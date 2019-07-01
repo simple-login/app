@@ -1,0 +1,30 @@
+{# Base for all pages after user logs in #}
+{% extends 'base.html' %}
+
+{% block nav %}
+    {% set navigation_bar = [
+    (url_for("dashboard.index"), 'dashboard', 'Dashboard'),
+]-%}
+
+
+    {% set active_page = active_page|default('index') -%}
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <ul class="navbar-nav mr-auto">
+            {% for href, id, caption in navigation_bar %}
+                <li{% if id == active_page %} class="nav-item active" {% else %} class="nav-item" {% endif %}>
+                    <a class="nav-link" href="{{ href|e }}">{{ caption|e }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                    {{ current_user.email }} (Logout)
+                </a>
+            </li>
+        </ul>
+
+    </nav>
+{% endblock %}
