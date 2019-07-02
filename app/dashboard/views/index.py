@@ -23,9 +23,9 @@ def index():
                 gen_email.email,
                 "A Test Email",
                 f"""
-Hi {current_user.name} ! <br><br>
-This is a test email to make sure you receive email sent at {gen_email.email} <br><br>
-If you have any question, feel free to reply to this email :) <br><br>
+Hi {current_user.name}! <br><br>
+This is a test to make sure that you receive emails sent from SimpleLogin <br><br>
+If you have any questions, feel free to reply to this email :) <br><br>
 Have a nice day <br><br>
 SimpleLogin team.
             """,
