@@ -24,9 +24,9 @@ def index():
                 "A Test Email",
                 f"""
 Hi {current_user.name}! <br><br>
-This is a test to make sure that you receive emails sent from SimpleLogin <br><br>
-If you have any questions, feel free to reply to this email :) <br><br>
-Have a nice day <br><br>
+This is a test to make sure that you receive emails sent from SimpleLogin. <br><br>
+If you have any questions, feel free to reply to this email :). <br><br>
+Have a nice day! <br><br>
 SimpleLogin team.
             """,
             )
