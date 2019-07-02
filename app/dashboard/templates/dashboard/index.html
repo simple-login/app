@@ -1,0 +1,244 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Dashboard
+{% endblock %}
+
+{% block default_content %}
+  <div class="page-header row">
+    <h3 class="page-title col"
+        data-intro="Here, you find the list of all <b>email alias</b> created. <br><br>
+        Emails sent to an <b>alias</b> will be forwarded to your personal email. <br><br>
+        Please note that email alias is <b>NOT</b> temporary, meaning an alias works forever! <br><br>
+        Email alias is a great way to hide your personal email so feel free to
+        use it whenever possible, for ex on untrusted websites.">
+      Email Alias
+    </h3>
+    <form method="post" class="col text-right">
+      <input type="hidden" name="form-name" value="create-new-email">
+      <button class="btn btn-success">Create email alias</button>
+    </form>
+  </div>
+
+  <div class="row row-cards row-deck mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-hover table-outline table-vcenter text-nowrap card-table">
+            <thead>
+            <tr>
+              <th>Email</th>
+              <th>
+                Used On
+                <i class="fe fe-help-circle" data-toggle="tooltip"
+                   title="List of app/website that has received this email"></i>
+              </th>
+              <th>Actions</th>
+              <th>
+                Enable/Disable Email Forwarding
+              </th>
+              <th>Created At</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for gen_email in gen_emails %}
+              <tr>
+                <td>
+                  <div>
+                    <a href="mailto: {{ gen_email.email }}">{{ gen_email.email }}</a>
+                  </div>
+                </td>
+
+                <td>
+                  {% for client_user in gen_email.client_users %}
+                    {{ client_user.client.name }} <br>
+                  {% endfor %}
+                </td>
+
+                <td>
+                  <div class="btn-group">
+                    <button class="clipboard btn btn-secondary btn-sm"
+                            data-clipboard-text="{{ gen_email.email }}">
+                      Copy
+                    </button>
+
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="trigger-email">
+                      <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+
+                      {% if gen_email.enabled %}
+                        <button class="btn btn-secondary btn-sm"
+                            {% if loop.index ==1 %}
+                                data-intro="By triggering the test email, 
+                            SimpleLogin server will send an email to this alias
+                            and this email should arrive to your personal email"
+                            {% endif %}
+                        >Trigger Test Email
+                        </button>
+                      {% endif %}
+                    </form>
+                  </div>
+                </td>
+
+                <td>
+                  <form method="post">
+                    <input type="hidden" name="form-name" value="switch-email-forwarding">
+                    <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+
+                    <label class="custom-switch"
+                        {% if loop.index ==1 %}
+                           data-intro="By turning off an alias, emails sent to this alias will <b>NOT</b>
+                           be forwarded to your personal email. <br><br>
+                           This should only be used with care as others might
+                           not be able to reach you after ...
+                            "
+                        {% endif %}
+                    >
+                      <input type="checkbox" class="custom-switch-input"
+                          {{ "checked" if gen_email.enabled else "" }}>
+                      <span class="custom-switch-indicator"></span>
+                    </label>
+                  </form>
+                </td>
+
+                <td>
+                  {{ gen_email.created_at | dt }}
+                </td>
+              </tr>
+            {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-header row">
+    <h3 class="page-title col" data-intro="Here you can find the list of website/app on which
+    you have used the <b>Connect with SimpleLogin</b> button <br><br>
+    You also see what information that SimpleLogin has communicated to these website/app when you sign in.
+">
+      Apps
+    </h3>
+  </div>
+
+  <div class="row row-cards row-deck mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-hover table-outline table-vcenter text-nowrap card-table">
+            <thead>
+            <tr>
+              <th>
+                App
+              </th>
+              <th>
+                Information
+                <i class="fe fe-help-circle" data-toggle="tooltip"
+                   title="Information sent to this app/website"></i>
+              </th>
+              <th class="text-center">
+                First used
+                <i class="fe fe-help-circle" data-toggle="tooltip"
+                   title="The first time you have used the SimpleLogin on this app/website"></i>
+              </th>
+              <!--<th class="text-center">Last used</th>-->
+            </tr>
+            </thead>
+            <tbody>
+            {% for client_user in client_users %}
+              <tr>
+                <td>
+                  {{ client_user.client.name }}
+                </td>
+
+                <td>
+                  {% for scope, val in client_user.get_user_info().items() %}
+                    <div>
+                      {% if scope == "email" %}
+                        Email: <a href="mailto:{{ val }}">{{ val }}</a>
+                      {% elif scope == "name" %}
+                        Name: {{ val }}
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </td>
+
+
+                <td class="text-center">
+                  {{ client_user.created_at | dt }}
+                </td>
+
+                {#            TODO: add last_used#}
+                <!--
+                  <td class="text-center">
+                    <div>4 minutes ago</div>
+                  </td>
+                -->
+
+              </tr>
+            {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    require(['clipboard', 'notie', 'jquery', 'intro'], function (Clipboard, notie, $, intro) {
+      var clipboard = new Clipboard('.clipboard');
+
+      var introShown = localStorage.getItem("introShown");
+      console.log(introShown);
+      if ("yes" !== introShown) {
+        intro().start();
+        localStorage.setItem("introShown", "yes")
+      }
+
+      clipboard.on('success', function (e) {
+        notie.alert({
+          type: "success",
+          text: "Copied to clipboard",
+          time: 1,
+        });
+
+        e.clearSelection();
+      });
+
+      // the modal does not get close when user clicks outside of modal
+      // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
+      notie.setOptions({
+        overlayClickDismiss: false,
+      });
+
+      $(".custom-switch-input").change(function (e) {
+        var message = "";
+
+        if (e.target.checked) {
+          message = `After this, you will start receiving email sent to this email address, please confirm`;
+        } else {
+          message = `After this, you will stop receiving email sent to this email address, please confirm`;
+        }
+
+        notie.confirm({
+          text: message,
+          cancelCallback: () => {
+            // reset to the original value
+            var oldValue = !$(this).prop("checked");
+            $(this).prop("checked", oldValue);
+          },
+          submitCallback: () => {
+            $(this).closest("form").submit();
+          }
+        });
+      })
+    })
+  </script>
+{% endblock %}

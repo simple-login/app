@@ -1,0 +1,29 @@
+<ul class="nav nav-tabs border-0 flex-column flex-lg-row">
+  <li class="nav-item">
+    <a href="{{ url_for('dashboard.index') }}"
+       class="nav-link {{ 'active' if active_page == 'dashboard' }}">
+      <i class="fe fe-home"></i>
+      Dashboard
+    </a>
+  </li>
+
+  <!--
+  <li class="nav-item">
+    <a href="{{ url_for('discover.index') }}"
+       class="nav-link {{ 'active' if active_page == 'discover' }}">
+      <i class="fe fe-globe"></i>
+      Discover
+    </a>
+  </li>
+  -->
+
+  {% if current_user.is_developer %}
+    <li class="nav-item">
+      <a href="{{ url_for('developer.index') }}"
+         class="nav-link {{ 'active' if active_page == 'developer' }}">
+        <i class="fe fe-terminal"></i>
+        Developer
+      </a>
+    </li>
+  {% endif %}
+</ul>

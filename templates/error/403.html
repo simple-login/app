@@ -1,0 +1,15 @@
+{% extends "error.html" %}
+
+{% block error_name %}
+  403
+{% endblock %}
+
+{% block error_description %}
+  We are sorry but you do not have permission to access this page
+{% endblock %}
+
+{% block suggestion %}
+  <a class="btn btn-primary" href="/">
+    <i class="fe fe-home mr-2"></i>Home Page
+  </a>
+{% endblock %}

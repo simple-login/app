@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="flex-fill">
+    {% include "header.html" %}
+
+    <div class="my-3 my-md-5">
+      <div class="container">
+        {% block default_content %}
+        {% endblock %}
+      </div>
+
+    </div>
+  </div>
+
+  {% include "footer.html" %}
+
+{% endblock %}

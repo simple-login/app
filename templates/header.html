@@ -1,0 +1,76 @@
+<div class="header py-4">
+  <div class="container">
+    <div class="d-flex">
+      <a class="header-brand" href="{{ url_for('dashboard.index') }}">
+        <img src="/static/icon.svg" class="header-brand-img" alt="logo">
+      </a>
+
+      <div class="d-flex order-lg-2 ml-auto">
+        {% if current_user.should_upgrade() %}
+          <div class="nav-item d-none d-md-flex">
+            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade To Premium</a>
+          </div>
+        {% endif %}
+        <div class="dropdown d-none d-md-flex">
+          <a class="nav-link icon"
+             data-intro="Welcome to SimpleLogin! <br><br>
+  It seems that this is the first time you are here,
+  let's walk through some SimpleLogin features together! <br><br>
+             You can always show this tutorial again any time by clicking on this icon"
+             onclick="startIntro()">
+            <i class="fe fe-help-circle"></i>
+          </a>
+        </div>
+        <div class="dropdown">
+          <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
+            <span class="avatar" style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
+            <span class="ml-2 d-none d-lg-block">
+							<span class="text-default">{{ current_user.name }}</span>
+							<small class="text-muted d-block mt-1">{{ current_user.email }}</small>
+						</span>
+          </a>
+
+          <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+            <a class="dropdown-item" href="{{ url_for('dashboard.setting') }}">
+              <i class="dropdown-icon fe fe-settings"></i> Settings
+            </a>
+
+            {% if not current_user.is_developer %}
+              <a class="dropdown-item" href="{{ url_for('partner.become') }}">
+                <i class="dropdown-icon fe fe-target"></i> Become Partner
+              </a>
+            {% endif %}
+
+            <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+              <i class="dropdown-icon fe fe-log-out"></i> Sign out
+            </a>
+          </div>
+
+        </div>
+      </div>
+
+      <a href="#" class="header-toggler d-lg-none ml-3 ml-lg-0" data-toggle="collapse"
+         data-target="#headerMenuCollapse">
+        <span class="header-toggler-icon"></span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="header collapse d-lg-flex p-0" id="headerMenuCollapse">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg order-lg-first">
+        {% include "menu.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function startIntro() {
+    require(['intro'], function (intro) {
+      intro().start();
+    })
+  }
+</script>

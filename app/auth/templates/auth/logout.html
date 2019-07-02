@@ -1,0 +1,14 @@
+{% extends "single.html" %}
+
+{% block title %}
+  Logout
+{% endblock %}
+
+{% block single_content %}
+  <div class="text-center text-muted">
+    You are logged out.
+
+    <a href="{{ url_for('auth.login') }}">Login</a>
+  </div>
+
+{% endblock %}

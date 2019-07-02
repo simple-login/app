@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-single">
+    <div class="container">
+      <div class="row">
+        <div class="col col-login mx-auto">
+          <div class="text-center mb-6">
+            <a href="/">
+              <img src="/static/icon.svg" class="h-6" alt="">
+            </a>
+          </div>
+
+          {% block single_content %}
+          {% endblock %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

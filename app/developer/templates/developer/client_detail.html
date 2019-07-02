@@ -1,0 +1,150 @@
+{% from "_formhelpers.html" import render_field, render_field_errors %}
+
+{% extends 'default.html' %}
+
+{% set active_page = "developer" %}
+
+{% block title %}
+  Developer - Edit client
+{% endblock %}
+
+{% block default_content %}
+  <div class="col-md-8 offset-md-2">
+    <form method="post" enctype="multipart/form-data">
+      {{ form.csrf_token }}
+
+      <h3>App Information</h3>
+      <div class="form-group">
+        <label class="form-label">App Name</label>
+        {{ form.name(class="form-control", value=client.name) }}
+        {{ render_field_errors(form.name) }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Website Url</label>
+        {{ form.home_url(class="form-control", type="url", value=client.home_url or "") }}
+        {{ render_field_errors(form.home_url) }}
+      </div>
+
+
+      <div class="form-group">
+        <div class="form-label">App Icon</div>
+        {{ form.icon(class="form-control-file") }}
+        {{ render_field_errors(form.icon) }}
+
+        {% if client.icon_id %}
+          <img src="{{ client.icon.get_url() }}" class="client-icon">
+        {% endif %}
+      </div>
+
+      <hr>
+      <h3>OpenID/OAuth2 parameters</h3>
+
+      <div class="form-group">
+        <label class="form-label">OAuth2 Client ID</label>
+
+        <div class="input-group mt-2">
+          <input type="text" value="{{ client.oauth_client_id }}" class="form-control">
+          <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ client.oauth_client_id }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">OAuth2 Client Secret</label>
+
+        <div class="input-group mt-2">
+          <input type="password" value="{{ client.oauth_client_secret }}" class="form-control">
+          <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ client.oauth_client_secret }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Authorized URIs</label>
+
+        {% for redirect_uri in client.redirect_uris %}
+          <div class="input-group mt-2">
+            <input type="url" name="uri" class="form-control" value="{{ redirect_uri.uri }}" required>
+
+            <span class="input-group-append">
+            <button class="remove-uri btn btn-primary" type="button">
+              <i class="fe fe-x"></i>
+            </button>
+          </span>
+
+          </div>
+        {% endfor %}
+
+        <div id="new-uris">
+          <!-- New uri will be put here -->
+        </div>
+
+
+        <button type="button" id="create-new-uri" class="mt-2 btn btn-outline-secondary">Add new uri</button>
+      </div>
+      <hr>
+      <button type="submit" class="btn btn-primary btn-lg">Update</button>
+    </form>
+
+    <!-- template for new uri -->
+    <div class="input-group mt-2" id="hidden-uri" style="display: none">
+      <input type="url" name="uri" class="form-control" required>
+
+      <span class="input-group-append">
+      <button class="remove-uri btn btn-primary" type="button">
+        <i class="fe fe-x"></i>
+      </button>
+    </span>
+
+    </div>
+
+  </div>
+
+{% endblock %}
+
+{% block script %}
+  <script type="text/x-template" id="course-detail">
+    <h1> ALO </h1>
+  </script>
+
+  <script>
+    require(["jquery", "notie", "clipboard"], function ($, notie, Clipboard) {
+
+      $("#create-new-uri").on("click", function (e) {
+        var clone = $("#hidden-uri").clone(true, true); // (true, true) to clone withDataAndEvents, deepWithDataAndEvents
+        clone.removeAttr("id");
+
+        $("#new-uris").append(clone);
+        clone.show();
+      });
+
+      $(".remove-uri").click(function (e) {
+        var currentElement = $(this);
+        currentElement.parent().parent().remove();
+      });
+
+      var clipboard = new Clipboard('.clipboard');
+
+      clipboard.on('success', function (e) {
+        notie.alert({
+          type: "success",
+          text: "Copied to clipboard",
+          time: 2,
+        });
+
+        e.clearSelection();
+      });
+    })
+  </script>
+{% endblock %}

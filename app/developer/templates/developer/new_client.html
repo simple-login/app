@@ -1,0 +1,37 @@
+{% from "_formhelpers.html" import render_field, render_field_errors %}
+
+{% extends 'default.html' %}
+
+{% set active_page = "developer" %}
+
+{% block title %}
+  Developer - Create new client
+{% endblock %}
+
+{% block default_content %}
+  <form method="post" enctype="multipart/form-data">
+    {{ form.csrf_token }}
+
+    <div class="form-group">
+      <label class="form-label">App Name</label>
+      {{ form.name(class="form-control") }}
+      {{ render_field_errors(form.name) }}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Website Url</label>
+      {{ form.home_url(class="form-control", type="url") }}
+      {{ render_field_errors(form.home_url) }}
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">App Icon</div>
+      {{ form.icon(class="form-control-file") }}
+      {{ render_field_errors(form.icon) }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create</button>
+  </form>
+
+
+{% endblock %}

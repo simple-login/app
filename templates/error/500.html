@@ -1,0 +1,16 @@
+{% extends "error.html" %}
+
+{% block error_name %}
+  Server error
+{% endblock %}
+
+{% block error_description %}
+  Looks like we are having some server issues... <br><br>
+  We are notified and will look at this issue asap!
+{% endblock %}
+
+{% block suggestion %}
+  <a class="btn btn-primary" href="javascript:history.back()">
+    <i class="fe fe-arrow-left mr-2"></i>Go Back
+  </a>
+{% endblock %}

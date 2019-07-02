@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-content">
+    <div class="container text-center">
+      <div class="display-3 text-muted mb-5">
+        <i class="si si-exclamation"></i>
+        {% block error_name %}
+        {% endblock %}
+      </div>
+
+      <h3 class="h3 mb-4">
+        {% block error_description %}
+        {% endblock %}
+      </h3>
+
+      {% block suggestion %}
+        <a class="btn btn-primary" href="/">
+          <i class="fe fe-home mr-2"></i>Home Page
+        </a>
+      {% endblock %}
+
+
+    </div>
+  </div>
+{% endblock %}

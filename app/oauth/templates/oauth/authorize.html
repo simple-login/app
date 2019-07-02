@@ -1,0 +1,81 @@
+{% extends 'default.html' %}
+
+{% block title %}
+  Authorization
+{% endblock %}
+
+{% block default_content %}
+  <div class="col-md-6 offset-md-3">
+    <form class="card" method="post">
+      <div class="card-body p-6">
+        <!-- User has already authorized this client -->
+        {% if client_user %}
+          <div class="card-title">
+            You have already authorized <b>{{ client.name }}</b>.
+          </div>
+
+          <div>
+            <b>{{ client.name }}</b> has access to the following information:
+          </div>
+
+          <ul>
+            {% for scope in client.scopes %}
+              <li>{{ scope.name }}: {{ user_info[scope.name] }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="card-title">
+            <b>{{ client.name }}</b> will receive your following information:
+          </div>
+
+          <ul>
+            {% for scope in client.scopes %}
+              <li>{{ scope.name }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {% if client_user %}
+          <div class="form-footer">
+            <div class="btn-group" role="group" aria-label="Basic example">
+              <button type="submit" name="button" value="allow"
+                      class="btn btn-success">Allow
+              </button>
+
+              <a class="btn btn-light" href="javascript:history.back()">
+                Cancel
+              </a>
+            </div>
+          </div>
+        {% else %}
+          <div class="form-group">
+            <div class="custom-controls-stacked">
+              <label class="custom-control custom-checkbox">
+                <input type="checkbox" name="gen-email"
+                       class="custom-control-input" checked>
+                <span class="custom-control-label">Generate a new email</span>
+              </label>
+            </div>
+
+            <small class="form-text text-muted">
+              If checked, a new random email address will be generated for this app.
+            </small>
+          </div>
+
+          <div class="form-footer">
+            <div class="btn-group btn-block" role="group" aria-label="Basic example">
+              <button type="submit" name="button" value="allow"
+                      class="btn btn-success">Allow
+              </button>
+
+              <button type="submit" name="button" value="deny"
+                      class="btn btn-light">Deny
+              </button>
+            </div>
+          </div>
+        {% endif %}
+
+      </div>
+    </form>
+  </div>
+{% endblock %}

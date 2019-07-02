@@ -1,8 +1,5 @@
-import subprocess
-
+from app.config import SHA1
 from app.monitor.base import monitor_bp
-
-SHA1 = subprocess.getoutput("git rev-parse HEAD")
 
 
 @monitor_bp.route("/git")

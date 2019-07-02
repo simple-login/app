@@ -1,0 +1,6 @@
+jobs:
+  - name: downgrade_expired_plan
+    command: python /code/cron.py
+    shell: /bin/bash
+    schedule: "0 0 * * *"
+    captureStderr: true

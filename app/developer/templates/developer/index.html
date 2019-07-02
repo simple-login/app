@@ -1,0 +1,164 @@
+{% from "_formhelpers.html" import render_field %}
+
+{% extends 'default.html' %}
+
+{% set active_page = "developer" %}
+
+{% block title %}
+  Developer
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-4">
+      <a href="{{ url_for('developer.new_client') }}" class="btn btn-success">Create new app</a>
+    </div>
+  </div>
+
+  <div class="row row-cards row-deck mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-hover table-outline table-vcenter text-nowrap card-table">
+            <thead>
+            <tr>
+              <th class="text-center w-1"><i class="icon-people"></i></th>
+              <th>Name</th>
+              <th>OAuth2 Client ID</th>
+              <th>Scopes</th>
+              <th>Number Users</th>
+              <th>Edit</th>
+              <!--<th>Publish</th>-->
+              <th>Delete</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for client in clients %}
+              <tr>
+                <td class="text-center">
+                  {% if client.icon_id %}
+                    <div class="avatar d-block" style="background-image: url({{ client.icon.get_url() }})">
+                      <span class="avatar-status bg-green"></span>
+                    </div>
+                  {% endif %}
+                </td>
+
+                <td>
+                  <div>
+                    <a href="{{ url_for('developer.client_detail', client_id=client.id) }}">
+                      {{ client.name }}
+                    </a>
+                  </div>
+                  <div class="small text-muted">
+                    Created at: {{ client.created_at |dt }}
+                  </div>
+                </td>
+
+                <td>
+                  {{ client.oauth_client_id }}
+                </td>
+
+                <td class="align-middle">
+                  <ul class="list-unstyled mb-0">
+                    {% for scope in client.scopes %}
+                      <li>
+                        <i class="fe fe-check"></i>
+                        {{ scope.name }}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </td>
+
+                <td>
+                  {{ client.nb_user() }}
+                </td>
+
+                <td>
+                  <a href="{{ url_for('developer.client_detail', client_id=client.id) }}" class="btn btn-info">
+                    <i class="fe fe-edit"></i>
+                  </a>
+                </td>
+
+              <!-- TODO: uncomment when bringing back "Discover" feature
+                <td>
+                  <form method="post">
+                    <input type="hidden" name="form-name" value="switch-client-publish">
+                    <input type="hidden" name="client-id" value="{{ client.id }}">
+
+                    <label class="custom-switch">
+                      <input type="checkbox" class="custom-switch-input"
+                          {{ "checked" if client.published else "" }}>
+                      <span class="custom-switch-indicator"></span>
+                    </label>
+                  </form>
+                </td>
+                -->
+
+                <td>
+                  <form method="post"
+                        onsubmit="return confirm('Please make sure no user is using this client. This operation is not reversible');">
+                    <input type="hidden" name="form-name" value="delete-client">
+                    <input type="hidden" name="client-id" value="{{ client.id }}">
+                    <button type="submit" class="btn btn-danger">
+                      <i class="fe fe-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block script %}
+  <script>
+    require(['clipboard', 'notie', 'jquery'], function (Clipboard, notie, $) {
+      var clipboard = new Clipboard('.btn');
+
+      clipboard.on('success', function (e) {
+        notie.alert({
+          type: "success",
+          text: "Copied to clipboard",
+          time: 1,
+        });
+
+        e.clearSelection();
+      });
+
+      // the modal does not get close when user clicks outside of modal
+      // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
+      notie.setOptions({
+        overlayClickDismiss: false,
+      });
+
+      $(".custom-switch-input").change(function (e) {
+        // Only ask for confirmation when publishing, not when un-publishing
+        if (e.target.checked) {
+          var message = `After this, your app/website will made available in "Discover", please confirm`;
+
+          notie.confirm({
+            text: message,
+            cancelCallback: () => {
+              // reset to the original value
+              var oldValue = !$(this).prop("checked");
+              $(this).prop("checked", oldValue);
+            },
+            submitCallback: () => {
+              $(this).closest("form").submit();
+            }
+          });
+        } else {
+          $(this).closest("form").submit();
+        }
+      })
+
+    });
+  </script>
+{% endblock %}
+

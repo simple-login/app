@@ -1,3 +1,6 @@
 .idea/
 *.pyc
 db.sqlite
+.env
+.pytest_cache
+.vscode

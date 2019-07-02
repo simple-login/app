@@ -1,0 +1,21 @@
+.profile-picture {
+    /* make a square container */
+    width: 150px;
+    height: 150px;
+
+    /* round the edges to a circle with border radius 1/2 container size */
+    border-radius: 50%;
+
+    margin-top: 10px;
+}
+
+.client-icon {
+    /* make a square container */
+    width: 150px;
+    height: 150px;
+
+    /* round the edges to a circle with border radius 1/2 container size */
+    border-radius: 10%;
+
+    margin-top: 10px;
+}

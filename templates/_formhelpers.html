@@ -18,3 +18,14 @@
     </div>
   </div>
 {% endmacro %}
+
+{% macro render_field_errors(field) %}
+  {% if field.errors %}
+    <ul class=errors>
+      {% for error in field.errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endmacro %}
+
