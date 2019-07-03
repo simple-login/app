@@ -8,7 +8,7 @@ from app.config import SUPPORT_EMAIL, SENDGRID_API_KEY, ENV
 from app.log import LOG
 
 
-def send(to_email, subject, html_content):
+def send(to_email, subject, html_content, plain_content=None):
     # On local only print out email content
     if ENV == "local":
         LOG.d(
@@ -16,11 +16,15 @@ def send(to_email, subject, html_content):
         )
         return
 
+    if not plain_content:
+        plain_content = subject
+
     message = Mail(
         from_email=SUPPORT_EMAIL,
         to_emails=to_email,
         subject=subject,
         html_content=html_content,
+        plain_text_content=plain_content,
     )
     sg = SendGridAPIClient(SENDGRID_API_KEY)
     response = sg.send(message)
