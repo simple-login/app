@@ -195,7 +195,7 @@ def generate_access_token() -> str:
 
 
 def get_host_name_and_scheme(url: str) -> (str, str):
-    """http://localhost:5000?a=b -> (localhost, http) """
+    """http://localhost:7777?a=b -> (localhost, http) """
     url_comp = urlparse(url)
 
     return url_comp.hostname, url_comp.scheme

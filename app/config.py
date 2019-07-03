@@ -13,7 +13,7 @@ else:
     load_dotenv()
 
 
-URL = os.environ.get("URL") or "http://sl-server:5000"
+URL = os.environ.get("URL") or "http://sl-server:7777"
 EMAIL_DOMAIN = os.environ.get("EMAIL_DOMAIN") or "sl"
 SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL") or "support@sl"
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
