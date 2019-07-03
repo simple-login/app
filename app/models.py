@@ -12,7 +12,7 @@ from app import s3
 from app.config import URL, MAX_NB_EMAIL_FREE_PLAN, EMAIL_DOMAIN
 from app.extensions import db
 from app.log import LOG
-from app.oauth_models import ScopeE
+from app.oauth_models import Scope
 from app.utils import convert_to_id, random_string
 
 
@@ -248,9 +248,9 @@ class Client(db.Model, ModelMixin):
     def nb_user(self):
         return ClientUser.filter_by(client_id=self.id).count()
 
-    def get_scopes(self) -> [ScopeE]:
+    def get_scopes(self) -> [Scope]:
         # todo: client can choose which scopes they want to have access
-        return [ScopeE.NAME, ScopeE.EMAIL, ScopeE.AVATAR_URL]
+        return [Scope.NAME, Scope.EMAIL, Scope.AVATAR_URL]
 
     @classmethod
     def create_new(cls, name, user_id) -> "Client":
@@ -375,22 +375,22 @@ class ClientUser(db.Model, ModelMixin):
         res = {"id": self.id, "client": self.client.name, "email_verified": True}
 
         for scope in self.client.get_scopes():
-            if scope == ScopeE.NAME:
-                res[ScopeE.NAME.value] = self.user.name
-            elif scope == ScopeE.AVATAR_URL:
+            if scope == Scope.NAME:
+                res[Scope.NAME.value] = self.user.name
+            elif scope == Scope.AVATAR_URL:
                 if self.user.profile_picture_id:
-                    res[ScopeE.AVATAR_URL.value] = self.user.profile_picture.get_url()
+                    res[Scope.AVATAR_URL.value] = self.user.profile_picture.get_url()
                 else:
-                    res[ScopeE.AVATAR_URL.value] = None
-            elif scope == ScopeE.EMAIL:
+                    res[Scope.AVATAR_URL.value] = None
+            elif scope == Scope.EMAIL:
                 # Use generated email
                 if self.gen_email_id:
                     LOG.debug(
                         "Use gen email for user %s, client %s", self.user, self.client
                     )
-                    res[ScopeE.EMAIL.value] = self.gen_email.email
+                    res[Scope.EMAIL.value] = self.gen_email.email
                 # Use user original email
                 else:
-                    res[ScopeE.EMAIL.value] = self.user.email
+                    res[Scope.EMAIL.value] = self.user.email
 
         return res

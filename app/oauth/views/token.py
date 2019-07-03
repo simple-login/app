@@ -6,7 +6,7 @@ from app.log import LOG
 from app.models import Client, AuthorizationCode, OauthToken, ClientUser
 from app.oauth.base import oauth_bp
 from app.oauth.views.authorize import generate_access_token
-from app.oauth_models import ScopeE
+from app.oauth_models import Scope
 
 
 @oauth_bp.route("/token", methods=["POST"])
@@ -82,7 +82,7 @@ def get_access_token():
         "user": user_data,
     }
 
-    if oauth_token.scope and ScopeE.OPENID.value in oauth_token.scope:
+    if oauth_token.scope and Scope.OPENID.value in oauth_token.scope:
         res["id_token"] = make_id_token(client_user)
 
     return jsonify(res)

@@ -14,26 +14,27 @@
             You have already authorized <b>{{ client.name }}</b>.
           </div>
 
-          <div>
+          <hr>
+
+          <div class="mb-4">
             <b>{{ client.name }}</b> has access to the following information:
           </div>
-
-          <ul>
+          <div>
             {% for scope in client.get_scopes() %}
-              <li style="margin-top: .4rem">
-                {% if scope == ScopeE.AVATAR_URL %}
+              <div>
+                {% if scope == Scope.AVATAR_URL and user_info[scope.value] %}
                   {{ scope.value }}: <img src="{{ user_info[scope.value] }}" class="avatar">
-                {% elif scope == ScopeE.EMAIL %}
+                {% elif scope == Scope.EMAIL %}
                   {{ scope.value }}:
                   <a href="mailto:{{ user_info[scope.value] }}">
                     {{ user_info[scope.value] }}
                   </a>
-                {% elif scope == ScopeE.NAME %}
+                {% elif scope == Scope.NAME %}
                   {{ scope.value }}: <b>{{ user_info[scope.value] }}</b>
                 {% endif %}
-              </li>
+              </div>
             {% endfor %}
-          </ul>
+          </div>
         {% else %}
           <div class="card-title">
             <b>{{ client.name }}</b> will receive your following information:

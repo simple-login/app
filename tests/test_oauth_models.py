@@ -1,7 +1,7 @@
 import flask
 import pytest
 
-from app.oauth_models import get_scopes, ScopeE, get_response_types, ResponseType
+from app.oauth_models import get_scopes, Scope, get_response_types, ResponseType
 
 
 def test_get_scopes(flask_app):
@@ -11,17 +11,17 @@ def test_get_scopes(flask_app):
 
     with flask_app.test_request_context("/?scope=email&scope=name"):
         scopes = get_scopes(flask.request)
-        assert scopes == {ScopeE.NAME, ScopeE.EMAIL}
+        assert scopes == {Scope.NAME, Scope.EMAIL}
 
     # a space between email and name
     with flask_app.test_request_context("/?scope=email%20name"):
         scopes = get_scopes(flask.request)
-        assert scopes == {ScopeE.NAME, ScopeE.EMAIL}
+        assert scopes == {Scope.NAME, Scope.EMAIL}
 
     # a comma between email and name
     with flask_app.test_request_context("/?scope=email,name"):
         scopes = get_scopes(flask.request)
-        assert scopes == {ScopeE.NAME, ScopeE.EMAIL}
+        assert scopes == {Scope.NAME, Scope.EMAIL}
 
     # non-existent scope: raise ValueError
     with flask_app.test_request_context("/?scope=abcd"):

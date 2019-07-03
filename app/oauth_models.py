@@ -4,9 +4,7 @@ from typing import Set, Union
 import flask
 
 
-class ScopeE(enum.Enum):
-    """ScopeE to distinguish with Scope model"""
-
+class Scope(enum.Enum):
     EMAIL = "email"
     NAME = "name"
     OPENID = "openid"
@@ -19,10 +17,10 @@ class ResponseType(enum.Enum):
     ID_TOKEN = "id_token"
 
 
-def get_scopes(request: flask.Request) -> Set[ScopeE]:
+def get_scopes(request: flask.Request) -> Set[Scope]:
     scope_strs = _split_arg(request.args.getlist("scope"))
 
-    return set([ScopeE(scope_str) for scope_str in scope_strs])
+    return set([Scope(scope_str) for scope_str in scope_strs])
 
 
 def get_response_types(request: flask.Request) -> Set[ResponseType]:
