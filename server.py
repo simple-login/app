@@ -27,7 +27,15 @@ from app.discover.base import discover_bp
 from app.extensions import db, login_manager, migrate
 from app.jose_utils import get_jwk_key
 from app.log import LOG
-from app.models import Client, User, ClientUser, GenEmail, RedirectUri, PlanEnum
+from app.models import (
+    Client,
+    User,
+    ClientUser,
+    GenEmail,
+    RedirectUri,
+    PlanEnum,
+    Partner,
+)
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
 from app.partner.base import partner_bp
@@ -239,11 +247,13 @@ def init_extensions(app: Flask):
 
 def init_admin(app):
     admin = Admin(name="SimpleLogin", template_mode="bootstrap3")
+
     admin.init_app(app, index_view=SLAdminIndexView())
     admin.add_view(SLModelView(User, db.session))
     admin.add_view(SLModelView(Client, db.session))
     admin.add_view(SLModelView(GenEmail, db.session))
     admin.add_view(SLModelView(ClientUser, db.session))
+    admin.add_view(SLModelView(Partner, db.session, endpoint="admin-partner"))
 
 
 if __name__ == "__main__":
