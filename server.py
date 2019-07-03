@@ -62,6 +62,8 @@ def create_app() -> Flask:
 
     stripe.api_key = STRIPE_SECRET_KEY
 
+    init_admin(app)
+
     return app
 
 
