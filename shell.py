@@ -1,11 +1,9 @@
 import flask_migrate
-import stripe
 from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from app.config import DB_URI
 from app.models import *
-from app.oauth_models import ScopeE
 from server import create_app
 
 
@@ -17,12 +15,6 @@ def create_db():
         # Create all tables
         # Use flask-migrate instead of db.create_all()
         flask_migrate.upgrade()
-
-        scope_name = Scope.create(name=ScopeE.NAME.value)
-        db.session.add(scope_name)
-        scope_email = Scope.create(name=ScopeE.EMAIL.value)
-        db.session.add(scope_email)
-        db.session.commit()
 
 
 def add_real_data():

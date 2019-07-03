@@ -27,10 +27,9 @@ from app.discover.base import discover_bp
 from app.extensions import db, login_manager, migrate
 from app.jose_utils import get_jwk_key
 from app.log import LOG
-from app.models import Client, User, Scope, ClientUser, GenEmail, RedirectUri, PlanEnum
+from app.models import Client, User, ClientUser, GenEmail, RedirectUri, PlanEnum
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
-from app.oauth_models import ScopeE
 from app.partner.base import partner_bp
 
 if ENABLE_SENTRY:
@@ -75,11 +74,6 @@ def fake_data():
 
     # Create all tables
     db.create_all()
-
-    # fake data
-    Scope.create(name=ScopeE.NAME.value)
-    Scope.create(name=ScopeE.EMAIL.value)
-    db.session.commit()
 
     # Create a user
     user = User.create(

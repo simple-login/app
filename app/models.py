@@ -215,24 +215,6 @@ class Partner(db.Model, ModelMixin):
 
 # <<< OAUTH models >>>
 
-client_scope = db.Table(
-    "client_scope",
-    db.Column(
-        "client_id",
-        db.Integer,
-        db.ForeignKey("client.id", ondelete="cascade"),
-        primary_key=True,
-        nullable=False,
-    ),
-    db.Column(
-        "scope_id",
-        db.Integer,
-        db.ForeignKey("scope.id", ondelete="cascade"),
-        primary_key=True,
-        nullable=False,
-    ),
-)
-
 
 def generate_oauth_client_id(client_name) -> str:
     oauth_client_id = convert_to_id(client_name) + "-" + random_string()
@@ -261,7 +243,6 @@ class Client(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     icon_id = db.Column(db.ForeignKey(File.id), nullable=True)
 
-    scopes = db.relationship("Scope", secondary=client_scope, lazy="subquery")
     icon = db.relationship(File)
 
     def nb_user(self):
@@ -282,10 +263,6 @@ class Client(db.Model, ModelMixin):
             oauth_client_secret=oauth_client_secret,
             user_id=user_id,
         )
-
-        # By default, add email and name scope
-        client.scopes.append(Scope.get_by(name=ScopeE.NAME.value))
-        client.scopes.append(Scope.get_by(name=ScopeE.EMAIL.value))
 
         return client
 
@@ -327,10 +304,6 @@ class OauthToken(db.Model, ModelMixin):
 
     user = db.relationship(User)
     client = db.relationship(Client)
-
-
-class Scope(db.Model, ModelMixin):
-    name = db.Column(db.String(128), unique=True, nullable=False)
 
 
 def generate_email() -> str:
