@@ -9,11 +9,11 @@ from flask_login import UserMixin
 from sqlalchemy_utils import ArrowType
 
 from app import s3
-from app.config import URL, MAX_NB_EMAIL_FREE_PLAN, EMAIL_DOMAIN
+from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, URL
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
-from app.utils import convert_to_id, random_string
+from app.utils import convert_to_id, random_string, random_words
 
 
 class ModelMixin(object):
@@ -308,7 +308,7 @@ class OauthToken(db.Model, ModelMixin):
 
 def generate_email() -> str:
     """generate an email address that does not exist before"""
-    random_email = random_string(40) + "@" + EMAIL_DOMAIN
+    random_email = random_words() + "@" + EMAIL_DOMAIN
 
     # check that the client does not exist yet
     if not GenEmail.get_by(email=random_email):

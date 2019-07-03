@@ -4,6 +4,19 @@ import urllib.parse
 
 from unidecode import unidecode
 
+from .config import WORDS_FILE_PATH
+from .log import LOG
+
+with open(WORDS_FILE_PATH) as f:
+    LOG.d("load words file: %s", WORDS_FILE_PATH)
+    _words = f.read().split()
+
+
+def random_words():
+    """Generate a random words. Used to generate user-facing string, for ex email addresses"""
+    nb_words = random.randint(3, 5)
+    return "_".join([random.choice(_words) for i in range(nb_words)])
+
 
 def random_string(length=10):
     """Generate a random string of fixed length """

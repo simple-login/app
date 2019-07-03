@@ -57,3 +57,5 @@ PARTNER_CODES = ["SL2019"]
 
 # Allow user to have 1 year of premium: set the expiration_date to 1 year more
 PROMO_CODE = "SIMPLEISBETTER"
+
+WORDS_FILE_PATH = os.environ.get("WORDS_FILE_PATH")
