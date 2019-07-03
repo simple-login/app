@@ -5,8 +5,8 @@
     <b>{{ client.name }}</b> &nbsp; would like to have access to your following data:
 
     <ul class="mt-3">
-      {% for scope in client.scopes %}
-        <li>{{ scope.name }}</li>
+      {% for scope in client.get_scopes() %}
+        <li>{{ scope.value }}</li>
       {% endfor %}
     </ul>
 

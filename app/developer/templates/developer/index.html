@@ -60,10 +60,10 @@
 
                 <td class="align-middle">
                   <ul class="list-unstyled mb-0">
-                    {% for scope in client.scopes %}
+                    {% for scope in client.get_scopes() %}
                       <li>
                         <i class="fe fe-check"></i>
-                        {{ scope.name }}
+                        {{ scope.value }}
                       </li>
                     {% endfor %}
                   </ul>

@@ -17,7 +17,7 @@ from app.models import (
     OauthToken,
 )
 from app.oauth.base import oauth_bp
-from app.oauth_models import get_response_types, ResponseType
+from app.oauth_models import get_response_types, ResponseType, ScopeE
 from app.utils import random_string, encode_url
 
 
@@ -73,7 +73,11 @@ def authorize():
                 user_info = client_user.get_user_info()
 
             return render_template(
-                "oauth/authorize.html", client=client, user_info=user_info
+                "oauth/authorize.html",
+                client=client,
+                user_info=user_info,
+                client_user=client_user,
+                ScopeE=ScopeE,
             )
         else:
             # after user logs in, redirect user back to this page

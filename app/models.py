@@ -267,6 +267,10 @@ class Client(db.Model, ModelMixin):
     def nb_user(self):
         return ClientUser.filter_by(client_id=self.id).count()
 
+    def get_scopes(self) -> [ScopeE]:
+        # todo: client can choose which scopes they want to have access
+        return [ScopeE.NAME, ScopeE.EMAIL, ScopeE.AVATAR_URL]
+
     @classmethod
     def create_new(cls, name, user_id) -> "Client":
         # generate a client-id
@@ -383,15 +387,29 @@ class ClientUser(db.Model, ModelMixin):
 
     def get_user_info(self) -> dict:
         """return user info according to client scope
-        Return dict with key being scope name
+        Return dict with key being scope name. For now all the fields are the same for all clients:
+
+        {
+          "client": "Demo",
+          "email": "test-avk5l@mail-tester.com",
+          "email_verified": true,
+          "id": 1,
+          "name": "Son GM",
+          "avatar_url": "http://s3..."
+        }
 
         """
         res = {"id": self.id, "client": self.client.name, "email_verified": True}
 
-        for scope in self.client.scopes:
-            if scope.name == ScopeE.NAME.value:
+        for scope in self.client.get_scopes():
+            if scope == ScopeE.NAME:
                 res[ScopeE.NAME.value] = self.user.name
-            elif scope.name == ScopeE.EMAIL.value:
+            elif scope == ScopeE.AVATAR_URL:
+                if self.user.profile_picture_id:
+                    res[ScopeE.AVATAR_URL.value] = self.user.profile_picture.get_url()
+                else:
+                    res[ScopeE.AVATAR_URL.value] = None
+            elif scope == ScopeE.EMAIL:
                 # Use generated email
                 if self.gen_email_id:
                     LOG.debug(

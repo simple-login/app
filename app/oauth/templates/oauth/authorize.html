@@ -19,8 +19,19 @@
           </div>
 
           <ul>
-            {% for scope in client.scopes %}
-              <li>{{ scope.name }}: {{ user_info[scope.name] }}</li>
+            {% for scope in client.get_scopes() %}
+              <li style="margin-top: .4rem">
+                {% if scope == ScopeE.AVATAR_URL %}
+                  {{ scope.value }}: <img src="{{ user_info[scope.value] }}" class="avatar">
+                {% elif scope == ScopeE.EMAIL %}
+                  {{ scope.value }}:
+                  <a href="mailto:{{ user_info[scope.value] }}">
+                    {{ user_info[scope.value] }}
+                  </a>
+                {% elif scope == ScopeE.NAME %}
+                  {{ scope.value }}: <b>{{ user_info[scope.value] }}</b>
+                {% endif %}
+              </li>
             {% endfor %}
           </ul>
         {% else %}
@@ -29,8 +40,8 @@
           </div>
 
           <ul>
-            {% for scope in client.scopes %}
-              <li>{{ scope.name }}</li>
+            {% for scope in client.get_scopes() %}
+              <li>{{ scope.value }}</li>
             {% endfor %}
           </ul>
         {% endif %}

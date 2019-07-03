@@ -10,6 +10,7 @@ class ScopeE(enum.Enum):
     EMAIL = "email"
     NAME = "name"
     OPENID = "openid"
+    AVATAR_URL = "avatar_url"
 
 
 class ResponseType(enum.Enum):
