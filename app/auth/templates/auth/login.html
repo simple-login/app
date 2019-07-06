@@ -33,7 +33,7 @@
         <label class="form-label">
           Password
           <a href="{{ url_for('auth.forgot_password') }}" class="float-right small">
-            I forgot password
+            I forgot my password
           </a>
         </label>
         {{ form.password(class="form-control", type="password") }}
@@ -50,13 +50,13 @@
       -->
 
       <div class="form-footer">
-        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+        <button type="submit" class="btn btn-primary btn-block">Log in</button>
       </div>
     </div>
   </form>
 
   <div class="text-center text-muted">
-    Don't have account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
+    Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
   </div>
 
 
