@@ -35,7 +35,7 @@ SimpleLogin team.
                 "success",
             )
 
-        elif request.form.get("form-name") == "create-new-email":
+        elif request.form.get("form-name") == "create-random-email":
             can_create_new_email = current_user.can_create_new_email()
 
             if can_create_new_email:
