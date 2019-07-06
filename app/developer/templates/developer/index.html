@@ -1,5 +1,3 @@
-{% from "_formhelpers.html" import render_field %}
-
 {% extends 'default.html' %}
 
 {% set active_page = "developer" %}
@@ -119,53 +117,50 @@
 
 {% block script %}
   <script>
-    require(['clipboard', 'notie', 'jquery'], function (Clipboard, notie, $) {
-      var clipboard = new Clipboard('.btn');
+    var clipboard = new ClipboardJS('.btn');
 
-      clipboard.on('success', function (e) {
-        notie.alert({
-          type: "success",
-          text: "Copied to clipboard",
-          time: 1,
-        });
-
-        e.clearSelection();
+    clipboard.on('success', function (e) {
+      notie.alert({
+        type: "success",
+        text: "Copied to clipboard",
+        time: 1,
       });
 
-      $(".delete-client").on("click", function (e) {
+      e.clearSelection();
+    });
+
+    $(".delete-client").on("click", function (e) {
+      notie.confirm({
+        text: "This operation is not reversible, please confirm",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+
+    $(".custom-switch-input").change(function (e) {
+      // Only ask for confirmation when publishing, not when un-publishing
+      if (e.target.checked) {
+        var message = `After this, your app/website will made available in "Discover", please confirm`;
+
         notie.confirm({
-          text: "This operation is not reversible, please confirm",
+          text: message,
           cancelCallback: () => {
-            // nothing to do
+            // reset to the original value
+            var oldValue = !$(this).prop("checked");
+            $(this).prop("checked", oldValue);
           },
           submitCallback: () => {
             $(this).closest("form").submit();
           }
         });
-      });
-
-      $(".custom-switch-input").change(function (e) {
-        // Only ask for confirmation when publishing, not when un-publishing
-        if (e.target.checked) {
-          var message = `After this, your app/website will made available in "Discover", please confirm`;
-
-          notie.confirm({
-            text: message,
-            cancelCallback: () => {
-              // reset to the original value
-              var oldValue = !$(this).prop("checked");
-              $(this).prop("checked", oldValue);
-            },
-            submitCallback: () => {
-              $(this).closest("form").submit();
-            }
-          });
-        } else {
-          $(this).closest("form").submit();
-        }
-      })
-
-    });
+      } else {
+        $(this).closest("form").submit();
+      }
+    })
   </script>
 {% endblock %}
 

@@ -117,32 +117,29 @@
   </script>
 
   <script>
-    require(["jquery", "notie", "clipboard"], function ($, notie, Clipboard) {
+    $("#create-new-uri").on("click", function (e) {
+      var clone = $("#hidden-uri").clone(true, true); // (true, true) to clone withDataAndEvents, deepWithDataAndEvents
+      clone.removeAttr("id");
 
-      $("#create-new-uri").on("click", function (e) {
-        var clone = $("#hidden-uri").clone(true, true); // (true, true) to clone withDataAndEvents, deepWithDataAndEvents
-        clone.removeAttr("id");
+      $("#new-uris").append(clone);
+      clone.show();
+    });
 
-        $("#new-uris").append(clone);
-        clone.show();
+    $(".remove-uri").click(function (e) {
+      var currentElement = $(this);
+      currentElement.parent().parent().remove();
+    });
+
+    var clipboard = new ClipboardJS('.clipboard');
+
+    clipboard.on('success', function (e) {
+      notie.alert({
+        type: "success",
+        text: "Copied to clipboard",
+        time: 2,
       });
 
-      $(".remove-uri").click(function (e) {
-        var currentElement = $(this);
-        currentElement.parent().parent().remove();
-      });
-
-      var clipboard = new Clipboard('.clipboard');
-
-      clipboard.on('success', function (e) {
-        notie.alert({
-          type: "success",
-          text: "Copied to clipboard",
-          time: 2,
-        });
-
-        e.clearSelection();
-      });
-    })
+      e.clearSelection();
+    });
   </script>
 {% endblock %}

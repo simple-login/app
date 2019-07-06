@@ -18,7 +18,6 @@
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
   <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
 
-  <!-- Generated: 2019-04-04 16:55:45 +0200 -->
   <title>
     {% block title %}{% endblock %} | SimpleLogin
   </title>
@@ -26,40 +25,34 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,300i,400,400i,500,500i,600,600i,700,700i&amp;subset=latin-ext">
-  <script src="/static/assets/js/require.min.js"></script>
-  <script>
-    requirejs.config({
-      baseUrl: '/static',
-      paths: {
-        'clipboard': ['/static/vendor/clipboard.min'],
-        'notie': ['/static/vendor/notie.min'],
-        'intro': ['/static/vendor/intro.min'],
-      }
-    });
-  </script>
 
   <!-- Dashboard Core -->
   <link href="/static/assets/css/dashboard.css" rel="stylesheet"/>
-  <script src="/static/assets/js/dashboard.js"></script>
 
-  <!-- c3.js Charts Plugin -->
-  <link href="/static/assets/plugins/charts-c3/plugin.css" rel="stylesheet"/>
-  <script src="/static/assets/plugins/charts-c3/plugin.js"></script>
+  <!-- Tabler JS -->
+  <script src="/static/assets/js/vendors/jquery-3.2.1.min.js"></script>
+  <script src="/static/assets/js/vendors/bootstrap.bundle.min.js"></script>
+  <script src="/static/assets/js/vendors/jquery.sparkline.min.js"></script>
+  <script src="/static/assets/js/vendors/selectize.min.js"></script>
+  <script src="/static/assets/js/vendors/jquery.tablesorter.min.js"></script>
+  <script src="/static/assets/js/vendors/jquery-jvectormap-2.0.3.min.js"></script>
+  <script src="/static/assets/js/vendors/jquery-jvectormap-de-merc.js"></script>
+  <script src="/static/assets/js/vendors/jquery-jvectormap-world-mill.js"></script>
+  <script src="/static/assets/js/vendors/circle-progress.min.js"></script>
+  <script src="/static/assets/js/core.js"></script>
 
-  <!-- Google Maps Plugin -->
-  <link href="/static/assets/plugins/maps-google/plugin.css" rel="stylesheet"/>
-  <script src="/static/assets/plugins/maps-google/plugin.js"></script>
+  <!-- ClipboardJS -->
+  <script src="/static/vendor/clipboard.min.js"></script>
 
-  <!-- Input Mask Plugin -->
-  <script src="/static/assets/plugins/input-mask/plugin.js"></script>
-
-  <!-- Datatables Plugin -->
-  <script src="/static/assets/plugins/datatables/plugin.js"></script>
-
+  <!-- Notie -->
   <link rel="stylesheet" type="text/css" href="https://unpkg.com/notie/dist/notie.min.css">
+  <script src="/static/vendor/notie.min.js"></script>
 
+  <!-- IntroJS -->
   <link rel="stylesheet" type="text/css" href="/static/vendor/introjs.min.css">
+  <script src="/static/vendor/intro.min.js"></script>
 
+  <!-- Sentry -->
   <script src="https://browser.sentry-cdn.com/5.4.3/bundle.min.js" crossorigin="anonymous"></script>
 
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
@@ -83,12 +76,10 @@
       {% if messages %}
         {% for category, message in messages %}
           <script>
-            require(['clipboard', 'notie'], function (Clipboard, notie) {
-              notie.alert({
-                type: "{{ category }}",
-                text: "{{ message }}",
-                time: 3
-              })
+            notie.alert({
+              type: "{{ category }}",
+              text: "{{ message }}",
+              time: 3
             })
           </script>
         {% endfor %}
@@ -106,12 +97,10 @@
     Sentry.init({dsn: 'https://ad2187ed843340a1b4165bd8d5d6cdce@sentry.io/1478143'});
   {% endif %}
 
-  require(['clipboard', 'notie', 'jquery'], function (Clipboard, notie, $) {
-    // the modal does not get close when user clicks outside of modal
-    // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
-    notie.setOptions({
-      overlayClickDismiss: false,
-    });
+  // the modal does not get close when user clicks outside of modal
+  // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
+  notie.setOptions({
+    overlayClickDismiss: false,
   });
 
 </script>

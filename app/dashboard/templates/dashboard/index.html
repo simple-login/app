@@ -200,8 +200,7 @@
 
 {% block script %}
   <script>
-    require(['clipboard', 'notie', 'jquery', 'intro'], function (Clipboard, notie, $, intro) {
-      var clipboard = new Clipboard('.clipboard');
+    var clipboard = new ClipboardJS('.clipboard');
 
       var introShown = localStorage.getItem("introShown");
       console.log(introShown);
@@ -255,6 +254,5 @@
           }
         });
       })
-    })
   </script>
 {% endblock %}
