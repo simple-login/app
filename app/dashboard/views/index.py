@@ -66,6 +66,16 @@ SimpleLogin team.
                 )
             db.session.commit()
 
+        elif request.form.get("form-name") == "delete-email":
+            gen_email_id = request.form.get("gen-email-id")
+            gen_email: GenEmail = GenEmail.get(gen_email_id)
+
+            LOG.d("delete gen email %s", gen_email)
+            email = gen_email.email
+            GenEmail.delete(gen_email.id)
+            db.session.commit()
+            flash(f"Email alias {email} has been deleted", "success")
+
         return redirect(url_for("dashboard.index"))
 
     client_users = (

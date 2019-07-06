@@ -39,7 +39,7 @@
               <th>
                 Enable/Disable Email Forwarding
               </th>
-              <th>Created At</th>
+              <th>Delete</th>
             </tr>
             </thead>
             <tbody>
@@ -104,8 +104,16 @@
                 </td>
 
                 <td>
-                  {{ gen_email.created_at | dt }}
+                  <form method="post">
+                    <input type="hidden" name="form-name" value="delete-email">
+                    <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                    <a href="javascript:{}"
+                       class="icon delete-email">
+                      <i class="fe fe-trash"></i>
+                    </a>
+                  </form>
                 </td>
+
               </tr>
             {% endfor %}
 
@@ -212,10 +220,18 @@
         e.clearSelection();
       });
 
-      // the modal does not get close when user clicks outside of modal
-      // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
-      notie.setOptions({
-        overlayClickDismiss: false,
+      $(".delete-email").on("click", function (e) {
+        notie.confirm({
+          text: "Once an email alias is deleted, people/apps " +
+            "who used to contact you via this email cannot reach you any more," +
+            " please confirm",
+          cancelCallback: () => {
+            // nothing to do
+          },
+          submitCallback: () => {
+            $(this).closest("form").submit();
+          }
+        });
       });
 
       $(".custom-switch-input").change(function (e) {
