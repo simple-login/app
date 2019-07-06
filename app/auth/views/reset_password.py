@@ -49,7 +49,7 @@ def reset_password():
         user.activated = True
 
         # remove the reset password code
-        reset_password_code.delete()
+        ResetPasswordCode.delete(reset_password_code.id)
 
         db.session.commit()
         login_user(user)

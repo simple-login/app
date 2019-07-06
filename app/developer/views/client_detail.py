@@ -57,7 +57,7 @@ def client_detail(client_id):
 
             # replace all uris. TODO: optimize this?
             for redirect_uri in client.redirect_uris:
-                redirect_uri.delete()
+                RedirectUri.delete(redirect_uri.id)
 
             for uri in uris:
                 RedirectUri.create(client_id=client_id, uri=uri)

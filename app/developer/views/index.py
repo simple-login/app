@@ -21,7 +21,7 @@ def index():
                 flash("You cannot remove this client", "warning")
             else:
                 client_name = client.name
-                client.delete()
+                Client.delete(client.id)
                 db.session.commit()
                 LOG.d("Remove client %s", client)
                 flash(f"Client {client_name} has been deleted successfully", "success")

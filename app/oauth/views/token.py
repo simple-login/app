@@ -64,7 +64,7 @@ def get_access_token():
     db.session.add(oauth_token)
 
     # Auth code can be used only once
-    db.session.delete(auth_code)
+    AuthorizationCode.delete(auth_code.id)
 
     db.session.commit()
 

@@ -41,7 +41,7 @@ def activate():
     login_user(user)
 
     # activation code is to be used only once
-    activation_code.delete()
+    ActivationCode.delete(activation_code.id)
     db.session.commit()
 
     flash("Your account has been activated", "success")

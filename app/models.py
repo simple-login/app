@@ -57,8 +57,9 @@ class ModelMixin(object):
     def save(self):
         db.session.add(self)
 
-    def delete(self):
-        db.session.delete(self)
+    @classmethod
+    def delete(cls, obj_id):
+        cls.query.filter(cls.id == obj_id).delete()
 
     def __repr__(self):
         values = ", ".join(
