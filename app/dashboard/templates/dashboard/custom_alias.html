@@ -1,0 +1,44 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Custom Alias
+{% endblock %}
+
+{% block default_content %}
+
+  <div class="col-md-6 offset-md-3">
+    {% if error %}
+      <div class="text-danger text-center mb-4">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {{ form.csrf_token }}
+
+      <div class="form-group">
+        <label class="form-label">Custom Alias</label>
+        <small class="text-muted">
+          Email must use alphanumeric characters and must be at least 6 characters
+        </small>
+        <div class="row mt-4">
+          <div class="col">
+            {{ form.email(class="form-control",
+                pattern="[0-9|A-Z|a-z]{6,}",
+                title="Email must use alphanumeric characters and must be at least 6 characters.") }}
+            {{ render_field_errors(form.email) }}
+          </div>
+          <div class="col align-self-center">
+              <h4>
+                @simplelogin.co
+              </h4>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary">Create</button>
+    </form>
+  </div>
+
+{% endblock %}
+

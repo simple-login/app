@@ -20,6 +20,10 @@
       <input type="hidden" name="form-name" value="create-random-email">
       <button class="btn btn-success">Create random alias</button>
     </form>
+
+    <a href="{{ url_for('dashboard.custom_alias') }}" class="btn btn-primary">
+      Create custom alias
+    </a>
   </div>
 
   <div class="row row-cards row-deck mt-4">
@@ -202,57 +206,56 @@
   <script>
     var clipboard = new ClipboardJS('.clipboard');
 
-      var introShown = localStorage.getItem("introShown");
-      console.log(introShown);
-      if ("yes" !== introShown) {
-        intro().start();
-        localStorage.setItem("introShown", "yes")
+    var introShown = localStorage.getItem("introShown");
+    if ("yes" !== introShown) {
+      intro().start();
+      localStorage.setItem("introShown", "yes")
+    }
+
+    clipboard.on('success', function (e) {
+      notie.alert({
+        type: "success",
+        text: "Copied to clipboard",
+        time: 1,
+      });
+
+      e.clearSelection();
+    });
+
+    $(".delete-email").on("click", function (e) {
+      notie.confirm({
+        text: "Once an email alias is deleted, people/apps " +
+          "who used to contact you via this email cannot reach you any more," +
+          " please confirm",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+
+    $(".custom-switch-input").change(function (e) {
+      var message = "";
+
+      if (e.target.checked) {
+        message = `After this, you will start receiving email sent to this email address, please confirm`;
+      } else {
+        message = `After this, you will stop receiving email sent to this email address, please confirm`;
       }
 
-      clipboard.on('success', function (e) {
-        notie.alert({
-          type: "success",
-          text: "Copied to clipboard",
-          time: 1,
-        });
-
-        e.clearSelection();
-      });
-
-      $(".delete-email").on("click", function (e) {
-        notie.confirm({
-          text: "Once an email alias is deleted, people/apps " +
-            "who used to contact you via this email cannot reach you any more," +
-            " please confirm",
-          cancelCallback: () => {
-            // nothing to do
-          },
-          submitCallback: () => {
-            $(this).closest("form").submit();
-          }
-        });
-      });
-
-      $(".custom-switch-input").change(function (e) {
-        var message = "";
-
-        if (e.target.checked) {
-          message = `After this, you will start receiving email sent to this email address, please confirm`;
-        } else {
-          message = `After this, you will stop receiving email sent to this email address, please confirm`;
+      notie.confirm({
+        text: message,
+        cancelCallback: () => {
+          // reset to the original value
+          var oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
         }
-
-        notie.confirm({
-          text: message,
-          cancelCallback: () => {
-            // reset to the original value
-            var oldValue = !$(this).prop("checked");
-            $(this).prop("checked", oldValue);
-          },
-          submitCallback: () => {
-            $(this).closest("form").submit();
-          }
-        });
-      })
+      });
+    })
   </script>
 {% endblock %}

@@ -129,6 +129,14 @@ class User(db.Model, ModelMixin, UserMixin):
     def is_premium(self):
         return self.plan in (PlanEnum.monthly, PlanEnum.yearly)
 
+    def can_create_custom_email(self):
+        if self.is_premium():
+            return True
+        # plan not expired yet
+        elif self.plan == PlanEnum.trial and self.plan_expiration > arrow.now():
+            return True
+        return False
+
     def can_create_new_email(self):
         if self.is_premium():
             return True
