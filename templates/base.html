@@ -103,6 +103,15 @@
     console.log("Init sentry");
     Sentry.init({dsn: 'https://ad2187ed843340a1b4165bd8d5d6cdce@sentry.io/1478143'});
   {% endif %}
+
+  require(['clipboard', 'notie', 'jquery'], function (Clipboard, notie, $) {
+    // the modal does not get close when user clicks outside of modal
+    // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
+    notie.setOptions({
+      overlayClickDismiss: false,
+    });
+  });
+
 </script>
 
 <!-- For additional script -->

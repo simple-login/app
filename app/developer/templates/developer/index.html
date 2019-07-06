@@ -96,7 +96,7 @@
 
 
                 <td>
-                  <form method="post" id="delete-client-form">
+                  <form method="post">
                     <input type="hidden" name="form-name" value="delete-client">
                     <input type="hidden" name="client-id" value="{{ client.id }}">
                     <a href="javascript:{}"
@@ -130,12 +130,6 @@
         });
 
         e.clearSelection();
-      });
-
-      // the modal does not get close when user clicks outside of modal
-      // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
-      notie.setOptions({
-        overlayClickDismiss: false,
       });
 
       $(".delete-client").on("click", function (e) {
