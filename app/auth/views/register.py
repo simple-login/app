@@ -1,5 +1,6 @@
 import arrow
-from flask import request, flash, render_template
+from flask import request, flash, render_template, redirect, url_for
+from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
@@ -23,6 +24,10 @@ class RegisterForm(FlaskForm):
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
+    if current_user.is_authenticated:
+        LOG.d("user is already authenticated, redirect to dashboard")
+        return redirect(url_for("dashboard.index"))
+
     form = RegisterForm(request.form)
 
     if form.validate_on_submit():

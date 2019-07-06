@@ -1,5 +1,5 @@
 from flask import request, render_template, redirect, url_for
-from flask_login import login_user
+from flask_login import login_user, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
@@ -15,6 +15,10 @@ class LoginForm(FlaskForm):
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    if current_user.is_authenticated:
+        LOG.d("user is already authenticated, redirect to dashboard")
+        return redirect(url_for("dashboard.index"))
+
     form = LoginForm(request.form)
 
     if form.validate_on_submit():
