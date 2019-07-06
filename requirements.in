@@ -25,3 +25,4 @@ sqlalchemy-utils
 stripe
 jwcrypto
 yacron
+flask-debugtoolbar
