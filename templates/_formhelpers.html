@@ -23,7 +23,7 @@
   {% if field.errors %}
     <ul class=errors>
       {% for error in field.errors %}
-        <li>{{ error }}</li>
+        <li class="text-danger">{{ error }}</li>
       {% endfor %}
     </ul>
   {% endif %}
