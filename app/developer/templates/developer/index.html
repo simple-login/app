@@ -74,12 +74,12 @@
                 </td>
 
                 <td>
-                  <a href="{{ url_for('developer.client_detail', client_id=client.id) }}" class="btn btn-info">
+                  <a href="{{ url_for('developer.client_detail', client_id=client.id) }}" class="icon">
                     <i class="fe fe-edit"></i>
                   </a>
                 </td>
 
-              <!-- TODO: uncomment when bringing back "Discover" feature
+                <!-- TODO: uncomment when bringing back "Discover" feature
                 <td>
                   <form method="post">
                     <input type="hidden" name="form-name" value="switch-client-publish">
@@ -94,14 +94,15 @@
                 </td>
                 -->
 
+
                 <td>
-                  <form method="post"
-                        onsubmit="return confirm('Please make sure no user is using this client. This operation is not reversible');">
+                  <form method="post" id="delete-client-form">
                     <input type="hidden" name="form-name" value="delete-client">
                     <input type="hidden" name="client-id" value="{{ client.id }}">
-                    <button type="submit" class="btn btn-danger">
+                    <a href="javascript:{}"
+                       class="icon delete-client">
                       <i class="fe fe-trash"></i>
-                    </button>
+                    </a>
                   </form>
                 </td>
               </tr>
@@ -135,6 +136,18 @@
       // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
       notie.setOptions({
         overlayClickDismiss: false,
+      });
+
+      $(".delete-client").on("click", function (e) {
+        notie.confirm({
+          text: "This operation is not reversible, please confirm",
+          cancelCallback: () => {
+            // nothing to do
+          },
+          submitCallback: () => {
+            $(this).closest("form").submit();
+          }
+        });
       });
 
       $(".custom-switch-input").change(function (e) {
