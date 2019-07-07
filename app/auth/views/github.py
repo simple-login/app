@@ -16,7 +16,7 @@ token_url = "https://github.com/login/oauth/access_token"
 
 # need to set explicitly redirect_uri instead of leaving the lib to pre-fill redirect_uri
 # when served behind nginx, the redirect_uri is localhost... and not the real url
-redirect_uri = URL + "/github/callback"
+redirect_uri = URL + "/auth/github/callback"
 
 
 @auth_bp.route("/github/login")
