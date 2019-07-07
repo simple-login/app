@@ -21,9 +21,11 @@
       <button class="btn btn-success">Create random alias</button>
     </form>
 
-    <a href="{{ url_for('dashboard.custom_alias') }}" class="btn btn-primary">
-      Create custom alias
-    </a>
+    {% if current_user.can_create_custom_email() %}
+      <a href="{{ url_for('dashboard.custom_alias') }}" class="btn btn-primary">
+        Create custom alias
+      </a>
+    {% endif %}
   </div>
 
   <div class="row row-cards row-deck mt-4">
