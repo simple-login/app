@@ -26,3 +26,4 @@ stripe
 jwcrypto
 yacron
 flask-debugtoolbar
+requests_oauthlib
