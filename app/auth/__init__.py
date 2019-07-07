@@ -6,4 +6,5 @@ from .views import (
     resend_activation,
     reset_password,
     forgot_password,
+    github,
 )

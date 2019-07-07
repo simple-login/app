@@ -1,7 +1,17 @@
 {% extends "single.html" %}
 
+
 {% block title %}
   Login
+{% endblock %}
+
+
+{% block head %}
+  <style>
+    .col-login {
+      max-width: 48rem;
+    }
+  </style>
 {% endblock %}
 
 {% block single_content %}
@@ -9,52 +19,68 @@
     <div class="text-danger text-center mb-4">{{ error }}</div>
   {% endif %}
 
-  {% if show_resend_activation %}
-    <div class="text-center text-muted small mb-4">
-      You haven't received the activation email?
-      <a href="{{ url_for('auth.resend_activation') }}">Resend</a>
-    </div>
-  {% endif %}
+  <div class="row">
+    <div class="col-md-6">
+      {% if show_resend_activation %}
+        <div class="text-center text-muted small mb-4">
+          You haven't received the activation email?
+          <a href="{{ url_for('auth.resend_activation') }}">Resend</a>
+        </div>
+      {% endif %}
 
-  <form class="card" method="post">
-    {{ form.csrf_token }}
-    <div class="card-body p-6">
-      <div class="card-title">Login to your account</div>
+      <form class="card" method="post">
+        {{ form.csrf_token }}
+        <div class="card-body p-6">
+          <div class="card-title">Login to your account</div>
 
-      <div class="form-group">
-        <label class="form-label">Email address</label>
-        {{ form.email(class="form-control", type="email") }}
-        {{ render_field_errors(form.email) }}
+          <div class="form-group">
+            <label class="form-label">Email address</label>
+            {{ form.email(class="form-control", type="email") }}
+            {{ render_field_errors(form.email) }}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Password
+              <a href="{{ url_for('auth.forgot_password') }}" class="float-right small">
+                I forgot my password
+              </a>
+            </label>
+            {{ form.password(class="form-control", type="password") }}
+            {{ render_field_errors(form.password) }}
+          </div>
+
+          <!-- TODO: add remember me
+          <div class="form-group">
+            <label class="custom-control custom-checkbox">
+              <input type="checkbox" class="custom-control-input"/>
+              <span class="custom-control-label">Remember me</span>
+            </label>
+          </div>
+          -->
+
+          <div class="form-footer">
+            <button type="submit" class="btn btn-primary btn-block">Log in</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="text-center text-muted">
+        Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
       </div>
+    </div>
 
-      <div class="form-group">
-        <label class="form-label">
-          Password
-          <a href="{{ url_for('auth.forgot_password') }}" class="float-right small">
-            I forgot my password
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body p-6">
+          <div class="card-title">Social sign in</div>
+
+          <a href="{{ url_for('auth.github_login') }}" class="btn btn-block btn-social btn-github">
+            <i class="fa fa-github"></i> Sign in with Github
           </a>
-        </label>
-        {{ form.password(class="form-control", type="password") }}
-        {{ render_field_errors(form.password) }}
-      </div>
-
-      <!-- TODO: add remember me
-      <div class="form-group">
-        <label class="custom-control custom-checkbox">
-          <input type="checkbox" class="custom-control-input"/>
-          <span class="custom-control-label">Remember me</span>
-        </label>
-      </div>
-      -->
-
-      <div class="form-footer">
-        <button type="submit" class="btn btn-primary btn-block">Log in</button>
       </div>
     </div>
-  </form>
 
-  <div class="text-center text-muted">
-    Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
   </div>
 
 
