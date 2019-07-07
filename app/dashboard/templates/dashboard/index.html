@@ -208,7 +208,7 @@
 
     var introShown = localStorage.getItem("introShown");
     if ("yes" !== introShown) {
-      intro().start();
+      introJs().start();
       localStorage.setItem("introShown", "yes")
     }
 
