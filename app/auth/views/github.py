@@ -4,7 +4,7 @@ from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 
 from app.auth.base import auth_bp
-from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
 from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
@@ -14,10 +14,16 @@ from app.utils import random_string
 authorization_base_url = "https://github.com/login/oauth/authorize"
 token_url = "https://github.com/login/oauth/access_token"
 
+# need to set explicitly redirect_uri instead of leaving the lib to pre-fill redirect_uri
+# when served behind nginx, the redirect_uri is localhost... and not the real url
+redirect_uri = URL + "/github/callback"
+
 
 @auth_bp.route("/github/login")
 def github_login():
-    github = OAuth2Session(GITHUB_CLIENT_ID, scope=["user:email"])
+    github = OAuth2Session(
+        GITHUB_CLIENT_ID, scope=["user:email"], redirect_uri=redirect_uri
+    )
     authorization_url, state = github.authorization_url(authorization_base_url)
 
     # State is used to prevent CSRF, keep this for later.
@@ -28,7 +34,10 @@ def github_login():
 @auth_bp.route("/github/callback")
 def github_callback():
     github = OAuth2Session(
-        GITHUB_CLIENT_ID, state=session["oauth_state"], scope=["user:email"]
+        GITHUB_CLIENT_ID,
+        state=session["oauth_state"],
+        scope=["user:email"],
+        redirect_uri=redirect_uri,
     )
     token = github.fetch_token(
         token_url,
