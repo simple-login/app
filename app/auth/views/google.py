@@ -12,10 +12,10 @@ from app.log import LOG
 from app.models import User, File
 from app.utils import random_string
 
-authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
-token_url = "https://www.googleapis.com/oauth2/v4/token"
+_authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
+_token_url = "https://www.googleapis.com/oauth2/v4/token"
 
-scope = [
+_scope = [
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile",
     "openid",
@@ -23,7 +23,7 @@ scope = [
 
 # need to set explicitly redirect_uri instead of leaving the lib to pre-fill redirect_uri
 # when served behind nginx, the redirect_uri is localhost... and not the real url
-redirect_uri = URL + "/auth/google/callback"
+_redirect_uri = URL + "/auth/google/callback"
 
 
 @auth_bp.route("/google/login")
@@ -31,8 +31,8 @@ def google_login():
     # to avoid flask-login displaying the login error message
     session.pop("_flashes", None)
 
-    google = OAuth2Session(GOOGLE_CLIENT_ID, scope=scope, redirect_uri=redirect_uri)
-    authorization_url, state = google.authorization_url(authorization_base_url)
+    google = OAuth2Session(GOOGLE_CLIENT_ID, scope=_scope, redirect_uri=_redirect_uri)
+    authorization_url, state = google.authorization_url(_authorization_base_url)
 
     # State is used to prevent CSRF, keep this for later.
     session["oauth_state"] = state
@@ -44,11 +44,11 @@ def google_callback():
     google = OAuth2Session(
         GOOGLE_CLIENT_ID,
         state=session["oauth_state"],
-        scope=scope,
-        redirect_uri=redirect_uri,
+        scope=_scope,
+        redirect_uri=_redirect_uri,
     )
     token = google.fetch_token(
-        token_url,
+        _token_url,
         client_secret=GOOGLE_CLIENT_SECRET,
         authorization_response=request.url,
     )
