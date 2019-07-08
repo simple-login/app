@@ -29,38 +29,39 @@ def register():
         return redirect(url_for("dashboard.index"))
 
     form = RegisterForm(request.form)
+    next_url = request.args.get("next")
 
     if form.validate_on_submit():
         user = User.filter_by(email=form.email.data).first()
 
         if user:
             flash(f"Email {form.email.data} already exists", "warning")
-            return render_template("auth/register.html", form=form)
+        else:
+            LOG.debug("create user %s", form.email.data)
+            user = User.create(email=form.email.data, name=form.name.data)
+            user.set_password(form.password.data)
 
-        LOG.debug("create user %s", form.email.data)
-        user = User.create(email=form.email.data, name=form.name.data)
-        user.set_password(form.password.data)
+            # by default new user will be trial period
+            user.plan = PlanEnum.trial
+            user.plan_expiration = arrow.now().shift(days=+15)
+            db.session.flush()
 
-        # by default new user will be trial period
-        user.plan = PlanEnum.trial
-        user.plan_expiration = arrow.now().shift(days=+15)
-        db.session.flush()
+            # create a first alias mail to show user how to use when they login
+            GenEmail.create_new_gen_email(user_id=user.id)
+            db.session.commit()
 
-        # create a first alias mail to show user how to use when they login
-        GenEmail.create_new_gen_email(user_id=user.id)
-        db.session.commit()
+            send_activation_email(user, next_url)
+            notify_admin(
+                f"new user signs up {user.email}",
+                f"{user.name} signs up at {arrow.now()}",
+            )
 
-        send_activation_email(user)
-        notify_admin(
-            f"new user signs up {user.email}", f"{user.name} signs up at {arrow.now()}"
-        )
+            return render_template("auth/register_waiting_activation.html")
 
-        return render_template("auth/register_waiting_activation.html")
-
-    return render_template("auth/register.html", form=form)
+    return render_template("auth/register.html", form=form, next_url=next_url)
 
 
-def send_activation_email(user):
+def send_activation_email(user, next_url):
     # the activation code is valid for 1h
     activation = ActivationCode.create(
         user_id=user.id, code=random_string(30), expired=arrow.now().shift(hours=1)
@@ -69,9 +70,9 @@ def send_activation_email(user):
 
     # Send user activation email
     activation_link = f"{URL}/auth/activate?code={activation.code}"
-    if "next" in request.args:
-        LOG.d("redirect user to %s after activation", request.args["next"])
-        activation_link = activation_link + "&next=" + encode_url(request.args["next"])
+    if next_url:
+        LOG.d("redirect user to %s after activation", next_url)
+        activation_link = activation_link + "&next=" + encode_url(next_url)
 
     email_utils.send(
         user.email,

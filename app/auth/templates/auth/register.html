@@ -64,11 +64,13 @@
         <div class="card-body p-6">
           <div class="card-title">Social sign up</div>
 
-          <a href="{{ url_for('auth.github_login') }}" class="btn btn-block btn-social btn-github">
+          <a href="{{ url_for('auth.github_login', next=next_url) }}"
+             class="btn btn-block btn-social btn-github">
             <i class="fa fa-github"></i> Sign up with Github
           </a>
 
-          <a href="{{ url_for('auth.google_login') }}" class="btn btn-block btn-social btn-google">
+          <a href="{{ url_for('auth.google_login', next=next_url) }}"
+             class="btn btn-block btn-social btn-google">
             <i class="fa fa-google"></i> Sign up with Google
           </a>
         </div>

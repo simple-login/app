@@ -33,7 +33,7 @@ def resend_activation():
             "An activation email is on its way, please check your inbox/spam folder",
             "warning",
         )
-        send_activation_email(user)
+        send_activation_email(user, request.args.get("next"))
         return render_template("auth/register_waiting_activation.html")
 
     return render_template("auth/resend_activation.html", form=form)
