@@ -207,8 +207,7 @@ class ResetPasswordCode(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
-    # the activation code is valid for 1h
-    expired = db.Column(ArrowType, default=arrow.now().shift(hours=1), nullable=False)
+    expired = db.Column(ArrowType, nullable=False)
 
 
 class Partner(db.Model, ModelMixin):
