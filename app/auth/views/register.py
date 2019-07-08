@@ -61,7 +61,10 @@ def register():
 
 
 def send_activation_email(user):
-    activation = ActivationCode.create(user_id=user.id, code=random_string(30))
+    # the activation code is valid for 1h
+    activation = ActivationCode.create(
+        user_id=user.id, code=random_string(30), expired=arrow.now().shift(hours=1)
+    )
     db.session.commit()
 
     # Send user activation email
