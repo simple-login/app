@@ -75,17 +75,19 @@
         <div class="card-body p-6">
           <div class="card-title">Social sign in</div>
 
-          <a href="{{ url_for('auth.github_login') }}" class="btn btn-block btn-social btn-github">
+          <a href="{{ url_for('auth.github_login', next=next_url) }}"
+             class="btn btn-block btn-social btn-github">
             <i class="fa fa-github"></i> Sign in with Github
           </a>
 
-          <a href="{{ url_for('auth.google_login') }}" class="btn btn-block btn-social btn-google">
+          <a href="{{ url_for('auth.google_login', next=next_url) }}"
+             class="btn btn-block btn-social btn-google">
             <i class="fa fa-google"></i> Sign in with Google
           </a>
+        </div>
       </div>
-    </div>
 
-  </div>
+    </div>
 
 
 {% endblock %}

@@ -20,36 +20,36 @@ def login():
         return redirect(url_for("dashboard.index"))
 
     form = LoginForm(request.form)
+    next_url = request.args.get("next")
+    error = ""
+    show_resend_activation = False
 
     if form.validate_on_submit():
         user = User.filter_by(email=form.email.data).first()
 
         if not user:
-            return render_template(
-                "auth/login.html", form=form, error="Email not exist in our system"
-            )
-
-        if not user.check_password(form.password.data):
-            return render_template("auth/login.html", form=form, error="Wrong password")
-
-        if not user.activated:
-            return render_template(
-                "auth/login.html",
-                form=form,
-                show_resend_activation=True,
-                error="Please check your inbox for the activation email. You can also have this email re-sent",
-            )
-
-        LOG.debug("log user %s in", user)
-        login_user(user)
-
-        # User comes to login page from another page
-        if "next" in request.args:
-            next_url = request.args.get("next")
-            LOG.debug("redirect user to %s", next_url)
-            return redirect(next_url)
+            error = "Email not exist in our system"
+        elif not user.check_password(form.password.data):
+            error = "Wrong password"
+        elif not user.activated:
+            show_resend_activation = True
+            error = "Please check your inbox for the activation email. You can also have this email re-sent"
         else:
-            LOG.debug("redirect user to dashboard")
-            return redirect(url_for("dashboard.index"))
+            LOG.debug("log user %s in", user)
+            login_user(user)
 
-    return render_template("auth/login.html", form=form)
+            # User comes to login page from another page
+            if next_url:
+                LOG.debug("redirect user to %s", next_url)
+                return redirect(next_url)
+            else:
+                LOG.debug("redirect user to dashboard")
+                return redirect(url_for("dashboard.index"))
+
+    return render_template(
+        "auth/login.html",
+        form=form,
+        next_url=next_url,
+        show_resend_activation=show_resend_activation,
+        error=error,
+    )

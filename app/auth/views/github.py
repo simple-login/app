@@ -9,22 +9,28 @@ from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
 from app.models import User
-from app.utils import random_string
+from app.utils import random_string, encode_url
 
-authorization_base_url = "https://github.com/login/oauth/authorize"
-token_url = "https://github.com/login/oauth/access_token"
+_authorization_base_url = "https://github.com/login/oauth/authorize"
+_token_url = "https://github.com/login/oauth/access_token"
 
 # need to set explicitly redirect_uri instead of leaving the lib to pre-fill redirect_uri
 # when served behind nginx, the redirect_uri is localhost... and not the real url
-redirect_uri = URL + "/auth/github/callback"
+_redirect_uri = URL + "/auth/github/callback"
 
 
 @auth_bp.route("/github/login")
 def github_login():
+    next_url = request.args.get("next")
+    if next_url:
+        redirect_uri = _redirect_uri + "?next=" + encode_url(next_url)
+    else:
+        redirect_uri = _redirect_uri
+
     github = OAuth2Session(
         GITHUB_CLIENT_ID, scope=["user:email"], redirect_uri=redirect_uri
     )
-    authorization_url, state = github.authorization_url(authorization_base_url)
+    authorization_url, state = github.authorization_url(_authorization_base_url)
 
     # State is used to prevent CSRF, keep this for later.
     session["oauth_state"] = state
@@ -37,10 +43,10 @@ def github_callback():
         GITHUB_CLIENT_ID,
         state=session["oauth_state"],
         scope=["user:email"],
-        redirect_uri=redirect_uri,
+        redirect_uri=_redirect_uri,
     )
     token = github.fetch_token(
-        token_url,
+        _token_url,
         client_secret=GITHUB_CLIENT_SECRET,
         authorization_response=request.url,
     )
