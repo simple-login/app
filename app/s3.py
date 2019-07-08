@@ -1,6 +1,7 @@
 from io import BytesIO
 
 import boto3
+import requests
 
 from app.config import AWS_REGION, BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 
@@ -16,6 +17,11 @@ def upload_from_bytesio(key: str, bs: BytesIO, content_type="string") -> None:
     session.resource("s3").Bucket(BUCKET).put_object(
         Key=key, Body=bs, ContentType=content_type
     )
+
+
+def upload_from_url(url: str, upload_path):
+    r = requests.get(url)
+    upload_from_bytesio(upload_path, BytesIO(r.content))
 
 
 def delete_file(key: str) -> None:

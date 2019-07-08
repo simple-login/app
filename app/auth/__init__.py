@@ -7,4 +7,5 @@ from .views import (
     reset_password,
     forgot_password,
     github,
+    google,
 )
