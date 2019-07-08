@@ -10,7 +10,7 @@ from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
 from app.models import User, File
-from app.utils import random_string
+from app.utils import random_string, encode_url
 
 _authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
 _token_url = "https://www.googleapis.com/oauth2/v4/token"
@@ -31,7 +31,13 @@ def google_login():
     # to avoid flask-login displaying the login error message
     session.pop("_flashes", None)
 
-    google = OAuth2Session(GOOGLE_CLIENT_ID, scope=_scope, redirect_uri=_redirect_uri)
+    next_url = request.args.get("next")
+    if next_url:
+        redirect_uri = _redirect_uri + "?next=" + encode_url(next_url)
+    else:
+        redirect_uri = _redirect_uri
+
+    google = OAuth2Session(GOOGLE_CLIENT_ID, scope=_scope, redirect_uri=redirect_uri)
     authorization_url, state = google.authorization_url(_authorization_base_url)
 
     # State is used to prevent CSRF, keep this for later.
