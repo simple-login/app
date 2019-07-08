@@ -116,6 +116,10 @@ def google_callback():
     if "google_next_url" in session:
         next_url = session["google_next_url"]
         LOG.debug("redirect user to %s", next_url)
+
+        # reset the next_url to avoid user getting redirected at each login :)
+        session.pop("google_next_url", None)
+
         return redirect(next_url)
     else:
         LOG.debug("redirect user to dashboard")
