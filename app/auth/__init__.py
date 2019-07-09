@@ -8,4 +8,5 @@ from .views import (
     forgot_password,
     github,
     google,
+    facebook,
 )

@@ -84,6 +84,11 @@
              class="btn btn-block btn-social btn-google">
             <i class="fa fa-google"></i> Sign in with Google
           </a>
+
+          <a href="{{ url_for('auth.facebook_login', next=next_url) }}"
+             class="btn btn-block btn-social btn-facebook">
+            <i class="fa fa-facebook"></i> Sign in with Facebook
+          </a>
         </div>
       </div>
 
