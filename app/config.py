@@ -14,6 +14,8 @@ else:
 
 
 URL = os.environ.get("URL") or "http://sl-server:7777"
+print("URL:", URL)
+
 EMAIL_DOMAIN = os.environ.get("EMAIL_DOMAIN") or "sl"
 SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL") or "support@sl"
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
@@ -66,3 +68,6 @@ GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+
+FACEBOOK_CLIENT_ID = os.environ.get("FACEBOOK_CLIENT_ID")
+FACEBOOK_CLIENT_SECRET = os.environ.get("FACEBOOK_CLIENT_SECRET")
