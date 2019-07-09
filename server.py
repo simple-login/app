@@ -1,4 +1,5 @@
 import os
+import ssl
 
 import arrow
 import sentry_sdk
@@ -282,4 +283,11 @@ if __name__ == "__main__":
         with app.app_context():
             fake_data()
 
-    app.run(debug=True, host="0.0.0.0", port=7777)
+    if URL.startswith("https"):
+        LOG.d("enable https")
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        context.load_cert_chain("local_data/cert.pem", "local_data/key.pem")
+
+        app.run(debug=True, host="0.0.0.0", port=7777, ssl_context=context)
+    else:
+        app.run(debug=True, host="0.0.0.0", port=7777)
