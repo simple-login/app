@@ -40,11 +40,20 @@
             <b>{{ client.name }}</b> will receive your following information:
           </div>
 
-          <ul>
+          <div>
             {% for scope in client.get_scopes() %}
-              <li>{{ scope.value }}</li>
+              <div style="display: flex; align-items: center; margin: .5rem 0; line-height: 1.3rem">
+                {% if scope == Scope.AVATAR_URL and current_user.profile_picture_id %}
+                  avatar: <img src="{{ current_user.profile_picture_url() }}" class="avatar" style="margin: 10px 0px">
+                {% elif scope == Scope.EMAIL %}
+                  {{ scope.value }}:
+                  A random alias or your original email
+                {% elif scope == Scope.NAME %}
+                  {{ scope.value }}: <b>{{ current_user.name }}</b>
+                {% endif %}
+              </div>
             {% endfor %}
-          </ul>
+          </div>
         {% endif %}
 
         {% if client_user %}
@@ -60,17 +69,17 @@
             </div>
           </div>
         {% else %}
-          <div class="form-group">
+          <div class="form-group" style="margin-top: 1rem">
             <div class="custom-controls-stacked">
               <label class="custom-control custom-checkbox">
                 <input type="checkbox" name="gen-email"
                        class="custom-control-input" checked>
-                <span class="custom-control-label">Generate a new email</span>
+                <span class="custom-control-label">Use email alias</span>
               </label>
             </div>
 
             <small class="form-text text-muted">
-              If checked, a new random email address will be generated for this app.
+              If checked, an email alias will be used.
             </small>
           </div>
 
