@@ -6,7 +6,13 @@
 
     <ul class="mt-3">
       {% for scope in client.get_scopes() %}
-        <li>{{ scope.value }}</li>
+        <li>
+        {% if scope == Scope.AVATAR_URL %}
+          avatar
+        {% else %}
+          {{ scope.value }}
+        {% endif %}
+        </li>
       {% endfor %}
     </ul>
 
