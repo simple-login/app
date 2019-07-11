@@ -23,7 +23,7 @@
             {% for scope in client.get_scopes() %}
               <div>
                 {% if scope == Scope.AVATAR_URL and user_info[scope.value] %}
-                  {{ scope.value }}: <img src="{{ user_info[scope.value] }}" class="avatar">
+                  avatar: <img src="{{ user_info[scope.value] }}" class="avatar">
                 {% elif scope == Scope.EMAIL %}
                   {{ scope.value }}:
                   <a href="mailto:{{ user_info[scope.value] }}">
