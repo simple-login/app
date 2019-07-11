@@ -48,6 +48,11 @@ def facebook_login():
 
 @auth_bp.route("/facebook/callback")
 def facebook_callback():
+    # user clicks on cancel
+    if "error" in request.args:
+        flash("please use another sign in method then", "warning")
+        return redirect("/")
+
     facebook = OAuth2Session(
         FACEBOOK_CLIENT_ID,
         state=session["oauth_state"],

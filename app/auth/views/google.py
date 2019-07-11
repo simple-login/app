@@ -48,6 +48,11 @@ def google_login():
 
 @auth_bp.route("/google/callback")
 def google_callback():
+    # user clicks on cancel
+    if "error" in request.args:
+        flash("please use another sign in method then", "warning")
+        return redirect("/")
+
     google = OAuth2Session(
         GOOGLE_CLIENT_ID,
         state=session["oauth_state"],

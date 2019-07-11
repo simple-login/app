@@ -39,6 +39,11 @@ def github_login():
 
 @auth_bp.route("/github/callback")
 def github_callback():
+    # user clicks on cancel
+    if "error" in request.args:
+        flash("please use another sign in method then", "warning")
+        return redirect("/")
+
     github = OAuth2Session(
         GITHUB_CLIENT_ID,
         state=session["oauth_state"],
