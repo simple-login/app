@@ -10,7 +10,7 @@ from app.config import URL
 from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
-from app.models import User, ActivationCode, PlanEnum, GenEmail
+from app.models import User, ActivationCode
 from app.utils import random_string, encode_url
 
 
@@ -38,16 +38,9 @@ def register():
             flash(f"Email {form.email.data} already exists", "warning")
         else:
             LOG.debug("create user %s", form.email.data)
-            user = User.create(email=form.email.data, name=form.name.data)
-            user.set_password(form.password.data)
-
-            # by default new user will be trial period
-            user.plan = PlanEnum.trial
-            user.plan_expiration = arrow.now().shift(days=+15)
-            db.session.flush()
-
-            # create a first alias mail to show user how to use when they login
-            GenEmail.create_new_gen_email(user_id=user.id)
+            user = User.create(
+                email=form.email.data, name=form.name.data, password=form.password.data
+            )
             db.session.commit()
 
             send_activation_email(user, next_url)

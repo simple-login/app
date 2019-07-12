@@ -29,15 +29,7 @@ from app.discover.base import discover_bp
 from app.extensions import db, login_manager, migrate
 from app.jose_utils import get_jwk_key
 from app.log import LOG
-from app.models import (
-    Client,
-    User,
-    ClientUser,
-    GenEmail,
-    RedirectUri,
-    PlanEnum,
-    Partner,
-)
+from app.models import Client, User, ClientUser, GenEmail, RedirectUri, Partner
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
 from app.partner.base import partner_bp
@@ -94,13 +86,12 @@ def fake_data():
     user = User.create(
         email="nguyenkims+local@gmail.com",
         name="Son Local",
+        password="password",
         activated=True,
         is_admin=True,
         is_developer=True,
     )
-    user.set_password("password")
-    user.plan = PlanEnum.trial
-    user.plan_expiration = arrow.now().shift(weeks=2)
+
     db.session.commit()
 
     GenEmail.create_new_gen_email(user_id=user.id)

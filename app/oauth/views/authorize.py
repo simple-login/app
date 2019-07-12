@@ -82,7 +82,10 @@ def authorize():
         else:
             # after user logs in, redirect user back to this page
             return render_template(
-                "oauth/authorize_nonlogin_user.html", client=client, next=request.url, Scope=Scope,
+                "oauth/authorize_nonlogin_user.html",
+                client=client,
+                next=request.url,
+                Scope=Scope,
             )
     else:  # user allows or denies
         gen_new_email = request.form.get("gen-email") == "on"

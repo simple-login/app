@@ -116,6 +116,25 @@ class User(db.Model, ModelMixin, UserMixin):
 
     profile_picture = db.relationship(File)
 
+    @classmethod
+    def create(cls, email, name, password=None, **kwargs):
+        user = super(User, cls).create(email=email, name=name, **kwargs)
+
+        if not password:
+            # set a random password
+            user.set_password(random_string(20))
+
+        # by default new user will be trial period
+        user.plan = PlanEnum.trial
+        user.plan_expiration = arrow.now().shift(days=+15)
+        db.session.flush()
+
+        # create a first alias mail to show user how to use when they login
+        GenEmail.create_new_gen_email(user_id=user.id)
+        db.session.flush()
+
+        return user
+
     def should_upgrade(self):
         """User is invited to upgrade if they are in free plan or their trial ends soon"""
         if self.plan == PlanEnum.free:
