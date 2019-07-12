@@ -1,5 +1,7 @@
 import os
 
+os.environ["CONFIG"] = ".env.example"
+
 # use in-memory database
 # need to set before importing any other module as DB_URI is init at import time
 os.environ["DB_URI"] = "sqlite://"
