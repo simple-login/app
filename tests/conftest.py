@@ -1,6 +1,9 @@
 import os
 
-os.environ["CONFIG"] = ".env.example"
+os.environ["CONFIG"] = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env.example")
+)
+
 
 # use in-memory database
 # need to set before importing any other module as DB_URI is init at import time
@@ -16,7 +19,10 @@ from server import create_app
 def flask_app():
     app = create_app()
 
+    # use in-memory database
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
     app.config["TESTING"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
 
     with app.app_context():
         db.create_all()
@@ -31,6 +37,7 @@ def flask_client():
     # use in-memory database
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
     app.config["TESTING"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
 
     client = app.test_client()
 
