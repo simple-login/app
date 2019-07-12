@@ -23,6 +23,7 @@ def flask_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
+    app.config["SERVER_NAME"] = "sl.test"
 
     with app.app_context():
         db.create_all()
@@ -38,6 +39,7 @@ def flask_client():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
+    app.config["SERVER_NAME"] = "sl.test"
 
     client = app.test_client()
 

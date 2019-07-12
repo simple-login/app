@@ -22,7 +22,6 @@ from app.config import (
     SHA1,
     LYRA_ANALYTICS_ID,
     STRIPE_SECRET_KEY,
-    SERVER_NAME,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -49,8 +48,6 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def create_app() -> Flask:
     app = Flask(__name__)
     app.url_map.strict_slashes = False
-
-    app.config["SERVER_NAME"] = SERVER_NAME
 
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False

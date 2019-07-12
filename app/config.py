@@ -24,7 +24,6 @@ else:
     load_dotenv()
 
 
-SERVER_NAME = os.environ["SERVER_NAME"]
 URL = os.environ["URL"]
 print("URL:", URL)
 
