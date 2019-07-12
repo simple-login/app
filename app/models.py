@@ -118,11 +118,13 @@ class User(db.Model, ModelMixin, UserMixin):
 
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
-        user = super(User, cls).create(email=email, name=name, **kwargs)
+        user: User = super(User, cls).create(email=email, name=name, **kwargs)
 
         if not password:
             # set a random password
-            user.set_password(random_string(20))
+            password = random_string(20)
+
+        user.set_password(password)
 
         # by default new user will be trial period
         user.plan = PlanEnum.trial
