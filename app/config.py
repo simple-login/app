@@ -18,10 +18,12 @@ def get_abs_path(file_path: str):
 
 config_file = os.environ.get("CONFIG")
 if config_file:
+    config_file = get_abs_path(config_file)
     print("load config file", config_file)
     load_dotenv(get_abs_path(config_file))
 else:
     load_dotenv()
+
 
 # Constants
 PARTNER_CODES = ["SL2019"]
@@ -32,7 +34,7 @@ PROMO_CODE = "SIMPLEISBETTER"
 
 # Server url
 URL = os.environ["URL"]
-print("URL:", URL)
+print(">>> URL:", URL)
 
 # Whether sentry is enabled
 ENABLE_SENTRY = "ENABLE_SENTRY" in os.environ

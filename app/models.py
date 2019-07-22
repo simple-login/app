@@ -7,6 +7,7 @@ import stripe
 from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
+from sqlalchemy import text
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -371,6 +372,9 @@ class GenEmail(db.Model, ModelMixin):
 
     enabled = db.Column(db.Boolean(), default=True, nullable=False)
 
+    # this email has been customized by user, i.e. not generated randomly
+    custom = db.Column(db.Boolean(), default=False, nullable=False, server_default="0")
+
     @classmethod
     def create_new_gen_email(cls, user_id):
         random_email = generate_email()
@@ -391,6 +395,16 @@ class ClientUser(db.Model, ModelMixin):
     # Null means client has access to user original email
     gen_email_id = db.Column(
         db.ForeignKey(GenEmail.id, ondelete="cascade"), nullable=True
+    )
+
+    # user can decide to send to client another name
+    name = db.Column(
+        db.String(128), nullable=True, default=None, server_default=text("NULL")
+    )
+
+    # user can decide to send to client a default avatar
+    default_avatar = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
     )
 
     gen_email = db.relationship(GenEmail, backref="client_users")
