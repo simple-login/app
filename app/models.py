@@ -1,10 +1,11 @@
 import enum
-import hashlib
+import random
 
 import arrow
 import bcrypt
 import stripe
 from arrow import Arrow
+from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy_utils import ArrowType
 
@@ -180,9 +181,8 @@ class User(db.Model, ModelMixin, UserMixin):
     def profile_picture_url(self):
         if self.profile_picture_id:
             return self.profile_picture.get_url()
-        else:  # use gravatar
-            hash_email = hashlib.md5(self.email.encode("utf-8")).hexdigest()
-            return f"https://www.gravatar.com/avatar/{hash_email}"
+        else:
+            return url_for("static", filename="default-avatar.png")
 
     def plan_current_period_end(self) -> Arrow:
         if not self.stripe_subscription_id:

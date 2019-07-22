@@ -27,7 +27,7 @@ def test_unactivated_user_login(flask_client):
 def test_activated_user_login(flask_client):
     """Start with a blank database."""
 
-    # create user, user is not activated
+    # create user, user is activated
     User.create(email="a@b.c", password="password", name="Test User", activated=True)
     db.session.commit()
 
