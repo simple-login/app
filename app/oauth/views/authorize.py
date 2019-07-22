@@ -123,7 +123,9 @@ def authorize():
                 email = f"{convert_to_id(custom_email_prefix)}.{email_suffix}@{EMAIL_DOMAIN}"
                 LOG.d("create custom email alias %s for user %s", email, current_user)
 
-                gen_email = GenEmail.create(email=email, user_id=current_user.id)
+                gen_email = GenEmail.create(
+                    email=email, user_id=current_user.id, custom=True
+                )
                 db.session.flush()
             else:  # user picks an email from suggestion
                 if chosen_email != current_user.email:

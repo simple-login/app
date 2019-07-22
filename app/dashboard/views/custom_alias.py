@@ -41,7 +41,7 @@ def custom_alias():
             else:
                 # create the new alias
                 LOG.d("create custom alias %s for user %s", full_email, current_user)
-                GenEmail.create(email=full_email, user_id=current_user.id)
+                GenEmail.create(email=full_email, user_id=current_user.id, custom=True)
                 db.session.commit()
 
                 flash(f"Email alias {full_email} has been created", "success")
