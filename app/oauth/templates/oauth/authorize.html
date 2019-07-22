@@ -82,7 +82,7 @@
           <div class="col-md-9">
             <select class="custom-select custom-select" name="suggested-email">
               <option selected value="{{ suggested_email }}">{{ suggested_email }}</option>
-              <option value="{{ personal_email }}">{{ personal_email }}</option>
+              <option value="{{ personal_email }}">{{ personal_email }} (Personal Email)</option>
               {% for email in other_emails %}
                 <option value="{{ email }}">{{ email }}</option>
               {% endfor %}
