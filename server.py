@@ -84,8 +84,8 @@ def fake_data():
 
     # Create a user
     user = User.create(
-        email="nguyenkims+local@gmail.com",
-        name="Son Local",
+        email="john@wick.com",
+        name="John Wick",
         password="password",
         activated=True,
         is_admin=True,
