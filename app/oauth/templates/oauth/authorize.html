@@ -61,12 +61,17 @@
             {% if current_user.can_create_custom_email() %}
               <div class="mt-2">OR</div>
               <div style="display: flex; align-items: center" class="mt-2">
-                <input class="form-control" style="flex-grow: 2" name="custom-email-prefix">
+                <input class="form-control"
+                       pattern="[0-9|A-Z|a-z]{3,}"
+                       style="flex-grow: 2" name="custom-email-prefix">
                 <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
                 <div class="ml-2">
                   .{{ email_suffix }}@{{ EMAIL_DOMAIN }}
                 </div>
               </div>
+              <small class="text-muted">
+                Custom alias use alphanumeric characters and must be at least 3 characters
+              </small>
             {% endif %}
           </div>
         </div>
