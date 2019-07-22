@@ -11,7 +11,7 @@
     <form method="post" enctype="multipart/form-data">
       {{ form.csrf_token }}
 
-      <h3>App Information</h3>
+      <h3>App Info</h3>
       <div class="form-group">
         <label class="form-label">App Name</label>
         {{ form.name(class="form-control", value=client.name) }}
