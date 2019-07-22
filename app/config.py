@@ -23,23 +23,38 @@ if config_file:
 else:
     load_dotenv()
 
+# Constants
+PARTNER_CODES = ["SL2019"]
 
+# Allow user to have 1 year of premium: set the expiration_date to 1 year more
+PROMO_CODE = "SIMPLEISBETTER"
+
+
+# Server url
 URL = os.environ["URL"]
 print("URL:", URL)
 
+# Whether sentry is enabled
+ENABLE_SENTRY = "ENABLE_SENTRY" in os.environ
+
+# Email related settings
+NOT_SEND_EMAIL = "NOT_SEND_EMAIL" in os.environ
 EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"]
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
 SENDGRID_API_KEY = os.environ["SENDGRID_API_KEY"]
+MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
+
+
+# Database
+RESET_DB = "RESET_DB" in os.environ
 DB_URI = os.environ["DB_URI"]
 
+# Flask secret
 FLASK_SECRET = os.environ["FLASK_SECRET"]
-
 # invalidate the session at each new version by changing the secret
 FLASK_SECRET = FLASK_SECRET + SHA1
 
-ENABLE_SENTRY = "ENABLE_SENTRY" in os.environ
-ENV = os.environ["ENV"]
-
+# AWS
 AWS_REGION = "eu-west-3"
 BUCKET = os.environ["BUCKET"]
 AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
@@ -49,27 +64,24 @@ ENABLE_CLOUDWATCH = "ENABLE_CLOUDWATCH" in os.environ
 CLOUDWATCH_LOG_GROUP = os.environ["CLOUDWATCH_LOG_GROUP"]
 CLOUDWATCH_LOG_STREAM = os.environ["CLOUDWATCH_LOG_STREAM"]
 
+# Stripe
 STRIPE_API = os.environ["STRIPE_API"]  # Stripe public key
 STRIPE_SECRET_KEY = os.environ["STRIPE_SECRET_KEY"]
 STRIPE_YEARLY_PLAN = os.environ["STRIPE_YEARLY_PLAN"]
 STRIPE_MONTHLY_PLAN = os.environ["STRIPE_MONTHLY_PLAN"]
 
-# Max number emails user can generate for free plan
-MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
-
+# Analytics
 LYRA_ANALYTICS_ID = os.environ["LYRA_ANALYTICS_ID"]
 
-# Used to sign id_token
+# OpenID keys, used to sign id_token
 OPENID_PRIVATE_KEY_PATH = get_abs_path(os.environ["OPENID_PRIVATE_KEY_PATH"])
 OPENID_PUBLIC_KEY_PATH = get_abs_path(os.environ["OPENID_PUBLIC_KEY_PATH"])
 
-PARTNER_CODES = ["SL2019"]
-
-# Allow user to have 1 year of premium: set the expiration_date to 1 year more
-PROMO_CODE = "SIMPLEISBETTER"
-
+# Used to generate random email
 WORDS_FILE_PATH = get_abs_path(os.environ["WORDS_FILE_PATH"])
 
+
+# Github, Google, Facebook client id and secrets
 GITHUB_CLIENT_ID = os.environ["GITHUB_CLIENT_ID"]
 GITHUB_CLIENT_SECRET = os.environ["GITHUB_CLIENT_SECRET"]
 

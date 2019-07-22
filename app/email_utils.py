@@ -4,13 +4,13 @@
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-from app.config import SUPPORT_EMAIL, SENDGRID_API_KEY, ENV
+from app.config import SUPPORT_EMAIL, SENDGRID_API_KEY, NOT_SEND_EMAIL
 from app.log import LOG
 
 
 def send(to_email, subject, html_content, plain_content=None):
     # On local only print out email content
-    if ENV == "local":
+    if NOT_SEND_EMAIL:
         LOG.d(
             "send mail to %s, subject:%s, content:%s", to_email, subject, html_content
         )
