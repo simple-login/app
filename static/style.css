@@ -30,3 +30,14 @@
 
     margin-top: 10px;
 }
+
+.small-profile-picture {
+    /* make a square container */
+    width: 60px;
+    height: 60px;
+
+    /* round the edges to a circle with border radius 1/2 container size */
+    border-radius: 50%;
+
+    margin-top: 10px;
+}

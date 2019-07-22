@@ -446,7 +446,12 @@ class ClientUser(db.Model, ModelMixin):
                     res[Scope.NAME.value] = self.user.name
             elif scope == Scope.AVATAR_URL:
                 if self.user.profile_picture_id:
-                    res[Scope.AVATAR_URL.value] = self.user.profile_picture.get_url()
+                    if self.default_avatar:
+                        res[Scope.AVATAR_URL.value] = URL + "/static/default-avatar.png"
+                    else:
+                        res[
+                            Scope.AVATAR_URL.value
+                        ] = self.user.profile_picture.get_url()
                 else:
                     res[Scope.AVATAR_URL.value] = None
             elif scope == Scope.EMAIL:

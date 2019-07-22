@@ -122,6 +122,8 @@ def authorize():
             suggested_name = request.form.get("suggested-name")
             custom_name = request.form.get("custom-name")
 
+            use_default_avatar = request.form.get("avatar-choice") == "default"
+
             gen_email = None
             if custom_email_prefix:
                 # check if user can generate custom email
@@ -166,6 +168,11 @@ def authorize():
                     client,
                 )
                 client_user.name = suggested_name
+
+            if use_default_avatar:
+                # use default avatar
+                LOG.d("use default avatar for user %s client %s", current_user, client)
+                client_user.default_avatar = True
 
             db.session.flush()
             LOG.d("create client-user for client %s, user %s", client, current_user)

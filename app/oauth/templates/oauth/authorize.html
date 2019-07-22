@@ -4,6 +4,33 @@
   Authorization
 {% endblock %}
 
+{% block head %}
+  <style>
+    /* Inspired from https://stackoverflow.com/a/17541916/1428034 */
+    /* HIDE RADIO */
+    [type=radio] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    /* IMAGE STYLES */
+    [type=radio] + img {
+      cursor: pointer;
+    }
+
+    /* CHECKED STYLES */
+    [type=radio]:checked + img {
+    {#outline: 2px solid #f00;#} display: block;
+      border-radius: 50%;
+      box-sizing: border-box;
+      background-color: #0ff;
+      border: 3px solid #88d748;
+    }
+  </style>
+{% endblock %}
+
 {% block default_content %}
   <form class="card" method="post" style="max-width: 40rem; margin: auto">
     <div class="card-body p-6">
@@ -43,6 +70,9 @@
 
         <div class="text-center mt-4">
           <b>{{ client.name }}</b> will receive the following info
+          <div>
+            <small class="font-weight-lighter">You can customize the information sent to this app.</small>
+          </div>
         </div>
 
         <div class="row mt-4 md-4">
@@ -95,19 +125,26 @@
           </div>
         </div>
 
-
         {% if current_user.profile_picture_id %}
-          <div class="row mt-4">
-            <div class="col-md-3 text-right">
-              <label>Avatar</label>
+          <div class="row mt-4 md-4">
+            <div class="col-md-3 text-left">
+              <label style="padding-top: 2rem">Avatar</label>
             </div>
-            <div class="col-md-9">
-              <img class="profile-picture" href="{{ current_user.profile_picture_url() }}">
+            <div class="col-md-9" style="display: flex; align-items: center">
+              <label>
+                <input type="radio" name="avatar-choice" value="real" checked>
+                <img src="{{ current_user.profile_picture_url() }}" class="small-profile-picture">
+              </label>
+
+              <div style="margin: 0 1rem">OR</div>
+
+              <label>
+                <input type="radio" name="avatar-choice" value="default">
+                <img src="{{ url_for('static', filename='default-avatar.png') }}" class="small-profile-picture">
+              </label>
             </div>
           </div>
         {% endif %}
-
-
       {% endif %}
 
       {% if client_user %}
