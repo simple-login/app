@@ -208,6 +208,21 @@ class User(db.Model, ModelMixin, UserMixin):
 
         self.promo_codes = ",".join(current_promo_codes)
 
+    def suggested_emails(self) -> (str, [str]):
+        """return suggested email and other email choices """
+        all_gen_emails = [ge.email for ge in GenEmail.filter_by(user_id=self.id)]
+        if self.can_create_new_email():
+            # create a new email
+            suggested_gen_email = generate_email()
+        else:
+            # pick an email from the list of gen emails
+            suggested_gen_email = random.choice(all_gen_emails)
+
+        return (
+            suggested_gen_email,
+            list(set(all_gen_emails).difference(set([suggested_gen_email]))),
+        )
+
 
 class ActivationCode(db.Model, ModelMixin):
     """For activate user account"""
