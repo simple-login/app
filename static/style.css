@@ -19,3 +19,14 @@
 
     margin-top: 10px;
 }
+
+.small-client-icon {
+    /* make a square container */
+    width: 40px;
+    height: 40px;
+
+    /* round the edges to a circle with border radius 1/2 container size */
+    border-radius: 10%;
+
+    margin-top: 10px;
+}

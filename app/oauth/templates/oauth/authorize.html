@@ -5,99 +5,154 @@
 {% endblock %}
 
 {% block default_content %}
-  <div class="col-md-6 offset-md-3">
-    <form class="card" method="post">
-      <div class="card-body p-6">
-        <!-- User has already authorized this client -->
-        {% if client_user %}
-          <div class="card-title">
-            You have already authorized <b>{{ client.name }}</b>.
-          </div>
+  <form class="card" method="post" style="max-width: 40rem; margin: auto">
+    <div class="card-body p-6">
+      <!-- User has already authorized this client -->
+      {% if client_user %}
+        <div class="card-title">
+          You have already authorized <b>{{ client.name }}</b>.
+        </div>
 
-          <hr>
+        <hr>
 
-          <div class="mb-4">
-            <b>{{ client.name }}</b> has access to the following information:
-          </div>
-          <div>
-            {% for scope in client.get_scopes() %}
-              <div>
-                {% if scope == Scope.AVATAR_URL and user_info[scope.value] %}
-                  avatar: <img src="{{ user_info[scope.value] }}" class="avatar">
-                {% elif scope == Scope.EMAIL %}
-                  {{ scope.value }}:
-                  <a href="mailto:{{ user_info[scope.value] }}">
-                    {{ user_info[scope.value] }}
-                  </a>
-                {% elif scope == Scope.NAME %}
-                  {{ scope.value }}: <b>{{ user_info[scope.value] }}</b>
-                {% endif %}
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="card-title">
-            <b>{{ client.name }}</b> will receive your following information:
-          </div>
-
-          <div>
-            {% for scope in client.get_scopes() %}
-              <div style="display: flex; align-items: center; margin: .5rem 0; line-height: 1.3rem">
-                {% if scope == Scope.AVATAR_URL and current_user.profile_picture_id %}
-                  avatar: <img src="{{ current_user.profile_picture_url() }}" class="avatar" style="margin: 10px 0px">
-                {% elif scope == Scope.EMAIL %}
-                  {{ scope.value }}:
-                  A random alias or your original email
-                {% elif scope == Scope.NAME %}
-                  {{ scope.value }}: <b>{{ current_user.name }}</b>
-                {% endif %}
-              </div>
-            {% endfor %}
+        <div class="mb-4">
+          <b>{{ client.name }}</b> has access to the following information:
+        </div>
+        <div>
+          {% for scope in client.get_scopes() %}
+            <div>
+              {% if scope == Scope.AVATAR_URL and user_info[scope.value] %}
+                avatar: <img src="{{ user_info[scope.value] }}" class="avatar">
+              {% elif scope == Scope.EMAIL %}
+                {{ scope.value }}:
+                <a href="mailto:{{ user_info[scope.value] }}">
+                  {{ user_info[scope.value] }}
+                </a>
+              {% elif scope == Scope.NAME %}
+                {{ scope.value }}: <b>{{ user_info[scope.value] }}</b>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        {% if client.icon_id %}
+          <div class="text-center">
+            <img src="{{ client.get_icon_url() }}" class="small-client-icon">
           </div>
         {% endif %}
 
-        {% if client_user %}
-          <div class="form-footer">
-            <div class="btn-group" role="group" aria-label="Basic example">
-              <button type="submit" name="button" value="allow"
-                      class="btn btn-success">Allow
-              </button>
+        <div class="text-center mt-4">
+          <b>{{ client.name }}</b> will receive the following info
+        </div>
 
-              <a class="btn btn-light" href="javascript:history.back()">
-                Cancel
-              </a>
-            </div>
+        <div class="row mt-4 md-4">
+          <div class="col-md-3 text-left">
+            <label style="padding-top: .5rem">Email</label>
           </div>
-        {% else %}
-          <div class="form-group" style="margin-top: 1rem">
-            <div class="custom-controls-stacked">
-              <label class="custom-control custom-checkbox">
-                <input type="checkbox" name="gen-email"
-                       class="custom-control-input" checked>
-                <span class="custom-control-label">Use email alias</span>
-              </label>
-            </div>
+          <div class="col-md-9">
+            <select class="custom-select custom-select" name="suggested-email">
+              <option selected value="{{ suggested_email }}">{{ suggested_email }}</option>
+              <option value="{{ personal_email }}">{{ personal_email }}</option>
+              {% for email in other_emails %}
+                <option value="{{ email }}">{{ email }}</option>
+              {% endfor %}
+            </select>
 
-            <small class="form-text text-muted">
-              If checked, an email alias will be used. <br>
-              Otherwise, your personal email will be communicated to <b>{{ client.name }}</b>.
-            </small>
+            {% if current_user.can_create_custom_email() %}
+              <div class="mt-2">OR</div>
+              <div style="display: flex; align-items: center" class="mt-2">
+                <input class="form-control" style="flex-grow: 2" name="custom-email-prefix">
+                <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
+                <div class="ml-2">
+                  .{{ email_suffix }}@simplelogin.co
+                </div>
+              </div>
+            {% endif %}
           </div>
+        </div>
 
-          <div class="form-footer">
-            <div class="btn-group btn-block" role="group" aria-label="Basic example">
-              <button type="submit" name="button" value="allow"
-                      class="btn btn-success">Allow
-              </button>
+        <div class="row mt-4">
+          <div class="col-md-3 text-left">
+            <label>Name</label>
+          </div>
+          <div class="col-md-9">
+            {{ current_user.name }}
+          </div>
+        </div>
 
-              <button type="submit" name="button" value="deny"
-                      class="btn btn-light">Deny
-              </button>
+        {% if current_user.profile_picture_id %}
+          <div class="row mt-4">
+            <div class="col-md-3 text-right">
+              <label>Avatar</label>
+            </div>
+            <div class="col-md-9">
+              <img class="profile-picture" href="{{ current_user.profile_picture_url() }}">
             </div>
           </div>
         {% endif %}
 
-      </div>
-    </form>
-  </div>
+        <hr>
+        <div class="card-title">
+          <b>{{ client.name }}</b> will receive your following information:
+        </div>
+
+        <div>
+          {% for scope in client.get_scopes() %}
+            <div style="display: flex; align-items: center; margin: .5rem 0; line-height: 1.3rem">
+              {% if scope == Scope.AVATAR_URL and current_user.profile_picture_id %}
+                avatar: <img src="{{ current_user.profile_picture_url() }}" class="avatar" style="margin: 10px 0px">
+              {% elif scope == Scope.EMAIL %}
+                {{ scope.value }}:
+                A random alias or your original email
+              {% elif scope == Scope.NAME %}
+                {{ scope.value }}: <b>{{ current_user.name }}</b>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if client_user %}
+        <div class="form-footer">
+          <div class="btn-group" role="group" aria-label="Basic example">
+            <button type="submit" name="button" value="allow"
+                    class="btn btn-success">Allow
+            </button>
+
+            <a class="btn btn-light" href="javascript:history.back()">
+              Cancel
+            </a>
+          </div>
+        </div>
+      {% else %}
+        <div class="form-group" style="margin-top: 1rem">
+          <div class="custom-controls-stacked">
+            <label class="custom-control custom-checkbox">
+              <input type="checkbox" name="gen-email"
+                     class="custom-control-input" checked>
+              <span class="custom-control-label">Use email alias</span>
+            </label>
+          </div>
+
+          <small class="form-text text-muted">
+            If checked, an email alias will be used. <br>
+            Otherwise, your personal email will be communicated to <b>{{ client.name }}</b>.
+          </small>
+        </div>
+
+        <div class="form-footer">
+          <div class="btn-group btn-block" role="group" aria-label="Basic example">
+            <button type="submit" name="button" value="allow"
+                    class="btn btn-success">Allow
+            </button>
+
+            <button type="submit" name="button" value="deny"
+                    class="btn btn-light">Deny
+            </button>
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+  </form>
 {% endblock %}

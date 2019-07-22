@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 from flask import request, render_template, redirect
 from flask_login import current_user
 
+from app.config import EMAIL_DOMAIN
 from app.extensions import db
 from app.jose_utils import make_id_token
 from app.log import LOG
@@ -18,7 +19,7 @@ from app.models import (
 )
 from app.oauth.base import oauth_bp
 from app.oauth_models import get_response_types, ResponseType, Scope
-from app.utils import random_string, encode_url
+from app.utils import random_string, encode_url, convert_to_id
 
 
 @oauth_bp.route("/authorize", methods=["GET", "POST"])
@@ -63,6 +64,8 @@ def authorize():
     # redirect from client website
     if request.method == "GET":
         if current_user.is_authenticated:
+            suggested_email, other_emails, email_suffix = None, [], None
+
             # user has already allowed this client
             client_user: ClientUser = ClientUser.get_by(
                 client_id=client.id, user_id=current_user.id
@@ -71,6 +74,9 @@ def authorize():
             if client_user:
                 LOG.debug("user %s has already allowed client %s", current_user, client)
                 user_info = client_user.get_user_info()
+            else:
+                suggested_email, other_emails = current_user.suggested_emails()
+                email_suffix = random_string(6)
 
             return render_template(
                 "oauth/authorize.html",
@@ -78,6 +84,10 @@ def authorize():
                 user_info=user_info,
                 client_user=client_user,
                 Scope=Scope,
+                suggested_email=suggested_email,
+                personal_email=current_user.email,
+                other_emails=other_emails,
+                email_suffix=email_suffix,
             )
         else:
             # after user logs in, redirect user back to this page
@@ -88,8 +98,6 @@ def authorize():
                 Scope=Scope,
             )
     else:  # user allows or denies
-        gen_new_email = request.form.get("gen-email") == "on"
-
         if request.form.get("button") == "deny":
             LOG.debug("User %s denies Client %s", current_user, client)
             final_redirect_uri = f"{redirect_uri}?error=deny&state={state}"
@@ -98,15 +106,40 @@ def authorize():
         LOG.debug("User %s allows Client %s", current_user, client)
         client_user = ClientUser.get_by(client_id=client.id, user_id=current_user.id)
 
-        # user has already allowed this client
+        # user has already allowed this client, user cannot change information
         if client_user:
             LOG.d("user %s has already allowed client %s", current_user, client)
-            # User cannot choose to gen new email
-            gen_new_email = False
         else:
+            email_suffix = request.form.get("email-suffix")
+            custom_email_prefix = request.form.get("custom-email-prefix")
+            chosen_email = request.form.get("suggested-email")
+
+            gen_email = None
+            if custom_email_prefix:
+                # check if user can generate custom email
+                if not current_user.can_create_custom_email():
+                    raise Exception(f"User {current_user} cannot create custom email")
+
+                email = f"{convert_to_id(custom_email_prefix)}.{email_suffix}@{EMAIL_DOMAIN}"
+                LOG.d("create custom email alias %s for user %s", email, current_user)
+
+                gen_email = GenEmail.create(email=email, user_id=current_user.id)
+                db.session.flush()
+            else:  # user picks an email from suggestion
+                if chosen_email != current_user.email:
+                    gen_email = GenEmail.get_by(email=chosen_email)
+                    if not gen_email:
+                        gen_email = GenEmail.create(
+                            email=chosen_email, user_id=current_user.id
+                        )
+                        db.session.flush()
+
             client_user = ClientUser.create(
                 client_id=client.id, user_id=current_user.id
             )
+            if gen_email:
+                client_user.gen_email_id = gen_email.id
+
             db.session.flush()
             LOG.d("create client-user for client %s, user %s", client, current_user)
 
@@ -147,9 +180,6 @@ def authorize():
                 redirect_args["access_token"] = oauth_token.access_token
             elif response_type == ResponseType.ID_TOKEN:
                 redirect_args["id_token"] = make_id_token(client_user)
-
-        if gen_new_email:
-            client_user.gen_email_id = create_or_choose_gen_email(current_user).id
 
         db.session.commit()
 
