@@ -29,7 +29,7 @@ Whenever the model changes, a new migration needs to be created
 
 Set the database connection to use staging environment:
 
-> set -x CONFIG ~/config/simplelogin/staging.env
+> ln -sf ~/config/simplelogin/staging.env .env
 
 Generate the migration script and make sure to review it:
 
