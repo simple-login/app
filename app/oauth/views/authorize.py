@@ -88,6 +88,7 @@ def authorize():
                 personal_email=current_user.email,
                 other_emails=other_emails,
                 email_suffix=email_suffix,
+                EMAIL_DOMAIN=EMAIL_DOMAIN,
             )
         else:
             # after user logs in, redirect user back to this page
