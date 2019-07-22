@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash
+from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -8,7 +8,7 @@ from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail
-from app.utils import convert_to_id
+from app.utils import convert_to_id, random_string
 
 
 class CustomAliasForm(FlaskForm):
@@ -31,10 +31,12 @@ def custom_alias():
     if form.validate_on_submit():
         email = form.email.data
         email = convert_to_id(email)
-        if len(email) < 6:
-            error = "email must be at least 6 letters"
+        email_suffix = request.form.get("email-suffix")
+
+        if len(email) < 3:
+            error = "email must be at least 3 letters"
         else:
-            full_email = f"{email}@{EMAIL_DOMAIN}"
+            full_email = f"{email}.{email_suffix}@{EMAIL_DOMAIN}"
             # check if email already exists
             if GenEmail.get_by(email=full_email):
                 error = "email already chosen, please choose another one"
@@ -48,4 +50,11 @@ def custom_alias():
 
                 return redirect(url_for("dashboard.index"))
 
-    return render_template("dashboard/custom_alias.html", form=form, error=error)
+    email_suffix = random_string(6)
+    return render_template(
+        "dashboard/custom_alias.html",
+        form=form,
+        error=error,
+        email_suffix=email_suffix,
+        EMAIL_DOMAIN=EMAIL_DOMAIN,
+    )

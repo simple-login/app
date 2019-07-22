@@ -19,19 +19,20 @@
       <div class="form-group">
         <label class="form-label">Custom Alias</label>
         <small class="text-muted">
-          Email must use alphanumeric characters and must be at least 6 characters
+          Email must use alphanumeric characters and must be at least 3 characters
         </small>
         <div class="row mt-4">
           <div class="col">
             {{ form.email(class="form-control",
-                pattern="[0-9|A-Z|a-z]{6,}",
-                title="Email must use alphanumeric characters and must be at least 6 characters.") }}
+                pattern="[0-9|A-Z|a-z]{3,}",
+                title="Email must use alphanumeric characters and must be at least 3 characters.") }}
             {{ render_field_errors(form.email) }}
           </div>
           <div class="col align-self-center">
-              <h4>
-                @simplelogin.co
-              </h4>
+            <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
+            <h4>
+              .{{ email_suffix }}@{{ EMAIL_DOMAIN }}
+            </h4>
           </div>
         </div>
       </div>
