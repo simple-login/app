@@ -224,6 +224,13 @@ class User(db.Model, ModelMixin, UserMixin):
             list(set(all_gen_emails).difference(set([suggested_gen_email]))),
         )
 
+    def suggested_names(self) -> (str, [str]):
+        """return suggested name and other name choices """
+
+        other_name = convert_to_id(self.name)
+
+        return self.name, [other_name, "Anonymous", "whoami"]
+
 
 class ActivationCode(db.Model, ModelMixin):
     """For activate user account"""
@@ -433,7 +440,10 @@ class ClientUser(db.Model, ModelMixin):
 
         for scope in self.client.get_scopes():
             if scope == Scope.NAME:
-                res[Scope.NAME.value] = self.user.name
+                if self.name:
+                    res[Scope.NAME.value] = self.name
+                else:
+                    res[Scope.NAME.value] = self.user.name
             elif scope == Scope.AVATAR_URL:
                 if self.user.profile_picture_id:
                     res[Scope.AVATAR_URL.value] = self.user.profile_picture.get_url()

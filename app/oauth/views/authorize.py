@@ -65,6 +65,7 @@ def authorize():
     if request.method == "GET":
         if current_user.is_authenticated:
             suggested_email, other_emails, email_suffix = None, [], None
+            suggested_name, other_names = None, []
 
             # user has already allowed this client
             client_user: ClientUser = ClientUser.get_by(
@@ -76,6 +77,7 @@ def authorize():
                 user_info = client_user.get_user_info()
             else:
                 suggested_email, other_emails = current_user.suggested_emails()
+                suggested_name, other_names = current_user.suggested_names()
                 email_suffix = random_string(6)
 
             return render_template(
@@ -86,6 +88,8 @@ def authorize():
                 Scope=Scope,
                 suggested_email=suggested_email,
                 personal_email=current_user.email,
+                suggested_name=suggested_name,
+                other_names=other_names,
                 other_emails=other_emails,
                 email_suffix=email_suffix,
                 EMAIL_DOMAIN=EMAIL_DOMAIN,
@@ -115,6 +119,9 @@ def authorize():
             custom_email_prefix = request.form.get("custom-email-prefix")
             chosen_email = request.form.get("suggested-email")
 
+            suggested_name = request.form.get("suggested-name")
+            custom_name = request.form.get("custom-name")
+
             gen_email = None
             if custom_email_prefix:
                 # check if user can generate custom email
@@ -142,6 +149,23 @@ def authorize():
             )
             if gen_email:
                 client_user.gen_email_id = gen_email.id
+
+            if custom_name:
+                LOG.d(
+                    "use custom name %s for user %s client %s",
+                    custom_name,
+                    current_user,
+                    client,
+                )
+                client_user.name = custom_name
+            elif suggested_name != current_user.name:
+                LOG.d(
+                    "use another name %s for user %s client %s",
+                    custom_name,
+                    current_user,
+                    client,
+                )
+                client_user.name = suggested_name
 
             db.session.flush()
             LOG.d("create client-user for client %s, user %s", client, current_user)

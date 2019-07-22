@@ -76,14 +76,25 @@
           </div>
         </div>
 
-        <div class="row mt-4">
+        <div class="row mt-4 md-4">
           <div class="col-md-3 text-left">
-            <label>Name</label>
+            <label style="padding-top: .5rem">Name</label>
           </div>
           <div class="col-md-9">
-            {{ current_user.name }}
+            <select class="custom-select custom-select" name="suggested-name">
+              <option selected value="{{ suggested_name }}">{{ suggested_name }}</option>
+              {% for name in other_names %}
+                <option value="{{ name }}">{{ name }}</option>
+              {% endfor %}
+            </select>
+
+            <div class="mt-2">OR</div>
+            <div class="mt-2">
+              <input class="form-control" name="custom-name">
+            </div>
           </div>
         </div>
+
 
         {% if current_user.profile_picture_id %}
           <div class="row mt-4">
