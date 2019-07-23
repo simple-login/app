@@ -42,7 +42,7 @@
         <label class="form-label">OAuth2 Client ID</label>
 
         <div class="input-group mt-2">
-          <input type="text" value="{{ client.oauth_client_id }}" class="form-control">
+          <input disabled type="text" value="{{ client.oauth_client_id }}" class="form-control">
           <span class="input-group-append">
           <button
               data-clipboard-text="{{ client.oauth_client_id }}"
@@ -57,7 +57,7 @@
         <label class="form-label">OAuth2 Client Secret</label>
 
         <div class="input-group mt-2">
-          <input type="password" value="{{ client.oauth_client_secret }}" class="form-control">
+          <input disabled type="password" value="{{ client.oauth_client_secret }}" class="form-control">
           <span class="input-group-append">
           <button
               data-clipboard-text="{{ client.oauth_client_secret }}"
