@@ -3,29 +3,24 @@
 {% set active_page = "developer" %}
 
 {% block title %}
-  Developer - Create new client
+  Developer - Create new app
 {% endblock %}
 
 {% block default_content %}
+  <h1>Create new app</h1>
+  <p>An app can be a website, a SPA webapp or a mobile application</p>
+  <small>Let's get started integrating SimpleLogin into your app! </small>
+
+  <hr>
+
   <form method="post" enctype="multipart/form-data">
     {{ form.csrf_token }}
 
     <div class="form-group">
-      <label class="form-label">App Name</label>
-      {{ form.name(class="form-control") }}
+      <label class="form-label">Display Name</label>
+      {{ form.name(class="form-control",
+      placeholder="The name users sees when they click on *Sign in with SimpleLogin*") }}
       {{ render_field_errors(form.name) }}
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Website Url</label>
-      {{ form.home_url(class="form-control", type="url") }}
-      {{ render_field_errors(form.home_url) }}
-    </div>
-
-    <div class="form-group">
-      <div class="form-label">App Icon</div>
-      {{ form.icon(class="form-control-file") }}
-      {{ render_field_errors(form.icon) }}
     </div>
 
     <button type="submit" class="btn btn-primary">Create</button>
