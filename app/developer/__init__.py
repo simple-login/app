@@ -1,1 +1,1 @@
-from .views import index, new_client, client_detail
+from .views import index, new_client, client_detail, step

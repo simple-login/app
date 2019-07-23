@@ -1,0 +1,83 @@
+{% extends 'default.html' %}
+
+{% set active_page = "developer" %}
+
+{% block title %}
+  Step 2: Integrate SimpleLogin using OAuth2/OpenID
+{% endblock %}
+
+{% block default_content %}
+  <div>
+    <h1>Step 2: Integrate SimpleLogin using OAuth2/OpenID</h1>
+    <p>SimpleLogin will be integrated into your app using
+      <a href="https://oauth.net/2/grant-types/implicit/" target="_blank">OAuth 2.0 Implicit Grant</a> flow.
+    </p>
+
+    <p>
+      For more details on this flow, please consult our doc on:
+      <a href="https://docs.simplelogin.io/step-3.1-front-end" target="_blank">Frontend Integration</a>
+    </p>
+
+    <p>And if you already know this flow, here are the corresponding endpoints:</p>
+
+    <p>
+      Authorization endpoint:
+      <b>https://app.simplelogin.io/oauth2/authorize</b>
+      <i class="fe fe-clipboard clipboard" data-clipboard-text="https://app.simplelogin.io/oauth2/authorize"></i>
+    </p>
+
+    <p>
+      UserInfo endpoint:
+      <b>https://app.simplelogin.io/oauth2/userinfo</b>
+      <i class="fe fe-clipboard clipboard" data-clipboard-text="https://app.simplelogin.io/oauth2/userinfo"></i>
+    </p>
+
+    Please find below your OAuth Client-Id that is needed for the <em>Implicit Flow</em>
+    <br>
+
+    <div class="form-group">
+      <label class="form-label">OAuth2 Client ID</label>
+
+      <div class="input-group mt-2">
+        <input type="text" disabled value="{{ client.oauth_client_id }}" class="form-control">
+        <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ client.oauth_client_id }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <p>
+      By default, SimpleLogin whitelists <em>localhost</em> address that should facilitate the local development.
+    </p>
+
+    Once you finished SimpleLogin integration, do not forget to add your website as valid <em>redirect_uri</em>
+    on the app detail page 😀 <br>
+
+    <a class="btn btn-success" href="{{ url_for('developer.client_detail', client_id=client.id) }}">
+      App detail page
+      <i class="fe fe-arrow-right"></i>
+    </a>
+  </div>
+
+
+{% endblock %}
+
+{% block script %}
+  <script>
+    var clipboard = new ClipboardJS('.clipboard');
+
+    clipboard.on('success', function (e) {
+      notie.alert({
+        type: "success",
+        text: "Copied to clipboard",
+        time: 1,
+      });
+
+      e.clearSelection();
+    });
+  </script>
+{% endblock %}

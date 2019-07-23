@@ -1,0 +1,122 @@
+{% extends 'default.html' %}
+
+{% set active_page = "developer" %}
+
+{% block title %}
+  Step 2: Integrate SimpleLogin using OAuth2/OpenID
+{% endblock %}
+
+{% block default_content %}
+  <div>
+    <h1>Step 2: Integrate SimpleLogin using OAuth2/OpenID</h1>
+    <p>
+      SimpleLogin will be integrated into your app using
+      <a href="https://oauth.net/2/grant-types/authorization-code/" target="_blank">
+        OAuth2 Authorization Code
+      </a> flow.
+    </p>
+
+    <p>
+      For more details on this flow, please consult our doc on:
+      <a href="https://app.gitbook.com/@simplelogin/s/docs/step-3.2-back-end" target="_blank">
+        Backend Integration
+      </a>
+    </p>
+
+    <p>And if you already know this flow, here are the OAuth2 endpoints:</p>
+
+    <p>
+      Authorization endpoint:
+      <b>https://app.simplelogin.io/oauth2/authorize</b>
+      <i class="fe fe-clipboard clipboard" data-clipboard-text="https://app.simplelogin.io/oauth2/authorize"></i>
+    </p>
+
+    <p>
+      Token endpoint:
+      <b>https://app.simplelogin.io/oauth2/token</b>
+      <i class="fe fe-clipboard clipboard" data-clipboard-text="https://app.simplelogin.io/oauth2/token"></i>
+    </p>
+
+    <p>
+      UserInfo endpoint:
+      <b>https://app.simplelogin.io/oauth2/userinfo</b>
+      <i class="fe fe-clipboard clipboard" data-clipboard-text="https://app.simplelogin.io/oauth2/userinfo"></i>
+    </p>
+
+    Please find below your OAuth Client-Id and Client-Secret that are needed for the <em>Authorization Code Flow</em>:
+    <br>
+
+    <div class="form-group">
+      <label class="form-label">OAuth2 Client ID</label>
+
+      <div class="input-group mt-2">
+        <input type="text" disabled value="{{ client.oauth_client_id }}" class="form-control">
+        <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ client.oauth_client_id }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">OAuth2 Client Secret</label>
+
+      <div class="input-group mt-2">
+        <input disabled type="password" value="{{ client.oauth_client_secret }}" class="form-control">
+        <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ client.oauth_client_secret }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <p>
+      By default, SimpleLogin whitelists <em>localhost</em> address that should facilitate the local development.
+    </p>
+
+    <p>
+      We have created some examples along with a step-by-step guide on some framework/libraries,
+      feel free to check them out:
+      <br>
+      <a href="https://docs.simplelogin.io/examples/integrate-simplelogin-using-passportjs">
+        PassportJS (NodeJS)
+      </a>
+      <br>
+      <a href="https://docs.simplelogin.io/examples/integrate-simplelogin-using-requests-oauthlib">Requests-OAuthlib
+        (Python)
+      </a>
+    </p>
+
+    Once you finished SimpleLogin integration, do not forget to add your website as valid <em>redirect_uri</em>
+    on the app detail page 😀 <br>
+
+    <a class="btn btn-success" href="{{ url_for('developer.client_detail', client_id=client.id) }}">
+      App detail page
+      <i class="fe fe-arrow-right"></i>
+    </a>
+  </div>
+
+
+{% endblock %}
+
+{% block script %}
+  <script>
+    var clipboard = new ClipboardJS('.clipboard');
+
+    clipboard.on('success', function (e) {
+      notie.alert({
+        type: "success",
+        text: "Copied to clipboard",
+        time: 1,
+      });
+
+      e.clearSelection();
+    });
+  </script>
+{% endblock %}
