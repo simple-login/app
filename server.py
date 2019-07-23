@@ -97,15 +97,11 @@ def fake_data():
 
     # Create a client
     client1 = Client.create_new(name="Demo", user_id=user.id)
-    client1.home_url = "http://sl-client:7000"
     client1.oauth_client_id = "client-id"
     client1.oauth_client_secret = "client-secret"
     client1.published = True
     db.session.commit()
 
-    RedirectUri.create(client_id=client1.id, uri="http://sl-client:7000/callback")
-    RedirectUri.create(client_id=client1.id, uri="http://sl-client:7000/implicit")
-    RedirectUri.create(client_id=client1.id, uri="http://sl-client:7000/implicit-jso")
     db.session.commit()
 
 
