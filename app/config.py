@@ -25,12 +25,8 @@ else:
     load_dotenv()
 
 
-# Constants
-PARTNER_CODES = ["SL2019"]
-
 # Allow user to have 1 year of premium: set the expiration_date to 1 year more
 PROMO_CODE = "SIMPLEISBETTER"
-
 
 # Server url
 URL = os.environ["URL"]

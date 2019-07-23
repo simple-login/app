@@ -33,21 +33,6 @@
         {{ render_field_errors(form.website) }}
       </div>
 
-      <!-- Possibility to bypass using promo code. Only applied for user already authenticated -->
-      {% if current_user.is_authenticated %}
-        <hr>
-        <h4 class="text-center">
-          Or if you have a <em>partner code</em>, you can become a partner right away!
-        </h4>
-        <br>
-
-        <div class="form-group">
-          <label class="form-label">Partner Code</label>
-          {{ form.partner_code(class="form-control", type="text", placeholder="Partner Code") }}
-          {{ render_field_errors(form.partner_code) }}
-        </div>
-      {% endif %}
-
       <div class="form-footer">
         <button type="submit" class="btn btn-primary btn-block">Become a Partner</button>
       </div>
