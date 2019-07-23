@@ -111,7 +111,6 @@ class User(db.Model, ModelMixin, UserMixin):
     stripe_subscription_id = db.Column(db.String(128), unique=True)
 
     profile_picture_id = db.Column(db.ForeignKey(File.id), nullable=True)
-    is_developer = db.Column(db.Boolean, nullable=False, server_default="0")
 
     # contain the list of promo codes user has used. Promo codes are separated by ","
     promo_codes = db.Column(db.Text, nullable=True)
