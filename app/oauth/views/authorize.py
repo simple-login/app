@@ -55,9 +55,11 @@ def authorize():
 
     # check if redirect_uri is valid
     # allow localhost by default
-    # todo: only allow https
     hostname, scheme = get_host_name_and_scheme(redirect_uri)
     if hostname != "localhost":
+        if scheme != "https":
+            return "Only https is supported", 400
+
         if not RedirectUri.get_by(client_id=client.id, uri=redirect_uri):
             return f"{redirect_uri} is not authorized", 400
 
