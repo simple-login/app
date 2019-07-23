@@ -89,7 +89,6 @@ def fake_data():
         password="password",
         activated=True,
         is_admin=True,
-        is_developer=True,
     )
 
     db.session.commit()

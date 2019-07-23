@@ -35,11 +35,9 @@
               <i class="dropdown-icon fe fe-settings"></i> Settings
             </a>
 
-            {% if not current_user.is_developer %}
-              <a class="dropdown-item" href="{{ url_for('partner.become') }}">
-                <i class="dropdown-icon fe fe-target"></i> Become Partner/Developer
-              </a>
-            {% endif %}
+            <a class="dropdown-item" href="{{ url_for('partner.become') }}">
+              <i class="dropdown-icon fe fe-target"></i> Become Partner/Developer
+            </a>
 
             <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
               <i class="dropdown-icon fe fe-log-out"></i> Sign out
