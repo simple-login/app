@@ -13,14 +13,15 @@
 
       <h3>App Info</h3>
       <div class="form-group">
-        <label class="form-label">App Name</label>
+        <label class="form-label">Display Name</label>
         {{ form.name(class="form-control", value=client.name) }}
         {{ render_field_errors(form.name) }}
       </div>
 
       <div class="form-group">
-        <label class="form-label">Website Url</label>
-        {{ form.home_url(class="form-control", type="url", value=client.home_url or "") }}
+        <label class="form-label">Website URL</label>
+        {{ form.home_url(class="form-control", type="url", value=client.home_url or "",
+          placeholder="https://mywebsite.com") }}
         {{ render_field_errors(form.home_url) }}
       </div>
 
@@ -69,6 +70,52 @@
       </div>
 
       <div class="form-group">
+        <label class="form-label">Authorization endpoint</label>
+
+        <div class="input-group mt-2">
+          <input type="text" disabled value="https://app.simplelogin.io/oauth2/authorize" class="form-control">
+          <span class="input-group-append">
+          <button
+              data-clipboard-text="https://app.simplelogin.io/oauth2/authorize"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Token endpoint</label>
+
+        <div class="input-group mt-2">
+          <input type="text" disabled value="https://app.simplelogin.io/oauth2/token" class="form-control">
+          <span class="input-group-append">
+          <button
+              data-clipboard-text="https://app.simplelogin.io/oauth2/token"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">UserInfo endpoint</label>
+
+        <div class="input-group mt-2">
+          <input type="text" disabled value="https://app.simplelogin.io/oauth2/userinfo" class="form-control">
+          <span class="input-group-append">
+          <button
+              data-clipboard-text="https://app.simplelogin.io/oauth2/userinfo"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+        </div>
+
+      </div>
+
+      <div class="form-group">
         <label class="form-label">Authorized URIs</label>
 
         {% for redirect_uri in client.redirect_uris %}
@@ -89,7 +136,7 @@
         </div>
 
 
-        <button type="button" id="create-new-uri" class="mt-2 btn btn-outline-secondary">Add new uri</button>
+        <button type="button" id="create-new-uri" class="mt-2 btn btn-secondary">Add new uri</button>
       </div>
       <hr>
       <button type="submit" class="btn btn-primary btn-lg">Update</button>
