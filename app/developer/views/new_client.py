@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.developer.base import developer_bp
+from app.email_utils import notify_admin
 from app.extensions import db
 from app.models import Client
 
@@ -21,6 +22,8 @@ def new_client():
         if form.validate():
             client = Client.create_new(form.name.data, current_user.id)
             db.session.commit()
+
+            notify_admin(f"user {current_user} created new app {client.name}")
             flash("Your app has been created", "success")
 
             return redirect(
