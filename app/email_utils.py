@@ -31,7 +31,7 @@ def send(to_email, subject, html_content, plain_content=None):
     LOG.d("sendgrid res:%s, email:%s", response.status_code, to_email)
 
 
-def notify_admin(subject, html_content):
+def notify_admin(subject, html_content=""):
     send(
         SUPPORT_EMAIL,
         subject,
