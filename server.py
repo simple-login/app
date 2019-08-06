@@ -55,6 +55,9 @@ def create_app() -> Flask:
 
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
+    # to avoid conflict with other cookie
+    app.config["SESSION_COOKIE_NAME"] = "slapp"
+
     init_extensions(app)
     register_blueprints(app)
     set_index_page(app)
