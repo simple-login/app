@@ -291,3 +291,49 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
 
     # id_token must be a valid, correctly signed JWT
     assert verify_id_token(r.json["id_token"])
+
+
+def test_authorize_token_flow(flask_client):
+    """make sure the authorize redirects user to correct page for the *Token Flow*
+    , ie when response_type=token
+    The /authorize endpoint should return an access_token
+    """
+
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+
+    db.session.commit()
+
+    # user allows client on the authorization page
+    r = flask_client.post(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="teststate",
+            redirect_uri="http://localhost",
+            response_type="token",  # token flow
+        ),
+        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        # user will be redirected to client page, do not allow redirection here
+        # to assert the redirect url
+        # follow_redirects=True,
+    )
+
+    assert r.status_code == 302  # user gets redirected back to client page
+
+    # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
+    o = urlparse(r.location)
+    assert o.netloc == "localhost"
+
+    # in token flow, access_token is in fragment and not query
+    assert o.fragment
+    assert not o.query
+
+    # parse the fragment, should return something like
+    # {'state': ['teststate'], 'code': ['knuyjepwvg']}
+    queries = parse_qs(o.fragment)
+
+    assert queries["state"] == ["teststate"]
+
+    # access_token must be returned
+    assert len(queries["access_token"]) == 1
