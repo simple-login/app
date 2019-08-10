@@ -160,6 +160,7 @@ def setup_openid_metadata(app):
             "issuer": URL,
             "authorization_endpoint": URL + "/oauth2/authorize",
             "token_endpoint": URL + "/oauth2/token",
+            "userinfo_endpoint": URL + "/oauth2/userinfo",
             "jwks_uri": URL + "/jwks",
             "response_types_supported": [
                 "code",
@@ -171,8 +172,8 @@ def setup_openid_metadata(app):
             "subject_types_supported": ["public"],
             "id_token_signing_alg_values_supported": ["RS256"],
             # todo: add introspection and revocation endpoints
-            "introspection_endpoint": URL + "/oauth2/token/introspection",
-            "revocation_endpoint": URL + "/oauth2/token/revocation",
+            # "introspection_endpoint": URL + "/oauth2/token/introspection",
+            # "revocation_endpoint": URL + "/oauth2/token/revocation",
         }
 
         return jsonify(res)
