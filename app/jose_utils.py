@@ -32,7 +32,9 @@ def make_id_token(client_user: ClientUser):
 
     claims = {**claims, **client_user.get_user_info()}
 
-    jwt_token = jwt.JWT(header={"alg": "RS256", "kid": "simple-login"}, claims=claims)
+    jwt_token = jwt.JWT(
+        header={"alg": "RS256", "kid": key._public_params()["kid"]}, claims=claims
+    )
     jwt_token.make_signed_token(key)
     return jwt_token.serialize()
 
