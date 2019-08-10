@@ -154,6 +154,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
     # parse the query, should return something like
     # {'state': ['teststate'], 'code': ['knuyjepwvg']}
     queries = parse_qs(o.query)
+    assert len(queries) == 2
 
     assert queries["state"] == ["teststate"]
     assert len(queries["code"]) == 1
@@ -240,6 +241,7 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     # parse the query, should return something like
     # {'state': ['teststate'], 'code': ['knuyjepwvg']}
     queries = parse_qs(o.query)
+    assert len(queries) == 2
 
     assert queries["state"] == ["teststate"]
     assert len(queries["code"]) == 1
@@ -270,7 +272,6 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     #     'name': 'AB CD'
     #   }
     # }
-    print(r.json)
     assert r.status_code == 200
     assert r.json["access_token"]
     assert r.json["expires_in"] == 3600
@@ -330,10 +331,59 @@ def test_authorize_token_flow(flask_client):
     assert not o.query
 
     # parse the fragment, should return something like
-    # {'state': ['teststate'], 'code': ['knuyjepwvg']}
+    # {'state': ['teststate'], 'access_token': ['knuyjepwvg']}
     queries = parse_qs(o.fragment)
+    assert len(queries) == 2
 
     assert queries["state"] == ["teststate"]
 
     # access_token must be returned
     assert len(queries["access_token"]) == 1
+
+
+def test_authorize_id_token_flow(flask_client):
+    """make sure the authorize redirects user to correct page for the *ID-Token Flow*
+    , ie when response_type=id_token
+    The /authorize endpoint should return an id_token
+    """
+
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+
+    db.session.commit()
+
+    # user allows client on the authorization page
+    r = flask_client.post(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="teststate",
+            redirect_uri="http://localhost",
+            response_type="id_token",  # id_token flow
+        ),
+        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        # user will be redirected to client page, do not allow redirection here
+        # to assert the redirect url
+        # follow_redirects=True,
+    )
+
+    assert r.status_code == 302  # user gets redirected back to client page
+
+    # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
+    o = urlparse(r.location)
+    assert o.netloc == "localhost"
+    assert not o.fragment
+    assert o.query
+
+    # parse the fragment, should return something like
+    # {'state': ['teststate'], 'id_token': ['knuyjepwvg']}
+    queries = parse_qs(o.query)
+    assert len(queries) == 2
+
+    assert queries["state"] == ["teststate"]
+
+    # access_token must be returned
+    assert len(queries["id_token"]) == 1
+
+    # id_token must be a valid, correctly signed JWT
+    assert verify_id_token(queries["id_token"][0])
