@@ -435,7 +435,12 @@ class ClientUser(db.Model, ModelMixin):
         }
 
         """
-        res = {"id": self.id, "client": self.client.name, "email_verified": True}
+        res = {
+            "id": self.id,
+            "client": self.client.name,
+            "email_verified": True,
+            "sub": str(self.id),
+        }
 
         for scope in self.client.get_scopes():
             if scope == Scope.NAME:

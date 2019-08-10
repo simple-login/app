@@ -189,8 +189,8 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
     assert r.status_code == 200
     assert r.json["access_token"]
     assert r.json["expires_in"] == 3600
-    assert r.json["scope"] == ""
-    assert r.json["token_type"] == "bearer"
+    assert not r.json["scope"]
+    assert r.json["token_type"] == "Bearer"
 
     assert r.json["user"] == {
         "avatar_url": None,
@@ -199,6 +199,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
         "email_verified": True,
         "id": 1,
         "name": "AB CD",
+        "sub": "1",
     }
 
 
@@ -240,9 +241,9 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     assert not o.fragment
 
     # parse the query, should return something like
-    # {'state': ['teststate'], 'code': ['knuyjepwvg']}
+    # {'state': ['teststate'], 'code': ['knuyjepwvg'], 'scope': ["openid"]}
     queries = parse_qs(o.query)
-    assert len(queries) == 2
+    assert len(queries) == 3
 
     assert queries["state"] == ["teststate"]
     assert len(queries["code"]) == 1
@@ -276,8 +277,8 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     assert r.status_code == 200
     assert r.json["access_token"]
     assert r.json["expires_in"] == 3600
-    assert r.json["scope"] == ""
-    assert r.json["token_type"] == "bearer"
+    assert r.json["scope"] == "openid"
+    assert r.json["token_type"] == "Bearer"
 
     assert r.json["user"] == {
         "avatar_url": None,
@@ -286,6 +287,7 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
         "email_verified": True,
         "id": 1,
         "name": "AB CD",
+        "sub": "1",
     }
 
     # id_token must be returned
