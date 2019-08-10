@@ -1,4 +1,5 @@
 from flask import request, jsonify
+from flask_cors import cross_origin
 
 from app.extensions import db
 from app.jose_utils import make_id_token
@@ -10,6 +11,7 @@ from app.oauth_models import Scope
 
 
 @oauth_bp.route("/token", methods=["POST"])
+@cross_origin()
 def token():
     """
     Calls by client to exchange the access token given the authorization code.
