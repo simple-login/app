@@ -78,10 +78,10 @@ def token():
 
     res = {
         "access_token": oauth_token.access_token,
-        "token_type": "bearer",
+        "token_type": "Bearer",
         "expires_in": 3600,
-        "scope": "",
-        "user": user_data,
+        "scope": auth_code.scope,
+        "user": user_data,  # todo: remove this
     }
 
     if oauth_token.scope and Scope.OPENID.value in oauth_token.scope:
