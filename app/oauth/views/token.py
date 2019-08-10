@@ -10,7 +10,7 @@ from app.oauth_models import Scope
 
 
 @oauth_bp.route("/token", methods=["POST"])
-def get_access_token():
+def token():
     """
     Calls by client to exchange the access token given the authorization code.
     The client authentications using Basic Authentication.
