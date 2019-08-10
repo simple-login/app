@@ -159,13 +159,13 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
     assert len(queries["code"]) == 1
 
     # Exchange the code to get access_token
-    valid_credentials = base64.b64encode(
+    basic_auth_headers = base64.b64encode(
         f"{client.oauth_client_id}:{client.oauth_client_secret}".encode()
     ).decode("utf-8")
 
     r = flask_client.post(
         url_for("oauth.token"),
-        headers={"Authorization": "Basic " + valid_credentials},
+        headers={"Authorization": "Basic " + basic_auth_headers},
         data={"grant_type": "authorization_code", "code": queries["code"][0]},
     )
 
@@ -245,13 +245,13 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     assert len(queries["code"]) == 1
 
     # Exchange the code to get access_token
-    valid_credentials = base64.b64encode(
+    basic_auth_headers = base64.b64encode(
         f"{client.oauth_client_id}:{client.oauth_client_secret}".encode()
     ).decode("utf-8")
 
     r = flask_client.post(
         url_for("oauth.token"),
-        headers={"Authorization": "Basic " + valid_credentials},
+        headers={"Authorization": "Basic " + basic_auth_headers},
         data={"grant_type": "authorization_code", "code": queries["code"][0]},
     )
 

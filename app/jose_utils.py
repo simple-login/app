@@ -28,6 +28,7 @@ def make_id_token(client_user: ClientUser):
         "aud": client_user.client.oauth_client_id,
         "exp": arrow.now().shift(hours=1).timestamp,
         "iat": arrow.now().timestamp,
+        "auth_time": arrow.now().timestamp,
     }
 
     claims = {**claims, **client_user.get_user_info()}
