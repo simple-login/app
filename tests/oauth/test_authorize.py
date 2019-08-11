@@ -478,3 +478,141 @@ def test_authorize_token_id_token_flow(flask_client):
     assert "iss" in payload
     assert "name" in payload
     assert "sub" in payload
+
+
+def test_authorize_code_id_token_flow(flask_client):
+    """make sure the authorize redirects user to correct page for the *ID-Token Code Flow*
+    , ie when response_type=id_token,code
+    The /authorize endpoint should return an id_token, code and id_token must contain *c_hash*
+
+    The /token endpoint must return a access_token and an id_token
+
+    """
+
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+
+    db.session.commit()
+
+    # user allows client on the authorization page
+    r = flask_client.post(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="teststate",
+            redirect_uri="http://localhost",
+            response_type="id_token code",  # id_token,code flow
+        ),
+        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        # user will be redirected to client page, do not allow redirection here
+        # to assert the redirect url
+        # follow_redirects=True,
+    )
+
+    assert r.status_code == 302  # user gets redirected back to client page
+
+    # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
+    o = urlparse(r.location)
+    assert o.netloc == "localhost"
+    assert not o.fragment
+    assert o.query
+
+    # parse the query, should return something like
+    # {'state': ['teststate'], 'id_token': ['knuyjepwvg'], 'code': ['longstring']}
+    queries = parse_qs(o.query)
+    assert len(queries) == 3
+
+    assert queries["state"] == ["teststate"]
+
+    assert len(queries["id_token"]) == 1
+    assert len(queries["code"]) == 1
+
+    # id_token must be a valid, correctly signed JWT
+    id_token = queries["id_token"][0]
+    assert verify_id_token(id_token)
+
+    # make sure jwt has all the necessary fields
+    jwt = decode_id_token(id_token)
+
+    # payload should have this format
+    # {
+    #   'at_hash': 'jLDmoGpuOIHwxeyFEe9SKw',
+    #   'aud': 'testclient-sywcpwsyua',
+    #   'auth_time': 1565450736,
+    #   'avatar_url': None,
+    #   'client': 'test client',
+    #   'email': 'x@y.z',
+    #   'email_verified': True,
+    #   'exp': 1565454336,
+    #   'iat': 1565450736,
+    #   'id': 1,
+    #   'iss': 'http://localhost',
+    #   'name': 'AB CD',
+    #   'sub': '1'
+    # }
+    payload = json.loads(jwt.claims)
+
+    # at_hash MUST be present when the flow is id_token,token
+    assert "c_hash" in payload
+
+    assert "aud" in payload
+    assert "auth_time" in payload
+    assert "avatar_url" in payload
+    assert "client" in payload
+    assert "email" in payload
+    assert "email_verified" in payload
+    assert "exp" in payload
+    assert "iat" in payload
+    assert "id" in payload
+    assert "iss" in payload
+    assert "name" in payload
+    assert "sub" in payload
+
+    # <<< Exchange the code to get access_token >>>
+    basic_auth_headers = base64.b64encode(
+        f"{client.oauth_client_id}:{client.oauth_client_secret}".encode()
+    ).decode("utf-8")
+
+    r = flask_client.post(
+        url_for("oauth.token"),
+        headers={"Authorization": "Basic " + basic_auth_headers},
+        data={"grant_type": "authorization_code", "code": queries["code"][0]},
+    )
+
+    # r.json should have this format
+    # {
+    #   'access_token': 'avmhluhonsouhcwwailydwvhankspptgidoggcbu',
+    #   'id_token': 'ab.cd.xy',
+    #   'expires_in': 3600,
+    #   'scope': '',
+    #   'token_type': 'bearer',
+    #   'user': {
+    #     'avatar_url': None,
+    #     'client': 'test client',
+    #     'email': 'x@y.z',
+    #     'email_verified': True,
+    #     'id': 1,
+    #     'name': 'AB CD'
+    #   }
+    # }
+    assert r.status_code == 200
+    assert r.json["access_token"]
+    assert r.json["expires_in"] == 3600
+    assert not r.json["scope"]
+    assert r.json["token_type"] == "Bearer"
+
+    assert r.json["user"] == {
+        "avatar_url": None,
+        "client": "test client",
+        "email": "x@y.z",
+        "email_verified": True,
+        "id": 1,
+        "name": "AB CD",
+        "sub": "1",
+    }
+
+    # id_token must be returned
+    assert r.json["id_token"]
+
+    # id_token must be a valid, correctly signed JWT
+    assert verify_id_token(r.json["id_token"])
