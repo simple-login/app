@@ -26,7 +26,20 @@ def get_scopes(request: flask.Request) -> Set[Scope]:
 def get_response_types(request: flask.Request) -> Set[ResponseType]:
     response_type_strs = _split_arg(request.args.getlist("response_type"))
 
-    return set([ResponseType(r) for r in response_type_strs])
+    return set([ResponseType(r) for r in response_type_strs if r])
+
+
+def get_response_types_from_str(response_type_str) -> Set[ResponseType]:
+    response_type_strs = _split_arg(response_type_str)
+
+    return set([ResponseType(r) for r in response_type_strs if r])
+
+
+def response_types_to_str(response_types: [ResponseType]) -> str:
+    """return a string representing a list of response type, for ex
+    *code*, *id_token,token*,...
+    """
+    return ",".join([r.value for r in response_types])
 
 
 def _split_arg(arg_input: Union[str, list]) -> Set[str]:
