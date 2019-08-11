@@ -340,6 +340,9 @@ class AuthorizationCode(db.Model, ModelMixin):
     scope = db.Column(db.String(128))
     redirect_uri = db.Column(db.String(1024))
 
+    # what is the input response_type, e.g. "code", "code,id_token", ...
+    response_type = db.Column(db.String(128))
+
     user = db.relationship(User, lazy=False)
     client = db.relationship(Client, lazy=False)
 
@@ -351,6 +354,9 @@ class OauthToken(db.Model, ModelMixin):
 
     scope = db.Column(db.String(128))
     redirect_uri = db.Column(db.String(1024))
+
+    # what is the input response_type, e.g. "token", "token,id_token", ...
+    response_type = db.Column(db.String(128))
 
     user = db.relationship(User)
     client = db.relationship(Client)
