@@ -18,7 +18,14 @@ from app.models import (
     OauthToken,
 )
 from app.oauth.base import oauth_bp
-from app.oauth_models import get_response_types, ResponseType, Scope
+from app.oauth_models import (
+    get_response_types,
+    ResponseType,
+    Scope,
+    SUPPORTED_OPENID_FLOWS,
+    SUPPORTED_OPENID_FLOWS_STR,
+    response_types_to_str,
+)
 from app.utils import random_string, encode_url, convert_to_id
 
 
@@ -35,6 +42,8 @@ def authorize():
     state = request.args.get("state")
     scope = request.args.get("scope")
     redirect_uri = request.args.get("redirect_uri")
+    response_mode = request.args.get("response_mode")
+    nonce = request.args.get("nonce")
 
     try:
         response_types: [ResponseType] = get_response_types(request)
@@ -42,6 +51,12 @@ def authorize():
         return (
             "response_type must be code, token, id_token or certain combination of these."
             " Please see /.well-known/openid-configuration to see what response_type are supported ",
+            400,
+        )
+
+    if set(response_types) not in SUPPORTED_OPENID_FLOWS:
+        return (
+            f"SimpleLogin only support the following OIDC flows: {SUPPORTED_OPENID_FLOWS_STR}",
             400,
         )
 
@@ -191,36 +206,58 @@ def authorize():
         if scope:
             redirect_args["scope"] = scope
 
-        for response_type in response_types:
-            if response_type == ResponseType.CODE:
-                # Create authorization code
-                auth_code = AuthorizationCode.create(
-                    client_id=client.id,
-                    user_id=current_user.id,
-                    code=random_string(),
-                    scope=scope,
-                    redirect_uri=redirect_uri,
-                )
-                db.session.add(auth_code)
-                redirect_args["code"] = auth_code.code
-            elif response_type == ResponseType.TOKEN:
-                # create access-token
-                oauth_token = OauthToken.create(
-                    client_id=client.id,
-                    user_id=current_user.id,
-                    scope=scope,
-                    redirect_uri=redirect_uri,
-                    access_token=generate_access_token(),
-                )
-                db.session.add(oauth_token)
-                redirect_args["access_token"] = oauth_token.access_token
-            elif response_type == ResponseType.ID_TOKEN:
-                redirect_args["id_token"] = make_id_token(client_user)
+        auth_code = None
+        if ResponseType.CODE in response_types:
+            # Create authorization code
+            auth_code = AuthorizationCode.create(
+                client_id=client.id,
+                user_id=current_user.id,
+                code=random_string(),
+                scope=scope,
+                redirect_uri=redirect_uri,
+                response_type=response_types_to_str(response_types),
+            )
+            db.session.add(auth_code)
+            redirect_args["code"] = auth_code.code
+
+        oauth_token = None
+        if ResponseType.TOKEN in response_types:
+            # create access-token
+            oauth_token = OauthToken.create(
+                client_id=client.id,
+                user_id=current_user.id,
+                scope=scope,
+                redirect_uri=redirect_uri,
+                access_token=generate_access_token(),
+                response_type=response_types_to_str(response_types),
+            )
+            db.session.add(oauth_token)
+            redirect_args["access_token"] = oauth_token.access_token
+
+        if ResponseType.ID_TOKEN in response_types:
+            redirect_args["id_token"] = make_id_token(
+                client_user,
+                nonce,
+                oauth_token.access_token if oauth_token else None,
+                auth_code.code if auth_code else None,
+            )
 
         db.session.commit()
 
+        # should all params appended the url using fragment (#) or query
+        fragment = False
+
+        if response_mode and response_mode == "fragment":
+            fragment = True
+
+        # if response_types contain "token" => implicit flow => should use fragment
+        # except if client sets explicitly response_mode
+        if not response_mode:
+            if ResponseType.TOKEN in response_types:
+                fragment = True
+
         # construct redirect_uri with redirect_args
-        return redirect(construct_url(redirect_uri, redirect_args))
+        return redirect(construct_url(redirect_uri, redirect_args, fragment))
 
 
 def create_or_choose_gen_email(user) -> GenEmail:
@@ -238,13 +275,16 @@ def create_or_choose_gen_email(user) -> GenEmail:
     return gen_email
 
 
-def construct_url(url, args: Dict[str, str]):
+def construct_url(url, args: Dict[str, str], fragment: bool = False):
     for i, (k, v) in enumerate(args.items()):
         # make sure to escape v
         v = encode_url(v)
 
         if i == 0:
-            url += f"?{k}={v}"
+            if fragment:
+                url += f"#{k}={v}"
+            else:
+                url += f"?{k}={v}"
         else:
             url += f"&{k}={v}"
 

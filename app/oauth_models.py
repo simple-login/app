@@ -17,6 +17,20 @@ class ResponseType(enum.Enum):
     ID_TOKEN = "id_token"
 
 
+# All the OIDC flows supported by SimpleLogin
+# CF https://medium.com/@darutk/diagrams-of-all-the-openid-connect-flows-6968e3990660
+SUPPORTED_OPENID_FLOWS = [
+    {ResponseType.CODE},
+    {ResponseType.TOKEN},
+    {ResponseType.ID_TOKEN},
+    {ResponseType.ID_TOKEN, ResponseType.TOKEN},
+    {ResponseType.ID_TOKEN, ResponseType.CODE},
+]
+
+# String form of SUPPORTED_OPENID_FLOWS
+SUPPORTED_OPENID_FLOWS_STR = "code|token|id_token|id_token,token|id_token,code"
+
+
 def get_scopes(request: flask.Request) -> Set[Scope]:
     scope_strs = _split_arg(request.args.getlist("scope"))
 

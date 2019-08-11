@@ -7,7 +7,7 @@ from app.log import LOG
 from app.models import Client, AuthorizationCode, OauthToken, ClientUser
 from app.oauth.base import oauth_bp
 from app.oauth.views.authorize import generate_access_token
-from app.oauth_models import Scope
+from app.oauth_models import Scope, get_response_types_from_str, ResponseType
 
 
 @oauth_bp.route("/token", methods=["POST"])
@@ -62,6 +62,7 @@ def token():
         scope=auth_code.scope,
         redirect_uri=auth_code.redirect_uri,
         access_token=generate_access_token(),
+        response_type=auth_code.response_type,
     )
     db.session.add(oauth_token)
 
@@ -85,6 +86,12 @@ def token():
     }
 
     if oauth_token.scope and Scope.OPENID.value in oauth_token.scope:
+        res["id_token"] = make_id_token(client_user)
+
+    # Also return id_token if the initial flow is "code,id_token"
+    # cf https://medium.com/@darutk/diagrams-of-all-the-openid-connect-flows-6968e3990660
+    response_types = get_response_types_from_str(auth_code.response_type)
+    if ResponseType.ID_TOKEN in response_types:
         res["id_token"] = make_id_token(client_user)
 
     return jsonify(res)
