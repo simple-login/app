@@ -23,8 +23,7 @@
               <th class="text-center w-1"><i class="icon-people"></i></th>
               <th>Name</th>
               <th>OAuth2 Client ID</th>
-              <th>Scopes</th>
-              <th>Number Users</th>
+              <th>#Users</th>
               <th>Edit</th>
               <!--<th>Publish</th>-->
               <th>Delete</th>
@@ -54,17 +53,6 @@
 
                 <td>
                   {{ client.oauth_client_id }}
-                </td>
-
-                <td class="align-middle">
-                  <ul class="list-unstyled mb-0">
-                    {% for scope in client.get_scopes() %}
-                      <li>
-                        <i class="fe fe-check"></i>
-                        {{ scope.value }}
-                      </li>
-                    {% endfor %}
-                  </ul>
                 </td>
 
                 <td>
