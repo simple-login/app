@@ -49,8 +49,6 @@ DB_URI = os.environ["DB_URI"]
 
 # Flask secret
 FLASK_SECRET = os.environ["FLASK_SECRET"]
-# invalidate the session at each new version by changing the secret
-FLASK_SECRET = FLASK_SECRET + SHA1
 
 # AWS
 AWS_REGION = "eu-west-3"
