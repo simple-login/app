@@ -326,6 +326,16 @@ class Client(db.Model, ModelMixin):
         else:
             return URL + "/static/default-icon.svg"
 
+    def last_user_login(self) -> "ClientUser":
+        client_user = (
+            ClientUser.query.filter(ClientUser.client_id == self.id)
+            .order_by(ClientUser.updated_at)
+            .first()
+        )
+        if client_user:
+            return client_user
+        return None
+
 
 class RedirectUri(db.Model, ModelMixin):
     """Valid redirect uris for a client"""
@@ -430,6 +440,12 @@ class ClientUser(db.Model, ModelMixin):
 
     def get_email(self):
         return self.gen_email.email if self.gen_email_id else self.user.email
+
+    def get_user_name(self):
+        if self.name:
+            return self.name
+        else:
+            return self.user.name
 
     def get_user_info(self) -> dict:
         """return user info according to client scope

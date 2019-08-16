@@ -14,108 +14,45 @@
   </div>
 
   <div class="row row-cards row-deck mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="table-responsive">
-          <table class="table table-hover table-outline table-vcenter text-nowrap card-table">
-            <thead>
-            <tr>
-              <th class="text-center w-1"><i class="icon-people"></i></th>
-              <th>Name</th>
-              <th>OAuth2 Client ID</th>
-              <th>#Users</th>
-              <th>Edit</th>
-              <!--<th>Publish</th>-->
-              <th>Delete</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for client in clients %}
-              <tr>
-                <td class="text-center">
-                  {% if client.icon_id %}
-                    <div class="avatar d-block" style="background-image: url({{ client.icon.get_url() }})">
-                      <span class="avatar-status bg-green"></span>
-                    </div>
-                  {% endif %}
-                </td>
+    {% for client in clients %}
+      <div class="col-md-6 col-xl-4">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title d-flex align-items-center">
+              {% if client.icon_id %}
+                <span class="avatar" style="background-image: url({{ client.icon.get_url() }})"></span>
+              {% endif %}
+              <span class="">
+                {{ client.name }}
+              </span>
+            </div>
 
-                <td>
-                  <div>
-                    <a href="{{ url_for('developer.client_detail', client_id=client.id) }}">
-                      {{ client.name }}
-                    </a>
-                  </div>
-                  <div class="small text-muted">
-                    Created at: {{ client.created_at |dt }}
-                  </div>
-                </td>
+            <div class="card-options">
+              <a href="{{ url_for('developer.client_detail', client_id=client.id) }}"
+                 class="btn btn-primary btn-sm">
+                Edit
+              </a>
+            </div>
+          </div>
 
-                <td>
-                  {{ client.oauth_client_id }}
-                </td>
+          <div class="card-body">
+            App ID: <em>{{ client.oauth_client_id }} </em><br>
+            <span class="h1 m-0">{{ client.nb_user() }}</span> Users <br>
+            Created {{ client.created_at |dt }} <br>
+            {% if client.last_user_login() %}
+              Last User Login: {{ client.last_user_login().get_user_name() }}
+            {% endif %}
+          </div>
 
-                <td>
-                  {{ client.nb_user() }}
-                </td>
-
-                <td>
-                  <a href="{{ url_for('developer.client_detail', client_id=client.id) }}" class="icon">
-                    <i class="fe fe-edit"></i>
-                  </a>
-                </td>
-
-                <!-- TODO: uncomment when bringing back "Discover" feature
-                <td>
-                  <form method="post">
-                    <input type="hidden" name="form-name" value="switch-client-publish">
-                    <input type="hidden" name="client-id" value="{{ client.id }}">
-
-                    <label class="custom-switch">
-                      <input type="checkbox" class="custom-switch-input"
-                          {{ "checked" if client.published else "" }}>
-                      <span class="custom-switch-indicator"></span>
-                    </label>
-                  </form>
-                </td>
-                -->
-
-
-                <td>
-                  <form method="post">
-                    <input type="hidden" name="form-name" value="delete-client">
-                    <input type="hidden" name="client-id" value="{{ client.id }}">
-                    <span class="icon delete-client">
-                      <i class="fe fe-trash"></i>
-                    </span>
-                  </form>
-                </td>
-              </tr>
-            {% endfor %}
-
-            </tbody>
-          </table>
         </div>
       </div>
-    </div>
+    {% endfor %}
   </div>
 
 {% endblock %}
 
 {% block script %}
   <script>
-    $(".delete-client").on("click", function (e) {
-      notie.confirm({
-        text: "This operation is not reversible, please confirm",
-        cancelCallback: () => {
-          // nothing to do
-        },
-        submitCallback: () => {
-          $(this).closest("form").submit();
-        }
-      });
-    });
-
     $(".custom-switch-input").change(function (e) {
       // Only ask for confirmation when publishing, not when un-publishing
       if (e.target.checked) {

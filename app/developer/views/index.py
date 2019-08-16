@@ -11,22 +11,8 @@ from app.models import Client
 @developer_bp.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    # delete client
     if request.method == "POST":
-        if request.form.get("form-name") == "delete-client":
-            client_id = int(request.form.get("client-id"))
-            client = Client.get(client_id)
-
-            if client.user_id != current_user.id:
-                flash("You cannot remove this client", "warning")
-            else:
-                client_name = client.name
-                Client.delete(client.id)
-                db.session.commit()
-                LOG.d("Remove client %s", client)
-                flash(f"Client {client_name} has been deleted successfully", "success")
-
-        elif request.form.get("form-name") == "switch-client-publish":
+        if request.form.get("form-name") == "switch-client-publish":
             client_id = int(request.form.get("client-id"))
             client = Client.get(client_id)
 
