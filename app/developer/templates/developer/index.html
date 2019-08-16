@@ -23,7 +23,9 @@
                 <span class="avatar" style="background-image: url({{ client.icon.get_url() }})"></span>
               {% endif %}
               <span class="">
-                {{ client.name }}
+                <a href="{{ url_for('developer.client_detail', client_id=client.id) }}">
+                  {{ client.name }}
+                </a>
               </span>
             </div>
 
