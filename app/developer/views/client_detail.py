@@ -20,6 +20,7 @@ class EditClientForm(FlaskForm):
     home_url = StringField("Home Url")
 
 
+# basic info
 @developer_bp.route("/clients/<client_id>", methods=["GET", "POST"])
 @login_required
 def client_detail(client_id):
@@ -31,7 +32,7 @@ def client_detail(client_id):
         return redirect(url_for("developer.index"))
 
     if client.user_id != current_user.id:
-        flash("you cannot see this client", "warning")
+        flash("you cannot see this app", "warning")
         return redirect(url_for("developer.index"))
 
     if form.validate_on_submit():
@@ -46,12 +47,41 @@ def client_detail(client_id):
 
             s3.upload_from_bytesio(file_path, BytesIO(form.icon.data.read()))
 
-            db.session.commit()
+            db.session.flush()
             LOG.d("upload file %s to s3", file)
 
             client.icon_id = file.id
-            db.session.commit()
+            db.session.flush()
 
+        db.session.commit()
+
+        flash(f"{client.name} has been updated", "success")
+
+        return redirect(url_for("developer.client_detail", client_id=client.id))
+
+    return render_template(
+        "developer/client_details/basic_info.html", form=form, client=client
+    )
+
+
+class OAuthSettingForm(FlaskForm):
+    pass
+
+
+@developer_bp.route("/clients/<client_id>/oauth_setting", methods=["GET", "POST"])
+@login_required
+def client_detail_oauth_setting(client_id):
+    form = OAuthSettingForm()
+    client = Client.get(client_id)
+    if not client:
+        flash("no such app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if client.user_id != current_user.id:
+        flash("you cannot see this app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if form.validate_on_submit():
         uris = request.form.getlist("uri")
 
         # replace all uris. TODO: optimize this?
@@ -63,8 +93,29 @@ def client_detail(client_id):
 
         db.session.commit()
 
-        flash(f"client {client.name} has been updated", "success")
+        flash(f"{client.name} has been updated", "success")
 
-        return redirect(url_for("developer.client_detail", client_id=client.id))
+        return redirect(
+            url_for("developer.client_detail_oauth_setting", client_id=client.id)
+        )
 
-    return render_template("developer/client_detail.html", form=form, client=client)
+    return render_template(
+        "developer/client_details/oauth_setting.html", form=form, client=client
+    )
+
+
+@developer_bp.route("/clients/<client_id>/oauth_endpoint", methods=["GET", "POST"])
+@login_required
+def client_detail_oauth_endpoint(client_id):
+    client = Client.get(client_id)
+    if not client:
+        flash("no such app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if client.user_id != current_user.id:
+        flash("you cannot see this app", "warning")
+        return redirect(url_for("developer.index"))
+
+    return render_template(
+        "developer/client_details/oauth_endpoint.html", client=client
+    )

@@ -1,0 +1,34 @@
+{% extends 'developer/client_details/base.html' %}
+
+{% set client_details_page = "basic_info" %}
+
+{% block client_details_content %}
+  <form method="post" enctype="multipart/form-data">
+    {{ form.csrf_token }}
+
+    <h3>App Info</h3>
+    <div class="form-group">
+      <label class="form-label">Display Name</label>
+      {{ form.name(class="form-control", value=client.name) }}
+      {{ render_field_errors(form.name) }}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Website URL</label>
+      {{ form.home_url(class="form-control", type="url", value=client.home_url or "",
+              placeholder="https://mywebsite.com") }}
+      {{ render_field_errors(form.home_url) }}
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">App Icon</div>
+      {{ form.icon(class="form-control-file") }}
+      {{ render_field_errors(form.icon) }}
+
+      {% if client.icon_id %}
+        <img src="{{ client.icon.get_url() }}" class="client-icon">
+      {% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg">Update</button>
+  </form>
+{% endblock %}
