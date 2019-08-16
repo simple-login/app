@@ -1,0 +1,11 @@
+{% extends 'developer/client_details/base.html' %}
+
+{% set client_details_page = "advanced" %}
+
+{% block client_details_content %}
+  <form method="post">
+    {{ form.csrf_token }}
+    <h3>Please note that this operation is not reversible!</h3>
+    <button type="submit" class="btn btn-danger">Delete App</button>
+  </form>
+{% endblock %}

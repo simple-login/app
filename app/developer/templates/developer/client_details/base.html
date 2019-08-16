@@ -29,6 +29,11 @@
           <span class="icon mr-3"><i class="fe fe-shield"></i></span>OAuth Endpoints
         </a>
 
+        <a href="{{ url_for('developer.client_detail_advanced', client_id=client.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'advanced' }}">
+          <span class="icon mr-3"><i class="fe fe-alert-octagon"></i></span>Advanced Setting
+        </a>
+
       </div>
     </div>
     <div class="col-lg-9">

@@ -119,3 +119,35 @@ def client_detail_oauth_endpoint(client_id):
     return render_template(
         "developer/client_details/oauth_endpoint.html", client=client
     )
+
+
+class AdvancedForm(FlaskForm):
+    pass
+
+
+@developer_bp.route("/clients/<client_id>/advanced", methods=["GET", "POST"])
+@login_required
+def client_detail_advanced(client_id):
+    form = AdvancedForm()
+    client = Client.get(client_id)
+    if not client:
+        flash("no such app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if client.user_id != current_user.id:
+        flash("you cannot see this app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if form.validate_on_submit():
+        # delete client
+        client_name = client.name
+        Client.delete(client.id)
+        db.session.commit()
+        LOG.d("Remove client %s", client)
+        flash(f"{client_name} has been deleted successfully", "success")
+
+        return redirect(url_for("developer.index"))
+
+    return render_template(
+        "developer/client_details/advanced.html", form=form, client=client
+    )
