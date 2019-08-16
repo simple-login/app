@@ -104,18 +104,6 @@
 
 {% block script %}
   <script>
-    var clipboard = new ClipboardJS('.btn');
-
-    clipboard.on('success', function (e) {
-      notie.alert({
-        type: "success",
-        text: "Copied to clipboard",
-        time: 1,
-      });
-
-      e.clearSelection();
-    });
-
     $(".delete-client").on("click", function (e) {
       notie.confirm({
         text: "This operation is not reversible, please confirm",

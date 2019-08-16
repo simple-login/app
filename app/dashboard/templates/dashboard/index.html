@@ -215,15 +215,6 @@
       localStorage.setItem("introShown", "yes")
     }
 
-    clipboard.on('success', function (e) {
-      notie.alert({
-        type: "success",
-        text: "Copied to clipboard",
-        time: 1,
-      });
-
-      e.clearSelection();
-    });
 
     $(".delete-email").on("click", function (e) {
       notie.confirm({

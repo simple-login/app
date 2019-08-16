@@ -112,7 +112,6 @@
           </button>
         </span>
         </div>
-
       </div>
 
       <div class="form-group">
@@ -177,16 +176,5 @@
       currentElement.parent().parent().remove();
     });
 
-    var clipboard = new ClipboardJS('.clipboard');
-
-    clipboard.on('success', function (e) {
-      notie.alert({
-        type: "success",
-        text: "Copied to clipboard",
-        time: 2,
-      });
-
-      e.clearSelection();
-    });
   </script>
 {% endblock %}

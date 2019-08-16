@@ -105,6 +105,18 @@
     overlayClickDismiss: false,
   });
 
+  var clipboard = new ClipboardJS('.clipboard');
+
+  clipboard.on('success', function (e) {
+    notie.alert({
+      type: "success",
+      text: "Copied to clipboard",
+      time: 2,
+    });
+
+    e.clearSelection();
+  });
+
 </script>
 
 <!-- For additional script -->

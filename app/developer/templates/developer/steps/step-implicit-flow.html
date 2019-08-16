@@ -85,19 +85,3 @@
 
 
 {% endblock %}
-
-{% block script %}
-  <script>
-    var clipboard = new ClipboardJS('.clipboard');
-
-    clipboard.on('success', function (e) {
-      notie.alert({
-        type: "success",
-        text: "Copied to clipboard",
-        time: 1,
-      });
-
-      e.clearSelection();
-    });
-  </script>
-{% endblock %}
