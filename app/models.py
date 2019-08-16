@@ -230,6 +230,10 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return self.name, [other_name, "Anonymous", "whoami"]
 
+    def get_name_initial(self) -> str:
+        names = self.name.split(" ")
+        return "".join([n[0].upper() for n in names if n])
+
 
 class ActivationCode(db.Model, ModelMixin):
     """For activate user account"""

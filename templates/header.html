@@ -23,7 +23,12 @@
         </div>
         <div class="dropdown">
           <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
-            <span class="avatar" style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
+            {% if current_user.profile_picture_id %}
+              <span class="avatar" style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
+            {% else %}
+              <span class="avatar avatar-blue">{{ current_user.get_name_initial() }}</span>
+            {% endif %}
+
             <span class="ml-2 d-none d-lg-block">
 							<span class="text-default">{{ current_user.name }}</span>
 							<small class="text-muted d-block mt-1">{{ current_user.email }}</small>

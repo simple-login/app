@@ -24,8 +24,9 @@
         <div class="form-label">Profile picture</div>
         {{ form.profile_picture(class="form-control-file") }}
         {{ render_field_errors(form.profile_picture) }}
-
-        <img src="{{ current_user.profile_picture_url() }}" class="profile-picture">
+        {% if current_user.profile_picture_id %}
+          <img src="{{ current_user.profile_picture_url() }}" class="profile-picture">
+        {% endif %}
       </div>
 
       <button class="btn btn-primary">Update</button>
