@@ -18,16 +18,15 @@ class NewClientForm(FlaskForm):
 def new_client():
     form = NewClientForm()
 
-    if request.method == "POST":
-        if form.validate():
-            client = Client.create_new(form.name.data, current_user.id)
-            db.session.commit()
+    if form.validate_on_submit():
+        client = Client.create_new(form.name.data, current_user.id)
+        db.session.commit()
 
-            notify_admin(f"user {current_user} created new app {client.name}")
-            flash("Your app has been created", "success")
+        notify_admin(f"user {current_user} created new app {client.name}")
+        flash("Your app has been created", "success")
 
-            return redirect(
-                url_for("developer.handle_step", client_id=client.id, step="step-0")
-            )
+        return redirect(
+            url_for("developer.handle_step", client_id=client.id, step="step-0")
+        )
 
     return render_template("developer/new_client.html", form=form)

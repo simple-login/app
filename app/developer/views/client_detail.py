@@ -34,38 +34,37 @@ def client_detail(client_id):
         flash("you cannot see this client", "warning")
         return redirect(url_for("developer.index"))
 
-    if request.method == "POST":
-        if form.validate():
-            client.name = form.name.data
-            client.home_url = form.home_url.data
+    if form.validate_on_submit():
+        client.name = form.name.data
+        client.home_url = form.home_url.data
 
-            if form.icon.data:
-                # todo: remove current icon if any
-                # todo: handle remove icon
-                file_path = random_string(30)
-                file = File.create(path=file_path)
+        if form.icon.data:
+            # todo: remove current icon if any
+            # todo: handle remove icon
+            file_path = random_string(30)
+            file = File.create(path=file_path)
 
-                s3.upload_from_bytesio(file_path, BytesIO(form.icon.data.read()))
-
-                db.session.commit()
-                LOG.d("upload file %s to s3", file)
-
-                client.icon_id = file.id
-                db.session.commit()
-
-            uris = request.form.getlist("uri")
-
-            # replace all uris. TODO: optimize this?
-            for redirect_uri in client.redirect_uris:
-                RedirectUri.delete(redirect_uri.id)
-
-            for uri in uris:
-                RedirectUri.create(client_id=client_id, uri=uri)
+            s3.upload_from_bytesio(file_path, BytesIO(form.icon.data.read()))
 
             db.session.commit()
+            LOG.d("upload file %s to s3", file)
 
-            flash(f"client {client.name} has been updated", "success")
+            client.icon_id = file.id
+            db.session.commit()
 
-            return redirect(url_for("developer.client_detail", client_id=client.id))
+        uris = request.form.getlist("uri")
+
+        # replace all uris. TODO: optimize this?
+        for redirect_uri in client.redirect_uris:
+            RedirectUri.delete(redirect_uri.id)
+
+        for uri in uris:
+            RedirectUri.create(client_id=client_id, uri=uri)
+
+        db.session.commit()
+
+        flash(f"client {client.name} has been updated", "success")
+
+        return redirect(url_for("developer.client_detail", client_id=client.id))
 
     return render_template("developer/client_detail.html", form=form, client=client)
