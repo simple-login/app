@@ -47,6 +47,11 @@ def token():
     auth_code: AuthorizationCode = AuthorizationCode.filter_by(code=code).first()
     if not auth_code:
         return jsonify(error=f"no such authorization code {code}"), 400
+    elif auth_code.is_expired():
+        AuthorizationCode.delete(auth_code.id)
+        db.session.commit()
+        LOG.d("delete expired authorization code:%s", auth_code)
+        return jsonify(error=f"{code} already expired"), 400
 
     if auth_code.client_id != client.id:
         return jsonify(error=f"are you sure this code belongs to you?"), 400
