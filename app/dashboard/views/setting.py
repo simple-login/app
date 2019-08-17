@@ -146,7 +146,7 @@ def send_reset_password_email(user):
     """
     # the activation code is valid for 1h
     reset_password_code = ResetPasswordCode.create(
-        user_id=user.id, code=random_string(60), expired=arrow.now().shift(hours=1)
+        user_id=user.id, code=random_string(60)
     )
     db.session.commit()
 

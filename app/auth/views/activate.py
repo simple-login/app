@@ -1,4 +1,3 @@
-import arrow
 from flask import request, redirect, url_for, flash, render_template
 from flask_login import login_user, current_user
 
@@ -26,7 +25,7 @@ def activate():
             400,
         )
 
-    if activation_code.expired and activation_code.expired < arrow.now():
+    if activation_code.is_expired():
         return (
             render_template(
                 "auth/activate.html",

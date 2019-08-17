@@ -32,7 +32,7 @@ def reset_password():
         )
         return render_template("auth/reset_password.html", form=form, error=error)
 
-    if reset_password_code.expired < arrow.now():
+    if reset_password_code.is_expired():
         error = (
             "The link is already expired. Please make a new request to reset password"
         )

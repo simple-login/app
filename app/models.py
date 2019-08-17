@@ -251,7 +251,10 @@ class ActivationCode(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
-    expired = db.Column(ArrowType, default=_expiration_1h)
+    expired = db.Column(ArrowType, nullable=False, default=_expiration_1h)
+
+    def is_expired(self):
+        return self.expired < arrow.now()
 
 
 class ResetPasswordCode(db.Model, ModelMixin):
@@ -263,6 +266,9 @@ class ResetPasswordCode(db.Model, ModelMixin):
     user = db.relationship(User)
 
     expired = db.Column(ArrowType, nullable=False, default=_expiration_1h)
+
+    def is_expired(self):
+        return self.expired < arrow.now()
 
 
 class Partner(db.Model, ModelMixin):
