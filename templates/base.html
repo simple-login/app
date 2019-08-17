@@ -104,7 +104,11 @@
 <script>
   {% if ENABLE_SENTRY %}
     console.log("Init sentry");
-    Sentry.init({dsn: 'https://ad2187ed843340a1b4165bd8d5d6cdce@sentry.io/1478143'});
+    try {
+      Sentry.init({dsn: 'https://ad2187ed843340a1b4165bd8d5d6cdce@sentry.io/1478143'});
+    } catch (error) {
+      console.log("Sentry error, probably due to AdBlocker ...")
+    }
   {% endif %}
 
   // the modal does not get close when user clicks outside of modal
