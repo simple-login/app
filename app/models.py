@@ -235,6 +235,14 @@ class User(db.Model, ModelMixin, UserMixin):
         return "".join([n[0].upper() for n in names if n])
 
 
+def _expiration_1h():
+    return arrow.now().shift(hours=1)
+
+
+def _expiration_5m():
+    return arrow.now().shift(minutes=5)
+
+
 class ActivationCode(db.Model, ModelMixin):
     """For activate user account"""
 
@@ -243,7 +251,7 @@ class ActivationCode(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
-    expired = db.Column(ArrowType)
+    expired = db.Column(ArrowType, default=_expiration_1h)
 
 
 class ResetPasswordCode(db.Model, ModelMixin):
@@ -254,7 +262,7 @@ class ResetPasswordCode(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
-    expired = db.Column(ArrowType, nullable=False)
+    expired = db.Column(ArrowType, nullable=False, default=_expiration_1h)
 
 
 class Partner(db.Model, ModelMixin):
@@ -360,6 +368,11 @@ class AuthorizationCode(db.Model, ModelMixin):
     user = db.relationship(User, lazy=False)
     client = db.relationship(Client, lazy=False)
 
+    expired = db.Column(ArrowType, nullable=False, default=_expiration_5m)
+
+    def is_expired(self):
+        return self.expired < arrow.now()
+
 
 class OauthToken(db.Model, ModelMixin):
     access_token = db.Column(db.String(128), unique=True)
@@ -374,6 +387,11 @@ class OauthToken(db.Model, ModelMixin):
 
     user = db.relationship(User)
     client = db.relationship(Client)
+
+    expired = db.Column(ArrowType, nullable=False, default=_expiration_1h)
+
+    def is_expired(self):
+        return self.expired < arrow.now()
 
 
 def generate_email() -> str:
