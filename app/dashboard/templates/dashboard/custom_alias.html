@@ -19,13 +19,13 @@
       <div class="form-group">
         <label class="form-label">Custom Alias</label>
         <small class="text-muted">
-          Email must use alphanumeric characters and must be at least 3 characters
+          You can use letter, number or dash. Alias must have at least 3 characters
         </small>
         <div class="row mt-4">
           <div class="col">
             {{ form.email(class="form-control",
-                pattern="[0-9|A-Z|a-z]{3,}",
-                title="Email must use alphanumeric characters and must be at least 3 characters.") }}
+                pattern="[0-9|A-Z|a-z|-]{3,}",
+                title="Only letter, number or dash can be used and alias must have at least 3 characters.") }}
             {{ render_field_errors(form.email) }}
           </div>
           <div class="col align-self-center">
