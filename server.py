@@ -19,10 +19,8 @@ from app.config import (
     ENABLE_SENTRY,
     URL,
     SHA1,
-    LYRA_ANALYTICS_ID,
     STRIPE_SECRET_KEY,
-    RESET_DB,
-)
+    RESET_DB)
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
 from app.discover.base import discover_bp
@@ -103,6 +101,14 @@ def fake_data():
     client1.oauth_client_id = "client-id"
     client1.oauth_client_secret = "client-secret"
     client1.published = True
+    db.session.commit()
+
+    RedirectUri.create(client_id=client1.id, uri="https://ab.com")
+
+    client2 = Client.create_new(name="Demo 2", user_id=user.id)
+    client2.oauth_client_id = "client-id2"
+    client2.oauth_client_secret = "client-secret2"
+    client2.published = True
     db.session.commit()
 
     db.session.commit()
@@ -230,8 +236,7 @@ def jinja2_filter(app):
             YEAR=arrow.now().year,
             URL=URL,
             ENABLE_SENTRY=ENABLE_SENTRY,
-            VERSION=SHA1,
-            LYRA_ANALYTICS_ID=LYRA_ANALYTICS_ID,
+            VERSION=SHA1
         )
 
 

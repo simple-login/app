@@ -59,11 +59,19 @@
 
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
 
-  {% if LYRA_ANALYTICS_ID %}
-    <script>var lyra = window.lyra || [];
-    lyra.push(['lyra_Id', '{{ LYRA_ANALYTICS_ID }}']);</script>
-    <script async src='https://thelyra.pro/a/analytics.js'></script>
-  {% endif %}
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-145852331-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'UA-145852331-2');
+  </script>
 
   <!-- For additional head -->
   {% block head %}

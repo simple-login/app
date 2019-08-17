@@ -66,9 +66,6 @@ STRIPE_SECRET_KEY = os.environ["STRIPE_SECRET_KEY"]
 STRIPE_YEARLY_PLAN = os.environ["STRIPE_YEARLY_PLAN"]
 STRIPE_MONTHLY_PLAN = os.environ["STRIPE_MONTHLY_PLAN"]
 
-# Analytics
-LYRA_ANALYTICS_ID = os.environ["LYRA_ANALYTICS_ID"]
-
 # OpenID keys, used to sign id_token
 OPENID_PRIVATE_KEY_PATH = get_abs_path(os.environ["OPENID_PRIVATE_KEY_PATH"])
 OPENID_PUBLIC_KEY_PATH = get_abs_path(os.environ["OPENID_PUBLIC_KEY_PATH"])
