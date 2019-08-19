@@ -82,7 +82,6 @@ class File(db.Model, ModelMixin):
 class PlanEnum(enum.Enum):
     free = 0
     trial = 1
-    monthly = 2
     yearly = 3
 
 
@@ -149,7 +148,7 @@ class User(db.Model, ModelMixin, UserMixin):
         return False
 
     def is_premium(self):
-        return self.plan in (PlanEnum.monthly, PlanEnum.yearly)
+        return self.plan == PlanEnum.yearly
 
     def can_create_custom_email(self):
         if self.is_premium():

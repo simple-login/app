@@ -3,7 +3,7 @@ from flask import render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from stripe.error import CardError
 
-from app.config import STRIPE_API, STRIPE_MONTHLY_PLAN, STRIPE_YEARLY_PLAN
+from app.config import STRIPE_API, STRIPE_YEARLY_PLAN
 from app.dashboard.base import dashboard_bp
 from app.email_utils import notify_admin
 from app.extensions import db
@@ -31,10 +31,8 @@ def pricing():
         raise Exception("user email is already used on stripe!")
 
     if request.method == "POST":
-        plan_str = request.form.get("plan")  # either monthly or yearly
-        if plan_str == "monthly":
-            plan = PlanEnum.monthly
-        elif plan_str == "yearly":
+        plan_str = request.form.get("plan")  # yearly
+        if plan_str == "yearly":
             plan = PlanEnum.yearly
         else:
             raise Exception("Plan must be either yearly or monthly")
@@ -60,9 +58,7 @@ def pricing():
             LOG.d("stripe customer %s", customer)
             current_user.stripe_customer_id = customer.id
 
-            stripe_plan = (
-                STRIPE_MONTHLY_PLAN if plan == PlanEnum.monthly else STRIPE_YEARLY_PLAN
-            )
+            stripe_plan = STRIPE_YEARLY_PLAN
             subscription = stripe.Subscription.create(
                 customer=current_user.stripe_customer_id,
                 items=[{"plan": stripe_plan}],

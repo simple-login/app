@@ -64,7 +64,6 @@ CLOUDWATCH_LOG_STREAM = os.environ["CLOUDWATCH_LOG_STREAM"]
 STRIPE_API = os.environ["STRIPE_API"]  # Stripe public key
 STRIPE_SECRET_KEY = os.environ["STRIPE_SECRET_KEY"]
 STRIPE_YEARLY_PLAN = os.environ["STRIPE_YEARLY_PLAN"]
-STRIPE_MONTHLY_PLAN = os.environ["STRIPE_MONTHLY_PLAN"]
 
 # OpenID keys, used to sign id_token
 OPENID_PRIVATE_KEY_PATH = get_abs_path(os.environ["OPENID_PRIVATE_KEY_PATH"])
