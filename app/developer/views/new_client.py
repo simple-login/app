@@ -1,4 +1,4 @@
-from flask import request, render_template, redirect, url_for, flash
+from flask import render_template, redirect, url_for, flash
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -26,7 +26,7 @@ def new_client():
         flash("Your app has been created", "success")
 
         return redirect(
-            url_for("developer.handle_step", client_id=client.id, step="step-0")
+            url_for("developer.client_detail", client_id=client.id, is_new=1)
         )
 
     return render_template("developer/new_client.html", form=form)

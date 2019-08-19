@@ -26,6 +26,8 @@ class EditClientForm(FlaskForm):
 def client_detail(client_id):
     form = EditClientForm()
 
+    is_new = "is_new" in request.args
+
     client = Client.get(client_id)
     if not client:
         flash("no such client", "warning")
@@ -60,7 +62,10 @@ def client_detail(client_id):
         return redirect(url_for("developer.client_detail", client_id=client.id))
 
     return render_template(
-        "developer/client_details/basic_info.html", form=form, client=client
+        "developer/client_details/basic_info.html",
+        form=form,
+        client=client,
+        is_new=is_new,
     )
 
 
