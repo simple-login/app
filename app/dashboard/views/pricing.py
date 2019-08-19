@@ -31,11 +31,7 @@ def pricing():
         raise Exception("user email is already used on stripe!")
 
     if request.method == "POST":
-        plan_str = request.form.get("plan")  # yearly
-        if plan_str == "yearly":
-            plan = PlanEnum.yearly
-        else:
-            raise Exception("Plan must be either yearly or monthly")
+        plan = PlanEnum.yearly
 
         stripe_token = request.form.get("stripeToken")
         LOG.d("stripe card token %s for plan %s", stripe_token, plan)
