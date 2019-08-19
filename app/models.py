@@ -141,9 +141,7 @@ class User(db.Model, ModelMixin, UserMixin):
         """User is invited to upgrade if they are in free plan or their trial ends soon"""
         if self.plan == PlanEnum.free:
             return True
-        elif self.plan == PlanEnum.trial and self.plan_expiration < arrow.now().shift(
-            weeks=1
-        ):
+        elif self.plan == PlanEnum.trial:
             return True
         return False
 
