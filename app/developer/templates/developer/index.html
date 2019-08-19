@@ -7,6 +7,17 @@
 {% endblock %}
 
 {% block default_content %}
+  {% if not clients %}
+    <div class="alert alert-primary" role="alert">
+      <strong>If you have a website or a mobile application and want to add SimpleLogin to it, this page is for
+        you!</strong>
+      <p>Have a look at our extensive doc to have an idea 👉
+        <a href="https://docs.simplelogin.io" target="_blank">Docs</a>
+      </p>
+      <p>Create your first SimpleLogin App here 👇</p>
+    </div>
+  {% endif %}
+
   <div class="row">
     <div class="col-4">
       <a href="{{ url_for('developer.new_client') }}" class="btn btn-success">Create new app</a>
