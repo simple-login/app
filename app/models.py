@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy_utils import ArrowType
 
 from app import s3
-from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, URL
+from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, URL, AVATAR_URL_EXPIRATION
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
@@ -75,8 +75,8 @@ class ModelMixin(object):
 class File(db.Model, ModelMixin):
     path = db.Column(db.String(128), unique=True, nullable=False)
 
-    def get_url(self):
-        return s3.get_url(self.path)
+    def get_url(self, expires_in=3600):
+        return s3.get_url(self.path, expires_in)
 
 
 class PlanEnum(enum.Enum):
@@ -500,9 +500,9 @@ class ClientUser(db.Model, ModelMixin):
                     if self.default_avatar:
                         res[Scope.AVATAR_URL.value] = URL + "/static/default-avatar.png"
                     else:
-                        res[
-                            Scope.AVATAR_URL.value
-                        ] = self.user.profile_picture.get_url()
+                        res[Scope.AVATAR_URL.value] = self.user.profile_picture.get_url(
+                            AVATAR_URL_EXPIRATION
+                        )
                 else:
                     res[Scope.AVATAR_URL.value] = None
             elif scope == Scope.EMAIL:

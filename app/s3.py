@@ -3,7 +3,13 @@ from io import BytesIO
 import boto3
 import requests
 
-from app.config import AWS_REGION, BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+from app.config import (
+    AWS_REGION,
+    BUCKET,
+    AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY,
+    AVATAR_URL_EXPIRATION,
+)
 
 session = boto3.Session(
     aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -29,11 +35,12 @@ def delete_file(key: str) -> None:
     o.delete()
 
 
-def get_url(key: str) -> str:
-    """by default the link will expire in 1h (3600 seconds)"""
+def get_url(key: str, expires_in=3600) -> str:
     s3_client = session.client("s3")
     return s3_client.generate_presigned_url(
-        ClientMethod="get_object", Params={"Bucket": BUCKET, "Key": key}
+        ExpiresIn=expires_in,
+        ClientMethod="get_object",
+        Params={"Bucket": BUCKET, "Key": key},
     )
 
 
