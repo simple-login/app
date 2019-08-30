@@ -1,9 +1,9 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import EMAIL_DOMAIN
+from app.config import EMAIL_DOMAIN, HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -43,10 +43,13 @@ def custom_alias():
             else:
                 # create the new alias
                 LOG.d("create custom alias %s for user %s", full_email, current_user)
-                GenEmail.create(email=full_email, user_id=current_user.id, custom=True)
+                gen_email = GenEmail.create(
+                    email=full_email, user_id=current_user.id, custom=True
+                )
                 db.session.commit()
 
                 flash(f"Email alias {full_email} has been created", "success")
+                session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
 
                 return redirect(url_for("dashboard.index"))
 

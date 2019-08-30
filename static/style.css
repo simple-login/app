@@ -41,3 +41,9 @@
 
     margin-top: 10px;
 }
+
+/* highlighted table row */
+.highlight-row {
+    background-color: #eee;
+    font-weight: bolder;
+}

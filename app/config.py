@@ -86,3 +86,6 @@ FACEBOOK_CLIENT_SECRET = os.environ["FACEBOOK_CLIENT_SECRET"]
 
 # in seconds
 AVATAR_URL_EXPIRATION = 3600 * 24 * 7  # 1h*24h/d*7d=1week
+
+# session key
+HIGHLIGHT_GEN_EMAIL_ID = "highlight_gen_email_id"

@@ -1,8 +1,9 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
+from app.config import HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -12,6 +13,13 @@ from app.models import GenEmail, ClientUser
 @dashboard_bp.route("/", methods=["GET", "POST"])
 @login_required
 def index():
+    # after creating a gen email, it's helpful to highlight it
+    highlight_gen_email_id = session.get(HIGHLIGHT_GEN_EMAIL_ID)
+
+    # reset as it should not persist
+    if highlight_gen_email_id:
+        del session[HIGHLIGHT_GEN_EMAIL_ID]
+
     # User generates a new email
     if request.method == "POST":
         if request.form.get("form-name") == "trigger-email":
@@ -44,6 +52,7 @@ SimpleLogin team.
 
                 LOG.d("generate new email %s for user %s", gen_email, current_user)
                 flash(f"Email {gen_email.email} has been created", "success")
+                session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
             else:
                 flash(f"You need to upgrade your plan to create new email.", "warning")
 
@@ -95,5 +104,8 @@ SimpleLogin team.
     )
 
     return render_template(
-        "dashboard/index.html", client_users=client_users, gen_emails=gen_emails
+        "dashboard/index.html",
+        client_users=client_users,
+        gen_emails=gen_emails,
+        highlight_gen_email_id=highlight_gen_email_id,
     )

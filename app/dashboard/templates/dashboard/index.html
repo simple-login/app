@@ -50,7 +50,7 @@
             </thead>
             <tbody>
             {% for gen_email in gen_emails %}
-              <tr>
+              <tr {% if gen_email.id == highlight_gen_email_id %} class="highlight-row" {% endif %}>
                 <td>
                   <div>
                     <a href="mailto: {{ gen_email.email }}">{{ gen_email.email }}</a>
@@ -77,7 +77,7 @@
                       {% if gen_email.enabled %}
                         <button class="btn btn-secondary btn-sm"
                             {% if loop.index ==1 %}
-                                data-intro="By triggering the test email, 
+                                data-intro="By triggering the test email,
                             SimpleLogin server will send an email to this alias
                             and this email should arrive to your personal email inbox 🚀"
                             {% endif %}
