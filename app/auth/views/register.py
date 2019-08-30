@@ -1,4 +1,3 @@
-import arrow
 from flask import request, flash, render_template, redirect, url_for
 from flask_login import current_user
 from flask_wtf import FlaskForm
@@ -45,8 +44,7 @@ def register():
 
             send_activation_email(user, next_url)
             notify_admin(
-                f"new user signs up {user.email}",
-                f"{user.name} signs up at {arrow.now()}",
+                f"new user {user.name} {user.email} signs up via email/password"
             )
 
             return render_template("auth/register_waiting_activation.html")

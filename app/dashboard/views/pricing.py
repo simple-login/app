@@ -74,8 +74,7 @@ def pricing():
                 db.session.commit()
                 flash("Thanks for your subscription!", "success")
                 notify_admin(
-                    f"user {current_user.email} has finished subscription",
-                    f"plan: {plan}",
+                    f"user {current_user.email} has finished subscription {plan}"
                 )
                 return redirect(url_for("dashboard.index"))
 

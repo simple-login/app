@@ -1,4 +1,4 @@
-import arrow
+from flask import request, session, redirect, url_for, flash
 from flask import request, session, redirect, url_for, flash
 from flask_login import login_user
 from requests_oauthlib import OAuth2Session
@@ -9,7 +9,7 @@ from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
 from app.models import User
-from app.utils import random_string, encode_url
+from app.utils import encode_url
 
 _authorization_base_url = "https://github.com/login/oauth/authorize"
 _token_url = "https://github.com/login/oauth/access_token"
@@ -93,9 +93,7 @@ def github_callback():
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
-        notify_admin(
-            f"new user signs up {user.email}", f"{user.name} signs up at {arrow.now()}"
-        )
+        notify_admin(f"new user {user.name} {user.email} signs up via github")
 
     # The activation link contains the original page, for ex authorize page
     if "next" in request.args:

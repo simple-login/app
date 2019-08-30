@@ -231,6 +231,9 @@ class User(db.Model, ModelMixin, UserMixin):
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
 
+    def __repr__(self):
+        return f"<User {self.id} {self.name} {self.email}>"
+
 
 def _expiration_1h():
     return arrow.now().shift(hours=1)
