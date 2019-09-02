@@ -71,7 +71,7 @@ def authorize():
     # check if redirect_uri is valid
     # allow localhost by default
     hostname, scheme = get_host_name_and_scheme(redirect_uri)
-    if hostname != "localhost":
+    if hostname != "localhost" and hostname != "127.0.0.1":
         if scheme != "https":
             return "Only https is supported", 400
 
