@@ -43,25 +43,31 @@
         <label class="form-label col">Authorized URIs</label>
         <p class="col text-right">
           <small class="text-muted">
-            <em>redirect_uri</em> must be <b>https</b> for security reason.
+            <em>redirect_uri</em> must be <b>HTTPS</b> for security reason.
           </small>
         </p>
       </div>
 
       {% if not client.redirect_uris %}
-        <p><small class="text-muted">
-          You haven't added any <a href="https://www.oauth.com/oauth2-servers/redirect-uris/">redirect_uri</a>,
-          that is the url that will receive the <em>code</em> or <em>access-token</em> in OAuth2 flow.
-          <br>
-          There's NO NEED to add <em>http://localhost:*</em> here as by default,
-          SimpleLogin <em>whitelists</em> localhost!
-          <br>
-          You DO need to add your <em>redirect_uri</em> here once your website/app goes live.
-          <br>
-          The <em>redirect_uri</em> need to be HTTPS for security reason.
-          <br>
-          Start by adding your first <em>redirect_uri</em> here 👇
-        </small></p>
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+          <p>
+            You haven't added any <a href="https://www.oauth.com/oauth2-servers/redirect-uris/">redirect_uri</a>,
+            that is the url that will receive the <em>code</em> or <em>access-token</em> in OAuth2 flow.
+          </p>
+          <p>
+            There's NO NEED to add <em>http://localhost:*</em> as by default,
+            SimpleLogin <em>whitelists</em> localhost (unlike Facebook).
+          </p>
+          <p>
+            You DO need to add your <em>redirect_uri</em> once your website/app goes live (i.e. deployed on production).
+          </p>
+          <p>
+            The <em>redirect_uri</em> needs to be <b>HTTPS</b> for security reason.
+          </p>
+          <p>
+            Start by adding your first <em>redirect_uri</em> here 👇
+          </p>
+        </div>
       {% endif %}
 
       {% for redirect_uri in client.redirect_uris %}
