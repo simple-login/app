@@ -129,6 +129,16 @@
     e.clearSelection();
   });
 
+  // Handle back or close button
+  $('.back-or-close').on("click", function () {
+    // the window is actually a popup, in this case just close it
+    if (history.length == 1) {
+      window.close();
+    } else {
+      history.back();
+    }
+  });
+
 </script>
 
 <!-- For additional script -->

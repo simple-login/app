@@ -55,7 +55,7 @@ def test_authorize_page_non_login_user(flask_client):
 
     html = r.get_data(as_text=True)
     assert r.status_code == 200
-    assert "In order to accept the request, you need to login or sign up" in html
+    assert "In order to accept the request, you need to sign in" in html
 
 
 def test_authorize_page_login_user_non_supported_flow(flask_client):

@@ -7,17 +7,17 @@
     <ul class="mt-3">
       {% for scope in client.get_scopes() %}
         <li>
-        {% if scope == Scope.AVATAR_URL %}
-          avatar
-        {% else %}
-          {{ scope.value }}
-        {% endif %}
+          {% if scope == Scope.AVATAR_URL %}
+            avatar
+          {% else %}
+            {{ scope.value }}
+          {% endif %}
         </li>
       {% endfor %}
     </ul>
 
     <label>
-      In order to accept the request, you need to login or sign up.
+      In order to accept the request, you need to sign in.
     </label>
   </div>
 
@@ -37,9 +37,11 @@
   <hr>
 
   <div class="row">
-    <a class="btn btn-block btn-secondary" href="javascript:history.back()">
+    <p class="text-center col">Cancel and go back to <b>{{ client.name }}</b></p>
+    <a class="btn btn-block btn-secondary back-or-close">
       <i class="fe fe-arrow-left mr-2"></i>Cancel
     </a>
   </div>
 
 {% endblock %}
+
