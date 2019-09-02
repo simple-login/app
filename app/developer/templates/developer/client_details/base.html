@@ -21,7 +21,7 @@
 
         <a href="{{ url_for('developer.client_detail_oauth_setting', client_id=client.id) }}"
            class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'oauth_setting' }}">
-          <span class="icon mr-3"><i class="fe fe-settings"></i></span>OAuth Setting
+          <span class="icon mr-3"><i class="fe fe-settings"></i></span>OAuth Settings
         </a>
 
         <a href="{{ url_for('developer.client_detail_oauth_endpoint', client_id=client.id) }}"
@@ -31,7 +31,7 @@
 
         <a href="{{ url_for('developer.client_detail_advanced', client_id=client.id) }}"
            class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'advanced' }}">
-          <span class="icon mr-3"><i class="fe fe-alert-octagon"></i></span>Advanced Setting
+          <span class="icon mr-3"><i class="fe fe-alert-octagon"></i></span>Advanced Settings
         </a>
 
       </div>

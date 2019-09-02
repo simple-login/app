@@ -53,8 +53,12 @@
           You haven't added any <a href="https://www.oauth.com/oauth2-servers/redirect-uris/">redirect_uri</a>,
           that is the url that will receive the <em>code</em> or <em>access-token</em> in OAuth2 flow.
           <br>
-          By default, SimpleLogin whitelists <em>localhost</em> but you do
-          need to add your <em>redirect_uri</em> here once your website/app goes live.
+          There's NO NEED to add <em>http://localhost:*</em> here as by default,
+          SimpleLogin <em>whitelists</em> localhost!
+          <br>
+          You DO need to add your <em>redirect_uri</em> here once your website/app goes live.
+          <br>
+          The <em>redirect_uri</em> need to be HTTPS for security reason.
           <br>
           Start by adding your first <em>redirect_uri</em> here 👇
         </small></p>
