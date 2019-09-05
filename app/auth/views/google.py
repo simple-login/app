@@ -108,7 +108,12 @@ def google_callback():
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
-        notify_admin(f"new user {user.name} {user.email} signs up via google")
+        notify_admin(
+            f"new user {user.name} {user.email} signs up via google",
+            html_content=f"""
+name: {user.name} <br>
+email: {user.email} <br>""",
+        )
 
     # The activation link contains the original page, for ex authorize page
     if "google_next_url" in session:

@@ -22,7 +22,14 @@ def new_client():
         client = Client.create_new(form.name.data, current_user.id)
         db.session.commit()
 
-        notify_admin(f"user {current_user} created new app {client.name}")
+        notify_admin(
+            f"user {current_user} created new app {client.name}",
+            html_content=f"""
+name: {current_user.name} <br>
+email: {current_user.email} <br>
+app: {client.name}
+""",
+        )
         flash("Your app has been created", "success")
 
         return redirect(

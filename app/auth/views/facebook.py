@@ -109,7 +109,13 @@ def facebook_callback():
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
-        notify_admin(f"new user {user.name} {user.email} signs up via facebook")
+        notify_admin(
+            f"new user {user.name} {user.email} signs up via facebook",
+            html_content=f"""
+name: {user.name} <br>
+email: {user.email} <br>
+        """,
+        )
 
     # The activation link contains the original page, for ex authorize page
     if "facebook_next_url" in session:

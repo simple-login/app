@@ -44,7 +44,10 @@ def register():
 
             send_activation_email(user, next_url)
             notify_admin(
-                f"new user {user.name} {user.email} signs up via email/password"
+                f"new user {user.name} {user.email} signs up via email/password",
+                html_content=f"""
+name: {user.name} <br>
+email: {user.email} <br>""",
             )
 
             return render_template("auth/register_waiting_activation.html")

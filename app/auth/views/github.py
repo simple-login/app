@@ -93,7 +93,12 @@ def github_callback():
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
-        notify_admin(f"new user {user.name} {user.email} signs up via github")
+        notify_admin(
+            f"new user {user.name} {user.email} signs up via github",
+            html_content=f"""
+                     name: {user.name} <br>
+                     email: {user.email} <br>""",
+        )
 
     # The activation link contains the original page, for ex authorize page
     if "next" in request.args:
