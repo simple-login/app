@@ -520,3 +520,24 @@ class ClientUser(db.Model, ModelMixin):
                     res[Scope.EMAIL.value] = self.user.email
 
         return res
+
+
+class ForwardEmail(db.Model, ModelMixin):
+    """
+    Emails that are forwarded through SL: email that is sent by website to user via SL alias
+    """
+    __table_args__ = (
+        db.UniqueConstraint("gen_email_id", "website_email", name="uq_forward_email"),
+    )
+
+    gen_email_id = db.Column(
+        db.ForeignKey(GenEmail.id, ondelete="cascade"), nullable=False
+    )
+
+    website_email = db.Column(db.String(128), nullable=False)
+
+    # when user clicks on "reply", they will reply to this address.
+    # This address allows to hide user personal email
+    # this reply email is created every time a website sends an email to user
+    # it has the prefix "reply+" to distinguish with other email
+    reply_email = db.Column(db.String(128), nullable=False)
