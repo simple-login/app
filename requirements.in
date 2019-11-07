@@ -28,3 +28,4 @@ yacron
 flask-debugtoolbar
 requests_oauthlib
 pyopenssl
+aiosmtpd
