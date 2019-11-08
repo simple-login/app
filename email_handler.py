@@ -69,17 +69,18 @@ class MailHandler:
         return "250 OK"
 
     async def handle_DATA(self, server, session, envelope):
-        LOG.debug(">>> handle_DATA <<<")
+        LOG.debug(">>> New message <<<")
 
         LOG.debug("Mail from %s", envelope.mail_from)
         LOG.debug("Rcpt to %s", envelope.rcpt_tos)
-        LOG.debug("Message data:\n")
         message_data = envelope.content.decode("utf8", errors="replace")
-        LOG.debug(message_data)
-        LOG.debug("End of message")
 
-        # todo: replace host IP
-        client = SMTP("172.31.18.3", 25)
+        # Only when debug
+        # LOG.debug("Message data:\n")
+        # LOG.debug(message_data)
+
+        # host IP, setup via Docker network
+        client = SMTP("1.1.1.1", 25)
         msg = Parser(policy=default).parsestr(message_data)
 
         if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case
@@ -114,6 +115,14 @@ class MailHandler:
                 msg.add_header("X-SimpleLogin-Type", "Forward")
                 msg.add_header("Reply-To", forward_email.reply_email)
 
+                LOG.d(
+                    "Send mail from %s to %s, mail_options %s, rcpt_options %s ",
+                    envelope.mail_from,
+                    gen_email.user.email,
+                    envelope.mail_options,
+                    envelope.rcpt_options,
+                )
+
                 client.send_message(
                     msg,
                     from_addr=envelope.mail_from,
@@ -135,6 +144,14 @@ class MailHandler:
                 # email seems to come from alias
                 msg.replace_header("From", alias)
                 msg.replace_header("To", forward_email.website_email)
+
+                LOG.d(
+                    "send email from %s to %s, mail_options:%s,rcpt_options:%s",
+                    alias,
+                    forward_email.website_email,
+                    envelope.mail_options,
+                    envelope.rcpt_options,
+                )
 
                 client.send_message(
                     msg,
