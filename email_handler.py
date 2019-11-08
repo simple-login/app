@@ -38,6 +38,7 @@ from smtplib import SMTP
 from aiosmtpd.controller import Controller
 
 from app.config import EMAIL_DOMAIN
+from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail
@@ -140,6 +141,10 @@ class MailHandler:
                 forward_email = ForwardEmail.get_by(reply_email=reply_email)
 
                 alias = forward_email.gen_email.email
+
+                notify_admin(
+                    f"Reply phase used by user: {forward_email.gen_email.user.email} "
+                )
 
                 # email seems to come from alias
                 msg.replace_header("From", alias)
