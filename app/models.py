@@ -425,6 +425,8 @@ class GenEmail(db.Model, ModelMixin):
     # this email has been customized by user, i.e. not generated randomly
     custom = db.Column(db.Boolean(), default=False, nullable=False, server_default="0")
 
+    user = db.relationship(User)
+
     @classmethod
     def create_new_gen_email(cls, user_id):
         random_email = generate_email()
@@ -526,6 +528,7 @@ class ForwardEmail(db.Model, ModelMixin):
     """
     Emails that are forwarded through SL: email that is sent by website to user via SL alias
     """
+
     __table_args__ = (
         db.UniqueConstraint("gen_email_id", "website_email", name="uq_forward_email"),
     )

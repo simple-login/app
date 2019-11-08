@@ -42,6 +42,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail
 from app.utils import random_words
+from server import create_app
 
 
 def parse_srs_email(srs) -> str:
@@ -77,67 +78,77 @@ class MailHandler:
         LOG.debug(message_data)
         LOG.debug("End of message")
 
-        client = SMTP("localhost", 25)
+        # todo: replace host IP
+        client = SMTP("172.31.18.3", 25)
         msg = Parser(policy=default).parsestr(message_data)
 
         if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case
             LOG.debug("Forward phase, add Reply-To header")
             alias = envelope.rcpt_tos[0]  # alias@SL
 
-            gen_email = GenEmail.get_by(email=alias)
-            website_email = parse_srs_email(envelope.mail_from)
+            app = create_app()
 
-            forward_email = ForwardEmail.get_by(
-                gen_email_id=gen_email.id, website_email=website_email
-            )
-            if not forward_email:
-                LOG.debug(
-                    "create forward email for alias %s and website email %s",
-                    alias,
-                    website_email,
+            with app.app_context():
+                gen_email = GenEmail.get_by(email=alias)
+                website_email = parse_srs_email(envelope.mail_from)
+
+                forward_email = ForwardEmail.get_by(
+                    gen_email_id=gen_email.id, website_email=website_email
                 )
-                # todo: make sure reply_email is unique
-                reply_email = f"reply+{random_words()}@{EMAIL_DOMAIN}"
-                forward_email = ForwardEmail.create(
-                    gen_email_id=gen_email.id,
-                    website_email=website_email,
-                    reply_email=reply_email,
+                if not forward_email:
+                    LOG.debug(
+                        "create forward email for alias %s and website email %s",
+                        alias,
+                        website_email,
+                    )
+                    # todo: make sure reply_email is unique
+                    reply_email = f"reply+{random_words()}@{EMAIL_DOMAIN}"
+                    forward_email = ForwardEmail.create(
+                        gen_email_id=gen_email.id,
+                        website_email=website_email,
+                        reply_email=reply_email,
+                    )
+                    db.session.commit()
+
+                # add custom header
+                msg.add_header("X-SimpleLogin-Type", "Forward")
+                msg.add_header("Reply-To", forward_email.reply_email)
+
+                client.send_message(
+                    msg,
+                    from_addr=envelope.mail_from,
+                    to_addrs=[gen_email.user.email],  # user personal email
+                    mail_options=envelope.mail_options,
+                    rcpt_options=envelope.rcpt_options,
                 )
-                db.session.commit()
-
-            # add custom header
-            msg.add_header("X-SimpleLogin-Type", "Forward")
-            msg.add_header("Reply-To", forward_email.reply_email)
-
-            client.send_message(
-                msg,
-                from_addr=envelope.mail_from,
-                to_addrs=[gen_email.user.emai],  # user personal email
-                mail_options=envelope.mail_options,
-                rcpt_options=envelope.rcpt_options,
-            )
         else:
             LOG.debug("Reply phase")
-            # todo: parse alias from envelope.rcpt_tos, e.g. ['reply+abcd+nguyenkims+hotmail.com@mailsl.meo.ovh']
-            alias = "abcd"
+            reply_email = envelope.rcpt_tos[0]
 
-            # email seems to come from alias
-            msg.replace_header("From", f"{alias}{DOMAIN}")
-            msg.replace_header("To", FROM)
+            app = create_app()
 
-            client.send_message(
-                msg,
-                from_addr=f"{alias}{DOMAIN}",
-                to_addrs=[FROM],
-                mail_options=envelope.mail_options,
-                rcpt_options=envelope.rcpt_options,
-            )
+            with app.app_context():
+                forward_email = ForwardEmail.get_by(reply_email=reply_email)
+
+                alias = forward_email.gen_email.email
+
+                # email seems to come from alias
+                msg.replace_header("From", alias)
+                msg.replace_header("To", forward_email.website_email)
+
+                client.send_message(
+                    msg,
+                    from_addr=alias,
+                    to_addrs=[forward_email.website_email],
+                    mail_options=envelope.mail_options,
+                    rcpt_options=envelope.rcpt_options,
+                )
 
         return "250 Message accepted for delivery"
 
 
 if __name__ == "__main__":
-    controller = Controller(MailHandler(), hostname="localhost", port=20381)
+    controller = Controller(MailHandler(), hostname="0.0.0.0", port=20381)
 
     controller.start()
     print(">>", controller.hostname, controller.port)
