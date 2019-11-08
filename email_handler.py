@@ -136,10 +136,11 @@ class MailHandler:
         return "250 Message accepted for delivery"
 
 
-controller = Controller(MailHandler(), hostname="localhost", port=20381)
+if __name__ == "__main__":
+    controller = Controller(MailHandler(), hostname="localhost", port=20381)
 
-controller.start()
-print(">>", controller.hostname, controller.port)
+    controller.start()
+    print(">>", controller.hostname, controller.port)
 
-while True:
-    time.sleep(10)
+    while True:
+        time.sleep(10)

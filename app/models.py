@@ -541,3 +541,5 @@ class ForwardEmail(db.Model, ModelMixin):
     # this reply email is created every time a website sends an email to user
     # it has the prefix "reply+" to distinguish with other email
     reply_email = db.Column(db.String(128), nullable=False)
+
+    gen_email = db.relationship(GenEmail)
