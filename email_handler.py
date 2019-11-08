@@ -1,18 +1,18 @@
 """
-Handle the email *forward* and *reply*. phase There are 3 actors:
+Handle the email *forward* and *reply*. phase. There are 3 actors:
 - website: who sends emails to alias@sl.co address
 - SL email handler (this script)
-- user personal email
+- user personal email: to be protected. Should never leak to website.
 
 This script makes sure that in the forward phase, the email that is forwarded to user personal email has the following
 envelope and header fields:
 Envelope:
     mail from: srs@sl.co # managed by SRS
-    rcpt to: @real
+    rcpt to: @personal_email
 Header:
     From: @website
-    To: alias@sl.co
-    Reply-to: special@sl.co # magic here
+    To: alias@sl.co # so user knows this email is sent to alias
+    Reply-to: special@sl.co # magic HERE
 
 And in the reply phase:
 Envelope:
@@ -20,7 +20,7 @@ Envelope:
     rcpt to: @website
 
 Header:
-    From: alias@sl.co # magic here
+    From: alias@sl.co # so for website the email comes from alias. magic HERE
     To: @website
 
 The special@sl.co allows to hide user personal email when user clicks "Reply" to the forwarded email.
@@ -80,7 +80,7 @@ class MailHandler:
         # LOG.debug(message_data)
 
         # host IP, setup via Docker network
-        client = SMTP("1.1.1.1", 25)
+        smtp = SMTP("1.1.1.1", 25)
         msg = Parser(policy=default).parsestr(message_data)
 
         if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case
@@ -123,7 +123,7 @@ class MailHandler:
                     envelope.rcpt_options,
                 )
 
-                client.send_message(
+                smtp.send_message(
                     msg,
                     from_addr=envelope.mail_from,
                     to_addrs=[gen_email.user.email],  # user personal email
@@ -153,7 +153,7 @@ class MailHandler:
                     envelope.rcpt_options,
                 )
 
-                client.send_message(
+                smtp.send_message(
                     msg,
                     from_addr=alias,
                     to_addrs=[forward_email.website_email],
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     controller = Controller(MailHandler(), hostname="0.0.0.0", port=20381)
 
     controller.start()
-    print(">>", controller.hostname, controller.port)
+    LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
 
     while True:
         time.sleep(10)
