@@ -116,8 +116,6 @@ class MailHandler:
                 msg.add_header("X-SimpleLogin-Type", "Forward")
                 msg.add_header("Reply-To", forward_email.reply_email)
 
-                msg.replace_header("To", f"{alias} <{gen_email.user.email}>")
-
                 LOG.d(
                     "Send mail from %s to %s, mail_options %s, rcpt_options %s ",
                     envelope.mail_from,
