@@ -66,6 +66,8 @@
                 <td>
                   <div class="btn-group">
                     <button class="clipboard btn btn-secondary btn-sm"
+                            data-toggle="tooltip"
+                            title="Copy the alias to clipboard"
                             data-clipboard-text="{{ gen_email.email }}">
                       Copy
                     </button>
@@ -76,6 +78,8 @@
 
                       {% if gen_email.enabled %}
                         <button class="btn btn-secondary btn-sm"
+                                data-toggle="tooltip"
+                                title="Send a test email to the alias."
                             {% if loop.index ==1 %}
                                 data-intro="By triggering the test email,
                             SimpleLogin server will send an email to this alias
@@ -94,6 +98,13 @@
                     <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
 
                     <label class="custom-switch"
+                           data-toggle="tooltip"
+                        {% if gen_email.enabled %}
+                           title="Block Alias"
+                        {% else %}
+                           title="Unblock Alias"
+                        {% endif %}
+
                         {% if loop.index ==1 %}
                            data-intro="By turning off an alias, emails sent to this alias will <b>NOT</b>
                            be forwarded to your personal email. <br><br>
