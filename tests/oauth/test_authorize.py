@@ -616,3 +616,69 @@ def test_authorize_code_id_token_flow(flask_client):
 
     # id_token must be a valid, correctly signed JWT
     assert verify_id_token(r.json["id_token"])
+
+
+def test_authorize_page_invalid_client_id(flask_client):
+    """make sure to redirect user to redirect_url?error=invalid_client_id"""
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+
+    db.session.commit()
+
+    r = flask_client.get(
+        url_for(
+            "oauth.authorize",
+            client_id="invalid_client_id",
+            state="teststate",
+            redirect_uri="http://localhost",
+            response_type="code",
+        )
+    )
+
+    assert r.status_code == 302
+    assert (
+        r.location
+        == "http://localhost?error=invalid_client_id&client_id=invalid_client_id"
+    )
+
+
+def test_authorize_page_http_not_allowed(flask_client):
+    """make sure to redirect user to redirect_url?error=http_not_allowed"""
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+
+    db.session.commit()
+
+    r = flask_client.get(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="teststate",
+            redirect_uri="http://mywebsite.com",
+            response_type="code",
+        )
+    )
+
+    assert r.status_code == 302
+    assert r.location == "http://mywebsite.com?error=http_not_allowed"
+
+
+def test_authorize_page_unknown_redirect_uri(flask_client):
+    """make sure to redirect user to redirect_url?error=unknown_redirect_uri"""
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+
+    db.session.commit()
+
+    r = flask_client.get(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="teststate",
+            redirect_uri="https://unknown.com",
+            response_type="code",
+        )
+    )
+
+    assert r.status_code == 302
+    assert r.location == "https://unknown.com?error=unknown_redirect_uri"

@@ -66,17 +66,23 @@ def authorize():
 
     client = Client.get_by(oauth_client_id=oauth_client_id)
     if not client:
-        return f"no such client with oauth-client-id {oauth_client_id}", 400
+        final_redirect_uri = (
+            f"{redirect_uri}?error=invalid_client_id&client_id={oauth_client_id}"
+        )
+        return redirect(final_redirect_uri)
 
     # check if redirect_uri is valid
     # allow localhost by default
     hostname, scheme = get_host_name_and_scheme(redirect_uri)
     if hostname != "localhost" and hostname != "127.0.0.1":
-        if scheme != "https":
-            return "Only https is supported", 400
+        # support custom scheme for mobile app
+        if scheme == "http":
+            final_redirect_uri = f"{redirect_uri}?error=http_not_allowed"
+            return redirect(final_redirect_uri)
 
         if not RedirectUri.get_by(client_id=client.id, uri=redirect_uri):
-            return f"{redirect_uri} is not authorized", 400
+            final_redirect_uri = f"{redirect_uri}?error=unknown_redirect_uri"
+            return redirect(final_redirect_uri)
 
     # redirect from client website
     if request.method == "GET":
