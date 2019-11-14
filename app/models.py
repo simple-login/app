@@ -522,3 +522,22 @@ class ForwardEmail(db.Model, ModelMixin):
     reply_email = db.Column(db.String(128), nullable=False)
 
     gen_email = db.relationship(GenEmail)
+
+
+class Subscription(db.Model, ModelMixin):
+    # Come from Paddle
+    cancel_url = db.Column(db.String(1024), nullable=False)
+    update_url = db.Column(db.String(1024), nullable=False)
+    subscription_id = db.Column(db.String(1024), nullable=False, unique=True)
+    event_time = db.Column(ArrowType, nullable=False)
+    next_bill_date = db.Column(db.Date, nullable=False)
+
+    cancelled = db.Column(db.Boolean, nullable=False, default=False)
+
+    plan = db.Column(db.Enum(PlanEnum), nullable=False)
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    user = db.relationship(User)

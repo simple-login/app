@@ -1,6 +1,8 @@
+import arrow
+
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
-from app.models import generate_email, User, GenEmail, PlanEnum
+from app.models import generate_email, User, GenEmail
 
 
 def test_generate_email(flask_client):
@@ -38,6 +40,7 @@ def test_suggested_emails_for_user_who_cannot_create_new_email(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
+    user.trial_expiration = arrow.now().shift(days=-1)
     db.session.commit()
 
     # make sure user runs out of quota to create new email
