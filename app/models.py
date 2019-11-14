@@ -3,8 +3,6 @@ import random
 
 import arrow
 import bcrypt
-import stripe
-from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text
@@ -80,8 +78,7 @@ class File(db.Model, ModelMixin):
 
 
 class PlanEnum(enum.Enum):
-    free = 0
-    trial = 1
+    monthly = 2
     yearly = 3
 
 
@@ -95,24 +92,13 @@ class User(db.Model, ModelMixin, UserMixin):
 
     activated = db.Column(db.Boolean, default=False, nullable=False)
 
-    plan = db.Column(
-        db.Enum(PlanEnum),
-        nullable=False,
-        default=PlanEnum.free,
-        server_default=PlanEnum.free.name,
-    )
-
-    # only relevant for trial period
-    plan_expiration = db.Column(ArrowType)
+    trial_expiration = db.Column(ArrowType)
 
     stripe_customer_id = db.Column(db.String(128), unique=True)
     stripe_card_token = db.Column(db.String(128), unique=True)
     stripe_subscription_id = db.Column(db.String(128), unique=True)
 
     profile_picture_id = db.Column(db.ForeignKey(File.id), nullable=True)
-
-    # contain the list of promo codes user has used. Promo codes are separated by ","
-    promo_codes = db.Column(db.Text, nullable=True)
 
     profile_picture = db.relationship(File)
 
@@ -127,8 +113,7 @@ class User(db.Model, ModelMixin, UserMixin):
         user.set_password(password)
 
         # by default new user will be trial period
-        user.plan = PlanEnum.trial
-        user.plan_expiration = arrow.now().shift(days=+15)
+        user.trial_expiration = arrow.now().shift(days=+15)
         db.session.flush()
 
         # create a first alias mail to show user how to use when they login
@@ -138,29 +123,26 @@ class User(db.Model, ModelMixin, UserMixin):
         return user
 
     def should_upgrade(self):
-        """User is invited to upgrade if they are in free plan or their trial ends soon"""
-        if self.plan == PlanEnum.free:
-            return True
-        elif self.plan == PlanEnum.trial:
-            return True
-        return False
+        return not self.is_premium()
 
     def is_premium(self):
-        return self.plan == PlanEnum.yearly
+        """user is premium if they have a active subscription"""
+        sub: Subscription = self.get_subscription()
+        return sub is not None and sub.next_bill_date > arrow.now().date()
 
     def can_create_custom_email(self):
         if self.is_premium():
             return True
-        # plan not expired yet
-        elif self.plan == PlanEnum.trial and self.plan_expiration > arrow.now():
+        # trial not expired yet
+        elif self.trial_expiration > arrow.now():
             return True
         return False
 
     def can_create_new_email(self):
         if self.is_premium():
             return True
-        # plan not expired yet
-        elif self.plan == PlanEnum.trial and self.plan_expiration > arrow.now():
+        # trial not expired yet
+        elif self.trial_expiration > arrow.now():
             return True
         else:  # free or trial expired
             return GenEmail.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
@@ -180,30 +162,6 @@ class User(db.Model, ModelMixin, UserMixin):
             return self.profile_picture.get_url()
         else:
             return url_for("static", filename="default-avatar.png")
-
-    def plan_current_period_end(self) -> Arrow:
-        if not self.stripe_subscription_id:
-            LOG.error(
-                "plan_current_period_end should not be called with empty stripe_subscription_id"
-            )
-            return None
-
-        current_period_end_ts = stripe.Subscription.retrieve(
-            self.stripe_subscription_id
-        )["current_period_end"]
-
-        return arrow.get(current_period_end_ts)
-
-    def get_promo_codes(self) -> [str]:
-        if not self.promo_codes:
-            return []
-        return self.promo_codes.split(",")
-
-    def save_new_promo_code(self, promo_code):
-        current_promo_codes = self.get_promo_codes()
-        current_promo_codes.append(promo_code)
-
-        self.promo_codes = ",".join(current_promo_codes)
 
     def suggested_emails(self) -> (str, [str]):
         """return suggested email and other email choices """
@@ -230,6 +188,24 @@ class User(db.Model, ModelMixin, UserMixin):
     def get_name_initial(self) -> str:
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
+
+    def plan_name(self) -> str:
+        if self.is_premium():
+            sub = self.get_subscription()
+
+            if sub.plan == PlanEnum.monthly:
+                return "Monthly ($2.99/month)"
+            else:
+                return "Yearly ($29.99/year)"
+
+        elif self.trial_expiration > arrow.now():
+            return "Trial"
+        else:
+            return "Free Plan"
+
+    def get_subscription(self):
+        sub = Subscription.get_by(user_id=self.id)
+        return sub
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"

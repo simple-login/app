@@ -38,7 +38,6 @@ def test_suggested_emails_for_user_who_cannot_create_new_email(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    user.plan = PlanEnum.free
     db.session.commit()
 
     # make sure user runs out of quota to create new email

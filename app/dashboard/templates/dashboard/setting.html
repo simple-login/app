@@ -33,61 +33,7 @@
     </form>
 
     <hr>
-    <h3>Current subscription</h3>
-    Your current plan is
-    {% if current_user.is_premium() %}
-      <b>{{ current_user.plan.name }}</b>
-      <br>
-      {% if current_user.plan_expiration %}
-        Ends {{ current_user.plan_expiration.humanize() }}
-      {% else %}
-        Renewed {{ current_user.plan_current_period_end().humanize() }}
-      {% endif %}
-    {% else %}
-      <b>{{ current_user.plan.name }}</b><br>
-      {% if current_user.plan == PlanEnum.trial %}
-        Ends {{ current_user.plan_expiration.humanize() }}<br>
-      {% endif %}
-      <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">
-        Upgrade To Premium
-      </a>
-      <br><br>
-      <form method="post">
-        {{ promo_form.csrf_token }}
-        <input type="hidden" name="form-name" value="promo-code">
-        <h5>If you have a promo code, you can enter it here</h5>
-        <p class="text-muted">You can use a given promo code only once :)</p>
-        <div class="form-group">
-          <label class="form-label">Promo code</label>
-          {{ promo_form.code(class="form-control") }}
-          {{ render_field_errors(promo_form.code) }}
-        </div>
-        <button class="btn btn-primary">Apply</button>
-      </form>
-    {% endif %}
-
-    {% if current_user.is_premium() %}
-      <!-- This corresponds to the more rare case where user has upgraded the plan,
-      downgraded it and decides to upgrade again before the end of the previous plan  -->
-      {% if current_user.plan_expiration %}
-        <form method="post">
-          <input type="hidden" name="form-name" value="reactivate-subscription">
-          <br><br>
-          <button class="btn btn-warning">Reactivate subscription</button>
-        </form>
-      {% else %}
-        <!-- current_user.plan_expiration=None, this corresponds to the usual case
-        where user has upgraded the plan, and now decide to downgrade it. -->
-        <form method="post"
-              onsubmit="return confirm('Your plan will be downgraded to free plan {{ current_user.plan_current_period_end().humanize() }}, please confirm.')">
-          <input type="hidden" name="form-name" value="cancel-subscription">
-          <br><br>
-          <button class="btn btn-warning">Cancel subscription</button>
-        </form>
-      {% endif %}
-    {% endif %}
-
-    <hr>
+    
     <h3>Change password</h3>
     <form method="post">
       <input type="hidden" name="form-name" value="change-password">

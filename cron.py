@@ -1,32 +1,16 @@
 import arrow
-import stripe
 
-from app.extensions import db
 from app.log import LOG
-from app.models import User, PlanEnum
+from app.models import Subscription
 from server import create_app
 
 
-def downgrade_expired_plan():
-    """set user plan to free when plan is expired, ie plan_expiration < now
+def late_payment():
+    """check for late payment
     """
-    for user in User.query.filter(
-        User.plan != PlanEnum.free, User.plan_expiration < arrow.now()
-    ).all():
-        LOG.d("set user %s to free plan", user)
-
-        user.plan_expiration = None
-        user.plan = PlanEnum.free
-
-        if user.stripe_customer_id:
-            LOG.d("delete user %s on stripe", user.stripe_customer_id)
-            stripe.Customer.delete(user.stripe_customer_id)
-
-            user.stripe_card_token = None
-            user.stripe_customer_id = None
-            user.stripe_subscription_id = None
-
-    db.session.commit()
+    for sub in Subscription.query.all():
+        if (not sub.cancelled) and sub.next_bill_date < arrow.now():
+            LOG.error(f"user {sub.user.email} has late payment. {sub}")
 
 
 if __name__ == "__main__":
@@ -34,4 +18,4 @@ if __name__ == "__main__":
     app = create_app()
 
     with app.app_context():
-        downgrade_expired_plan()
+        late_payment()

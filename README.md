@@ -74,37 +74,4 @@ response_type=id_token code
     return `id_token` in addition to `authorization_code` in /authorization endpoint
    
 
-# Plan Upgrade, downgrade flow
-
-Here's an example:
-
-July 2019: user takes yearly plan, valid until July 2020
-    user.plan=yearly, user.plan_expiration=None
-    set user.stripe card-token, customer-id, subscription-id
-
-December 2019: user cancels his plan.
-	set plan_expiration to "period end of subscription", ie July 2020
-	call stripe:
-		stripe.Subscription.modify(
-		  user.stripe_subscription_id,
-		  cancel_at_period_end=True
-		)
-
-There are 2 possible scenarios at this point:
-1) user decides to renew on March 2020: 
-	set plan_expiration = None
-	stripe.Subscription.modify(
-	  user.stripe_subscription_id,
-	  cancel_at_period_end=False
-	)
-
-2) the plan ends on July 2020. 
-The cronjob set 
-- user stripe_subscription_id , stripe_card_token, stripe_customer_id to None
-- user.plan=free, user.plan_expiration=None
-- delete customer on stripe
-
-user decides to take the premium plan again: go through all normal flow
-
-
 
