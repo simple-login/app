@@ -114,7 +114,11 @@ class MailHandler:
 
                 # add custom header
                 msg.add_header("X-SimpleLogin-Type", "Forward")
-                msg.replace_header("Reply-To", forward_email.reply_email)
+                try:
+                    msg.add_header("Reply-To", forward_email.reply_email)
+                except ValueError:
+                    # the header exists already
+                    msg.replace_header("Reply-To", forward_email.reply_email)
 
                 LOG.d(
                     "Send mail from %s to %s, mail_options %s, rcpt_options %s ",
