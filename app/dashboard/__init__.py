@@ -1,1 +1,1 @@
-from .views import index, pricing, setting, custom_alias
+from .views import index, pricing, setting, custom_alias, billing

@@ -43,10 +43,17 @@
 {#            <a class="dropdown-item" href="{{ url_for('partner.become') }}">#}
 {#              <i class="dropdown-icon fe fe-target"></i> Become Partner/Developer#}
 {#            </a>#}
+            
+            {% if current_user.is_premium() %}
+              <a class="dropdown-item" href="{{ url_for('dashboard.billing') }}">
+                <i class="dropdown-icon fe fe-dollar-sign"></i> Billing
+              </a>            
+            {% endif %}
 
             <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
               <i class="dropdown-icon fe fe-log-out"></i> Sign out
             </a>
+            
           </div>
 
         </div>

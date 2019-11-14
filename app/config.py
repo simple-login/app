@@ -65,6 +65,11 @@ STRIPE_API = os.environ["STRIPE_API"]  # Stripe public key
 STRIPE_SECRET_KEY = os.environ["STRIPE_SECRET_KEY"]
 STRIPE_YEARLY_PLAN = os.environ["STRIPE_YEARLY_PLAN"]
 
+# Paddle TODO: put into config file
+PADDLE_VENDOR_ID = int(os.environ["PADDLE_VENDOR_ID"])
+PADDLE_MONTHLY_PRODUCT_ID = int(os.environ["PADDLE_MONTHLY_PRODUCT_ID"])
+PADDLE_YEARLY_PRODUCT_ID = int(os.environ["PADDLE_YEARLY_PRODUCT_ID"])
+
 # OpenID keys, used to sign id_token
 OPENID_PRIVATE_KEY_PATH = get_abs_path(os.environ["OPENID_PRIVATE_KEY_PATH"])
 OPENID_PUBLIC_KEY_PATH = get_abs_path(os.environ["OPENID_PUBLIC_KEY_PATH"])

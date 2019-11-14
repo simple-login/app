@@ -1,0 +1,63 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Pricing
+{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-sm-6 col-lg-6">
+      <div class="card">
+        <div class="card-body text-center">
+          <div class="card-category">Premium</div>
+          <ul class="list-unstyled leading-loose">
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i> Unlimited Alias</li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i> Custom Alias</li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i> Custom email domain</li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
+              Support us and our application partners
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-6">
+      <div class="display-6">
+        🔐 Secure payments by <a href="https://paddle.com">Paddle</a>
+      </div>
+
+      <hr>
+
+      <button class="btn btn-success btn-lg" onclick="upgrade({{ PADDLE_MONTHLY_PRODUCT_ID }})">
+        Monthly <br>
+        $2.99/month
+      </button>
+
+      <button class="btn btn-primary btn-lg" onclick="upgrade({{ PADDLE_YEARLY_PRODUCT_ID }})">
+        Yearly <br>
+        $29.99/year
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.paddle.com/paddle/paddle.js"></script>
+
+  <script type="text/javascript">
+    Paddle.Setup({vendor: {{ PADDLE_VENDOR_ID }}});
+
+    function upgrade(productId) {
+      Paddle.Checkout.open({
+        product: productId,
+        email: "{{ current_user.email }}",
+        success: "{{ success_url }}"
+      });
+    }
+  </script>
+
+{% endblock %}
