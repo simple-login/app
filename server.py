@@ -20,14 +20,26 @@ from app.config import (
     URL,
     SHA1,
     STRIPE_SECRET_KEY,
-    RESET_DB)
+    RESET_DB,
+    PADDLE_MONTHLY_PRODUCT_ID,
+)
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
 from app.discover.base import discover_bp
+from app.email_utils import notify_admin
 from app.extensions import db, login_manager, migrate
 from app.jose_utils import get_jwk_key
 from app.log import LOG
-from app.models import Client, User, ClientUser, GenEmail, RedirectUri, Partner
+from app.models import (
+    Client,
+    User,
+    ClientUser,
+    GenEmail,
+    RedirectUri,
+    Partner,
+    Subscription,
+    PlanEnum,
+)
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
 from app.partner.base import partner_bp
@@ -69,6 +81,7 @@ def create_app() -> Flask:
     stripe.api_key = STRIPE_SECRET_KEY
 
     init_admin(app)
+    setup_paddle_callback(app)
 
     return app
 
@@ -233,11 +246,76 @@ def jinja2_filter(app):
     @app.context_processor
     def inject_stage_and_region():
         return dict(
-            YEAR=arrow.now().year,
-            URL=URL,
-            ENABLE_SENTRY=ENABLE_SENTRY,
-            VERSION=SHA1
+            YEAR=arrow.now().year, URL=URL, ENABLE_SENTRY=ENABLE_SENTRY, VERSION=SHA1
         )
+
+
+def setup_paddle_callback(app: Flask):
+    @app.route("/paddle", methods=["GET", "POST"])
+    def paddle():
+        LOG.debug(
+            "paddle callback %s %s %s %s %s",
+            request.form.get("alert_name"),
+            request.form.get("email"),
+            request.form.get("customer_name"),
+            request.form.get("subscription_id"),
+            request.form.get("subscription_plan_id"),
+        )
+        LOG.debug("paddle full request %s", request.form)
+
+        if (
+            request.form.get("alert_name") == "subscription_created"
+        ):  # new user subscribes
+            user_email = request.form.get("email")
+            user = User.get_by(email=user_email)
+
+            if (
+                int(request.form.get("subscription_plan_id"))
+                == PADDLE_MONTHLY_PRODUCT_ID
+            ):
+                plan = PlanEnum.monthly
+            else:
+                plan = PlanEnum.yearly
+
+            Subscription.create(
+                user_id=user.id,
+                cancel_url=request.form.get("cancel_url"),
+                update_url=request.form.get("update_url"),
+                subscription_id=request.form.get("subscription_id"),
+                event_time=arrow.now(),
+                next_bill_date=arrow.get(
+                    request.form.get("next_bill_date"), "YYYY-MM-DD"
+                ).date(),
+                plan=plan,
+            )
+
+            LOG.debug("User %s upgrades!", user)
+            notify_admin(f"User {user.email} upgrades!")
+
+            db.session.commit()
+
+        elif request.form.get("alert_name") == "subscription_updated":
+            subscription_id = request.form.get("subscription_id")
+            LOG.debug("Update subscription %s", subscription_id)
+
+            sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
+            sub.event_time = arrow.now()
+            sub.next_bill_date = arrow.get(
+                request.form.get("next_bill_date"), "YYYY-MM-DD"
+            ).date()
+
+            db.session.commit()
+
+        elif request.form.get("alert_name") == "subscription_cancelled":
+            subscription_id = request.form.get("subscription_id")
+            LOG.debug("Cancel subscription %s", subscription_id)
+
+            sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
+            sub.cancelled = True
+
+            db.session.commit()
+
+        return "OK"
 
 
 def init_extensions(app: Flask):
