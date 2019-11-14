@@ -130,19 +130,20 @@ class User(db.Model, ModelMixin, UserMixin):
         sub: Subscription = self.get_subscription()
         return sub is not None and sub.next_bill_date > arrow.now().date()
 
+    def is_trial(self):
+        return self.trial_expiration is not None and self.trial_expiration > arrow.now()
+
     def can_create_custom_email(self):
         if self.is_premium():
             return True
-        # trial not expired yet
-        elif self.trial_expiration > arrow.now():
+        elif self.is_trial():
             return True
         return False
 
     def can_create_new_email(self):
         if self.is_premium():
             return True
-        # trial not expired yet
-        elif self.trial_expiration > arrow.now():
+        elif self.is_trial():
             return True
         else:  # free or trial expired
             return GenEmail.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
@@ -198,7 +199,7 @@ class User(db.Model, ModelMixin, UserMixin):
             else:
                 return "Yearly ($29.99/year)"
 
-        elif self.trial_expiration > arrow.now():
+        elif self.is_trial():
             return "Trial"
         else:
             return "Free Plan"
