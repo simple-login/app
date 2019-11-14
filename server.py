@@ -104,7 +104,18 @@ def fake_data():
         activated=True,
         is_admin=True,
     )
+    db.session.commit()
 
+    # Create a subscription for user
+    Subscription.create(
+        user_id=user.id,
+        cancel_url="https://checkout.paddle.com/subscription/cancel?user=1234",
+        update_url="https://checkout.paddle.com/subscription/update?user=1234",
+        subscription_id="123",
+        event_time=arrow.now(),
+        next_bill_date=arrow.now().shift(days=1),
+        plan=PlanEnum.monthly,
+    )
     db.session.commit()
 
     GenEmail.create_new_gen_email(user_id=user.id)
