@@ -5,3 +5,4 @@ db.sqlite
 .pytest_cache
 .vscode
 .DS_Store
+config
