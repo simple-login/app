@@ -29,7 +29,7 @@ def upgrade():
     sa.Column('event_time', sqlalchemy_utils.types.arrow.ArrowType(), nullable=False),
     sa.Column('next_bill_date', sa.Date(), nullable=False),
     sa.Column('cancelled', sa.Boolean(), nullable=False),
-    sa.Column('plan', sa.Enum('monthly', 'yearly', name='planenum'), nullable=False),
+    sa.Column('plan', sa.Enum('monthly', 'yearly', name='planenum2'), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='cascade'),
     sa.PrimaryKeyConstraint('id'),
