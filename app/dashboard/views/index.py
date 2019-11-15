@@ -34,11 +34,15 @@ def index():
 Hi {current_user.name}!
 
 This is a test to make sure that you receive emails sent from SimpleLogin.
+
 If you have any questions, feel free to reply to this email :).
+
 Have a nice day!
-SimpleLogin team.
+Son.
+SimpleLogin.
             """,
             )
+
             flash(
                 f"An email sent to {gen_email.email} is on its way, please check your inbox/spam folder",
                 "success",

@@ -40,7 +40,7 @@ def send_by_postfix(to_email, subject, content):
     msg = EmailMessage()
 
     msg["Subject"] = subject
-    msg["From"] = SUPPORT_EMAIL
+    msg["From"] = f"Son from SimpleLogin <{SUPPORT_EMAIL}>"
     msg["To"] = to_email
     msg.set_content(content)
 
