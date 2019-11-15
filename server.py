@@ -42,7 +42,6 @@ from app.models import (
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
-from app.partner.base import partner_bp
 
 if ENABLE_SENTRY:
     LOG.d("enable sentry")
@@ -150,7 +149,6 @@ def register_blueprints(app: Flask):
     app.register_blueprint(monitor_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(developer_bp)
-    app.register_blueprint(partner_bp)
 
     app.register_blueprint(oauth_bp, url_prefix="/oauth")
     app.register_blueprint(oauth_bp, url_prefix="/oauth2")

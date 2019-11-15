@@ -11,6 +11,7 @@
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade To Premium</a>
           </div>
         {% endif %}
+
         <div class="dropdown d-none d-md-flex">
           <a class="nav-link icon"
              data-intro="Welcome to SimpleLogin! <br><br>
@@ -40,10 +41,6 @@
               <i class="dropdown-icon fe fe-settings"></i> Settings
             </a>
 
-{#            <a class="dropdown-item" href="{{ url_for('partner.become') }}">#}
-{#              <i class="dropdown-icon fe fe-target"></i> Become Partner/Developer#}
-{#            </a>#}
-            
             {% if current_user.is_premium() %}
               <a class="dropdown-item" href="{{ url_for('dashboard.billing') }}">
                 <i class="dropdown-icon fe fe-dollar-sign"></i> Billing
