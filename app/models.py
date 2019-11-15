@@ -256,16 +256,6 @@ class ResetPasswordCode(db.Model, ModelMixin):
         return self.expired < arrow.now()
 
 
-class Partner(db.Model, ModelMixin):
-    email = db.Column(db.String(128))
-    name = db.Column(db.String(128))
-    website = db.Column(db.String(1024))
-    additional_information = db.Column(db.Text)
-
-    # If apply from a authenticated user, set user_id to the user who has applied for partnership
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=True)
-
-
 # <<< OAUTH models >>>
 
 

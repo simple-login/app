@@ -36,7 +36,6 @@ from app.models import (
     ClientUser,
     GenEmail,
     RedirectUri,
-    Partner,
     Subscription,
     PlanEnum,
 )
@@ -342,7 +341,6 @@ def init_admin(app):
     admin.add_view(SLModelView(Client, db.session))
     admin.add_view(SLModelView(GenEmail, db.session))
     admin.add_view(SLModelView(ClientUser, db.session))
-    admin.add_view(SLModelView(Partner, db.session, endpoint="admin-partner"))
 
 
 if __name__ == "__main__":
