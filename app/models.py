@@ -128,7 +128,15 @@ class User(db.Model, ModelMixin, UserMixin):
     def is_premium(self):
         """user is premium if they have a active subscription"""
         sub: Subscription = self.get_subscription()
-        return sub is not None and not sub.cancelled
+        if sub:
+            if sub.cancelled:
+                # user is premium until the next billing_date + 1
+                return sub.next_bill_date >= arrow.now().shift(days=-1).date()
+
+            # subscription active, ie not cancelled
+            return True
+
+        return False
 
     def is_trial(self):
         return self.trial_expiration is not None and self.trial_expiration > arrow.now()
