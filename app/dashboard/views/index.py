@@ -31,10 +31,11 @@ def index():
                 gen_email.email,
                 "A Test Email",
                 f"""
-Hi {current_user.name}! <br><br>
-This is a test to make sure that you receive emails sent from SimpleLogin. <br><br>
-If you have any questions, feel free to reply to this email :). <br><br>
-Have a nice day! <br><br>
+Hi {current_user.name}!
+
+This is a test to make sure that you receive emails sent from SimpleLogin.
+If you have any questions, feel free to reply to this email :).
+Have a nice day!
 SimpleLogin team.
             """,
             )
