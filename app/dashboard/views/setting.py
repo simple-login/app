@@ -79,7 +79,7 @@ def send_reset_password_email(user):
 
     reset_password_link = f"{URL}/auth/reset_password?code={reset_password_code.code}"
 
-    email_utils.send(
+    email_utils.send_by_sendgrid(
         user.email,
         f"Reset your password on SimpleLogin",
         html_content=f"""

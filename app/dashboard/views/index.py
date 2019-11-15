@@ -27,7 +27,7 @@ def index():
             gen_email = GenEmail.get(gen_email_id)
 
             LOG.d("trigger an email to %s", gen_email)
-            email_utils.send(
+            email_utils.send_by_sendgrid(
                 gen_email.email,
                 "A Test Email",
                 f"""

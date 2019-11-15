@@ -38,7 +38,7 @@ app: {client.name}
         # if this is the first app user creates, sends an email to ask for feedback
         if db.session.query(Client).filter_by(user_id=current_user.id).count() == 1:
             LOG.d(f"send feedback email to user {current_user}")
-            email_utils.send(
+            email_utils.send_by_sendgrid(
                 current_user.email,
                 "SimpleLogin questions/feedbacks",
                 f"""

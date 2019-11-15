@@ -66,7 +66,7 @@ def send_activation_email(user, next_url):
         LOG.d("redirect user to %s after activation", next_url)
         activation_link = activation_link + "&next=" + encode_url(next_url)
 
-    email_utils.send(
+    email_utils.send_by_sendgrid(
         user.email,
         f"Welcome to SimpleLogin {user.name} - just one more step!",
         html_content=f"""
