@@ -113,7 +113,7 @@ def fake_data():
         update_url="https://checkout.paddle.com/subscription/update?user=1234",
         subscription_id="123",
         event_time=arrow.now(),
-        next_bill_date=arrow.now().shift(days=1),
+        next_bill_date=arrow.now().shift(days=10).date(),
         plan=PlanEnum.monthly,
     )
     db.session.commit()
