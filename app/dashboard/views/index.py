@@ -27,9 +27,7 @@ def index():
             gen_email = GenEmail.get(gen_email_id)
 
             LOG.d("trigger an email to %s", gen_email)
-            email_utils.send_test_email_alias(
-                gen_email.email, gen_email.user.name, gen_email.email
-            )
+            email_utils.send_test_email_alias(gen_email.email, gen_email.user.name)
 
             flash(
                 f"An email sent to {gen_email.email} is on its way, please check your inbox/spam folder",
