@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from flask import render_template, request, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -7,7 +9,15 @@ from app.config import HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ClientUser
+from app.models import GenEmail, ClientUser, ForwardEmail, ForwardEmailLog
+
+
+@dataclass
+class AliasInfo:
+    gen_email: GenEmail
+    nb_forward: int
+    nb_blocked: int
+    nb_reply: int
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
@@ -97,6 +107,43 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
+        aliases=get_alias_info(current_user.id),
         gen_emails=gen_emails,
         highlight_gen_email_id=highlight_gen_email_id,
     )
+
+
+def get_alias_info(user_id) -> [AliasInfo]:
+    aliases = {}  # dict of alias and AliasInfo
+    q = db.session.query(GenEmail, ForwardEmail, ForwardEmailLog).filter(
+        GenEmail.user_id == user_id,
+        GenEmail.id == ForwardEmail.gen_email_id,
+        ForwardEmail.id == ForwardEmailLog.forward_id,
+    )
+
+    for ge, fe, fel in q:
+        if ge.email not in aliases:
+            aliases[ge.email] = AliasInfo(
+                gen_email=ge, nb_blocked=0, nb_forward=0, nb_reply=0
+            )
+
+        alias_info = aliases[ge.email]
+        if fel.is_reply:
+            alias_info.nb_reply += 1
+        elif fel.blocked:
+            alias_info.nb_blocked += 1
+        else:
+            alias_info.nb_forward += 1
+
+    # also add alias that has no forward email or log
+    q = (
+        db.session.query(GenEmail)
+        .filter(GenEmail.email.notin_(aliases.keys()))
+        .filter(GenEmail.user_id == user_id)
+    )
+    for ge in q:
+        aliases[ge.email] = AliasInfo(
+            gen_email=ge, nb_blocked=0, nb_forward=0, nb_reply=0
+        )
+
+    return list(aliases.values())
