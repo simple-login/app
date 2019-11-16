@@ -523,6 +523,18 @@ class ForwardEmail(db.Model, ModelMixin):
     gen_email = db.relationship(GenEmail)
 
 
+class ForwardEmailLog(db.Model, ModelMixin):
+    forward_id = db.Column(
+        db.ForeignKey(ForwardEmail.id, ondelete="cascade"), nullable=False
+    )
+
+    # whether this is a reply
+    is_reply = db.Column(db.Boolean, nullable=False, default=False)
+
+    # for ex if alias is disabled, this forwarding is blocked
+    blocked = db.Column(db.Boolean, nullable=False, default=False)
+
+
 class Subscription(db.Model, ModelMixin):
     # Come from Paddle
     cancel_url = db.Column(db.String(1024), nullable=False)
