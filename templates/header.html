@@ -31,7 +31,12 @@
             {% endif %}
 
             <span class="ml-2 d-none d-lg-block">
-							<span class="text-default">{{ current_user.name }}</span>
+							<span class="text-default">
+                {{ current_user.name }}
+                {% if current_user.is_premium() %}
+                  - <small class="text-success">Premium</small>
+                {% endif %}
+              </span>
 							<small class="text-muted d-block mt-1">{{ current_user.email }}</small>
 						</span>
           </a>
@@ -44,13 +49,13 @@
             {% if current_user.is_premium() %}
               <a class="dropdown-item" href="{{ url_for('dashboard.billing') }}">
                 <i class="dropdown-icon fe fe-dollar-sign"></i> Billing
-              </a>            
+              </a>
             {% endif %}
 
             <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
               <i class="dropdown-icon fe fe-log-out"></i> Sign out
             </a>
-            
+
           </div>
 
         </div>
