@@ -1,0 +1,14 @@
+Welcome to SimpleLogin {{name}}!
+
+Our mission is to protect our online identity. This should be *simple*.
+
+To get started, we need to confirm your email address, so please click this link
+to finish creating your account.
+
+{{activation_link}}
+
+Your feedbacks are very important to us. Please feel free to reply to this email to let us know any
+of your suggestion!
+
+Thanks!
+Son - SimpleLogin founder.
