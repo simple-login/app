@@ -1,10 +1,12 @@
 import os
 from email.message import EmailMessage
+from email.utils import make_msgid, formatdate
 from smtplib import SMTP
 
 from jinja2 import Environment, FileSystemLoader
 
 from app.config import SUPPORT_EMAIL, ROOT_DIR
+from app.log import LOG
 
 
 def _render(template_name, **kwargs) -> str:
@@ -77,6 +79,14 @@ def send_by_postfix(to_email, subject, plaintext, html):
     msg.set_content(plaintext)
     if html is not None:
         msg.add_alternative(html, subtype="html")
+
+    msg_id_header = make_msgid()
+    LOG.d("message-id %s", msg_id_header)
+    msg["Message-ID"] = msg_id_header
+
+    date_header = formatdate()
+    LOG.d("Date header: %s", date_header)
+    msg["Date"] = date_header
 
     smtp.send_message(msg, from_addr=SUPPORT_EMAIL, to_addrs=[to_email])
 
