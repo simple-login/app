@@ -41,7 +41,7 @@ from app.config import EMAIL_DOMAIN
 from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ForwardEmail
+from app.models import GenEmail, ForwardEmail, ForwardEmailLog
 from app.utils import random_words
 from server import create_app
 
@@ -92,11 +92,6 @@ class MailHandler:
 
             with app.app_context():
                 gen_email = GenEmail.get_by(email=alias)
-
-                if not gen_email.enabled:
-                    LOG.d("%s is disabled, do not forward", gen_email)
-                    return "250 Message accepted"
-
                 website_email = parse_srs_email(envelope.mail_from)
 
                 forward_email = ForwardEmail.get_by(
@@ -117,29 +112,37 @@ class MailHandler:
                     )
                     db.session.commit()
 
-                # add custom header
-                msg.add_header("X-SimpleLogin-Type", "Forward")
-                try:
-                    msg.add_header("Reply-To", forward_email.reply_email)
-                except ValueError:
-                    # the header exists already
-                    msg.replace_header("Reply-To", forward_email.reply_email)
+                forward_log = ForwardEmailLog.create(forward_id=forward_email.id)
 
-                LOG.d(
-                    "Send mail from %s to %s, mail_options %s, rcpt_options %s ",
-                    envelope.mail_from,
-                    gen_email.user.email,
-                    envelope.mail_options,
-                    envelope.rcpt_options,
-                )
+                if gen_email.enabled:
+                    # add custom header
+                    msg.add_header("X-SimpleLogin-Type", "Forward")
+                    try:
+                        msg.add_header("Reply-To", forward_email.reply_email)
+                    except ValueError:
+                        # the header exists already
+                        msg.replace_header("Reply-To", forward_email.reply_email)
 
-                smtp.send_message(
-                    msg,
-                    from_addr=envelope.mail_from,
-                    to_addrs=[gen_email.user.email],  # user personal email
-                    mail_options=envelope.mail_options,
-                    rcpt_options=envelope.rcpt_options,
-                )
+                    LOG.d(
+                        "Send mail from %s to %s, mail_options %s, rcpt_options %s ",
+                        envelope.mail_from,
+                        gen_email.user.email,
+                        envelope.mail_options,
+                        envelope.rcpt_options,
+                    )
+
+                    smtp.send_message(
+                        msg,
+                        from_addr=envelope.mail_from,
+                        to_addrs=[gen_email.user.email],  # user personal email
+                        mail_options=envelope.mail_options,
+                        rcpt_options=envelope.rcpt_options,
+                    )
+                else:
+                    LOG.d("%s is disabled, do not forward", gen_email)
+                    forward_log.blocked = True
+
+                db.session.commit()
         else:
             LOG.debug("Reply phase")
             reply_email = envelope.rcpt_tos[0]
@@ -148,7 +151,6 @@ class MailHandler:
 
             with app.app_context():
                 forward_email = ForwardEmail.get_by(reply_email=reply_email)
-
                 alias = forward_email.gen_email.email
 
                 notify_admin(
@@ -174,6 +176,9 @@ class MailHandler:
                     mail_options=envelope.mail_options,
                     rcpt_options=envelope.rcpt_options,
                 )
+
+                ForwardEmailLog.create(forward_id=forward_email.id, is_reply=True)
+                db.session.commit()
 
         return "250 Message accepted for delivery"
 
