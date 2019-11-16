@@ -18,12 +18,12 @@
     </h3>
     <form method="post" class="col text-right">
       <input type="hidden" name="form-name" value="create-random-email">
-      <button class="btn btn-success">Create random alias</button>
+      <button class="btn btn-success">Random alias</button>
     </form>
 
     {% if current_user.can_create_custom_email() %}
       <a href="{{ url_for('dashboard.custom_alias') }}" class="btn btn-primary">
-        Create custom alias
+        Custom alias
       </a>
     {% endif %}
   </div>
@@ -38,9 +38,11 @@
               <th>Alias</th>
               <th>Activity &nbsp; <i class="fe fe-help-circle" data-toggle="tooltip" title="Stats on this alias"></i>
               </th>
-              <th>Email Forwarding <i class="fe fe-help-circle" data-toggle="tooltip" title="Block/unblock an alias"></i>
+              <th>Email Forwarding <i class="fe fe-help-circle" data-toggle="tooltip"
+                                      title="Block/unblock an alias"></i>
               </th>
-              <th></th>
+              <th>Actions</th>
+              <th>More</th>
             </tr>
 
             </thead>
@@ -53,11 +55,7 @@
                 <td>
                   <div>
                     <a href="mailto: {{ gen_email.email }}">{{ gen_email.email }}</a> &nbsp; &nbsp;
-                    {% if gen_email.enabled %}
-                      <span class="icon clipboard" data-clipboard-text="{{ gen_email.email }}">
-                        <i class="dropdown-icon fe fe-clipboard"></i>
-                      </span>
-                    {% endif %}
+
                   </div>
                   <div>
                     Created {{ gen_email.created_at | dt }}
@@ -99,15 +97,24 @@
                 </td>
 
                 <td>
+                  <div class="btn-group" role="group">
+                    <a href="{{ url_for('dashboard.alias_log', alias=gen_email.email) }}"
+                       class="btn btn-secondary">
+                      Activity &nbsp; &nbsp; <i class="dropdown-icon fe fe-activity"></i>
+                    </a>
+
+                    {% if gen_email.enabled %}
+                      <button class="btn btn-secondary clipboard" data-clipboard-text="{{ gen_email.email }}">
+                        Copy &nbsp; &nbsp; <i class="dropdown-icon fe fe-clipboard"></i>
+                      </button>
+                    {% endif %}
+                  </div>
+                </td>
+
+                <td>
                   <div class="item-action dropdown">
                     <a href="javascript:void(0)" data-toggle="dropdown" class="icon"><i class="fe fe-more-vertical"></i></a>
                     <div class="dropdown-menu dropdown-menu-right">
-                      <a href="{{ url_for('dashboard.alias_log', alias=gen_email.email) }}"
-                         class="dropdown-item">
-                        <i class="dropdown-icon fe fe-activity"></i>
-                        Activity
-                      </a>
-
                       {% if gen_email.enabled %}
                         <form method="post">
                           <a href="javascript:void(0)" class="dropdown-item"><i class="dropdown-icon fe fe-send"></i>
