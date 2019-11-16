@@ -92,6 +92,11 @@ class MailHandler:
 
             with app.app_context():
                 gen_email = GenEmail.get_by(email=alias)
+
+                if not gen_email.enabled:
+                    LOG.d("%s is disabled, do not forward", gen_email)
+                    return "250 Message accepted"
+
                 website_email = parse_srs_email(envelope.mail_from)
 
                 forward_email = ForwardEmail.get_by(
