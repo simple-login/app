@@ -56,6 +56,15 @@ def send_new_app_email(email, name):
     )
 
 
+def send_test_email_alias(email, name):
+    send_by_postfix(
+        email,
+        f"{name}, this email is sent to {email}",
+        _render("test-email.txt", name=name, alias=email),
+        _render("test-email.html", name=name, alias=email),
+    )
+
+
 def send_by_postfix(to_email, subject, plaintext, html):
     # host IP, setup via Docker network
     smtp = SMTP("1.1.1.1", 25)
