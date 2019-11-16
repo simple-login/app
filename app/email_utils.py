@@ -1,40 +1,62 @@
-# using SendGrid's Python Library
-# https://github.com/sendgrid/sendgrid-python
+import os
 from email.message import EmailMessage
 from smtplib import SMTP
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from jinja2 import Environment, FileSystemLoader
 
-from app.config import SUPPORT_EMAIL, SENDGRID_API_KEY, NOT_SEND_EMAIL
-from app.log import LOG
+from app.config import SUPPORT_EMAIL, ROOT_DIR
 
 
-def send_by_sendgrid(to_email, subject, html_content, plain_content=None):
-    # On local only print out email content
-    if NOT_SEND_EMAIL:
-        LOG.d(
-            "send mail to %s, subject:%s, content:%s", to_email, subject, html_content
-        )
-        return
+def _render(template_name, **kwargs) -> str:
+    templates_dir = os.path.join(ROOT_DIR, "templates", "emails")
+    env = Environment(loader=FileSystemLoader(templates_dir))
 
-    if not plain_content:
-        plain_content = subject
+    template = env.get_template(template_name)
 
-    message = Mail(
-        from_email=SUPPORT_EMAIL,
-        to_emails=to_email,
-        subject=subject,
-        html_content=html_content,
-        plain_text_content=plain_content,
+    return template.render(**kwargs)
+
+
+def send_welcome_email(email, name):
+    send_by_postfix(
+        email,
+        f"{name}, welcome to SimpleLogin!",
+        _render("welcome.txt", name=name),
+        _render("welcome.html", name=name),
     )
 
-    sg = SendGridAPIClient(SENDGRID_API_KEY)
-    response = sg.send(message)
-    LOG.d("sendgrid res:%s, email:%s", response.status_code, to_email)
+
+def send_activation_email(email, name, activation_link):
+    send_by_postfix(
+        email,
+        f"{name}, just one more step to join SimpleLogin",
+        _render("activation.txt", name=name, activation_link=activation_link),
+        _render("activation.html", name=name, activation_link=activation_link),
+    )
 
 
-def send_by_postfix(to_email, subject, content):
+def send_reset_password_email(email, name, reset_password_link):
+    send_by_postfix(
+        email,
+        f"{name}, reset your password on SimpleLogin",
+        _render(
+            "reset-password.txt", name=name, reset_password_link=reset_password_link
+        ),
+        _render(
+            "reset-password.html", name=name, reset_password_link=reset_password_link
+        ),
+    )
+
+
+def send_new_app_email(email, name):
+    send_by_postfix(
+        email,
+        f"{name}, any questions/feedbacks for SimpleLogin?",
+        _render("new-app.txt", name=name),
+        _render("new-app.html", name=name),
+    )
+
+
+def send_by_postfix(to_email, subject, plaintext, html):
     # host IP, setup via Docker network
     smtp = SMTP("1.1.1.1", 25)
     msg = EmailMessage()
@@ -42,10 +64,13 @@ def send_by_postfix(to_email, subject, content):
     msg["Subject"] = subject
     msg["From"] = f"Son from SimpleLogin <{SUPPORT_EMAIL}>"
     msg["To"] = to_email
-    msg.set_content(content)
+
+    msg.set_content(plaintext)
+    if html is not None:
+        msg.add_alternative(html, subtype="html")
 
     smtp.send_message(msg, from_addr=SUPPORT_EMAIL, to_addrs=[to_email])
 
 
 def notify_admin(subject, html_content=""):
-    send_by_postfix(SUPPORT_EMAIL, subject, html_content)
+    send_by_postfix(SUPPORT_EMAIL, subject, html_content, html_content)

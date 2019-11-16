@@ -38,46 +38,7 @@ app: {client.name}
         # if this is the first app user creates, sends an email to ask for feedback
         if db.session.query(Client).filter_by(user_id=current_user.id).count() == 1:
             LOG.d(f"send feedback email to user {current_user}")
-            email_utils.send_by_sendgrid(
-                current_user.email,
-                "SimpleLogin questions/feedbacks",
-                f"""
-Hi {current_user.name}! <br><br>
-
-This is Son, SimpleLogin CEO & Founder :) <br><br>
-
-Even though I lead the company, I’m the "product person" and the user experience you get from our product means a lot to me. <br><br>
-
-Our users and developers love SimpleLogin and its simplicity (hence the "simple" in the name 😉), but if there's anything that's bugging you, even the smallest of issues that could be done better, I want to hear about it - so hit the reply button.
-<br><br>
-
-And ok, this is an automated email, but if you reply it comes directly to me and will be answered by me.
-<br><br>
-
-Best regards, <br>
-Son. <br>
-<br>
-----------------------------------<br>
-Son NK <br>
-SimpleLogin founder. <br>
-https://simplelogin.io <br>
-https://twitter.com/nguyenkims <br>
-                             """,
-                plain_content="""
-                             Hi there!
-
-This is Son, SimpleLogin CEO & Founder :).
-
-Even though I lead the company, I’m the "product person" and the user experience you get from our product means a lot to me.
-
-Our users and developers love SimpleLogin and its simplicity (hence the "simple" in the name 😉), but if there's anything that's bugging you, even the smallest of issues that could be done better, I want to hear about it - so hit the reply button.
-
-And ok, this is an automated email, but if you reply it comes directly to me and will be answered by me.
-
-Best regards,
-Son.
-""",
-            )
+            email_utils.send_new_app_email(current_user.email, current_user.name)
 
         return redirect(
             url_for("developer.client_detail", client_id=client.id, is_new=1)

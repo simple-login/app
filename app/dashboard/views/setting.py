@@ -1,7 +1,5 @@
 from io import BytesIO
 
-import arrow
-import stripe
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -9,9 +7,8 @@ from flask_wtf.file import FileField
 from wtforms import StringField, validators
 
 from app import s3, email_utils
-from app.config import URL, PROMO_CODE
+from app.config import URL
 from app.dashboard.base import dashboard_bp
-from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
 from app.models import PlanEnum, File, ResetPasswordCode
@@ -55,10 +52,9 @@ def setting():
 
                 db.session.commit()
                 flash(f"Your profile has been updated", "success")
-        
+
         elif request.form.get("form-name") == "change-password":
             send_reset_password_email(current_user)
-        
 
         return redirect(url_for("dashboard.setting"))
 
@@ -79,21 +75,7 @@ def send_reset_password_email(user):
 
     reset_password_link = f"{URL}/auth/reset_password?code={reset_password_code.code}"
 
-    email_utils.send_by_sendgrid(
-        user.email,
-        f"Reset your password on SimpleLogin",
-        html_content=f"""
-    Hi {user.name}! <br><br>
-
-    To reset or change your password, please follow this link <a href="{reset_password_link}">reset password</a>. 
-    Or you can paste this link into your browser: <br><br>
-
-    {reset_password_link} <br><br>
-
-    Cheers,
-    SimpleLogin team.
-    """,
-    )
+    email_utils.send_reset_password_email(user.email, user.name, reset_password_link)
 
     flash(
         "You are going to receive an email containing instruction to change your password",
