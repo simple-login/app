@@ -1,6 +1,7 @@
 from flask import request, redirect, url_for, flash, render_template
 from flask_login import login_user, current_user
 
+from app import email_utils
 from app.auth.base import auth_bp
 from app.extensions import db
 from app.log import LOG
@@ -38,6 +39,7 @@ def activate():
     user = activation_code.user
     user.activated = True
     login_user(user)
+    email_utils.send_welcome_email(user.email, user.name)
 
     # activation code is to be used only once
     ActivationCode.delete(activation_code.id)

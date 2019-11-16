@@ -1,9 +1,9 @@
-import arrow
 from flask import request, session, redirect, url_for, flash
 from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 
+from app import email_utils
 from app.auth.base import auth_bp
 from app.auth.views.google import create_file_from_url
 from app.config import URL, FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET
@@ -11,7 +11,6 @@ from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
 from app.models import User
-from app.utils import random_string
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"
@@ -106,6 +105,7 @@ def facebook_callback():
 
         db.session.commit()
         login_user(user)
+        email_utils.send_welcome_email(user.email, user.name)
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 

@@ -1,9 +1,8 @@
-import arrow
 from flask import request, session, redirect, url_for, flash
 from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 
-from app import s3
+from app import s3, email_utils
 from app.auth.base import auth_bp
 from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from app.email_utils import notify_admin
@@ -105,6 +104,7 @@ def google_callback():
 
         db.session.commit()
         login_user(user)
+        email_utils.send_welcome_email(user.email, user.name)
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 

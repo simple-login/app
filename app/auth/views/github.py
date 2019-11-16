@@ -3,6 +3,7 @@ from flask import request, session, redirect, url_for, flash
 from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 
+from app import email_utils
 from app.auth.base import auth_bp
 from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
 from app.email_utils import notify_admin
@@ -90,6 +91,7 @@ def github_callback():
         user = User.create(email=email, name=github_user_data["name"], activated=True)
         db.session.commit()
         login_user(user)
+        email_utils.send_welcome_email(user.email, user.name)
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
