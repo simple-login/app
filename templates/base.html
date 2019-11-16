@@ -57,6 +57,9 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/4.12.0/bootstrap-social.min.css">
 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.min.js"></script>
+
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
 
   <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -86,11 +89,13 @@
       {% if messages %}
         {% for category, message in messages %}
           <script>
-            notie.alert({
-              type: "{{ category }}",
-              text: "{{ message }}",
-              time: 3
-            })
+            new Noty({
+              type: '{{ category }}',
+              theme: 'nest',
+              text: '{{ message }}',
+              timeout: 2000,
+              progressBar: false
+            }).show();
           </script>
         {% endfor %}
       {% endif %}
@@ -120,11 +125,13 @@
   var clipboard = new ClipboardJS('.clipboard');
 
   clipboard.on('success', function (e) {
-    notie.alert({
-      type: "success",
-      text: "Copied to clipboard",
-      time: 2,
-    });
+    new Noty({
+      type: 'success',
+      theme: 'nest',
+      text: 'Copied to clipboard',
+      timeout: 1000,
+      progressBar: false
+    }).show();
 
     e.clearSelection();
   });
