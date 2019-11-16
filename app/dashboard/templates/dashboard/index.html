@@ -65,30 +65,35 @@
 
                 <td>
                   <div class="btn-group">
-                    <button class="clipboard btn btn-secondary btn-sm"
-                            data-toggle="tooltip"
-                            title="Copy the alias to clipboard"
-                            data-clipboard-text="{{ gen_email.email }}">
-                      Copy
-                    </button>
+                    {% if gen_email.enabled %}
+                      <button class="clipboard btn btn-secondary btn-sm"
+                              data-toggle="tooltip"
+                              title="Copy the alias to clipboard"
+                              data-clipboard-text="{{ gen_email.email }}">
+                        Copy
 
-                    <form method="post">
-                      <input type="hidden" name="form-name" value="trigger-email">
-                      <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                      </button>
+                    {% endif %}
 
-                      {% if gen_email.enabled %}
-                        <button class="btn btn-secondary btn-sm"
-                                data-toggle="tooltip"
-                                title="Send a test email to the alias."
-                            {% if loop.index ==1 %}
-                                data-intro="By triggering the test email,
-                            SimpleLogin server will send an email to this alias
-                            and this email should arrive to your personal email inbox 🚀"
-                            {% endif %}
-                        >Trigger Test Email
-                        </button>
-                      {% endif %}
-                    </form>
+                    {% if gen_email.enabled %}
+                      <form method="post">
+                        <input type="hidden" name="form-name" value="trigger-email">
+                        <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+
+
+                          <button class="btn btn-secondary btn-sm"
+                                  data-toggle="tooltip"
+                                  title="Send a test email to the alias."
+                              {% if loop.index ==1 %}
+                                  data-intro="By triggering the test email,
+                              SimpleLogin server will send an email to this alias
+                              and this email should arrive to your personal email inbox 🚀"
+                              {% endif %}
+                          >Trigger Test Email
+                          </button>
+                      </form>
+                    {% endif %}
+
                   </div>
                 </td>
 
