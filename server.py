@@ -285,17 +285,31 @@ def setup_paddle_callback(app: Flask):
             else:
                 plan = PlanEnum.yearly
 
-            Subscription.create(
-                user_id=user.id,
-                cancel_url=request.form.get("cancel_url"),
-                update_url=request.form.get("update_url"),
-                subscription_id=request.form.get("subscription_id"),
-                event_time=arrow.now(),
-                next_bill_date=arrow.get(
+            sub = Subscription.get_by(user_id=user.id)
+
+            if not sub:
+                LOG.d("create a new sub")
+                Subscription.create(
+                    user_id=user.id,
+                    cancel_url=request.form.get("cancel_url"),
+                    update_url=request.form.get("update_url"),
+                    subscription_id=request.form.get("subscription_id"),
+                    event_time=arrow.now(),
+                    next_bill_date=arrow.get(
+                        request.form.get("next_bill_date"), "YYYY-MM-DD"
+                    ).date(),
+                    plan=plan,
+                )
+            else:
+                LOG.d("update existing sub %s", sub)
+                sub.cancel_url = request.form.get("cancel_url")
+                sub.update_url = request.form.get("update_url")
+                sub.subscription_id = request.form.get("subscription_id")
+                sub.event_time = arrow.now()
+                sub.next_bill_date = arrow.get(
                     request.form.get("next_bill_date"), "YYYY-MM-DD"
-                ).date(),
-                plan=plan,
-            )
+                ).date()
+                sub.plan = plan
 
             LOG.debug("User %s upgrades!", user)
             notify_admin(f"User {user.email} upgrades!")
