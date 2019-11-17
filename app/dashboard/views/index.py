@@ -19,6 +19,8 @@ class AliasInfo:
     nb_blocked: int
     nb_reply: int
 
+    show_intro_test_send_email: bool = False
+
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
 @login_required
@@ -146,4 +148,12 @@ def get_alias_info(user_id) -> [AliasInfo]:
             gen_email=ge, nb_blocked=0, nb_forward=0, nb_reply=0
         )
 
-    return list(aliases.values())
+    ret = list(aliases.values())
+
+    # only show intro on the first enabled alias
+    for alias in ret:
+        if alias.gen_email.enabled:
+            alias.show_intro_test_send_email = True
+            break
+
+    return ret

@@ -9,11 +9,10 @@
 {% block default_content %}
   <div class="page-header row">
     <h3 class="page-title col"
-        data-intro="Here, you find the list of all <b>email alias</b> created. <br><br>
-        Emails sent to an <b>alias</b> will be forwarded to your personal email. <br><br>
-        Please note that email alias is <b>NOT</b> temporary, meaning an alias works forever! <br><br>
-        Email alias is a great way to hide your personal email so feel free to
-        use it whenever possible, for ex on untrusted websites 😎">
+        data-intro="Here, you find the list of all <b>alias</b> created. <br><br>
+        Emails sent to an <b>alias</b> will be forwarded to your inbox. <br><br>
+        Alias is a great way to hide your personal email address so feel free to
+        use it whenever possible, for example on untrusted websites 😎">
       Email Alias
     </h3>
     <form method="post" class="col text-right">
@@ -42,7 +41,6 @@
                                       title="Block/unblock an alias"></i>
               </th>
               <th>Actions</th>
-              <th>More</th>
             </tr>
 
             </thead>
@@ -83,7 +81,7 @@
 
                         {% if loop.index ==1 %}
                            data-intro="By turning off an alias, emails sent to this alias will <b>NOT</b>
-                           be forwarded to your personal email. <br><br>
+                           be forwarded to your inbox. <br><br>
                            This should only be used with care as others might
                            not be able to reach you after ...
                             "
@@ -108,34 +106,32 @@
                         Copy &nbsp; &nbsp; <i class="dropdown-icon fe fe-clipboard"></i>
                       </button>
                     {% endif %}
-                  </div>
-                </td>
 
-                <td>
-                  <div class="item-action dropdown">
-                    <a href="javascript:void(0)" data-toggle="dropdown" class="icon"><i class="fe fe-more-vertical"></i></a>
-                    <div class="dropdown-menu dropdown-menu-right">
-                      {% if gen_email.enabled %}
-                        <form method="post">
-                          <a href="javascript:void(0)" class="dropdown-item"><i class="dropdown-icon fe fe-send"></i>
-                            <input type="hidden" name="form-name" value="trigger-email">
-                            <input type="hidden" name="gen-email-id"
-                                   value="{{ gen_email.id }}">
-                            <span class="trigger-email"> Send email to alias </span>
-                          </a>
-                        </form>
-                      {% endif %}
-
-                      <div class="dropdown-divider"></div>
-
+                    {% if gen_email.enabled %}
                       <form method="post">
-                        <a href="javascript:void(0)" class="dropdown-item"><i class="dropdown-icon fe fe-trash"></i>
-                          <input type="hidden" name="form-name" value="delete-email">
-                          <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
-                          <span class="delete-email"> Delete </span>
-                        </a>
+                        <input type="hidden" name="form-name" value="trigger-email">
+                        <input type="hidden" name="gen-email-id"
+                               value="{{ gen_email.id }}">
+                        <span class="trigger-email btn btn-secondary"
+                            {% if alias_info.show_intro_test_send_email %}
+                              data-intro="Send a test email to this alias, the email will arrive at your inbox."
+                            {% endif %}
+                        >
+                          Test alias &nbsp; &nbsp;
+                          <i class="dropdown-icon fe fe-send"></i>
+                        </span>
                       </form>
-                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="delete-email">
+                      <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                      <span class="delete-email  btn btn-secondary"> Delete
+                            &nbsp; &nbsp;
+                          <i class="dropdown-icon fe fe-trash-2"></i>
+                          </span>
+                    </form>
+
                   </div>
                 </td>
 
