@@ -16,6 +16,7 @@ from app.utils import random_string
 
 
 class SettingForm(FlaskForm):
+    email = StringField("Email")
     name = StringField("Name", validators=[validators.DataRequired()])
     profile_picture = FileField("Profile Picture")
 

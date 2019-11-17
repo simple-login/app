@@ -14,6 +14,13 @@
       <input type="hidden" name="form-name" value="update-profile">
 
       <h3>Profile</h3>
+
+    <div class="form-group">
+        <label class="form-label">Email</label>
+        {{ form.email(class="form-control", value=current_user.email, readonly=True) }}
+        {{ render_field_errors(form.email) }}
+      </div>
+
       <div class="form-group">
         <label class="form-label">Name</label>
         {{ form.name(class="form-control", value=current_user.name) }}
