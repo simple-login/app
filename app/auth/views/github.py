@@ -88,7 +88,9 @@ def github_callback():
     # create user
     else:
         LOG.d("create github user")
-        user = User.create(email=email, name=github_user_data["name"], activated=True)
+        user = User.create(
+            email=email, name=github_user_data.get("name") or "", activated=True
+        )
         db.session.commit()
         login_user(user)
         email_utils.send_welcome_email(user.email, user.name)
