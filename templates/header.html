@@ -7,8 +7,8 @@
 
       <div class="d-flex order-lg-2 ml-auto">
         {% if current_user.should_upgrade() %}
-          <div class="nav-item d-none d-md-flex">
-            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade To Premium</a>
+          <div class="nav-item">
+            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           </div>
         {% endif %}
 
