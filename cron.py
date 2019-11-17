@@ -9,7 +9,7 @@ def late_payment():
     """check for late payment
     """
     for sub in Subscription.query.all():
-        if (not sub.cancelled) and sub.next_bill_date < arrow.now():
+        if (not sub.cancelled) and sub.next_bill_date < arrow.now().date():
             LOG.error(f"user {sub.user.email} has late payment. {sub}")
 
 
