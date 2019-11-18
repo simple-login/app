@@ -8,7 +8,7 @@
 	https://github.com/konsav/email-templates/  -->
 
 	<style>
-/* Reset styles */ 
+/* Reset styles */
 body { margin: 0; padding: 0; min-width: 100%; width: 100% !important; height: 100% !important;}
 body, table, td, div, p, a { -webkit-font-smoothing: antialiased; text-size-adjust: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; line-height: 100%; }
 table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse !important; border-spacing: 0; }
@@ -17,12 +17,12 @@ img { border: 0; line-height: 100%; outline: none; text-decoration: none; -ms-in
 .ReadMsgBody { width: 100%; } .ExternalClass { width: 100%; }
 .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div { line-height: 100%; }
 
-/* Rounded corners for advanced mail clients only */ 
+/* Rounded corners for advanced mail clients only */
 @media all and (min-width: 560px) {
 	.container { border-radius: 8px; -webkit-border-radius: 8px; -moz-border-radius: 8px; -khtml-border-radius: 8px;}
 }
 
-/* Set color for auto links (addresses, dates, etc.) */ 
+/* Set color for auto links (addresses, dates, etc.) */
 a, a:hover {
 	color: #127DB3;
 }
@@ -33,7 +33,7 @@ a, a:hover {
  	</style>
 
 	<!-- MESSAGE SUBJECT -->
-	<title>SimpleLogin | Change email</title>
+	<title>SimpleLogin | Reset password</title>
 
 </head>
 
@@ -106,9 +106,23 @@ a, a:hover {
 			color: #000000;
 			font-family: sans-serif;" class="paragraph">
       You have asked to change your email to {{new_email}}.
-      <br><br>
+		</td>
+	</tr>
+
+  <tr>
+		<td align="left" valign="top" style="border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%; width: 87.5%; font-size: 17px; font-weight: 400; line-height: 160%;
+			padding-top: 25px;
+			color: #000000;
+			font-family: sans-serif;" class="paragraph">
       Your current email is {{current_email}}.
-      <br><br>
+		</td>
+	</tr>
+
+  <tr>
+		<td align="left" valign="top" style="border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%; width: 87.5%; font-size: 17px; font-weight: 400; line-height: 160%;
+			padding-top: 25px;
+			color: #000000;
+			font-family: sans-serif;" class="paragraph">
       To confirm, please click on this link:
 		</td>
 	</tr>
@@ -119,7 +133,7 @@ a, a:hover {
 		<td align="center" valign="top" style="border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; padding-left: 1.25%; padding-right: 1.25%; width: 100%;
 			padding-top: 25px;
 			padding-bottom: 5px;" class="button"><a
-			href="{{ reset_password_link }}" target="_blank" style="text-decoration: underline;">
+			href="{{ link }}" target="_blank" style="text-decoration: underline;">
 				<table border="0" cellpadding="0" cellspacing="0" align="center" style="max-width: 540px; min-width: 120px; border-collapse: collapse; border-spacing: 0; padding: 0;"><tr><td align="center" valign="middle" style="padding: 12px 24px; margin: 0; text-decoration: underline; border-collapse: collapse; border-spacing: 0; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; -khtml-border-radius: 4px;"
 					bgcolor="#E9703E"><a target="_blank" style="text-decoration: underline;
 					color: #FFFFFF; font-family: sans-serif; font-size: 17px; font-weight: 400; line-height: 120%;"
@@ -135,17 +149,7 @@ a, a:hover {
 			padding-top: 25px;
 			color: #000000;
 			font-family: sans-serif;" class="paragraph">
-				Or you can paste this link into your browser: <br><br>
-      {{ link }}
-		</td>
-	</tr>
-
-  <tr>
-		<td align="left" valign="top" style="border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%; width: 87.5%; font-size: 17px; font-weight: 400; line-height: 160%;
-			padding-top: 25px;
-			color: #000000;
-			font-family: sans-serif;" class="paragraph">
-				Thanks. <br>
+				Cheers. <br>
       <a href="https://twitter.com/nguyenkims">Son</a> - SimpleLogin founder.
 		</td>
 	</tr>
