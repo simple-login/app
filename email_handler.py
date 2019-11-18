@@ -121,11 +121,18 @@ class MailHandler:
                 if gen_email.enabled:
                     # add custom header
                     msg.add_header("X-SimpleLogin-Type", "Forward")
-                    try:
-                        msg.add_header("Reply-To", forward_email.reply_email)
-                    except ValueError:
-                        # the header exists already
-                        msg.replace_header("Reply-To", forward_email.reply_email)
+
+                    # no need to modify reply-to as it is used in From: header directly
+                    # try:
+                    #     msg.add_header("Reply-To", forward_email.reply_email)
+                    # except ValueError:
+                    #     # the header exists already
+                    #     msg.replace_header("Reply-To", forward_email.reply_email)
+
+                    # remove reply-to header if present
+                    if msg["Reply-To"]:
+                        LOG.d("Delete reply-to header %s", msg["Reply-To"])
+                        del msg["Reply-To"]
 
                     # change the from header so the sender comes from @simplelogin
                     # so it can pass DMARC check
