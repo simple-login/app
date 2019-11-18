@@ -14,13 +14,13 @@
 
 
 {% block single_content %}
+  <h1 class="h3 text-center">Create your SimpleLogin account now</h1>
+
   <div class="row">
     <div class="col-md-6">
       <form class="card" method="post">
         {{ form.csrf_token }}
         <div class="card-body p-6">
-          <div class="card-title">Create new account</div>
-
           <div class="form-group">
             <label class="form-label">How should we call you?</label>
             {{ form.name(class="form-control") }}
@@ -49,7 +49,7 @@
           -->
 
           <div class="form-footer">
-            <button type="submit" class="btn btn-primary btn-block">Create new account</button>
+            <button type="submit" class="btn btn-primary btn-block">Create your SimpleLogin account</button>
           </div>
         </div>
       </form>
@@ -62,7 +62,7 @@
     <div class="col-md-6">
       <div class="card">
         <div class="card-body p-6">
-          <div class="card-title">Social sign up</div>
+          <div class="card-title text-center">OR</div>
 
           <a href="{{ url_for('auth.github_login', next=next_url) }}"
              class="btn btn-block btn-social btn-github">

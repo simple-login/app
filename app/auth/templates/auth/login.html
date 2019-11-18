@@ -19,6 +19,8 @@
     <div class="text-danger text-center mb-4">{{ error }}</div>
   {% endif %}
 
+  <h1 class="h2 text-center">Welcome back!</h1>
+
   <div class="row">
     <div class="col-md-6">
       {% if show_resend_activation %}
@@ -31,8 +33,6 @@
       <form class="card" method="post">
         {{ form.csrf_token }}
         <div class="card-body p-6">
-          <div class="card-title">Login to your account</div>
-
           <div class="form-group">
             <label class="form-label">Email address</label>
             {{ form.email(class="form-control", type="email") }}
@@ -73,7 +73,7 @@
     <div class="col-md-6">
       <div class="card">
         <div class="card-body p-6">
-          <div class="card-title">Social sign in</div>
+          <div class="card-title text-center">OR</div>
 
           <a href="{{ url_for('auth.github_login', next=next_url) }}"
              class="btn btn-block btn-social btn-github">
