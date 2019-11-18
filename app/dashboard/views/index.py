@@ -20,6 +20,7 @@ class AliasInfo:
     nb_reply: int
 
     show_intro_test_send_email: bool = False
+    highlight: bool = False
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
@@ -99,23 +100,15 @@ def index():
 
     sorted(client_users, key=lambda cu: cu.client.name)
 
-    gen_emails = (
-        GenEmail.filter_by(user_id=current_user.id)
-        .order_by(GenEmail.email)
-        .options(joinedload(GenEmail.client_users))
-        .all()
-    )
-
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        aliases=get_alias_info(current_user.id),
-        gen_emails=gen_emails,
+        aliases=get_alias_info(current_user.id, highlight_gen_email_id),
         highlight_gen_email_id=highlight_gen_email_id,
     )
 
 
-def get_alias_info(user_id) -> [AliasInfo]:
+def get_alias_info(user_id, highlight_gen_email_id=None) -> [AliasInfo]:
     aliases = {}  # dict of alias and AliasInfo
     q = db.session.query(GenEmail, ForwardEmail, ForwardEmailLog).filter(
         GenEmail.user_id == user_id,
@@ -126,7 +119,11 @@ def get_alias_info(user_id) -> [AliasInfo]:
     for ge, fe, fel in q:
         if ge.email not in aliases:
             aliases[ge.email] = AliasInfo(
-                gen_email=ge, nb_blocked=0, nb_forward=0, nb_reply=0
+                gen_email=ge,
+                nb_blocked=0,
+                nb_forward=0,
+                nb_reply=0,
+                highlight=ge.id == highlight_gen_email_id,
             )
 
         alias_info = aliases[ge.email]
@@ -145,10 +142,24 @@ def get_alias_info(user_id) -> [AliasInfo]:
     )
     for ge in q:
         aliases[ge.email] = AliasInfo(
-            gen_email=ge, nb_blocked=0, nb_forward=0, nb_reply=0
+            gen_email=ge,
+            nb_blocked=0,
+            nb_forward=0,
+            nb_reply=0,
+            highlight=ge.id == highlight_gen_email_id,
         )
 
     ret = list(aliases.values())
+
+    # make sure the highlighted alias is the first element
+    highlight_index = None
+    for ix, alias in enumerate(ret):
+        if alias.highlight:
+            highlight_index = ix
+            break
+
+    if highlight_index:
+        ret.insert(0, ret.pop(highlight_index))
 
     # only show intro on the first enabled alias
     for alias in ret:

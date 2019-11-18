@@ -48,16 +48,18 @@
             {% for alias_info in aliases %}
               {% set gen_email = alias_info.gen_email %}
 
-              <tr {% if gen_email.id == highlight_gen_email_id %} class="highlight-row" {% endif %}>
+              <tr {% if alias_info.highlight %} class="highlight-row" {% endif %}>
 
                 <td>
                   <div>
                     <a href="mailto: {{ gen_email.email }}">{{ gen_email.email }}</a> &nbsp; &nbsp;
-
                   </div>
                   <div>
                     Created {{ gen_email.created_at | dt }}
                   </div>
+                  {% if alias_info.highlight %}
+                    <span class="text-success">New</span>
+                  {% endif %}
                 </td>
 
                 <td>
