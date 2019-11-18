@@ -9,4 +9,5 @@ from .views import (
     github,
     google,
     facebook,
+    change_email,
 )
