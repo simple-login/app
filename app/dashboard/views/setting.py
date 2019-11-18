@@ -49,8 +49,12 @@ def setting():
     if request.method == "POST":
         if request.form.get("form-name") == "update-profile":
             if form.validate():
+                profile_updated = False
                 # update user info
-                current_user.name = form.name.data
+                if form.name.data != current_user.name:
+                    current_user.name = form.name.data
+                    db.session.commit()
+                    profile_updated = True
 
                 if form.profile_picture.data:
                     file_path = random_string(30)
@@ -64,12 +68,17 @@ def setting():
                     LOG.d("upload file %s to s3", file)
 
                     current_user.profile_picture_id = file.id
-                    db.session.flush()
+                    db.session.commit()
+                    profile_updated = True
 
-                db.session.commit()
-                flash(f"Your profile has been updated", "success")
+                if profile_updated:
+                    flash(f"Your profile has been updated", "success")
 
-                if form.email.data and form.email.data != current_user.email:
+                if (
+                    form.email.data
+                    and form.email.data != current_user.email
+                    and not pending_email
+                ):
                     new_email = form.email.data
 
                     # check if this email is not used by other user, or as alias
@@ -94,6 +103,10 @@ def setting():
                         )
                         db.session.commit()
                         send_change_email_confirmation(current_user, email_change)
+                        flash(
+                            "A confirmation email is on the way, please check your inbox",
+                            "success",
+                        )
 
         elif request.form.get("form-name") == "change-password":
             send_reset_password_email(current_user)
@@ -137,8 +150,6 @@ def send_change_email_confirmation(user: User, email_change: EmailChange):
     link = f"{URL}/auth/change_email?code={email_change.code}"
 
     email_utils.send_change_email(email_change.new_email, user.email, user.name, link)
-
-    flash("You are going to receive an email to confirm email change", "success")
 
 
 @dashboard_bp.route("/resend_email_change", methods=["GET", "POST"])
