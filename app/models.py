@@ -224,6 +224,10 @@ def _expiration_1h():
     return arrow.now().shift(hours=1)
 
 
+def _expiration_12h():
+    return arrow.now().shift(hours=12)
+
+
 def _expiration_5m():
     return arrow.now().shift(minutes=5)
 
@@ -563,3 +567,20 @@ class DeletedAlias(db.Model, ModelMixin):
     email = db.Column(db.String(128), unique=True, nullable=False)
 
 
+class EmailChange(db.Model, ModelMixin):
+    """Used when user wants to update their email"""
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    new_email = db.Column(db.String(128), unique=True, nullable=False)
+    code = db.Column(db.String(128), unique=True, nullable=False)
+    expired = db.Column(ArrowType, nullable=False, default=_expiration_12h)
+
+    user = db.relationship(User)
+
+    def is_expired(self):
+        return self.expired < arrow.now()
