@@ -177,6 +177,7 @@ def cancel_email_change():
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
         EmailChange.delete(email_change.id)
+        db.session.commit()
         flash("Your email change is cancelled", "success")
         return redirect(url_for("dashboard.setting"))
     else:

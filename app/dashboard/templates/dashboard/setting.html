@@ -26,7 +26,7 @@
             <span class="text-danger">Pending email change: {{ pending_email }}</span>
             <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Resend
               confirmation email</a>
-            <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Cancel email
+            <a href="{{ url_for('dashboard.cancel_email_change') }}" class="btn btn-secondary btn-sm">Cancel email
               change</a>
           </div>
         {% endif %}
