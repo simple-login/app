@@ -7,7 +7,7 @@ from app.config import EMAIL_DOMAIN, HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail
+from app.models import GenEmail, DeletedAlias
 from app.utils import convert_to_id, random_string
 
 
@@ -38,7 +38,9 @@ def custom_alias():
         else:
             full_email = f"{email}.{email_suffix}@{EMAIL_DOMAIN}"
             # check if email already exists
-            if GenEmail.get_by(email=full_email):
+            if GenEmail.get_by(email=full_email) or DeletedAlias.get_by(
+                email=full_email
+            ):
                 error = "email already chosen, please choose another one"
             else:
                 # create the new alias

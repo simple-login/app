@@ -380,7 +380,9 @@ def generate_email() -> str:
     random_email = random_words() + "@" + EMAIL_DOMAIN
 
     # check that the client does not exist yet
-    if not GenEmail.get_by(email=random_email):
+    if not GenEmail.get_by(email=random_email) and not DeletedAlias.get_by(
+        email=random_email
+    ):
         LOG.debug("generate email %s", random_email)
         return random_email
 

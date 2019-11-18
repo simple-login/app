@@ -9,7 +9,7 @@ from app.config import HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ClientUser, ForwardEmail, ForwardEmailLog
+from app.models import GenEmail, ClientUser, ForwardEmail, ForwardEmailLog, DeletedAlias
 
 
 @dataclass
@@ -86,6 +86,10 @@ def index():
             LOG.d("delete gen email %s", gen_email)
             email = gen_email.email
             GenEmail.delete(gen_email.id)
+
+            # save deleted alias
+            DeletedAlias.create(user_id=current_user.id, email=gen_email.email)
+
             db.session.commit()
             flash(f"Email alias {email} has been deleted", "success")
 

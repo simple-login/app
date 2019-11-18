@@ -2,7 +2,7 @@ import random
 from typing import Dict
 from urllib.parse import urlparse
 
-from flask import request, render_template, redirect
+from flask import request, render_template, redirect, flash
 from flask_login import current_user
 
 from app.config import EMAIL_DOMAIN
@@ -16,6 +16,7 @@ from app.models import (
     GenEmail,
     RedirectUri,
     OauthToken,
+    DeletedAlias,
 )
 from app.oauth.base import oauth_bp
 from app.oauth_models import (
@@ -155,6 +156,11 @@ def authorize():
 
                 email = f"{convert_to_id(custom_email_prefix)}.{email_suffix}@{EMAIL_DOMAIN}"
                 LOG.d("create custom email alias %s for user %s", email, current_user)
+
+                if GenEmail.get_by(email=email) or DeletedAlias.get_by(email=email):
+                    LOG.error("email %s already used, very rare!", email)
+                    flash(f"alias {email} already used", "error")
+                    return redirect(request.url)
 
                 gen_email = GenEmail.create(
                     email=email, user_id=current_user.id, custom=True
