@@ -126,6 +126,12 @@ class MailHandler:
                     except ValueError:
                         # the header exists already
                         msg.replace_header("Reply-To", forward_email.reply_email)
+                    # modify subject to let user know the email is forwarded from SL
+                    original_subject = msg["Subject"]
+                    msg.replace_header(
+                        "Subject",
+                        f"Forwarded by SimpleLogin. Subject: {original_subject}. From: {website_email}",
+                    )
 
                     LOG.d(
                         "Send mail from %s to %s, mail_options %s, rcpt_options %s ",
