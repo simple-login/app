@@ -25,6 +25,7 @@ class RegisterForm(FlaskForm):
 def register():
     if current_user.is_authenticated:
         LOG.d("user is already authenticated, redirect to dashboard")
+        flash("You are already logged in", "warning")
         return redirect(url_for("dashboard.index"))
 
     form = RegisterForm(request.form)
