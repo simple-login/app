@@ -5,7 +5,7 @@ from wtforms import StringField, validators
 
 from app import email_utils
 from app.auth.base import auth_bp
-from app.config import URL
+from app.config import URL, EMAIL_DOMAIN
 from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
@@ -32,7 +32,15 @@ def register():
     next_url = request.args.get("next")
 
     if form.validate_on_submit():
-        user = User.filter_by(email=form.email.data).first()
+        email = form.email.data
+
+        if email.endswith(EMAIL_DOMAIN):
+            flash(
+                "You cannot use alias as your personal inbox. Nice try though 😉",
+                "error",
+            )
+
+        user = User.filter_by(email=email).first()
 
         if user:
             flash(f"Email {form.email.data} already exists", "warning")
