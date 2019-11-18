@@ -92,6 +92,10 @@ class MailHandler:
 
             with app.app_context():
                 gen_email = GenEmail.get_by(email=alias)
+                if not gen_email:
+                    LOG.d("alias %s not exist")
+                    return "510 Email not exist"
+
                 website_email = parse_srs_email(envelope.mail_from)
 
                 forward_email = ForwardEmail.get_by(
