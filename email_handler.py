@@ -32,7 +32,7 @@ It should contain the following info:
 """
 import time
 from email.parser import Parser
-from email.policy import default
+from email.policy import SMTPUTF8
 from smtplib import SMTP
 
 from aiosmtpd.controller import Controller
@@ -82,7 +82,7 @@ class MailHandler:
 
         # host IP, setup via Docker network
         smtp = SMTP("1.1.1.1", 25)
-        msg = Parser(policy=default).parsestr(message_data)
+        msg = Parser(policy=SMTPUTF8).parsestr(message_data)
 
         if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case
             LOG.debug("Forward phase, add Reply-To header")
