@@ -552,3 +552,12 @@ class Subscription(db.Model, ModelMixin):
     )
 
     user = db.relationship(User)
+
+
+class DeletedAlias(db.Model, ModelMixin):
+    """Store all deleted alias to make sure they are NOT reused"""
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
+    )
+    email = db.Column(db.String(128), unique=True, nullable=False)
