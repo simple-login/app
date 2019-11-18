@@ -57,8 +57,9 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/4.12.0/bootstrap-social.min.css">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.min.js"></script>
+  <!-- Toastr library -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
 
@@ -76,6 +77,10 @@
     gtag('config', 'UA-145852331-2');
   </script>
 
+  <script>
+    toastr.options.closeButton = true;
+  </script>
+
   <!-- For additional head -->
   {% block head %}
   {% endblock %}
@@ -89,13 +94,7 @@
       {% if messages %}
         {% for category, message in messages %}
           <script>
-            new Noty({
-              type: '{{ category }}',
-              theme: 'nest',
-              text: '{{ message }}',
-              timeout: 3000,
-              progressBar: false
-            }).show();
+            toastr.{{category}}("{{ message }}");
           </script>
         {% endfor %}
       {% endif %}
@@ -125,14 +124,7 @@
   var clipboard = new ClipboardJS('.clipboard');
 
   clipboard.on('success', function (e) {
-    new Noty({
-      type: 'success',
-      theme: 'nest',
-      text: 'Copied to clipboard',
-      timeout: 1000,
-      progressBar: false
-    }).show();
-
+    toastr.success("Copied to clipboard");
     e.clearSelection();
   });
 
