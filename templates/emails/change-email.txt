@@ -1,0 +1,12 @@
+Hi {{name}},
+
+You have asked to change your email to {{new_email}}.
+
+Your current email is {{current_email}}.
+
+To confirm, please click on this link:
+
+{{link}}
+
+Cheers,
+Son - SimpleLogin founder.

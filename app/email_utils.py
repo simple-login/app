@@ -49,6 +49,27 @@ def send_reset_password_email(email, name, reset_password_link):
     )
 
 
+def send_change_email(new_email, current_email, name, link):
+    send_by_postfix(
+        new_email,
+        f"{name}, confirm email update on SimpleLogin",
+        _render(
+            "change-email.txt",
+            name=name,
+            link=link,
+            new_email=new_email,
+            current_email=current_email,
+        ),
+        _render(
+            "change-email.html",
+            name=name,
+            link=link,
+            new_email=new_email,
+            current_email=current_email,
+        ),
+    )
+
+
 def send_new_app_email(email, name):
     send_by_postfix(
         email,
