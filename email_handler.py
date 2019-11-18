@@ -126,6 +126,12 @@ class MailHandler:
                     except ValueError:
                         # the header exists already
                         msg.replace_header("Reply-To", forward_email.reply_email)
+
+                    # change the from header so the sender comes from @simplelogin
+                    # so it can pass DMARC check
+                    from_header = f"Original Sender {website_email.replace('@', ' at ')} <{forward_email.reply_email}>"
+                    msg.replace_header("From", from_header)
+
                     # modify subject to let user know the email is forwarded from SL
                     original_subject = msg["Subject"]
                     msg.replace_header(
@@ -134,9 +140,10 @@ class MailHandler:
                     )
 
                     LOG.d(
-                        "Send mail from %s to %s, mail_options %s, rcpt_options %s ",
-                        envelope.mail_from,
+                        "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
+                        website_email,
                         gen_email.user.email,
+                        original_subject,
                         envelope.mail_options,
                         envelope.rcpt_options,
                     )
