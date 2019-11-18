@@ -15,10 +15,21 @@
 
       <h3>Profile</h3>
 
-    <div class="form-group">
+      <div class="form-group">
         <label class="form-label">Email</label>
-        {{ form.email(class="form-control", value=current_user.email, readonly=True) }}
+        <!-- Not allow user to change email if there's a pending change -->
+        {{ form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
         {{ render_field_errors(form.email) }}
+
+        {% if pending_email %}
+          <div class="mt-2">
+            <span class="text-danger">Pending email change: {{ pending_email }}</span>
+            <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Resend
+              confirmation email</a>
+            <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Cancel email
+              change</a>
+          </div>
+        {% endif %}
       </div>
 
       <div class="form-group">
@@ -40,7 +51,7 @@
     </form>
 
     <hr>
-    
+
     <h3>Change password</h3>
     <form method="post">
       <input type="hidden" name="form-name" value="change-password">
