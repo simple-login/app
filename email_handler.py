@@ -31,6 +31,7 @@ It should contain the following info:
 
 """
 import time
+from email.message import EmailMessage
 from email.parser import Parser
 from email.policy import SMTPUTF8
 from smtplib import SMTP
@@ -86,123 +87,130 @@ class MailHandler:
 
         if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case
             LOG.debug("Forward phase, add Reply-To header")
-            alias = envelope.rcpt_tos[0]  # alias@SL
-
             app = create_app()
 
             with app.app_context():
-                gen_email = GenEmail.get_by(email=alias)
-                if not gen_email:
-                    LOG.d("alias %s not exist")
-                    return "510 Email not exist"
+                return self.handle_forward(envelope, smtp, msg)
 
-                website_email = parse_srs_email(envelope.mail_from)
-
-                forward_email = ForwardEmail.get_by(
-                    gen_email_id=gen_email.id, website_email=website_email
-                )
-                if not forward_email:
-                    LOG.debug(
-                        "create forward email for alias %s and website email %s",
-                        alias,
-                        website_email,
-                    )
-                    # todo: make sure reply_email is unique
-                    reply_email = f"reply+{random_words()}@{EMAIL_DOMAIN}"
-                    forward_email = ForwardEmail.create(
-                        gen_email_id=gen_email.id,
-                        website_email=website_email,
-                        reply_email=reply_email,
-                    )
-                    db.session.commit()
-
-                forward_log = ForwardEmailLog.create(forward_id=forward_email.id)
-
-                if gen_email.enabled:
-                    # add custom header
-                    msg.add_header("X-SimpleLogin-Type", "Forward")
-
-                    # no need to modify reply-to as it is used in From: header directly
-                    # try:
-                    #     msg.add_header("Reply-To", forward_email.reply_email)
-                    # except ValueError:
-                    #     # the header exists already
-                    #     msg.replace_header("Reply-To", forward_email.reply_email)
-
-                    # remove reply-to header if present
-                    if msg["Reply-To"]:
-                        LOG.d("Delete reply-to header %s", msg["Reply-To"])
-                        del msg["Reply-To"]
-
-                    # change the from header so the sender comes from @simplelogin
-                    # so it can pass DMARC check
-                    from_header = f"Original Sender {website_email.replace('@', ' at ')} <{forward_email.reply_email}>"
-                    msg.replace_header("From", from_header)
-
-                    # modify subject to let user know the email is forwarded from SL
-                    original_subject = msg["Subject"]
-                    msg.replace_header(
-                        "Subject",
-                        f"Forwarded by SimpleLogin. Subject: {original_subject}. From: {website_email}",
-                    )
-
-                    LOG.d(
-                        "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
-                        website_email,
-                        gen_email.user.email,
-                        original_subject,
-                        envelope.mail_options,
-                        envelope.rcpt_options,
-                    )
-
-                    smtp.send_message(
-                        msg,
-                        from_addr=envelope.mail_from,
-                        to_addrs=[gen_email.user.email],  # user personal email
-                        mail_options=envelope.mail_options,
-                        rcpt_options=envelope.rcpt_options,
-                    )
-                else:
-                    LOG.d("%s is disabled, do not forward", gen_email)
-                    forward_log.blocked = True
-
-                db.session.commit()
         else:
             LOG.debug("Reply phase")
-            reply_email = envelope.rcpt_tos[0]
-
             app = create_app()
 
             with app.app_context():
-                forward_email = ForwardEmail.get_by(reply_email=reply_email)
-                alias = forward_email.gen_email.email
+                return self.handle_reply(envelope, smtp, msg)
 
-                notify_admin(
-                    f"Reply phase used by user: {forward_email.gen_email.user.email} "
-                )
+    def handle_forward(self, envelope, smtp, msg: EmailMessage) -> str:
+        """return *status_code message*"""
+        alias = envelope.rcpt_tos[0]  # alias@SL
 
-                # email seems to come from alias
-                msg.replace_header("From", alias)
-                msg.replace_header("To", forward_email.website_email)
+        gen_email = GenEmail.get_by(email=alias)
+        if not gen_email:
+            LOG.d("alias %s not exist")
+            return "510 Email not exist"
 
-                LOG.d(
-                    "send email from %s to %s, mail_options:%s,rcpt_options:%s",
-                    alias,
-                    forward_email.website_email,
-                    envelope.mail_options,
-                    envelope.rcpt_options,
-                )
+        website_email = parse_srs_email(envelope.mail_from)
 
-                smtp.send_message(
-                    msg,
-                    from_addr=alias,
-                    to_addrs=[forward_email.website_email],
-                    mail_options=envelope.mail_options,
-                    rcpt_options=envelope.rcpt_options,
-                )
+        forward_email = ForwardEmail.get_by(
+            gen_email_id=gen_email.id, website_email=website_email
+        )
+        if not forward_email:
+            LOG.debug(
+                "create forward email for alias %s and website email %s",
+                alias,
+                website_email,
+            )
+            # todo: make sure reply_email is unique
+            reply_email = f"reply+{random_words()}@{EMAIL_DOMAIN}"
+            forward_email = ForwardEmail.create(
+                gen_email_id=gen_email.id,
+                website_email=website_email,
+                reply_email=reply_email,
+            )
+            db.session.commit()
 
-                ForwardEmailLog.create(forward_id=forward_email.id, is_reply=True)
-                db.session.commit()
+        forward_log = ForwardEmailLog.create(forward_id=forward_email.id)
+
+        if gen_email.enabled:
+            # add custom header
+            msg.add_header("X-SimpleLogin-Type", "Forward")
+
+            # no need to modify reply-to as it is used in From: header directly
+            # try:
+            #     msg.add_header("Reply-To", forward_email.reply_email)
+            # except ValueError:
+            #     # the header exists already
+            #     msg.replace_header("Reply-To", forward_email.reply_email)
+
+            # remove reply-to header if present
+            if msg["Reply-To"]:
+                LOG.d("Delete reply-to header %s", msg["Reply-To"])
+                del msg["Reply-To"]
+
+            # change the from header so the sender comes from @simplelogin
+            # so it can pass DMARC check
+            from_header = f"Original Sender {website_email.replace('@', ' at ')} <{forward_email.reply_email}>"
+            msg.replace_header("From", from_header)
+
+            # modify subject to let user know the email is forwarded from SL
+            original_subject = msg["Subject"]
+            msg.replace_header(
+                "Subject",
+                f"Forwarded by SimpleLogin. Subject: {original_subject}. From: {website_email}",
+            )
+
+            LOG.d(
+                "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
+                website_email,
+                gen_email.user.email,
+                original_subject,
+                envelope.mail_options,
+                envelope.rcpt_options,
+            )
+
+            smtp.send_message(
+                msg,
+                from_addr=envelope.mail_from,
+                to_addrs=[gen_email.user.email],  # user personal email
+                mail_options=envelope.mail_options,
+                rcpt_options=envelope.rcpt_options,
+            )
+        else:
+            LOG.d("%s is disabled, do not forward", gen_email)
+            forward_log.blocked = True
+
+        db.session.commit()
+        return "250 Message accepted for delivery"
+
+    def handle_reply(self, envelope, smtp, msg: EmailMessage) -> str:
+        reply_email = envelope.rcpt_tos[0]
+
+        forward_email = ForwardEmail.get_by(reply_email=reply_email)
+        alias = forward_email.gen_email.email
+
+        notify_admin(f"Reply phase used by user: {forward_email.gen_email.user.email} ")
+
+        # email seems to come from alias
+        msg.replace_header("From", alias)
+        msg.replace_header("To", forward_email.website_email)
+
+        LOG.d(
+            "send email from %s to %s, mail_options:%s,rcpt_options:%s",
+            alias,
+            forward_email.website_email,
+            envelope.mail_options,
+            envelope.rcpt_options,
+        )
+
+        smtp.send_message(
+            msg,
+            from_addr=alias,
+            to_addrs=[forward_email.website_email],
+            mail_options=envelope.mail_options,
+            rcpt_options=envelope.rcpt_options,
+        )
+
+        ForwardEmailLog.create(forward_id=forward_email.id, is_reply=True)
+        db.session.commit()
 
         return "250 Message accepted for delivery"
 
