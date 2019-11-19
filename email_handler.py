@@ -37,7 +37,7 @@ from smtplib import SMTP
 
 from aiosmtpd.controller import Controller
 
-from app.config import EMAIL_DOMAIN
+from app.config import EMAIL_DOMAIN, POSTFIX_SERVER
 from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
@@ -81,7 +81,7 @@ class MailHandler:
         # LOG.debug(message_data)
 
         # host IP, setup via Docker network
-        smtp = SMTP("1.1.1.1", 25)
+        smtp = SMTP(POSTFIX_SERVER, 25)
         msg = Parser(policy=SMTPUTF8).parsestr(message_data)
 
         if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case

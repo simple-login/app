@@ -5,7 +5,7 @@ from smtplib import SMTP
 
 from jinja2 import Environment, FileSystemLoader
 
-from app.config import SUPPORT_EMAIL, ROOT_DIR
+from app.config import SUPPORT_EMAIL, ROOT_DIR, POSTFIX_SERVER
 from app.log import LOG
 
 
@@ -90,7 +90,7 @@ def send_test_email_alias(email, name):
 
 def send_by_postfix(to_email, subject, plaintext, html):
     # host IP, setup via Docker network
-    smtp = SMTP("1.1.1.1", 25)
+    smtp = SMTP(POSTFIX_SERVER, 25)
     msg = EmailMessage()
 
     msg["Subject"] = subject
