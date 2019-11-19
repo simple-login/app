@@ -86,7 +86,7 @@ class MailHandler:
         msg = Parser(policy=SMTPUTF8).parsestr(message_data)
 
         if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case
-            LOG.debug("Forward phase, add Reply-To header")
+            LOG.debug("Forward phase")
             app = create_app()
 
             with app.app_context():
@@ -146,17 +146,19 @@ class MailHandler:
                 LOG.d("Delete reply-to header %s", msg["Reply-To"])
                 del msg["Reply-To"]
 
-            # change the from header so the sender comes from @simplelogin
+            # change the from header so the sender comes from @SL
             # so it can pass DMARC check
-            from_header = f"Sender {website_email.replace('@', ' at ')} <{forward_email.reply_email}>"
+            # replace the email part in from: header
+            from_header = (
+                get_email_name(msg["From"])
+                + " - "
+                + website_email.replace("@", " at ")
+                + f" <{forward_email.reply_email}>"
+            )
             msg.replace_header("From", from_header)
+            LOG.d("new from header:%s", from_header)
 
-            # modify subject to let user know the email is forwarded from SL
             original_subject = msg["Subject"]
-            # msg.replace_header(
-            #     "Subject",
-            #     f"Forwarded by SimpleLogin. Subject: {original_subject}. From: {website_email}",
-            # )
 
             LOG.d(
                 "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
@@ -213,6 +215,17 @@ class MailHandler:
         db.session.commit()
 
         return "250 Message accepted for delivery"
+
+
+def get_email_name(email_from):
+    """parse email from header and return the name part
+    First Last <ab@cd.com> -> First Last
+    ab@cd.com -> ""
+    """
+    if "<" in email_from:
+        return email_from[: email_from.find("<")].strip()
+
+    return ""
 
 
 if __name__ == "__main__":
