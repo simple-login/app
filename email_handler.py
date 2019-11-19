@@ -148,15 +148,15 @@ class MailHandler:
 
             # change the from header so the sender comes from @simplelogin
             # so it can pass DMARC check
-            from_header = f"Original Sender {website_email.replace('@', ' at ')} <{forward_email.reply_email}>"
+            from_header = f"Sender {website_email.replace('@', ' at ')} <{forward_email.reply_email}>"
             msg.replace_header("From", from_header)
 
             # modify subject to let user know the email is forwarded from SL
             original_subject = msg["Subject"]
-            msg.replace_header(
-                "Subject",
-                f"Forwarded by SimpleLogin. Subject: {original_subject}. From: {website_email}",
-            )
+            # msg.replace_header(
+            #     "Subject",
+            #     f"Forwarded by SimpleLogin. Subject: {original_subject}. From: {website_email}",
+            # )
 
             LOG.d(
                 "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
