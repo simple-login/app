@@ -38,7 +38,7 @@ from smtplib import SMTP
 
 from aiosmtpd.controller import Controller
 
-from app.config import EMAIL_DOMAIN, POSTFIX_SERVER
+from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL
 from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
@@ -158,8 +158,11 @@ class MailHandler:
             msg.replace_header("From", from_header)
             LOG.d("new from header:%s", from_header)
 
-            original_subject = msg["Subject"]
+            # add List-Unsubscribe header
+            unsubscribe_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
+            add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
 
+            original_subject = msg["Subject"]
             LOG.d(
                 "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
                 website_email,
@@ -195,6 +198,10 @@ class MailHandler:
         msg.replace_header("From", alias)
         msg.replace_header("To", forward_email.website_email)
 
+        # add List-Unsubscribe header
+        unsubscribe_link = f"{URL}/dashboard/unsubscribe/{forward_email.gen_email_id}"
+        add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+
         LOG.d(
             "send email from %s to %s, mail_options:%s,rcpt_options:%s",
             alias,
@@ -215,6 +222,14 @@ class MailHandler:
         db.session.commit()
 
         return "250 Message accepted for delivery"
+
+
+def add_or_replace_header(msg: EmailMessage, header: str, value: str):
+    try:
+        msg.add_header(header, value)
+    except ValueError:
+        # the header exists already
+        msg.replace_header(header, value)
 
 
 def get_email_name(email_from):
