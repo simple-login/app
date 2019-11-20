@@ -17,7 +17,7 @@
              data-intro="Welcome to SimpleLogin! <br><br>
   It seems that this is the first time you are here,
   let's walk through some SimpleLogin features together! <br><br>
-             You can always show this tutorial again any time by clicking on this icon"
+             You can always show this tutorial again any time by clicking on this <i class='fe fe-help-circle'></i> icon above 👆"
              onclick="startIntro()">
             <i class="fe fe-help-circle"></i>
           </a>
@@ -81,6 +81,7 @@
 
 <script>
   function startIntro() {
+    introJs().setOption('showProgress', true).start();
     introJs().start();
   }
 </script>
