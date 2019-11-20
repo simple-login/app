@@ -1,14 +1,8 @@
-Hi {{name}}!
+Hi {{name}},
 
-Our mission is to protect our online identity. This should be *simple*.
+Thank you for choosing SimpleLogin.
 
-To get started, we need to confirm your email address, so please click this link
-to finish creating your account.
+To get started, please confirm that {{email}} is your email address using this link {{activation_link}} within 1 hour.
 
-{{activation_link}}
-
-Your feedbacks are very important to us. Please feel free to reply to this email to let us know any
-of your suggestion!
-
-Thanks!
+Cheers,
 Son - SimpleLogin founder.

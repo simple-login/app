@@ -31,8 +31,12 @@ def send_activation_email(email, name, activation_link):
     send_by_postfix(
         email,
         f"{name}, just one more step to join SimpleLogin",
-        _render("activation.txt", name=name, activation_link=activation_link),
-        _render("activation.html", name=name, activation_link=activation_link),
+        _render(
+            "activation.txt", name=name, activation_link=activation_link, email=email
+        ),
+        _render(
+            "activation.html", name=name, activation_link=activation_link, email=email
+        ),
     )
 
 
