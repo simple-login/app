@@ -68,15 +68,9 @@ def index():
 
             gen_email.enabled = not gen_email.enabled
             if gen_email.enabled:
-                flash(
-                    f"The email forwarding for {gen_email.email} has been enabled",
-                    "success",
-                )
+                flash(f"Alias {gen_email.email} is enabled", "success")
             else:
-                flash(
-                    f"The email forwarding for {gen_email.email} has been disabled",
-                    "warning",
-                )
+                flash(f"Alias {gen_email.email} is disabled", "warning")
             db.session.commit()
 
         elif request.form.get("form-name") == "delete-email":
