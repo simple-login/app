@@ -5,6 +5,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 from app.config import DB_URI
 from app.models import *
 from server import create_app
+from app import email_utils
 
 
 def create_db():

@@ -1,4 +1,4 @@
-Welcome to SimpleLogin {{name}}!
+Hi {{name}}!
 
 Our mission is to protect our online identity. This should be *simple*.
 
