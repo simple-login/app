@@ -2,7 +2,7 @@
 Allow user to "unsubscribe", aka block an email alias
 """
 
-from flask import redirect, url_for, flash
+from flask import redirect, url_for, flash, request, render_template
 from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
@@ -11,7 +11,7 @@ from app.extensions import db
 from app.models import GenEmail
 
 
-@dashboard_bp.route("/unsubscribe/<gen_email_id>", methods=["GET"])
+@dashboard_bp.route("/unsubscribe/<gen_email_id>", methods=["GET", "POST"])
 @login_required
 def unsubscribe(gen_email_id):
     gen_email = GenEmail.get(gen_email_id)
@@ -26,9 +26,13 @@ def unsubscribe(gen_email_id):
         )
         return redirect(url_for("dashboard.index"))
 
-    gen_email.enabled = False
-    flash(f"Alias {gen_email.email} has been blocked", "success")
-    db.session.commit()
+    # automatic unsubscribe, according to https://tools.ietf.org/html/rfc8058
+    if request.method == "POST":
+        gen_email.enabled = False
+        flash(f"Alias {gen_email.email} has been blocked", "success")
+        db.session.commit()
 
-    notify_admin(f"User {current_user.email} has unsubscribed an alias")
-    return redirect(url_for("dashboard.index"))
+        notify_admin(f"User {current_user.email} has unsubscribed an alias")
+        return redirect(url_for("dashboard.index"))
+    else:  # ask user confirmation
+        return render_template("dashboard/unsubscribe.html", alias=gen_email.email)

@@ -161,6 +161,7 @@ class MailHandler:
             # add List-Unsubscribe header
             unsubscribe_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
             add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+            add_or_replace_header(msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
 
             original_subject = msg["Subject"]
             LOG.d(
@@ -201,6 +202,7 @@ class MailHandler:
         # add List-Unsubscribe header
         unsubscribe_link = f"{URL}/dashboard/unsubscribe/{forward_email.gen_email_id}"
         add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+        add_or_replace_header(msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
 
         LOG.d(
             "send email from %s to %s, mail_options:%s,rcpt_options:%s",

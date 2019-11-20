@@ -1,0 +1,28 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Block an alias
+{% endblock %}
+
+{% block default_content %}
+
+  <div class="col-md-8 offset-md-2 text-center">
+    <h1 class="h3">
+      Block alias
+    </h1>
+    <p>
+      You are about to block the alias <a href="mailto:{{alias}}">{{alias}}</a>
+    </p>
+    <p>
+      After this, you will stop receiving all emails sent to this alias, please confirm
+    </p>
+
+    <form method="post">
+      <button class="btn btn-warning">Confirm</button>
+    </form>
+  </div>
+
+{% endblock %}
+
