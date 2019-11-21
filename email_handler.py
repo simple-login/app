@@ -164,7 +164,7 @@ class MailHandler:
 
             smtp.send_message(
                 msg,
-                from_addr=envelope.mail_from,
+                from_addr=forward_email.reply_email,
                 to_addrs=[user_email],  # user personal email
                 mail_options=envelope.mail_options,
                 rcpt_options=envelope.rcpt_options,
