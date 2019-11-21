@@ -9,7 +9,7 @@
 {% block default_content %}
   <div class="page-header row">
     <h3 class="page-title col"
-        data-intro="Here, you find the list of all <b>alias</b> created. <br><br>
+        data-intro="Here, you find the list of created <b>alias</b>. <br><br>
         <b>All</b> emails sent to an alias will be forwarded to your inbox. <br><br>
         Alias is a great way to hide your personal email address so feel free to
         use it whenever possible, for example on untrusted websites 😎">
@@ -84,7 +84,7 @@
                         {% if loop.index ==1 %}
                            data-intro="By turning off an alias, emails sent to this alias will <b>NOT</b>
                            be forwarded to your inbox. <br><br>
-                           This should only be used with care as others might
+                           This should be used with care as others might
                            not be able to reach you after ...
                             "
                         {% endif %}
@@ -250,7 +250,7 @@
 
     $(".trigger-email").on("click", function (e) {
       notie.confirm({
-        text: "SimpleLogin server will send an email to this alias and it should arrive to your inbox, please confirm",
+        text: "SimpleLogin server will send an email to this alias and it will arrive to your inbox, please confirm",
         cancelCallback: () => {
           // nothing to do
         },
