@@ -152,6 +152,11 @@ class MailHandler:
                 msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
             )
 
+            # remove DKIM-Signature as Postfix will add this header
+            if msg["DKIM-Signature"]:
+                LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
+                del msg["DKIM-Signature"]
+
             original_subject = msg["Subject"]
             LOG.d(
                 "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
