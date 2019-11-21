@@ -32,7 +32,7 @@
               <tr>
                 <td>{{ log.when | dt }}</td>
                 <td>{{ log.website_email }}</td>
-                <td>
+                <td style="min-width: 55px">
                   {% if log.is_reply %}
                     <img src="{{ url_for('static', filename='arrows/reply-arrow.svg') }}" class="arrow">
                   {% elif log.blocked %}
