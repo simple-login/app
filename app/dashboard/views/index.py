@@ -58,14 +58,17 @@ def index():
                 flash(f"Email {gen_email.email} has been created", "success")
                 session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
             else:
-                flash(f"You need to upgrade your plan to create new email.", "warning")
+                flash(
+                    f"You need to upgrade your plan to create new random alias.",
+                    "warning",
+                )
 
         elif request.form.get("form-name") == "create-custom-email":
             if current_user.can_create_custom_email():
                 return redirect(url_for("dashboard.custom_alias"))
             else:
                 flash(
-                    f"You need to upgrade your plan to create new custom email.",
+                    f"You need to upgrade your plan to create new custom alias.",
                     "warning",
                 )
 
