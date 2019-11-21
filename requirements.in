@@ -13,7 +13,6 @@ psycopg2-binary
 sentry_sdk
 blinker
 arrow
-sendgrid
 Flask-WTF
 boto3
 Flask-Migrate

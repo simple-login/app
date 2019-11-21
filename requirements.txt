@@ -69,14 +69,12 @@ pytest==4.6.3
 python-dateutil==2.8.0    # via alembic, arrow, botocore, strictyaml
 python-dotenv==0.10.3
 python-editor==1.0.4      # via alembic
-python-http-client==3.1.0  # via sendgrid
 raven-aiohttp==0.7.0      # via yacron
 raven==6.10.0             # via raven-aiohttp, yacron
 requests-oauthlib==1.2.0
 requests==2.22.0          # via requests-oauthlib, stripe
 ruamel.yaml==0.15.97      # via strictyaml
 s3transfer==0.2.1         # via boto3
-sendgrid==6.0.5
 sentry-sdk==0.13.2
 six==1.12.0               # via bcrypt, cryptography, flask-cors, packaging, pip-tools, prompt-toolkit, pyopenssl, pytest, python-dateutil, sqlalchemy-utils, traitlets
 sqlalchemy-utils==0.33.11
