@@ -5,7 +5,7 @@ from smtplib import SMTP
 
 from jinja2 import Environment, FileSystemLoader
 
-from app.config import SUPPORT_EMAIL, ROOT_DIR, POSTFIX_SERVER
+from app.config import SUPPORT_EMAIL, ROOT_DIR, POSTFIX_SERVER, ADMIN_EMAIL
 from app.log import LOG
 
 
@@ -117,4 +117,4 @@ def send_by_postfix(to_email, subject, plaintext, html):
 
 
 def notify_admin(subject, html_content=""):
-    send_by_postfix(SUPPORT_EMAIL, subject, html_content, html_content)
+    send_by_postfix(ADMIN_EMAIL, subject, html_content, html_content)
