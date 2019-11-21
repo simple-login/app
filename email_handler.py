@@ -47,8 +47,6 @@ from app.utils import random_words
 from server import create_app
 
 
-
-
 class MailHandler:
     async def handle_RCPT(self, server, session, envelope, address, rcpt_options):
         if not address.endswith(EMAIL_DOMAIN):
@@ -97,6 +95,8 @@ class MailHandler:
             LOG.d("alias %s not exist")
             return "510 Email not exist"
 
+        user_email = gen_email.user.email
+
         website_email = envelope.mail_from
 
         forward_email = ForwardEmail.get_by(
@@ -121,14 +121,7 @@ class MailHandler:
 
         if gen_email.enabled:
             # add custom header
-            msg.add_header("X-SimpleLogin-Type", "Forward")
-
-            # no need to modify reply-to as it is used in From: header directly
-            # try:
-            #     msg.add_header("Reply-To", forward_email.reply_email)
-            # except ValueError:
-            #     # the header exists already
-            #     msg.replace_header("Reply-To", forward_email.reply_email)
+            add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
 
             # remove reply-to header if present
             if msg["Reply-To"]:
@@ -147,16 +140,23 @@ class MailHandler:
             msg.replace_header("From", from_header)
             LOG.d("new from header:%s", from_header)
 
+            # change the to: header so target is user email
+            to_header = alias.replace("@", " at ") + f" <{user_email}>"
+            msg.replace_header("To", to_header)
+            LOG.d("new to header: %s", to_header)
+
             # add List-Unsubscribe header
             unsubscribe_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
             add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
-            add_or_replace_header(msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
+            add_or_replace_header(
+                msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
+            )
 
             original_subject = msg["Subject"]
             LOG.d(
                 "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
                 website_email,
-                gen_email.user.email,
+                user_email,
                 original_subject,
                 envelope.mail_options,
                 envelope.rcpt_options,
@@ -165,7 +165,7 @@ class MailHandler:
             smtp.send_message(
                 msg,
                 from_addr=envelope.mail_from,
-                to_addrs=[gen_email.user.email],  # user personal email
+                to_addrs=[user_email],  # user personal email
                 mail_options=envelope.mail_options,
                 rcpt_options=envelope.rcpt_options,
             )
@@ -191,7 +191,9 @@ class MailHandler:
         # add List-Unsubscribe header
         unsubscribe_link = f"{URL}/dashboard/unsubscribe/{forward_email.gen_email_id}"
         add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
-        add_or_replace_header(msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
+        add_or_replace_header(
+            msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
+        )
 
         LOG.d(
             "send email from %s to %s, mail_options:%s,rcpt_options:%s",
