@@ -60,6 +60,15 @@ def index():
             else:
                 flash(f"You need to upgrade your plan to create new email.", "warning")
 
+        elif request.form.get("form-name") == "create-custom-email":
+            if current_user.can_create_custom_email():
+                return redirect(url_for("dashboard.custom_alias"))
+            else:
+                flash(
+                    f"You need to upgrade your plan to create new custom email.",
+                    "warning",
+                )
+
         elif request.form.get("form-name") == "switch-email-forwarding":
             gen_email_id = request.form.get("gen-email-id")
             gen_email: GenEmail = GenEmail.get(gen_email_id)

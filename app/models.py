@@ -111,9 +111,6 @@ class User(db.Model, ModelMixin, UserMixin):
             password = random_string(20)
 
         user.set_password(password)
-
-        # by default new user will be trial period
-        user.trial_expiration = arrow.now().shift(days=+15)
         db.session.flush()
 
         # create a first alias mail to show user how to use when they login
@@ -138,23 +135,23 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return False
 
-    def is_trial(self):
-        return self.trial_expiration is not None and self.trial_expiration > arrow.now()
-
     def can_create_custom_email(self):
         if self.is_premium():
             return True
-        elif self.is_trial():
-            return True
-        return False
+
+        return (
+            GenEmail.filter_by(user_id=self.id, custom=True).count()
+            < MAX_NB_EMAIL_FREE_PLAN
+        )
 
     def can_create_new_email(self):
         if self.is_premium():
             return True
-        elif self.is_trial():
-            return True
-        else:  # free or trial expired
-            return GenEmail.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
+        else:
+            return (
+                GenEmail.filter_by(user_id=self.id, custom=False).count()
+                < MAX_NB_EMAIL_FREE_PLAN
+            )
 
     def set_password(self, password):
         salt = bcrypt.gensalt()
@@ -206,9 +203,6 @@ class User(db.Model, ModelMixin, UserMixin):
                 return "Monthly ($2.99/month)"
             else:
                 return "Yearly ($29.99/year)"
-
-        elif self.is_trial():
-            return "Trial"
         else:
             return "Free Plan"
 
@@ -409,9 +403,9 @@ class GenEmail(db.Model, ModelMixin):
     user = db.relationship(User)
 
     @classmethod
-    def create_new_gen_email(cls, user_id):
+    def create_new_gen_email(cls, user_id, custom=False):
         random_email = generate_email()
-        return GenEmail.create(user_id=user_id, email=random_email)
+        return GenEmail.create(user_id=user_id, email=random_email, custom=custom)
 
     def __repr__(self):
         return f"<GenEmail {self.id} {self.email}>"

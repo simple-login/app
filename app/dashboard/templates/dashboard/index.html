@@ -15,16 +15,18 @@
         use it whenever possible, for example on untrusted websites 😎">
       Alias
     </h3>
-    <form method="post" class="col text-right">
-      <input type="hidden" name="form-name" value="create-random-email">
-      <button class="btn btn-success">Random alias</button>
-    </form>
 
-    {% if current_user.can_create_custom_email() %}
-      <a href="{{ url_for('dashboard.custom_alias') }}" class="btn btn-primary">
-        Custom alias
-      </a>
-    {% endif %}
+    <div class="btn-group" role="group">
+      <form method="post" style="margin-right: 10px">
+        <input type="hidden" name="form-name" value="create-random-email">
+        <button class="btn btn-success">Random alias</button>
+      </form>
+
+      <form method="post">
+        <input type="hidden" name="form-name" value="create-custom-email">
+        <button class="btn btn-primary">Custom alias</button>
+      </form>
+    </div>
   </div>
 
   <div class="row row-cards row-deck mt-4">
@@ -57,8 +59,12 @@
                   <div>
                     Created {{ gen_email.created_at | dt }}
                   </div>
+                  {% if gen_email.custom %}
+                    <div class="text-success">Custom</div>
+                  {% endif %}
+
                   {% if alias_info.highlight %}
-                    <span class="text-success">New</span>
+                    <div class="text-success">New</div>
                   {% endif %}
                 </td>
 
