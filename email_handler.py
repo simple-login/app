@@ -140,11 +140,6 @@ class MailHandler:
             msg.replace_header("From", from_header)
             LOG.d("new from header:%s", from_header)
 
-            # change the to: header so target is user email
-            to_header = alias.replace("@", " at ") + f" <{user_email}>"
-            msg.replace_header("To", to_header)
-            LOG.d("new to header: %s", to_header)
-
             # add List-Unsubscribe header
             unsubscribe_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
             add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
