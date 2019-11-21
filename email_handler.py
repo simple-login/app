@@ -7,7 +7,7 @@ Handle the email *forward* and *reply*. phase. There are 3 actors:
 This script makes sure that in the forward phase, the email that is forwarded to user personal email has the following
 envelope and header fields:
 Envelope:
-    mail from: srs@sl.co # managed by SRS
+    mail from: @website
     rcpt to: @personal_email
 Header:
     From: @website
@@ -16,7 +16,7 @@ Header:
 
 And in the reply phase:
 Envelope:
-    mail from: srs@sl.co # managed by SRS
+    mail from: @website
     rcpt to: @website
 
 Header:
@@ -47,17 +47,6 @@ from app.utils import random_words
 from server import create_app
 
 
-def parse_srs_email(srs) -> str:
-    """
-    Parse srs0=8lgw=y6=outlook.com=abcd@mailsl.meo.ovh and return abcd@outlook.com
-    """
-    local_part = srs[: srs.find("@")]  # srs0=8lgw=y6=outlook.com=abcd
-    local_email_part = local_part[local_part.rfind("=") + 1 :]  # abcd
-
-    rest = local_part[: local_part.rfind("=")]  # srs0=8lgw=y6=outlook.com
-    domain_email_part = rest[rest.rfind("=") + 1 :]  # outlook.com
-
-    return f"{local_email_part}@{domain_email_part}"
 
 
 class MailHandler:
@@ -108,7 +97,7 @@ class MailHandler:
             LOG.d("alias %s not exist")
             return "510 Email not exist"
 
-        website_email = parse_srs_email(envelope.mail_from)
+        website_email = envelope.mail_from
 
         forward_email = ForwardEmail.get_by(
             gen_email_id=gen_email.id, website_email=website_email
