@@ -33,6 +33,8 @@ def index():
     if highlight_gen_email_id:
         del session[HIGHLIGHT_GEN_EMAIL_ID]
 
+    query = request.args.get("query") or ""
+
     # User generates a new email
     if request.method == "POST":
         if request.form.get("form-name") == "trigger-email":
@@ -113,18 +115,22 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        aliases=get_alias_info(current_user.id, highlight_gen_email_id),
+        aliases=get_alias_info(current_user.id, query, highlight_gen_email_id),
         highlight_gen_email_id=highlight_gen_email_id,
+        query=query,
     )
 
 
-def get_alias_info(user_id, highlight_gen_email_id=None) -> [AliasInfo]:
+def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasInfo]:
     aliases = {}  # dict of alias and AliasInfo
     q = db.session.query(GenEmail, ForwardEmail, ForwardEmailLog).filter(
         GenEmail.user_id == user_id,
         GenEmail.id == ForwardEmail.gen_email_id,
         ForwardEmail.id == ForwardEmailLog.forward_id,
     )
+
+    if query:
+        q = q.filter(GenEmail.email.contains(query))
 
     for ge, fe, fel in q:
         if ge.email not in aliases:
@@ -150,6 +156,10 @@ def get_alias_info(user_id, highlight_gen_email_id=None) -> [AliasInfo]:
         .filter(GenEmail.email.notin_(aliases.keys()))
         .filter(GenEmail.user_id == user_id)
     )
+
+    if query:
+        q = q.filter(GenEmail.email.contains(query))
+
     for ge in q:
         aliases[ge.email] = AliasInfo(
             gen_email=ge,
