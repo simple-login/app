@@ -15,7 +15,7 @@ def late_payment():
             LOG.error(f"user {sub.user.email} has late payment. {sub}")
 
 
-_ignored_emails = ["nguyenkims", "mbpcmeo"]
+_ignored_emails = ["nguyenkims", "mbpcmeo", "son@simplelogin.io"]
 
 
 def stats():
