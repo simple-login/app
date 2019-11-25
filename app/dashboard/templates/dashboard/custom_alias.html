@@ -25,7 +25,8 @@
           <div class="col">
             {{ form.email(class="form-control",
                 pattern="[0-9|A-Z|a-z|-]{3,}",
-                title="Only letter, number or dash can be used and alias must have at least 3 characters.") }}
+                title="Only letter, number or dash can be used and alias must have at least 3 characters.",
+                autofocus=True) }}
             {{ render_field_errors(form.email) }}
           </div>
           <div class="col align-self-center">
