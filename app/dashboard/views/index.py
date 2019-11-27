@@ -122,6 +122,9 @@ def index():
 
 
 def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasInfo]:
+    if query:
+        query = query.strip().lower()
+
     aliases = {}  # dict of alias and AliasInfo
     q = db.session.query(GenEmail, ForwardEmail, ForwardEmailLog).filter(
         GenEmail.user_id == user_id,
