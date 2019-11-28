@@ -60,7 +60,7 @@ def stats():
     today = arrow.now().format()
 
     email_utils.notify_admin(
-        f"Stats for {today}",
+        f"SimpleLogin Stats for {today}",
         f"""
 Stats for {today} <br>
 nb_user: {nb_user} <br>

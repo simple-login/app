@@ -46,9 +46,11 @@
               <i class="dropdown-icon fe fe-settings"></i> Settings
             </a>
 
-            <a class="dropdown-item" href="{{ url_for('dashboard.api_key') }}">
-              <i class="dropdown-icon fe fe-chrome"></i> API Key
-            </a>
+            {% if current_user.can_use_api_key %}
+              <a class="dropdown-item" href="{{ url_for('dashboard.api_key') }}">
+                <i class="dropdown-icon fe fe-chrome"></i> API Key
+              </a>
+            {% endif %}
 
             {% if current_user.is_premium() %}
               <a class="dropdown-item" href="{{ url_for('dashboard.billing') }}">
