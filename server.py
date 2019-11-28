@@ -12,6 +12,7 @@ from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from app.admin_model import SLModelView, SLAdminIndexView
+from app.api.base import api_bp
 from app.auth.base import auth_bp
 from app.config import (
     DB_URI,
@@ -38,6 +39,7 @@ from app.models import (
     RedirectUri,
     Subscription,
     PlanEnum,
+    ApiKey,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -153,6 +155,7 @@ def register_blueprints(app: Flask):
     app.register_blueprint(oauth_bp, url_prefix="/oauth2")
 
     app.register_blueprint(discover_bp)
+    app.register_blueprint(api_bp)
 
 
 def set_index_page(app):
