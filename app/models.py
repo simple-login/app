@@ -576,3 +576,43 @@ class EmailChange(db.Model, ModelMixin):
 
     def is_expired(self):
         return self.expired < arrow.now()
+
+
+class AliasUsedOn(db.Model, ModelMixin):
+    """Used to know where an alias is created"""
+
+    __table_args__ = (
+        db.UniqueConstraint("gen_email_id", "hostname", name="uq_alias_used"),
+    )
+
+    gen_email_id = db.Column(
+        db.ForeignKey(GenEmail.id, ondelete="cascade"), nullable=False
+    )
+
+    hostname = db.Column(db.String(1024), nullable=False)
+
+
+class ApiKey(db.Model, ModelMixin):
+    """used in browser extension to identify user"""
+
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    code = db.Column(db.String(128), unique=True, nullable=False)
+    name = db.Column(db.String(128), nullable=False)
+    last_used = db.Column(ArrowType, default=None)
+    times = db.Column(db.Integer, default=0, nullable=False)
+
+    user = db.relationship(User)
+
+    @classmethod
+    def create(cls, user_id, name):
+        # generate unique code
+        found = False
+        while not found:
+            code = random_string(60)
+
+            if not cls.get_by(code=code):
+                found = True
+
+        a = cls(user_id=user_id, code=code, name=name)
+        db.session.add(a)
+        return a
