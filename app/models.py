@@ -99,8 +99,12 @@ class User(db.Model, ModelMixin, UserMixin):
     profile_picture_id = db.Column(db.ForeignKey(File.id), nullable=True)
 
     # feature flag
-    can_use_api_key = db.Column(db.Boolean, nullable=False, default=False)
-    can_use_custom_domain = db.Column(db.Boolean, nullable=False, default=False)
+    can_use_api_key = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+    can_use_custom_domain = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     profile_picture = db.relationship(File)
 
