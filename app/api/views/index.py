@@ -2,6 +2,7 @@ import random
 
 import arrow
 from flask import jsonify, request
+from flask_cors import cross_origin
 
 from app.api.base import api_bp
 from app.config import EMAIL_DOMAIN
@@ -12,6 +13,7 @@ from app.utils import random_string
 
 
 @api_bp.route("/alias/new", methods=["GET", "POST"])
+@cross_origin()
 def index():
     """
     the incoming request must provide a valid api-key in "Authentication" header and
@@ -61,7 +63,7 @@ def index():
 
             # check if email already exists. Very rare that an email is already used
             if GenEmail.get_by(email=full_email) or DeletedAlias.get_by(
-                    email=full_email
+                email=full_email
             ):
                 LOG.warning("full_email already used %s. Retry", full_email)
             else:
