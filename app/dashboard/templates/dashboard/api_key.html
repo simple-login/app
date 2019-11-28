@@ -1,0 +1,98 @@
+{% extends 'default.html' %}
+
+{% block title %}
+  API Key
+{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h1 class="h3"> API Key </h1>
+
+      <p>
+        The API Key is used inside the Chrome/Firefox extension.
+        Please copy and paste the API key below into the browser extension to get started.
+      </p>
+
+      <p class="text-danger">
+        Your API Keys are secret and should be treated as passwords.
+      </p>
+
+      {% for api_key in api_keys %}
+        <div class="card" style="max-width: 50rem">
+          <div class="card-body">
+            <h5 class="card-title">{{ api_key.name }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              {% if api_key.last_used %}
+                Last used: {{ api_key.last_used | dt }} <br>
+                Used: {{ api_key.times }} times.
+              {% else %}
+                Never used
+              {% endif %}
+            </h6>
+
+            <textarea class="card-text w-100" id="apikey-{{ api_key.id }}" readonly>{{ api_key.code }}</textarea>
+            <br>
+
+            <div class="row">
+              <div class="col">
+                <button class="clipboard btn btn-primary" data-clipboard-action="copy"
+                        data-clipboard-target="#apikey-{{ api_key.id }}">
+                  Copy &nbsp; &nbsp; <i class="dropdown-icon fe fe-clipboard"></i>
+                </button>
+              </div>
+
+              <div class="col">
+                <form method="post">
+                  <input type="hidden" name="form-name" value="delete">
+                  <input type="hidden" name="api-key-id" value="{{ api_key.id }}">
+                  <span class="card-link btn btn-link float-right delete-api-key">
+                    Delete
+                  </span>
+                </form>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      {% endfor %}
+
+      <hr>
+
+      <form method="post">
+        {{ new_api_key_form.csrf_token }}
+        <input type="hidden" name="form-name" value="create">
+
+        <label class="form-label">Api Key Name</label>
+        <small>Name of the api key, e.g. where it will be used.</small>
+
+        {{ new_api_key_form.name(class="form-control", placeholder="Chrome, Firefox") }}
+        {{ render_field_errors(new_api_key_form.name) }}
+        <button class="btn btn-primary">Create</button>
+      </form>
+
+
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-api-key").on("click", function (e) {
+      notie.confirm({
+        text: "If this api key is currently in use, you need to replace it with another api key, " +
+          " please confirm",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+  </script>
+{% endblock %}

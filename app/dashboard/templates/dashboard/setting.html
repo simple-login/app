@@ -1,7 +1,5 @@
 {% extends 'default.html' %}
 
-{% set active_page = "dashboard" %}
-
 {% block title %}
   Setting
 {% endblock %}
@@ -13,7 +11,7 @@
       {{ form.csrf_token }}
       <input type="hidden" name="form-name" value="update-profile">
 
-      <h3>Profile</h3>
+      <h1 class="h3">Profile</h1>
 
       <div class="form-group">
         <label class="form-label">Email</label>
