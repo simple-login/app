@@ -103,7 +103,6 @@ def fake_data():
         password="password",
         activated=True,
         is_admin=True,
-        can_use_api_key=True,
     )
     db.session.commit()
 
