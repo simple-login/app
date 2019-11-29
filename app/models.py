@@ -621,3 +621,10 @@ class ApiKey(db.Model, ModelMixin):
         a = cls(user_id=user_id, code=code, name=name)
         db.session.add(a)
         return a
+
+
+class CustomDomain(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    domain = db.Column(db.String(128), unique=True, nullable=False)
+
+    verified = db.Column(db.Boolean, nullable=False, default=False)
