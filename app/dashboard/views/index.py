@@ -101,7 +101,7 @@ def index():
             db.session.commit()
             flash(f"Email alias {email} has been deleted", "success")
 
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("dashboard.index", query=query))
 
     client_users = (
         ClientUser.filter_by(user_id=current_user.id)
