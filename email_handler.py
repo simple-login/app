@@ -48,15 +48,6 @@ from server import create_app
 
 
 class MailHandler:
-    async def handle_RCPT(self, server, session, envelope, address, rcpt_options):
-        if not address.endswith(EMAIL_DOMAIN):
-            LOG.error(f"Not handle email  {address}")
-            return "550 not relaying to that domain"
-
-        envelope.rcpt_tos.append(address)
-
-        return "250 OK"
-
     async def handle_DATA(self, server, session, envelope):
         LOG.debug(">>> New message <<<")
 
@@ -178,6 +169,11 @@ class MailHandler:
 
     def handle_reply(self, envelope, smtp, msg: EmailMessage) -> str:
         reply_email = envelope.rcpt_tos[0]
+
+        # reply_email must end with EMAIL_DOMAIN
+        if not reply_email.endswith(EMAIL_DOMAIN):
+            LOG.error(f"Reply email {reply_email} has wrong domain")
+            return "550 wrong reply email"
 
         forward_email = ForwardEmail.get_by(reply_email=reply_email)
         alias = forward_email.gen_email.email
