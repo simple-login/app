@@ -72,7 +72,7 @@ python-editor==1.0.4      # via alembic
 raven-aiohttp==0.7.0      # via yacron
 raven==6.10.0             # via raven-aiohttp, yacron
 requests-oauthlib==1.2.0
-requests==2.22.0          # via requests-oauthlib, stripe
+requests==2.22.0          # via requests-oauthlib
 ruamel.yaml==0.15.97      # via strictyaml
 s3transfer==0.2.1         # via boto3
 sentry-sdk==0.13.2
@@ -80,7 +80,6 @@ six==1.12.0               # via bcrypt, cryptography, flask-cors, packaging, pip
 sqlalchemy-utils==0.33.11
 sqlalchemy==1.3.4         # via alembic, flask-sqlalchemy, sqlalchemy-utils
 strictyaml==1.0.2         # via yacron
-stripe==2.30.1
 traitlets==4.3.2          # via ipython
 unidecode==1.0.23
 urllib3==1.25.3           # via botocore, requests, sentry-sdk

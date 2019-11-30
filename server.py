@@ -3,7 +3,6 @@ import ssl
 
 import arrow
 import sentry_sdk
-import stripe
 from flask import Flask, redirect, url_for, render_template, request, jsonify
 from flask_admin import Admin
 from flask_cors import cross_origin
@@ -20,7 +19,6 @@ from app.config import (
     ENABLE_SENTRY,
     URL,
     SHA1,
-    STRIPE_SECRET_KEY,
     RESET_DB,
     PADDLE_MONTHLY_PRODUCT_ID,
 )
@@ -77,8 +75,6 @@ def create_app() -> Flask:
 
     setup_favicon_route(app)
     setup_openid_metadata(app)
-
-    stripe.api_key = STRIPE_SECRET_KEY
 
     init_admin(app)
     setup_paddle_callback(app)
