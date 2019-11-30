@@ -92,10 +92,6 @@ class User(db.Model, ModelMixin, UserMixin):
 
     activated = db.Column(db.Boolean, default=False, nullable=False)
 
-    stripe_customer_id = db.Column(db.String(128), unique=True)
-    stripe_card_token = db.Column(db.String(128), unique=True)
-    stripe_subscription_id = db.Column(db.String(128), unique=True)
-
     profile_picture_id = db.Column(db.ForeignKey(File.id), nullable=True)
 
     # feature flag
