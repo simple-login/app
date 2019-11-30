@@ -13,12 +13,16 @@
       <h1 class="h3"> API Key </h1>
 
       <p>
-        The API Key is used inside the Chrome/Firefox extension.
-        Please copy and paste the API key below into the browser extension to get started.
-      </p>
-
-      <p class="text-danger">
-        Your API Keys are secret and should be treated as passwords.
+        The API Key is used inside the SimpleLogin Chrome extension. You can install the extension
+        <a href="https://chrome.google.com/webstore/detail/simplelogin-extension/dphilobhebphkdjbpfohgikllaljmgbn"
+           target="_blank">
+          here <i class="fe fe-external-link"></i>
+        </a>.
+        <br>
+        Please copy and paste the API key below into the browser extension to get started. <br>
+        <span class="text-danger">
+          Your API Keys are secret and should be treated as passwords.
+        </span>
       </p>
 
       {% for api_key in api_keys %}
@@ -34,14 +38,15 @@
               {% endif %}
             </h6>
 
-            <textarea class="card-text w-100" id="apikey-{{ api_key.id }}" readonly>{{ api_key.code }}</textarea>
+            <input class="form-control w-100" id="apikey-{{ api_key.id }}" readonly value="**********">
             <br>
 
             <div class="row">
               <div class="col">
                 <button class="clipboard btn btn-primary" data-clipboard-action="copy"
+                        data-clipboard-text="{{ api_key.code }}"
                         data-clipboard-target="#apikey-{{ api_key.id }}">
-                  Copy &nbsp; &nbsp; <i class="dropdown-icon fe fe-clipboard"></i>
+                  Copy &nbsp; &nbsp; <i class="fe fe-clipboard"></i>
                 </button>
               </div>
 
