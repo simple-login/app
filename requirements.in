@@ -27,3 +27,4 @@ flask-debugtoolbar
 requests_oauthlib
 pyopenssl
 aiosmtpd
+dnspython
