@@ -54,6 +54,11 @@ def index():
     if user.is_premium():
         LOG.d("create new custom alias %s %s", hostname, user)
 
+        # avoid too short custom email prefix
+        if len(hostname) < 3:
+            LOG.d("hostname %s too short", hostname)
+            hostname = "default"
+
         # generate a custom email
         found = False
         while not found:
