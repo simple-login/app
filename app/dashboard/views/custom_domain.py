@@ -19,6 +19,11 @@ class NewCustomDomainForm(FlaskForm):
 @dashboard_bp.route("/custom_domain", methods=["GET", "POST"])
 @login_required
 def custom_domain():
+    # only premium user can add custom domain
+    if not current_user.is_premium():
+        flash("Only premium user can add custom domains", "warning")
+        return redirect(url_for("dashboard.index"))
+
     custom_domains = CustomDomain.query.filter_by(user_id=current_user.id).all()
 
     new_custom_domain_form = NewCustomDomainForm()
