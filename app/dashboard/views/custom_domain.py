@@ -6,6 +6,7 @@ from wtforms import StringField, validators
 from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_SERVERS
 from app.dashboard.base import dashboard_bp
 from app.dns_utils import get_mx_domains
+from app.email_utils import notify_admin
 from app.extensions import db
 from app.models import CustomDomain
 
@@ -53,6 +54,9 @@ def custom_domain():
                 flash(
                     f"New domain {new_custom_domain.domain} has been created successfully",
                     "success",
+                )
+                notify_admin(
+                    f"User {current_user.email} creates new domain {new_custom_domain.domain}"
                 )
                 return redirect(url_for("dashboard.custom_domain"))
         elif request.form.get("form-name") == "check-domain":
