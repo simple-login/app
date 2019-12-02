@@ -402,6 +402,10 @@ class GenEmail(db.Model, ModelMixin):
     # this email has been customized by user, i.e. not generated randomly
     custom = db.Column(db.Boolean(), default=False, nullable=False, server_default="0")
 
+    custom_domain_id = db.Column(
+        db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
+    )
+
     user = db.relationship(User)
 
     @classmethod
