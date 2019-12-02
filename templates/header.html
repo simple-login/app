@@ -50,6 +50,12 @@
               <i class="dropdown-icon fe fe-chrome"></i> API Key
             </a>
 
+            {% if current_user.can_use_custom_domain %}
+              <a class="dropdown-item" href="{{ url_for('dashboard.custom_domain') }}">
+                <i class="dropdown-icon fe fe-server"></i> Custom Domains
+              </a>
+            {% endif %}
+
             {% if current_user.is_premium() %}
               <a class="dropdown-item" href="{{ url_for('dashboard.billing') }}">
                 <i class="dropdown-icon fe fe-dollar-sign"></i> Billing
