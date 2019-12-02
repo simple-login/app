@@ -9,25 +9,25 @@
 {% block default_content %}
 
   <div class="col-md-6 offset-md-3">
+    <h1 class="h3 mb-5">Custom Alias</h1>
     {% if error %}
       <div class="text-danger text-center mb-4">{{ error }}</div>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data">
-      {{ form.csrf_token }}
+    <form method="post">
+      <input type="hidden" name="form-name" value="non-custom-domain-name">
 
       <div class="form-group">
-        <label class="form-label">Custom Alias</label>
+        <label class="form-label font-weight-bold">SimpleLogin domain</label>
         <small class="text-muted">
           You can use letter, number or dash. Alias must have at least 3 characters
         </small>
+
         <div class="row mt-4">
           <div class="col">
-            {{ form.email(class="form-control",
-                pattern="[0-9|A-Z|a-z|-]{3,}",
-                title="Only letter, number or dash can be used and alias must have at least 3 characters.",
-                autofocus=True) }}
-            {{ render_field_errors(form.email) }}
+            <input name="email-prefix" class="form-control" pattern="[0-9|A-Z|a-z|-]{3,}" ,
+                   title="Only letter, number or dash can be used and alias must have at least 3 characters." ,
+                   autofocus>
           </div>
           <div class="col align-self-center">
             <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
@@ -40,6 +40,33 @@
 
       <button class="btn btn-primary">Create</button>
     </form>
+
+    {% if custom_domains %}
+      <hr>
+      <p class="font-weight-bold">OR with your custom domains</p>
+      {% for custom_domain in custom_domains %}
+        <form method="post" class="mb-6">
+          <input type="hidden" name="form-name" value="custom-domain-name">
+          <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
+
+          <div class="row mt-4">
+            <div class="col">
+              <input name="email" class="form-control">
+            </div>
+            <div class="col align-self-center">
+              <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
+              <h4>
+                @{{ custom_domain.domain }}
+              </h4>
+            </div>
+            <div class="col">
+              <button class="submit btn btn-sm btn-success">Create</button>
+            </div>
+          </div>
+
+        </form>
+      {% endfor %}
+    {% endif %}
   </div>
 
 {% endblock %}
