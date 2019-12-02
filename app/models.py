@@ -209,6 +209,9 @@ class User(db.Model, ModelMixin, UserMixin):
         sub = Subscription.get_by(user_id=self.id)
         return sub
 
+    def verified_custom_domains(self):
+        return CustomDomain.query.filter_by(user_id=self.id, verified=True).all()
+
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
 

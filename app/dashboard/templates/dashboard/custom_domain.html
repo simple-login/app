@@ -1,0 +1,127 @@
+{% extends 'default.html' %}
+
+{% block title %}
+  Custom Domains
+{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h1 class="h3"> Custom Domains </h1>
+
+      {% for custom_domain in custom_domains %}
+        <div class="card" style="max-width: 50rem">
+          <div class="card-body">
+            <h5 class="card-title">
+              {{ custom_domain.domain }}
+              {% if custom_domain.verified %}
+                <i class="fe fe-check" style="color: green"></i>
+              {% endif %}
+            </h5>
+
+            {% if not custom_domain.verified %}
+              <hr>
+              Please follow the following steps to set up your domain: <br>
+
+              <div>
+                <span class="badge badge-primary badge-pill mr-2">1</span>
+                Add the following MX DNS record to your domain
+              </div>
+
+              <div class="ml-6 mt-3">
+                {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
+                  <div class="ml-3 text-info">
+                    Domain: <em>{{ custom_domain.domain }}</em> <br>
+                    Priority: 10 <br>
+                    Target: <em>{{ email_server }}</em> <br>
+                  </div>
+                {% endfor %}
+
+                Or if you edit your DNS record in text format, use the following code: <br>
+
+                <pre class="ml-3">
+                  {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
+                    {{ custom_domain.domain }} IN MX {{ priority }} {{ email_server }}
+                  {% endfor %}
+                </pre>
+              </div>
+
+              <div>
+                <span class="badge badge-primary badge-pill mr-2">2</span>
+                Verify 👇🏽
+              </div>
+
+              <div class="ml-6 mt-3">
+                <form method="post">
+                  <input type="hidden" name="form-name" value="check-domain">
+                  <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
+                  <button type="submit" class="btn btn-primary">Verify</button>
+                </form>
+
+                {% if custom_domain.id in errors %}
+                  <div class="text-danger">
+                    {{ errors.get(custom_domain.id) }}
+                  </div>
+                {% endif %}
+
+                As the change could take up to 24 hours, do not hesitate to come back to this page and verify again.
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="card-footer">
+            <div class="row">
+              <div class="col">
+                <form method="post">
+                  <input type="hidden" name="form-name" value="delete">
+                  <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
+                  <span class="card-link btn btn-link float-right delete-custom-domain">
+                    Delete
+                  </span>
+                </form>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      {% endfor %}
+
+      <hr>
+
+      <form method="post">
+        {{ new_custom_domain_form.csrf_token }}
+        <input type="hidden" name="form-name" value="create">
+
+        <label class="form-label">Domain</label>
+        <small>Please use full path domain, for ex <em>my-subdomain.my-domain.com</em></small>
+
+        {{ new_custom_domain_form.domain(class="form-control", placeholder="my-domain.com") }}
+        {{ render_field_errors(new_custom_domain_form.domain) }}
+        <button class="btn btn-lg btn-success mt-2">Create</button>
+      </form>
+
+
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-custom-domain").on("click", function (e) {
+      notie.confirm({
+        text: "All aliases associated with this domain will be also deleted, " +
+          " please confirm",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+  </script>
+{% endblock %}

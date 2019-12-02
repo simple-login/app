@@ -7,4 +7,5 @@ from .views import (
     alias_log,
     unsubscribe,
     api_key,
+    custom_domain,
 )
