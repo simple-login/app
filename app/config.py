@@ -43,6 +43,11 @@ ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
 MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
 POSTFIX_SERVER = "1.1.1.1"
 
+# list of (priority, email server)
+EMAIL_SERVERS_WITH_PRIORITY = eval(
+    os.environ["EMAIL_SERVERS_WITH_PRIORITY"]
+)  # [(10, "email.hostname.")]
+EMAIL_SERVERS = [es for _, es in EMAIL_SERVERS_WITH_PRIORITY]
 
 # Database
 RESET_DB = "RESET_DB" in os.environ
