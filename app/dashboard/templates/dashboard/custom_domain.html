@@ -21,6 +21,10 @@
                 <i class="fe fe-check" style="color: green"></i>
               {% endif %}
             </h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              Created {{ custom_domain.created_at | dt }} <br>
+              <span class="font-weight-bold">{{ custom_domain.nb_alias() }}</span> aliases.
+            </h6>
 
             {% if not custom_domain.verified %}
               <hr>
