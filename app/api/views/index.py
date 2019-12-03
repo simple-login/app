@@ -31,6 +31,11 @@ def index():
 
     hostname = data.get("hostname")
 
+    # avoid too short custom email prefix
+    if len(hostname) < 3:
+        LOG.d("hostname %s too short", hostname)
+        hostname = "default"
+
     # Update api key stats
     api_key.last_used = arrow.now()
     api_key.times += 1
@@ -53,11 +58,6 @@ def index():
     # use a custom alias for this user
     if user.is_premium():
         LOG.d("create new custom alias %s %s", hostname, user)
-
-        # avoid too short custom email prefix
-        if len(hostname) < 3:
-            LOG.d("hostname %s too short", hostname)
-            hostname = "default"
 
         # generate a custom email
         found = False
