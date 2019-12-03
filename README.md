@@ -74,4 +74,36 @@ response_type=id_token code
     return `id_token` in addition to `authorization_code` in /authorization endpoint
    
 
+## API endpoints for extension
+
+```
+GET /alias/options hostname?="www.groupon.com"
+	recommendation?:
+		alias: www_groupon_com@simplelogin.co
+		hostname: www.groupon.com
+
+	custom?: 
+		suggestion: www_groupon_com
+		suffix: [@my_domain.com, .abcde@simplelogin.co]
+
+	can_create_custom: true
+	can_create_random: true
+
+	existing:
+		[email1, email2, ...]
+
+POST /alias/custom/new
+	prefix: www_groupon_com
+	suffix: @my_domain.com
+
+	201 -> OK {alias: "www_groupon_com@my_domain.com"}
+	409 -> duplicated
+
+POST /alias/random/new
+	201 -> OK {alias: "random_word@simplelogin.co"}
+
+```
+
+
+
 
