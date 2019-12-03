@@ -50,9 +50,9 @@ def index():
             )
 
         elif request.form.get("form-name") == "create-random-email":
-            can_create_new_email = current_user.can_create_new_email()
+            can_create_new_random_alias = current_user.can_create_new_random_alias()
 
-            if can_create_new_email:
+            if can_create_new_random_alias:
                 gen_email = GenEmail.create_new_gen_email(user_id=current_user.id)
                 db.session.commit()
 
@@ -66,7 +66,7 @@ def index():
                 )
 
         elif request.form.get("form-name") == "create-custom-email":
-            if current_user.can_create_custom_email():
+            if current_user.can_create_new_custom_alias():
                 return redirect(url_for("dashboard.custom_alias"))
             else:
                 flash(

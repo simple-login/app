@@ -151,7 +151,7 @@ def authorize():
             gen_email = None
             if custom_email_prefix:
                 # check if user can generate custom email
-                if not current_user.can_create_custom_email():
+                if not current_user.can_create_new_custom_alias():
                     raise Exception(f"User {current_user} cannot create custom email")
 
                 email = f"{convert_to_id(custom_email_prefix)}.{email_suffix}@{EMAIL_DOMAIN}"
@@ -273,9 +273,9 @@ def authorize():
 
 
 def create_or_choose_gen_email(user) -> GenEmail:
-    can_create_new_email = user.can_create_new_email()
+    can_create_new_random_alias = user.can_create_new_random_alias()
 
-    if can_create_new_email:
+    if can_create_new_random_alias:
         gen_email = GenEmail.create_new_gen_email(user_id=user.id)
         db.session.flush()
         LOG.debug("generate email %s for user %s", gen_email.email, user)

@@ -134,7 +134,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return False
 
-    def can_create_custom_email(self):
+    def can_create_new_custom_alias(self):
         if self.is_premium():
             return True
 
@@ -143,7 +143,7 @@ class User(db.Model, ModelMixin, UserMixin):
             < MAX_NB_EMAIL_FREE_PLAN
         )
 
-    def can_create_new_email(self):
+    def can_create_new_random_alias(self):
         if self.is_premium():
             return True
         else:
@@ -171,7 +171,7 @@ class User(db.Model, ModelMixin, UserMixin):
     def suggested_emails(self) -> (str, [str]):
         """return suggested email and other email choices """
         all_gen_emails = [ge.email for ge in GenEmail.filter_by(user_id=self.id)]
-        if self.can_create_new_email():
+        if self.can_create_new_random_alias():
             # create a new email
             suggested_gen_email = generate_email()
         else:
