@@ -1,5 +1,6 @@
 from flask import jsonify, request, g
 from flask_cors import cross_origin
+from sqlalchemy import desc
 
 from app.api.base import api_bp, verify_api_key
 from app.config import EMAIL_DOMAIN
@@ -37,10 +38,15 @@ def options():
 
     # recommendation alias if exist
     if hostname:
-        q = db.session.query(AliasUsedOn, GenEmail, User).filter(
-            AliasUsedOn.gen_email_id == GenEmail.id,
-            GenEmail.user_id == user.id,
-            AliasUsedOn.hostname == hostname,
+        # put the latest used alias first
+        q = (
+            db.session.query(AliasUsedOn, GenEmail, User)
+            .filter(
+                AliasUsedOn.gen_email_id == GenEmail.id,
+                GenEmail.user_id == user.id,
+                AliasUsedOn.hostname == hostname,
+            )
+            .order_by(desc(AliasUsedOn.created_at))
         )
 
         r = q.first()
