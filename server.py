@@ -115,14 +115,11 @@ def fake_data():
     )
     db.session.commit()
 
-    ApiKey.create(user_id=user.id, name="Chrome")
+    api_key = ApiKey.create(user_id=user.id, name="Chrome")
+    api_key.code = "code"
 
     GenEmail.create_new_gen_email(user_id=user.id)
-    GenEmail.create_new_gen_email(user_id=user.id)
-    GenEmail.create_new_gen_email(user_id=user.id)
 
-    GenEmail.create_new_gen_email(user_id=user.id, custom=True)
-    GenEmail.create_new_gen_email(user_id=user.id, custom=True)
     GenEmail.create_new_gen_email(user_id=user.id, custom=True)
 
     # Create a client
