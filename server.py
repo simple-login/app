@@ -99,7 +99,7 @@ def fake_data():
         password="password",
         activated=True,
         is_admin=True,
-        can_use_custom_domain=True
+        can_use_custom_domain=True,
     )
     db.session.commit()
 

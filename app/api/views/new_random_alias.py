@@ -28,6 +28,7 @@ def new_random_alias():
 
     hostname = request.args.get("hostname")
     gen_email = GenEmail.create_new_gen_email(user_id=user.id)
+    db.session.commit()
 
     if hostname:
         AliasUsedOn.create(gen_email_id=gen_email.id, hostname=hostname)
