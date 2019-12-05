@@ -85,6 +85,8 @@ def index():
                 flash(f"Alias {gen_email.email} is enabled", "success")
             else:
                 flash(f"Alias {gen_email.email} is disabled", "warning")
+
+            session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
             db.session.commit()
 
         elif request.form.get("form-name") == "delete-email":
