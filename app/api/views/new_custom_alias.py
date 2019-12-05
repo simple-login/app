@@ -40,9 +40,9 @@ def new_custom_alias():
     # make sure alias_prefix is more than 3 chars
     alias_prefix = alias_prefix.strip()
     alias_prefix = convert_to_id(alias_prefix)
-    if len(alias_prefix) < 3:  # should be checked on frontend
-        LOG.d("user %s submits too short alias prefix %s", user, alias_prefix)
-        return jsonify(error="alias prefix must be at least 3 letters"), 400
+    if not alias_prefix:  # should be checked on frontend
+        LOG.d("user %s submits empty alias prefix %s", user, alias_prefix)
+        return jsonify(error="alias prefix cannot be empty"), 400
 
     # make sure alias_suffix is either .random_letters@simplelogin.co or @my-domain.com
     alias_suffix = alias_suffix.strip()
