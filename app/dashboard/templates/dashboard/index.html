@@ -3,162 +3,135 @@
 {% set active_page = "dashboard" %}
 
 {% block title %}
-  Dashboard
+  Alias
 {% endblock %}
 
 {% block default_content %}
   <div class="page-header row">
-    <h3 class="page-title col"
-        data-intro="Here, you find the list of created <b>alias</b>. <br><br>
+    <div class="col-lg-3 col-sm-12 p-0 mt-1">
+      <form method="get">
+        <input type="search" name="query" autofocus placeholder="Enter to search for alias" class="form-control"
+               value="{{ query }}">
+      </form>
+    </div>
+
+    <div class="col-lg-3 offset-lg-6 pr-0 mt-1">
+      <div class="btn-group float-right" role="group">
+        <form method="post" style="margin-right: 10px">
+          <input type="hidden" name="form-name" value="create-random-email">
+          <button class="btn btn-success">Random alias</button>
+        </form>
+
+        <form method="post">
+          <input type="hidden" name="form-name" value="create-custom-email">
+          <button class="btn btn-primary">Custom alias</button>
+        </form>
+      </div>
+    </div>
+
+
+  </div>
+
+  <div class="row" data-intro="Here, you find the list of created <b>alias</b>. <br><br>
         <b>All</b> emails sent to an alias will be forwarded to your inbox. <br><br>
         Alias is a great way to hide your personal email address so feel free to
         use it whenever possible, for example on untrusted websites 😎">
-      Alias
-    </h3>
+    {% for alias_info in aliases %}
+      {% set gen_email = alias_info.gen_email %}
 
-    <div class="btn-group" role="group">
-      <form method="post" style="margin-right: 10px">
-        <input type="hidden" name="form-name" value="create-random-email">
-        <button class="btn btn-success">Random alias</button>
-      </form>
+      <div class="col-md-6">
+        <div class="card p-3 {% if alias_info.highlight %} highlight-row {% endif %}">
 
-      <form method="post">
-        <input type="hidden" name="form-name" value="create-custom-email">
-        <button class="btn btn-primary">Custom alias</button>
-      </form>
-    </div>
-  </div>
+          <div class="mb-0">
+            <a href="mailto: {{ gen_email.email }}">{{ gen_email.email }}</a>
+            {% if gen_email.enabled %}
+              <span class="clipboard btn btn-sm btn-success copt-btn"
+                    data-clipboard-text="{{ gen_email.email }}">
+                Copy
+              </span>
+            {% endif %}
+          </div>
 
-  <div class="row">
-    <form method="get" class="col-md-3">
-      <input type="search" name="query" autofocus placeholder="Enter to search for alias" class="form-control"
-             value="{{ query }}">
-    </form>
-  </div>
+          <p class="small-text">
+            Created {{ gen_email.created_at | dt }}
+            {% if gen_email.custom %}
+              - <span class="font-weight-bold small-text">Custom</span>
+            {% endif %}
+            {% if alias_info.highlight %}
+              - <span class="font-weight-bold text-success small-text">New</span>
+            {% endif %}
+          </p>
 
-  <div class="row row-cards row-deck mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="table-responsive">
-          <table class="table table-hover table-outline table-vcenter text-nowrap card-table">
-            <thead>
-            <tr>
-              <th>Alias</th>
-              <th>Activity &nbsp; <i class="fe fe-help-circle" data-toggle="tooltip" title="Stats on this alias"></i>
-              </th>
-              <th>Email Forwarding <i class="fe fe-help-circle" data-toggle="tooltip"
-                                      title="Block/unblock an alias"></i>
-              </th>
-              <th>Actions</th>
-            </tr>
+          <div class="text-info">
+            {{ alias_info.nb_forward }} forwards,
+            {{ alias_info.nb_blocked }} blocks,
+            {{ alias_info.nb_reply }} replies
+            <a href="{{ url_for('dashboard.alias_log', alias=gen_email.email) }}"
+               class="btn btn-secondary btn-sm">
+              Activity &nbsp; &nbsp; <i class="dropdown-icon fe fe-activity"></i>
+            </a>
+          </div>
 
-            </thead>
-            <tbody>
-            {% for alias_info in aliases %}
-              {% set gen_email = alias_info.gen_email %}
-
-              <tr {% if alias_info.highlight %} class="highlight-row" {% endif %}>
-
-                <td>
-                  <div>
-                    <a href="mailto: {{ gen_email.email }}">{{ gen_email.email }}</a> &nbsp; &nbsp;
-                  </div>
-                  <div>
-                    Created {{ gen_email.created_at | dt }}
-                  </div>
-                  {% if gen_email.custom %}
-                    <div class="text-success">Custom</div>
+          <div>
+            <form method="post">
+              <input type="hidden" name="form-name" value="switch-email-forwarding">
+              <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+              <label class="custom-switch mt-2"
+                     data-toggle="tooltip"
+                  {% if gen_email.enabled %}
+                     title="Block Alias"
+                  {% else %}
+                     title="Unblock Alias"
                   {% endif %}
 
-                  {% if alias_info.highlight %}
-                    <div class="text-success">New</div>
-                  {% endif %}
-                </td>
-
-                <td>
-                  <div>{{ alias_info.nb_forward }} forwarded</div>
-                  <div>{{ alias_info.nb_blocked }} blocked</div>
-                  <div>{{ alias_info.nb_reply }} reply</div>
-                </td>
-
-                <td>
-                  <form method="post">
-                    <input type="hidden" name="form-name" value="switch-email-forwarding">
-                    <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
-
-                    <label class="custom-switch"
-                           data-toggle="tooltip"
-                        {% if gen_email.enabled %}
-                           title="Block Alias"
-                        {% else %}
-                           title="Unblock Alias"
-                        {% endif %}
-
-                        {% if loop.index ==1 %}
-                           data-intro="By turning off an alias, emails sent to this alias will <b>NOT</b>
+                  {% if loop.index ==1 %}
+                     data-intro="By turning off an alias, emails sent to this alias will <b>NOT</b>
                            be forwarded to your inbox. <br><br>
                            This should be used with care as others might
                            not be able to reach you after ...
                             "
-                        {% endif %}
-                    >
-                      <input type="checkbox" class="custom-switch-input"
-                          {{ "checked" if gen_email.enabled else "" }}>
-                      <span class="custom-switch-indicator"></span>
-                    </label>
-                  </form>
-                </td>
+                  {% endif %}
+                     style="padding-left: 0px"
+              >
+                <input type="checkbox" class="custom-switch-input"
+                    {{ "checked" if gen_email.enabled else "" }}>
+                <span class="custom-switch-indicator"></span>
+              </label>
+            </form>
+          </div>
 
-                <td>
-                  <div class="btn-group" role="group">
-                    <a href="{{ url_for('dashboard.alias_log', alias=gen_email.email) }}"
-                       class="btn btn-secondary">
-                      Activity &nbsp; &nbsp; <i class="dropdown-icon fe fe-activity"></i>
-                    </a>
-
-                    {% if gen_email.enabled %}
-                      <button class="btn btn-secondary clipboard" data-clipboard-text="{{ gen_email.email }}">
-                        Copy &nbsp; &nbsp; <i class="dropdown-icon fe fe-clipboard"></i>
-                      </button>
+          <div class="btn-group mt-3" role="group">
+            {% if gen_email.enabled %}
+              <form method="post">
+                <input type="hidden" name="form-name" value="trigger-email">
+                <input type="hidden" name="gen-email-id"
+                       value="{{ gen_email.id }}">
+                <span class="trigger-email btn btn-secondary btn-sm"
+                    {% if alias_info.show_intro_test_send_email %}
+                      data-intro="Send a test email to this alias, the email will arrive at your inbox."
                     {% endif %}
-
-                    {% if gen_email.enabled %}
-                      <form method="post">
-                        <input type="hidden" name="form-name" value="trigger-email">
-                        <input type="hidden" name="gen-email-id"
-                               value="{{ gen_email.id }}">
-                        <span class="trigger-email btn btn-secondary"
-                            {% if alias_info.show_intro_test_send_email %}
-                              data-intro="Send a test email to this alias, the email will arrive at your inbox."
-                            {% endif %}
-                        >
+                >
                           Test alias &nbsp; &nbsp;
                           <i class="dropdown-icon fe fe-send"></i>
                         </span>
-                      </form>
-                    {% endif %}
+              </form>
+            {% endif %}
 
-                    <form method="post">
-                      <input type="hidden" name="form-name" value="delete-email">
-                      <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
-                      <span class="delete-email  btn btn-secondary"> Delete
+            <form method="post">
+              <input type="hidden" name="form-name" value="delete-email">
+              <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+              <span class="delete-email  btn btn-link btn-sm "> Delete
                             &nbsp; &nbsp;
                           <i class="dropdown-icon fe fe-trash-2"></i>
                           </span>
-                    </form>
+            </form>
+          </div>
 
-                  </div>
-                </td>
-
-              </tr>
-            {% endfor %}
-
-            </tbody>
-          </table>
         </div>
       </div>
-    </div>
+    {% endfor %}
   </div>
+
 
   {% if  client_users %}
     <div class="page-header row">

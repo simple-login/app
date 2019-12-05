@@ -56,3 +56,14 @@ em {
     font-style: normal;
     background-color: #FFFF00;
 }
+
+.small-text {
+    font-size: 12px;
+    font-weight: lighter;
+    margin-bottom: 0px;
+}
+
+.copy-btn {
+    font-size: 0.6rem;
+    line-height: 0.75;
+}
