@@ -32,14 +32,18 @@
 
   </div>
 
-  <div class="row" data-intro="Here, you find the list of created <b>alias</b>. <br><br>
-        <b>All</b> emails sent to an alias will be forwarded to your inbox. <br><br>
-        Alias is a great way to hide your personal email address so feel free to
-        use it whenever possible, for example on untrusted websites 😎">
+  <div class="row">
     {% for alias_info in aliases %}
       {% set gen_email = alias_info.gen_email %}
 
-      <div class="col-md-6">
+      <div class="col-md-6"
+          {% if loop.index ==1 %}
+           data-intro="This is an <b>alias</b>. <br><br>
+        <b>All</b> emails sent to an alias will be forwarded to your inbox. <br><br>
+        Alias is a great way to hide your personal email address so feel free to
+        use it whenever possible, for example on untrusted websites 😎"
+          {% endif %}
+      >
         <div class="card p-3 {% if alias_info.highlight %} highlight-row {% endif %}">
 
           <div class="mb-0">
