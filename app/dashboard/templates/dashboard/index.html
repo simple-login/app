@@ -219,8 +219,11 @@
 
     var introShown = localStorage.getItem("introShown");
     if ("yes" !== introShown) {
-      introJs().start();
-      localStorage.setItem("introShown", "yes")
+      // only show intro when screen is big enough to show "developer" tab
+      if (window.innerWidth >= 1024) {
+        introJs().start();
+        localStorage.setItem("introShown", "yes")
+      }
     }
 
 
