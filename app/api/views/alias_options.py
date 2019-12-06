@@ -7,7 +7,7 @@ from app.config import EMAIL_DOMAIN
 from app.extensions import db
 from app.log import LOG
 from app.models import AliasUsedOn, GenEmail, User
-from app.utils import random_string
+from app.utils import random_string, convert_to_id
 
 
 @api_bp.route("/alias/options")
@@ -59,7 +59,14 @@ def options():
     if user.can_create_new_custom_alias():
         ret["custom"] = {}
         if hostname:
-            ret["custom"]["suggestion"] = hostname.replace(".", "_")
+            # keep only the domain name of hostname, ignore TLD and subdomain
+            # for ex www.groupon.com -> groupon
+            domain_name = hostname
+            if "." in hostname:
+                parts = hostname.split(".")
+                domain_name = parts[-2]
+                domain_name = convert_to_id(domain_name)
+            ret["custom"]["suggestion"] = domain_name
         else:
             ret["custom"]["suggestion"] = ""
 
