@@ -176,9 +176,19 @@ class MailHandler:
             return "550 wrong reply email"
 
         forward_email = ForwardEmail.get_by(reply_email=reply_email)
-        alias = forward_email.gen_email.email
+        alias: str = forward_email.gen_email.email
 
         notify_admin(f"Reply phase used by user: {forward_email.gen_email.user.email} ")
+
+        # todo: add DKIM-Signature for custom domain
+        # remove DKIM-Signature for custom domain
+        if not alias.endswith(EMAIL_DOMAIN) and msg["DKIM-Signature"]:
+            LOG.d(
+                "Remove DKIM-Signature %s for custom-domain alias %s",
+                msg["DKIM-Signature"],
+                alias,
+            )
+            del msg["DKIM-Signature"]
 
         # email seems to come from alias
         msg.replace_header("From", alias)
