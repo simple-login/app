@@ -37,7 +37,7 @@ def new_custom_alias():
     alias_prefix = data["alias_prefix"]
     alias_suffix = data["alias_suffix"]
 
-    # make sure alias_prefix is more than 3 chars
+    # make sure alias_prefix is not empty
     alias_prefix = alias_prefix.strip()
     alias_prefix = convert_to_id(alias_prefix)
     if not alias_prefix:  # should be checked on frontend

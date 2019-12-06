@@ -18,16 +18,17 @@
       <input type="hidden" name="form-name" value="non-custom-domain-name">
 
       <div class="form-group">
-        <label class="form-label font-weight-bold">SimpleLogin domain</label>
+        <label class="form-label font-weight-bold">With SimpleLogin domain</label>
         <small class="text-muted">
-          You can use letter, number or dash. Alias must have at least 3 characters
+          You can use letter, number or dash. Alias prefix cannot be empty.
         </small>
 
         <div class="row mt-4">
           <div class="col">
-            <input name="email-prefix" class="form-control" pattern="[0-9|A-Z|a-z|-]{3,}"
-                   title="Only letter, number or dash can be used and alias must have at least 3 characters."
-                   autofocus>
+            <input name="email-prefix" class="form-control" pattern="[0-9|A-Z|a-z|-]{1,}"
+                   title="Only letter, number or dash can be used."
+                   placeholder="alias prefix"
+                   autofocus required>
           </div>
           <div class="col align-self-center">
             <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
@@ -35,10 +36,12 @@
               .{{ email_suffix }}@{{ EMAIL_DOMAIN }}
             </h4>
           </div>
+
+          <div class="col">
+            <button class="btn btn-primary btn-sm">Create</button>
+          </div>
         </div>
       </div>
-
-      <button class="btn btn-primary">Create</button>
     </form>
 
     {% if custom_domains %}

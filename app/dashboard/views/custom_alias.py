@@ -28,8 +28,8 @@ def custom_alias():
             email_prefix = convert_to_id(email_prefix)
             email_suffix = request.form.get("email-suffix")
 
-            if len(email_prefix) < 3:
-                error = "email must be at least 3 letters"
+            if not email_prefix:
+                error = "alias prefix cannot be empty"
             else:
                 full_email = f"{email_prefix}.{email_suffix}@{EMAIL_DOMAIN}"
                 # check if email already exists
