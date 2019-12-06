@@ -39,7 +39,7 @@ def test_different_scenarios(flask_client):
         headers={"Authentication": api_key.code},
     )
 
-    assert r.json["custom"]["suggestion"] == "www_test_com"
+    assert r.json["custom"]["suggestion"] == "test"
 
     # <<< with recommendation >>>
     alias = GenEmail.create_new_gen_email(user.id)
