@@ -28,50 +28,81 @@
 
             {% if not custom_domain.verified %}
               <hr>
-              Please follow the following steps to set up your domain: <br>
+              <div class="mb-3">Please follow the following steps to set up your domain: </div>
 
-              <div>
-                <span class="badge badge-primary badge-pill mr-2">1</span>
-                Add the following MX DNS record to your domain
-              </div>
+              <div class="row">
+                <div class="col-1">
+                  <span class="badge badge-primary badge-pill">1</span>
+                </div>
 
-              <div class="ml-6 mt-3">
-                {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
-                  <div class="ml-3 text-info">
-                    Domain: <em>{{ custom_domain.domain }}</em> <br>
-                    Priority: 10 <br>
-                    Target: <em>{{ email_server }}</em> <br>
-                  </div>
-                {% endfor %}
-
-                Or if you edit your DNS record in text format, use the following code: <br>
-
-                <pre class="ml-3">
+                <div class="col-11">
+                  Add the following MX DNS record to your domain
                   {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
-                    {{ custom_domain.domain }} IN MX {{ priority }} {{ email_server }}
+                    <div class="ml-2 mb-3 p-3" style="background-color: #eee">
+                      Domain: <em>{{ custom_domain.domain }}</em> <br>
+                      Priority: 10 <br>
+                      Target: <em>{{ email_server }}</em> <br>
+                    </div>
                   {% endfor %}
-                </pre>
+
+                  Or if you edit your DNS record in text format, use the following code: <br>
+
+                  <pre class="ml-3">{% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}{{ custom_domain.domain }} IN MX {{ priority }} {{ email_server }}<br>{% endfor %}</pre>
+                </div>
               </div>
 
-              <div>
-                <span class="badge badge-primary badge-pill mr-2">2</span>
-                Verify 👇🏽
-              </div>
+              <div class="row">
+                <div class="col-1"><span class="badge badge-primary badge-pill">2</span></div>
+                <div class="col-11">
+                  <span class="font-weight-bold">[Optional]</span>
+                  Setup <a href="https://en.wikipedia.org/wiki/Sender_Policy_Framework" target="_blank">
+                    SPF <i class="fe fe-external-link"></i></a> record.
+                  This can avoid emails forwarded to your personal inbox classified as spam. <br>
+                  Please note that some email providers can still classify these forwards as spam, in this case
+                  do not hesitate to create rules to avoid these emails mistakenly gone into spam.
+                  You can find how to whitelist a domain on
+                  <a href="https://www.simplelogin.io/help" target="_blank">Whitelist domain<i class="fe fe-external-link"></i></a><br>
 
-              <div class="ml-6 mt-3">
-                <form method="post">
-                  <input type="hidden" name="form-name" value="check-domain">
-                  <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
-                  <button type="submit" class="btn btn-primary">Verify</button>
-                </form>
+                  Please add the following TXT DNS record to your domain:
 
-                {% if custom_domain.id in errors %}
-                  <div class="text-danger">
-                    {{ errors.get(custom_domain.id) }}
+                  <div class="ml-3 mb-2 p-3" style="background-color: #eee">
+                    Domain: <em>{{ custom_domain.domain }}</em> <br>
+                    Value:
+                    <em>
+                      v=spf1
+                      {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
+                        include:{{ email_server[:-1] }}
+                      {% endfor %} -all
+                    </em>
                   </div>
-                {% endif %}
 
-                As the change could take up to 24 hours, do not hesitate to come back to this page and verify again.
+                  Or if you edit your DNS record in text format, use the following code: <br>
+
+                  <pre class="ml-3">{{ custom_domain.domain }} IN TXT "v=spf1 {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}include:{{ email_server[:-1] }} {% endfor %}-all"</pre>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-1">
+                  <span class="badge badge-primary badge-pill mr-2">3</span>
+                </div>
+
+                <div class="col-11">
+                  Verify 👇🏽
+                  <form method="post">
+                    <input type="hidden" name="form-name" value="check-domain">
+                    <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
+                    <button type="submit" class="btn btn-primary">Verify</button>
+                  </form>
+
+                  {% if custom_domain.id in errors %}
+                    <div class="text-danger">
+                      {{ errors.get(custom_domain.id) }}
+                    </div>
+                  {% endif %}
+
+                  As the change could take up to 24 hours, do not hesitate to come back to this page and verify again.
+                </div>
               </div>
             {% endif %}
           </div>

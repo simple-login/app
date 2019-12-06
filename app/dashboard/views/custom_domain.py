@@ -5,7 +5,7 @@ from wtforms import StringField, validators
 
 from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_SERVERS
 from app.dashboard.base import dashboard_bp
-from app.dns_utils import get_mx_domains
+from app.dns_utils import get_mx_domains, get_spf_domain
 from app.email_utils import notify_admin
 from app.extensions import db
 from app.models import CustomDomain
@@ -75,11 +75,17 @@ def custom_domain():
                 flash("You cannot delete this domain", "warning")
                 return redirect(url_for("dashboard.custom_domain"))
             else:
+                spf_domains = get_spf_domain(custom_domain.domain)
+                for email_server in EMAIL_SERVERS:
+                    email_server = email_server[:-1]  # remove the trailing .
+                    if email_server not in spf_domains:
+                        flash(f"{email_server} is not included in your SPF record.", "warning")
+
                 mx_domains = get_mx_domains(custom_domain.domain)
                 if mx_domains != EMAIL_SERVERS:
                     errors[
                         custom_domain.id
-                    ] = f"Your DNS is not correctly set. The MX record we obtain is {mx_domains}"
+                    ] = f"""Your DNS is not correctly set. The MX record we obtain is: {",".join(mx_domains)}"""
                 else:
                     flash(
                         "Your domain is verified. Now it can be used to create custom alias",
