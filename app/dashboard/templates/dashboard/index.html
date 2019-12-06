@@ -2,6 +2,15 @@
 
 {% set active_page = "dashboard" %}
 
+{% block head %}
+  <style>
+    .alias-activity {
+      font-weight: 600;
+      font-size: 14px;
+    }
+  </style>
+{% endblock %}
+
 {% block title %}
   Alias
 {% endblock %}
@@ -45,15 +54,21 @@
           {% endif %}
       >
         <div class="card p-3 {% if alias_info.highlight %} highlight-row {% endif %}">
-
-          <div class="mb-0">
-            <a href="mailto: {{ gen_email.email }}">{{ gen_email.email }}</a>
-            {% if gen_email.enabled %}
-              <span class="clipboard btn btn-sm btn-success copt-btn"
-                    data-clipboard-text="{{ gen_email.email }}">
-                Copy
-              </span>
-            {% endif %}
+          <div>
+            <span class="clipboard mb-0"
+                {% if gen_email.enabled %}
+                  data-toggle="tooltip"
+                  title="Copy to clipboard"
+                  data-clipboard-text="{{ gen_email.email }}"
+                {% endif %}
+            >
+              <span class="font-weight-bold">{{ gen_email.email }}</span>
+              {% if gen_email.enabled %}
+                <span class="btn btn-sm btn-success copy-btn">
+                  Copy
+                </span>
+              {% endif %}
+            </span>
           </div>
 
           <p class="small-text">
@@ -66,10 +81,10 @@
             {% endif %}
           </p>
 
-          <div class="text-info">
-            {{ alias_info.nb_forward }} forwards,
-            {{ alias_info.nb_blocked }} blocks,
-            {{ alias_info.nb_reply }} replies
+          <div class="" style="font-size: 12px">
+            <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwards,
+            <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
+            <span class="alias-activity">{{ alias_info.nb_reply }}</span> replies
             <a href="{{ url_for('dashboard.alias_log', alias=gen_email.email) }}"
                class="btn btn-secondary btn-sm">
               Activity &nbsp; &nbsp; <i class="dropdown-icon fe fe-activity"></i>
@@ -229,8 +244,8 @@
 
     $(".delete-email").on("click", function (e) {
       notie.confirm({
-        text: "Once an email alias is deleted, people/apps " +
-          "who used to contact you via this email cannot reach you any more," +
+        text: "Once an alias is deleted, people/apps " +
+          "who used to contact you via this email address cannot reach you any more," +
           " please confirm",
         cancelCallback: () => {
           // nothing to do
