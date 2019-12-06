@@ -50,7 +50,6 @@ EMAIL_SERVERS_WITH_PRIORITY = eval(
 EMAIL_SERVERS = [es for _, es in EMAIL_SERVERS_WITH_PRIORITY]
 
 # Database
-RESET_DB = "RESET_DB" in os.environ
 DB_URI = os.environ["DB_URI"]
 
 # Flask secret
