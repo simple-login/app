@@ -24,7 +24,7 @@ def new_random_alias():
     user = g.user
     if not user.can_create_new_random_alias():
         LOG.d("user %s cannot create random alias", user)
-        return jsonify(error="no more quota for random alias"), 400
+        return jsonify(error="You have created 3 random aliases, please upgrade to create more"), 400
 
     hostname = request.args.get("hostname")
     gen_email = GenEmail.create_new_gen_email(user_id=user.id)

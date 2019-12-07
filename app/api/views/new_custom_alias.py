@@ -28,7 +28,7 @@ def new_custom_alias():
     user = g.user
     if not user.can_create_new_custom_alias():
         LOG.d("user %s cannot create custom alias", user)
-        return jsonify(error="no more quota for custom alias"), 400
+        return jsonify(error="You have created 3 custom aliases, please upgrade to create more"), 400
 
     user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
     hostname = request.args.get("hostname")
@@ -69,7 +69,7 @@ def new_custom_alias():
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
-    gen_email = GenEmail.create(user_id=user.id, email=full_alias)
+    gen_email = GenEmail.create(user_id=user.id, email=full_alias, custom=True)
     db.session.commit()
 
     if hostname:
