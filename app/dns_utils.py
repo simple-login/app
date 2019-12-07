@@ -2,7 +2,11 @@ import dns.resolver
 
 
 def get_mx_domains(hostname) -> [str]:
-    answers = dns.resolver.query(hostname, "MX")
+    try:
+        answers = dns.resolver.query(hostname, "MX")
+    except dns.resolver.NoAnswer:
+        return []
+
     ret = []
 
     for a in answers:
