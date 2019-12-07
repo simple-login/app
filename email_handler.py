@@ -153,13 +153,24 @@ class MailHandler:
                 envelope.rcpt_options,
             )
 
-            smtp.send_message(
-                msg,
-                from_addr=forward_email.reply_email,
-                to_addrs=[user_email],  # user personal email
-                mail_options=envelope.mail_options,
-                rcpt_options=envelope.rcpt_options,
+            # smtp.send_message has UnicodeEncodeErroremail issue
+            # encode message raw directly instead
+            msg_raw = msg.as_string().encode()
+            smtp.sendmail(
+                forward_email.reply_email,
+                user_email,
+                msg_raw,
+                envelope.mail_options,
+                envelope.rcpt_options,
             )
+
+            # smtp.send_message(
+            #     msg,
+            #     from_addr=forward_email.reply_email,
+            #     to_addrs=[user_email],  # user personal email
+            #     mail_options=envelope.mail_options,
+            #     rcpt_options=envelope.rcpt_options,
+            # )
         else:
             LOG.d("%s is disabled, do not forward", gen_email)
             forward_log.blocked = True
