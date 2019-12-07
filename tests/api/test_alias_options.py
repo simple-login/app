@@ -5,10 +5,9 @@ from app.models import User, ApiKey, AliasUsedOn, GenEmail
 
 
 def test_different_scenarios(flask_client):
-    """Start with a blank database."""
-
-    # create user, user is not activated
-    user = User.create(email="a@b.c", password="password", name="Test User")
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
     db.session.commit()
 
     # create api_key
