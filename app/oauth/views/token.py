@@ -10,7 +10,7 @@ from app.oauth.views.authorize import generate_access_token
 from app.oauth_models import Scope, get_response_types_from_str, ResponseType
 
 
-@oauth_bp.route("/token", methods=["POST"])
+@oauth_bp.route("/token", methods=["POST", "GET"])
 @cross_origin()
 def token():
     """
