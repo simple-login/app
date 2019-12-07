@@ -10,9 +10,12 @@ from server import create_app
 def late_payment():
     """check for late payment
     """
-    for sub in Subscription.query.all():
-        if (not sub.cancelled) and sub.next_bill_date < arrow.now().date():
-            LOG.error(f"user {sub.user.email} has late payment. {sub}")
+    q = db.session.query(Subscription, User).filter(Subscription.user_id == User.id)
+    for ie in _ignored_emails:
+        q = q.filter(~User.email.contains(ie))
+
+    for sub, user in q.all():
+        LOG.error(f"user {user.email} has late payment. {sub}")
 
 
 _ignored_emails = ["nguyenkims", "mbpcmeo", "son@simplelogin.io", "demo.simplelogin"]
