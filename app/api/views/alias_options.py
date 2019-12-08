@@ -56,28 +56,27 @@ def options():
             ret["recommendation"] = {"alias": alias.email, "hostname": hostname}
 
     # custom alias suggestion and suffix
-    if user.can_create_new_custom_alias():
-        ret["custom"] = {}
-        if hostname:
-            # keep only the domain name of hostname, ignore TLD and subdomain
-            # for ex www.groupon.com -> groupon
-            domain_name = hostname
-            if "." in hostname:
-                parts = hostname.split(".")
-                domain_name = parts[-2]
-                domain_name = convert_to_id(domain_name)
-            ret["custom"]["suggestion"] = domain_name
-        else:
-            ret["custom"]["suggestion"] = ""
+    ret["custom"] = {}
+    if hostname:
+        # keep only the domain name of hostname, ignore TLD and subdomain
+        # for ex www.groupon.com -> groupon
+        domain_name = hostname
+        if "." in hostname:
+            parts = hostname.split(".")
+            domain_name = parts[-2]
+            domain_name = convert_to_id(domain_name)
+        ret["custom"]["suggestion"] = domain_name
+    else:
+        ret["custom"]["suggestion"] = ""
 
-        # maybe better to make sure the suffix is never used before
-        # but this is ok as there's a check when creating a new custom alias
-        ret["custom"]["suffixes"] = [f".{random_string(6)}@{EMAIL_DOMAIN}"]
+    # maybe better to make sure the suffix is never used before
+    # but this is ok as there's a check when creating a new custom alias
+    ret["custom"]["suffixes"] = [f".{random_string(6)}@{EMAIL_DOMAIN}"]
 
-        for custom_domain in user.verified_custom_domains():
-            ret["custom"]["suffixes"].append("@" + custom_domain.domain)
+    for custom_domain in user.verified_custom_domains():
+        ret["custom"]["suffixes"].append("@" + custom_domain.domain)
 
-        # custom domain should be put first
-        ret["custom"]["suffixes"] = list(reversed(ret["custom"]["suffixes"]))
+    # custom domain should be put first
+    ret["custom"]["suffixes"] = list(reversed(ret["custom"]["suffixes"]))
 
     return jsonify(ret)
