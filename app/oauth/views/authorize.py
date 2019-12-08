@@ -272,21 +272,6 @@ def authorize():
         return redirect(construct_url(redirect_uri, redirect_args, fragment))
 
 
-def create_or_choose_gen_email(user) -> GenEmail:
-    can_create_new_random_alias = user.can_create_new_random_alias()
-
-    if can_create_new_random_alias:
-        gen_email = GenEmail.create_new_gen_email(user_id=user.id)
-        db.session.flush()
-        LOG.debug("generate email %s for user %s", gen_email.email, user)
-    else:  # need to reuse one of the gen emails created
-        LOG.d("pick a random email for gen emails for user %s", current_user)
-        gen_emails = GenEmail.filter_by(user_id=current_user.id).all()
-        gen_email = random.choice(gen_emails)
-
-    return gen_email
-
-
 def construct_url(url, args: Dict[str, str], fragment: bool = False):
     for i, (k, v) in enumerate(args.items()):
         # make sure to escape v

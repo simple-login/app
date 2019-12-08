@@ -49,22 +49,6 @@ def index():
                 "success",
             )
 
-        elif request.form.get("form-name") == "create-random-email":
-            can_create_new_random_alias = current_user.can_create_new_random_alias()
-
-            if can_create_new_random_alias:
-                gen_email = GenEmail.create_new_gen_email(user_id=current_user.id)
-                db.session.commit()
-
-                LOG.d("generate new email %s for user %s", gen_email, current_user)
-                flash(f"Email {gen_email.email} has been created", "success")
-                session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
-            else:
-                flash(
-                    f"You need to upgrade your plan to create new random alias.",
-                    "warning",
-                )
-
         elif request.form.get("form-name") == "create-custom-email":
             if current_user.can_create_new_custom_alias():
                 return redirect(url_for("dashboard.custom_alias"))

@@ -77,7 +77,6 @@ def custom_alias():
                     full_email,
                     custom_domain.domain,
                 )
-                # todo: add custom_id to GenEmail
                 gen_email = GenEmail.create(
                     email=full_email,
                     user_id=current_user.id,
