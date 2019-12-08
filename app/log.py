@@ -13,6 +13,7 @@ from app.config import (
     CLOUDWATCH_LOG_GROUP,
     ENABLE_CLOUDWATCH,
     CLOUDWATCH_LOG_STREAM,
+    COLOR_LOG,
 )
 
 _log_format = "%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(module)s:%(lineno)d - %(funcName)s - %(message)s"
@@ -66,7 +67,8 @@ def _get_logger(name):
     # no propagation to avoid propagating to root logger
     logger.propagate = False
 
-    coloredlogs.install(level="DEBUG", logger=logger)
+    if COLOR_LOG:
+        coloredlogs.install(level="DEBUG", logger=logger)
 
     return logger
 
