@@ -20,6 +20,7 @@ from app.config import (
     URL,
     SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
+    RESET_DB,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -379,9 +380,10 @@ if __name__ == "__main__":
     # app.config["SQLALCHEMY_ECHO"] = True
 
     # warning: only used in local
-    # LOG.d("reset db, add fake data")
-    # with app.app_context():
-    #     fake_data()
+    if RESET_DB:
+        LOG.warning("reset db, add fake data")
+        with app.app_context():
+            fake_data()
 
     if URL.startswith("https"):
         LOG.d("enable https")

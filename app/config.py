@@ -24,6 +24,7 @@ if config_file:
 else:
     load_dotenv()
 
+RESET_DB = "RESET_DB" in os.environ
 
 # Allow user to have 1 year of premium: set the expiration_date to 1 year more
 PROMO_CODE = "SIMPLEISBETTER"
