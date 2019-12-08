@@ -3,6 +3,7 @@ import sys
 import time
 
 import boto3
+import coloredlogs
 import watchtower
 
 from app.config import (
@@ -64,6 +65,8 @@ def _get_logger(name):
 
     # no propagation to avoid propagating to root logger
     logger.propagate = False
+
+    coloredlogs.install(level="DEBUG", logger=logger)
 
     return logger
 
