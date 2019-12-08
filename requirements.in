@@ -28,3 +28,4 @@ requests_oauthlib
 pyopenssl
 aiosmtpd
 dnspython
+coloredlogs

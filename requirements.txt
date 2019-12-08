@@ -24,6 +24,7 @@ certifi==2019.3.9         # via requests, sentry-sdk
 cffi==1.12.3              # via bcrypt, cryptography
 chardet==3.0.4            # via aiohttp, requests
 click==7.0                # via flask, pip-tools
+coloredlogs==10.0
 crontab==0.22.5           # via yacron
 cryptography==2.7         # via jwcrypto, pyopenssl
 decorator==4.4.0          # via ipython, traitlets
@@ -38,6 +39,7 @@ flask-sqlalchemy==2.4.0
 flask-wtf==0.14.2
 flask==1.0.3
 gunicorn==19.9.0
+humanfriendly==4.18       # via coloredlogs
 idna==2.8                 # via requests, yarl
 importlib-metadata==0.18  # via pluggy, pytest
 ipython-genutils==0.2.0   # via traitlets
