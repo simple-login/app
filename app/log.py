@@ -68,7 +68,7 @@ def _get_logger(name):
     logger.propagate = False
 
     if COLOR_LOG:
-        coloredlogs.install(level="DEBUG", logger=logger)
+        coloredlogs.install(level="DEBUG", logger=logger, fmt=_log_format)
 
     return logger
 
