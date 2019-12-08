@@ -413,6 +413,22 @@ class GenEmail(db.Model, ModelMixin):
         random_email = generate_email()
         return GenEmail.create(user_id=user_id, email=random_email, custom=custom)
 
+    @classmethod
+    def create_custom_alias(cls, user_id, prefix):
+        if not prefix:
+            raise Exception("alias prefix cannot be empty")
+
+        # find the right suffix
+        found = False
+        while not found:
+            suffix = random_string(6)
+            email = f"{prefix}.{suffix}@{EMAIL_DOMAIN}"
+
+            if not cls.get_by(email=email):
+                found = True
+
+        return GenEmail.create(user_id=user_id, email=email, custom=True)
+
     def __repr__(self):
         return f"<GenEmail {self.id} {self.email}>"
 
