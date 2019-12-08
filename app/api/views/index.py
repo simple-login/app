@@ -12,6 +12,7 @@ from app.models import ApiKey, AliasUsedOn, GenEmail, User, DeletedAlias
 from app.utils import random_string
 
 
+# TODO: obsolete
 @api_bp.route("/alias/new", methods=["GET", "POST"])
 @cross_origin()
 def index():
@@ -19,6 +20,8 @@ def index():
     the incoming request must provide a valid api-key in "Authentication" header and
     the payload must contain "hostname"
     """
+    LOG.error("/api/alias/new is obsolete!")
+
     api_code = request.headers.get("Authentication")
     api_key = ApiKey.get_by(code=api_code)
 

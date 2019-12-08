@@ -8,6 +8,7 @@ from app.log import LOG
 from app.models import GenEmail, AliasUsedOn
 
 
+# OBSOLETE
 @api_bp.route("/alias/random/new", methods=["POST"])
 @cross_origin()
 @verify_api_key
@@ -21,10 +22,17 @@ def new_random_alias():
         409 if alias already exists
 
     """
+    LOG.error("/api/alias/new is obsolete! Called by %s", g.user)
+
     user = g.user
     if not user.can_create_new_random_alias():
         LOG.d("user %s cannot create random alias", user)
-        return jsonify(error="You have created 3 random aliases, please upgrade to create more"), 400
+        return (
+            jsonify(
+                error="You have created 3 random aliases, please upgrade to create more"
+            ),
+            400,
+        )
 
     hostname = request.args.get("hostname")
     gen_email = GenEmail.create_new_gen_email(user_id=user.id)
