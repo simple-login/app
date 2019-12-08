@@ -113,7 +113,7 @@ class User(db.Model, ModelMixin, UserMixin):
         db.session.flush()
 
         # create a first alias mail to show user how to use when they login
-        GenEmail.create_new_gen_email(user_id=user.id)
+        GenEmail.create_custom_alias(user.id, prefix="my-first-alias")
         db.session.flush()
 
         return user
