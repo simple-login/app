@@ -36,9 +36,9 @@ def test_out_of_quota(flask_client):
     db.session.commit()
 
     # create 3 custom alias to run out of quota
-    GenEmail.create_new_gen_email(user.id, custom=True)
-    GenEmail.create_new_gen_email(user.id, custom=True)
-    GenEmail.create_new_gen_email(user.id, custom=True)
+    GenEmail.create_custom_alias(user.id, prefix="test")
+    GenEmail.create_custom_alias(user.id, prefix="test")
+    GenEmail.create_custom_alias(user.id, prefix="test")
 
     r = flask_client.post(
         url_for("api.new_custom_alias", hostname="www.test.com"),

@@ -21,6 +21,7 @@ from app.config import (
     SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
     RESET_DB,
+    EMAIL_DOMAIN,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -118,9 +119,9 @@ def fake_data():
     api_key = ApiKey.create(user_id=user.id, name="Chrome")
     api_key.code = "code"
 
-    GenEmail.create_new_gen_email(user_id=user.id)
-
-    GenEmail.create_new_gen_email(user_id=user.id, custom=True)
+    GenEmail.create_custom_alias(user.id, "e1@")
+    GenEmail.create_custom_alias(user.id, "e2@")
+    GenEmail.create_custom_alias(user.id, "e3@")
 
     # Create a client
     client1 = Client.create_new(name="Demo", user_id=user.id)

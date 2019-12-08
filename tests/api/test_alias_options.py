@@ -41,7 +41,7 @@ def test_different_scenarios(flask_client):
     assert r.json["custom"]["suggestion"] == "test"
 
     # <<< with recommendation >>>
-    alias = GenEmail.create_new_gen_email(user.id)
+    alias = GenEmail.create_custom_alias(user.id, prefix="test")
     db.session.commit()
     AliasUsedOn.create(gen_email_id=alias.id, hostname="www.test.com")
     db.session.commit()
