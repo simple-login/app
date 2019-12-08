@@ -100,7 +100,7 @@ def authorize():
                 LOG.debug("user %s has already allowed client %s", current_user, client)
                 user_info = client_user.get_user_info()
             else:
-                suggested_email, other_emails = current_user.suggested_emails()
+                suggested_email, other_emails = current_user.suggested_emails(client.name)
                 suggested_name, other_names = current_user.suggested_names()
                 email_suffix = random_string(6)
 

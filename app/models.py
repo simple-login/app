@@ -168,19 +168,22 @@ class User(db.Model, ModelMixin, UserMixin):
         else:
             return url_for("static", filename="default-avatar.png")
 
-    def suggested_emails(self) -> (str, [str]):
+    def suggested_emails(self, website_name) -> (str, [str]):
         """return suggested email and other email choices """
+        website_name = convert_to_id(website_name)
+
         all_gen_emails = [ge.email for ge in GenEmail.filter_by(user_id=self.id)]
-        if self.can_create_new_random_alias():
-            # create a new email
-            suggested_gen_email = generate_email()
+        if self.can_create_new_custom_alias():
+            suggested_gen_email = GenEmail.create_custom_alias(
+                self.id, prefix=website_name
+            ).email
         else:
             # pick an email from the list of gen emails
             suggested_gen_email = random.choice(all_gen_emails)
 
         return (
             suggested_gen_email,
-            list(set(all_gen_emails).difference(set([suggested_gen_email]))),
+            list(set(all_gen_emails).difference({suggested_gen_email})),
         )
 
     def suggested_names(self) -> (str, [str]):
