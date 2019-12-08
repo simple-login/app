@@ -69,9 +69,6 @@
 
           <p class="small-text">
             Created {{ gen_email.created_at | dt }}
-            {% if gen_email.custom %}
-              - <span class="font-weight-bold small-text">Custom</span>
-            {% endif %}
             {% if alias_info.highlight %}
               - <span class="font-weight-bold text-success small-text">New</span>
             {% endif %}
