@@ -260,4 +260,4 @@ if __name__ == "__main__":
     LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
 
     while True:
-        time.sleep(10)
+        time.sleep(2)
