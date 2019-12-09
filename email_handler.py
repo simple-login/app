@@ -88,7 +88,7 @@ class MailHandler:
 
         user_email = gen_email.user.email
 
-        website_email = envelope.mail_from
+        website_email = msg["From"]
 
         forward_email = ForwardEmail.get_by(
             gen_email_id=gen_email.id, website_email=website_email

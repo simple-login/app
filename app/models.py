@@ -537,6 +537,7 @@ class ForwardEmail(db.Model, ModelMixin):
         db.ForeignKey(GenEmail.id, ondelete="cascade"), nullable=False
     )
 
+    # used to be envelope header, should be mail header from instead
     website_email = db.Column(db.String(128), nullable=False)
 
     # when user clicks on "reply", they will reply to this address.
