@@ -19,7 +19,7 @@
         <div class="my-2 p-2 card">
           <div class="font-weight-bold">{{ log.when | dt }}</div>
           <div>
-            <span class="mr-2">{{ log.website_email }}</span>
+            <span class="mr-2">{{ log.website_from or log.website_email }}</span>
 
             <span>
               {% if log.is_reply %}

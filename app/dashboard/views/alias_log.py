@@ -12,6 +12,7 @@ from app.models import GenEmail, ForwardEmailLog, ForwardEmail
 @dataclass
 class AliasLog:
     website_email: str
+    website_from: str
     alias: str
     when: arrow.Arrow
     is_reply: bool
@@ -50,6 +51,7 @@ def get_alias_log(gen_email: GenEmail):
     for fe, fel in q:
         al = AliasLog(
             website_email=fe.website_email,
+            website_from=fe.website_from,
             alias=gen_email.email,
             when=fel.created_at,
             is_reply=fel.is_reply,

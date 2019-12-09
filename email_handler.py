@@ -104,6 +104,7 @@ class MailHandler:
             forward_email = ForwardEmail.create(
                 gen_email_id=gen_email.id,
                 website_email=website_email,
+                website_from=msg["From"],
                 reply_email=reply_email,
             )
             db.session.commit()
