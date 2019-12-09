@@ -539,6 +539,10 @@ class ForwardEmail(db.Model, ModelMixin):
     # used to be envelope header, should be mail header from instead
     website_email = db.Column(db.String(128), nullable=False)
 
+    # the email from header, e.g. AB CD <ab@cd.com>
+    # nullable as this field is added after website_email
+    website_from = db.Column(db.String(128), nullable=True)
+
     # when user clicks on "reply", they will reply to this address.
     # This address allows to hide user personal email
     # this reply email is created every time a website sends an email to user
