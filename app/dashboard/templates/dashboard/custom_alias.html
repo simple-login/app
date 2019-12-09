@@ -24,8 +24,9 @@
 
         <div class="row mt-4">
           <div class="col pr-1">
-            <input name="email-prefix" class="form-control" pattern="[0-9|A-Z|a-z|-]{1,}"
-                   title="Only letter, number or dash can be used."
+            <input name="email-prefix" class="form-control"
+                   pattern="[0-9|A-Z|a-z|-|_]{1,}"
+                   title="Only letter, number, dash (-), underscore (_) can be used in alias prefix."
                    placeholder="alias prefix"
                    autofocus required>
           </div>
