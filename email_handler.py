@@ -88,7 +88,7 @@ class MailHandler:
 
         user_email = gen_email.user.email
 
-        website_email = msg["From"]
+        website_email = get_email_part(msg["From"])
 
         forward_email = ForwardEmail.get_by(
             gen_email_id=gen_email.id, website_email=website_email
@@ -251,6 +251,17 @@ def get_email_name(email_from):
         return email_from[: email_from.find("<")].strip()
 
     return ""
+
+
+def get_email_part(email_from):
+    """parse email from header and return the email part
+    First Last <ab@cd.com> -> ab@cd.com
+    ab@cd.com -> ""
+    """
+    if "<" in email_from:
+        return email_from[email_from.find("<") + 1 : email_from.find(">")].strip()
+
+    return email_from
 
 
 if __name__ == "__main__":
