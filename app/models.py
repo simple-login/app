@@ -13,7 +13,7 @@ from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, URL, AVATAR_URL_EXP
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
-from app.utils import convert_to_id, random_string, random_words
+from app.utils import convert_to_id, random_string, random_words, random_word
 
 
 class ModelMixin(object):
@@ -421,14 +421,13 @@ class GenEmail(db.Model, ModelMixin):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
 
-        # find the right suffix
-        found = False
-        while not found:
-            suffix = random_string(6)
+        # find the right suffix - avoid infinite loop by running this at max 1000 times
+        for i in range(1000):
+            suffix = random_word()
             email = f"{prefix}.{suffix}@{EMAIL_DOMAIN}"
 
             if not cls.get_by(email=email):
-                found = True
+                break
 
         return GenEmail.create(user_id=user_id, email=email, custom=True)
 

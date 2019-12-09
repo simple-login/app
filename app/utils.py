@@ -12,6 +12,10 @@ with open(WORDS_FILE_PATH) as f:
     _words = f.read().split()
 
 
+def random_word():
+    return random.choice(_words)
+
+
 def random_words():
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
     nb_words = random.randint(2, 3)

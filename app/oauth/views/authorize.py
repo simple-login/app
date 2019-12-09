@@ -1,4 +1,3 @@
-import random
 from typing import Dict
 from urllib.parse import urlparse
 
@@ -27,7 +26,7 @@ from app.oauth_models import (
     SUPPORTED_OPENID_FLOWS_STR,
     response_types_to_str,
 )
-from app.utils import random_string, encode_url, convert_to_id
+from app.utils import random_string, encode_url, convert_to_id, random_word
 
 
 @oauth_bp.route("/authorize", methods=["GET", "POST"])
@@ -100,9 +99,11 @@ def authorize():
                 LOG.debug("user %s has already allowed client %s", current_user, client)
                 user_info = client_user.get_user_info()
             else:
-                suggested_email, other_emails = current_user.suggested_emails(client.name)
+                suggested_email, other_emails = current_user.suggested_emails(
+                    client.name
+                )
                 suggested_name, other_names = current_user.suggested_names()
-                email_suffix = random_string(6)
+                email_suffix = random_word()
 
             return render_template(
                 "oauth/authorize.html",

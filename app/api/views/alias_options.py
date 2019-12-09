@@ -7,7 +7,7 @@ from app.config import EMAIL_DOMAIN
 from app.extensions import db
 from app.log import LOG
 from app.models import AliasUsedOn, GenEmail, User
-from app.utils import random_string, convert_to_id
+from app.utils import convert_to_id, random_word
 
 
 @api_bp.route("/alias/options")
@@ -71,7 +71,7 @@ def options():
 
     # maybe better to make sure the suffix is never used before
     # but this is ok as there's a check when creating a new custom alias
-    ret["custom"]["suffixes"] = [f".{random_string(6)}@{EMAIL_DOMAIN}"]
+    ret["custom"]["suffixes"] = [f".{random_word()}@{EMAIL_DOMAIN}"]
 
     for custom_domain in user.verified_custom_domains():
         ret["custom"]["suffixes"].append("@" + custom_domain.domain)
