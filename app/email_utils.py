@@ -5,7 +5,13 @@ from smtplib import SMTP
 
 from jinja2 import Environment, FileSystemLoader
 
-from app.config import SUPPORT_EMAIL, ROOT_DIR, POSTFIX_SERVER, ADMIN_EMAIL
+from app.config import (
+    SUPPORT_EMAIL,
+    ROOT_DIR,
+    POSTFIX_SERVER,
+    ADMIN_EMAIL,
+    NOT_SEND_EMAIL,
+)
 from app.log import LOG
 
 
@@ -93,6 +99,16 @@ def send_test_email_alias(email, name):
 
 
 def send_by_postfix(to_email, subject, plaintext, html):
+    if NOT_SEND_EMAIL:
+        LOG.d(
+            "send email with subject %s to %s, plaintext: %s, html:%s",
+            subject,
+            to_email,
+            plaintext,
+            html,
+        )
+        return
+
     # host IP, setup via Docker network
     smtp = SMTP(POSTFIX_SERVER, 25)
     msg = EmailMessage()
