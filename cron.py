@@ -80,5 +80,7 @@ if __name__ == "__main__":
     app = create_app()
 
     with app.app_context():
-        late_payment()
+        # TODO: re-enable when take into account user with 100% discount
+        # late_payment()
+
         stats()
