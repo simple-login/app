@@ -22,15 +22,15 @@
           <label class="form-label font-weight-bold">With SimpleLogin domain</label>
         {% endif %}
 
-        <div class="row mt-4">
-          <div class="col pr-1">
+        <div class="row">
+          <div class="col-sm-6 pr-1 pl-0 mb-1" style="min-width: 5em">
             <input name="email-prefix" class="form-control"
                    pattern="[0-9|A-Z|a-z|-|_]{1,}"
                    title="Only letter, number, dash (-), underscore (_) can be used in alias prefix."
-                   placeholder="alias prefix"
+                   placeholder="email alias"
                    autofocus required>
           </div>
-          <div class="col align-self-center p-0" style="height:1.5rem">
+          <div class="col-sm-6 align-self-center p-0" style="height:1.5rem">
             <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
             <h4>
               .{{ email_suffix }}@{{ EMAIL_DOMAIN }}
@@ -38,11 +38,16 @@
           </div>
         </div>
 
-        <div class="small-text">
-          You can use letter, number or dash. Alias cannot be empty.
+        <div class="row">
+          <div class="small-text">
+            You can use letter, number or dash. Alias cannot be empty.
+          </div>
         </div>
 
-        <button class="btn btn-primary">Create</button>
+        <div class="row">
+          <button class="btn btn-primary mt-1">Create</button>
+        </div>
+
       </div>
     </form>
 
