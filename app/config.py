@@ -43,7 +43,8 @@ EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"]
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
 ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
 MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
-POSTFIX_SERVER = "1.1.1.1"
+# allow to override postfix server locally
+POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "1.1.1.1")
 
 # list of (priority, email server)
 EMAIL_SERVERS_WITH_PRIORITY = eval(
