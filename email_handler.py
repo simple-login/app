@@ -47,6 +47,22 @@ from app.utils import random_words
 from server import create_app
 
 
+# fix the database connection leak issue
+# use this method instead of create_app
+def new_app():
+    app = create_app()
+
+    @app.teardown_appcontext
+    def shutdown_session(response_or_exc):
+        # same as shutdown_session() in flask-sqlalchemy but this is not enough
+        db.session.remove()
+
+        # dispose the engine too
+        db.engine.dispose()
+
+    return app
+
+
 class MailHandler:
     async def handle_DATA(self, server, session, envelope):
         LOG.debug(">>> New message <<<")
@@ -65,14 +81,14 @@ class MailHandler:
 
         if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case
             LOG.debug("Forward phase")
-            app = create_app()
+            app = new_app()
 
             with app.app_context():
                 return self.handle_forward(envelope, smtp, msg)
 
         else:
             LOG.debug("Reply phase")
-            app = create_app()
+            app = new_app()
 
             with app.app_context():
                 return self.handle_reply(envelope, smtp, msg)
