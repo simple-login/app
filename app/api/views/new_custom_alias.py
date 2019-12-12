@@ -28,7 +28,12 @@ def new_custom_alias():
     user = g.user
     if not user.can_create_new_custom_alias():
         LOG.d("user %s cannot create custom alias", user)
-        return jsonify(error="You have created 3 custom aliases, please upgrade to create more"), 400
+        return (
+            jsonify(
+                error="You have created 3 custom aliases, please upgrade to create more"
+            ),
+            400,
+        )
 
     user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
     hostname = request.args.get("hostname")

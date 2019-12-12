@@ -79,7 +79,10 @@ def custom_domain():
                 for email_server in EMAIL_SERVERS:
                     email_server = email_server[:-1]  # remove the trailing .
                     if email_server not in spf_domains:
-                        flash(f"{email_server} is not included in your SPF record.", "warning")
+                        flash(
+                            f"{email_server} is not included in your SPF record.",
+                            "warning",
+                        )
 
                 mx_domains = get_mx_domains(custom_domain.domain)
                 if mx_domains != EMAIL_SERVERS:
