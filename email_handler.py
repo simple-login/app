@@ -237,12 +237,13 @@ class MailHandler:
             envelope.rcpt_options,
         )
 
-        smtp.send_message(
-            msg,
-            from_addr=alias,
-            to_addrs=[forward_email.website_email],
-            mail_options=envelope.mail_options,
-            rcpt_options=envelope.rcpt_options,
+        msg_raw = msg.as_string().encode()
+        smtp.sendmail(
+            alias,
+            forward_email.website_email,
+            msg_raw,
+            envelope.mail_options,
+            envelope.rcpt_options,
         )
 
         ForwardEmailLog.create(forward_id=forward_email.id, is_reply=True)
