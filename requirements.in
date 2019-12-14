@@ -29,3 +29,5 @@ pyopenssl
 aiosmtpd
 dnspython
 coloredlogs
+pycryptodome
+phpserialize
