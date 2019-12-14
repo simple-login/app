@@ -10,6 +10,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
 
+from app import paddle_utils
 from app.admin_model import SLModelView, SLAdminIndexView
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -277,7 +278,13 @@ def setup_paddle_callback(app: Flask):
             request.form.get("subscription_id"),
             request.form.get("subscription_plan_id"),
         )
-        LOG.debug("paddle full request %s", request.form)
+
+        # make sure the request comes from Paddle
+        if not paddle_utils.verify_incoming_request(dict(request.form)):
+            LOG.error(
+                "request not coming from paddle. Request data:%s", dict(request.form)
+            )
+            return "KO", 400
 
         if (
             request.form.get("alert_name") == "subscription_created"
