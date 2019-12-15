@@ -79,8 +79,8 @@
             <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
             <span class="alias-activity">{{ alias_info.nb_reply }}</span> replies
             <a href="{{ url_for('dashboard.alias_log', alias=gen_email.email) }}"
-               class="btn btn-secondary btn-sm">
-              Activity &nbsp; &nbsp; <i class="dropdown-icon fe fe-activity"></i>
+               class="btn btn-sm btn-link">
+              See All Activity &nbsp;→
             </a>
           </div>
 
@@ -119,12 +119,12 @@
                     {% if alias_info.show_intro_test_send_email %}
                    data-intro="Not only alias can receive emails, it can send emails too!"
                     {% endif %}
-                   class="btn btn-sm btn-secondary"
+                   class="btn btn-sm btn-outline-primary"
                    data-toggle="tooltip"
                    title="Send email from alias"
                 >
                   Send Email &nbsp; &nbsp;
-                  <i class="dropdown-icon fe fe-send"></i>
+                  <span class="badge badge-info">Beta</span>
                 </a>
               {% endif %}
             </div>
