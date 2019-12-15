@@ -79,19 +79,22 @@ class MailHandler:
         smtp = SMTP(POSTFIX_SERVER, 25)
         msg = Parser(policy=SMTPUTF8).parsestr(message_data)
 
-        if not envelope.rcpt_tos[0].startswith("reply+"):  # Forward case
-            LOG.debug("Forward phase")
-            app = new_app()
-
-            with app.app_context():
-                return self.handle_forward(envelope, smtp, msg)
-
-        else:
+        # Reply case
+        # reply+ or ra+ (reverse-alias) prefix
+        if envelope.rcpt_tos[0].startswith("reply+") or envelope.rcpt_tos[0].startswith(
+            "ra+"
+        ):
             LOG.debug("Reply phase")
             app = new_app()
 
             with app.app_context():
                 return self.handle_reply(envelope, smtp, msg)
+        else:  # Forward case
+            LOG.debug("Forward phase")
+            app = new_app()
+
+            with app.app_context():
+                return self.handle_forward(envelope, smtp, msg)
 
     def handle_forward(self, envelope, smtp, msg: EmailMessage) -> str:
         """return *status_code message*"""
@@ -146,10 +149,10 @@ class MailHandler:
             # so it can pass DMARC check
             # replace the email part in from: header
             from_header = (
-                    get_email_name(msg["From"])
-                    + " - "
-                    + website_email.replace("@", " at ")
-                    + f" <{forward_email.reply_email}>"
+                get_email_name(msg["From"])
+                + " - "
+                + website_email.replace("@", " at ")
+                + f" <{forward_email.reply_email}>"
             )
             msg.replace_header("From", from_header)
             LOG.d("new from header:%s", from_header)
