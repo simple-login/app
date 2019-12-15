@@ -43,7 +43,7 @@ from app.email_utils import get_email_name, get_email_part
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog
-from app.utils import random_words
+from app.utils import random_words, random_string
 from server import create_app
 
 
@@ -122,7 +122,7 @@ class MailHandler:
             # generate a reply_email, make sure it is unique
             # not use while to avoid infinite loop
             for _ in range(1000):
-                reply_email = f"reply+{random_words()}@{EMAIL_DOMAIN}"
+                reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
                 if not ForwardEmail.get_by(reply_email=reply_email):
                     break
 
