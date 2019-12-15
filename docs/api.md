@@ -25,7 +25,6 @@ Response: a json with following structure. ? means optional field.
 		suffix: [@my_domain.com, .abcde@simplelogin.co]
 
 	can_create_custom: true
-	can_create_random: true # obsolete now
 
 	existing:
 		[email1, email2, ...]

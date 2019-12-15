@@ -21,13 +21,11 @@ def test_different_scenarios(flask_client):
 
     # {
     #     "can_create_custom": True,
-    #     "can_create_random": True,
     #     "custom": {"suffixes": ["azdwbw@sl.local"], "suggestion": ""},
     #     "existing": ["cat_cat_cat@sl.local"],
     # }
     assert r.status_code == 200
     assert r.json["can_create_custom"]
-    assert r.json["can_create_random"]
     assert len(r.json["existing"]) == 1
     assert r.json["custom"]["suffixes"]
     assert r.json["custom"]["suggestion"] == ""  # no hostname => no suggestion

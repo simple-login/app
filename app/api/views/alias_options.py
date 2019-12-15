@@ -23,7 +23,6 @@ def options():
         optional recommendation:
         optional custom
         can_create_custom: boolean
-        can_create_random: boolean
         existing: array of existing aliases
 
     """
