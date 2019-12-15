@@ -1,0 +1,101 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Alias Contact Manager
+{% endblock %}
+
+{% block default_content %}
+  <div class="page-header row">
+    <h3 class="page-title col">
+      {{ alias }}
+    </h3>
+  </div>
+
+  <div class="alert alert-primary" role="alert">
+    <p>
+      To send an email from your alias, just send the email to a special email address that we call <em>reverse-alias</em>
+      and SimpleLogin will send it from the alias.
+    </p>
+    <p>
+      Make sure you send the email from your personal email address ({{ current_user.email }}).
+      This special email address can <em>only</em> be used by you.
+    </p>
+  </div>
+
+  <form method="post">
+    <input type="hidden" name="form-name" value="create">
+    {{ new_contact_form.csrf_token }}
+
+    <label class="form-label">Where do you want to send email to?</label>
+
+    {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>") }}
+    {{ render_field_errors(new_contact_form.email) }}
+    <button class="btn btn-primary mt-2">Create reverse-alias</button>
+  </form>
+
+  <div class="row">
+    {% for forward_email in forward_emails %}
+      <div class="col-6">
+        <div class="my-2 p-2 card {% if forward_email.id == forward_email_id %} highlight-row {% endif %}">
+          <div>
+            <span>
+              <a href="{{ 'mailto:' + forward_email.website_send_to() }}"
+                 class="font-weight-bold">*****</a>
+
+              <span class="clipboard btn btn-sm btn-success copy-btn" data-toggle="tooltip"
+                  title="Copy to clipboard"
+                  data-clipboard-text="{{ forward_email.website_send_to() }}">
+                Copy reverse-alias
+              </span>
+            </span>
+          </div>
+
+          <div>
+            → {{ forward_email.website_from or forward_email.website_email }}
+          </div>
+
+          <div class="mb-2 text-muted small-text">
+            Created {{ forward_email.created_at | dt }} <br>
+
+            {% if forward_email.last_reply() %}
+              {% set email_log = forward_email.last_reply() %}
+              Last email sent {{ email_log.created_at | dt }}
+            {% endif %}
+          </div>
+
+          <div>
+            <form method="post">
+              <input type="hidden" name="form-name" value="delete">
+              <input type="hidden" name="forward-email-id" value="{{ forward_email.id }}">
+              <span class="card-link btn btn-link float-right delete-forward-email">
+                Delete
+              </span>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+{% endblock %}
+
+
+{% block script %}
+  <script>
+    $(".delete-forward-email").on("click", function (e) {
+      notie.confirm({
+        text: "Activity history associated with this reverse-alias will be deleted, " +
+          " please confirm",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+  </script>
+{% endblock %}

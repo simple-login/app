@@ -5,11 +5,12 @@ import arrow
 import bcrypt
 from flask import url_for
 from flask_login import UserMixin
-from sqlalchemy import text
+from sqlalchemy import text, desc
 from sqlalchemy_utils import ArrowType
 
 from app import s3
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, URL, AVATAR_URL_EXPIRATION
+from app.email_utils import get_email_name
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
@@ -540,7 +541,25 @@ class ForwardEmail(db.Model, ModelMixin):
     # it has the prefix "reply+" to distinguish with other email
     reply_email = db.Column(db.String(128), nullable=False)
 
-    gen_email = db.relationship(GenEmail)
+    gen_email = db.relationship(GenEmail, backref="forward_emails")
+
+    def website_send_to(self):
+        """return the email address with name.
+        to use when user wants to send an email from the alias"""
+        if self.website_from:
+            name = get_email_name(self.website_from)
+            if name:
+                return name + " " + self.website_email + " " + f"<{self.reply_email}>"
+
+        return self.reply_email
+
+    def last_reply(self) -> "ForwardEmailLog":
+        """return the most recent reply"""
+        return (
+            ForwardEmailLog.query.filter_by(forward_id=self.id, is_reply=True)
+            .order_by(desc(ForwardEmailLog.created_at))
+            .first()
+        )
 
 
 class ForwardEmailLog(db.Model, ModelMixin):

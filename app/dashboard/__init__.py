@@ -8,4 +8,5 @@ from .views import (
     unsubscribe,
     api_key,
     custom_domain,
+    alias_contact_manager,
 )
