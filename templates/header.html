@@ -50,9 +50,9 @@
               <i class="dropdown-icon fe fe-chrome"></i> API Key
             </a>
 
-            {% if current_user.can_use_custom_domain %}
+            {% if current_user.is_premium() %}
               <a class="dropdown-item" href="{{ url_for('dashboard.custom_domain') }}">
-                <i class="dropdown-icon fe fe-server"></i> Custom Domains
+                <i class="dropdown-icon fe fe-server"></i> Custom Domains <span class="badge badge-info">Beta</span>
               </a>
             {% endif %}
 
