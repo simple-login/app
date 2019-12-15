@@ -115,8 +115,14 @@ class MailHandler:
                 alias,
                 website_email,
             )
-            # todo: make sure reply_email is unique
-            reply_email = f"reply+{random_words()}@{EMAIL_DOMAIN}"
+
+            # generate a reply_email, make sure it is unique
+            # not use while to avoid infinite loop
+            for _ in range(1000):
+                reply_email = f"reply+{random_words()}@{EMAIL_DOMAIN}"
+                if not ForwardEmail.get_by(reply_email=reply_email):
+                    break
+
             forward_email = ForwardEmail.create(
                 gen_email_id=gen_email.id,
                 website_email=website_email,
@@ -140,10 +146,10 @@ class MailHandler:
             # so it can pass DMARC check
             # replace the email part in from: header
             from_header = (
-                get_email_name(msg["From"])
-                + " - "
-                + website_email.replace("@", " at ")
-                + f" <{forward_email.reply_email}>"
+                    get_email_name(msg["From"])
+                    + " - "
+                    + website_email.replace("@", " at ")
+                    + f" <{forward_email.reply_email}>"
             )
             msg.replace_header("From", from_header)
             LOG.d("new from header:%s", from_header)
