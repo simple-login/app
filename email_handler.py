@@ -215,6 +215,15 @@ class MailHandler:
         forward_email = ForwardEmail.get_by(reply_email=reply_email)
         alias: str = forward_email.gen_email.email
 
+        user_email = forward_email.gen_email.user.email
+        if envelope.mail_from != user_email:
+            LOG.error(
+                f"Reply email can only be used by user email. Actual mail_from: %s. User email %s",
+                envelope.mail_from,
+                user_email,
+            )
+            return "550 forbidden"
+
         # todo: add DKIM-Signature for custom domain
         # remove DKIM-Signature for custom domain
         if not alias.endswith(EMAIL_DOMAIN) and msg["DKIM-Signature"]:
