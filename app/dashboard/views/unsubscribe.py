@@ -6,7 +6,6 @@ from flask import redirect, url_for, flash, request, render_template
 from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
-from app.email_utils import notify_admin
 from app.extensions import db
 from app.models import GenEmail
 
@@ -32,7 +31,6 @@ def unsubscribe(gen_email_id):
         flash(f"Alias {gen_email.email} has been blocked", "success")
         db.session.commit()
 
-        notify_admin(f"User {current_user.email} has unsubscribed an alias")
         return redirect(url_for("dashboard.index"))
     else:  # ask user confirmation
         return render_template("dashboard/unsubscribe.html", alias=gen_email.email)

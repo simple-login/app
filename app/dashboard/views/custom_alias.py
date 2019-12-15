@@ -3,7 +3,6 @@ from flask_login import login_required, current_user
 
 from app.config import EMAIL_DOMAIN, HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
-from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, DeletedAlias, CustomDomain
@@ -85,10 +84,6 @@ def custom_alias():
                 )
                 db.session.commit()
                 flash(f"Alias {full_email} has been created", "success")
-
-                notify_admin(
-                    f"User {current_user.email} creates new alias for domain {custom_domain.domain}"
-                )
 
                 session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
                 return redirect(url_for("dashboard.index"))

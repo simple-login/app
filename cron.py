@@ -3,7 +3,14 @@ import arrow
 from app import email_utils
 from app.extensions import db
 from app.log import LOG
-from app.models import Subscription, User, GenEmail, ForwardEmailLog, ForwardEmail
+from app.models import (
+    Subscription,
+    User,
+    GenEmail,
+    ForwardEmailLog,
+    ForwardEmail,
+    CustomDomain,
+    Client)
 from server import create_app
 
 
@@ -60,17 +67,38 @@ def stats():
 
     LOG.d("nb forward %s, nb block %s, nb reply %s", nb_forward, nb_block, nb_reply)
 
+    nb_premium = Subscription.query.count()
+    nb_custom_domain = CustomDomain.query.count()
+
+    nb_custom_domain_alias = GenEmail.query.filter(
+        GenEmail.custom_domain_id.isnot(None)
+    ).count()
+
+    nb_disabled_alias = GenEmail.query.filter(GenEmail.enabled == False).count()
+
+    nb_app = Client.query.count()
+
     today = arrow.now().format()
 
     email_utils.notify_admin(
         f"SimpleLogin Stats for {today}",
         f"""
 Stats for {today} <br>
+
 nb_user: {nb_user} <br>
+nb_premium: {nb_premium} <br>
+
 nb_alias: {nb_gen_email} <br>
+nb_disabled_alias: {nb_disabled_alias} <br>
+
+nb_custom_domain: {nb_custom_domain} <br>
+nb_custom_domain_alias: {nb_custom_domain_alias} <br>
+
 nb_forward: {nb_forward} <br>
 nb_reply: {nb_reply} <br>
 nb_block: {nb_block} <br>
+
+nb_app: {nb_app} <br>
     """,
     )
 

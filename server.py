@@ -26,7 +26,6 @@ from app.config import (
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
 from app.discover.base import discover_bp
-from app.email_utils import notify_admin
 from app.extensions import db, login_manager, migrate
 from app.jose_utils import get_jwk_key
 from app.log import LOG
@@ -326,7 +325,6 @@ def setup_paddle_callback(app: Flask):
                 sub.plan = plan
 
             LOG.debug("User %s upgrades!", user)
-            notify_admin(f"User {user.email} upgrades!")
 
             db.session.commit()
 

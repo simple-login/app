@@ -5,7 +5,6 @@ from requests_oauthlib import OAuth2Session
 from app import s3, email_utils
 from app.auth.base import auth_bp
 from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-from app.email_utils import notify_admin
 from app.extensions import db
 from app.log import LOG
 from app.models import User, File
@@ -107,13 +106,6 @@ def google_callback():
         email_utils.send_welcome_email(user.email, user.name)
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
-
-        notify_admin(
-            f"new user {user.name} {user.email} signs up via google",
-            html_content=f"""
-name: {user.name} <br>
-email: {user.email} <br>""",
-        )
 
     # The activation link contains the original page, for ex authorize page
     if "google_next_url" in session:
