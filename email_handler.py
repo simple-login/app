@@ -38,12 +38,12 @@ from smtplib import SMTP
 
 from aiosmtpd.controller import Controller
 
-from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL
+from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL, SUPPORT_EMAIL
 from app.email_utils import get_email_name, get_email_part
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog
-from app.utils import random_words, random_string
+from app.utils import random_string
 from server import create_app
 
 
@@ -96,7 +96,7 @@ class MailHandler:
             with app.app_context():
                 return self.handle_forward(envelope, smtp, msg)
 
-    def handle_forward(self, envelope, smtp, msg: EmailMessage) -> str:
+    def handle_forward(self, envelope, smtp: SMTP, msg: EmailMessage) -> str:
         """return *status_code message*"""
         alias = envelope.rcpt_tos[0]  # alias@SL
 
@@ -204,7 +204,7 @@ class MailHandler:
         db.session.commit()
         return "250 Message accepted for delivery"
 
-    def handle_reply(self, envelope, smtp, msg: EmailMessage) -> str:
+    def handle_reply(self, envelope, smtp: SMTP, msg: EmailMessage) -> str:
         reply_email = envelope.rcpt_tos[0]
 
         # reply_email must end with EMAIL_DOMAIN
@@ -222,7 +222,14 @@ class MailHandler:
                 envelope.mail_from,
                 user_email,
             )
-            return "550 forbidden"
+
+            smtp.sendmail(
+                SUPPORT_EMAIL,
+                envelope.mail_from,
+                f"You cannot send email to {reply_email}",
+            )
+
+            return "250 ignored"
 
         # todo: add DKIM-Signature for custom domain
         # remove DKIM-Signature for custom domain
