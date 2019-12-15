@@ -1,6 +1,7 @@
 import arrow
 
 from app import email_utils
+from app.config import IGNORED_EMAILS
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -15,16 +16,11 @@ from app.models import (
 from server import create_app
 
 
-
-
-_ignored_emails = ["nguyenkims", "mbpcmeo", "son@simplelogin.io", "demo.simplelogin"]
-
-
 def stats():
     """send admin stats everyday"""
     # nb user
     q = User.query
-    for ie in _ignored_emails:
+    for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))
 
     nb_user = q.count()
@@ -33,7 +29,7 @@ def stats():
 
     # nb gen emails
     q = db.session.query(GenEmail, User).filter(GenEmail.user_id == User.id)
-    for ie in _ignored_emails:
+    for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))
 
     nb_gen_email = q.count()
@@ -45,7 +41,7 @@ def stats():
         ForwardEmail.gen_email_id == GenEmail.id,
         GenEmail.user_id == User.id,
     )
-    for ie in _ignored_emails:
+    for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))
 
     nb_forward = nb_block = nb_reply = 0

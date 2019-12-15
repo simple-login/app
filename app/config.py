@@ -52,6 +52,12 @@ EMAIL_SERVERS_WITH_PRIORITY = eval(
 )  # [(10, "email.hostname.")]
 EMAIL_SERVERS = [es for _, es in EMAIL_SERVERS_WITH_PRIORITY]
 
+# these emails are ignored when computing stats
+if os.environ.get("IGNORED_EMAILS"):
+    IGNORED_EMAILS = eval(os.environ.get("IGNORED_EMAILS"))
+else:
+    IGNORED_EMAILS = []
+
 # Database
 DB_URI = os.environ["DB_URI"]
 
