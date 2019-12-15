@@ -15,15 +15,6 @@ from app.models import (
 from server import create_app
 
 
-def late_payment():
-    """check for late payment
-    """
-    q = db.session.query(Subscription, User).filter(Subscription.user_id == User.id)
-    for ie in _ignored_emails:
-        q = q.filter(~User.email.contains(ie))
-
-    for sub, user in q.all():
-        LOG.error(f"user {user.email} has late payment. {sub}")
 
 
 _ignored_emails = ["nguyenkims", "mbpcmeo", "son@simplelogin.io", "demo.simplelogin"]
@@ -109,7 +100,4 @@ if __name__ == "__main__":
     app = create_app()
 
     with app.app_context():
-        # TODO: re-enable when take into account user with 100% discount
-        # late_payment()
-
         stats()
