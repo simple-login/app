@@ -1,4 +1,4 @@
-from email_handler import get_email_name, get_email_part
+from app.email_utils import get_email_name, get_email_part
 
 
 def test_get_email_name():

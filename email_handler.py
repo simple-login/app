@@ -39,6 +39,7 @@ from smtplib import SMTP
 from aiosmtpd.controller import Controller
 
 from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL
+from app.email_utils import get_email_name, get_email_part
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog
@@ -255,28 +256,6 @@ def add_or_replace_header(msg: EmailMessage, header: str, value: str):
     except ValueError:
         # the header exists already
         msg.replace_header(header, value)
-
-
-def get_email_name(email_from):
-    """parse email from header and return the name part
-    First Last <ab@cd.com> -> First Last
-    ab@cd.com -> ""
-    """
-    if "<" in email_from:
-        return email_from[: email_from.find("<")].strip()
-
-    return ""
-
-
-def get_email_part(email_from):
-    """parse email from header and return the email part
-    First Last <ab@cd.com> -> ab@cd.com
-    ab@cd.com -> ""
-    """
-    if "<" in email_from:
-        return email_from[email_from.find("<") + 1 : email_from.find(">")].strip()
-
-    return email_from
 
 
 if __name__ == "__main__":

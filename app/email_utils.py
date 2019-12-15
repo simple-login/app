@@ -134,3 +134,25 @@ def send_by_postfix(to_email, subject, plaintext, html):
 
 def notify_admin(subject, html_content=""):
     send_by_postfix(ADMIN_EMAIL, subject, html_content, html_content)
+
+
+def get_email_name(email_from):
+    """parse email from header and return the name part
+    First Last <ab@cd.com> -> First Last
+    ab@cd.com -> ""
+    """
+    if "<" in email_from:
+        return email_from[: email_from.find("<")].strip()
+
+    return ""
+
+
+def get_email_part(email_from):
+    """parse email from header and return the email part
+    First Last <ab@cd.com> -> ab@cd.com
+    ab@cd.com -> ""
+    """
+    if "<" in email_from:
+        return email_from[email_from.find("<") + 1 : email_from.find(">")].strip()
+
+    return email_from
