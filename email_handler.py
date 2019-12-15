@@ -38,8 +38,8 @@ from smtplib import SMTP
 
 from aiosmtpd.controller import Controller
 
-from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL, SUPPORT_EMAIL
-from app.email_utils import get_email_name, get_email_part
+from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL
+from app.email_utils import get_email_name, get_email_part, send_by_postfix
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog
@@ -223,10 +223,11 @@ class MailHandler:
                 user_email,
             )
 
-            smtp.sendmail(
-                SUPPORT_EMAIL,
+            send_by_postfix(
                 envelope.mail_from,
-                f"You cannot send email to {reply_email}",
+                f"Your email ({envelope.mail_from}) is not allowed to send email to {reply_email}",
+                "",
+                "",
             )
 
             return "250 ignored"
