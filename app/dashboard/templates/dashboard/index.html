@@ -112,31 +112,33 @@
             </form>
           </div>
 
-          <div class="btn-group mt-3" role="group">
-            {% if gen_email.enabled %}
-              <form method="post">
-                <input type="hidden" name="form-name" value="trigger-email">
-                <input type="hidden" name="gen-email-id"
-                       value="{{ gen_email.id }}">
-                <span class="trigger-email btn btn-secondary btn-sm"
+          <div class="row mt-3">
+            <div class="col">
+              {% if gen_email.enabled %}
+                <a href="{{ url_for('dashboard.alias_contact_manager', alias=gen_email.email) }}"
                     {% if alias_info.show_intro_test_send_email %}
-                      data-intro="Send a test email to this alias, the email will arrive at your inbox."
+                   data-intro="Not only alias can receive emails, it can send emails too!"
                     {% endif %}
+                   class="btn btn-sm btn-secondary"
                 >
-                          Test alias &nbsp; &nbsp;
-                          <i class="dropdown-icon fe fe-send"></i>
-                        </span>
-              </form>
-            {% endif %}
+                  Send Email &nbsp; &nbsp;
+                  <i class="dropdown-icon fe fe-send"></i>
+                </a>
+              {% endif %}
+            </div>
 
-            <form method="post">
-              <input type="hidden" name="form-name" value="delete-email">
-              <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
-              <span class="delete-email  btn btn-link btn-sm "> Delete
+            <div class="col">
+              <form method="post">
+                <input type="hidden" name="form-name" value="delete-email">
+                <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                <span class="delete-email  btn btn-link btn-sm float-right">
+                  Delete
                             &nbsp; &nbsp;
                           <i class="dropdown-icon fe fe-trash-2"></i>
                           </span>
-            </form>
+              </form>
+            </div>
+
           </div>
 
         </div>
