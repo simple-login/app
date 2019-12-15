@@ -143,15 +143,6 @@ class User(db.Model, ModelMixin, UserMixin):
             < MAX_NB_EMAIL_FREE_PLAN
         )
 
-    def can_create_new_random_alias(self):
-        if self.is_premium():
-            return True
-        else:
-            return (
-                GenEmail.filter_by(user_id=self.id, custom=False).count()
-                < MAX_NB_EMAIL_FREE_PLAN
-            )
-
     def set_password(self, password):
         salt = bcrypt.gensalt()
         password_hash = bcrypt.hashpw(password.encode(), salt).decode()

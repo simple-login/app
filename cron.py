@@ -10,7 +10,8 @@ from app.models import (
     ForwardEmailLog,
     ForwardEmail,
     CustomDomain,
-    Client)
+    Client,
+)
 from server import create_app
 
 

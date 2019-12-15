@@ -19,25 +19,6 @@ def test_profile_picture_url(flask_client):
     assert user.profile_picture_url() == "http://sl.test/static/default-avatar.png"
 
 
-def test_suggested_emails_for_user_who_can_create_new_random_alias(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    suggested_email, other_emails = user.suggested_emails(website_name="test")
-    assert suggested_email
-    assert len(other_emails) == 1
-
-    db.session.rollback()
-
-    # the suggested email is new and not exist in GenEmail
-    assert GenEmail.get_by(email=suggested_email) is None
-
-    # all other emails are generated emails
-    assert GenEmail.get_by(email=other_emails[0])
-
-
 def test_suggested_emails_for_user_who_cannot_create_new_email(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
