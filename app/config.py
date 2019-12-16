@@ -34,8 +34,7 @@ PROMO_CODE = "SIMPLEISBETTER"
 URL = os.environ["URL"]
 print(">>> URL:", URL)
 
-# Whether sentry is enabled
-ENABLE_SENTRY = "ENABLE_SENTRY" in os.environ
+SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
 # Email related settings
 NOT_SEND_EMAIL = "NOT_SEND_EMAIL" in os.environ

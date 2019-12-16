@@ -92,10 +92,10 @@
 </div>
 
 <script>
-  {% if ENABLE_SENTRY %}
+  {% if SENTRY_DSN %}
     console.log("Init sentry");
     try {
-      Sentry.init({dsn: 'https://ad2187ed843340a1b4165bd8d5d6cdce@sentry.io/1478143'});
+      Sentry.init({dsn: '{{SENTRY_DSN}}'});
     } catch (error) {
       console.log("Sentry error, probably due to AdBlocker ...")
     }

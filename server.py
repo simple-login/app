@@ -17,7 +17,7 @@ from app.auth.base import auth_bp
 from app.config import (
     DB_URI,
     FLASK_SECRET,
-    ENABLE_SENTRY,
+    SENTRY_DSN,
     URL,
     SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
@@ -42,10 +42,10 @@ from app.models import (
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
 
-if ENABLE_SENTRY:
+if SENTRY_DSN:
     LOG.d("enable sentry")
     sentry_sdk.init(
-        dsn="https://ad2187ed843340a1b4165bd8d5d6cdce@sentry.io/1478143",
+        dsn=SENTRY_DSN,
         integrations=[FlaskIntegration()],
     )
 
@@ -260,7 +260,7 @@ def jinja2_filter(app):
     @app.context_processor
     def inject_stage_and_region():
         return dict(
-            YEAR=arrow.now().year, URL=URL, ENABLE_SENTRY=ENABLE_SENTRY, VERSION=SHA1
+            YEAR=arrow.now().year, URL=URL, SENTRY_DSN=SENTRY_DSN, VERSION=SHA1
         )
 
 
