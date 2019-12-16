@@ -5,13 +5,7 @@ from smtplib import SMTP
 
 from jinja2 import Environment, FileSystemLoader
 
-from app.config import (
-    SUPPORT_EMAIL,
-    ROOT_DIR,
-    POSTFIX_SERVER,
-    ADMIN_EMAIL,
-    NOT_SEND_EMAIL,
-)
+from app.config import SUPPORT_EMAIL, ROOT_DIR, POSTFIX_SERVER, NOT_SEND_EMAIL
 from app.log import LOG
 
 
@@ -25,7 +19,7 @@ def _render(template_name, **kwargs) -> str:
 
 
 def send_welcome_email(email, name):
-    send_by_postfix(
+    send_email(
         email,
         f"{name}, welcome to SimpleLogin!",
         _render("welcome.txt", name=name),
@@ -34,7 +28,7 @@ def send_welcome_email(email, name):
 
 
 def send_activation_email(email, name, activation_link):
-    send_by_postfix(
+    send_email(
         email,
         f"{name}, just one more step to join SimpleLogin",
         _render(
@@ -47,7 +41,7 @@ def send_activation_email(email, name, activation_link):
 
 
 def send_reset_password_email(email, name, reset_password_link):
-    send_by_postfix(
+    send_email(
         email,
         f"{name}, reset your password on SimpleLogin",
         _render(
@@ -60,7 +54,7 @@ def send_reset_password_email(email, name, reset_password_link):
 
 
 def send_change_email(new_email, current_email, name, link):
-    send_by_postfix(
+    send_email(
         new_email,
         f"{name}, confirm email update on SimpleLogin",
         _render(
@@ -81,7 +75,7 @@ def send_change_email(new_email, current_email, name, link):
 
 
 def send_new_app_email(email, name):
-    send_by_postfix(
+    send_email(
         email,
         f"{name}, any questions/feedbacks for SimpleLogin?",
         _render("new-app.txt", name=name),
@@ -90,7 +84,7 @@ def send_new_app_email(email, name):
 
 
 def send_test_email_alias(email, name):
-    send_by_postfix(
+    send_email(
         email,
         f"{name}, this email is sent to {email}",
         _render("test-email.txt", name=name, alias=email),
@@ -98,7 +92,7 @@ def send_test_email_alias(email, name):
     )
 
 
-def send_by_postfix(to_email, subject, plaintext, html):
+def send_email(to_email, subject, plaintext, html):
     if NOT_SEND_EMAIL:
         LOG.d(
             "send email with subject %s to %s, plaintext: %s, html:%s",
@@ -130,10 +124,6 @@ def send_by_postfix(to_email, subject, plaintext, html):
     msg["Date"] = date_header
 
     smtp.send_message(msg, from_addr=SUPPORT_EMAIL, to_addrs=[to_email])
-
-
-def notify_admin(subject, html_content=""):
-    send_by_postfix(ADMIN_EMAIL, subject, html_content, html_content)
 
 
 def get_email_name(email_from):

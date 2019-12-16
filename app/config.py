@@ -40,7 +40,7 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN")
 NOT_SEND_EMAIL = "NOT_SEND_EMAIL" in os.environ
 EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"]
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
-ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
 MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
 # allow to override postfix server locally
 POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "1.1.1.1")

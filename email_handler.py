@@ -39,7 +39,7 @@ from smtplib import SMTP
 from aiosmtpd.controller import Controller
 
 from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL
-from app.email_utils import get_email_name, get_email_part, send_by_postfix
+from app.email_utils import get_email_name, get_email_part, send_email
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog
@@ -223,7 +223,7 @@ class MailHandler:
                 user_email,
             )
 
-            send_by_postfix(
+            send_email(
                 envelope.mail_from,
                 f"Your email ({envelope.mail_from}) is not allowed to send email to {reply_email}",
                 "",

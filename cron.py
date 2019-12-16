@@ -1,7 +1,7 @@
 import arrow
 
-from app import email_utils
-from app.config import IGNORED_EMAILS
+from app.config import IGNORED_EMAILS, ADMIN_EMAIL
+from app.email_utils import send_email
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -18,6 +18,10 @@ from server import create_app
 
 def stats():
     """send admin stats everyday"""
+    if not ADMIN_EMAIL:
+        # nothing to do
+        return
+
     # nb user
     q = User.query
     for ie in IGNORED_EMAILS:
@@ -68,9 +72,11 @@ def stats():
 
     today = arrow.now().format()
 
-    email_utils.notify_admin(
-        f"SimpleLogin Stats for {today}",
-        f"""
+    send_email(
+        ADMIN_EMAIL,
+        subject=f"SimpleLogin Stats for {today}",
+        plaintext="",
+        html=f"""
 Stats for {today} <br>
 
 nb_user: {nb_user} <br>
