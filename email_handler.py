@@ -234,10 +234,10 @@ class MailHandler:
 
             return "250 ignored"
 
-        # todo: add DKIM-Signature for custom domain
-        # add DKIM-Signature for non-custom-domain alias
-        if alias.endswith(EMAIL_DOMAIN):
-            add_dkim_signature(msg, EMAIL_DOMAIN)
+        # remove DKIM-Signature
+        if msg["DKIM-Signature"]:
+            LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
+            del msg["DKIM-Signature"]
 
         # email seems to come from alias
         msg.replace_header("From", alias)
@@ -257,6 +257,11 @@ class MailHandler:
             envelope.mail_options,
             envelope.rcpt_options,
         )
+
+        # todo: add DKIM-Signature for custom domain
+        # add DKIM-Signature for non-custom-domain alias
+        if alias.endswith(EMAIL_DOMAIN):
+            add_dkim_signature(msg, EMAIL_DOMAIN)
 
         msg_raw = msg.as_string().encode()
         smtp.sendmail(
