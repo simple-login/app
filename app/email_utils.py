@@ -163,6 +163,10 @@ def get_email_part(email_from):
 
 
 def add_dkim_signature(msg: EmailMessage, email_domain: str):
+    if msg["DKIM-Signature"]:
+        LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
+        del msg["DKIM-Signature"]
+
     # Specify headers in "byte" form
     # Generate message signature
     sig = dkim.sign(
@@ -177,5 +181,4 @@ def add_dkim_signature(msg: EmailMessage, email_domain: str):
     # remove linebreaks from sig
     sig = sig.replace("\n", " ").replace("\r", "")
 
-    # Add the DKIM-Signature
     msg.add_header("DKIM-Signature", sig[len("DKIM-Signature: ") :])

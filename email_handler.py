@@ -169,11 +169,6 @@ class MailHandler:
                 msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
             )
 
-            # remove DKIM-Signature as Postfix will add this header
-            if msg["DKIM-Signature"]:
-                LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
-                del msg["DKIM-Signature"]
-
             original_subject = msg["Subject"]
             LOG.d(
                 "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
@@ -240,15 +235,6 @@ class MailHandler:
             return "250 ignored"
 
         # todo: add DKIM-Signature for custom domain
-        # remove DKIM-Signature for custom domain
-        if not alias.endswith(EMAIL_DOMAIN) and msg["DKIM-Signature"]:
-            LOG.d(
-                "Remove DKIM-Signature %s for custom-domain alias %s",
-                msg["DKIM-Signature"],
-                alias,
-            )
-            del msg["DKIM-Signature"]
-
         # add DKIM-Signature for non-custom-domain alias
         if alias.endswith(EMAIL_DOMAIN):
             add_dkim_signature(msg, EMAIL_DOMAIN)
