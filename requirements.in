@@ -31,3 +31,4 @@ dnspython
 coloredlogs
 pycryptodome
 phpserialize
+dkimpy

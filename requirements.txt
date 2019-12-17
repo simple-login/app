@@ -28,6 +28,7 @@ coloredlogs==10.0
 crontab==0.22.5           # via yacron
 cryptography==2.7         # via jwcrypto, pyopenssl
 decorator==4.4.0          # via ipython, traitlets
+dkimpy==1.0.1
 dnspython==1.16.0
 docutils==0.14            # via botocore
 flask-admin==1.5.3
