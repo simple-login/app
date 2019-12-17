@@ -39,7 +39,12 @@ from smtplib import SMTP
 from aiosmtpd.controller import Controller
 
 from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL
-from app.email_utils import get_email_name, get_email_part, send_email
+from app.email_utils import (
+    get_email_name,
+    get_email_part,
+    send_email,
+    add_dkim_signature,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog
@@ -179,6 +184,8 @@ class MailHandler:
                 envelope.rcpt_options,
             )
 
+            add_dkim_signature(msg, EMAIL_DOMAIN)
+
             # smtp.send_message has UnicodeEncodeErroremail issue
             # encode message raw directly instead
             msg_raw = msg.as_string().encode()
@@ -241,6 +248,10 @@ class MailHandler:
                 alias,
             )
             del msg["DKIM-Signature"]
+
+        # add DKIM-Signature for non-custom-domain alias
+        if alias.endswith(EMAIL_DOMAIN):
+            add_dkim_signature(msg, EMAIL_DOMAIN)
 
         # email seems to come from alias
         msg.replace_header("From", alias)

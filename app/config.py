@@ -57,6 +57,14 @@ if os.environ.get("IGNORED_EMAILS"):
 else:
     IGNORED_EMAILS = []
 
+DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
+DKIM_SELECTOR = b"dkim"
+
+with open(DKIM_PRIVATE_KEY_PATH) as f:
+    DKIM_PRIVATE_KEY = f.read()
+
+DKIM_HEADERS = [b'from', b'to', b'subject']
+
 # Database
 DB_URI = os.environ["DB_URI"]
 

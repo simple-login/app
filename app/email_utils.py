@@ -3,9 +3,18 @@ from email.message import EmailMessage
 from email.utils import make_msgid, formatdate
 from smtplib import SMTP
 
+import dkim
 from jinja2 import Environment, FileSystemLoader
 
-from app.config import SUPPORT_EMAIL, ROOT_DIR, POSTFIX_SERVER, NOT_SEND_EMAIL
+from app.config import (
+    SUPPORT_EMAIL,
+    ROOT_DIR,
+    POSTFIX_SERVER,
+    NOT_SEND_EMAIL,
+    DKIM_SELECTOR,
+    DKIM_PRIVATE_KEY,
+    DKIM_HEADERS,
+)
 from app.log import LOG
 
 
@@ -123,7 +132,12 @@ def send_email(to_email, subject, plaintext, html):
     LOG.d("Date header: %s", date_header)
     msg["Date"] = date_header
 
-    smtp.send_message(msg, from_addr=SUPPORT_EMAIL, to_addrs=[to_email])
+    # add DKIM
+    email_domain = SUPPORT_EMAIL[SUPPORT_EMAIL.find("@") + 1 :]
+    add_dkim_signature(msg, email_domain)
+
+    msg_raw = msg.as_string().encode()
+    smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
 
 
 def get_email_name(email_from):
@@ -146,3 +160,22 @@ def get_email_part(email_from):
         return email_from[email_from.find("<") + 1 : email_from.find(">")].strip()
 
     return email_from
+
+
+def add_dkim_signature(msg: EmailMessage, email_domain: str):
+    # Specify headers in "byte" form
+    # Generate message signature
+    sig = dkim.sign(
+        msg.as_string().encode(),
+        DKIM_SELECTOR,
+        email_domain.encode(),
+        DKIM_PRIVATE_KEY.encode(),
+        include_headers=DKIM_HEADERS,
+    )
+    sig = sig.decode()
+
+    # remove linebreaks from sig
+    sig = sig.replace("\n", " ").replace("\r", "")
+
+    # Add the DKIM-Signature
+    msg.add_header("DKIM-Signature", sig[len("DKIM-Signature: ") :])
