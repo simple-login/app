@@ -169,17 +169,15 @@ class MailHandler:
                 msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
             )
 
-            original_subject = msg["Subject"]
+            add_dkim_signature(msg, EMAIL_DOMAIN)
+
             LOG.d(
-                "Forward mail from %s to %s, subject %s, mail_options %s, rcpt_options %s ",
+                "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
                 website_email,
                 user_email,
-                original_subject,
                 envelope.mail_options,
                 envelope.rcpt_options,
             )
-
-            add_dkim_signature(msg, EMAIL_DOMAIN)
 
             # smtp.send_message has UnicodeEncodeErroremail issue
             # encode message raw directly instead
@@ -191,14 +189,6 @@ class MailHandler:
                 envelope.mail_options,
                 envelope.rcpt_options,
             )
-
-            # smtp.send_message(
-            #     msg,
-            #     from_addr=forward_email.reply_email,
-            #     to_addrs=[user_email],  # user personal email
-            #     mail_options=envelope.mail_options,
-            #     rcpt_options=envelope.rcpt_options,
-            # )
         else:
             LOG.d("%s is disabled, do not forward", gen_email)
             forward_log.blocked = True
