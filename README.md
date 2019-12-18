@@ -53,7 +53,7 @@ openssl rsa -in dkim.key -pubout -out dkim.pub.key
 
 You will need the files `dkim.key` and `dkim.pub.key` for the next steps.
 
-For email gurus, we have chosen 1024 key length instead of 2048 for DNS simplicty as some registrar don't play well with long TXT record.
+For email gurus, we have chosen 1024 key length instead of 2048 for DNS simplicty as some registrars don't play well with long TXT record.
 
 ### DNS
 
@@ -78,7 +78,7 @@ Set up DKIM by adding a TXT record for `dkim._domainkey.mydomain.com` with the f
 v=DKIM1; k=rsa; p=public_key
 ```
 
-with the `public_key` being your `dkim.pub.key` with
+with the `public_key` being your `dkim.pub.key` but
 - remove the `-----BEGIN PUBLIC KEY-----` and `-----END PUBLIC KEY-----`
 - join all the lines on a single line.
 
@@ -104,7 +104,7 @@ From Wikipedia https://en.wikipedia.org/wiki/Sender_Policy_Framework
 > Sender Policy Framework (SPF) is an email authentication method designed to detect forging sender addresses during the delivery of the email
 
 Similar to DKIM, setting up SPF is highly recommended. 
-Add a TXT record for `mydomain.com` with the value `v=spf1 mx -all`. What it means is only your server can send email with `@mydomain.com` domain. To verify, you can use `dig mydomain.com txt`.
+Add a TXT record for `mydomain.com` with the value `v=spf1 mx -all`. What it means is only your server can send email with `@mydomain.com` domain. To verify, you can use `dig mydomain.com txt`
 
 #### DMARC (optional) TODO
 
@@ -134,7 +134,7 @@ docker network create -d bridge \
 
 ### Postgres
 
-This sections show how to run a Postgres database using Docker. At the end of this section, you will have a database username and password that're going to be used in the next section.
+This sections show how to run a Postgres database using Docker. At the end of this section, you will have a database username and password that're going to be used in the next steps.
 
 If you already have a Postgres database, you can skip this section and just copy the database username/password.
 
