@@ -104,7 +104,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
-        user: User = super(User, cls).create(email=email, name=name, **kwargs)
+        user = super(User, cls).create(email=email, name=name, **kwargs)
 
         if not password:
             # set a random password
