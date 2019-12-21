@@ -79,7 +79,15 @@ def facebook_callback():
         "https://graph.facebook.com/me?fields=id,name,email,picture{url}"
     ).json()
 
-    email = facebook_user_data["email"]
+    email = facebook_user_data.get("email")
+
+    # user choose to not share email, cannot continue
+    if not email:
+        flash(
+            "In order to use SimpleLogin, you need to give us a valid email", "warning"
+        )
+        return redirect(url_for("auth.register"))
+
     user = User.get_by(email=email)
 
     picture_url = facebook_user_data.get("picture", {}).get("data", {}).get("url")
