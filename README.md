@@ -156,12 +156,17 @@ docker run -d \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
-    -p 5432:5432 \
     --network="sl-network" \
     postgres
 ```
 
-To test if the database runs correctly, run `docker exec -it sl-db psql -U myuser simplelogin`, you should be logged into postgres console.
+To test if the database runs correctly, run
+
+```bash
+docker exec -it sl-db psql -U myuser simplelogin
+```
+
+you should be logged into postgres console.
 
 ### Postfix
 
@@ -188,7 +193,7 @@ sudo postconf -e 'transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf'
 ```
 
 
-Create the `relay-domains` file at `/etc/postfix/pgsql-relay-domains.cf` and put the following content. Make sure to replace `user` and `password` by your Postgres username and password and `mydomain.com` by your domain.
+Create the `relay-domains` file at `/etc/postfix/pgsql-relay-domains.cf` and put the following content. Make sure that the database config is correctly set and replace `mydomain.com` by your domain.
 
 ```
 # postgres config
@@ -243,35 +248,32 @@ Before running the webapp, you need to prepare the database by running the migra
 ```bash
 docker run \
     --name sl-migration \
-    -e CONFIG=/simplelogin.env \
     -v $(pwd)/dkim.key:/dkim.key \
-    -v $(pwd)/simplelogin.env:/simplelogin.env \
+    -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
     simplelogin/app flask db upgrade
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
 
-Now it's time to run the webapp container!
+Now it's time to run the `webapp` container!
 
 ```bash
 docker run -d \
     --name sl-app \
-    -e CONFIG=/simplelogin.env \
-    -v $(pwd)/simplelogin.env:/simplelogin.env \
+    -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -p 7777:7777 \
     --network="sl-network" \
     simplelogin/app
 ```
 
-Next run the Mail Handler
+Next run the `email handler`
 
 ```bash
 docker run -d \
     --name sl-email \
-    -e CONFIG=/simplelogin.env \
-    -v $(pwd)/simplelogin.env:/simplelogin.env \
+    -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -p 20381:20381 \
     --network="sl-network" \
@@ -283,8 +285,7 @@ docker run -d \
 ```bash
 docker run -d \
     --name sl-cron \
-    -e CONFIG=/simplelogin.env \
-    -v $(pwd)/simplelogin.env:/simplelogin.env \
+    -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     --network="sl-network" \
     simplelogin/app yacron -c /code/crontab.yml
