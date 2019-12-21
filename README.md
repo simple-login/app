@@ -347,6 +347,8 @@ To run the code locally, please create a local setting file based on `.env.examp
 cp .env.example .env
 ```
 
+Make sure to uncomment the `RESET_DB=true` to create the database locally.
+
 Feel free to custom your `.env` file, it would be your default setting when developing locally. This file is ignored by git.
 
 You don't need all the parameters, for ex if you don't update images to s3, then
