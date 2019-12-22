@@ -26,7 +26,7 @@ def new_custom_alias():
 
     """
     user = g.user
-    if not user.can_create_new_custom_alias():
+    if not user.can_create_new_alias():
         LOG.d("user %s cannot create custom alias", user)
         return (
             jsonify(

@@ -50,7 +50,7 @@ def index():
             )
 
         elif request.form.get("form-name") == "create-custom-email":
-            if current_user.can_create_new_custom_alias():
+            if current_user.can_create_new_alias():
                 return redirect(url_for("dashboard.custom_alias"))
             else:
                 flash(

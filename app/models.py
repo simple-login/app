@@ -130,7 +130,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return False
 
-    def can_create_new_custom_alias(self):
+    def can_create_new_alias(self):
         if self.is_premium():
             return True
 
@@ -160,7 +160,7 @@ class User(db.Model, ModelMixin, UserMixin):
         website_name = convert_to_id(website_name)
 
         all_gen_emails = [ge.email for ge in GenEmail.filter_by(user_id=self.id)]
-        if self.can_create_new_custom_alias():
+        if self.can_create_new_alias():
             suggested_gen_email = GenEmail.create_custom_alias(
                 self.id, prefix=website_name
             ).email
