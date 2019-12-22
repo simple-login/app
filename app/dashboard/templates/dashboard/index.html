@@ -134,10 +134,8 @@
                 <input type="hidden" name="form-name" value="delete-email">
                 <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
                 <span class="delete-email  btn btn-link btn-sm float-right">
-                  Delete
-                            &nbsp; &nbsp;
-                          <i class="dropdown-icon fe fe-trash-2"></i>
-                          </span>
+                  Delete&nbsp; &nbsp;<i class="dropdown-icon fe fe-trash-2"></i>
+                </span>
               </form>
             </div>
 
@@ -243,7 +241,7 @@
       notie.confirm({
         text: "Once an alias is deleted, people/apps " +
           "who used to contact you via this email address cannot reach you any more," +
-          " please confirm",
+          " please confirm.",
         cancelCallback: () => {
           // nothing to do
         },
@@ -255,7 +253,8 @@
 
     $(".trigger-email").on("click", function (e) {
       notie.confirm({
-        text: "SimpleLogin server will send an email to this alias and it will arrive to your inbox, please confirm",
+        text: "SimpleLogin server will send an email to this alias " +
+          "and it will arrive to your inbox, please confirm.",
         cancelCallback: () => {
           // nothing to do
         },
@@ -269,9 +268,9 @@
       var message = "";
 
       if (e.target.checked) {
-        message = `After this, you will start receiving email sent to this alias, please confirm`;
+        message = `After this, you will start receiving email sent to this alias, please confirm.`;
       } else {
-        message = `After this, you will stop receiving email sent to this alias, please confirm`;
+        message = `After this, you will stop receiving email sent to this alias, please confirm.`;
       }
 
       notie.confirm({
