@@ -27,7 +27,7 @@ def test_suggested_emails_for_user_who_cannot_create_new_email(flask_client):
 
     # make sure user runs out of quota to create new email
     for i in range(MAX_NB_EMAIL_FREE_PLAN):
-        GenEmail.create_custom_alias(user_id=user.id, prefix="test")
+        GenEmail.create_new(user_id=user.id, prefix="test")
     db.session.commit()
 
     suggested_email, other_emails = user.suggested_emails(website_name="test")

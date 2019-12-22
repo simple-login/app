@@ -115,9 +115,9 @@ def fake_data():
     api_key = ApiKey.create(user_id=user.id, name="Chrome")
     api_key.code = "code"
 
-    GenEmail.create_custom_alias(user.id, "e1@")
-    GenEmail.create_custom_alias(user.id, "e2@")
-    GenEmail.create_custom_alias(user.id, "e3@")
+    GenEmail.create_new(user.id, "e1@")
+    GenEmail.create_new(user.id, "e2@")
+    GenEmail.create_new(user.id, "e3@")
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(
