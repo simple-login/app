@@ -8,7 +8,7 @@
 
 {% block default_content %}
 
-  <div class="col-md-6 offset-md-3">
+  <div class="bg-white p-6" style="max-width: 60em; margin: auto">
     <h1 class="h3 mb-5">New Email Alias</h1>
     {% if error %}
       <div class="text-danger text-center mb-4">{{ error }}</div>
@@ -17,9 +17,11 @@
     <form method="post">
       <input type="hidden" name="form-name" value="non-custom-domain-name">
 
-      <div class="form-group">
+      <div class="container">
         {% if custom_domains %}
-          <label class="form-label font-weight-bold">With SimpleLogin domain</label>
+          <div class="row">
+            <label class="form-label font-weight-bold">With SimpleLogin domain</label>
+          </div>
         {% endif %}
 
         <div class="row">
@@ -60,17 +62,18 @@
           <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
 
           <div class="row mt-4">
-            <div class="col">
+            <div class="col" style="min-width: 10em">
               <input name="email" class="form-control">
             </div>
-            <div class="col align-self-center">
+            <div class="col align-self-center d-flex">
               <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
-              <h4>
+              <span style="font-weight: 600">
                 @{{ custom_domain.domain }}
-              </h4>
+              </span>
+              <button class="ml-4 submit btn btn-sm btn-success">Create</button>
             </div>
             <div class="col">
-              <button class="submit btn btn-sm btn-success">Create</button>
+
             </div>
           </div>
 
