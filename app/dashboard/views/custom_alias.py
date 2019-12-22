@@ -13,7 +13,7 @@ from app.utils import convert_to_id, random_word
 @login_required
 def custom_alias():
     # check if user has the right to create custom alias
-    if not current_user.can_create_new_custom_alias():
+    if not current_user.can_create_new_alias():
         # notify admin
         LOG.error("user %s tries to create custom alias", current_user)
         flash("ony premium user can choose custom alias", "warning")
