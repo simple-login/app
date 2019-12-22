@@ -163,9 +163,7 @@ def authorize():
                     flash(f"alias {email} already used", "error")
                     return redirect(request.url)
 
-                gen_email = GenEmail.create(
-                    email=email, user_id=current_user.id, custom=True
-                )
+                gen_email = GenEmail.create(email=email, user_id=current_user.id)
                 db.session.flush()
             else:  # user picks an email from suggestion
                 if chosen_email != current_user.email:

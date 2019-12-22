@@ -134,10 +134,7 @@ class User(db.Model, ModelMixin, UserMixin):
         if self.is_premium():
             return True
 
-        return (
-            GenEmail.filter_by(user_id=self.id, custom=True).count()
-            < MAX_NB_EMAIL_FREE_PLAN
-        )
+        return GenEmail.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
 
     def set_password(self, password):
         salt = bcrypt.gensalt()
@@ -389,9 +386,6 @@ class GenEmail(db.Model, ModelMixin):
 
     enabled = db.Column(db.Boolean(), default=True, nullable=False)
 
-    # this email has been customized by user, i.e. not generated randomly
-    custom = db.Column(db.Boolean(), default=False, nullable=False, server_default="0")
-
     custom_domain_id = db.Column(
         db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
     )
@@ -411,7 +405,7 @@ class GenEmail(db.Model, ModelMixin):
             if not cls.get_by(email=email):
                 break
 
-        return GenEmail.create(user_id=user_id, email=email, custom=True)
+        return GenEmail.create(user_id=user_id, email=email)
 
     def __repr__(self):
         return f"<GenEmail {self.id} {self.email}>"

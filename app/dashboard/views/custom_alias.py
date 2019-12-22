@@ -42,7 +42,7 @@ def custom_alias():
                         "create custom alias %s for user %s", full_email, current_user
                     )
                     gen_email = GenEmail.create(
-                        email=full_email, user_id=current_user.id, custom=True
+                        email=full_email, user_id=current_user.id
                     )
                     db.session.commit()
 
@@ -79,7 +79,6 @@ def custom_alias():
                 gen_email = GenEmail.create(
                     email=full_email,
                     user_id=current_user.id,
-                    custom=True,
                     custom_domain_id=custom_domain.id,
                 )
                 db.session.commit()
