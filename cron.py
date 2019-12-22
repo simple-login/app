@@ -74,7 +74,7 @@ def stats():
 
     send_email(
         ADMIN_EMAIL,
-        subject=f"SimpleLogin Stats for {today}",
+        subject=f"SimpleLogin Stats for {today}, {nb_user} users, {nb_gen_email} aliases, {nb_forward} forwards",
         plaintext="",
         html=f"""
 Stats for {today} <br>
