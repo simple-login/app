@@ -17,22 +17,22 @@
     <form method="post">
       <input type="hidden" name="form-name" value="non-custom-domain-name">
 
-      <div class="container">
+      <div class="container p-0">
         {% if custom_domains %}
-          <div class="row">
+          <div class="row col">
             <label class="form-label font-weight-bold">With SimpleLogin domain</label>
           </div>
         {% endif %}
 
         <div class="row">
-          <div class="col-sm-6 pr-1 pl-0 mb-1" style="min-width: 5em">
+          <div class="col-sm-6 pr-1 mb-1" style="min-width: 5em">
             <input name="email-prefix" class="form-control"
                    pattern="[0-9|A-Z|a-z|-|_]{1,}"
                    title="Only letter, number, dash (-), underscore (_) can be used in alias prefix."
                    placeholder="email alias"
                    autofocus required>
           </div>
-          <div class="col-sm-6 align-self-center p-0" style="height:1.5rem">
+          <div class="col-sm-6 align-self-center" style="height:1.5rem">
             <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
             <h4>
               .{{ email_suffix }}@{{ EMAIL_DOMAIN }}
@@ -40,13 +40,13 @@
           </div>
         </div>
 
-        <div class="row">
+        <div class="row col">
           <div class="small-text">
             You can use letter, number or dash. Alias cannot be empty.
           </div>
         </div>
 
-        <div class="row">
+        <div class="row col">
           <button class="btn btn-primary mt-1">Create</button>
         </div>
 
@@ -56,29 +56,31 @@
     {% if custom_domains %}
       <hr>
       <p class="font-weight-bold">OR with your custom domains</p>
-      {% for custom_domain in custom_domains %}
-        <form method="post" class="mb-6">
-          <input type="hidden" name="form-name" value="custom-domain-name">
-          <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
+      <div class="container p-0">
+        {% for custom_domain in custom_domains %}
+          <form method="post" class="mb-6">
+            <input type="hidden" name="form-name" value="custom-domain-name">
+            <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
 
-          <div class="row mt-4">
-            <div class="col" style="min-width: 10em">
-              <input name="email" class="form-control">
-            </div>
-            <div class="col align-self-center d-flex">
-              <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
-              <span style="font-weight: 600">
-                @{{ custom_domain.domain }}
-              </span>
-              <button class="ml-4 submit btn btn-sm btn-success">Create</button>
-            </div>
-            <div class="col">
+            <div class="row mt-4">
+              <div class="col" style="min-width: 10em">
+                <input name="email" class="form-control">
+                <div>
+                  <span style="font-weight: 600">
+                    @{{ custom_domain.domain }}
+                  </span>
+                </div>
+              </div>
 
+              <div class="col">
+                <button class="submit btn btn-success">Create</button>
+              </div>
             </div>
-          </div>
 
-        </form>
-      {% endfor %}
+
+          </form>
+        {% endfor %}
+      </div>
     {% endif %}
   </div>
 
