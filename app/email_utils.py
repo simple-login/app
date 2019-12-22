@@ -104,11 +104,10 @@ def send_test_email_alias(email, name):
 def send_email(to_email, subject, plaintext, html):
     if NOT_SEND_EMAIL:
         LOG.d(
-            "send email with subject %s to %s, plaintext: %s, html:%s",
+            "send email with subject %s to %s, plaintext: %s",
             subject,
             to_email,
             plaintext,
-            html,
         )
         return
 
