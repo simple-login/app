@@ -38,7 +38,7 @@ from app.models import (
     Subscription,
     PlanEnum,
     ApiKey,
-)
+    CustomDomain)
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
 
@@ -120,6 +120,10 @@ def fake_data():
     GenEmail.create_custom_alias(user.id, "e1@")
     GenEmail.create_custom_alias(user.id, "e2@")
     GenEmail.create_custom_alias(user.id, "e3@")
+
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
+    CustomDomain.create(user_id=user.id, domain="very-long-domain.com.net.org", verified=True)
+    db.session.commit()
 
     # Create a client
     client1 = Client.create_new(name="Demo", user_id=user.id)
