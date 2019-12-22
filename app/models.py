@@ -109,7 +109,7 @@ class User(db.Model, ModelMixin, UserMixin):
         db.session.flush()
 
         # create a first alias mail to show user how to use when they login
-        GenEmail.create_custom_alias(user.id, prefix="my-first-alias")
+        GenEmail.create_new(user.id, prefix="my-first-alias")
         db.session.flush()
 
         return user
@@ -158,7 +158,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
         all_gen_emails = [ge.email for ge in GenEmail.filter_by(user_id=self.id)]
         if self.can_create_new_alias():
-            suggested_gen_email = GenEmail.create_custom_alias(
+            suggested_gen_email = GenEmail.create_new(
                 self.id, prefix=website_name
             ).email
         else:
@@ -393,7 +393,7 @@ class GenEmail(db.Model, ModelMixin):
     user = db.relationship(User)
 
     @classmethod
-    def create_custom_alias(cls, user_id, prefix):
+    def create_new(cls, user_id, prefix):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
 
