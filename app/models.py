@@ -399,11 +399,6 @@ class GenEmail(db.Model, ModelMixin):
     user = db.relationship(User)
 
     @classmethod
-    def create_new_gen_email(cls, user_id, custom=False):
-        random_email = generate_email()
-        return GenEmail.create(user_id=user_id, email=random_email, custom=custom)
-
-    @classmethod
     def create_custom_alias(cls, user_id, prefix):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
