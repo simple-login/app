@@ -1,4 +1,4 @@
-from flask import request, render_template, redirect, url_for
+from flask import request, render_template, redirect, url_for, flash
 from flask_login import login_user, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -21,19 +21,21 @@ def login():
 
     form = LoginForm(request.form)
     next_url = request.args.get("next")
-    error = ""
     show_resend_activation = False
 
     if form.validate_on_submit():
         user = User.filter_by(email=form.email.data).first()
 
         if not user:
-            error = "Email not exist in our system"
+            flash("Email not exist in our system", "error")
         elif not user.check_password(form.password.data):
-            error = "Wrong password"
+            flash("Wrong password", "error")
         elif not user.activated:
             show_resend_activation = True
-            error = "Please check your inbox for the activation email. You can also have this email re-sent"
+            flash(
+                "Please check your inbox for the activation email. You can also have this email re-sent",
+                "error",
+            )
         else:
             LOG.debug("log user %s in", user)
             login_user(user)
@@ -51,5 +53,4 @@ def login():
         form=form,
         next_url=next_url,
         show_resend_activation=show_resend_activation,
-        error=error,
     )
