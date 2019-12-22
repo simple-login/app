@@ -2,7 +2,7 @@ from io import BytesIO
 
 import arrow
 from flask import render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
+from flask_login import login_required, current_user, logout_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from wtforms import StringField, validators
@@ -110,6 +110,13 @@ def setting():
 
         elif request.form.get("form-name") == "change-password":
             send_reset_password_email(current_user)
+
+        elif request.form.get("form-name") == "delete-account":
+            User.delete(current_user.id)
+            db.session.commit()
+            flash("Your account has been deleted", "success")
+            logout_user()
+            return redirect(url_for("auth.register"))
 
         return redirect(url_for("dashboard.setting"))
 
