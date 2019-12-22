@@ -440,6 +440,12 @@ Here are a small sum-ups of the directory structure and their roles:
 - templates/: contain both html and email templates.
 - tests/: tests. We don't really distinguish unit, functional or integration test. A test is simply here to make sure a feature works correctly.
 
+The code is formatted using https://github.com/psf/black, to format the code, simply run
+
+```
+black
+```
+
 ### OAuth flow
 
 SL currently supports code and implicit flow.
