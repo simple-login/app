@@ -17,9 +17,7 @@
           <div class="card-body">
             <h5 class="card-title">
               {{ custom_domain.domain }}
-              {% if custom_domain.verified %}
-                <i class="fe fe-check" style="color: green"></i>
-              {% endif %}
+              {% if custom_domain.verified %} ✅ {% else %} 🚫{% endif %}
             </h5>
             <h6 class="card-subtitle mb-2 text-muted">
               Created {{ custom_domain.created_at | dt }} <br>
