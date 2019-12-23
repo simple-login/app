@@ -533,9 +533,9 @@ class ForwardEmail(db.Model, ModelMixin):
         if self.website_from:
             name = get_email_name(self.website_from)
             if name:
-                return name + " " + self.website_email + " " + f"<{self.reply_email}>"
+                return name + " " + self.website_email + f" <{self.reply_email}>"
 
-        return self.reply_email
+        return self.website_email.replace("@", " at ") + f" <{self.reply_email}>"
 
     def last_reply(self) -> "ForwardEmailLog":
         """return the most recent reply"""
