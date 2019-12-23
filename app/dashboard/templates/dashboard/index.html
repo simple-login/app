@@ -28,7 +28,17 @@
       <div class="btn-group float-right" role="group">
         <form method="post">
           <input type="hidden" name="form-name" value="create-custom-email">
-          <button class="btn btn-primary">Create Email Alias</button>
+          <button data-toggle="tooltip"
+                  title="Create a custom alias"
+                  class="btn btn-primary mr-2">New Email Alias
+          </button>
+        </form>
+        <form method="post">
+          <input type="hidden" name="form-name" value="create-random-email">
+          <button data-toggle="tooltip"
+                  title="Create a totally random alias"
+                  class="btn btn-success">Random Alias
+          </button>
         </form>
       </div>
     </div>

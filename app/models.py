@@ -407,6 +407,12 @@ class GenEmail(db.Model, ModelMixin):
 
         return GenEmail.create(user_id=user_id, email=email)
 
+    @classmethod
+    def create_new_random(cls, user_id):
+        """create a new random alias"""
+        random_email = generate_email()
+        return GenEmail.create(user_id=user_id, email=random_email)
+
     def __repr__(self):
         return f"<GenEmail {self.id} {self.email}>"
 
