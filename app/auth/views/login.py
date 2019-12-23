@@ -27,9 +27,9 @@ def login():
         user = User.filter_by(email=form.email.data).first()
 
         if not user:
-            flash("Email not exist in our system", "error")
+            flash("Email or password incorrect", "error")
         elif not user.check_password(form.password.data):
-            flash("Wrong password", "error")
+            flash("Email or password incorrect", "error")
         elif not user.activated:
             show_resend_activation = True
             flash(
