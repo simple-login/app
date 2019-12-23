@@ -9,7 +9,7 @@
 {% block default_content %}
 
   <div class="bg-white p-6" style="max-width: 60em; margin: auto">
-    <h1 class="h3 mb-5">New Email Alias</h1>
+    <h1 class="h2 mb-5">New Email Alias</h1>
     {% if error %}
       <div class="text-danger text-center mb-4">{{ error }}</div>
     {% endif %}
@@ -20,7 +20,7 @@
       <div class="container p-0">
         {% if custom_domains %}
           <div class="row col">
-            <label class="form-label font-weight-bold">With SimpleLogin domain</label>
+            <div class="font-weight-bold h4">With SimpleLogin domain</div>
           </div>
         {% endif %}
 
@@ -42,8 +42,11 @@
 
         <div class="row col">
           <div class="small-text">
-            You can use letter, number or dash. Alias cannot be empty.
+            <span class="badge badge-info">Hint</span>
+            You can use the name of the website that you plan to use the alias on here.<br>
+            This way you can remember where the alias is used.
           </div>
+
         </div>
 
         <div class="row col">
@@ -55,7 +58,7 @@
 
     {% if custom_domains %}
       <hr>
-      <p class="font-weight-bold">Or with your custom domains</p>
+      <p class="font-weight-bold h4">Or with your custom domains</p>
       <div class="container p-0">
         {% for custom_domain in custom_domains %}
           <form method="post" class="mb-6">
