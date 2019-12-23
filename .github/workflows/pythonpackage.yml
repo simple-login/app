@@ -26,6 +26,6 @@ jobs:
         pip install pytest
         pytest
     - name: Test formatting
-        run: |
-          pip install black
-          black --check .
+      run: |
+        pip install black
+        black --check .
