@@ -31,7 +31,7 @@ def options():
 
     ret = {
         "existing": [ge.email for ge in GenEmail.query.filter_by(user_id=user.id)],
-        "can_create_custom": user.can_create_new_custom_alias(),
+        "can_create_custom": user.can_create_new_alias(),
     }
 
     # recommendation alias if exist

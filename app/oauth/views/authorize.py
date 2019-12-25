@@ -152,7 +152,7 @@ def authorize():
             gen_email = None
             if custom_email_prefix:
                 # check if user can generate custom email
-                if not current_user.can_create_new_custom_alias():
+                if not current_user.can_create_new_alias():
                     raise Exception(f"User {current_user} cannot create custom email")
 
                 email = f"{convert_to_id(custom_email_prefix)}.{email_suffix}@{EMAIL_DOMAIN}"
@@ -163,9 +163,7 @@ def authorize():
                     flash(f"alias {email} already used", "error")
                     return redirect(request.url)
 
-                gen_email = GenEmail.create(
-                    email=email, user_id=current_user.id, custom=True
-                )
+                gen_email = GenEmail.create(email=email, user_id=current_user.id)
                 db.session.flush()
             else:  # user picks an email from suggestion
                 if chosen_email != current_user.email:

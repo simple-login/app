@@ -8,8 +8,9 @@ https://simplelogin.io
 In some way yes ... However SimpleLogin is a bit different because:
 
 - it's fully open-source: both the server and client code (browser extension, JS library) are open-source so anyone can freely inspect and (hopefully) improve the code.
-- not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that: a. offers privacy for users b. is simple to use for developers.
-- plenty of features: custom domain, browser extension, OAuth libraries, etc.
+- not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that: a. offers privacy for users b. is simple to use for developers. Our goal is to offer a privacy-focused alternative to the "Login with Facebook/Google/Twitter" buttons.
+- the only email alias solution that is `self-hostable`: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows how to `ssh` is able to deploy SimpleLogin on their server.  
+- plenty of features: custom domain, browser extension, alias activity, OAuth libraries, etc.
 - written in Python 🐍 😅 this is not a difference per se but hey I never found a Python email server so feel free to tweak this one if you want to use Python for handling emails.
 
 # Table of Contents
@@ -35,15 +36,15 @@ SimpleLogin backend consists of 2 main components:
 
 ### Prerequisites
 
-- a Linux server (either a VM or dedicated server). This doc shows the setup for Ubuntu 18.04 LTS but the steps could be adapted for other popular Linux distributions. As most of components run as Docker container and Docker can be a bit heavy, having at least 2 GB of RAM is recommended. The server needs to have the port 25, 465 (email), 80, 443 (for the webapp), 22 (so you can ssh into it) open.
+- a Linux server (either a VM or dedicated server). This doc shows the setup for Ubuntu 18.04 LTS but the steps could be adapted for other popular Linux distributions. As most of components run as Docker container and Docker can be a bit heavy, having at least 2 GB of RAM is recommended. The server needs to have the port 25 (email), 80, 443 (for the webapp), 22 (so you can ssh into it) open.
 
-- a domain that you can config the DNS. It could be a subdomain. In the rest of the doc, let's say it's `mydomain.com` for the email and `app.mydomain.com` for SimpleLogin webapp. Please make sure to replace these values by your domain name.
+- a domain that you can config the DNS. It could be a subdomain. In the rest of the doc, let's say it's `mydomain.com` for the email and `app.mydomain.com` for SimpleLogin webapp. Please make sure to replace these values by your domain name whenever they appear in the doc.
 
-- [Optional]: a Postgres database. If you don't want to manage and maintain a Postgres database, you can use managed services proposed by cloud providers. Otherwise this guide will show how to run a Postgres database using Docker. Database is not well-known to be run inside Docker but this is probably fine if you don't have thousands of emails to handle.
+- [Optional]: a dedicated Postgres database. If you don't want to manage and maintain a Postgres database, you can use managed services proposed by some cloud providers. Otherwise this guide will show how to run a Postgres database using Docker. Database is not well-known to be run inside Docker but this is probably fine if you don't have thousands of email addresses.
 
-- [Optional] AWS S3, Sentry, Google/Facebook/Github developer accounts.
+- [Optional] AWS S3, Sentry, Google/Facebook/Github developer accounts. These are necessary only if you want to activate these options.
 
-All the below steps, except for the DNS ones that are usually done inside your domain registrar interface, are done on your server.
+All the below steps, except for the DNS ones that are usually done inside your domain registrar interface, are done on your server. The commands are to run with `bash` (or any bash-compatible shell like `zsh`) being the shell. If you use other shells like `fish`, please make sure to adapt the commands.
 
 ### DKIM
 
@@ -51,7 +52,7 @@ From Wikipedia https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail
 
 > DomainKeys Identified Mail (DKIM) is an email authentication method designed to detect forged sender addresses in emails (email spoofing), a technique often used in phishing and email spam.
 
-Setting up DKIM is highly recommended to reduce the chance your emails ending up in Spam folder.
+Setting up DKIM is highly recommended to reduce the chance your emails ending up in the recipient's Spam folder.
 
 First you need to generate a private and public key for DKIM:
 
@@ -62,7 +63,7 @@ openssl rsa -in dkim.key -pubout -out dkim.pub.key
 
 You will need the files `dkim.key` and `dkim.pub.key` for the next steps.
 
-For email gurus, we have chosen 1024 key length instead of 2048 for DNS simplicty as some registrars don't play well with long TXT record.
+For email gurus, we have chosen 1024 key length instead of 2048 for DNS simplicity as some registrars don't play well with long TXT record.
 
 ### DNS
 
@@ -84,14 +85,14 @@ An **A record** that points `app.mydomain.com` to your server IP. To verify, `di
 Set up DKIM by adding a TXT record for `dkim._domainkey.mydomain.com` with the following value:
 
 ```
-v=DKIM1; k=rsa; p=public_key
+v=DKIM1; k=rsa; p=PUBLIC_KEY
 ```
 
-with the `public_key` being your `dkim.pub.key` but
+with `PUBLIC_KEY` being your `dkim.pub.key` but
 - remove the `-----BEGIN PUBLIC KEY-----` and `-----END PUBLIC KEY-----`
 - join all the lines on a single line.
 
-For ex, if your `dkim.pub.key` is 
+For example, if your `dkim.pub.key` is 
 
 ```
 -----BEGIN PUBLIC KEY-----
@@ -102,7 +103,7 @@ gh
 -----END PUBLIC KEY-----
 ```
 
-then the `public_key` would be `abcdefgh`.
+then the `PUBLIC_KEY` would be `abcdefgh`.
 
 To verify, `dig dkim._domainkey.mydomain.com txt` should return the above value.
 
@@ -145,7 +146,7 @@ docker network create -d bridge \
 
 This sections show how to run a Postgres database using Docker. At the end of this section, you will have a database username and password that're going to be used in the next steps.
 
-If you already have a Postgres database, you can skip this section and just copy the database username/password.
+If you already have a Postgres database, you can skip this section and just copy the database configuration (host, port, username, password, database name).
 
 Run a postgres Docker container. Make sure to replace `myuser` and `mypassword` by something more secret 😎.
 
@@ -155,12 +156,17 @@ docker run -d \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
-    -p 5432:5432 \
     --network="sl-network" \
     postgres
 ```
 
-To test if the database runs correctly, run `docker exec -it sl-db psql -U myuser simplelogin`, you should be logged into postgres console.
+To test if the database runs correctly, run
+
+```bash
+docker exec -it sl-db psql -U myuser simplelogin
+```
+
+you should be logged into postgres console.
 
 ### Postfix
 
@@ -187,7 +193,7 @@ sudo postconf -e 'transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf'
 ```
 
 
-Create the `relay-domains` file at `/etc/postfix/pgsql-relay-domains.cf` and put the following content. Make sure to replace `user` and `password` by your Postgres username and password and `mydomain.com` by your domain.
+Create the `relay-domains` file at `/etc/postfix/pgsql-relay-domains.cf` and put the following content. Make sure that the database config is correctly set and replace `mydomain.com` by your domain.
 
 ```
 # postgres config
@@ -199,8 +205,7 @@ dbname = simplelogin
 query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true UNION SELECT '%s' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
-Create the `transport-maps` file at `/etc/postfix/pgsql-transport-maps.cf` and put the following lines. Make sure to replace `user` and `password` by your Postgres username and password and `mydomain.com` by your domain.
-
+Create the `transport-maps` file at `/etc/postfix/pgsql-transport-maps.cf` and put the following lines. Make sure that the database config is correctly set and replace `mydomain.com` by your domain.
 
 ```
 # postgres config
@@ -219,7 +224,7 @@ Finally restart Postfix
 
 ### Run SimpleLogin Docker containers
 
-To run the server, you would need a config file. Please have a look at [](./.env.example) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS). 
+To run the server, you need a config file. Please have a look at [config example](./.env.example) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS). 
 
 Let's put your config file at `~/simplelogin.env`.
 
@@ -243,35 +248,32 @@ Before running the webapp, you need to prepare the database by running the migra
 ```bash
 docker run \
     --name sl-migration \
-    -e CONFIG=/simplelogin.env \
     -v $(pwd)/dkim.key:/dkim.key \
-    -v $(pwd)/simplelogin.env:/simplelogin.env \
+    -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
     simplelogin/app flask db upgrade
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
 
-Now it's time to run the webapp container!
+Now it's time to run the `webapp` container!
 
 ```bash
 docker run -d \
     --name sl-app \
-    -e CONFIG=/simplelogin.env \
-    -v $(pwd)/simplelogin.env:/simplelogin.env \
+    -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -p 7777:7777 \
     --network="sl-network" \
     simplelogin/app
 ```
 
-Next run the Mail Handler
+Next run the `email handler`
 
 ```bash
 docker run -d \
     --name sl-email \
-    -e CONFIG=/simplelogin.env \
-    -v $(pwd)/simplelogin.env:/simplelogin.env \
+    -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -p 20381:20381 \
     --network="sl-network" \
@@ -283,8 +285,7 @@ docker run -d \
 ```bash
 docker run -d \
     --name sl-cron \
-    -e CONFIG=/simplelogin.env \
-    -v $(pwd)/simplelogin.env:/simplelogin.env \
+    -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     --network="sl-network" \
     simplelogin/app yacron -c /code/crontab.yml
@@ -345,6 +346,8 @@ To run the code locally, please create a local setting file based on `.env.examp
 ```
 cp .env.example .env
 ```
+
+Make sure to uncomment the `RESET_DB=true` to create the database locally.
 
 Feel free to custom your `.env` file, it would be your default setting when developing locally. This file is ignored by git.
 
@@ -436,6 +439,12 @@ Here are a small sum-ups of the directory structure and their roles:
 - static/: files available at `/static` url. 
 - templates/: contain both html and email templates.
 - tests/: tests. We don't really distinguish unit, functional or integration test. A test is simply here to make sure a feature works correctly.
+
+The code is formatted using https://github.com/psf/black, to format the code, simply run
+
+```
+black
+```
 
 ### OAuth flow
 

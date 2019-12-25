@@ -109,7 +109,7 @@ class User(db.Model, ModelMixin, UserMixin):
         db.session.flush()
 
         # create a first alias mail to show user how to use when they login
-        GenEmail.create_custom_alias(user.id, prefix="my-first-alias")
+        GenEmail.create_new(user.id, prefix="my-first-alias")
         db.session.flush()
 
         return user
@@ -130,14 +130,11 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return False
 
-    def can_create_new_custom_alias(self):
+    def can_create_new_alias(self):
         if self.is_premium():
             return True
 
-        return (
-            GenEmail.filter_by(user_id=self.id, custom=True).count()
-            < MAX_NB_EMAIL_FREE_PLAN
-        )
+        return GenEmail.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
 
     def set_password(self, password):
         salt = bcrypt.gensalt()
@@ -160,8 +157,8 @@ class User(db.Model, ModelMixin, UserMixin):
         website_name = convert_to_id(website_name)
 
         all_gen_emails = [ge.email for ge in GenEmail.filter_by(user_id=self.id)]
-        if self.can_create_new_custom_alias():
-            suggested_gen_email = GenEmail.create_custom_alias(
+        if self.can_create_new_alias():
+            suggested_gen_email = GenEmail.create_new(
                 self.id, prefix=website_name
             ).email
         else:
@@ -389,9 +386,6 @@ class GenEmail(db.Model, ModelMixin):
 
     enabled = db.Column(db.Boolean(), default=True, nullable=False)
 
-    # this email has been customized by user, i.e. not generated randomly
-    custom = db.Column(db.Boolean(), default=False, nullable=False, server_default="0")
-
     custom_domain_id = db.Column(
         db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
     )
@@ -399,12 +393,7 @@ class GenEmail(db.Model, ModelMixin):
     user = db.relationship(User)
 
     @classmethod
-    def create_new_gen_email(cls, user_id, custom=False):
-        random_email = generate_email()
-        return GenEmail.create(user_id=user_id, email=random_email, custom=custom)
-
-    @classmethod
-    def create_custom_alias(cls, user_id, prefix):
+    def create_new(cls, user_id, prefix):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
 
@@ -416,7 +405,13 @@ class GenEmail(db.Model, ModelMixin):
             if not cls.get_by(email=email):
                 break
 
-        return GenEmail.create(user_id=user_id, email=email, custom=True)
+        return GenEmail.create(user_id=user_id, email=email)
+
+    @classmethod
+    def create_new_random(cls, user_id):
+        """create a new random alias"""
+        random_email = generate_email()
+        return GenEmail.create(user_id=user_id, email=random_email)
 
     def __repr__(self):
         return f"<GenEmail {self.id} {self.email}>"
@@ -544,9 +539,9 @@ class ForwardEmail(db.Model, ModelMixin):
         if self.website_from:
             name = get_email_name(self.website_from)
             if name:
-                return name + " " + self.website_email + " " + f"<{self.reply_email}>"
+                return name + " " + self.website_email + f" <{self.reply_email}>"
 
-        return self.reply_email
+        return self.website_email.replace("@", " at ") + f" <{self.reply_email}>"
 
     def last_reply(self) -> "ForwardEmailLog":
         """return the most recent reply"""
@@ -659,6 +654,9 @@ class CustomDomain(db.Model, ModelMixin):
     domain = db.Column(db.String(128), unique=True, nullable=False)
 
     verified = db.Column(db.Boolean, nullable=False, default=False)
+    dkim_verified = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     def nb_alias(self):
         return GenEmail.filter_by(custom_domain_id=self.id).count()

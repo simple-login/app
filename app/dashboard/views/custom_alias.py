@@ -13,7 +13,7 @@ from app.utils import convert_to_id, random_word
 @login_required
 def custom_alias():
     # check if user has the right to create custom alias
-    if not current_user.can_create_new_custom_alias():
+    if not current_user.can_create_new_alias():
         # notify admin
         LOG.error("user %s tries to create custom alias", current_user)
         flash("ony premium user can choose custom alias", "warning")
@@ -42,7 +42,7 @@ def custom_alias():
                         "create custom alias %s for user %s", full_email, current_user
                     )
                     gen_email = GenEmail.create(
-                        email=full_email, user_id=current_user.id, custom=True
+                        email=full_email, user_id=current_user.id
                     )
                     db.session.commit()
 
@@ -79,7 +79,6 @@ def custom_alias():
                 gen_email = GenEmail.create(
                     email=full_email,
                     user_id=current_user.id,
-                    custom=True,
                     custom_domain_id=custom_domain.id,
                 )
                 db.session.commit()

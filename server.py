@@ -38,16 +38,14 @@ from app.models import (
     Subscription,
     PlanEnum,
     ApiKey,
+    CustomDomain,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
 
 if SENTRY_DSN:
     LOG.d("enable sentry")
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[FlaskIntegration()],
-    )
+    sentry_sdk.init(dsn=SENTRY_DSN, integrations=[FlaskIntegration()])
 
 # the app is served behin nginx which uses http and not https
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -117,9 +115,15 @@ def fake_data():
     api_key = ApiKey.create(user_id=user.id, name="Chrome")
     api_key.code = "code"
 
-    GenEmail.create_custom_alias(user.id, "e1@")
-    GenEmail.create_custom_alias(user.id, "e2@")
-    GenEmail.create_custom_alias(user.id, "e3@")
+    GenEmail.create_new(user.id, "e1@")
+    GenEmail.create_new(user.id, "e2@")
+    GenEmail.create_new(user.id, "e3@")
+
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
+    CustomDomain.create(
+        user_id=user.id, domain="very-long-domain.com.net.org", verified=True
+    )
+    db.session.commit()
 
     # Create a client
     client1 = Client.create_new(name="Demo", user_id=user.id)
@@ -259,9 +263,7 @@ def jinja2_filter(app):
 
     @app.context_processor
     def inject_stage_and_region():
-        return dict(
-            YEAR=arrow.now().year, URL=URL, SENTRY_DSN=SENTRY_DSN, VERSION=SHA1
-        )
+        return dict(YEAR=arrow.now().year, URL=URL, SENTRY_DSN=SENTRY_DSN, VERSION=SHA1)
 
 
 def setup_paddle_callback(app: Flask):

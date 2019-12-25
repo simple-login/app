@@ -1,8 +1,9 @@
+import json
 from io import BytesIO
 
 import arrow
-from flask import render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
+from flask import render_template, request, redirect, url_for, flash, Response
+from flask_login import login_required, current_user, logout_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from wtforms import StringField, validators
@@ -20,6 +21,8 @@ from app.models import (
     User,
     GenEmail,
     DeletedAlias,
+    CustomDomain,
+    Client,
 )
 from app.utils import random_string
 
@@ -110,6 +113,41 @@ def setting():
 
         elif request.form.get("form-name") == "change-password":
             send_reset_password_email(current_user)
+
+        elif request.form.get("form-name") == "delete-account":
+            User.delete(current_user.id)
+            db.session.commit()
+            flash("Your account has been deleted", "success")
+            logout_user()
+            return redirect(url_for("auth.register"))
+
+        elif request.form.get("form-name") == "export-data":
+            data = {
+                "email": current_user.email,
+                "name": current_user.name,
+                "aliases": [],
+                "apps": [],
+                "custom_domains": [],
+            }
+
+            for alias in GenEmail.filter_by(
+                user_id=current_user.id
+            ).all():  # type: GenEmail
+                data["aliases"].append(dict(email=alias.email, enabled=alias.enabled))
+
+            for custom_domain in CustomDomain.filter_by(user_id=current_user.id).all():
+                data["custom_domains"].append(custom_domain.domain)
+
+            for app in Client.filter_by(user_id=current_user.id):  # type: Client
+                data["apps"].append(
+                    dict(name=app.name, home_url=app.home_url, published=app.published)
+                )
+
+            return Response(
+                json.dumps(data),
+                mimetype="text/json",
+                headers={"Content-Disposition": "attachment;filename=data.json"},
+            )
 
         return redirect(url_for("dashboard.setting"))
 

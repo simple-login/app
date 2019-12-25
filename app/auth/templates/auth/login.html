@@ -15,10 +15,6 @@
 {% endblock %}
 
 {% block single_content %}
-  {% if error %}
-    <div class="text-danger text-center mb-4">{{ error }}</div>
-  {% endif %}
-
   <h1 class="h2 text-center">Welcome back!</h1>
 
   <div class="row">
@@ -30,50 +26,53 @@
         </div>
       {% endif %}
 
-      <form class="card" method="post">
-        {{ form.csrf_token }}
-        <div class="card-body p-6">
-          <div class="form-group">
-            <label class="form-label">Email address</label>
-            {{ form.email(class="form-control", type="email") }}
-            {{ render_field_errors(form.email) }}
-          </div>
+      <div class="card">
+        <form method="post">
+          {{ form.csrf_token }}
+          <div class="card-body p-6">
+            <div class="form-group">
+              <label class="form-label">Email address</label>
+              {{ form.email(class="form-control", type="email") }}
+              {{ render_field_errors(form.email) }}
+            </div>
 
-          <div class="form-group">
-            <label class="form-label">
-              Password
-              <a href="{{ url_for('auth.forgot_password') }}" class="float-right small">
-                I forgot my password
-              </a>
-            </label>
-            {{ form.password(class="form-control", type="password") }}
-            {{ render_field_errors(form.password) }}
-          </div>
+            <div class="form-group">
+              <label class="form-label">
+                Password
+                <a href="{{ url_for('auth.forgot_password') }}" class="float-right small">
+                  I forgot my password
+                </a>
+              </label>
+              {{ form.password(class="form-control", type="password") }}
+              {{ render_field_errors(form.password) }}
+            </div>
 
-          <!-- TODO: add remember me
-          <div class="form-group">
-            <label class="custom-control custom-checkbox">
-              <input type="checkbox" class="custom-control-input"/>
-              <span class="custom-control-label">Remember me</span>
-            </label>
-          </div>
-          -->
+            <!-- TODO: add remember me
+            <div class="form-group">
+              <label class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input"/>
+                <span class="custom-control-label">Remember me</span>
+              </label>
+            </div>
+            -->
 
-          <div class="form-footer">
-            <button type="submit" class="btn btn-primary btn-block">Log in</button>
+            <div class="form-footer">
+              <button type="submit" class="btn btn-primary btn-block">Log in</button>
+            </div>
           </div>
+        </form>
+
+        <div class="text-center text-muted mb-6">
+          Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
         </div>
-      </form>
-
-      <div class="text-center text-muted">
-        Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
       </div>
     </div>
 
     <div class="col-md-6">
       <div class="card">
         <div class="card-body p-6">
-          <div class="card-title text-center">OR</div>
+          <div class="card-title text-center">Or with social login
+          </div>
 
           <a href="{{ url_for('auth.github_login', next=next_url) }}"
              class="btn btn-block btn-social btn-github">
@@ -90,7 +89,18 @@
             <i class="fa fa-facebook"></i> Sign in with Facebook
           </a>
         </div>
+        <div class="text-center p-3" style="font-size: 12px; font-weight: light; margin: auto">
+
+          We don't use the Facebook/Google SDK to avoid their trackers. <br>
+
+          However when using a social login button, please keep in mind that this social network will <b>know</b> that
+          you are using SimpleLogin.
+
+          <span class="badge badge-warning">Warning</span>
+
+        </div>
       </div>
+
 
     </div>
 

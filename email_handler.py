@@ -47,7 +47,7 @@ from app.email_utils import (
 )
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ForwardEmail, ForwardEmailLog
+from app.models import GenEmail, ForwardEmail, ForwardEmailLog, CustomDomain
 from app.utils import random_string
 from server import create_app
 
@@ -207,6 +207,12 @@ class MailHandler:
         forward_email = ForwardEmail.get_by(reply_email=reply_email)
         alias: str = forward_email.gen_email.email
 
+        # alias must end with EMAIL_DOMAIN or custom-domain
+        alias_domain = alias[alias.find("@") + 1 :]
+        if alias_domain != EMAIL_DOMAIN:
+            if not CustomDomain.get_by(domain=alias_domain):
+                return "550 alias unknown by SimpleLogin"
+
         user_email = forward_email.gen_email.user.email
         if envelope.mail_from != user_email:
             LOG.error(
@@ -248,10 +254,13 @@ class MailHandler:
             envelope.rcpt_options,
         )
 
-        # todo: add DKIM-Signature for custom domain
-        # add DKIM-Signature for non-custom-domain alias
-        if alias.endswith(EMAIL_DOMAIN):
+        if alias_domain == EMAIL_DOMAIN:
             add_dkim_signature(msg, EMAIL_DOMAIN)
+        # add DKIM-Signature for non-custom-domain alias
+        else:
+            custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
+            if custom_domain.dkim_verified:
+                add_dkim_signature(msg, alias_domain)
 
         msg_raw = msg.as_string().encode()
         smtp.sendmail(

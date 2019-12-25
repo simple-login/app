@@ -18,51 +18,55 @@
 
   <div class="row">
     <div class="col-md-6">
-      <form class="card" method="post">
-        {{ form.csrf_token }}
-        <div class="card-body p-6">
-          <div class="form-group">
-            <label class="form-label">How should we call you?</label>
-            {{ form.name(class="form-control") }}
-            {{ render_field_errors(form.name) }}
-          </div>
+      <div class="card">
+        <form method="post">
+          {{ form.csrf_token }}
+          <div class="card-body p-6">
+            <div class="form-group">
+              <label class="form-label">How should we call you?</label>
+              {{ form.name(class="form-control") }}
+              {{ render_field_errors(form.name) }}
+            </div>
 
-          <div class="form-group">
-            <label class="form-label">Email address</label>
-            {{ form.email(class="form-control", type="email") }}
-            {{ render_field_errors(form.email) }}
-          </div>
+            <div class="form-group">
+              <label class="form-label">Email address</label>
+              {{ form.email(class="form-control", type="email") }}
+              {{ render_field_errors(form.email) }}
+            </div>
 
-          <div class="form-group">
-            <label class="form-label">Password</label>
-            {{ form.password(class="form-control", type="password") }}
-            {{ render_field_errors(form.password) }}
-          </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              {{ form.password(class="form-control", type="password") }}
+              {{ render_field_errors(form.password) }}
+            </div>
 
-          <!-- TODO: add terms
-          <div class="form-group">
-            <label class="custom-control custom-checkbox">
-              <input type="checkbox" class="custom-control-input"/>
-              <span class="custom-control-label">Agree the <a href="terms.html">terms and policy</a></span>
-            </label>
-          </div>
-          -->
+            <!-- TODO: add terms
+            <div class="form-group">
+              <label class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input"/>
+                <span class="custom-control-label">Agree the <a href="terms.html">terms and policy</a></span>
+              </label>
+            </div>
+            -->
 
-          <div class="form-footer">
-            <button type="submit" class="btn btn-primary btn-block">Create your SimpleLogin account</button>
+            <div class="form-footer">
+              <button type="submit" class="btn btn-primary btn-block">Create your SimpleLogin account</button>
+            </div>
           </div>
+        </form>
+
+        <div class="text-center text-muted mb-6">
+          Already have account? <a href="{{ url_for('auth.login') }}">Sign in</a>
         </div>
-      </form>
-
-      <div class="text-center text-muted">
-        Already have account? <a href="{{ url_for('auth.login') }}">Sign in</a>
       </div>
+
+
     </div>
 
     <div class="col-md-6">
       <div class="card">
         <div class="card-body p-6">
-          <div class="card-title text-center">OR</div>
+          <div class="card-title text-center">Or with social login</div>
 
           <a href="{{ url_for('auth.github_login', next=next_url) }}"
              class="btn btn-block btn-social btn-github">
@@ -80,6 +84,17 @@
           </a>
 
         </div>
+        <div class="text-center p-3" style="font-size: 12px; font-weight: light; margin: auto">
+
+          We don't use the Facebook/Google SDK to avoid their trackers. <br>
+
+          However when using a social login button, please keep in mind that this social network will <b>know</b> that
+          you are using SimpleLogin.
+
+          <span class="badge badge-warning">Warning</span>
+
+        </div>
+
       </div>
     </div>
   </div>

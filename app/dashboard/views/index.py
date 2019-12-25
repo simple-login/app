@@ -50,13 +50,21 @@ def index():
             )
 
         elif request.form.get("form-name") == "create-custom-email":
-            if current_user.can_create_new_custom_alias():
+            if current_user.can_create_new_alias():
                 return redirect(url_for("dashboard.custom_alias"))
             else:
-                flash(
-                    f"You need to upgrade your plan to create new custom alias.",
-                    "warning",
-                )
+                flash(f"You need to upgrade your plan to create new alias.", "warning")
+
+        elif request.form.get("form-name") == "create-random-email":
+            if current_user.can_create_new_alias():
+                gen_email = GenEmail.create_new_random(user_id=current_user.id)
+                db.session.commit()
+
+                LOG.d("generate new email %s for user %s", gen_email, current_user)
+                flash(f"Alias {gen_email.email} has been created", "success")
+                session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
+            else:
+                flash(f"You need to upgrade your plan to create new alias.", "warning")
 
         elif request.form.get("form-name") == "switch-email-forwarding":
             gen_email_id = request.form.get("gen-email-id")
@@ -85,7 +93,7 @@ def index():
             DeletedAlias.create(user_id=current_user.id, email=gen_email.email)
 
             db.session.commit()
-            flash(f"Email alias {email} has been deleted", "success")
+            flash(f"Alias {email} has been deleted", "success")
 
         return redirect(url_for("dashboard.index", query=query))
 

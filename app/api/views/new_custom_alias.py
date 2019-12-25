@@ -26,7 +26,7 @@ def new_custom_alias():
 
     """
     user = g.user
-    if not user.can_create_new_custom_alias():
+    if not user.can_create_new_alias():
         LOG.d("user %s cannot create custom alias", user)
         return (
             jsonify(
@@ -74,7 +74,7 @@ def new_custom_alias():
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
-    gen_email = GenEmail.create(user_id=user.id, email=full_alias, custom=True)
+    gen_email = GenEmail.create(user_id=user.id, email=full_alias)
     db.session.commit()
 
     if hostname:

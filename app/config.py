@@ -63,7 +63,7 @@ DKIM_SELECTOR = b"dkim"
 with open(DKIM_PRIVATE_KEY_PATH) as f:
     DKIM_PRIVATE_KEY = f.read()
 
-DKIM_HEADERS = [b'from', b'to', b'subject']
+DKIM_HEADERS = [b"from", b"to", b"subject"]
 
 # Database
 DB_URI = os.environ["DB_URI"]
