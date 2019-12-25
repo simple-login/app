@@ -260,7 +260,7 @@ class MailHandler:
         else:
             custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain.dkim_verified:
-                add_dkim_signature(msg, EMAIL_DOMAIN)
+                add_dkim_signature(msg, alias_domain)
 
         msg_raw = msg.as_string().encode()
         smtp.sendmail(
