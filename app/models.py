@@ -654,6 +654,9 @@ class CustomDomain(db.Model, ModelMixin):
     domain = db.Column(db.String(128), unique=True, nullable=False)
 
     verified = db.Column(db.Boolean, nullable=False, default=False)
+    dkim_verified = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     def nb_alias(self):
         return GenEmail.filter_by(custom_domain_id=self.id).count()
