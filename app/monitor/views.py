@@ -4,7 +4,7 @@ from app.monitor.base import monitor_bp
 
 @monitor_bp.route("/git")
 def git_sha1():
-    return SHA1()
+    return SHA1
 
 
 @monitor_bp.route("/exception")
