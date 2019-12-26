@@ -110,7 +110,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
-        user = super(User, cls).create(email=email, name=name, **kwargs)
+        user: User = super(User, cls).create(email=email, name=name, **kwargs)
 
         if not password:
             # set a random password
@@ -426,7 +426,7 @@ class GenEmail(db.Model, ModelMixin):
         return GenEmail.create(user_id=user_id, email=email)
 
     @classmethod
-    def create_new_random(cls, user_id, scheme: int = 1, in_hex: bool = False):
+    def create_new_random(cls, user_id, scheme: int = AliasGeneratorEnum.word.value, in_hex: bool = False):
         """create a new random alias"""
         random_email = generate_email(scheme=scheme, in_hex=in_hex)
         return GenEmail.create(user_id=user_id, email=random_email)
