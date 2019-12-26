@@ -100,7 +100,7 @@ class User(db.Model, ModelMixin, UserMixin):
     password = db.Column(db.String(128), nullable=False)
     name = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
-    alias_generator = db.Column(db.Integer, nullable=True, default=AliasGeneratorEnum.word.value)
+    alias_generator = db.Column(db.Integer, nullable=False, default=AliasGeneratorEnum.word.value)
 
     activated = db.Column(db.Boolean, default=False, nullable=False)
 
@@ -378,7 +378,7 @@ class OauthToken(db.Model, ModelMixin):
         return self.expired < arrow.now()
 
 
-def generate_email(scheme: int = 1, in_hex: bool = False) -> str:
+def generate_email(scheme: int = AliasGeneratorEnum.word.value, in_hex: bool = False) -> str:
     """generate an email address that does not exist before
     :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
     :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
