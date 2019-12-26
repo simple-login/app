@@ -1,4 +1,7 @@
+from uuid import UUID
+
 import arrow
+import pytest
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
@@ -8,6 +11,12 @@ from app.models import generate_email, User, GenEmail
 def test_generate_email(flask_client):
     email = generate_email()
     assert email.endswith("@" + EMAIL_DOMAIN)
+
+    with pytest.raises(ValueError):
+        UUID(email.split("@")[0], version=4)
+
+    email_uuid = generate_email(scheme=2)
+    assert UUID(email_uuid.split("@")[0], version=4)
 
 
 def test_profile_picture_url(flask_client):
