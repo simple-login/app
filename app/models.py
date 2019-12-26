@@ -1,5 +1,6 @@
 import enum
 import random
+import uuid
 
 import arrow
 import bcrypt
@@ -83,6 +84,15 @@ class PlanEnum(enum.Enum):
     yearly = 3
 
 
+class AliasGeneratorEnum(enum.Enum):
+    word = 1  # aliases are generated based on random words
+    uuid = 2  # aliases are generated based on uuid
+
+    @classmethod
+    def has_value(cls, value: int) -> bool:
+        return value in set(item.value for item in cls)
+
+
 class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
     email = db.Column(db.String(128), unique=True, nullable=False)
@@ -90,6 +100,7 @@ class User(db.Model, ModelMixin, UserMixin):
     password = db.Column(db.String(128), nullable=False)
     name = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    alias_generator = db.Column(db.Integer, nullable=True, default=AliasGeneratorEnum.word.value)
 
     activated = db.Column(db.Boolean, default=False, nullable=False)
 
@@ -310,8 +321,8 @@ class Client(db.Model, ModelMixin):
     def last_user_login(self) -> "ClientUser":
         client_user = (
             ClientUser.query.filter(ClientUser.client_id == self.id)
-            .order_by(ClientUser.updated_at)
-            .first()
+                .order_by(ClientUser.updated_at)
+                .first()
         )
         if client_user:
             return client_user
@@ -367,20 +378,27 @@ class OauthToken(db.Model, ModelMixin):
         return self.expired < arrow.now()
 
 
-def generate_email() -> str:
-    """generate an email address that does not exist before"""
-    random_email = random_words() + "@" + EMAIL_DOMAIN
+def generate_email(scheme: int = 1, in_hex: bool = False) -> str:
+    """generate an email address that does not exist before
+    :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
+    :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
+    """
+    if scheme == AliasGeneratorEnum.uuid.value:
+        name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
+        random_email = name + "@" + EMAIL_DOMAIN
+    else:
+        random_email = random_words() + "@" + EMAIL_DOMAIN
 
     # check that the client does not exist yet
     if not GenEmail.get_by(email=random_email) and not DeletedAlias.get_by(
-        email=random_email
+            email=random_email
     ):
         LOG.debug("generate email %s", random_email)
         return random_email
 
     # Rerun the function
     LOG.warning("email %s already exists, generate a new email", random_email)
-    return generate_email()
+    return generate_email(scheme=scheme, in_hex=in_hex)
 
 
 class GenEmail(db.Model, ModelMixin):
@@ -413,9 +431,9 @@ class GenEmail(db.Model, ModelMixin):
         return GenEmail.create(user_id=user_id, email=email)
 
     @classmethod
-    def create_new_random(cls, user_id):
+    def create_new_random(cls, user_id, scheme: int = 1, in_hex: bool = False):
         """create a new random alias"""
-        random_email = generate_email()
+        random_email = generate_email(scheme=scheme, in_hex=in_hex)
         return GenEmail.create(user_id=user_id, email=random_email)
 
     def __repr__(self):
@@ -552,8 +570,8 @@ class ForwardEmail(db.Model, ModelMixin):
         """return the most recent reply"""
         return (
             ForwardEmailLog.query.filter_by(forward_id=self.id, is_reply=True)
-            .order_by(desc(ForwardEmailLog.created_at))
-            .first()
+                .order_by(desc(ForwardEmailLog.created_at))
+                .first()
         )
 
 

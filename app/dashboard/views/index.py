@@ -9,7 +9,7 @@ from app.config import HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ClientUser, ForwardEmail, ForwardEmailLog, DeletedAlias
+from app.models import GenEmail, ClientUser, ForwardEmail, ForwardEmailLog, DeletedAlias, AliasGeneratorEnum
 
 
 @dataclass
@@ -57,7 +57,10 @@ def index():
 
         elif request.form.get("form-name") == "create-random-email":
             if current_user.can_create_new_alias():
-                gen_email = GenEmail.create_new_random(user_id=current_user.id)
+                scheme = int(request.form.get("generator_scheme") or current_user.alias_generator)
+                if not scheme or not AliasGeneratorEnum.has_value(scheme):
+                    scheme = current_user.alias_generator
+                gen_email = GenEmail.create_new_random(user_id=current_user.id, scheme=scheme)
                 db.session.commit()
 
                 LOG.d("generate new email %s for user %s", gen_email, current_user)
@@ -99,9 +102,9 @@ def index():
 
     client_users = (
         ClientUser.filter_by(user_id=current_user.id)
-        .options(joinedload(ClientUser.client))
-        .options(joinedload(ClientUser.gen_email))
-        .all()
+            .options(joinedload(ClientUser.client))
+            .options(joinedload(ClientUser.gen_email))
+            .all()
     )
 
     sorted(client_users, key=lambda cu: cu.client.name)
@@ -112,6 +115,7 @@ def index():
         aliases=get_alias_info(current_user.id, query, highlight_gen_email_id),
         highlight_gen_email_id=highlight_gen_email_id,
         query=query,
+        AliasGeneratorEnum=AliasGeneratorEnum
     )
 
 
@@ -150,8 +154,8 @@ def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasIn
     # also add alias that has no forward email or log
     q = (
         db.session.query(GenEmail)
-        .filter(GenEmail.email.notin_(aliases.keys()))
-        .filter(GenEmail.user_id == user_id)
+            .filter(GenEmail.email.notin_(aliases.keys()))
+            .filter(GenEmail.user_id == user_id)
     )
 
     if query:

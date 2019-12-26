@@ -65,6 +65,18 @@
       <input type="hidden" name="form-name" value="change-password">
       <button class="btn btn-outline-primary">Change password</button>
     </form>
+      <hr>
+
+    <h3 class="mb-0">Random Alias</h3>
+    <div class="small-text mb-3">Choose how to create your email alias by default</div>
+    <form method="post" class="form-inline">
+      <input type="hidden" name="form-name" value="change-alias-generator">
+      <select class="custom-select mr-sm-2" name="alias-generator-scheme" id="alias-generator-scheme">
+        <option value="{{ AliasGeneratorEnum.word.value }}" {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected {% endif %} >Based on Random {{ AliasGeneratorEnum.word.name.capitalize() }}</option>
+        <option value="{{ AliasGeneratorEnum.uuid.value }}" {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
+      </select>
+      <button class="btn btn-outline-primary">Update Preference</button>
+    </form>
 
     <hr>
     <h3 class="mb-0">Export Data</h3>

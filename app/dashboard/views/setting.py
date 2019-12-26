@@ -23,7 +23,7 @@ from app.models import (
     DeletedAlias,
     CustomDomain,
     Client,
-)
+    AliasGeneratorEnum)
 from app.utils import random_string
 
 
@@ -121,6 +121,13 @@ def setting():
             logout_user()
             return redirect(url_for("auth.register"))
 
+        elif request.form.get("form-name") == "change-alias-generator":
+            scheme = int(request.form.get("alias-generator-scheme"))
+            if AliasGeneratorEnum.has_value(scheme):
+                current_user.alias_generator = scheme
+                db.session.commit()
+            flash("Your preference has been updated", "success")
+
         elif request.form.get("form-name") == "export-data":
             data = {
                 "email": current_user.email,
@@ -157,6 +164,7 @@ def setting():
         PlanEnum=PlanEnum,
         promo_form=promo_form,
         pending_email=pending_email,
+        AliasGeneratorEnum=AliasGeneratorEnum
     )
 
 
