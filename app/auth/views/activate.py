@@ -22,7 +22,7 @@ def activate():
 
     if not activation_code:
         return (
-            render_template("auth/activate.html", error="Activation code not found"),
+            render_template("auth/activate.html", error="Activation code cannot be found"),
             400,
         )
 
@@ -30,7 +30,7 @@ def activate():
         return (
             render_template(
                 "auth/activate.html",
-                error="Activation code is expired",
+                error="Activation code was expired",
                 show_resend_activation=True,
             ),
             400,
