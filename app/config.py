@@ -3,7 +3,7 @@ import subprocess
 
 from dotenv import load_dotenv
 
-SHA1 = lambda: subprocess.getoutput("git rev-parse HEAD")
+SHA1 = subprocess.getoutput("git rev-parse HEAD")
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
