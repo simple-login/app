@@ -1,7 +1,9 @@
 import dns.resolver
 
 
-def get_mx_domains(hostname) -> [str]:
+def get_mx_domains(hostname, keep_priority=False) -> [str]:
+    """return list of (domain name). priority is also included if `keep_priority`
+    """
     try:
         answers = dns.resolver.query(hostname, "MX")
     except dns.resolver.NoAnswer:
@@ -11,8 +13,10 @@ def get_mx_domains(hostname) -> [str]:
 
     for a in answers:
         record = a.to_text()  # for ex '20 alt2.aspmx.l.google.com.'
-        r = record.split(" ")[1]  # alt2.aspmx.l.google.com.
-        ret.append(r)
+        if not keep_priority:
+            record = record.split(" ")[1]  # alt2.aspmx.l.google.com.
+
+        ret.append(record)
 
     return ret
 
@@ -40,3 +44,37 @@ def get_spf_domain(hostname) -> [str]:
                         ret.append(part[part.find(_include_spf) + len(_include_spf) :])
 
     return ret
+
+
+def get_txt_record(hostname) -> [str]:
+    try:
+        answers = dns.resolver.query(hostname, "TXT")
+    except dns.resolver.NoAnswer:
+        return []
+
+    ret = []
+
+    for a in answers:  # type: dns.rdtypes.ANY.TXT.TXT
+        for record in a.strings:
+            record = record.decode()  # record is bytes
+
+            ret.append(a)
+
+    return ret
+
+
+def get_dkim_record(hostname) -> str:
+    """query the dkim._domainkey.{hostname} record and returns its value"""
+    try:
+        answers = dns.resolver.query(f"dkim._domainkey.{hostname}", "TXT")
+    except dns.resolver.NoAnswer:
+        return ""
+
+    ret = []
+    for a in answers:  # type: dns.rdtypes.ANY.TXT.TXT
+        for record in a.strings:
+            record = record.decode()  # record is bytes
+
+            ret.append(record)
+
+    return "".join(ret)
