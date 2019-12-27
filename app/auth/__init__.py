@@ -10,4 +10,5 @@ from .views import (
     google,
     facebook,
     change_email,
+    mfa,
 )
