@@ -32,3 +32,4 @@ coloredlogs
 pycryptodome
 phpserialize
 dkimpy
+pyotp
