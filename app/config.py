@@ -58,10 +58,20 @@ else:
     IGNORED_EMAILS = []
 
 DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
+DKIM_PUBLIC_KEY_PATH = get_abs_path(os.environ["DKIM_PUBLIC_KEY_PATH"])
 DKIM_SELECTOR = b"dkim"
 
 with open(DKIM_PRIVATE_KEY_PATH) as f:
     DKIM_PRIVATE_KEY = f.read()
+
+
+with open(DKIM_PUBLIC_KEY_PATH) as f:
+    DKIM_DNS_VALUE = f.read()
+    DKIM_DNS_VALUE = DKIM_DNS_VALUE.replace("-----BEGIN PUBLIC KEY-----", "")
+    DKIM_DNS_VALUE = DKIM_DNS_VALUE.replace("-----END PUBLIC KEY-----", "")
+    DKIM_DNS_VALUE = DKIM_DNS_VALUE.replace("\r", "")
+    DKIM_DNS_VALUE = DKIM_DNS_VALUE.replace("\n", "")
+
 
 DKIM_HEADERS = [b"from", b"to", b"subject"]
 
