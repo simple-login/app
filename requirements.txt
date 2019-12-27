@@ -70,6 +70,7 @@ pycparser==2.19           # via cffi
 pycryptodome==3.9.4
 pygments==2.4.2           # via ipython
 pyopenssl==19.0.0
+pyotp==2.3.0
 pyparsing==2.4.0          # via packaging
 pytest==4.6.3
 python-dateutil==2.8.0    # via alembic, arrow, botocore, strictyaml
