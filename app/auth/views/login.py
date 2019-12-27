@@ -1,9 +1,10 @@
 from flask import request, render_template, redirect, url_for, flash
-from flask_login import login_user, current_user
+from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
+from app.auth.views.login_utils import after_login
 from app.log import LOG
 from app.models import User
 
@@ -37,16 +38,7 @@ def login():
                 "error",
             )
         else:
-            LOG.debug("log user %s in", user)
-            login_user(user)
-
-            # User comes to login page from another page
-            if next_url:
-                LOG.debug("redirect user to %s", next_url)
-                return redirect(next_url)
-            else:
-                LOG.debug("redirect user to dashboard")
-                return redirect(url_for("dashboard.index"))
+            return after_login(user, next_url)
 
     return render_template(
         "auth/login.html",
