@@ -237,6 +237,7 @@ EMAIL_DOMAIN=mydomain.com
 SUPPORT_EMAIL=support@mydomain.com
 EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
 DKIM_PRIVATE_KEY_PATH=/dkim.key
+DKIM_PUBLIC_KEY_PATH=/dkim.pub.key
 DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
 
 # optional, to have more choices for random alias.
@@ -250,6 +251,7 @@ Before running the webapp, you need to prepare the database by running the migra
 docker run --rm \
     --name sl-migration \
     -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
     simplelogin/app flask db upgrade
@@ -264,6 +266,7 @@ docker run -d \
     --name sl-app \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 7777:7777 \
     --network="sl-network" \
     simplelogin/app
@@ -276,6 +279,7 @@ docker run -d \
     --name sl-email \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 20381:20381 \
     --network="sl-network" \
     simplelogin/app python email_handler.py
@@ -288,6 +292,7 @@ docker run -d \
     --name sl-cron \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
     simplelogin/app yacron -c /code/crontab.yml
 ```
