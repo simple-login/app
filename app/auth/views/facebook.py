@@ -10,6 +10,7 @@ from app.config import URL, FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET
 from app.extensions import db
 from app.log import LOG
 from app.models import User
+from .login_utils import after_login
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"
@@ -99,7 +100,6 @@ def facebook_callback():
             user.profile_picture_id = file.id
             db.session.commit()
 
-        login_user(user)
     # create user
     else:
         LOG.d("create facebook user with %s", facebook_user_data)
@@ -116,6 +116,7 @@ def facebook_callback():
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
+    next_url = None
     # The activation link contains the original page, for ex authorize page
     if "facebook_next_url" in session:
         next_url = session["facebook_next_url"]
@@ -124,7 +125,4 @@ def facebook_callback():
         # reset the next_url to avoid user getting redirected at each login :)
         session.pop("facebook_next_url", None)
 
-        return redirect(next_url)
-    else:
-        LOG.debug("redirect user to dashboard")
-        return redirect(url_for("dashboard.index"))
+    return after_login(user, next_url)

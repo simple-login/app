@@ -1,4 +1,4 @@
-from flask import request, session, redirect, url_for, flash
+from flask import request, session, redirect, flash
 from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 
@@ -9,6 +9,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import User, File
 from app.utils import random_string
+from .login_utils import after_login
 
 _authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
 _token_url = "https://www.googleapis.com/oauth2/v4/token"
@@ -89,8 +90,6 @@ def google_callback():
             file = create_file_from_url(picture_url)
             user.profile_picture_id = file.id
             db.session.commit()
-
-        login_user(user)
     # create user
     else:
         LOG.d("create google user with %s", google_user_data)
@@ -107,6 +106,7 @@ def google_callback():
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
+    next_url = None
     # The activation link contains the original page, for ex authorize page
     if "google_next_url" in session:
         next_url = session["google_next_url"]
@@ -115,10 +115,7 @@ def google_callback():
         # reset the next_url to avoid user getting redirected at each login :)
         session.pop("google_next_url", None)
 
-        return redirect(next_url)
-    else:
-        LOG.debug("redirect user to dashboard")
-        return redirect(url_for("dashboard.index"))
+    return after_login(user, next_url)
 
 
 def create_file_from_url(url) -> File:
