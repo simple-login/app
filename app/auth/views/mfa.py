@@ -29,24 +29,23 @@ def mfa():
     if otp_token_form.validate_on_submit():
         totp = pyotp.TOTP(user.otp_secret)
 
-        if otp_token_form.validate_on_submit():
-            token = otp_token_form.token.data
+        token = otp_token_form.token.data
 
-            if totp.verify(token):
-                del session[MFA_USER_ID]
+        if totp.verify(token):
+            del session[MFA_USER_ID]
 
-                login_user(user)
-                flash(f"Welcome back {user.name}!")
+            login_user(user)
+            flash(f"Welcome back {user.name}!")
 
-                # User comes to login page from another page
-                if next_url:
-                    LOG.debug("redirect user to %s", next_url)
-                    return redirect(next_url)
-                else:
-                    LOG.debug("redirect user to dashboard")
-                    return redirect(url_for("dashboard.index"))
-
+            # User comes to login page from another page
+            if next_url:
+                LOG.debug("redirect user to %s", next_url)
+                return redirect(next_url)
             else:
-                flash("Incorrect token", "warning")
+                LOG.debug("redirect user to dashboard")
+                return redirect(url_for("dashboard.index"))
+
+        else:
+            flash("Incorrect token", "warning")
 
     return render_template("auth/mfa.html", otp_token_form=otp_token_form)
