@@ -95,6 +95,11 @@ class User(db.Model, ModelMixin, UserMixin):
 
     profile_picture_id = db.Column(db.ForeignKey(File.id), nullable=True)
 
+    otp_secret = db.Column(db.String(16), nullable=True)
+    enable_otp = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     profile_picture = db.relationship(File)
 
     @classmethod
