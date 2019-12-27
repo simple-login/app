@@ -228,7 +228,7 @@ To run the server, you need a config file. Please have a look at [config example
 
 Let's put your config file at `~/simplelogin.env`.
 
-Make sure to update the following variables
+Make sure to update the following variables and replace these values by yours.
 
 ```.env
 # Server url
@@ -237,6 +237,7 @@ EMAIL_DOMAIN=mydomain.com
 SUPPORT_EMAIL=support@mydomain.com
 EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
 DKIM_PRIVATE_KEY_PATH=/dkim.key
+DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
 
 # optional, to have more choices for random alias.
 WORDS_FILE_PATH=local_data/words_alpha.txt
@@ -246,7 +247,7 @@ WORDS_FILE_PATH=local_data/words_alpha.txt
 Before running the webapp, you need to prepare the database by running the migration
 
 ```bash
-docker run \
+docker run --rm \
     --name sl-migration \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/simplelogin.env:/code/.env \
@@ -417,11 +418,17 @@ Whenever the model changes, a new migration needs to be created
 
 Set the database connection to use a current database (i.e. the one without the model changes you just made), for ex if you have a staging config at `~/config/simplelogin/staging.env`, you can do: 
 
-> ln -sf ~/config/simplelogin/staging.env .env
+```bash
+ln -sf ~/config/simplelogin/staging.env .env
+```
 
 Generate the migration script and make sure to review it before commit it. Sometimes (very rarely though), the migration generation can go wrong.
 
-> flask db migrate
+```bash
+flask db migrate
+```
+
+In local the database creation in Sqlite doesn't use migration and uses directly `db.create_all()` (cf `fake_data()` method). This is because Sqlite doesn't handle well the migration. As sqlite is only used during development, the database is deleted and re-populated at each run.
 
 ### Code structure
 
