@@ -6,3 +6,4 @@ db.sqlite
 .vscode
 .DS_Store
 config
+/venv/

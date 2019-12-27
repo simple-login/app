@@ -427,6 +427,7 @@ class GenEmail(db.Model, ModelMixin):
 
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = db.Column(db.String(128), unique=True, nullable=False)
+    description = db.Column(db.String(200), unique=False, nullable=True, default="")
 
     enabled = db.Column(db.Boolean(), default=True, nullable=False)
 
@@ -442,7 +443,7 @@ class GenEmail(db.Model, ModelMixin):
     user = db.relationship(User)
 
     @classmethod
-    def create_new(cls, user_id, prefix):
+    def create_new(cls, user_id, prefix, description=""):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
 
@@ -454,7 +455,7 @@ class GenEmail(db.Model, ModelMixin):
             if not cls.get_by(email=email):
                 break
 
-        return GenEmail.create(user_id=user_id, email=email)
+        return GenEmail.create(user_id=user_id, email=email, description=description)
 
     @classmethod
     def create_new_random(

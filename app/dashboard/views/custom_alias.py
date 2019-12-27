@@ -26,6 +26,7 @@ def custom_alias():
             email_prefix = request.form.get("email-prefix")
             email_prefix = convert_to_id(email_prefix)
             email_suffix = request.form.get("email-suffix")
+            email_description = request.form.get("email-description")
 
             # verify email_suffix
             if not word_exist(email_suffix):
@@ -50,7 +51,7 @@ def custom_alias():
                         "create custom alias %s for user %s", full_email, current_user
                     )
                     gen_email = GenEmail.create(
-                        email=full_email, user_id=current_user.id
+                        email=full_email, user_id=current_user.id, description=email_description
                     )
                     db.session.commit()
 
