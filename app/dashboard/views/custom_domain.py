@@ -3,9 +3,8 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_SERVERS
+from app.config import EMAIL_SERVERS_WITH_PRIORITY
 from app.dashboard.base import dashboard_bp
-from app.dns_utils import get_mx_domains, get_spf_domain
 from app.extensions import db
 from app.models import CustomDomain
 
@@ -30,25 +29,7 @@ def custom_domain():
     errors = {}
 
     if request.method == "POST":
-        if request.form.get("form-name") == "delete":
-            custom_domain_id = request.form.get("custom-domain-id")
-            custom_domain = CustomDomain.get(custom_domain_id)
-
-            if not custom_domain:
-                flash("Unknown error. Refresh the page", "warning")
-                return redirect(url_for("dashboard.custom_domain"))
-            elif custom_domain.user_id != current_user.id:
-                flash("You cannot delete this domain", "warning")
-                return redirect(url_for("dashboard.custom_domain"))
-
-            name = custom_domain.domain
-            CustomDomain.delete(custom_domain_id)
-            db.session.commit()
-            flash(f"Domain {name} has been deleted successfully", "success")
-
-            return redirect(url_for("dashboard.custom_domain"))
-
-        elif request.form.get("form-name") == "create":
+        if request.form.get("form-name") == "create":
             if new_custom_domain_form.validate():
                 new_custom_domain = CustomDomain.create(
                     domain=new_custom_domain_form.domain.data, user_id=current_user.id
@@ -60,39 +41,11 @@ def custom_domain():
                     "success",
                 )
 
-                return redirect(url_for("dashboard.custom_domain"))
-        elif request.form.get("form-name") == "check-domain":
-            custom_domain_id = request.form.get("custom-domain-id")
-            custom_domain = CustomDomain.get(custom_domain_id)
-
-            if not custom_domain:
-                flash("Unknown error. Refresh the page", "warning")
-                return redirect(url_for("dashboard.custom_domain"))
-            elif custom_domain.user_id != current_user.id:
-                flash("You cannot delete this domain", "warning")
-                return redirect(url_for("dashboard.custom_domain"))
-            else:
-                spf_domains = get_spf_domain(custom_domain.domain)
-                for email_server in EMAIL_SERVERS:
-                    email_server = email_server[:-1]  # remove the trailing .
-                    if email_server not in spf_domains:
-                        flash(
-                            f"{email_server} is not included in your SPF record.",
-                            "warning",
-                        )
-
-                mx_domains = get_mx_domains(custom_domain.domain)
-                if mx_domains != EMAIL_SERVERS:
-                    errors[
-                        custom_domain.id
-                    ] = f"""Your DNS is not correctly set. The MX record we obtain is: {",".join(mx_domains)}"""
-                else:
-                    flash(
-                        "Your domain is verified. Now it can be used to create custom alias",
-                        "success",
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail", custom_domain_id=new_custom_domain.id
                     )
-                    custom_domain.verified = True
-                    db.session.commit()
+                )
 
     return render_template(
         "dashboard/custom_domain.html",

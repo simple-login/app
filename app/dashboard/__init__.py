@@ -10,4 +10,5 @@ from .views import (
     custom_domain,
     alias_contact_manager,
     mfa_setup,
+    domain_detail,
 )
