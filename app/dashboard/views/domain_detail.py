@@ -103,7 +103,4 @@ def domain_detail(custom_domain_id):
 
     dkim_record = f"v=DKIM1; k=rsa; p={DKIM_DNS_VALUE}"
 
-    return render_template(
-        "dashboard/domain_detail.html",
-        **locals()
-    )
+    return render_template("dashboard/domain_detail.html", **locals())
