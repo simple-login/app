@@ -105,14 +105,5 @@ def domain_detail(custom_domain_id):
 
     return render_template(
         "dashboard/domain_detail.html",
-        custom_domain=custom_domain,
-        EMAIL_SERVERS_WITH_PRIORITY=EMAIL_SERVERS_WITH_PRIORITY,
-        spf_record=spf_record,
-        dkim_record=dkim_record,
-        mx_errors=mx_errors,
-        mx_ok=mx_ok,
-        spf_errors=spf_errors,
-        spf_ok=spf_ok,
-        dkim_errors=dkim_errors,
-        dkim_ok=dkim_ok,
+        **locals()
     )

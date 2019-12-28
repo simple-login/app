@@ -80,7 +80,7 @@
       >
         <div class="card p-3 {% if alias_info.highlight %} highlight-row {% endif %}">
           <div>
-            <span class="clipboard mb-0"
+            <span class="clipboard cursor mb-0"
                 {% if gen_email.enabled %}
                   data-toggle="tooltip"
                   title="Copy to clipboard"
@@ -118,7 +118,7 @@
             <form method="post">
               <input type="hidden" name="form-name" value="switch-email-forwarding">
               <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
-              <label class="custom-switch mt-2"
+              <label class="custom-switch cursor mt-2"
                      data-toggle="tooltip"
                   {% if gen_email.enabled %}
                      title="Block Alias"
