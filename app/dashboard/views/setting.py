@@ -23,7 +23,8 @@ from app.models import (
     DeletedAlias,
     CustomDomain,
     Client,
-    AliasGeneratorEnum)
+    AliasGeneratorEnum,
+)
 from app.utils import random_string
 
 
@@ -164,7 +165,7 @@ def setting():
         PlanEnum=PlanEnum,
         promo_form=promo_form,
         pending_email=pending_email,
-        AliasGeneratorEnum=AliasGeneratorEnum
+        AliasGeneratorEnum=AliasGeneratorEnum,
     )
 
 
