@@ -7,6 +7,21 @@
     </a>
   </li>
 
+  <li class="nav-item">
+    <a href="{{ url_for('dashboard.setting') }}"
+       class="nav-link {{ 'active' if active_page == 'setting' }}">
+      <i class="fe fe-settings"></i>
+      Settings
+    </a>
+  </li>
+
+  <li class="nav-item">
+    <a href="{{ url_for('dashboard.api_key') }}"
+       class="nav-link {{ 'active' if active_page == 'api_key' }}">
+      <i class="fe fe-chrome"></i> API Key
+    </a>
+  </li>
+
   <!--
   <li class="nav-item">
     <a href="{{ url_for('discover.index') }}"
