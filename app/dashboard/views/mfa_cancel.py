@@ -27,6 +27,7 @@ def mfa_cancel():
 
         if totp.verify(token):
             current_user.enable_otp = False
+            current_user.otp_secret = None
             db.session.commit()
             flash("MFA is now disabled", "warning")
             return redirect(url_for("dashboard.index"))
