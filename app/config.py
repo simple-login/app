@@ -66,11 +66,13 @@ with open(DKIM_PRIVATE_KEY_PATH) as f:
 
 
 with open(DKIM_PUBLIC_KEY_PATH) as f:
-    DKIM_DNS_VALUE = f.read()
-    DKIM_DNS_VALUE = DKIM_DNS_VALUE.replace("-----BEGIN PUBLIC KEY-----", "")
-    DKIM_DNS_VALUE = DKIM_DNS_VALUE.replace("-----END PUBLIC KEY-----", "")
-    DKIM_DNS_VALUE = DKIM_DNS_VALUE.replace("\r", "")
-    DKIM_DNS_VALUE = DKIM_DNS_VALUE.replace("\n", "")
+    DKIM_DNS_VALUE = (
+        f.read()
+        .replace("-----BEGIN PUBLIC KEY-----", "")
+        .replace("-----END PUBLIC KEY-----", "")
+        .replace("\r", "")
+        .replace("\n", "")
+    )
 
 
 DKIM_HEADERS = [b"from", b"to", b"subject"]
