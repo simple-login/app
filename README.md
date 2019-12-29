@@ -402,6 +402,15 @@ Response: a json with following structure. ? means optional field.
 		[email1, email2, ...]
 ```
 
+To try out the endpoint, you can use the following command. The command uses [httpie](https://httpie.org). 
+Make sure to replace `{api_key}` by your API Key obtained on https://app.simplelogin.io/dashboard/api_key
+
+```
+http https://app.simplelogin.io/api/alias/options \
+    Authentication:{api_key} \
+    hostname==www.google.com
+```
+
 - `/alias/custom/new`: allows user to create a new custom alias.
 
 ```
