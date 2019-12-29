@@ -1,5 +1,5 @@
 {% extends 'default.html' %}
-
+{% set active_page = "setting" %}
 {% block title %}
   MFA Setup
 {% endblock %}
@@ -10,7 +10,7 @@
 
 {% block default_content %}
   <div class="bg-white p-6" style="max-width: 60em; margin: auto">
-    <h1 class="h2">Two Factor Authentication</h1>
+    <h1 class="h2">Multi Factor Authentication</h1>
     <p>Please open a TOTP application (Google Authenticator, Authy, etc)
       on your smartphone and scan the following QR Code:
     </p>
