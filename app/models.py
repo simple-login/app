@@ -106,6 +106,7 @@ class User(db.Model, ModelMixin, UserMixin):
         default=AliasGeneratorEnum.word.value,
         server_default=str(AliasGeneratorEnum.word.value),
     )
+    notification = db.Column(db.Boolean, default=True, nullable=False, server_default=str(True))
 
     activated = db.Column(db.Boolean, default=False, nullable=False)
 

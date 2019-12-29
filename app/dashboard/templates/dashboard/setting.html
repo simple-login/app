@@ -82,6 +82,21 @@
     </form>
 
     <hr>
+
+    <h3 class="mb-0">Notifications</h3>
+    <div class="small-text mb-3">Do you want to receive our newsletter?</div>
+      <form method="post">
+        <input type="hidden" name="form-name" value="notification-preference">
+        <div class="form-inline mb-3">
+          <div class="form-group">
+              <input type="checkbox" id="notification" name="notification" {% if current_user.notification %} checked {% endif %} class="form-check-input">
+              <label for="notification">I want to receive your newsletter</label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-outline-primary">Submit</button>
+      </form>
+
+    <hr>
     <h3 class="mb-0">Export Data</h3>
     <div class="small-text mb-3">
       You can download all aliases you have created on SimpleLogin along with other data.

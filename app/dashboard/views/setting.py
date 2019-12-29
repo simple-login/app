@@ -115,6 +115,15 @@ def setting():
         elif request.form.get("form-name") == "change-password":
             send_reset_password_email(current_user)
 
+        elif request.form.get("form-name") == "notification-preference":
+            choose = request.form.get("notification")
+            if choose == "on":
+                current_user.notification = True
+            else:
+                current_user.notification = False
+            db.session.commit()
+            flash("Your notification preference has been updated", "success")
+
         elif request.form.get("form-name") == "delete-account":
             User.delete(current_user.id)
             db.session.commit()
