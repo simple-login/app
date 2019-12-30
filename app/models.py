@@ -420,6 +420,11 @@ class GenEmail(db.Model, ModelMixin):
         db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
     )
 
+    # To know whether an alias is created "on the fly", i.e. via the custom domain catch-all feature
+    automatic_creation = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     user = db.relationship(User)
 
     @classmethod
