@@ -119,6 +119,25 @@ def domain_detail(custom_domain_id):
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
 
+    if request.method == "POST":
+        if request.form.get("form-name") == "switch-catch-all":
+            custom_domain.catch_all = not custom_domain.catch_all
+            db.session.commit()
+
+            if custom_domain.catch_all:
+                flash(
+                    f"The catch-all has been enabled for {custom_domain.domain}",
+                    "success",
+                )
+            else:
+                flash(
+                    f"The catch-all has been disabled for {custom_domain.domain}",
+                    "warning",
+                )
+            return redirect(
+                url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
+            )
+
     nb_alias = GenEmail.filter_by(custom_domain_id=custom_domain.id).count()
 
     return render_template("dashboard/domain_detail/info.html", **locals())

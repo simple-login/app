@@ -19,5 +19,40 @@
 
   {{ nb_alias }} aliases
 
+  <hr>
+  <div>Catch All</div>
+  <div class="small-text">
+    This feature allows you to create aliases <b>on the fly</b>.
+    Simply use <em>anything@{{ custom_domain.domain }}</em>
+    next time you need an email address. <br>
+    The alias will be created the first time it receives an email.
+  </div>
+
+  <div>
+    <form method="post">
+      <input type="hidden" name="form-name" value="switch-catch-all">
+      <label class="custom-switch cursor mt-2 pl-0"
+             data-toggle="tooltip"
+          {% if custom_domain.catch_all %}
+             title="Disable catch-all"
+          {% else %}
+             title="Enable catch-all"
+          {% endif %}
+      >
+        <input type="checkbox" class="custom-switch-input"
+            {{ "checked" if custom_domain.catch_all else "" }}>
+
+        <span class="custom-switch-indicator"></span>
+      </label>
+    </form>
+  </div>
+
 {% endblock %}
 
+{% block script %}
+  <script>
+    $(".custom-switch-input").change(function (e) {
+      $(this).closest("form").submit();
+    })
+  </script>
+{% endblock %}
