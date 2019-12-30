@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
-from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_SERVERS, DKIM_DNS_VALUE
+from app.config import EMAIL_SERVERS_WITH_PRIORITY, DKIM_DNS_VALUE, EMAIL_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.dns_utils import (
     get_mx_domains,
@@ -33,9 +33,12 @@ def domain_detail_dns(custom_domain_id):
         if request.form.get("form-name") == "check-mx":
             mx_domains = get_mx_domains(custom_domain.domain)
 
-            if mx_domains != EMAIL_SERVERS:
+            if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
                 mx_ok = False
-                mx_errors = get_mx_domains(custom_domain.domain, keep_priority=True)
+                # build mx_errors to show to user
+                mx_errors = [
+                    f"{priority} {domain}" for (priority, domain) in mx_domains
+                ]
             else:
                 flash(
                     "Your domain is verified. Now it can be used to create custom alias",
@@ -50,15 +53,7 @@ def domain_detail_dns(custom_domain_id):
                 )
         elif request.form.get("form-name") == "check-spf":
             spf_domains = get_spf_domain(custom_domain.domain)
-            for email_server in EMAIL_SERVERS:
-                email_server = email_server[:-1]  # remove the trailing .
-                if email_server not in spf_domains:
-                    flash(
-                        f"{email_server} is not included in your SPF record.", "warning"
-                    )
-                    spf_ok = False
-
-            if spf_ok:
+            if EMAIL_DOMAIN in spf_domains:
                 custom_domain.spf_verified = True
                 db.session.commit()
                 flash("The SPF is setup correctly", "success")
@@ -68,6 +63,8 @@ def domain_detail_dns(custom_domain_id):
                     )
                 )
             else:
+                flash(f"{EMAIL_DOMAIN} is not included in your SPF record.", "warning")
+                spf_ok = False
                 spf_errors = get_txt_record(custom_domain.domain)
 
         elif request.form.get("form-name") == "check-dkim":
@@ -87,11 +84,7 @@ def domain_detail_dns(custom_domain_id):
                 dkim_ok = False
                 dkim_errors = get_txt_record(f"dkim._domainkey.{custom_domain.domain}")
 
-    spf_include_records = []
-    for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY:
-        spf_include_records.append(f"include:{email_server[:-1]}")
-
-    spf_record = f"v=spf1 {' '.join(spf_include_records)} -all"
+    spf_record = f"v=spf1 include:{EMAIL_DOMAIN} -all"
 
     dkim_record = f"v=DKIM1; k=rsa; p={DKIM_DNS_VALUE}"
 

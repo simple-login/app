@@ -27,7 +27,9 @@
         {% endif %}
       </div>
 
-      <div class="mb-2">Add the following MX DNS record to your domain</div>
+      <div class="mb-2">Add the following MX DNS record to your domain.
+        Please note that there's a point (<em>.</em>) at the end of target addresses.
+      </div>
 
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
         <div class="mb-3 p-3" style="background-color: #eee">
