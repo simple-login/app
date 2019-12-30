@@ -97,6 +97,7 @@ def fake_data():
         password="password",
         activated=True,
         is_admin=True,
+        otp_secret="base32secret3232",
     )
     db.session.commit()
 

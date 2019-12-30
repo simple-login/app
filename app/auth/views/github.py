@@ -1,9 +1,10 @@
-from flask import request, session, redirect, url_for, flash
+from flask import request, session, redirect, flash
 from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 
 from app import email_utils
 from app.auth.base import auth_bp
+from app.auth.views.login_utils import after_login
 from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
 from app.extensions import db
 from app.log import LOG
@@ -81,10 +82,8 @@ def github_callback():
 
     user = User.get_by(email=email)
 
-    if user:
-        login_user(user)
     # create user
-    else:
+    if not user:
         LOG.d("create github user")
         user = User.create(
             email=email, name=github_user_data.get("name") or "", activated=True
@@ -96,10 +95,6 @@ def github_callback():
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
     # The activation link contains the original page, for ex authorize page
-    if "next" in request.args:
-        next_url = request.args.get("next")
-        LOG.debug("redirect user to %s", next_url)
-        return redirect(next_url)
-    else:
-        LOG.debug("redirect user to dashboard")
-        return redirect(url_for("dashboard.index"))
+    next_url = request.args.get("next") if request.args else None
+
+    return after_login(user, next_url)

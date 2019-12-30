@@ -1,7 +1,9 @@
 {% extends 'default.html' %}
 
+{% set active_page = "setting" %}
+
 {% block title %}
-  Setting
+  Settings
 {% endblock %}
 
 {% block default_content %}
@@ -48,13 +50,42 @@
       <button class="btn btn-primary">Update</button>
     </form>
 
-    <hr>
 
+    <hr>
+    <h3 class="mb-0">Multi-Factor Authentication (MFA)</h3>
+    <div class="small-text mb-3">
+      Secure your account with Multi-Factor Authentication.
+      This requires having applications like Google Authenticator, Authy, FreeOTP, etc.
+    </div>
+    {% if not current_user.enable_otp %}
+      <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Enable</a>
+    {% else %}
+      <a href="{{ url_for('dashboard.mfa_cancel') }}" class="btn btn-outline-danger">Cancel MFA</a>
+    {% endif %}
+
+    <hr>
     <h3 class="mb-0">Change password</h3>
     <div class="small-text mb-3">You will receive an email containing instructions on how to change password.</div>
     <form method="post">
       <input type="hidden" name="form-name" value="change-password">
       <button class="btn btn-outline-primary">Change password</button>
+    </form>
+
+    <hr>
+
+    <h3 class="mb-0">Random Alias</h3>
+    <div class="small-text mb-3">Choose how to create your email alias by default</div>
+    <form method="post" class="form-inline">
+      <input type="hidden" name="form-name" value="change-alias-generator">
+      <select class="custom-select mr-sm-2" name="alias-generator-scheme">
+        <option value="{{ AliasGeneratorEnum.word.value }}"
+            {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected {% endif %} >Based on
+          Random {{ AliasGeneratorEnum.word.name.capitalize() }}</option>
+        <option value="{{ AliasGeneratorEnum.uuid.value }}"
+            {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
+          on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
+      </select>
+      <button class="btn btn-outline-primary">Update Preference</button>
     </form>
 
     <hr>

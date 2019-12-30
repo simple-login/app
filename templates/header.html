@@ -2,7 +2,7 @@
   <div class="container">
     <div class="d-flex">
       <a class="header-brand" href="{{ url_for('dashboard.index') }}">
-        <img src="/static/icon.svg" class="header-brand-img" alt="logo">
+        <img src="/static/logo.png" class="header-brand-img" alt="logo">
       </a>
 
       <div class="d-flex order-lg-2 ml-auto">
@@ -42,20 +42,6 @@
           </a>
 
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-            <a class="dropdown-item" href="{{ url_for('dashboard.setting') }}">
-              <i class="dropdown-icon fe fe-settings"></i> Settings
-            </a>
-
-            <a class="dropdown-item" href="{{ url_for('dashboard.api_key') }}">
-              <i class="dropdown-icon fe fe-chrome"></i> API Key
-            </a>
-
-            {% if current_user.is_premium() %}
-              <a class="dropdown-item" href="{{ url_for('dashboard.custom_domain') }}">
-                <i class="dropdown-icon fe fe-server"></i> Custom Domains <span class="badge badge-info">Beta</span>
-              </a>
-            {% endif %}
-
             {% if current_user.is_premium() %}
               <a class="dropdown-item" href="{{ url_for('dashboard.billing') }}">
                 <i class="dropdown-icon fe fe-dollar-sign"></i> Billing

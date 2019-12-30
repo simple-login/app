@@ -228,7 +228,7 @@ To run the server, you need a config file. Please have a look at [config example
 
 Let's put your config file at `~/simplelogin.env`.
 
-Make sure to update the following variables
+Make sure to update the following variables and replace these values by yours.
 
 ```.env
 # Server url
@@ -237,6 +237,8 @@ EMAIL_DOMAIN=mydomain.com
 SUPPORT_EMAIL=support@mydomain.com
 EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
 DKIM_PRIVATE_KEY_PATH=/dkim.key
+DKIM_PUBLIC_KEY_PATH=/dkim.pub.key
+DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
 
 # optional, to have more choices for random alias.
 WORDS_FILE_PATH=local_data/words_alpha.txt
@@ -246,9 +248,10 @@ WORDS_FILE_PATH=local_data/words_alpha.txt
 Before running the webapp, you need to prepare the database by running the migration
 
 ```bash
-docker run \
+docker run --rm \
     --name sl-migration \
     -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
     simplelogin/app flask db upgrade
@@ -263,6 +266,7 @@ docker run -d \
     --name sl-app \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 7777:7777 \
     --network="sl-network" \
     simplelogin/app
@@ -275,6 +279,7 @@ docker run -d \
     --name sl-email \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 20381:20381 \
     --network="sl-network" \
     simplelogin/app python email_handler.py
@@ -287,6 +292,7 @@ docker run -d \
     --name sl-cron \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
     simplelogin/app yacron -c /code/crontab.yml
 ```
@@ -329,7 +335,7 @@ All work on SimpleLogin happens directly on GitHub.
 
 ### Run code locally
 
-The project uses Python 3.6+. First, install all dependencies by running the following command. Feel free to use `virtualenv` or similar tools to isolate development environment.
+The project uses Python 3.7+. First, install all dependencies by running the following command. Feel free to use `virtualenv` or similar tools to isolate development environment.
 
 ```bash
 pip3 install -r requirements.txt
@@ -396,7 +402,16 @@ Response: a json with following structure. ? means optional field.
 		[email1, email2, ...]
 ```
 
-- `/alias/custom/new`: allows user to create a new customised alias.
+- `/alias/custom/new`: allows user to create a new custom alias.
+
+To try out the endpoint, you can use the following command. The command uses [httpie](https://httpie.org). 
+Make sure to replace `{api_key}` by your API Key obtained on https://app.simplelogin.io/dashboard/api_key
+
+```
+http https://app.simplelogin.io/api/alias/options \
+    Authentication:{api_key} \
+    hostname==www.google.com
+```
 
 ```
 POST /alias/custom/new
@@ -417,11 +432,17 @@ Whenever the model changes, a new migration has to be created
 
 Set the database connection to use a current database (i.e. the one without the model changes you just made), for example, if you have a staging config at `~/config/simplelogin/staging.env`, you can do: 
 
-> ln -sf ~/config/simplelogin/staging.env .env
+```bash
+ln -sf ~/config/simplelogin/staging.env .env
+```
 
 Generate the migration script and make sure to review it before committing it. Sometimes (very rarely though), the migration generation can go wrong.
 
-> flask db migrate
+```bash
+flask db migrate
+```
+
+In local the database creation in Sqlite doesn't use migration and uses directly `db.create_all()` (cf `fake_data()` method). This is because Sqlite doesn't handle well the migration. As sqlite is only used during development, the database is deleted and re-populated at each run.
 
 ### Code structure
 

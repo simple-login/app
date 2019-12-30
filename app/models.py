@@ -1,5 +1,6 @@
 import enum
 import random
+import uuid
 
 import arrow
 import bcrypt
@@ -83,6 +84,15 @@ class PlanEnum(enum.Enum):
     yearly = 3
 
 
+class AliasGeneratorEnum(enum.Enum):
+    word = 1  # aliases are generated based on random words
+    uuid = 2  # aliases are generated based on uuid
+
+    @classmethod
+    def has_value(cls, value: int) -> bool:
+        return value in set(item.value for item in cls)
+
+
 class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
     email = db.Column(db.String(128), unique=True, nullable=False)
@@ -90,10 +100,21 @@ class User(db.Model, ModelMixin, UserMixin):
     password = db.Column(db.String(128), nullable=False)
     name = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    alias_generator = db.Column(
+        db.Integer,
+        nullable=False,
+        default=AliasGeneratorEnum.word.value,
+        server_default=str(AliasGeneratorEnum.word.value),
+    )
 
     activated = db.Column(db.Boolean, default=False, nullable=False)
 
     profile_picture_id = db.Column(db.ForeignKey(File.id), nullable=True)
+
+    otp_secret = db.Column(db.String(16), nullable=True)
+    enable_otp = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     profile_picture = db.relationship(File)
 
@@ -362,9 +383,18 @@ class OauthToken(db.Model, ModelMixin):
         return self.expired < arrow.now()
 
 
-def generate_email() -> str:
-    """generate an email address that does not exist before"""
-    random_email = random_words() + "@" + EMAIL_DOMAIN
+def generate_email(
+    scheme: int = AliasGeneratorEnum.word.value, in_hex: bool = False
+) -> str:
+    """generate an email address that does not exist before
+    :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
+    :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
+    """
+    if scheme == AliasGeneratorEnum.uuid.value:
+        name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
+        random_email = name + "@" + EMAIL_DOMAIN
+    else:
+        random_email = random_words() + "@" + EMAIL_DOMAIN
 
     # check that the client does not exist yet
     if not GenEmail.get_by(email=random_email) and not DeletedAlias.get_by(
@@ -375,7 +405,7 @@ def generate_email() -> str:
 
     # Rerun the function
     LOG.warning("email %s already exists, generate a new email", random_email)
-    return generate_email()
+    return generate_email(scheme=scheme, in_hex=in_hex)
 
 
 class GenEmail(db.Model, ModelMixin):
@@ -408,9 +438,11 @@ class GenEmail(db.Model, ModelMixin):
         return GenEmail.create(user_id=user_id, email=email)
 
     @classmethod
-    def create_new_random(cls, user_id):
+    def create_new_random(
+        cls, user_id, scheme: int = AliasGeneratorEnum.word.value, in_hex: bool = False
+    ):
         """create a new random alias"""
-        random_email = generate_email()
+        random_email = generate_email(scheme=scheme, in_hex=in_hex)
         return GenEmail.create(user_id=user_id, email=random_email)
 
     def __repr__(self):
@@ -654,6 +686,12 @@ class CustomDomain(db.Model, ModelMixin):
     domain = db.Column(db.String(128), unique=True, nullable=False)
 
     verified = db.Column(db.Boolean, nullable=False, default=False)
+    dkim_verified = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+    spf_verified = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     def nb_alias(self):
         return GenEmail.filter_by(custom_domain_id=self.id).count()

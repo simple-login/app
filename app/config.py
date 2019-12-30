@@ -58,10 +58,22 @@ else:
     IGNORED_EMAILS = []
 
 DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
+DKIM_PUBLIC_KEY_PATH = get_abs_path(os.environ["DKIM_PUBLIC_KEY_PATH"])
 DKIM_SELECTOR = b"dkim"
 
 with open(DKIM_PRIVATE_KEY_PATH) as f:
     DKIM_PRIVATE_KEY = f.read()
+
+
+with open(DKIM_PUBLIC_KEY_PATH) as f:
+    DKIM_DNS_VALUE = (
+        f.read()
+        .replace("-----BEGIN PUBLIC KEY-----", "")
+        .replace("-----END PUBLIC KEY-----", "")
+        .replace("\r", "")
+        .replace("\n", "")
+    )
+
 
 DKIM_HEADERS = [b"from", b"to", b"subject"]
 
@@ -77,9 +89,11 @@ BUCKET = os.environ["BUCKET"]
 AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
 AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
 
+CLOUDWATCH_LOG_GROUP = CLOUDWATCH_LOG_STREAM = ""
 ENABLE_CLOUDWATCH = "ENABLE_CLOUDWATCH" in os.environ
-CLOUDWATCH_LOG_GROUP = os.environ["CLOUDWATCH_LOG_GROUP"]
-CLOUDWATCH_LOG_STREAM = os.environ["CLOUDWATCH_LOG_STREAM"]
+if ENABLE_CLOUDWATCH:
+    CLOUDWATCH_LOG_GROUP = os.environ["CLOUDWATCH_LOG_GROUP"]
+    CLOUDWATCH_LOG_STREAM = os.environ["CLOUDWATCH_LOG_STREAM"]
 
 # Paddle
 PADDLE_VENDOR_ID = int(os.environ["PADDLE_VENDOR_ID"])
@@ -111,3 +125,4 @@ AVATAR_URL_EXPIRATION = 3600 * 24 * 7  # 1h*24h/d*7d=1week
 
 # session key
 HIGHLIGHT_GEN_EMAIL_ID = "highlight_gen_email_id"
+MFA_USER_ID = "mfa_user_id"

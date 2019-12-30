@@ -24,7 +24,7 @@
       </form>
     </div>
 
-    <div class="col-lg-3 offset-lg-6 pr-0 mt-1">
+    <div class="col-lg-4 offset-lg-5 pr-0 mt-1">
       <div class="btn-group float-right" role="group">
         <form method="post">
           <input type="hidden" name="form-name" value="create-custom-email">
@@ -33,16 +33,36 @@
                   class="btn btn-primary mr-2">New Email Alias
           </button>
         </form>
-        <form method="post">
-          <input type="hidden" name="form-name" value="create-random-email">
-          <button data-toggle="tooltip"
-                  title="Create a totally random alias"
-                  class="btn btn-success">Random Alias
-          </button>
-        </form>
+        <div class="btn-group" role="group">
+            <form method="post">
+                <input type="hidden" name="form-name" value="create-random-email">
+                <button data-toggle="tooltip"
+                        title="Create a totally random alias"
+                        class="btn btn-success">Random Alias
+                </button>
+            </form>
+            <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            </button>
+            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="btnGroupDrop1">
+                <div class="">
+                    <form method="post">
+                        <input type="hidden" name="form-name" value="create-random-email">
+                        <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
+                        <button class="dropdown-item">By random words</button>
+                    </form>
+                </div>
+                <div class="">
+                    <form method="post">
+                        <input type="hidden" name="form-name" value="create-random-email">
+                        <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.uuid.value }}">
+                        <button class="dropdown-item">By UUID</button>
+                    </form>
+                </div>
+            </div>
+        </div>
       </div>
     </div>
-
 
   </div>
 
@@ -60,7 +80,7 @@
       >
         <div class="card p-3 {% if alias_info.highlight %} highlight-row {% endif %}">
           <div>
-            <span class="clipboard mb-0"
+            <span class="clipboard cursor mb-0"
                 {% if gen_email.enabled %}
                   data-toggle="tooltip"
                   title="Copy to clipboard"
@@ -98,7 +118,7 @@
             <form method="post">
               <input type="hidden" name="form-name" value="switch-email-forwarding">
               <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
-              <label class="custom-switch mt-2"
+              <label class="custom-switch cursor mt-2"
                      data-toggle="tooltip"
                   {% if gen_email.enabled %}
                      title="Block Alias"
@@ -115,8 +135,10 @@
                   {% endif %}
                      style="padding-left: 0px"
               >
+                <input type="hidden" name="alias" class="alias" value="{{ gen_email.email }}">
                 <input type="checkbox" class="custom-switch-input"
                     {{ "checked" if gen_email.enabled else "" }}>
+
                 <span class="custom-switch-indicator"></span>
               </label>
             </form>
@@ -143,6 +165,8 @@
               <form method="post">
                 <input type="hidden" name="form-name" value="delete-email">
                 <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                <input type="hidden" name="alias" class="alias" value="{{ gen_email.email }}">
+
                 <span class="delete-email  btn btn-link btn-sm float-right">
                   Delete&nbsp; &nbsp;<i class="dropdown-icon fe fe-trash-2"></i>
                 </span>
@@ -248,9 +272,10 @@
 
 
     $(".delete-email").on("click", function (e) {
+      let alias = $(this).parent().find(".alias").val();
       notie.confirm({
-        text: "Once an alias is deleted, people/apps " +
-          "who used to contact you via this email address cannot reach you any more," +
+        text: `Once <b>${alias}</b> is deleted, people/apps ` +
+          "who used to contact you via this alias cannot reach you any more," +
           " please confirm.",
         cancelCallback: () => {
           // nothing to do
@@ -276,11 +301,12 @@
 
     $(".custom-switch-input").change(function (e) {
       var message = "";
+      let alias = $(this).parent().find(".alias").val();
 
       if (e.target.checked) {
-        message = `After this, you will start receiving email sent to this alias, please confirm.`;
+        message = `After this, you will start receiving email sent to <b>${alias}</b>, please confirm.`;
       } else {
-        message = `After this, you will stop receiving email sent to this alias, please confirm.`;
+        message = `After this, you will stop receiving email sent to <b>${alias}</b>, please confirm.`;
       }
 
       notie.confirm({
