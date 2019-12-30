@@ -87,8 +87,6 @@ def domain_detail_dns(custom_domain_id):
                 dkim_ok = False
                 dkim_errors = get_txt_record(f"dkim._domainkey.{custom_domain.domain}")
 
-
-
     spf_include_records = []
     for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY:
         spf_include_records.append(f"include:{email_server[:-1]}")
