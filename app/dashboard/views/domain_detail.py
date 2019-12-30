@@ -87,13 +87,7 @@ def domain_detail_dns(custom_domain_id):
                 dkim_ok = False
                 dkim_errors = get_txt_record(f"dkim._domainkey.{custom_domain.domain}")
 
-        elif request.form.get("form-name") == "delete":
-            name = custom_domain.domain
-            CustomDomain.delete(custom_domain_id)
-            db.session.commit()
-            flash(f"Domain {name} has been deleted", "success")
 
-            return redirect(url_for("dashboard.custom_domain"))
 
     spf_include_records = []
     for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY:
@@ -137,6 +131,13 @@ def domain_detail(custom_domain_id):
             return redirect(
                 url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
             )
+        elif request.form.get("form-name") == "delete":
+            name = custom_domain.domain
+            CustomDomain.delete(custom_domain_id)
+            db.session.commit()
+            flash(f"Domain {name} has been deleted", "success")
+
+            return redirect(url_for("dashboard.custom_domain"))
 
     nb_alias = GenEmail.filter_by(custom_domain_id=custom_domain.id).count()
 

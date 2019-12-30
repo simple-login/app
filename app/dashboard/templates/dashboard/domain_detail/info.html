@@ -47,12 +47,36 @@
     </form>
   </div>
 
+  <hr>
+  <h3 class="mb-0">Delete Domain</h3>
+  <div class="small-text mb-3">Please note that this operation is irreversible.
+    All aliases associated with this domain will be also deleted
+  </div>
+
+  <form method="post">
+    <input type="hidden" name="form-name" value="delete">
+    <span class="delete-custom-domain btn btn-outline-danger">Delete domain</span>
+  </form>
+
 {% endblock %}
 
 {% block script %}
   <script>
     $(".custom-switch-input").change(function (e) {
       $(this).closest("form").submit();
-    })
+    });
+
+    $(".delete-custom-domain").on("click", function (e) {
+      notie.confirm({
+        text: "All aliases associated with <b>{{ custom_domain.domain }}</b> will be also deleted, " +
+          " please confirm.",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
   </script>
 {% endblock %}
