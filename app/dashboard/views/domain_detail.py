@@ -10,12 +10,12 @@ from app.dns_utils import (
     get_txt_record,
 )
 from app.extensions import db
-from app.models import CustomDomain
+from app.models import CustomDomain, GenEmail
 
 
-@dashboard_bp.route("/domains/<int:custom_domain_id>", methods=["GET", "POST"])
+@dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
 @login_required
-def domain_detail(custom_domain_id):
+def domain_detail_dns(custom_domain_id):
     # only premium user can see custom domain
     if not current_user.is_premium():
         flash("Only premium user can add custom domains", "warning")
@@ -91,7 +91,7 @@ def domain_detail(custom_domain_id):
             name = custom_domain.domain
             CustomDomain.delete(custom_domain_id)
             db.session.commit()
-            flash(f"Domain {name} has been deleted successfully", "success")
+            flash(f"Domain {name} has been deleted", "success")
 
             return redirect(url_for("dashboard.custom_domain"))
 
@@ -103,4 +103,22 @@ def domain_detail(custom_domain_id):
 
     dkim_record = f"v=DKIM1; k=rsa; p={DKIM_DNS_VALUE}"
 
-    return render_template("dashboard/domain_detail.html", **locals())
+    return render_template("dashboard/domain_detail/dns.html", **locals())
+
+
+@dashboard_bp.route("/domains/<int:custom_domain_id>/info", methods=["GET", "POST"])
+@login_required
+def domain_detail(custom_domain_id):
+    # only premium user can see custom domain
+    if not current_user.is_premium():
+        flash("Only premium user can add custom domains", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    custom_domain = CustomDomain.get(custom_domain_id)
+    if not custom_domain or custom_domain.user_id != current_user.id:
+        flash("You cannot see this page", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    nb_alias = GenEmail.filter_by(custom_domain_id=custom_domain.id).count()
+
+    return render_template("dashboard/domain_detail/info.html", **locals())

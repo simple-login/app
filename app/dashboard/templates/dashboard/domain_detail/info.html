@@ -1,0 +1,23 @@
+{% extends 'dashboard/domain_detail/base.html' %}
+
+{% set domain_detail_page = "info" %}
+
+{% block title %}
+  {{ custom_domain.domain }} Info
+{% endblock %}
+
+{% block domain_detail_content %}
+  <h1 class="h3"> {{ custom_domain.domain }}
+    {% if custom_domain.verified %}
+      <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup OK">✅</span>
+    {% else %}
+      <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup Needed">🚫 </span>
+    {% endif %}
+  </h1>
+
+  <div class="small-text">Created {{ custom_domain.created_at | dt }}</div>
+
+  {{ nb_alias }} aliases
+
+{% endblock %}
+

@@ -40,7 +40,7 @@ def custom_domain():
 
                 return redirect(
                     url_for(
-                        "dashboard.domain_detail", custom_domain_id=new_custom_domain.id
+                        "dashboard.domain_detail_dns", custom_domain_id=new_custom_domain.id
                     )
                 )
 

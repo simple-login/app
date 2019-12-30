@@ -1,14 +1,13 @@
-{% extends 'default.html' %}
-{% set active_page = "custom_domain" %}
+{% extends 'dashboard/domain_detail/base.html' %}
+
+{% set domain_detail_page = "dns" %}
 
 {% block title %}
-  {{ custom_domain.domain }}
+  {{ custom_domain.domain }} DNS
 {% endblock %}
 
-{% block head %}
-{% endblock %}
 
-{% block default_content %}
+{% block domain_detail_content %}
   <div class="bg-white p-4" style="max-width: 60rem; margin: auto">
     <h1 class="h3"> {{ custom_domain.domain }} </h1>
     <div class="">Please follow the steps below to set up your domain.</div>
