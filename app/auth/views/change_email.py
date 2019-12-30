@@ -24,7 +24,7 @@ def change_email():
     EmailChange.delete(email_change.id)
     db.session.commit()
 
-    flash("Your new email has been updated successfully", "success")
+    flash("Your new email has been updated", "success")
 
     login_user(user)
 

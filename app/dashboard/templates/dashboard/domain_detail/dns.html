@@ -1,14 +1,13 @@
-{% extends 'default.html' %}
-{% set active_page = "custom_domain" %}
+{% extends 'dashboard/domain_detail/base.html' %}
+
+{% set domain_detail_page = "dns" %}
 
 {% block title %}
-  {{ custom_domain.domain }}
+  {{ custom_domain.domain }} DNS
 {% endblock %}
 
-{% block head %}
-{% endblock %}
 
-{% block default_content %}
+{% block domain_detail_content %}
   <div class="bg-white p-4" style="max-width: 60rem; margin: auto">
     <h1 class="h3"> {{ custom_domain.domain }} </h1>
     <div class="">Please follow the steps below to set up your domain.</div>
@@ -22,18 +21,20 @@
       <div class="font-weight-bold">1. MX record
 
         {% if custom_domain.verified %}
-            <span class="cursor" data-toggle="tooltip" data-original-title="MX Record Verified">✅</span>
+          <span class="cursor" data-toggle="tooltip" data-original-title="MX Record Verified">✅</span>
         {% else %}
-            <span class="cursor" data-toggle="tooltip" data-original-title="MX Record Not Verified">🚫 </span>
+          <span class="cursor" data-toggle="tooltip" data-original-title="MX Record Not Verified">🚫 </span>
         {% endif %}
       </div>
 
-      <div class="mb-2">Add the following MX DNS record to your domain</div>
+      <div class="mb-2">Add the following MX DNS record to your domain.
+        Please note that there's a point (<em>.</em>) at the end of target addresses.
+      </div>
 
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
         <div class="mb-3 p-3" style="background-color: #eee">
           Domain: <em>{{ custom_domain.domain }}</em> <br>
-          Priority: 10 <br>
+          Priority: {{priority}} <br>
           Target: <em>{{ email_server }}</em> <br>
         </div>
       {% endfor %}
@@ -71,9 +72,9 @@
     <div>
       <div class="font-weight-bold">2. SPF (Optional)
         {% if custom_domain.spf_verified %}
-            <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
+          <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
         {% else %}
-            <span class="cursor" data-toggle="tooltip" data-original-title="SPF Not Verified">🚫 </span>
+          <span class="cursor" data-toggle="tooltip" data-original-title="SPF Not Verified">🚫 </span>
         {% endif %}
       </div>
 
@@ -127,9 +128,9 @@
     <div>
       <div class="font-weight-bold">3. DKIM (Optional)
         {% if custom_domain.dkim_verified %}
-            <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
+          <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
         {% else %}
-            <span class="cursor" data-toggle="tooltip" data-original-title="DKIM Not Verified">🚫 </span>
+          <span class="cursor" data-toggle="tooltip" data-original-title="DKIM Not Verified">🚫 </span>
         {% endif %}
       </div>
 
@@ -185,33 +186,5 @@
       {% endif %}
     </div>
 
-    <hr>
-    <h3 class="mb-0">Delete Domain</h3>
-    <div class="small-text mb-3">Please note that this operation is irreversible.
-      All aliases associated with this domain will be also deleted
-    </div>
-
-    <form method="post">
-      <input type="hidden" name="form-name" value="delete">
-      <span class="delete-custom-domain btn btn-outline-danger">Delete domain</span>
-    </form>
-
   </div>
-{% endblock %}
-
-{% block script %}
-  <script>
-    $(".delete-custom-domain").on("click", function (e) {
-      notie.confirm({
-        text: "All aliases associated with <b>{{ custom_domain.domain }}</b> will be also deleted, " +
-          " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
-        },
-        submitCallback: () => {
-          $(this).closest("form").submit();
-        }
-      });
-    });
-  </script>
 {% endblock %}

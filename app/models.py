@@ -423,6 +423,11 @@ class GenEmail(db.Model, ModelMixin):
         db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
     )
 
+    # To know whether an alias is created "on the fly", i.e. via the custom domain catch-all feature
+    automatic_creation = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     user = db.relationship(User)
 
     @classmethod
@@ -696,5 +701,11 @@ class CustomDomain(db.Model, ModelMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # an alias is created automatically the first time it receives an email
+    catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     def nb_alias(self):
         return GenEmail.filter_by(custom_domain_id=self.id).count()
+
+    def __repr__(self):
+        return f"<Custom Domain {self.domain}>"

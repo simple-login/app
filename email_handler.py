@@ -44,6 +44,7 @@ from app.email_utils import (
     get_email_part,
     send_email,
     add_dkim_signature,
+    get_email_domain_part,
 )
 from app.extensions import db
 from app.log import LOG
@@ -108,7 +109,22 @@ class MailHandler:
         gen_email = GenEmail.get_by(email=alias)
         if not gen_email:
             LOG.d("alias %s not exist")
-            return "510 Email not exist"
+
+            # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
+            alias_domain = get_email_domain_part(alias)
+            custom_domain = CustomDomain.get_by(domain=alias_domain)
+            if custom_domain and custom_domain.catch_all:
+                LOG.d("create alias %s for domain %s", alias, custom_domain)
+
+                gen_email = GenEmail.create(
+                    email=alias,
+                    user_id=custom_domain.user_id,
+                    custom_domain_id=custom_domain.id,
+                    automatic_creation=True,
+                )
+                db.session.commit()
+            else:
+                return "510 Email not exist"
 
         user_email = gen_email.user.email
 

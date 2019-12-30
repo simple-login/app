@@ -1,0 +1,82 @@
+{% extends 'dashboard/domain_detail/base.html' %}
+
+{% set domain_detail_page = "info" %}
+
+{% block title %}
+  {{ custom_domain.domain }} Info
+{% endblock %}
+
+{% block domain_detail_content %}
+  <h1 class="h3"> {{ custom_domain.domain }}
+    {% if custom_domain.verified %}
+      <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup OK">✅</span>
+    {% else %}
+      <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup Needed">🚫 </span>
+    {% endif %}
+  </h1>
+
+  <div class="small-text">Created {{ custom_domain.created_at | dt }}</div>
+
+  {{ nb_alias }} aliases
+
+  <hr>
+  <div>Catch All</div>
+  <div class="small-text">
+    This feature allows you to create aliases <b>on the fly</b>.
+    Simply use <em>anything@{{ custom_domain.domain }}</em>
+    next time you need an email address. <br>
+    The alias will be created the first time it receives an email.
+  </div>
+
+  <div>
+    <form method="post">
+      <input type="hidden" name="form-name" value="switch-catch-all">
+      <label class="custom-switch cursor mt-2 pl-0"
+             data-toggle="tooltip"
+          {% if custom_domain.catch_all %}
+             title="Disable catch-all"
+          {% else %}
+             title="Enable catch-all"
+          {% endif %}
+      >
+        <input type="checkbox" class="custom-switch-input"
+            {{ "checked" if custom_domain.catch_all else "" }}>
+
+        <span class="custom-switch-indicator"></span>
+      </label>
+    </form>
+  </div>
+
+  <hr>
+  <h3 class="mb-0">Delete Domain</h3>
+  <div class="small-text mb-3">Please note that this operation is irreversible.
+    All aliases associated with this domain will be also deleted
+  </div>
+
+  <form method="post">
+    <input type="hidden" name="form-name" value="delete">
+    <span class="delete-custom-domain btn btn-outline-danger">Delete domain</span>
+  </form>
+
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".custom-switch-input").change(function (e) {
+      $(this).closest("form").submit();
+    });
+
+    $(".delete-custom-domain").on("click", function (e) {
+      notie.confirm({
+        text: "All aliases associated with <b>{{ custom_domain.domain }}</b> will be also deleted, " +
+          " please confirm.",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+  </script>
+{% endblock %}

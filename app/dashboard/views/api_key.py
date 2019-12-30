@@ -35,7 +35,7 @@ def api_key():
             name = api_key.name
             ApiKey.delete(api_key_id)
             db.session.commit()
-            flash(f"API Key {name} has been deleted successfully", "success")
+            flash(f"API Key {name} has been deleted", "success")
 
             return redirect(url_for("dashboard.api_key"))
 
@@ -46,10 +46,7 @@ def api_key():
                 )
                 db.session.commit()
 
-                flash(
-                    f"New API Key {new_api_key.name} has been created successfully",
-                    "success",
-                )
+                flash(f"New API Key {new_api_key.name} has been created", "success")
                 return redirect(url_for("dashboard.api_key"))
 
         return redirect(url_for("dashboard.api_key"))

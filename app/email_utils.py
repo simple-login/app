@@ -161,6 +161,22 @@ def get_email_part(email_from):
     return email_from
 
 
+def get_email_local_part(email):
+    """
+    Get the local part from email
+    ab@cd.com -> ab
+    """
+    return email[: email.find("@")]
+
+
+def get_email_domain_part(email):
+    """
+    Get the domain part from email
+    ab@cd.com -> cd.com
+    """
+    return email[email.find("@") + 1 :]
+
+
 def add_dkim_signature(msg: EmailMessage, email_domain: str):
     if msg["DKIM-Signature"]:
         LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])

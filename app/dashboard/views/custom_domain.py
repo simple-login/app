@@ -36,14 +36,12 @@ def custom_domain():
                 )
                 db.session.commit()
 
-                flash(
-                    f"New domain {new_custom_domain.domain} has been created successfully",
-                    "success",
-                )
+                flash(f"New domain {new_custom_domain.domain} is created", "success")
 
                 return redirect(
                     url_for(
-                        "dashboard.domain_detail", custom_domain_id=new_custom_domain.id
+                        "dashboard.domain_detail_dns",
+                        custom_domain_id=new_custom_domain.id,
                     )
                 )
 

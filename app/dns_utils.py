@@ -1,8 +1,9 @@
 import dns.resolver
 
 
-def get_mx_domains(hostname, keep_priority=False) -> [str]:
-    """return list of (domain name). priority is also included if `keep_priority`
+def get_mx_domains(hostname) -> [(int, str)]:
+    """return list of (priority, domain name).
+    domain name ends with a "." at the end.
     """
     try:
         answers = dns.resolver.query(hostname, "MX")
@@ -13,10 +14,9 @@ def get_mx_domains(hostname, keep_priority=False) -> [str]:
 
     for a in answers:
         record = a.to_text()  # for ex '20 alt2.aspmx.l.google.com.'
-        if not keep_priority:
-            record = record.split(" ")[1]  # alt2.aspmx.l.google.com.
+        parts = record.split(" ")
 
-        ret.append(record)
+        ret.append((int(parts[0]), parts[1]))
 
     return ret
 

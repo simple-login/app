@@ -49,7 +49,6 @@ POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "1.1.1.1")
 EMAIL_SERVERS_WITH_PRIORITY = eval(
     os.environ["EMAIL_SERVERS_WITH_PRIORITY"]
 )  # [(10, "email.hostname.")]
-EMAIL_SERVERS = [es for _, es in EMAIL_SERVERS_WITH_PRIORITY]
 
 # these emails are ignored when computing stats
 if os.environ.get("IGNORED_EMAILS"):
