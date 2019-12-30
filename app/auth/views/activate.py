@@ -22,7 +22,9 @@ def activate():
 
     if not activation_code:
         return (
-            render_template("auth/activate.html", error="Activation code cannot be found"),
+            render_template(
+                "auth/activate.html", error="Activation code cannot be found"
+            ),
             400,
         )
 
