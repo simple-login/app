@@ -95,10 +95,7 @@ def alias_contact_manager(alias, forward_email_id=None):
 
                 LOG.d("create reverse-alias for %s", contact_email)
                 db.session.commit()
-                flash(
-                    f"Reverse alias for {contact_email} is created successfully",
-                    "success",
-                )
+                flash(f"Reverse alias for {contact_email} is created", "success")
 
                 return redirect(
                     url_for(
@@ -122,10 +119,7 @@ def alias_contact_manager(alias, forward_email_id=None):
             ForwardEmail.delete(forward_email_id)
             db.session.commit()
 
-            flash(
-                f"Reverse-alias for {contact_name} has been deleted successfully",
-                "success",
-            )
+            flash(f"Reverse-alias for {contact_name} has been deleted", "success")
 
             return redirect(url_for("dashboard.alias_contact_manager", alias=alias))
 

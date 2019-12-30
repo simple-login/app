@@ -149,7 +149,7 @@ def client_detail_advanced(client_id):
         Client.delete(client.id)
         db.session.commit()
         LOG.d("Remove client %s", client)
-        flash(f"{client_name} has been deleted successfully", "success")
+        flash(f"{client_name} has been deleted", "success")
 
         return redirect(url_for("developer.index"))
 
