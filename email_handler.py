@@ -120,6 +120,7 @@ class MailHandler:
                     email=alias,
                     user_id=custom_domain.user_id,
                     custom_domain_id=custom_domain.id,
+                    automatic_creation=True,
                 )
                 db.session.commit()
             else:
