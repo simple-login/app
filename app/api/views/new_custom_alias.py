@@ -31,7 +31,7 @@ def new_custom_alias():
         return (
             jsonify(
                 error="You have reached the limitation of a free account with the maximum of "
-                      "3 custom aliases, please upgrade your plan to create more custom aliases"
+                "3 custom aliases, please upgrade your plan to create more custom aliases"
             ),
             400,
         )
