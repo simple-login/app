@@ -48,7 +48,7 @@ def domain_detail_dns(custom_domain_id):
                 db.session.commit()
                 return redirect(
                     url_for(
-                        "dashboard.domain_detail", custom_domain_id=custom_domain.id
+                        "dashboard.domain_detail_dns", custom_domain_id=custom_domain.id
                     )
                 )
         elif request.form.get("form-name") == "check-spf":
@@ -59,7 +59,7 @@ def domain_detail_dns(custom_domain_id):
                 flash("The SPF is setup correctly", "success")
                 return redirect(
                     url_for(
-                        "dashboard.domain_detail", custom_domain_id=custom_domain.id
+                        "dashboard.domain_detail_dns", custom_domain_id=custom_domain.id
                     )
                 )
             else:
@@ -77,7 +77,7 @@ def domain_detail_dns(custom_domain_id):
 
                 return redirect(
                     url_for(
-                        "dashboard.domain_detail", custom_domain_id=custom_domain.id
+                        "dashboard.domain_detail_dns", custom_domain_id=custom_domain.id
                     )
                 )
             else:
