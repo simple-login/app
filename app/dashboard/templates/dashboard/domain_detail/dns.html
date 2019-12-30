@@ -32,7 +32,7 @@
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
         <div class="mb-3 p-3" style="background-color: #eee">
           Domain: <em>{{ custom_domain.domain }}</em> <br>
-          Priority: 10 <br>
+          Priority: {{priority}} <br>
           Target: <em>{{ email_server }}</em> <br>
         </div>
       {% endfor %}

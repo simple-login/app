@@ -95,7 +95,11 @@ def domain_detail_dns(custom_domain_id):
 
     dkim_record = f"v=DKIM1; k=rsa; p={DKIM_DNS_VALUE}"
 
-    return render_template("dashboard/domain_detail/dns.html", **locals())
+    return render_template(
+        "dashboard/domain_detail/dns.html",
+        EMAIL_SERVERS_WITH_PRIORITY=EMAIL_SERVERS_WITH_PRIORITY,
+        **locals(),
+    )
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/info", methods=["GET", "POST"])
