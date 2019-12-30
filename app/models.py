@@ -698,3 +698,6 @@ class CustomDomain(db.Model, ModelMixin):
 
     def nb_alias(self):
         return GenEmail.filter_by(custom_domain_id=self.id).count()
+
+    def __repr__(self):
+        return f"<Custom Domain {self.domain}>"
