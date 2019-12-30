@@ -49,7 +49,7 @@ def facebook_login():
 def facebook_callback():
     # user clicks on cancel
     if "error" in request.args:
-        flash("please use another sign in method then", "warning")
+        flash("Please use another sign in method then", "warning")
         return redirect("/")
 
     facebook = OAuth2Session(

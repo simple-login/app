@@ -86,7 +86,7 @@ def send_change_email(new_email, current_email, name, link):
 def send_new_app_email(email, name):
     send_email(
         email,
-        f"{name}, any questions/feedbacks for SimpleLogin?",
+        f"{name}, any question/feedback for SimpleLogin?",
         _render("new-app.txt", name=name),
         _render("new-app.html", name=name),
     )

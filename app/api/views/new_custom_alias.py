@@ -22,15 +22,16 @@ def new_custom_alias():
         optional "hostname" in args
     Output:
         201 if success
-        409 if alias already exists
+        409 if the alias already exists
 
     """
     user = g.user
     if not user.can_create_new_alias():
-        LOG.d("user %s cannot create custom alias", user)
+        LOG.d("user %s cannot create any custom alias", user)
         return (
             jsonify(
-                error="You have created 3 custom aliases, please upgrade to create more"
+                error="You have reached the limitation of a free account with the maximum of "
+                      "3 custom aliases, please upgrade your plan to create more custom aliases"
             ),
             400,
         )
@@ -46,7 +47,7 @@ def new_custom_alias():
     alias_prefix = alias_prefix.strip()
     alias_prefix = convert_to_id(alias_prefix)
     if not alias_prefix:  # should be checked on frontend
-        LOG.d("user %s submits empty alias prefix %s", user, alias_prefix)
+        LOG.d("user %s submits an empty alias with the prefix %s", user, alias_prefix)
         return jsonify(error="alias prefix cannot be empty"), 400
 
     # make sure alias_suffix is either .random_letters@simplelogin.co or @my-domain.com
@@ -54,19 +55,19 @@ def new_custom_alias():
     if alias_suffix.startswith("@"):
         custom_domain = alias_suffix[1:]
         if custom_domain not in user_custom_domains:
-            LOG.d("user %s submits wrong custom domain %s ", user, custom_domain)
+            LOG.d("user %s submits a wrong custom domain %s ", user, custom_domain)
             return jsonify(error="error"), 400
     else:
         if not alias_suffix.startswith("."):
-            LOG.d("user %s submits wrong alias suffix %s", user, alias_suffix)
+            LOG.d("user %s submits a wrong alias suffix %s", user, alias_suffix)
             return jsonify(error="error"), 400
         if not alias_suffix.endswith(EMAIL_DOMAIN):
-            LOG.d("user %s submits wrong alias suffix %s", user, alias_suffix)
+            LOG.d("user %s submits a wrong alias suffix %s", user, alias_suffix)
             return jsonify(error="error"), 400
 
         random_letters = alias_suffix[1 : alias_suffix.find("@")]
         if len(random_letters) < 5:
-            LOG.d("user %s submits wrong alias suffix %s", user, alias_suffix)
+            LOG.d("user %s submits a wrong alias suffix %s", user, alias_suffix)
             return jsonify(error="error"), 400
 
     full_alias = alias_prefix + alias_suffix

@@ -41,7 +41,7 @@ def github_login():
 def github_callback():
     # user clicks on cancel
     if "error" in request.args:
-        flash("please use another sign in method then", "warning")
+        flash("Please use another sign in method then", "warning")
         return redirect("/")
 
     github = OAuth2Session(

@@ -28,13 +28,13 @@ def reset_password():
     if not reset_password_code:
         error = (
             "The reset password link can be used only once. "
-            "Please make a new request to reset password"
+            "Please request a new link to reset password."
         )
         return render_template("auth/reset_password.html", form=form, error=error)
 
     if reset_password_code.is_expired():
         error = (
-            "The link is already expired. Please make a new request to reset password"
+            "The link has been already expired. Please make a new request of the reset password link"
         )
         return render_template("auth/reset_password.html", form=form, error=error)
 

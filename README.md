@@ -5,7 +5,7 @@ https://simplelogin.io
 
 > Yet another email forwarding service?
 
-In some way yes ... However SimpleLogin is a bit different because:
+In some way yes... However, SimpleLogin is a bit different because:
 
 - it's fully open-source: both the server and client code (browser extension, JS library) are open-source so anyone can freely inspect and (hopefully) improve the code.
 - not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that: a. offers privacy for users b. is simple to use for developers. Our goal is to offer a privacy-focused alternative to the "Login with Facebook/Google/Twitter" buttons.
@@ -30,7 +30,7 @@ SimpleLogin backend consists of 2 main components:
 
 - the `webapp` used by several clients: web UI (the dashboard), browser extension (Chrome & Firefox for now), OAuth clients (apps that integrate "Login with SimpleLogin" button) and mobile app (work in progress).
 
-- the `email handler`: implements the email forwarding (i.e. alias receiveing email) and email sending (i.e. alias sending email). 
+- the `email handler`: implements the email forwarding (i.e. alias receiving email) and email sending (i.e. alias sending email). 
 
 ## Self hosting
 
@@ -38,7 +38,7 @@ SimpleLogin backend consists of 2 main components:
 
 - a Linux server (either a VM or dedicated server). This doc shows the setup for Ubuntu 18.04 LTS but the steps could be adapted for other popular Linux distributions. As most of components run as Docker container and Docker can be a bit heavy, having at least 2 GB of RAM is recommended. The server needs to have the port 25 (email), 80, 443 (for the webapp), 22 (so you can ssh into it) open.
 
-- a domain that you can config the DNS. It could be a subdomain. In the rest of the doc, let's say it's `mydomain.com` for the email and `app.mydomain.com` for SimpleLogin webapp. Please make sure to replace these values by your domain name whenever they appear in the doc.
+- a domain that you can config the DNS. It could be a sub-domain. In the rest of the doc, let's say it's `mydomain.com` for the email and `app.mydomain.com` for SimpleLogin webapp. Please make sure to replace these values by your domain name whenever they appear in the doc.
 
 - [Optional]: a dedicated Postgres database. If you don't want to manage and maintain a Postgres database, you can use managed services proposed by some cloud providers. Otherwise this guide will show how to run a Postgres database using Docker. Database is not well-known to be run inside Docker but this is probably fine if you don't have thousands of email addresses.
 
@@ -144,11 +144,11 @@ docker network create -d bridge \
 
 ### Postgres
 
-This sections show how to run a Postgres database using Docker. At the end of this section, you will have a database username and password that're going to be used in the next steps.
+This section shows how to run a Postgres database using Docker. At the end of this section, you will have a database username and password which are being referred to the next steps.
 
-If you already have a Postgres database, you can skip this section and just copy the database configuration (host, port, username, password, database name).
+If you have already had a Postgres database in use, you can skip this section and just copy the database configuration (i.e. host, port, username, password, database name).
 
-Run a postgres Docker container. Make sure to replace `myuser` and `mypassword` by something more secret 😎.
+Run a Postgres Docker container as your Postgres database server. Make sure to replace `myuser` and `mypassword` with something more secret 😎.
 
 ```bash
 docker run -d \
@@ -160,17 +160,17 @@ docker run -d \
     postgres
 ```
 
-To test if the database runs correctly, run
+To test whether the database operates correctly or not, run the following command:
 
 ```bash
 docker exec -it sl-db psql -U myuser simplelogin
 ```
 
-you should be logged into postgres console.
+you should be logged in the postgres console.
 
 ### Postfix
 
-Install `postfix` and `postfix-pgsql`. The latter is used to connect Postfix and Postgres database in the next steps.
+Install `postfix` and `postfix-pgsql`. The latter is used to connect Postfix and the Postgres database in the next steps.
 
 ```bash
 sudo apt-get install -y postfix postfix-pgsql
@@ -178,7 +178,7 @@ sudo apt-get install -y postfix postfix-pgsql
 
 Choose "Internet Site" in Postfix installation window then keep using the proposed value as *System mail name* in the next window. 
 
-Run the following commands to setup Postfix. Make sure to replace `mydomain.com` by your domain.
+Run the following commands to setup Postfix. Make sure to replace `mydomain.com` with the appropriate value of your domain.
 
 ```bash
 sudo postconf -e 'myhostname = app.mydomain.com'
@@ -193,7 +193,7 @@ sudo postconf -e 'transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf'
 ```
 
 
-Create the `relay-domains` file at `/etc/postfix/pgsql-relay-domains.cf` and put the following content. Make sure that the database config is correctly set and replace `mydomain.com` by your domain.
+Create the `relay-domains` file at `/etc/postfix/pgsql-relay-domains.cf` and put the following content. Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
 
 ```
 # postgres config
@@ -205,7 +205,7 @@ dbname = simplelogin
 query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true UNION SELECT '%s' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
-Create the `transport-maps` file at `/etc/postfix/pgsql-transport-maps.cf` and put the following lines. Make sure that the database config is correctly set and replace `mydomain.com` by your domain.
+Create the `transport-maps` file at `/etc/postfix/pgsql-transport-maps.cf` and put the following lines. Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
 
 ```
 # postgres config
@@ -218,7 +218,7 @@ dbname = simplelogin
 query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND verified=true UNION SELECT 'smtp:127.0.0.1:20381' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
-Finally restart Postfix
+Finally, restart Postfix
 
 > sudo systemctl restart postfix
 
@@ -259,7 +259,7 @@ docker run --rm \
 
 This command could take a while to download the `simplelogin/app` docker image.
 
-Now it's time to run the `webapp` container!
+Now, it's time to run the `webapp` container!
 
 ```bash
 docker run -d \
@@ -305,7 +305,7 @@ Install Nginx
 sudo apt-get install -y nginx
 ```
 
-Then create `/etc/nginx/sites-enabled/simplelogin` with the following lines:
+Then, create `/etc/nginx/sites-enabled/simplelogin` with the following lines:
 
 ```
 server {
@@ -317,7 +317,7 @@ server {
 }
 ```
 
-Reload nginx with 
+Reload Nginx with the command below
 
 ```bash
 sudo systemctl reload nginx
@@ -327,7 +327,7 @@ At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot
 
 ### Enjoy!
 
-If all the steps are successful, open http://app.mydomain.com/ and create your first account! 
+If all of the above steps are successful, open http://app.mydomain.com/ and create your first account! 
 
 ## Contributing
 
@@ -357,7 +357,7 @@ Make sure to uncomment the `RESET_DB=true` to create the database locally.
 
 Feel free to custom your `.env` file, it would be your default setting when developing locally. This file is ignored by git.
 
-You don't need all the parameters, for ex if you don't update images to s3, then
+You don't need all the parameters, for example, if you don't update images to s3, then
 `BUCKET`, `AWS_ACCESS_KEY_ID` can be empty or if you don't use login with Github locally, `GITHUB_CLIENT_ID` doesn't have to be filled. The `.env.example` file contains minimal requirement so that if you run:
 
 ```
@@ -374,15 +374,15 @@ john@wick.com / password
 
 For now the only API client is the Chrome/Firefox extension. This extension relies on `API Code` for authentication. 
 
-In every request the extension sends
+In every request, the extension sends
 
 - the `API Code` is set in `Authentication` header. The check is done via the `verify_api_key` wrapper, implemented in `app/api/base.py`
 
 - the current website `hostname` which is the website subdomain name + domain name. For ex, if user is on `http://dashboard.example.com/path1/path2?query`, the subdomain is `dashboard.example.com`. This information is important to know where an alias is used in order to proposer to user the same alias if they want to create on alias on the same website in the future. The `hostname` is passed in the request query `?hostname=`, see `app/api/views/alias_options.py` for an example.
 
-Currently the latest extension uses 2 endpoints:
+Currently, the latest extension uses the two following endpoints :
 
-- `/alias/options`: that returns what to suggest to user when they open the extension. 
+- `/alias/options`: returns what to suggest to user when they open the extension. 
 
 ```
 GET /alias/options hostname?="www.groupon.com"
@@ -402,6 +402,8 @@ Response: a json with following structure. ? means optional field.
 		[email1, email2, ...]
 ```
 
+- `/alias/custom/new`: allows user to create a new custom alias.
+
 To try out the endpoint, you can use the following command. The command uses [httpie](https://httpie.org). 
 Make sure to replace `{api_key}` by your API Key obtained on https://app.simplelogin.io/dashboard/api_key
 
@@ -410,8 +412,6 @@ http https://app.simplelogin.io/api/alias/options \
     Authentication:{api_key} \
     hostname==www.google.com
 ```
-
-- `/alias/custom/new`: allows user to create a new custom alias.
 
 ```
 POST /alias/custom/new
@@ -428,15 +428,15 @@ Response:
 
 The database migration is handled by `alembic`
 
-Whenever the model changes, a new migration needs to be created
+Whenever the model changes, a new migration has to be created
 
-Set the database connection to use a current database (i.e. the one without the model changes you just made), for ex if you have a staging config at `~/config/simplelogin/staging.env`, you can do: 
+Set the database connection to use a current database (i.e. the one without the model changes you just made), for example, if you have a staging config at `~/config/simplelogin/staging.env`, you can do: 
 
 ```bash
 ln -sf ~/config/simplelogin/staging.env .env
 ```
 
-Generate the migration script and make sure to review it before commit it. Sometimes (very rarely though), the migration generation can go wrong.
+Generate the migration script and make sure to review it before committing it. Sometimes (very rarely though), the migration generation can go wrong.
 
 ```bash
 flask db migrate
@@ -446,19 +446,19 @@ In local the database creation in Sqlite doesn't use migration and uses directly
 
 ### Code structure
 
-The repo consists of 3 entry points:
+The repo consists of the three following entry points:
 
 - wsgi.py and server.py: the webapp. 
 - email_handler.py: the email handler. 
 - cron.py: the cronjob. 
 
-Here are a small sum-ups of the directory structure and their roles:
+Here are the small sum-ups of the directory structures and their roles:
 
-- app/: main Flask app. It is divided into different packages that represents different features like oauth,  api, dashboard, etc.
-- local_data/: contain files that are there to facilitate local development. They are replaced during the deployment.
-- migrations/: generated by flask-migrate. Edit these files only when you spot (very rare) errors on database migration files.
+- app/: main Flask app. It is structured into different packages representing different features like oauth,  api, dashboard, etc.
+- local_data/: contains files to facilitate the local development. They are replaced during the deployment.
+- migrations/: generated by flask-migrate. Edit these files will be only edited when you spot (very rare) errors on the database migration files.
 - static/: files available at `/static` url. 
-- templates/: contain both html and email templates.
+- templates/: contains both html and email templates.
 - tests/: tests. We don't really distinguish unit, functional or integration test. A test is simply here to make sure a feature works correctly.
 
 The code is formatted using https://github.com/psf/black, to format the code, simply run
@@ -487,7 +487,7 @@ Next, exchange the code to get the token with `{code}` replaced by the code obta
 http -f -a client-id:client-secret http://localhost:7777/oauth/token grant_type=authorization_code code={code}
 ```
 
-This should return an `access token` that allow to get user info via the following command. Again, `http` tool is used.
+This should return an `access token` that allows to get user info via the following command. Again, `http` tool is used.
 
 ```
 http http://localhost:7777/oauth/user_info 'Authorization:Bearer {token}'
@@ -495,21 +495,21 @@ http http://localhost:7777/oauth/user_info 'Authorization:Bearer {token}'
 
 #### Implicit flow
 
-Similar to code flow, except we get the `access token` back with the redirection. 
+Similar to code flow, except for the the `access token` which we we get back with the redirection. 
 For implicit flow, the url is 
 
 ```
 http://localhost:7777/oauth/authorize?client_id=client-id&state=123456&response_type=token&redirect_uri=http%3A%2F%2Flocalhost%3A7000%2Fcallback&state=random_string
 ```
 
-#### OpenID, OAuth2 response_type & scope
+#### OpenID and OAuth2 response_type & scope
 
-According to https://medium.com/@darutk/diagrams-of-all-the-openid-connect-flows-6968e3990660
+According to the sharing web blog titled [Diagrams of All The OpenID Connect Flows](https://medium.com/@darutk/diagrams-of-all-the-openid-connect-flows-6968e3990660), we should pay attention to:
 
-- `response_type` can be either `code, token, id_token`  or any combination.
-- `scope` can contain `openid` or not
+- `response_type` can be either `code, token, id_token`  or any combination of those attributes.
+- `scope` might contain `openid`
 
-Below is the different combinations that are taken into account in SL until now:
+Below are the potential combinations that are taken into account in SL until now:
 
 ```
 response_type=code
