@@ -5,7 +5,7 @@ from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.models import GenEmail, ForwardEmailLog, ForwardEmail
 
-LIMIT = 15
+_LIMIT = 15
 
 
 class AliasLog:
@@ -39,7 +39,9 @@ def alias_log(alias, page_id):
         return redirect(url_for("dashboard.index"))
 
     logs = get_alias_log(gen_email, page_id)
-    last_page = len(logs) < LIMIT  # lightweight pagination without counting all objects
+    last_page = (
+        len(logs) < _LIMIT
+    )  # lightweight pagination without counting all objects
 
     return render_template("dashboard/alias_log.html", **locals())
 
@@ -51,8 +53,8 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
         db.session.query(ForwardEmail, ForwardEmailLog)
         .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
         .filter(ForwardEmail.gen_email_id == gen_email.id)
-        .limit(LIMIT)
-        .offset(page_id * LIMIT)
+        .limit(_LIMIT)
+        .offset(page_id * _LIMIT)
     )
 
     for fe, fel in q:
