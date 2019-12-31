@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-
-import arrow
 from flask import render_template, flash, redirect, url_for, abort
 from flask_login import login_required, current_user
 
@@ -8,20 +5,25 @@ from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.models import GenEmail, ForwardEmailLog, ForwardEmail
 
-LIMIT = 3
+LIMIT = 15
 
 
-@dataclass
 class AliasLog:
-    website_email: str
-    website_from: str
-    alias: str
-    when: arrow.Arrow
-    is_reply: bool
-    blocked: bool
+    __slots__ = [
+        "website_email",
+        "website_from",
+        "alias",
+        "when",
+        "is_reply",
+        "blocked",
+    ]  # memory efficiency
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
-@dashboard_bp.route("/alias_log/<alias>", methods=["GET"], defaults={'page_id': 0})
+@dashboard_bp.route("/alias_log/<alias>", methods=["GET"], defaults={"page_id": 0})
 @dashboard_bp.route("/alias_log/<alias>/<int:page_id>")
 @login_required
 def alias_log(alias, page_id):
@@ -39,9 +41,7 @@ def alias_log(alias, page_id):
     logs = get_alias_log(gen_email, page_id)
     last_page = len(logs) < LIMIT  # lightweight pagination without counting all objects
 
-    return render_template(
-        "dashboard/alias_log.html", **locals()
-    )
+    return render_template("dashboard/alias_log.html", **locals())
 
 
 def get_alias_log(gen_email: GenEmail, page_id=0):
@@ -49,10 +49,10 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
 
     q = (
         db.session.query(ForwardEmail, ForwardEmailLog)
-            .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
-            .filter(ForwardEmail.gen_email_id == gen_email.id)
-            .limit(LIMIT)
-            .offset(page_id * LIMIT)
+        .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
+        .filter(ForwardEmail.gen_email_id == gen_email.id)
+        .limit(LIMIT)
+        .offset(page_id * LIMIT)
     )
 
     for fe, fel in q:
@@ -65,7 +65,6 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
             blocked=fel.blocked,
         )
         logs.append(al)
-
     logs = sorted(logs, key=lambda l: l.when, reverse=True)
 
     return logs
