@@ -19,7 +19,6 @@ from app.models import (
 )
 
 
-@dataclass
 class AliasInfo:
     gen_email: GenEmail
     nb_forward: int
@@ -28,6 +27,10 @@ class AliasInfo:
 
     show_intro_test_send_email: bool = False
     highlight: bool = False
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])

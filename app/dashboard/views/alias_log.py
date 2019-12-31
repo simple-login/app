@@ -1,4 +1,5 @@
-from flask import render_template, flash, redirect, url_for, abort
+import arrow
+from flask import render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
@@ -9,14 +10,12 @@ _LIMIT = 15
 
 
 class AliasLog:
-    __slots__ = [
-        "website_email",
-        "website_from",
-        "alias",
-        "when",
-        "is_reply",
-        "blocked",
-    ]  # memory efficiency
+    website_email: str
+    website_from: str
+    alias: str
+    when: arrow.Arrow
+    is_reply: bool
+    blocked: bool
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
