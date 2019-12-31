@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from flask import render_template, request, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
