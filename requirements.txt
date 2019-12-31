@@ -84,7 +84,7 @@ ruamel.yaml==0.15.97      # via strictyaml
 s3transfer==0.2.1         # via boto3
 sentry-sdk==0.13.5
 six==1.12.0               # via bcrypt, cryptography, flask-cors, packaging, pip-tools, prompt-toolkit, pyopenssl, pytest, python-dateutil, sqlalchemy-utils, traitlets
-sqlalchemy-utils==0.33.11
+sqlalchemy-utils==0.36.1
 sqlalchemy==1.3.12        # via alembic, flask-sqlalchemy, sqlalchemy-utils
 strictyaml==1.0.2         # via yacron
 traitlets==4.3.2          # via ipython
