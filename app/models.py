@@ -119,6 +119,9 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # some users could have lifetime premium
+    lifetime = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+
     profile_picture = db.relationship(File)
 
     @classmethod
@@ -224,7 +227,6 @@ class User(db.Model, ModelMixin, UserMixin):
                 return None
         else:
             return sub
-
 
     def verified_custom_domains(self):
         return CustomDomain.query.filter_by(user_id=self.id, verified=True).all()
@@ -715,3 +717,8 @@ class CustomDomain(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<Custom Domain {self.domain}>"
+
+
+class LifetimeCoupon(db.Model, ModelMixin):
+    code = db.Column(db.String(128), nullable=False, unique=True)
+    nb_used = db.Column(db.Integer, nullable=False)
