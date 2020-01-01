@@ -1,4 +1,4 @@
-SimpleLogin - privacy-first email alias and Single Sign-On (SSO) Identity Provider
+SimpleLogin | Privacy-First Email Alias and Identity Provider service
 ---
 
 https://simplelogin.io
@@ -12,6 +12,25 @@ In some way yes... However, SimpleLogin is a bit different because:
 - the only email alias solution that is `self-hostable`: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows how to `ssh` is able to deploy SimpleLogin on their server.  
 - plenty of features: custom domain, browser extension, alias activity, OAuth libraries, etc.
 - written in Python 🐍 😅 this is not a difference per se but hey I never found a Python email server so feel free to tweak this one if you want to use Python for handling emails.
+
+# Quick start
+
+If you have Docker installed, run the following command to start SimpleLogin local server: 
+
+
+```bash
+docker run -it --rm \
+    -e RESET_DB=true \
+    -e CONFIG=/code/.env.example \ 
+    -p 7777:7777 \
+    simplelogin/app python server.py
+```
+
+Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
+
+To use SimpleLogin email aliases, you need to deploy it on your server with some DNS setup though, 
+the following section will show a step-by-step guide on how to get your own email forwarder service!  
+
 
 # Table of Contents
 
