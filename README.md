@@ -10,6 +10,27 @@
 
 SimpleLogin | Privacy-First Email Forwarding and Identity Provider Service
 ---
+<p>    
+<a href="https://chrome.google.com/webstore/detail/simplelogin-protect-your/dphilobhebphkdjbpfohgikllaljmgbn">
+    <img src="https://img.shields.io/chrome-web-store/rating/dphilobhebphkdjbpfohgikllaljmgbn?label=Chrome%20Extension">
+</a>
+
+<a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">    
+<img src="https://img.shields.io/amo/rating/simplelogin?label=Firefox%20Add-On&logo=SimpleLogin">
+</a>
+
+<a href="https://stats.uptimerobot.com/APkzziNWoM">    
+<img src="https://img.shields.io/uptimerobot/ratio/7/m782965045-15d8e413b20b5376f58db050">
+</a>
+
+<a href="./LICENSE">
+<img src="https://img.shields.io/github/license/simple-login/app">
+</a>
+
+<a href="https://twitter.com/simple_login">
+<img src="https://img.shields.io/twitter/follow/simple_login?style=social">
+</a>
+</p>
 
 https://simplelogin.io
 
@@ -566,8 +587,3 @@ response_type=id_token code
     return `id_token` in addition to `authorization_code` in /authorization endpoint
 
 ```
-
-
-
-
-
