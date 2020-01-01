@@ -89,7 +89,7 @@ def create_app() -> Flask:
                 "username": "admin",
                 "password": FLASK_PROFILER_PASSWORD,
             },
-            "ignore": ["^/static/.*", "/git", "/exception" ],
+            "ignore": ["^/static/.*", "/git", "/exception"],
         }
         flask_profiler.init_app(app)
 
