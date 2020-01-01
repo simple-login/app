@@ -6,7 +6,7 @@ from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, DeletedAlias, CustomDomain
-from app.utils import convert_to_id, random_word
+from app.utils import convert_to_id, random_word, word_exist
 
 
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
@@ -26,6 +26,14 @@ def custom_alias():
             email_prefix = request.form.get("email-prefix")
             email_prefix = convert_to_id(email_prefix)
             email_suffix = request.form.get("email-suffix")
+
+            # verify email_suffix
+            if not word_exist(email_suffix):
+                flash(
+                    "nice try :). The suffix is there so no one can take all the *nice* aliases though",
+                    "warning",
+                )
+                return redirect(url_for("dashboard.custom_alias"))
 
             if not email_prefix:
                 error = "alias prefix cannot be empty"
