@@ -1,17 +1,7 @@
-SimpleLogin | Privacy-First Email Alias and Identity Provider service
+SimpleLogin | Privacy-First Email Forwarding/Alias and Identity Provider service
 ---
 
 https://simplelogin.io
-
-> Yet another email forwarding service?
-
-In some way yes... However, SimpleLogin is a bit different because:
-
-- it's fully open-source: both the server and client code (browser extension, JS library) are open-source so anyone can freely inspect and (hopefully) improve the code.
-- not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that: a. offers privacy for users b. is simple to use for developers. Our goal is to offer a privacy-focused alternative to the "Login with Facebook/Google/Twitter" buttons.
-- the only email alias solution that is `self-hostable`: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows how to `ssh` is able to deploy SimpleLogin on their server.  
-- plenty of features: custom domain, browser extension, alias activity, OAuth libraries, etc.
-- written in Python 🐍 😅 this is not a difference per se but hey I never found a Python email server so feel free to tweak this one if you want to use Python for handling emails.
 
 # Quick start
 
@@ -29,7 +19,24 @@ docker run -it --rm \
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
 
 To use SimpleLogin email aliases, you need to deploy it on your server with some DNS setup though, 
-the following section will show a step-by-step guide on how to get your own email forwarder service!  
+the following section will show a step-by-step guide on how to get your own email forwarder service!
+
+# Introduction
+
+> Yet another email forwarding service?
+
+In some way yes... However, SimpleLogin is a bit different because:
+
+- it's fully open source: both the server and client code (browser extension, JS library) are open source so anyone can freely inspect and (hopefully) improve the code.
+- not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that:
+    - offers privacy for users 
+    - is simple to use for developers. SimpleLogin is a privacy-focused alternative to the "Login with Facebook/Google/Twitter" buttons.
+    
+- the only email alias solution that is `self-hostable`: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows how to `ssh` is able to deploy SimpleLogin on their server.  
+- plenty of features: custom domain, browser extension, alias activity, OAuth libraries, etc.
+- written in Python 🐍 😅 this is not a difference per se but hey I never found a Python email server so feel free to tweak this one if you want to use Python for handling emails.
+
+
 
 
 # Table of Contents
