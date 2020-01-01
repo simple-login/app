@@ -52,6 +52,26 @@
         Yearly <br>
         $29.99/year
       </button>
+
+      <hr class="my-6">
+
+      <form method="post">
+        {{ coupon_form.csrf_token }}
+        <input type="hidden" name="form-name" value="create">
+
+        <div class="font-weight-bold mb-2">Coupon</div>
+        <div class="small-text">
+          If you have a lifetime coupon, please paste it here. <br>
+          For information, we offer free premium account for education (student, professor or technical staff working at
+          an educational institute). <br>
+          Drop us an email at hi@simplelogin.io with your student ID or certificate to get the coupon.
+        </div>
+
+
+        {{ coupon_form.code(class="form-control", placeholder="Coupon") }}
+        {{ render_field_errors(coupon_form.code) }}
+        <button class="btn btn-lg btn-success mt-2">Apply</button>
+      </form>
     </div>
   </div>
 

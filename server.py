@@ -41,6 +41,7 @@ from app.models import (
     PlanEnum,
     ApiKey,
     CustomDomain,
+    LifetimeCoupon,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -115,6 +116,9 @@ def fake_data():
         is_admin=True,
         otp_secret="base32secret3232",
     )
+    db.session.commit()
+
+    LifetimeCoupon.create(code="coupon", nb_used=10)
     db.session.commit()
 
     # Create a subscription for user
