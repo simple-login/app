@@ -2,12 +2,12 @@ import os
 import ssl
 
 import arrow
+import flask_profiler
 import sentry_sdk
 from flask import Flask, redirect, url_for, render_template, request, jsonify
 from flask_admin import Admin
 from flask_cors import cross_origin
 from flask_login import current_user
-import flask_profiler
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from app import paddle_utils
@@ -89,7 +89,7 @@ def create_app() -> Flask:
                 "username": "admin",
                 "password": FLASK_PROFILER_PASSWORD,
             },
-            "ignore": ["^/static/.*"],
+            "ignore": ["^/static/.*", "/git", "/exception" ],
         }
         flask_profiler.init_app(app)
 
