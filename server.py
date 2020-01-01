@@ -367,9 +367,9 @@ def setup_paddle_callback(app: Flask):
             LOG.debug("Cancel subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
-            sub.cancelled = True
-
-            db.session.commit()
+            if sub:
+                sub.cancelled = True
+                db.session.commit()
 
         return "OK"
 
