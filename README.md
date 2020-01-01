@@ -1,11 +1,40 @@
-SimpleLogin | Privacy-First Email Forwarding/Alias and Identity Provider service
+<p align="center">
+    <img src="./docs/diagram.png" height="300px">
+</p>
+
+<p align="center">
+  <a href="https://twitter.com/intent/tweet?text=Open%20source%20solution%20to%20protect%20your%20email%20address%20@simple_login&url=https://github.com/simple-login/app&hashtags=OpenSource,SimpleLogin">
+    <img alt="tweet" src="https://img.shields.io/twitter/url/https/twitter?label=Share on%20twitter&style=social" target="_blank" />
+  </a>
+</p>
+
+SimpleLogin | Privacy-First Email Forwarding and Identity Provider Service
 ---
 
 https://simplelogin.io
 
+> Yet another email forwarding service?
+
+In some way yes... However, SimpleLogin is a bit different because:
+
+- Fully open source: both the server and client code (browser extension, JS library) are open source so anyone can freely inspect and (hopefully) improve the code.
+- Not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that:
+    - offers privacy for users
+    - is simple to use for developers. SimpleLogin is a privacy-focused alternative to the "Login with Facebook/Google/Twitter" buttons.
+    
+- The only email forwarding solution that is **self-hostable**: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows `ssh` is able to deploy SimpleLogin on their server.
+- Plenty of features: browser extension, custom domain, catch-all alias, OAuth libraries, etc.
+- Open roadmap at https://trello.com/b/4d6A69I4/open-roadmap: you know the exciting features we are working on.
+
+At the heart of SimpleLogin is `email alias`: an alias is a normal email address but all emails sent to an alias are **forwarded** to your email inbox. SimpleLogin alias can also **send** emails: for your contact, the alias is therefore your email address. Use alias whenever you need to give out your email address to protect your online identity.
+
+<p align="center">
+    <img src="./docs/custom-alias.png" height="150px">
+</p>
+
 # Quick start
 
-If you have Docker installed, run the following command to start SimpleLogin local server: 
+If you have Docker installed, run the following command to start SimpleLogin local server:
 
 
 ```bash
@@ -18,26 +47,8 @@ docker run -it --rm \
 
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
 
-To use SimpleLogin email aliases, you need to deploy it on your server with some DNS setup though, 
+To use SimpleLogin aliases, you need to deploy it on your server with some DNS setup though,
 the following section will show a step-by-step guide on how to get your own email forwarder service!
-
-# Introduction
-
-> Yet another email forwarding service?
-
-In some way yes... However, SimpleLogin is a bit different because:
-
-- it's fully open source: both the server and client code (browser extension, JS library) are open source so anyone can freely inspect and (hopefully) improve the code.
-- not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that:
-    - offers privacy for users 
-    - is simple to use for developers. SimpleLogin is a privacy-focused alternative to the "Login with Facebook/Google/Twitter" buttons.
-    
-- the only email alias solution that is `self-hostable`: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows how to `ssh` is able to deploy SimpleLogin on their server.  
-- plenty of features: custom domain, browser extension, alias activity, OAuth libraries, etc.
-- written in Python 🐍 😅 this is not a difference per se but hey I never found a Python email server so feel free to tweak this one if you want to use Python for handling emails.
-
-
-
 
 # Table of Contents
 
@@ -50,13 +61,17 @@ In some way yes... However, SimpleLogin is a bit different because:
 
 ## General Architecture
 
-![](docs/archi.png)
+<p align="center">
+    <img src="./docs/archi.png" height="350px">
+</p>
 
-SimpleLogin backend consists of 2 main components: 
+
+
+SimpleLogin backend consists of 2 main components:
 
 - the `webapp` used by several clients: web UI (the dashboard), browser extension (Chrome & Firefox for now), OAuth clients (apps that integrate "Login with SimpleLogin" button) and mobile app (work in progress).
 
-- the `email handler`: implements the email forwarding (i.e. alias receiving email) and email sending (i.e. alias sending email). 
+- the `email handler`: implements the email forwarding (i.e. alias receiving email) and email sending (i.e. alias sending email).
 
 ## Self hosting
 
@@ -66,11 +81,10 @@ SimpleLogin backend consists of 2 main components:
 
 - a domain that you can config the DNS. It could be a sub-domain. In the rest of the doc, let's say it's `mydomain.com` for the email and `app.mydomain.com` for SimpleLogin webapp. Please make sure to replace these values by your domain name whenever they appear in the doc.
 
-- [Optional]: a dedicated Postgres database. If you don't want to manage and maintain a Postgres database, you can use managed services proposed by some cloud providers. Otherwise this guide will show how to run a Postgres database using Docker. Database is not well-known to be run inside Docker but this is probably fine if you don't have thousands of email addresses.
-
 - [Optional] AWS S3, Sentry, Google/Facebook/Github developer accounts. These are necessary only if you want to activate these options.
 
-All the below steps, except for the DNS ones that are usually done inside your domain registrar interface, are done on your server. The commands are to run with `bash` (or any bash-compatible shell like `zsh`) being the shell. If you use other shells like `fish`, please make sure to adapt the commands.
+
+Except for the DNS setup that is usually done on your domain registrar interface, all the below steps are to be done on your server. The commands are to run with `bash` (or any bash-compatible shell like `zsh`) being the shell. If you use other shells like `fish`, please make sure to adapt the commands.
 
 ### DKIM
 
@@ -98,7 +112,7 @@ Please note that DNS changes could take up to 24 hours to propagate. In practice
 #### MX record
 Create a **MX record** that points `mydomain.com` to `app.mydomain.com` with priority 10.
 
-To verify if the DNS works, `dig mydomain.com mx` should contain the following in the result. 
+To verify if the DNS works, `dig mydomain.com mx` should contain the following in the result.
 
 ```
 mydomain.com.	3600	IN	MX	10 app.mydomain.com.
@@ -118,7 +132,7 @@ with `PUBLIC_KEY` being your `dkim.pub.key` but
 - remove the `-----BEGIN PUBLIC KEY-----` and `-----END PUBLIC KEY-----`
 - join all the lines on a single line.
 
-For example, if your `dkim.pub.key` is 
+For example, if your `dkim.pub.key` is
 
 ```
 -----BEGIN PUBLIC KEY-----
@@ -139,16 +153,14 @@ From Wikipedia https://en.wikipedia.org/wiki/Sender_Policy_Framework
 
 > Sender Policy Framework (SPF) is an email authentication method designed to detect forging sender addresses during the delivery of the email
 
-Similar to DKIM, setting up SPF is highly recommended. 
+Similar to DKIM, setting up SPF is highly recommended.
 Add a TXT record for `mydomain.com` with the value `v=spf1 mx -all`. What it means is only your server can send email with `@mydomain.com` domain. To verify, you can use `dig mydomain.com txt`
-
-#### DMARC (optional) TODO
 
 ### Docker
 
 Now the boring DNS stuffs are done, let's do something more fun!
 
-Please follow the steps on [Docker CE for Ubuntu](https://docs.docker.com/v17.12/install/linux/docker-ce/ubuntu/) to install Docker on the server. 
+If you don't already have Docker installed on your server, please follow the steps on [Docker CE for Ubuntu](https://docs.docker.com/v17.12/install/linux/docker-ce/ubuntu/) to install Docker.
 
 Tips: if you want to run Docker without the `sudo` prefix, add your account to `docker` group:
 
@@ -170,7 +182,7 @@ docker network create -d bridge \
 
 ### Postgres
 
-This section shows how to run a Postgres database using Docker. At the end of this section, you will have a database username and password which are being referred to the next steps.
+This section shows how to run a Postgres database using Docker. At the end of this section, you will have a database username and password which will be used in the next steps.
 
 If you have already had a Postgres database in use, you can skip this section and just copy the database configuration (i.e. host, port, username, password, database name).
 
@@ -202,7 +214,7 @@ Install `postfix` and `postfix-pgsql`. The latter is used to connect Postfix and
 sudo apt-get install -y postfix postfix-pgsql
 ```
 
-Choose "Internet Site" in Postfix installation window then keep using the proposed value as *System mail name* in the next window. 
+Choose "Internet Site" in Postfix installation window then keep using the proposed value as *System mail name* in the next window.
 
 Run the following commands to setup Postfix. Make sure to replace `mydomain.com` with the appropriate value of your domain.
 
@@ -250,7 +262,7 @@ Finally, restart Postfix
 
 ### Run SimpleLogin Docker containers
 
-To run the server, you need a config file. Please have a look at [config example](./.env.example) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS). 
+To run the server, you need a config file. Please have a look at [config example](./.env.example) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
 Let's put your config file at `~/simplelogin.env`.
 
@@ -265,9 +277,6 @@ EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
 DKIM_PRIVATE_KEY_PATH=/dkim.key
 DKIM_PUBLIC_KEY_PATH=/dkim.pub.key
 DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
-
-# optional, to have more choices for random alias.
-WORDS_FILE_PATH=local_data/words_alpha.txt
 ```
 
 
@@ -353,11 +362,11 @@ At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot
 
 ### Enjoy!
 
-If all of the above steps are successful, open http://app.mydomain.com/ and create your first account! 
+If all of the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
 ## Contributing
 
-All work on SimpleLogin happens directly on GitHub. 
+All work on SimpleLogin happens directly on GitHub.
 
 ### Run code locally
 
@@ -398,7 +407,7 @@ john@wick.com / password
 
 ### API
 
-For now the only API client is the Chrome/Firefox extension. This extension relies on `API Code` for authentication. 
+For now the only API client is the Chrome/Firefox extension. This extension relies on `API Code` for authentication.
 
 In every request, the extension sends
 
@@ -408,7 +417,7 @@ In every request, the extension sends
 
 Currently, the latest extension uses the two following endpoints :
 
-- `/alias/options`: returns what to suggest to user when they open the extension. 
+- `/alias/options`: returns what to suggest to user when they open the extension.
 
 ```
 GET /alias/options hostname?="www.groupon.com"
@@ -418,7 +427,7 @@ Response: a json with following structure. ? means optional field.
 		alias: www_groupon_com@simplelogin.co
 		hostname: www.groupon.com
 
-	custom: 
+	custom:
 		suggestion: groupon
 		suffix: [@my_domain.com, .abcde@simplelogin.co]
 
@@ -430,7 +439,7 @@ Response: a json with following structure. ? means optional field.
 
 - `/alias/custom/new`: allows user to create a new custom alias.
 
-To try out the endpoint, you can use the following command. The command uses [httpie](https://httpie.org). 
+To try out the endpoint, you can use the following command. The command uses [httpie](https://httpie.org).
 Make sure to replace `{api_key}` by your API Key obtained on https://app.simplelogin.io/dashboard/api_key
 
 ```
@@ -456,7 +465,7 @@ The database migration is handled by `alembic`
 
 Whenever the model changes, a new migration has to be created
 
-Set the database connection to use a current database (i.e. the one without the model changes you just made), for example, if you have a staging config at `~/config/simplelogin/staging.env`, you can do: 
+Set the database connection to use a current database (i.e. the one without the model changes you just made), for example, if you have a staging config at `~/config/simplelogin/staging.env`, you can do:
 
 ```bash
 ln -sf ~/config/simplelogin/staging.env .env
@@ -474,16 +483,16 @@ In local the database creation in Sqlite doesn't use migration and uses directly
 
 The repo consists of the three following entry points:
 
-- wsgi.py and server.py: the webapp. 
-- email_handler.py: the email handler. 
-- cron.py: the cronjob. 
+- wsgi.py and server.py: the webapp.
+- email_handler.py: the email handler.
+- cron.py: the cronjob.
 
 Here are the small sum-ups of the directory structures and their roles:
 
 - app/: main Flask app. It is structured into different packages representing different features like oauth,  api, dashboard, etc.
 - local_data/: contains files to facilitate the local development. They are replaced during the deployment.
 - migrations/: generated by flask-migrate. Edit these files will be only edited when you spot (very rare) errors on the database migration files.
-- static/: files available at `/static` url. 
+- static/: files available at `/static` url.
 - templates/: contains both html and email templates.
 - tests/: tests. We don't really distinguish unit, functional or integration test. A test is simply here to make sure a feature works correctly.
 
@@ -499,7 +508,7 @@ SL currently supports code and implicit flow.
 
 #### Code flow
 
-To trigger the code flow locally, you can go to the following url after running `python server.py`:  
+To trigger the code flow locally, you can go to the following url after running `python server.py`:
 
 ```
 http://localhost:7777/oauth/authorize?client_id=client-id&state=123456&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A7000%2Fcallback&state=random_string
@@ -521,8 +530,8 @@ http http://localhost:7777/oauth/user_info 'Authorization:Bearer {token}'
 
 #### Implicit flow
 
-Similar to code flow, except for the the `access token` which we we get back with the redirection. 
-For implicit flow, the url is 
+Similar to code flow, except for the the `access token` which we we get back with the redirection.
+For implicit flow, the url is
 
 ```
 http://localhost:7777/oauth/authorize?client_id=client-id&state=123456&response_type=token&redirect_uri=http%3A%2F%2Flocalhost%3A7000%2Fcallback&state=random_string
