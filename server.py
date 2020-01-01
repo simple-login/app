@@ -6,8 +6,8 @@ import sentry_sdk
 from flask import Flask, redirect, url_for, render_template, request, jsonify
 from flask_admin import Admin
 from flask_cors import cross_origin
-from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import current_user
+import flask_profiler
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from app import paddle_utils
@@ -22,6 +22,8 @@ from app.config import (
     SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
     RESET_DB,
+    FLASK_PROFILER_PATH,
+    FLASK_PROFILER_PASSWORD,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -76,6 +78,20 @@ def create_app() -> Flask:
 
     init_admin(app)
     setup_paddle_callback(app)
+
+    if FLASK_PROFILER_PATH:
+        LOG.d("Enable flask-profiler")
+        app.config["flask_profiler"] = {
+            "enabled": True,
+            "storage": {"engine": "sqlite", "FILE": FLASK_PROFILER_PATH},
+            "basicAuth": {
+                "enabled": True,
+                "username": "admin",
+                "password": FLASK_PROFILER_PASSWORD,
+            },
+            "ignore": ["^/static/.*"],
+        }
+        flask_profiler.init_app(app)
 
     return app
 
