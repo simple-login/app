@@ -11,7 +11,7 @@ If you have Docker installed, run the following command to start SimpleLogin loc
 ```bash
 docker run -it --rm \
     -e RESET_DB=true \
-    -e CONFIG=/code/.env.example \ 
+    -e CONFIG=/code/.env.example \
     -p 7777:7777 \
     simplelogin/app python server.py
 ```
