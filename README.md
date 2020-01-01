@@ -2,12 +2,6 @@
     <img src="./docs/diagram.png" height="300px">
 </p>
 
-<p align="center">
-  <a href="https://twitter.com/intent/tweet?text=Open%20source%20solution%20to%20protect%20your%20email%20address%20@simple_login&url=https://github.com/simple-login/app&hashtags=OpenSource,SimpleLogin">
-    <img alt="tweet" src="https://img.shields.io/twitter/url/https/twitter?label=Share on%20twitter&style=social" target="_blank" />
-  </a>
-</p>
-
 SimpleLogin | Privacy-First Email Forwarding and Identity Provider Service
 ---
 <p>    
@@ -30,6 +24,7 @@ SimpleLogin | Privacy-First Email Forwarding and Identity Provider Service
 <a href="https://twitter.com/simple_login">
 <img src="https://img.shields.io/twitter/follow/simple_login?style=social">
 </a>
+
 </p>
 
 https://simplelogin.io
