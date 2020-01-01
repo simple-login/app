@@ -6,7 +6,6 @@ import sentry_sdk
 from flask import Flask, redirect, url_for, render_template, request, jsonify
 from flask_admin import Admin
 from flask_cors import cross_origin
-from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -39,6 +38,7 @@ from app.models import (
     PlanEnum,
     ApiKey,
     CustomDomain,
+    LifetimeCoupon,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -99,6 +99,9 @@ def fake_data():
         is_admin=True,
         otp_secret="base32secret3232",
     )
+    db.session.commit()
+
+    LifetimeCoupon.create(code="coupon", nb_used=10)
     db.session.commit()
 
     # Create a subscription for user
