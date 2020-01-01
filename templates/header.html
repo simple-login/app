@@ -42,7 +42,7 @@
           </a>
 
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-            {% if current_user.is_premium() %}
+            {% if current_user.get_subscription() %}
               <a class="dropdown-item" href="{{ url_for('dashboard.billing') }}">
                 <i class="dropdown-icon fe fe-dollar-sign"></i> Billing
               </a>
