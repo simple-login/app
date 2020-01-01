@@ -1,8 +1,10 @@
 <p align="center">
-    <img src="./docs/diagram.png" height="300px">
+    <a href="https://simplelogin.io">
+        <img src="./docs/diagram.png" height="300px">
+    </a>
 </p>
 
-SimpleLogin | Privacy-First Email Forwarding and Identity Provider Service
+[SimpleLogin](https://simplelogin.io) | Privacy-First Email Forwarding and Identity Provider Service
 ---
 <p>    
 <a href="https://chrome.google.com/webstore/detail/simplelogin-protect-your/dphilobhebphkdjbpfohgikllaljmgbn">
@@ -27,8 +29,6 @@ SimpleLogin | Privacy-First Email Forwarding and Identity Provider Service
 
 </p>
 
-https://simplelogin.io
-
 > Yet another email forwarding service?
 
 In some way yes... However, SimpleLogin is a bit different because:
@@ -42,7 +42,7 @@ In some way yes... However, SimpleLogin is a bit different because:
 - Plenty of features: browser extension, custom domain, catch-all alias, OAuth libraries, etc.
 - Open roadmap at https://trello.com/b/4d6A69I4/open-roadmap: you know the exciting features we are working on.
 
-At the heart of SimpleLogin is `email alias`: an alias is a normal email address but all emails sent to an alias are **forwarded** to your email inbox. SimpleLogin alias can also **send** emails: for your contact, the alias is therefore your email address. Use alias whenever you need to give out your email address to protect your online identity.
+At the heart of SimpleLogin is `email alias`: an alias is a normal email address but all emails sent to an alias are **forwarded** to your email inbox. SimpleLogin alias can also **send** emails: for your contact, the alias is therefore your email address. Use alias whenever you need to give out your email address to protect your online identity. More info on our website at https://simplelogin.io
 
 <p align="center">
     <img src="./docs/custom-alias.png" height="150px">
@@ -78,10 +78,8 @@ the following section will show a step-by-step guide on how to get your own emai
 ## General Architecture
 
 <p align="center">
-    <img src="./docs/archi.png" height="350px">
+    <img src="./docs/archi.png" height="450px">
 </p>
-
-
 
 SimpleLogin backend consists of 2 main components:
 
@@ -582,3 +580,18 @@ response_type=id_token code
     return `id_token` in addition to `authorization_code` in /authorization endpoint
 
 ```
+
+
+## ❤️ Contributors
+
+Thanks go to these wonderful people:
+
+<table>
+  <tr>
+    <td align="center"><a href="https://www.linkedin.com/in/vandungnguyen/"><img src="https://simplelogin.io/about/dung.jpg" width="100px;" alt="Dung Nguyen Van"/><br /><sub><b>Dung Nguyen Van</b></sub></a><br /></td>
+    <td align="center"><a href="https://www.linkedin.com/in/giuseppe-f-83449ba4/"><img src="https://simplelogin.io/about/giuseppe.jpeg" width="100px;" alt="Giuseppe Federico"/><br /><sub><b>Giuseppe Federico</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/NinhDinh"><img src="https://avatars2.githubusercontent.com/u/1419742?s=460&v=4" width="100px;" alt="Ninh Dinh"/><br /><sub><b>Ninh Dinh</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/ntung"><img src="https://avatars1.githubusercontent.com/u/663341?s=460&v=4" width="100px;" alt="Tung Nguyen V. N."/><br /><sub><b>Tung Nguyen V. N.</b></sub></a><br /></td>    
+    <td align="center"><a href="https://www.linkedin.com/in/nguyenkims/"><img src="https://simplelogin.io/about/me.jpeg" width="100px;" alt="Son Nguyen Kim"/><br /><sub><b>Son Nguyen Kim</b></sub></a><br /></td>    
+</tr>
+</table>
