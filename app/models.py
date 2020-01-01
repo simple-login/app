@@ -146,6 +146,9 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def is_premium(self):
         """user is premium if they have a active subscription"""
+        if self.lifetime:
+            return True
+
         sub: Subscription = self.get_subscription()
         if sub:
             return True
