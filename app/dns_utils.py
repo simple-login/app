@@ -7,7 +7,7 @@ def get_mx_domains(hostname) -> [(int, str)]:
     """
     try:
         answers = dns.resolver.query(hostname, "MX")
-    except dns.resolver.NoAnswer:
+    except Exception:
         return []
 
     ret = []
