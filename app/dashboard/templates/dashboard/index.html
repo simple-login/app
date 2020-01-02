@@ -34,32 +34,32 @@
           </button>
         </form>
         <div class="btn-group" role="group">
-            <form method="post">
-                <input type="hidden" name="form-name" value="create-random-email">
-                <button data-toggle="tooltip"
-                        title="Create a totally random alias"
-                        class="btn btn-success">Random Alias
-                </button>
-            </form>
-            <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <form method="post">
+            <input type="hidden" name="form-name" value="create-random-email">
+            <button data-toggle="tooltip"
+                    title="Create a totally random alias"
+                    class="btn btn-success">Random Alias
             </button>
-            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="btnGroupDrop1">
-                <div class="">
-                    <form method="post">
-                        <input type="hidden" name="form-name" value="create-random-email">
-                        <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
-                        <button class="dropdown-item">By random words</button>
-                    </form>
-                </div>
-                <div class="">
-                    <form method="post">
-                        <input type="hidden" name="form-name" value="create-random-email">
-                        <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.uuid.value }}">
-                        <button class="dropdown-item">By UUID</button>
-                    </form>
-                </div>
+          </form>
+          <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle"
+                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          </button>
+          <div class="dropdown-menu dropdown-menu-right" aria-labelledby="btnGroupDrop1">
+            <div class="">
+              <form method="post">
+                <input type="hidden" name="form-name" value="create-random-email">
+                <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
+                <button class="dropdown-item">By random words</button>
+              </form>
             </div>
+            <div class="">
+              <form method="post">
+                <input type="hidden" name="form-name" value="create-random-email">
+                <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.uuid.value }}">
+                <button class="dropdown-item">By UUID</button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -70,17 +70,17 @@
     {% for alias_info in aliases %}
       {% set gen_email = alias_info.gen_email %}
 
-      <div class="col-md-6"
-          {% if loop.index ==1 %}
-           data-intro="This is an <b>alias</b>. <br><br>
-        <b>All</b> emails sent to an alias will be forwarded to your inbox. <br><br>
-        Alias is a great way to hide your personal email address so feel free to
-        use it whenever possible, for example on untrusted websites 😎"
-          {% endif %}
-      >
+      <div class="col-md-6">
         <div class="card p-3 {% if alias_info.highlight %} highlight-row {% endif %}">
           <div>
             <span class="clipboard cursor mb-0"
+                {% if loop.index ==1 %}
+                  data-intro="This is an <em>alias</em>. <br><br>
+        <b>All</b> emails sent to an alias will be <em>forwarded</em> to your inbox. <br><br>
+        Alias is a great way to hide your personal email address so feel free to
+        use it whenever possible, for example when signing up for a newsletter or creating a new account on a suspicious website 😎"
+                  data-step="2"
+                {% endif %}
                 {% if gen_email.enabled %}
                   data-toggle="tooltip"
                   title="Copy to clipboard"
@@ -127,11 +127,12 @@
                   {% endif %}
 
                   {% if loop.index ==1 %}
-                     data-intro="By turning off an alias, emails sent to this alias will <b>NOT</b>
+                     data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
                            be forwarded to your inbox. <br><br>
                            This should be used with care as others might
                            not be able to reach you after ...
                             "
+                     data-step="3"
                   {% endif %}
                      style="padding-left: 0px"
               >
@@ -149,7 +150,11 @@
               {% if gen_email.enabled %}
                 <a href="{{ url_for('dashboard.alias_contact_manager', alias=gen_email.email) }}"
                     {% if alias_info.show_intro_test_send_email %}
-                   data-intro="Not only alias can receive emails, it can send emails too!"
+                   data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
+                   You can add a new <em>contact</em> to for your alias here. <br><br>
+                   To send an email to your contact, SimpleLogin will create a <em>special</em> email address: <br>
+                   sending an email to this email address will <em>forward</em> your email to your contact"
+                   data-step="4"
                     {% endif %}
                    class="btn btn-sm btn-outline-primary"
                    data-toggle="tooltip"
@@ -183,10 +188,12 @@
 
   {% if  client_users %}
     <div class="page-header row">
-      <h3 class="page-title col" data-intro="Here you can find the list of website/app on which
-    you have used the <b>Connect with SimpleLogin</b> button <br><br>
-    You also see what information that SimpleLogin has communicated to these website/app when you sign in.
-">
+      <h3 class="page-title col"
+          data-intro="Here you can find the list of website/app on which
+    you have used the <em>Connect with SimpleLogin</em> button <br><br>
+    You also see what information that SimpleLogin has communicated to these website/app when you sign in."
+          data-step="5"
+      >
         Apps
       </h3>
     </div>
