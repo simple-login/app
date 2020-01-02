@@ -56,6 +56,9 @@
         <div class="text-danger mt-4">
           Your DNS is not correctly set. The MX record we obtain is:
           <div class="mb-3 p-3" style="background-color: #eee">
+            {% if not mx_errors %}
+              (Empty)
+            {% endif %}
             {% for r in mx_errors %}
               {{ r }} <br>
             {% endfor %}
@@ -112,6 +115,10 @@
         <div class="text-danger mt-4">
           Your DNS is not correctly set. The TXT record we obtain is:
           <div class="mb-3 p-3" style="background-color: #eee">
+            {% if not spf_errors %}
+              (Empty)
+            {% endif %}
+
             {% for r in spf_errors %}
               {{ r }} <br>
             {% endfor %}
