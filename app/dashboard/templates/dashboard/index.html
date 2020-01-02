@@ -34,32 +34,32 @@
           </button>
         </form>
         <div class="btn-group" role="group">
-            <form method="post">
-                <input type="hidden" name="form-name" value="create-random-email">
-                <button data-toggle="tooltip"
-                        title="Create a totally random alias"
-                        class="btn btn-success">Random Alias
-                </button>
-            </form>
-            <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <form method="post">
+            <input type="hidden" name="form-name" value="create-random-email">
+            <button data-toggle="tooltip"
+                    title="Create a totally random alias"
+                    class="btn btn-success">Random Alias
             </button>
-            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="btnGroupDrop1">
-                <div class="">
-                    <form method="post">
-                        <input type="hidden" name="form-name" value="create-random-email">
-                        <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
-                        <button class="dropdown-item">By random words</button>
-                    </form>
-                </div>
-                <div class="">
-                    <form method="post">
-                        <input type="hidden" name="form-name" value="create-random-email">
-                        <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.uuid.value }}">
-                        <button class="dropdown-item">By UUID</button>
-                    </form>
-                </div>
+          </form>
+          <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle"
+                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          </button>
+          <div class="dropdown-menu dropdown-menu-right" aria-labelledby="btnGroupDrop1">
+            <div class="">
+              <form method="post">
+                <input type="hidden" name="form-name" value="create-random-email">
+                <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
+                <button class="dropdown-item">By random words</button>
+              </form>
             </div>
+            <div class="">
+              <form method="post">
+                <input type="hidden" name="form-name" value="create-random-email">
+                <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.uuid.value }}">
+                <button class="dropdown-item">By UUID</button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
