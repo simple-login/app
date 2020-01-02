@@ -9,6 +9,9 @@ from flask_admin import Admin
 from flask_cors import cross_origin
 from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+
 
 from app import paddle_utils
 from app.admin_model import SLModelView, SLAdminIndexView
@@ -48,7 +51,14 @@ from app.oauth.base import oauth_bp
 
 if SENTRY_DSN:
     LOG.d("enable sentry")
-    sentry_sdk.init(dsn=SENTRY_DSN, integrations=[FlaskIntegration()])
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            FlaskIntegration(),
+            SqlalchemyIntegration(),
+            AioHttpIntegration(),
+        ],
+    )
 
 # the app is served behin nginx which uses http and not https
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
