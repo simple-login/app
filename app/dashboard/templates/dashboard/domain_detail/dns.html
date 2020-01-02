@@ -39,7 +39,7 @@
         </div>
       {% endfor %}
 
-      <form method="post">
+      <form method="post" id="mx-form" action="#mx-form">
         <input type="hidden" name="form-name" value="check-mx">
         {% if custom_domain.verified %}
           <button type="submit" class="btn btn-outline-primary">
@@ -98,7 +98,7 @@
         </em>
       </div>
 
-      <form method="post">
+      <form method="post" id="spf-form" action="#spf-form">
         <input type="hidden" name="form-name" value="check-spf">
         {% if custom_domain.spf_verified %}
           <button type="submit" class="btn btn-outline-primary">
@@ -159,7 +159,7 @@
         </em>
       </div>
 
-      <form method="post">
+      <form method="post" id="dkim-form" action="#dkim-form">
         <input type="hidden" name="form-name" value="check-dkim">
         {% if custom_domain.dkim_verified %}
           <button type="submit" class="btn btn-outline-primary">
