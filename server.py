@@ -195,7 +195,7 @@ def register_blueprints(app: Flask):
 
 
 def set_index_page(app):
-    @app.route("/")
+    @app.route("/", methods=["GET", "POST"])
     def index():
         if current_user.is_authenticated:
             return redirect(url_for("dashboard.index"))
