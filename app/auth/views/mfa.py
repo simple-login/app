@@ -22,13 +22,13 @@ def mfa():
     # user access this page directly without passing by login page
     if not user_id:
         flash("Unknown error, redirect back to main page", "warning")
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("auth.login"))
 
     user = User.get(user_id)
 
     if not (user and user.enable_otp):
         flash("Only user with MFA enabled should go to this page", "warning")
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("auth.login"))
 
     otp_token_form = OtpTokenForm()
     next_url = request.args.get("next")
