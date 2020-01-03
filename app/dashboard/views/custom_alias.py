@@ -51,7 +51,9 @@ def custom_alias():
                         "create custom alias %s for user %s", full_email, current_user
                     )
                     gen_email = GenEmail.create(
-                        email=full_email, user_id=current_user.id, description=email_description
+                        email=full_email,
+                        user_id=current_user.id,
+                        description=email_description,
                     )
                     db.session.commit()
 

@@ -108,7 +108,7 @@ def create_app() -> Flask:
 
 
 def fake_data():
-    NB_ALIAS = 4;
+    NB_ALIAS = 4
 
     LOG.d("create fake data")
     # Remove db if exist
@@ -149,7 +149,11 @@ def fake_data():
     api_key.code = "code"
 
     for i in range(NB_ALIAS):
-        GenEmail.create_new(user.id, f"e{i}@", f"This is a small description to test that the description for e{i}@ works fine...")
+        GenEmail.create_new(
+            user.id,
+            f"e{i}@",
+            f"This is a small description to test that the description for e{i}@ works fine...",
+        )
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(
