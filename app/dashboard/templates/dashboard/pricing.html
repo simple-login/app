@@ -22,6 +22,9 @@
               Custom Domain
             </li>
             <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
+              Catch-all (or wildcard) alias
+            </li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
               Directory (or Username)
               <span class="badge badge-info">Coming Soon</span>
             </li>
@@ -35,20 +38,23 @@
     </div>
 
     <div class="col-sm-6 col-lg-6">
-      <div class="display-6 mt-3">
+      <div class="display-6 my-3">
         🔐 Secure payments by
-        <a href="https://paddle.com">Paddle<i class="fe fe-external-link"></i></a></li>
+        <a href="https://paddle.com" target="_blank">Paddle<i class="fe fe-external-link"></i></a></li>
         </a>
       </div>
 
-      <hr>
+      <div class="mb-3">
+        Please note that Paddle only supports bank card or PayPal. <br>
+        Send us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a> if you need other payment options (e.g. IBAN transfer).
+      </div>
 
-      <button class="btn btn-success btn-lg" onclick="upgrade({{ PADDLE_MONTHLY_PRODUCT_ID }})">
+      <button class="btn btn-success" onclick="upgrade({{ PADDLE_MONTHLY_PRODUCT_ID }})">
         Monthly <br>
         $2.99/month
       </button>
 
-      <button class="btn btn-primary btn-lg" onclick="upgrade({{ PADDLE_YEARLY_PRODUCT_ID }})">
+      <button class="btn btn-primary" onclick="upgrade({{ PADDLE_YEARLY_PRODUCT_ID }})">
         Yearly <br>
         $29.99/year
       </button>
@@ -64,13 +70,13 @@
           If you have a lifetime coupon, please paste it here. <br>
           For information, we offer free premium account for education (student, professor or technical staff working at
           an educational institute). <br>
-          Drop us an email at hi@simplelogin.io with your student ID or certificate to get the coupon.
+          Drop us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a> with your student ID or certificate to get the coupon.
         </div>
 
 
         {{ coupon_form.code(class="form-control", placeholder="Coupon") }}
         {{ render_field_errors(coupon_form.code) }}
-        <button class="btn btn-lg btn-success mt-2">Apply</button>
+        <button class="btn btn-success mt-2">Apply</button>
       </form>
     </div>
   </div>
