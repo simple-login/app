@@ -89,6 +89,7 @@ def create_app() -> Flask:
 
     init_admin(app)
     setup_paddle_callback(app)
+    setup_do_not_track(app)
 
     if FLASK_PROFILER_PATH:
         LOG.d("Enable flask-profiler")
@@ -399,6 +400,23 @@ def init_admin(app):
     admin.add_view(SLModelView(Client, db.session))
     admin.add_view(SLModelView(GenEmail, db.session))
     admin.add_view(SLModelView(ClientUser, db.session))
+
+
+def setup_do_not_track(app):
+    @app.route("/dnt")
+    def do_not_track():
+        return """
+        <script>
+// Disable GoatCounter if this script is called
+
+window.localStorage.setItem('goatcounter-ignore', 't');
+
+alert("GoatCounter disabled");
+
+window.location.href = "/";
+
+</script>
+        """
 
 
 if __name__ == "__main__":
