@@ -17,7 +17,7 @@
       minute or in our experience).
     </div>
 
-    <div>
+    <div id="mx-form">
       <div class="font-weight-bold">1. MX record
 
         {% if custom_domain.verified %}
@@ -34,12 +34,12 @@
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
         <div class="mb-3 p-3" style="background-color: #eee">
           Domain: <em>{{ custom_domain.domain }}</em> <br>
-          Priority: {{priority}} <br>
+          Priority: {{ priority }} <br>
           Target: <em>{{ email_server }}</em> <br>
         </div>
       {% endfor %}
 
-      <form method="post" id="mx-form" action="#mx-form">
+      <form method="post" action="#mx-form">
         <input type="hidden" name="form-name" value="check-mx">
         {% if custom_domain.verified %}
           <button type="submit" class="btn btn-outline-primary">
@@ -72,7 +72,7 @@
 
     <hr>
 
-    <div>
+    <div id="spf-form">
       <div class="font-weight-bold">2. SPF (Optional)
         {% if custom_domain.spf_verified %}
           <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
@@ -98,7 +98,7 @@
         </em>
       </div>
 
-      <form method="post" id="spf-form" action="#spf-form">
+      <form method="post" action="#spf-form">
         <input type="hidden" name="form-name" value="check-spf">
         {% if custom_domain.spf_verified %}
           <button type="submit" class="btn btn-outline-primary">
@@ -132,7 +132,7 @@
 
     <hr>
 
-    <div>
+    <div id="dkim-form">
       <div class="font-weight-bold">3. DKIM (Optional)
         {% if custom_domain.dkim_verified %}
           <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
@@ -159,7 +159,7 @@
         </em>
       </div>
 
-      <form method="post" id="dkim-form" action="#dkim-form">
+      <form method="post" action="#dkim-form">
         <input type="hidden" name="form-name" value="check-dkim">
         {% if custom_domain.dkim_verified %}
           <button type="submit" class="btn btn-outline-primary">
