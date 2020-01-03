@@ -12,4 +12,5 @@ from .views import (
     mfa_setup,
     mfa_cancel,
     domain_detail,
+    lifetime_licence,
 )
