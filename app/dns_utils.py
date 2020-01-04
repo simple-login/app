@@ -6,7 +6,12 @@ def get_mx_domains(hostname) -> [(int, str)]:
     domain name ends with a "." at the end.
     """
     try:
-        answers = dns.resolver.query(hostname, "MX")
+        my_resolver = dns.resolver.Resolver()
+
+        # 8.8.8.8 is Google's public DNS server
+        my_resolver.nameservers = ['8.8.8.8']
+
+        answers = my_resolver.query(hostname, "MX")
     except Exception:
         return []
 
@@ -27,7 +32,12 @@ _include_spf = "include:"
 def get_spf_domain(hostname) -> [str]:
     """return all domains listed in *include:*"""
     try:
-        answers = dns.resolver.query(hostname, "TXT")
+        my_resolver = dns.resolver.Resolver()
+
+        # 8.8.8.8 is Google's public DNS server
+        my_resolver.nameservers = ['8.8.8.8']
+
+        answers = my_resolver.query(hostname, "TXT")
     except Exception:
         return []
 
@@ -48,7 +58,12 @@ def get_spf_domain(hostname) -> [str]:
 
 def get_txt_record(hostname) -> [str]:
     try:
-        answers = dns.resolver.query(hostname, "TXT")
+        my_resolver = dns.resolver.Resolver()
+
+        # 8.8.8.8 is Google's public DNS server
+        my_resolver.nameservers = ['8.8.8.8']
+
+        answers = my_resolver.query(hostname, "TXT")
     except Exception:
         return []
 
@@ -66,7 +81,12 @@ def get_txt_record(hostname) -> [str]:
 def get_dkim_record(hostname) -> str:
     """query the dkim._domainkey.{hostname} record and returns its value"""
     try:
-        answers = dns.resolver.query(f"dkim._domainkey.{hostname}", "TXT")
+        my_resolver = dns.resolver.Resolver()
+
+        # 8.8.8.8 is Google's public DNS server
+        my_resolver.nameservers = ['8.8.8.8']
+
+        answers = my_resolver.query(f"dkim._domainkey.{hostname}", "TXT")
     except Exception:
         return ""
 
