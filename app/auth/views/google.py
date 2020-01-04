@@ -93,7 +93,9 @@ def google_callback():
     # create user
     else:
         LOG.d("create google user with %s", google_user_data)
-        user = User.create(email=email, name=google_user_data["name"], activated=True)
+        user = User.create(
+            email=email.lower(), name=google_user_data["name"], activated=True
+        )
 
         if picture_url:
             LOG.d("set user profile picture to %s", picture_url)

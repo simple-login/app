@@ -103,7 +103,9 @@ def facebook_callback():
     # create user
     else:
         LOG.d("create facebook user with %s", facebook_user_data)
-        user = User.create(email=email, name=facebook_user_data["name"], activated=True)
+        user = User.create(
+            email=email.lower(), name=facebook_user_data["name"], activated=True
+        )
 
         if picture_url:
             LOG.d("set user profile picture to %s", picture_url)
