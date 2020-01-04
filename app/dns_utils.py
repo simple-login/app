@@ -9,7 +9,7 @@ def get_mx_domains(hostname) -> [(int, str)]:
         my_resolver = dns.resolver.Resolver()
 
         # 8.8.8.8 is Google's public DNS server
-        my_resolver.nameservers = ['8.8.8.8']
+        my_resolver.nameservers = ["8.8.8.8"]
 
         answers = my_resolver.query(hostname, "MX")
     except Exception:
@@ -35,7 +35,7 @@ def get_spf_domain(hostname) -> [str]:
         my_resolver = dns.resolver.Resolver()
 
         # 8.8.8.8 is Google's public DNS server
-        my_resolver.nameservers = ['8.8.8.8']
+        my_resolver.nameservers = ["8.8.8.8"]
 
         answers = my_resolver.query(hostname, "TXT")
     except Exception:
@@ -61,7 +61,7 @@ def get_txt_record(hostname) -> [str]:
         my_resolver = dns.resolver.Resolver()
 
         # 8.8.8.8 is Google's public DNS server
-        my_resolver.nameservers = ['8.8.8.8']
+        my_resolver.nameservers = ["8.8.8.8"]
 
         answers = my_resolver.query(hostname, "TXT")
     except Exception:
@@ -84,7 +84,7 @@ def get_dkim_record(hostname) -> str:
         my_resolver = dns.resolver.Resolver()
 
         # 8.8.8.8 is Google's public DNS server
-        my_resolver.nameservers = ['8.8.8.8']
+        my_resolver.nameservers = ["8.8.8.8"]
 
         answers = my_resolver.query(f"dkim._domainkey.{hostname}", "TXT")
     except Exception:
