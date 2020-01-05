@@ -427,51 +427,73 @@ In every request, the extension sends
 
 - the `API Code` is set in `Authentication` header. The check is done via the `verify_api_key` wrapper, implemented in `app/api/base.py`
 
-- the current website `hostname` which is the website subdomain name + domain name. For ex, if user is on `http://dashboard.example.com/path1/path2?query`, the subdomain is `dashboard.example.com`. This information is important to know where an alias is used in order to proposer to user the same alias if they want to create on alias on the same website in the future. The `hostname` is passed in the request query `?hostname=`, see `app/api/views/alias_options.py` for an example.
+- (Optional but recommended) `hostname` passed in query string. hostname is the the URL hostname (cf https://en.wikipedia.org/wiki/URL), for ex if URL is http://www.example.com/index.html then the hostname is `www.example.com`. This information is important to know where an alias is used in order to suggest user the same alias if they want to create on alias on the same website in the future. 
 
-Currently, the latest extension uses the two following endpoints :
+If error, the API returns 4** with body containing the error message, for example:
 
-- `/alias/options`: returns what to suggest to user when they open the extension.
-
-```
-GET /alias/options hostname?="www.groupon.com"
-
-Response: a json with following structure. ? means optional field.
-	recommendation?:
-		alias: www_groupon_com@simplelogin.co
-		hostname: www.groupon.com
-
-	custom:
-		suggestion: groupon
-		suffix: [@my_domain.com, .abcde@simplelogin.co]
-
-	can_create_custom: true
-
-	existing:
-		[email1, email2, ...]
+```json
+{"error": "request body cannot be empty"}
 ```
 
-- `/alias/custom/new`: allows user to create a new custom alias.
+The error message is used mostly for debugging and should never be displayed to user as-is.
 
-To try out the endpoint, you can use the following command. The command uses [httpie](https://httpie.org).
-Make sure to replace `{api_key}` by your API Key obtained on https://app.simplelogin.io/dashboard/api_key
+#### GET /api/v2/alias/options
 
+User alias info and suggestion. Used by the first extension screen when user opens the extension.
+
+Input:
+- `Authentication` header that contains the api key
+- (Optional but recommended) `hostname` passed in query string. 
+
+Output: a json with the following field:
+- can_create: boolean. Whether user can create new alias
+- suffixes: list of string. List of alias `suffix` that user can use. If user doesn't have custom domain, this list has a single element which is the alias default domain (simplelogin.co).
+- prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted from `hostname`. If no `hostname`, then the `prefix_suggestion` is empty.
+- existing: list of string. List of existing alias.
+- recommendation: optional field, dictionary. If an alias is already used for this website, the recommendation will be returned. There are 2 subfields in `recommendation`: `alias` which is the recommended alias and `hostname` is the website on which this alias is used before.
+
+For ex:
+```json
+{
+    "can_create": true,
+    "existing": [
+        "my-first-alias.meo@sl.local",
+        "e1.cat@sl.local",
+        "e2.chat@sl.local",
+        "e3.cat@sl.local"
+    ],
+    "prefix_suggestion": "test",
+    "recommendation": {
+        "alias": "e1.cat@sl.local",
+        "hostname": "www.test.com"
+    },
+    "suffixes": [
+        "@very-long-domain.com.net.org",
+        "@ab.cd",
+        ".cat@sl.local"
+    ]
+}
 ```
-http https://app.simplelogin.io/api/alias/options \
-    Authentication:{api_key} \
-    hostname==www.google.com
+
+#### POST /alias/custom/new
+
+Create a new custom alias.
+
+Input: 
+- `Authentication` header that contains the api key
+- (Optional but recommended) `hostname` passed in query string
+- Request Message Body in json (`Content-Type` is `application/json`)
+    - alias_prefix: string. The first part of the alias that user can choose.
+    - alias_suffix: should be one of the suffixes returned in the `GET /api/v2/alias/options` endpoint.
+
+Output:
+If success, 201 with the new alias, for example 
+
+```json
+{alias: "www_groupon_com@my_domain.com"}
 ```
 
-```
-POST /alias/custom/new
-	prefix: www_groupon_com
-	suffix: @my_domain.com
-
-Response:
-	201 -> OK {alias: "www_groupon_com@my_domain.com"}
-	409 -> duplicated
-
-```
+409 if the alias is already created.
 
 ### Database migration
 
