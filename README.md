@@ -432,10 +432,15 @@ In every request, the extension sends
 If error, the API returns 4** with body containing the error message, for example:
 
 ```json
-{"error": "request body cannot be empty"}
+{
+  "error":  "request body cannot be empty"
+}
 ```
 
-The error message is used mostly for debugging and should never be displayed to user as-is.
+The error message could be displayed to user as-is, for example for when user exceeds their alias quota. 
+Some errors should be fixed during development however: for example error like `request body cannot be empty` is there to catch development error and should never be shown to user. 
+ 
+All following endpoint return `401` status code if the API Key is incorrect.
 
 #### GET /api/v2/alias/options
 
@@ -490,7 +495,9 @@ Output:
 If success, 201 with the new alias, for example 
 
 ```json
-{alias: "www_groupon_com@my_domain.com"}
+{
+  "alias": "www_groupon_com@my_domain.com"
+}
 ```
 
 409 if the alias is already created.
