@@ -69,7 +69,7 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.url_map.strict_slashes = False
     app.debug = DEBUG
-    os.environ["FLASK_DEBUG"] = DEBUG
+    os.environ["FLASK_DEBUG"] = str(DEBUG)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
