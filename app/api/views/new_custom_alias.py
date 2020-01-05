@@ -40,8 +40,11 @@ def new_custom_alias():
     hostname = request.args.get("hostname")
 
     data = request.get_json()
-    alias_prefix = data["alias_prefix"]
-    alias_suffix = data["alias_suffix"]
+    if not data:
+        return jsonify(error="request body cannot be empty"), 400
+
+    alias_prefix = data.get("alias_prefix", "")
+    alias_suffix = data.get("alias_suffix", "")
 
     # make sure alias_prefix is not empty
     alias_prefix = alias_prefix.strip()
