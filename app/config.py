@@ -31,7 +31,7 @@ COLOR_LOG = "COLOR_LOG" in os.environ
 PROMO_CODE = "SIMPLEISBETTER"
 
 # Debug mode
-DEBUG = os.environ["DEBUG"]
+DEBUG = os.environ["DEBUG"] if "DEBUG" in os.environ else False
 # Server url
 URL = os.environ["URL"]
 print(">>> URL:", URL)
