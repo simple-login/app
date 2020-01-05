@@ -48,5 +48,5 @@ def test_out_of_quota(flask_client):
 
     assert r.status_code == 400
     assert r.json == {
-        "error": "You have reached the limitation of a free account with the maximum of 3 custom aliases, please upgrade your plan to create more custom aliases"
+        "error": "You have reached the limitation of a free account with the maximum of 3 aliases, please upgrade your plan to create more aliases"
     }

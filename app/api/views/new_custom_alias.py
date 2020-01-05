@@ -3,7 +3,7 @@ from flask import jsonify, request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
-from app.config import EMAIL_DOMAIN
+from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, AliasUsedOn
@@ -31,7 +31,7 @@ def new_custom_alias():
         return (
             jsonify(
                 error="You have reached the limitation of a free account with the maximum of "
-                "3 custom aliases, please upgrade your plan to create more custom aliases"
+                f"{MAX_NB_EMAIL_FREE_PLAN} aliases, please upgrade your plan to create more aliases"
             ),
             400,
         )
