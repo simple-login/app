@@ -38,6 +38,15 @@ def alias_log(alias, page_id):
         return redirect(url_for("dashboard.index"))
 
     logs = get_alias_log(gen_email, page_id)
+    base = (
+        db.session.query(ForwardEmail, ForwardEmailLog)
+        .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
+        .filter(ForwardEmail.gen_email_id == gen_email.id)
+    )
+    total = base.count()
+    email_forwarded = base.filter(ForwardEmailLog.is_reply == False).count()
+    email_replied = base.filter(ForwardEmailLog.is_reply == True).count()
+    email_blocked = base.filter(ForwardEmailLog.blocked == True).count()
     last_page = (
         len(logs) < _LIMIT
     )  # lightweight pagination without counting all objects
