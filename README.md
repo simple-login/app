@@ -480,7 +480,7 @@ For ex:
 }
 ```
 
-#### POST /alias/custom/new
+#### POST /api/alias/custom/new
 
 Create a new custom alias.
 
@@ -500,7 +500,22 @@ If success, 201 with the new alias, for example
 }
 ```
 
-409 if the alias is already created.
+#### POST /api/alias/random/new
+
+Create a new random alias.
+
+Input: 
+- `Authentication` header that contains the api key
+- (Optional but recommended) `hostname` passed in query string
+
+Output:
+If success, 201 with the new alias, for example 
+
+```json
+{
+  "alias": "www_groupon_com@my_domain.com"
+}
+```
 
 ### Database migration
 
