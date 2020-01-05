@@ -442,6 +442,26 @@ Some errors should be fixed during development however: for example error like `
  
 All following endpoint return `401` status code if the API Key is incorrect.
 
+#### GET /api/user_info
+
+Given the API Key, return user name and whether user is premium. 
+This endpoint could be used to validate the api key.
+
+Input:
+- `Authentication` header that contains the api key
+
+Output: if api key is correct, return a json with user name and whether user is premium, for example:
+
+```json
+{
+	"name": "John Wick",
+	"is_premium": false
+}
+```
+
+If api key is incorrect, return 401.
+
+
 #### GET /api/v2/alias/options
 
 User alias info and suggestion. Used by the first extension screen when user opens the extension.
