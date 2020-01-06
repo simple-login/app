@@ -44,7 +44,7 @@ def alias_log(alias, page_id):
         .filter(ForwardEmail.gen_email_id == gen_email.id)
     )
     total = base.count()
-    email_forwarded = base.filter(ForwardEmailLog.is_reply == False).count()
+    email_forwarded = base.filter(ForwardEmailLog.is_reply == False).filter(ForwardEmailLog.blocked==False).count()
     email_replied = base.filter(ForwardEmailLog.is_reply == True).count()
     email_blocked = base.filter(ForwardEmailLog.blocked == True).count()
     last_page = (
