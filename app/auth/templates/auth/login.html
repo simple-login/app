@@ -39,32 +39,26 @@
             <div class="form-group">
               <label class="form-label">
                 Password
-                <a href="{{ url_for('auth.forgot_password') }}" class="float-right small">
-                  I forgot my password
-                </a>
               </label>
               {{ form.password(class="form-control", type="password") }}
               {{ render_field_errors(form.password) }}
+              <div class="text-muted">
+                <a href="{{ url_for('auth.forgot_password') }}" class="small">
+                  I forgot my password
+                </a>
+              </div>
             </div>
-
-            <!-- TODO: add remember me
-            <div class="form-group">
-              <label class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input"/>
-                <span class="custom-control-label">Remember me</span>
-              </label>
-            </div>
-            -->
 
             <div class="form-footer">
               <button type="submit" class="btn btn-primary btn-block">Log in</button>
             </div>
+
+            <div class="text-center text-muted mt-2">
+              Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
+            </div>
+
           </div>
         </form>
-
-        <div class="text-center text-muted mb-6">
-          Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
-        </div>
       </div>
     </div>
 
