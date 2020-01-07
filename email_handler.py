@@ -45,7 +45,7 @@ from app.email_utils import (
     send_email,
     add_dkim_signature,
     get_email_domain_part,
-    add_or_replace_header)
+    add_or_replace_header, delete_header)
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog, CustomDomain
@@ -162,9 +162,7 @@ class MailHandler:
             add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
 
             # remove reply-to header if present
-            if msg["Reply-To"]:
-                LOG.d("Delete reply-to header %s", msg["Reply-To"])
-                del msg["Reply-To"]
+            delete_header(msg, "Reply-To")
 
             # change the from header so the sender comes from @SL
             # so it can pass DMARC check
@@ -246,10 +244,7 @@ class MailHandler:
 
             return "450 ignored"
 
-        # remove DKIM-Signature
-        if msg["DKIM-Signature"]:
-            LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
-            del msg["DKIM-Signature"]
+        delete_header(msg, "DKIM-Signature")
 
         # the email comes from alias
         msg.replace_header("From", alias)

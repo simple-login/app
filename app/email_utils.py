@@ -205,3 +205,8 @@ def add_or_replace_header(msg: Message, header: str, value: str):
     except ValueError:
         # the header exists already
         msg.replace_header(header, value)
+
+
+def delete_header(msg: Message, header: str):
+    if msg[header]:
+        del msg[header]
