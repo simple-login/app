@@ -45,7 +45,7 @@ from app.email_utils import (
     send_email,
     add_dkim_signature,
     get_email_domain_part,
-)
+    add_or_replace_header)
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog, CustomDomain
@@ -296,14 +296,6 @@ class MailHandler:
         db.session.commit()
 
         return "250 Message accepted for delivery"
-
-
-def add_or_replace_header(msg: Message, header: str, value: str):
-    try:
-        msg.add_header(header, value)
-    except ValueError:
-        # the header exists already
-        msg.replace_header(header, value)
 
 
 if __name__ == "__main__":
