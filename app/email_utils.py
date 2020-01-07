@@ -177,7 +177,7 @@ def get_email_domain_part(email):
     return email[email.find("@") + 1 :]
 
 
-def add_dkim_signature(msg: EmailMessage, email_domain: str):
+def add_dkim_signature(msg: Message, email_domain: str):
     if msg["DKIM-Signature"]:
         LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
         del msg["DKIM-Signature"]
