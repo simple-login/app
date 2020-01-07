@@ -45,7 +45,9 @@ from app.email_utils import (
     send_email,
     add_dkim_signature,
     get_email_domain_part,
-    add_or_replace_header, delete_header)
+    add_or_replace_header,
+    delete_header,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail, ForwardEmailLog, CustomDomain
