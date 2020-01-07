@@ -68,8 +68,6 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def create_app() -> Flask:
     app = Flask(__name__)
     app.url_map.strict_slashes = False
-    app.debug = DEBUG
-    os.environ["FLASK_DEBUG"] = str(DEBUG)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -445,6 +443,6 @@ if __name__ == "__main__":
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         context.load_cert_chain("local_data/cert.pem", "local_data/key.pem")
 
-        app.run(host="0.0.0.0", port=7777, ssl_context=context)
+        app.run(debug=True, host="0.0.0.0", port=7777, ssl_context=context)
     else:
-        app.run(host="0.0.0.0", port=7777)
+        app.run(debug=True, host="0.0.0.0", port=7777)
