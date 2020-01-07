@@ -27,13 +27,14 @@
         {% endif %}
       </div>
 
-      <div class="mb-2">Add the following MX DNS record to your domain.
-        Please note that there's a point (<em>.</em>) at the end of target addresses.
+      <div class="mb-2">Add the following MX DNS record to your domain. <br>
+        Please note that there's a point (<em>.</em>) at the end target addresses. <br>
+        Also some domain registrars (Namecheap, CloudFlare, etc) might use <em>@</em> for the root domain.
       </div>
 
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
         <div class="mb-3 p-3" style="background-color: #eee">
-          Domain: <em>{{ custom_domain.domain }}</em> <br>
+          Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
           Priority: {{ priority }} <br>
           Target: <em>{{ email_server }}</em> <br>
         </div>
@@ -91,7 +92,7 @@
       <div class="mb-2">Add the following TXT DNS record to your domain</div>
 
       <div class="mb-2 p-3" style="background-color: #eee">
-        Domain: <em>{{ custom_domain.domain }}</em> <br>
+        Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
         Value:
         <em>
           {{ spf_record }}
