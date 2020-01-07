@@ -250,8 +250,8 @@ class MailHandler:
         msg.replace_header("From", alias)
 
         # some email providers like ProtonMail adds automatically the Reply-To field
-        # make sure to replace it too
-        add_or_replace_header(msg, "Reply-To", alias)
+        # make sure to delete it
+        delete_header(msg, "Reply-To")
 
         msg.replace_header("To", forward_email.website_email)
 
