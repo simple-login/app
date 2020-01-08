@@ -208,5 +208,8 @@ def add_or_replace_header(msg: Message, header: str, value: str):
 
 
 def delete_header(msg: Message, header: str):
-    if msg[header]:
-        del msg[header]
+    """a header can appear several times in message."""
+    for h in msg._headers:
+        if h[0].lower() == header.lower():
+            msg._headers.remove(h)
+
