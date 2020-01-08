@@ -212,4 +212,3 @@ def delete_header(msg: Message, header: str):
     for h in msg._headers:
         if h[0].lower() == header.lower():
             msg._headers.remove(h)
-
