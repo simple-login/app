@@ -30,6 +30,8 @@ COLOR_LOG = "COLOR_LOG" in os.environ
 # Allow user to have 1 year of premium: set the expiration_date to 1 year more
 PROMO_CODE = "SIMPLEISBETTER"
 
+# Debug mode
+DEBUG = os.environ["DEBUG"] if "DEBUG" in os.environ else False
 # Server url
 URL = os.environ["URL"]
 print(">>> URL:", URL)
@@ -125,3 +127,6 @@ AVATAR_URL_EXPIRATION = 3600 * 24 * 7  # 1h*24h/d*7d=1week
 # session key
 HIGHLIGHT_GEN_EMAIL_ID = "highlight_gen_email_id"
 MFA_USER_ID = "mfa_user_id"
+
+FLASK_PROFILER_PATH = os.environ.get("FLASK_PROFILER_PATH")
+FLASK_PROFILER_PASSWORD = os.environ.get("FLASK_PROFILER_PASSWORD")

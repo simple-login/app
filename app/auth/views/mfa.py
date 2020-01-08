@@ -17,11 +17,18 @@ class OtpTokenForm(FlaskForm):
 @auth_bp.route("/mfa", methods=["GET", "POST"])
 def mfa():
     # passed from login page
-    user_id = session[MFA_USER_ID]
+    user_id = session.get(MFA_USER_ID)
+
+    # user access this page directly without passing by login page
+    if not user_id:
+        flash("Unknown error, redirect back to main page", "warning")
+        return redirect(url_for("auth.login"))
+
     user = User.get(user_id)
 
-    if not user.enable_otp:
-        raise Exception("Only user with MFA enabled should go to this page. %s", user)
+    if not (user and user.enable_otp):
+        flash("Only user with MFA enabled should go to this page", "warning")
+        return redirect(url_for("auth.login"))
 
     otp_token_form = OtpTokenForm()
     next_url = request.args.get("next")

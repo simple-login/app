@@ -34,6 +34,7 @@ def domain_detail_dns(custom_domain_id):
             mx_domains = get_mx_domains(custom_domain.domain)
 
             if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
+                flash("The MX record is not correctly set", "warning")
                 mx_ok = False
                 # build mx_errors to show to user
                 mx_errors = [
@@ -63,7 +64,10 @@ def domain_detail_dns(custom_domain_id):
                     )
                 )
             else:
-                flash(f"{EMAIL_DOMAIN} is not included in your SPF record.", "warning")
+                flash(
+                    f"SPF: {EMAIL_DOMAIN} is not included in your SPF record.",
+                    "warning",
+                )
                 spf_ok = False
                 spf_errors = get_txt_record(custom_domain.domain)
 
@@ -81,6 +85,7 @@ def domain_detail_dns(custom_domain_id):
                     )
                 )
             else:
+                flash("DKIM: the TXT record is not correctly set", "warning")
                 dkim_ok = False
                 dkim_errors = get_txt_record(f"dkim._domainkey.{custom_domain.domain}")
 

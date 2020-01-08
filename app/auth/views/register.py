@@ -46,7 +46,9 @@ def register():
         else:
             LOG.debug("create user %s", form.email.data)
             user = User.create(
-                email=form.email.data, name=form.name.data, password=form.password.data
+                email=form.email.data.lower(),
+                name=form.name.data,
+                password=form.password.data,
             )
             db.session.commit()
 

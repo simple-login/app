@@ -31,7 +31,7 @@ It should contain the following info:
 
 """
 import time
-from email.message import EmailMessage
+from email.message import Message
 from email.parser import Parser
 from email.policy import SMTPUTF8
 from smtplib import SMTP
@@ -45,6 +45,8 @@ from app.email_utils import (
     send_email,
     add_dkim_signature,
     get_email_domain_part,
+    add_or_replace_header,
+    delete_header,
 )
 from app.extensions import db
 from app.log import LOG
@@ -85,11 +87,11 @@ class MailHandler:
         smtp = SMTP(POSTFIX_SERVER, 25)
         msg = Parser(policy=SMTPUTF8).parsestr(message_data)
 
+        rcpt_to = envelope.rcpt_tos[0].lower()
+
         # Reply case
         # reply+ or ra+ (reverse-alias) prefix
-        if envelope.rcpt_tos[0].startswith("reply+") or envelope.rcpt_tos[0].startswith(
-            "ra+"
-        ):
+        if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
             LOG.debug("Reply phase")
             app = new_app()
 
@@ -102,9 +104,9 @@ class MailHandler:
             with app.app_context():
                 return self.handle_forward(envelope, smtp, msg)
 
-    def handle_forward(self, envelope, smtp: SMTP, msg: EmailMessage) -> str:
+    def handle_forward(self, envelope, smtp: SMTP, msg: Message) -> str:
         """return *status_code message*"""
-        alias = envelope.rcpt_tos[0]  # alias@SL
+        alias = envelope.rcpt_tos[0].lower()  # alias@SL
 
         gen_email = GenEmail.get_by(email=alias)
         if not gen_email:
@@ -162,9 +164,7 @@ class MailHandler:
             add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
 
             # remove reply-to header if present
-            if msg["Reply-To"]:
-                LOG.d("Delete reply-to header %s", msg["Reply-To"])
-                del msg["Reply-To"]
+            delete_header(msg, "Reply-To")
 
             # change the from header so the sender comes from @SL
             # so it can pass DMARC check
@@ -212,8 +212,8 @@ class MailHandler:
         db.session.commit()
         return "250 Message accepted for delivery"
 
-    def handle_reply(self, envelope, smtp: SMTP, msg: EmailMessage) -> str:
-        reply_email = envelope.rcpt_tos[0]
+    def handle_reply(self, envelope, smtp: SMTP, msg: Message) -> str:
+        reply_email = envelope.rcpt_tos[0].lower()
 
         # reply_email must end with EMAIL_DOMAIN
         if not reply_email.endswith(EMAIL_DOMAIN):
@@ -230,7 +230,7 @@ class MailHandler:
                 return "550 alias unknown by SimpleLogin"
 
         user_email = forward_email.gen_email.user.email
-        if envelope.mail_from != user_email:
+        if envelope.mail_from.lower() != user_email.lower():
             LOG.error(
                 f"Reply email can only be used by user email. Actual mail_from: %s. User email %s",
                 envelope.mail_from,
@@ -246,13 +246,15 @@ class MailHandler:
 
             return "450 ignored"
 
-        # remove DKIM-Signature
-        if msg["DKIM-Signature"]:
-            LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
-            del msg["DKIM-Signature"]
+        delete_header(msg, "DKIM-Signature")
 
-        # email seems to come from alias
+        # the email comes from alias
         msg.replace_header("From", alias)
+
+        # some email providers like ProtonMail adds automatically the Reply-To field
+        # make sure to delete it
+        delete_header(msg, "Reply-To")
+
         msg.replace_header("To", forward_email.website_email)
 
         # add List-Unsubscribe header
@@ -291,14 +293,6 @@ class MailHandler:
         db.session.commit()
 
         return "250 Message accepted for delivery"
-
-
-def add_or_replace_header(msg: EmailMessage, header: str, value: str):
-    try:
-        msg.add_header(header, value)
-    except ValueError:
-        # the header exists already
-        msg.replace_header(header, value)
 
 
 if __name__ == "__main__":

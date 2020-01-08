@@ -17,7 +17,7 @@
       minute or in our experience).
     </div>
 
-    <div>
+    <div id="mx-form">
       <div class="font-weight-bold">1. MX record
 
         {% if custom_domain.verified %}
@@ -27,19 +27,20 @@
         {% endif %}
       </div>
 
-      <div class="mb-2">Add the following MX DNS record to your domain.
-        Please note that there's a point (<em>.</em>) at the end of target addresses.
+      <div class="mb-2">Add the following MX DNS record to your domain. <br>
+        Please note that there's a point (<em>.</em>) at the end target addresses. <br>
+        Also some domain registrars (Namecheap, CloudFlare, etc) might use <em>@</em> for the root domain.
       </div>
 
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
         <div class="mb-3 p-3" style="background-color: #eee">
-          Domain: <em>{{ custom_domain.domain }}</em> <br>
-          Priority: {{priority}} <br>
+          Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
+          Priority: {{ priority }} <br>
           Target: <em>{{ email_server }}</em> <br>
         </div>
       {% endfor %}
 
-      <form method="post">
+      <form method="post" action="#mx-form">
         <input type="hidden" name="form-name" value="check-mx">
         {% if custom_domain.verified %}
           <button type="submit" class="btn btn-outline-primary">
@@ -56,6 +57,9 @@
         <div class="text-danger mt-4">
           Your DNS is not correctly set. The MX record we obtain is:
           <div class="mb-3 p-3" style="background-color: #eee">
+            {% if not mx_errors %}
+              (Empty)
+            {% endif %}
             {% for r in mx_errors %}
               {{ r }} <br>
             {% endfor %}
@@ -69,7 +73,7 @@
 
     <hr>
 
-    <div>
+    <div id="spf-form">
       <div class="font-weight-bold">2. SPF (Optional)
         {% if custom_domain.spf_verified %}
           <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
@@ -88,14 +92,14 @@
       <div class="mb-2">Add the following TXT DNS record to your domain</div>
 
       <div class="mb-2 p-3" style="background-color: #eee">
-        Domain: <em>{{ custom_domain.domain }}</em> <br>
+        Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
         Value:
         <em>
           {{ spf_record }}
         </em>
       </div>
 
-      <form method="post">
+      <form method="post" action="#spf-form">
         <input type="hidden" name="form-name" value="check-spf">
         {% if custom_domain.spf_verified %}
           <button type="submit" class="btn btn-outline-primary">
@@ -112,6 +116,10 @@
         <div class="text-danger mt-4">
           Your DNS is not correctly set. The TXT record we obtain is:
           <div class="mb-3 p-3" style="background-color: #eee">
+            {% if not spf_errors %}
+              (Empty)
+            {% endif %}
+
             {% for r in spf_errors %}
               {{ r }} <br>
             {% endfor %}
@@ -125,7 +133,7 @@
 
     <hr>
 
-    <div>
+    <div id="dkim-form">
       <div class="font-weight-bold">3. DKIM (Optional)
         {% if custom_domain.dkim_verified %}
           <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
@@ -152,7 +160,7 @@
         </em>
       </div>
 
-      <form method="post">
+      <form method="post" action="#dkim-form">
         <input type="hidden" name="form-name" value="check-dkim">
         {% if custom_domain.dkim_verified %}
           <button type="submit" class="btn btn-outline-primary">
