@@ -12,7 +12,8 @@ from app.email_utils import (
     get_email_part,
     get_email_name,
     add_dkim_signature,
-    send_email)
+    send_email,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, CustomDomain, ForwardEmail, ForwardEmailLog
@@ -50,7 +51,7 @@ def handle_reply(client, envelope) -> str:
     alias: str = forward_email.gen_email.email
 
     # alias must end with EMAIL_DOMAIN or custom-domain
-    alias_domain = alias[alias.find("@") + 1:]
+    alias_domain = alias[alias.find("@") + 1 :]
     if alias_domain != EMAIL_DOMAIN:
         if not CustomDomain.get_by(domain=alias_domain):
             return "550 alias unknown by SimpleLogin"
@@ -84,9 +85,7 @@ def handle_reply(client, envelope) -> str:
     # add List-Unsubscribe header
     unsubscribe_link = f"{URL}/dashboard/unsubscribe/{forward_email.gen_email_id}"
     add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
-    add_or_replace_header(
-        msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
-    )
+    add_or_replace_header(msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
 
     LOG.d(
         "send email from %s to %s, mail_options:%s,rcpt_options:%s",
@@ -233,6 +232,7 @@ def handle_forward(client: SMTP, envelope) -> str:
 
 def processing_data(envelope):
     import time
+
     time.sleep(0.5)
     message_data = envelope.content.decode("utf8", errors="replace")
     app = (
