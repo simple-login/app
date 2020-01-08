@@ -120,9 +120,9 @@ class MailHandler:
             if alias.endswith(EMAIL_DOMAIN):
                 if "+" in alias or "/" in alias:
                     if "+" in alias:
-                        directory_name = alias[:alias.find("+")]
+                        directory_name = alias[: alias.find("+")]
                     else:
-                        directory_name = alias[:alias.find("/")]
+                        directory_name = alias[: alias.find("/")]
 
                     LOG.d("directory_name %s", directory_name)
 
