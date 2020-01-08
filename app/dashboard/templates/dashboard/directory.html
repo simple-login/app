@@ -1,0 +1,94 @@
+{% extends 'default.html' %}
+{% set active_page = "directory" %}
+
+{% block title %}
+  Directory
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h1 class="h3"> Directories </h1>
+
+      <div class="alert alert-primary" role="alert">
+        Directory allows you to create aliases <b>on the fly</b>. <br>
+        Simply use <em>directory/<b>anything</b>@{{ EMAIL_DOMAIN }}</em>
+        or <em>directory+<b>anything</b>@{{ EMAIL_DOMAIN }}</em>
+        next time you need an email address. <br>
+        The alias will be created the first time it receives an email.
+      </div>
+
+      {% for dir in dirs %}
+        <div class="card" style="max-width: 50rem">
+          <div class="card-body">
+            <h5 class="card-title">
+              {{ dir.name }}
+            </h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              Created {{ dir.created_at | dt }} <br>
+              <span class="font-weight-bold">{{ dir.nb_alias() }}</span> aliases.
+            </h6>
+          </div>
+
+          <div class="card-footer p-0">
+            <div class="row">
+              <div class="col">
+                <form method="post">
+                  <input type="hidden" name="form-name" value="delete">
+                  <input type="hidden" class="dir-name" value="{{ dir.name }}">
+                  <input type="hidden" name="dir-id" value="{{ dir.id }}">
+                  <span class="card-link btn btn-link float-right delete-dir">
+                    Delete
+                  </span>
+                </form>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      {% endfor %}
+
+      {% if dirs|length > 0 %}
+        <hr>
+      {% endif %}
+
+      <form method="post" class="mt-6">
+        {{ new_dir_form.csrf_token }}
+        <input type="hidden" name="form-name" value="create">
+
+        <div class="font-weight-bold">Directory Name</div>
+        <div class="small-text">
+          Directory name must be at least 3 characters.
+          Only letter, number, dash (-), underscore (_) can be used.
+        </div>
+
+        {{ new_dir_form.name(class="form-control", placeholder="my-directory", pattern="[0-9A-Za-z-_]{3,}",
+            title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.",
+            autofocus="1") }}
+        {{ render_field_errors(new_dir_form.name) }}
+        <button class="btn btn-lg btn-success mt-2">Create</button>
+      </form>
+
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-dir").on("click", function (e) {
+      let directory = $(this).parent().find(".dir-name").val();
+      notie.confirm({
+        text: `All aliases associated with <b>${directory}</b> directory will be also deleted, ` +
+          " please confirm.",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+  </script>
+{% endblock %}
