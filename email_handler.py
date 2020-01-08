@@ -110,7 +110,7 @@ class MailHandler:
 
         gen_email = GenEmail.get_by(email=alias)
         if not gen_email:
-            LOG.d("alias %s not exist")
+            LOG.d("alias %s not exist", alias)
 
             # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
             alias_domain = get_email_domain_part(alias)
@@ -263,6 +263,9 @@ class MailHandler:
         add_or_replace_header(
             msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
         )
+
+        # Received-SPF is injected by postfix-policyd-spf-python can reveal user original email
+        delete_header(msg, "Received-SPF")
 
         LOG.d(
             "send email from %s to %s, mail_options:%s,rcpt_options:%s",
