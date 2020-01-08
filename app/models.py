@@ -439,6 +439,11 @@ class GenEmail(db.Model, ModelMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # to know whether an alias belongs to a directory
+    directory_id = db.Column(
+        db.ForeignKey("directory.id", ondelete="cascade"), nullable=True
+    )
+
     user = db.relationship(User)
 
     @classmethod
@@ -725,3 +730,16 @@ class CustomDomain(db.Model, ModelMixin):
 class LifetimeCoupon(db.Model, ModelMixin):
     code = db.Column(db.String(128), nullable=False, unique=True)
     nb_used = db.Column(db.Integer, nullable=False)
+
+
+class Directory(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    name = db.Column(db.String(128), unique=True, nullable=False)
+
+    user = db.relationship(User)
+
+    def nb_alias(self):
+        return GenEmail.filter_by(directory_id=self.id).count()
+
+    def __repr__(self):
+        return f"<Directory {self.name}>"
