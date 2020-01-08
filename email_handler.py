@@ -110,7 +110,7 @@ class MailHandler:
 
         gen_email = GenEmail.get_by(email=alias)
         if not gen_email:
-            LOG.d("alias %s not exist")
+            LOG.d("alias %s not exist. Try to see if it can created on the fly", alias)
 
             # try to see if alias could be created on-the-fly
             on_the_fly = False
@@ -120,9 +120,11 @@ class MailHandler:
             if alias.endswith(EMAIL_DOMAIN):
                 if "+" in alias or "/" in alias:
                     if "+" in alias:
-                        directory_name = alias[alias.find("+")]
+                        directory_name = alias[:alias.find("+")]
                     else:
-                        directory_name = alias[alias.find("/")]
+                        directory_name = alias[:alias.find("/")]
+
+                    LOG.d("directory_name %s", directory_name)
 
                     directory = Directory.get_by(name=directory_name)
                     if directory:
@@ -152,6 +154,7 @@ class MailHandler:
                     db.session.commit()
 
             if not on_the_fly:
+                LOG.d("alias %s not exist, return 510", alias)
                 return "510 Email not exist"
 
         user_email = gen_email.user.email
