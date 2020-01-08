@@ -52,12 +52,6 @@ def directory():
 
                 if Directory.get_by(name=new_dir_name):
                     flash(f"{new_dir_name} already added", "warning")
-                # ra+ and reply+ are reserved for reply-email and reverse-alias
-                elif new_dir_name in ("ra", "reply"):
-                    flash(
-                        f"{new_dir_name} cannot be *ra* and *reply*, please use another name!",
-                        "warning",
-                    )
                 else:
                     new_dir = Directory.create(
                         name=new_dir_name, user_id=current_user.id

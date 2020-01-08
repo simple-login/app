@@ -115,15 +115,10 @@ class MailHandler:
             # try to see if alias could be created on-the-fly
             on_the_fly = False
 
-            # check if alias belongs to a directory. In this case alias has one of the 2 formats:
-            # directory/anything@EMAIL_DOMAIN or directory+anything@EMAIL_DOMAIN
+            # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
             if alias.endswith(EMAIL_DOMAIN):
-                if "+" in alias or "/" in alias:
-                    if "+" in alias:
-                        directory_name = alias[: alias.find("+")]
-                    else:
-                        directory_name = alias[: alias.find("/")]
-
+                if "/" in alias:
+                    directory_name = alias[: alias.find("/")]
                     LOG.d("directory_name %s", directory_name)
 
                     directory = Directory.get_by(name=directory_name)
