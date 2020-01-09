@@ -288,6 +288,9 @@ class MailHandler:
             msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
         )
 
+        # Received-SPF is injected by postfix-policyd-spf-python can reveal user original email
+        delete_header(msg, "Received-SPF")
+
         LOG.d(
             "send email from %s to %s, mail_options:%s,rcpt_options:%s",
             alias,

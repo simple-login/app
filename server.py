@@ -18,6 +18,7 @@ from app.admin_model import SLModelView, SLAdminIndexView
 from app.api.base import api_bp
 from app.auth.base import auth_bp
 from app.config import (
+    DEBUG,
     DB_URI,
     FLASK_SECRET,
     SENTRY_DSN,
@@ -421,8 +422,6 @@ window.location.href = "/";
 
 if __name__ == "__main__":
     app = create_app()
-
-    app.debug = True
 
     # enable flask toolbar
     # app.config["DEBUG_TB_PROFILER_ENABLED"] = True

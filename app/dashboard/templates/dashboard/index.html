@@ -19,7 +19,7 @@
   <div class="page-header row">
     <div class="col-lg-3 col-sm-12 p-0 mt-1">
       <form method="get">
-        <input type="search" name="query" autofocus placeholder="Enter to search for alias" class="form-control"
+        <input type="search" name="query" autofocus placeholder="Enter to search for alias" class="form-control shadow"
                value="{{ query }}">
       </form>
     </div>
@@ -30,7 +30,7 @@
           <input type="hidden" name="form-name" value="create-custom-email">
           <button data-toggle="tooltip"
                   title="Create a custom alias"
-                  class="btn btn-primary mr-2">New Email Alias
+                  class="btn btn-primary mr-2"><i class="fa fa-plus"></i> New Email Alias
           </button>
         </form>
         <div class="btn-group" role="group">
@@ -38,7 +38,7 @@
             <input type="hidden" name="form-name" value="create-random-email">
             <button data-toggle="tooltip"
                     title="Create a totally random alias"
-                    class="btn btn-success">Random Alias
+                    class="btn btn-success"><i class="fa fa-random"></i> Random Alias
             </button>
           </form>
           <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle"
@@ -49,7 +49,7 @@
               <form method="post">
                 <input type="hidden" name="form-name" value="create-random-email">
                 <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
-                <button class="dropdown-item">By random words</button>
+                <button class="dropdown-item">By Random Words</button>
               </form>
             </div>
             <div class="">
@@ -71,7 +71,7 @@
       {% set gen_email = alias_info.gen_email %}
 
       <div class="col-md-6">
-        <div class="card p-3 {% if alias_info.highlight %} highlight-row {% endif %}">
+        <div class="card p-3 shadow-sm border-0 {% if alias_info.highlight %} highlight-row {% endif %}">
           <div>
             <span class="clipboard cursor mb-0"
                 {% if loop.index ==1 %}
@@ -171,8 +171,8 @@
                 <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
                 <input type="hidden" name="alias" class="alias" value="{{ gen_email.email }}">
 
-                <span class="delete-email  btn btn-link btn-sm float-right">
-                  Delete&nbsp; &nbsp;<i class="dropdown-icon fe fe-trash-2"></i>
+                <span class="delete-email btn btn-link btn-sm float-right text-danger">
+                  Delete&nbsp; &nbsp;<i class="dropdown-icon fe fe-trash-2 text-danger"></i>
                 </span>
               </form>
             </div>
