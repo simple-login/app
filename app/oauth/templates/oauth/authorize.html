@@ -94,8 +94,8 @@
               <div class="mt-2">OR</div>
               <div style="display: flex; align-items: center" class="mt-2">
                 <input class="form-control"
-                       pattern="[0-9|A-Z|a-z|-|_]{1,}"
-                       title="Only letter, number, dash (-), underscore (_) can be used in alias prefix."
+                       pattern="[0-9a-z-_]{1,}"
+                       title="Only lowercase letter, number, dash (-), underscore (_) can be used in alias prefix."
                        style="flex-grow: 2" name="custom-email-prefix">
                 <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
                 <div class="ml-2">

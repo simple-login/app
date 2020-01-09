@@ -60,7 +60,7 @@ def custom_alias():
                     return redirect(url_for("dashboard.index"))
         elif request.form.get("form-name") == "custom-domain-name":
             custom_domain_id = request.form.get("custom-domain-id")
-            email = request.form.get("email")
+            email = request.form.get("email").lower()
 
             custom_domain = CustomDomain.get(custom_domain_id)
 
