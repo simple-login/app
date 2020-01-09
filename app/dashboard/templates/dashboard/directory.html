@@ -59,10 +59,10 @@
         <div class="font-weight-bold">Directory Name</div>
         <div class="small-text">
           Directory name must be at least 3 characters.
-          Only letter, number, dash (-), underscore (_) can be used.
+          Only lowercase letter, number, dash (-), underscore (_) can be used.
         </div>
 
-        {{ new_dir_form.name(class="form-control", placeholder="my-directory", pattern="[0-9A-Za-z-_]{3,}",
+        {{ new_dir_form.name(class="form-control", placeholder="my-directory", pattern="[0-9a-z-_]{3,}",
             title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.",
             autofocus="1") }}
         {{ render_field_errors(new_dir_form.name) }}

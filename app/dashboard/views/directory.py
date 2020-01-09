@@ -48,7 +48,7 @@ def directory():
 
         elif request.form.get("form-name") == "create":
             if new_dir_form.validate():
-                new_dir_name = new_dir_form.name.data
+                new_dir_name = new_dir_form.name.data.lower()
 
                 if Directory.get_by(name=new_dir_name):
                     flash(f"{new_dir_name} already added", "warning")
