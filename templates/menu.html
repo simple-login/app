@@ -30,6 +30,14 @@
     </a>
   </li>
 
+  <li class="nav-item">
+    <a href="{{ url_for('dashboard.directory') }}"
+       class="nav-link {{ 'active' if active_page == 'directory' }}">
+      <i class="fe fe-folder"></i> Alias Directory
+      <span class="badge badge-info" style="font-size: .5rem; top: 5px">Beta</span>
+    </a>
+  </li>
+
   <!--
   <li class="nav-item">
     <a href="{{ url_for('discover.index') }}"

@@ -50,7 +50,7 @@ from app.email_utils import (
 )
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ForwardEmail, ForwardEmailLog, CustomDomain
+from app.models import GenEmail, ForwardEmail, ForwardEmailLog, CustomDomain, Directory
 from app.utils import random_string
 from server import create_app
 
@@ -110,22 +110,46 @@ class MailHandler:
 
         gen_email = GenEmail.get_by(email=alias)
         if not gen_email:
-            LOG.d("alias %s not exist", alias)
+            LOG.d("alias %s not exist. Try to see if it can created on the fly", alias)
 
-            # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
-            alias_domain = get_email_domain_part(alias)
-            custom_domain = CustomDomain.get_by(domain=alias_domain)
-            if custom_domain and custom_domain.catch_all:
-                LOG.d("create alias %s for domain %s", alias, custom_domain)
+            # try to see if alias could be created on-the-fly
+            on_the_fly = False
 
-                gen_email = GenEmail.create(
-                    email=alias,
-                    user_id=custom_domain.user_id,
-                    custom_domain_id=custom_domain.id,
-                    automatic_creation=True,
-                )
-                db.session.commit()
+            # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
+            if alias.endswith(EMAIL_DOMAIN):
+                if "/" in alias:
+                    directory_name = alias[: alias.find("/")]
+                    LOG.d("directory_name %s", directory_name)
+
+                    directory = Directory.get_by(name=directory_name)
+                    if directory:
+                        LOG.d("create alias %s for directory %s", alias, directory)
+                        on_the_fly = True
+
+                        gen_email = GenEmail.create(
+                            email=alias,
+                            user_id=directory.user_id,
+                            directory_id=directory.id,
+                        )
+                        db.session.commit()
             else:
+                # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
+                alias_domain = get_email_domain_part(alias)
+                custom_domain = CustomDomain.get_by(domain=alias_domain)
+                if custom_domain and custom_domain.catch_all:
+                    LOG.d("create alias %s for domain %s", alias, custom_domain)
+                    on_the_fly = True
+
+                    gen_email = GenEmail.create(
+                        email=alias,
+                        user_id=custom_domain.user_id,
+                        custom_domain_id=custom_domain.id,
+                        automatic_creation=True,
+                    )
+                    db.session.commit()
+
+            if not on_the_fly:
+                LOG.d("alias %s not exist, return 510", alias)
                 return "510 Email not exist"
 
         user_email = gen_email.user.email
