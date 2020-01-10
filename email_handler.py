@@ -244,7 +244,7 @@ class MailHandler:
                 "",
             )
 
-            return "450 ignored"
+            return "550 ignored"
 
         # remove DKIM-Signature
         if msg["DKIM-Signature"]:
