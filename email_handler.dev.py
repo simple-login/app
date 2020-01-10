@@ -71,7 +71,7 @@ def handle_reply(client, envelope) -> str:
             "",
         )
 
-        return "450 ignored"
+        return "550 ignored"
 
     # remove DKIM-Signature
     if msg["DKIM-Signature"]:
@@ -231,15 +231,10 @@ def handle_forward(client: SMTP, envelope) -> str:
 
 
 def processing_data(envelope):
-    import time
-
-    time.sleep(0.5)
-    message_data = envelope.content.decode("utf8", errors="replace")
     app = (
         safe_flask_app()
     )  # TODO: This will create an `app` instance on EVERY email sending. Consider to move it into the `amain` function
     client = SMTP(SMTP_SERVER, SMTP_PORT)
-    msg = Parser(policy=SMTPUTF8).parsestr(message_data)
     rcpt_to = envelope.rcpt_tos[0].lower()
 
     with app.app_context():
@@ -250,11 +245,11 @@ def processing_data(envelope):
 
 class AMailHandler:
     async def handle_DATA(self, server, session, envelope):
-        loop = asyncio.get_event_loop()
+        event_loop = asyncio.get_event_loop()
         with concurrent.futures.ThreadPoolExecutor() as pool:
             # Here we throw the blocking function (including sendmail, talk to db, ...)
             # into a thread pool and return the result after it finished
-            return await loop.run_in_executor(pool, processing_data, envelope)
+            return await event_loop.run_in_executor(pool, processing_data, envelope)
 
 
 class BlockingMailHandler:
