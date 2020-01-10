@@ -7,6 +7,14 @@
 {% endblock %}
 
 {% block head %}
+  <script src="https://cdn.paddle.com/paddle/paddle.js"></script>
+  <script>
+    if (window.Paddle === undefined) {
+      console.log("cannot load Paddle from CDN");
+      document.write('<script src="/static/vendor/paddle.js"><\/script>')
+    }
+  </script>
+
 {% endblock %}
 
 {% block default_content %}
@@ -66,7 +74,6 @@
     </div>
   </div>
 
-  <script src="https://cdn.paddle.com/paddle/paddle.js"></script>
 
   <script type="text/javascript">
     Paddle.Setup({vendor: {{ PADDLE_VENDOR_ID }}});
