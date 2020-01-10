@@ -23,7 +23,7 @@
         Authy) here
       </div>
 
-      {{ otp_token_form.token(class="form-control", placeholder="") }}
+      {{ otp_token_form.token(class="form-control", autofocus="true") }}
       {{ render_field_errors(otp_token_form.token) }}
       <button class="btn btn-success mt-2">Validate</button>
     </form>

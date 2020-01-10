@@ -31,19 +31,25 @@ def custom_domain():
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             if new_custom_domain_form.validate():
-                new_custom_domain = CustomDomain.create(
-                    domain=new_custom_domain_form.domain.data, user_id=current_user.id
-                )
-                db.session.commit()
-
-                flash(f"New domain {new_custom_domain.domain} is created", "success")
-
-                return redirect(
-                    url_for(
-                        "dashboard.domain_detail_dns",
-                        custom_domain_id=new_custom_domain.id,
+                new_domain = new_custom_domain_form.domain.data
+                if CustomDomain.get_by(domain=new_domain):
+                    flash(f"{new_domain} already added", "warning")
+                else:
+                    new_custom_domain = CustomDomain.create(
+                        domain=new_domain, user_id=current_user.id
                     )
-                )
+                    db.session.commit()
+
+                    flash(
+                        f"New domain {new_custom_domain.domain} is created", "success"
+                    )
+
+                    return redirect(
+                        url_for(
+                            "dashboard.domain_detail_dns",
+                            custom_domain_id=new_custom_domain.id,
+                        )
+                    )
 
     return render_template(
         "dashboard/custom_domain.html",

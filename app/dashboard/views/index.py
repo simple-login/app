@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from flask import render_template, request, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -19,7 +17,6 @@ from app.models import (
 )
 
 
-@dataclass
 class AliasInfo:
     gen_email: GenEmail
     nb_forward: int
@@ -28,6 +25,10 @@ class AliasInfo:
 
     show_intro_test_send_email: bool = False
     highlight: bool = False
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])

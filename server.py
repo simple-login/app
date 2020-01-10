@@ -2,19 +2,23 @@ import os
 import ssl
 
 import arrow
+import flask_profiler
 import sentry_sdk
 from flask import Flask, redirect, url_for, render_template, request, jsonify
 from flask_admin import Admin
 from flask_cors import cross_origin
-from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+
 
 from app import paddle_utils
 from app.admin_model import SLModelView, SLAdminIndexView
 from app.api.base import api_bp
 from app.auth.base import auth_bp
 from app.config import (
+    DEBUG,
     DB_URI,
     FLASK_SECRET,
     SENTRY_DSN,
@@ -22,6 +26,8 @@ from app.config import (
     SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
     RESET_DB,
+    FLASK_PROFILER_PATH,
+    FLASK_PROFILER_PASSWORD,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -39,13 +45,21 @@ from app.models import (
     PlanEnum,
     ApiKey,
     CustomDomain,
+    LifetimeCoupon,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
 
 if SENTRY_DSN:
     LOG.d("enable sentry")
-    sentry_sdk.init(dsn=SENTRY_DSN, integrations=[FlaskIntegration()])
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            FlaskIntegration(),
+            SqlalchemyIntegration(),
+            AioHttpIntegration(),
+        ],
+    )
 
 # the app is served behin nginx which uses http and not https
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -76,6 +90,21 @@ def create_app() -> Flask:
 
     init_admin(app)
     setup_paddle_callback(app)
+    setup_do_not_track(app)
+
+    if FLASK_PROFILER_PATH:
+        LOG.d("Enable flask-profiler")
+        app.config["flask_profiler"] = {
+            "enabled": True,
+            "storage": {"engine": "sqlite", "FILE": FLASK_PROFILER_PATH},
+            "basicAuth": {
+                "enabled": True,
+                "username": "admin",
+                "password": FLASK_PROFILER_PASSWORD,
+            },
+            "ignore": ["^/static/.*", "/git", "/exception"],
+        }
+        flask_profiler.init_app(app)
 
     return app
 
@@ -99,6 +128,9 @@ def fake_data():
         is_admin=True,
         otp_secret="base32secret3232",
     )
+    db.session.commit()
+
+    LifetimeCoupon.create(code="coupon", nb_used=10)
     db.session.commit()
 
     # Create a subscription for user
@@ -165,7 +197,7 @@ def register_blueprints(app: Flask):
 
 
 def set_index_page(app):
-    @app.route("/")
+    @app.route("/", methods=["GET", "POST"])
     def index():
         if current_user.is_authenticated:
             return redirect(url_for("dashboard.index"))
@@ -347,9 +379,9 @@ def setup_paddle_callback(app: Flask):
             LOG.debug("Cancel subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
-            sub.cancelled = True
-
-            db.session.commit()
+            if sub:
+                sub.cancelled = True
+                db.session.commit()
 
         return "OK"
 
@@ -371,10 +403,25 @@ def init_admin(app):
     admin.add_view(SLModelView(ClientUser, db.session))
 
 
+def setup_do_not_track(app):
+    @app.route("/dnt")
+    def do_not_track():
+        return """
+        <script>
+// Disable GoatCounter if this script is called
+
+window.localStorage.setItem('goatcounter-ignore', 't');
+
+alert("GoatCounter disabled");
+
+window.location.href = "/";
+
+</script>
+        """
+
+
 if __name__ == "__main__":
     app = create_app()
-
-    app.debug = True
 
     # enable flask toolbar
     # app.config["DEBUG_TB_PROFILER_ENABLED"] = True

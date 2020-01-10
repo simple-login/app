@@ -16,6 +16,10 @@ def random_word():
     return random.choice(_words)
 
 
+def word_exist(word):
+    return word in _words
+
+
 def random_words():
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
     nb_words = random.randint(2, 3)

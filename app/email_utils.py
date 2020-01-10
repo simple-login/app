@@ -1,5 +1,5 @@
 import os
-from email.message import EmailMessage
+from email.message import EmailMessage, Message
 from email.utils import make_msgid, formatdate
 from smtplib import SMTP
 
@@ -177,7 +177,7 @@ def get_email_domain_part(email):
     return email[email.find("@") + 1 :]
 
 
-def add_dkim_signature(msg: EmailMessage, email_domain: str):
+def add_dkim_signature(msg: Message, email_domain: str):
     if msg["DKIM-Signature"]:
         LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
         del msg["DKIM-Signature"]
@@ -197,3 +197,16 @@ def add_dkim_signature(msg: EmailMessage, email_domain: str):
     sig = sig.replace("\n", " ").replace("\r", "")
 
     msg.add_header("DKIM-Signature", sig[len("DKIM-Signature: ") :])
+
+
+def add_or_replace_header(msg: Message, header: str, value: str):
+    try:
+        msg.add_header(header, value)
+    except ValueError:
+        # the header exists already
+        msg.replace_header(header, value)
+
+
+def delete_header(msg: Message, header: str):
+    if msg[header]:
+        del msg[header]

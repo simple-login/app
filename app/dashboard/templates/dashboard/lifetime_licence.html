@@ -1,0 +1,29 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Lifetime Licence
+{% endblock %}
+
+{% block default_content %}
+  <div class="bg-white p-6" style="max-width: 60em; margin: auto">
+    <h1 class="h2">Lifetime Licence</h1>
+
+    <div class="mb-4">
+      If you have a lifetime licence, please paste it here. <br>
+      For information, we offer free premium account for education (student, professor or technical staff working at
+      an educational institute). <br>
+      Drop us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a> with your student ID or certificate to get the lifetime licence.
+    </div>
+
+    <form method="post">
+      {{ coupon_form.csrf_token }}
+
+      {{ coupon_form.code(class="form-control", placeholder="Licence Code") }}
+      {{ render_field_errors(coupon_form.code) }}
+      <button class="btn btn-success mt-2">Apply</button>
+    </form>
+  </div>
+
+{% endblock %}
