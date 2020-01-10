@@ -268,7 +268,7 @@ class MailHandler:
                 "",
             )
 
-            return "450 ignored"
+            return "550 ignored"
 
         delete_header(msg, "DKIM-Signature")
 
