@@ -1,9 +1,20 @@
-Welcome {{name}} 🎉!
+Hi {{name}}
 
-I really appreciate you signing up for SimpleLogin, and I'm sure you'll love it when you see how *simple* it is to use.
+My name is Son. I’m the founder of SimpleLogin and I wanted to be the first to welcome you on board.
 
-We built SimpleLogin to help people protecting their online identity, and I hope that we can achieve that for you.
+To better secure your account, I recommend enabling Multi-Factor Authentication (MFA) on your setting page at
+https://app.simplelogin.io/dashboard/setting
+
+If you use Chrome or Firefox, SimpleLogin extension could be quite handy to quickly create aliases.
+You can install Chrome extension on
+https://chrome.google.com/webstore/detail/simplelogin-your-anti-spa/dphilobhebphkdjbpfohgikllaljmgbn
+
+and Firefox on
+https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/
+
+If you have a domain, for example for your business or your project, you can import your domain into SimpleLogin
+and create your business emails backed by your personal email! By the way, all our business emails are actually aliases 🤫.
+Importing domain is only available for Premium plan though, shoot me an email if you need a trial period.
 
 Thanks.
-
 Son - SimpleLogin founder.

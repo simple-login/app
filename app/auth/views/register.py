@@ -17,7 +17,6 @@ class RegisterForm(FlaskForm):
     password = StringField(
         "Password", validators=[validators.DataRequired(), validators.Length(min=8)]
     )
-    name = StringField("Name", validators=[validators.DataRequired()])
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -46,9 +45,7 @@ def register():
         else:
             LOG.debug("create user %s", form.email.data)
             user = User.create(
-                email=form.email.data.lower(),
-                name=form.name.data,
-                password=form.password.data,
+                email=form.email.data.lower(), name="", password=form.password.data,
             )
             db.session.commit()
 

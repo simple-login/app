@@ -30,7 +30,7 @@ def _render(template_name, **kwargs) -> str:
 def send_welcome_email(email, name):
     send_email(
         email,
-        f"{name}, welcome to SimpleLogin!",
+        f"Welcome to SimpleLogin {name}!",
         _render("welcome.txt", name=name),
         _render("welcome.html", name=name),
     )
@@ -39,7 +39,7 @@ def send_welcome_email(email, name):
 def send_activation_email(email, name, activation_link):
     send_email(
         email,
-        f"{name}, just one more step to join SimpleLogin",
+        f"Just one more step to join SimpleLogin {name}",
         _render(
             "activation.txt", name=name, activation_link=activation_link, email=email
         ),
@@ -52,7 +52,7 @@ def send_activation_email(email, name, activation_link):
 def send_reset_password_email(email, name, reset_password_link):
     send_email(
         email,
-        f"{name}, reset your password on SimpleLogin",
+        f"Reset your password on SimpleLogin",
         _render(
             "reset-password.txt", name=name, reset_password_link=reset_password_link
         ),
@@ -65,7 +65,7 @@ def send_reset_password_email(email, name, reset_password_link):
 def send_change_email(new_email, current_email, name, link):
     send_email(
         new_email,
-        f"{name}, confirm email update on SimpleLogin",
+        f"Confirm email update on SimpleLogin",
         _render(
             "change-email.txt",
             name=name,
@@ -86,7 +86,7 @@ def send_change_email(new_email, current_email, name, link):
 def send_new_app_email(email, name):
     send_email(
         email,
-        f"{name}, any question/feedback for SimpleLogin?",
+        f"Any question/feedback for SimpleLogin {name}?",
         _render("new-app.txt", name=name),
         _render("new-app.html", name=name),
     )
@@ -95,7 +95,7 @@ def send_new_app_email(email, name):
 def send_test_email_alias(email, name):
     send_email(
         email,
-        f"{name}, this email is sent to {email}",
+        f"This email is sent to {email}",
         _render("test-email.txt", name=name, alias=email),
         _render("test-email.html", name=name, alias=email),
     )
