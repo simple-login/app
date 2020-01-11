@@ -1,4 +1,4 @@
-Hi {{name}},
+Hi {{name}}
 
 Thank you for choosing SimpleLogin.
 

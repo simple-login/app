@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + name + ",") }}
+  {{ render_text("Hi " + name) }}
   {{ render_text("You have asked to change your email to: <br><b>"+ new_email +"</b>.") }}
   {{ render_text("Your current email is: <br>" + current_email + ".") }}
   {{ render_text("To confirm, please click on the button below or use this link: <br> " + link + "<br> within 12 hours.") }}

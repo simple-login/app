@@ -1,4 +1,4 @@
-Hi {{name}},
+Hi {{name}}
 
 You have asked to change your email to {{new_email}}.
 
