@@ -17,7 +17,7 @@
             {% if current_user.profile_picture_id %}
               <span class="avatar" style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
             {% else %}
-              <span class="avatar avatar-blue">{{ current_user.get_name_initial() }}</span>
+              <span class="avatar avatar-blue">{{ current_user.get_name_initial() or "👻" }}</span>
             {% endif %}
 
             <span class="ml-2 d-none d-lg-block">
