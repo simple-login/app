@@ -22,11 +22,13 @@ class AliasLog:
             setattr(self, k, v)
 
 
-@dashboard_bp.route("/alias_log/<alias>", methods=["GET"], defaults={"page_id": 0})
-@dashboard_bp.route("/alias_log/<alias>/<int:page_id>")
+@dashboard_bp.route(
+    "/alias_log/<int:alias_id>", methods=["GET"], defaults={"page_id": 0}
+)
+@dashboard_bp.route("/alias_log/<int:alias_id>/<int:page_id>")
 @login_required
-def alias_log(alias, page_id):
-    gen_email = GenEmail.get_by(email=alias)
+def alias_log(alias_id, page_id):
+    gen_email = GenEmail.get(alias_id)
 
     # sanity check
     if not gen_email:
