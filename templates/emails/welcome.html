@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  (% if name %}
+  {% if name %}
     {{ render_text("Hi " + name + ",") }}
   {% else %}
     {{ render_text("Hi,") }}
