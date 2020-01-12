@@ -122,7 +122,7 @@ def index():
     sorted(client_users, key=lambda cu: cu.client.name)
 
     return render_template(
-        "dashboard/index.html",
+        "dashboard/index_column.html",
         client_users=client_users,
         aliases=get_alias_info(current_user.id, query, highlight_gen_email_id),
         highlight_gen_email_id=highlight_gen_email_id,

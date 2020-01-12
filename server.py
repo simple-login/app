@@ -12,7 +12,6 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 
-
 from app import paddle_utils
 from app.admin_model import SLModelView, SLAdminIndexView
 from app.api.base import api_bp
@@ -208,9 +207,9 @@ def set_index_page(app):
     def after_request(res):
         # not logging /static call
         if (
-            not request.path.startswith("/static")
-            and not request.path.startswith("/admin/static")
-            and not request.path.startswith("/_debug_toolbar")
+                not request.path.startswith("/static")
+                and not request.path.startswith("/admin/static")
+                and not request.path.startswith("/_debug_toolbar")
         ):
             LOG.debug(
                 "%s %s %s %s %s",
@@ -292,7 +291,19 @@ def jinja2_filter(app):
         dt = arrow.get(value)
         return dt.humanize()
 
+    def email_truncate(email: str, limit_length: int = 30) -> str:
+        """ Truncate if the email address is too long, but keep the domain part visible
+        For instance: 182ac4fa-df84-44a1-a4b6-8aca82d0534c@sl.local -> 182ac4fa-df84-44a1-a4b...@sl.local
+        :param email: The email address
+        :param limit_length: Limit number of character (including the domain part)
+        :return: truncated email
+        """
+        local, fqdn = email.split("@")
+        local = local[:limit_length - len(fqdn)] + "..." if len(local) > limit_length - len(fqdn) else local
+        return local + "@" + fqdn
+
     app.jinja_env.filters["dt"] = format_datetime
+    app.jinja_env.filters['email_truncate'] = email_truncate
 
     @app.context_processor
     def inject_stage_and_region():
@@ -319,14 +330,14 @@ def setup_paddle_callback(app: Flask):
             return "KO", 400
 
         if (
-            request.form.get("alert_name") == "subscription_created"
+                request.form.get("alert_name") == "subscription_created"
         ):  # new user subscribes
             user_email = request.form.get("email")
             user = User.get_by(email=user_email)
 
             if (
-                int(request.form.get("subscription_plan_id"))
-                == PADDLE_MONTHLY_PRODUCT_ID
+                    int(request.form.get("subscription_plan_id"))
+                    == PADDLE_MONTHLY_PRODUCT_ID
             ):
                 plan = PlanEnum.monthly
             else:

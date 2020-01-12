@@ -60,7 +60,7 @@ em {
 .small-text {
     font-size: 12px;
     font-weight: 300;
-    margin-bottom: 0px;
+    margin-bottom: 0;
 }
 
 .copy-btn {
@@ -70,4 +70,14 @@ em {
 
 .cursor {
     cursor: pointer;
+}
+/* Dashboard */
+
+.wrap-table {
+    border-radius: 3px;
+    overflow: hidden;
+}
+.table th, .text-wrap table th, .table td, .text-wrap table td {
+    padding: 20px;
+    border-top: 1px solid rgba(0, 40, 100, 0.05);
 }
