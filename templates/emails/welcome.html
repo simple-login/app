@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + name) }}
+  (% if name %}
+    {{ render_text("Hi " + name + ",") }}
+  {% else %}
+    {{ render_text("Hi,") }}
+  {% endif %}
 
   {{ render_text("My name is Son. I’m the founder of SimpleLogin and I wanted to be the first to welcome you on board.") }}
 
   {{ render_text('To better secure your account, I recommend enabling Multi-Factor Authentication (MFA) on your <a href="https://app.simplelogin.io/dashboard/setting">Setting page</a>.') }}
 
-  {{ render_text('If you use Chrome or Firefox, SimpleLogin extension could be quite handy to quickly create aliases. Chrome extension can be installed on <a href="https://chrome.google.com/webstore/detail/simplelogin-your-anti-spa/dphilobhebphkdjbpfohgikllaljmgbn">Chrome Store</a> and Firefox on <a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">Firefox Store</a>.') }}
+  {{ render_text('If you use Chrome or Firefox, SimpleLogin extension could be handy to quickly create aliases. Chrome extension can be installed on <a href="https://chrome.google.com/webstore/detail/simplelogin-your-anti-spa/dphilobhebphkdjbpfohgikllaljmgbn">Chrome Store</a> and Firefox on <a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">Firefox Store</a>.') }}
 
   {{ render_text('If you have a domain, for example for your business or your project, you can import your domain into SimpleLogin
 and create your business emails backed by your personal email. This is cheaper and more convenient than buying a GSuite account. By the way, all our business emails are actually aliases :).') }}
 
-  {{ render_text('Importing domain is only available for Premium plan though, shoot me an email if you need a trial period.') }}
+  {{ render_text('Importing domain is only available for Premium plan though, shoot me an email by replying to this email if you need a trial period.') }}
 
 {% endblock %}
 
