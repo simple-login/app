@@ -44,13 +44,13 @@ class NewContactForm(FlaskForm):
     )
 
 
-@dashboard_bp.route("/alias_contact_manager/<alias>/", methods=["GET", "POST"])
+@dashboard_bp.route("/alias_contact_manager/<alias_id>/", methods=["GET", "POST"])
 @dashboard_bp.route(
-    "/alias_contact_manager/<alias>/<int:forward_email_id>", methods=["GET", "POST"]
+    "/alias_contact_manager/<alias_id>/<int:forward_email_id>", methods=["GET", "POST"]
 )
 @login_required
-def alias_contact_manager(alias, forward_email_id=None):
-    gen_email = GenEmail.get_by(email=alias)
+def alias_contact_manager(alias_id, forward_email_id=None):
+    gen_email = GenEmail.get(alias_id)
 
     # sanity check
     if not gen_email:
@@ -83,7 +83,7 @@ def alias_contact_manager(alias, forward_email_id=None):
                 ):
                     flash(f"{website_email} is already added", "error")
                     return redirect(
-                        url_for("dashboard.alias_contact_manager", alias=alias)
+                        url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                     )
 
                 forward_email = ForwardEmail.create(
@@ -100,7 +100,7 @@ def alias_contact_manager(alias, forward_email_id=None):
                 return redirect(
                     url_for(
                         "dashboard.alias_contact_manager",
-                        alias=alias,
+                        alias_id=alias_id,
                         forward_email_id=forward_email.id,
                     )
                 )
@@ -110,10 +110,14 @@ def alias_contact_manager(alias, forward_email_id=None):
 
             if not forward_email:
                 flash("Unknown error. Refresh the page", "warning")
-                return redirect(url_for("dashboard.alias_contact_manager", alias=alias))
+                return redirect(
+                    url_for("dashboard.alias_contact_manager", alias_id=alias_id)
+                )
             elif forward_email.gen_email_id != gen_email.id:
                 flash("You cannot delete reverse-alias", "warning")
-                return redirect(url_for("dashboard.alias_contact_manager", alias=alias))
+                return redirect(
+                    url_for("dashboard.alias_contact_manager", alias_id=alias_id)
+                )
 
             contact_name = forward_email.website_from
             ForwardEmail.delete(forward_email_id)
@@ -121,7 +125,9 @@ def alias_contact_manager(alias, forward_email_id=None):
 
             flash(f"Reverse-alias for {contact_name} has been deleted", "success")
 
-            return redirect(url_for("dashboard.alias_contact_manager", alias=alias))
+            return redirect(
+                url_for("dashboard.alias_contact_manager", alias_id=alias_id)
+            )
 
     # make sure highlighted forward_email is at array start
     forward_emails = gen_email.forward_emails
