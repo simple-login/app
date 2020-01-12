@@ -207,9 +207,9 @@ def set_index_page(app):
     def after_request(res):
         # not logging /static call
         if (
-                not request.path.startswith("/static")
-                and not request.path.startswith("/admin/static")
-                and not request.path.startswith("/_debug_toolbar")
+            not request.path.startswith("/static")
+            and not request.path.startswith("/admin/static")
+            and not request.path.startswith("/_debug_toolbar")
         ):
             LOG.debug(
                 "%s %s %s %s %s",
@@ -299,11 +299,15 @@ def jinja2_filter(app):
         :return: truncated email
         """
         local, fqdn = email.split("@")
-        local = local[:limit_length - len(fqdn)] + "..." if len(local) > limit_length - len(fqdn) else local
+        local = (
+            local[: limit_length - len(fqdn)] + "..."
+            if len(local) > limit_length - len(fqdn)
+            else local
+        )
         return local + "@" + fqdn
 
     app.jinja_env.filters["dt"] = format_datetime
-    app.jinja_env.filters['email_truncate'] = email_truncate
+    app.jinja_env.filters["email_truncate"] = email_truncate
 
     @app.context_processor
     def inject_stage_and_region():
@@ -330,14 +334,14 @@ def setup_paddle_callback(app: Flask):
             return "KO", 400
 
         if (
-                request.form.get("alert_name") == "subscription_created"
+            request.form.get("alert_name") == "subscription_created"
         ):  # new user subscribes
             user_email = request.form.get("email")
             user = User.get_by(email=user_email)
 
             if (
-                    int(request.form.get("subscription_plan_id"))
-                    == PADDLE_MONTHLY_PRODUCT_ID
+                int(request.form.get("subscription_plan_id"))
+                == PADDLE_MONTHLY_PRODUCT_ID
             ):
                 plan = PlanEnum.monthly
             else:
