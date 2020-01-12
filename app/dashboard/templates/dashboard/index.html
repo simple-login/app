@@ -151,7 +151,7 @@
           <div class="row mt-3">
             <div class="col">
               {% if gen_email.enabled %}
-                <a href="{{ url_for('dashboard.alias_contact_manager', alias=gen_email.email) }}"
+                <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=gen_email.id) }}"
                     {% if alias_info.show_intro_test_send_email %}
                    data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
                    You can add a new <em>contact</em> to for your alias here. <br><br>
