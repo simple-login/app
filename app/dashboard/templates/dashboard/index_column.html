@@ -1,0 +1,324 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block head %}
+  <style>
+    .alias-activity {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .btn-group-border-left {
+      border-left: 1px #fbfbfb4f solid;
+    }
+  </style>
+{% endblock %}
+
+{% block title %}
+  Alias
+{% endblock %}
+
+{% block default_content %}
+  <div class="page-header row">
+    <div class="col-lg-3 col-sm-12 p-0 mt-1">
+      <form method="get">
+        <input type="search" name="query" autofocus placeholder="Enter to search for alias" class="form-control shadow"
+               value="{{ query }}">
+      </form>
+    </div>
+
+    <div class="col-lg-4 offset-lg-5 pr-0 mt-1">
+      <div class="btn-group float-right" role="group">
+        <form method="post">
+          <input type="hidden" name="form-name" value="create-custom-email">
+          <button data-toggle="tooltip"
+                  title="Create a custom alias"
+                  class="btn btn-primary mr-2"><i class="fa fa-plus"></i> New Email Alias
+          </button>
+        </form>
+        <div class="btn-group" role="group">
+          <form method="post">
+            <input type="hidden" name="form-name" value="create-random-email">
+            <button data-toggle="tooltip"
+                    title="Create a totally random alias"
+                    class="btn btn-success"><i class="fa fa-random"></i> Random Alias
+            </button>
+          </form>
+          <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle btn-group-border-left"
+                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          </button>
+          <div class="dropdown-menu dropdown-menu-right border-left" aria-labelledby="btnGroupDrop1">
+            <div class="">
+              <form method="post">
+                <input type="hidden" name="form-name" value="create-random-email">
+                <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
+                <button class="dropdown-item">By Random Words</button>
+              </form>
+            </div>
+            <div class="">
+              <form method="post">
+                <input type="hidden" name="form-name" value="create-random-email">
+                <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.uuid.value }}">
+                <button class="dropdown-item">By UUID</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row">
+    <div class="container">
+      <table class="table wrap-table shadow-lg">
+        <thead class="text-white bg-primary">
+        <tr>
+          <th scope="col" class="text-white">Alias</th>
+          <th scope="col" class="text-white">Recipients</th>
+          <th scope="col" class="text-white">Forwarded</th>
+          <th scope="col" class="text-white">Blocked</th>
+          <th scope="col" class="text-white">Reply</th>
+          <th scope="col" class="text-white">Active</th>
+          <th scope="col" class="text-white"></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for alias in aliases %}
+          <tr class="{% if alias.highlight %} bg-gray-lighter {% else %} bg-white {% endif %}">
+            <td class="cell">
+              <a href="{{ url_for('dashboard.alias_log', alias=alias.gen_email.email) }}">{{ alias.gen_email.email | email_truncate }}</a>
+              <span class="btn-group float-right">
+                <span class="btn btn-sm btn-success clipboard"
+                        {% if loop.index %}
+                      data-intro="This is an <em>alias</em>. <br><br> <b>All</b> emails sent to an alias will be <em>forwarded</em> to your inbox. <br><br>
+                     Alias is a great way to hide your personal email address so feel free to use it whenever possible,
+                     for example when signing up for a newsletter or creating a new account on a suspicious website 😎"
+                      data-step="2"
+                        {% endif %}
+                        {% if alias.gen_email.enabled %}
+                      data-toggle="tooltip"
+                      title="Copy to clipboard"
+                      data-clipboard-text="{{ alias.gen_email.email }}"
+                        {% else %}
+                      disabled
+                        {% endif %}
+                >
+                  <i class="fe fe-copy"></i>
+                 Copy
+                </span>
+                <span class="btn btn-sm btn-primary" >
+                  {% if alias.gen_email.enabled %}
+                    <a href="{{ url_for('dashboard.alias_contact_manager', alias=alias.gen_email.email) }}" class="text-white card-link"
+                      {% if alias.show_intro_test_send_email %}
+                       data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
+                         You can add a new <em>contact</em> to for your alias here. <br><br>
+                         To send an email to your contact, SimpleLogin will create a <em>special</em> email address. <br><br>
+                         Sending an email to this email address will <em>forward</em> the email to your contact"
+                       data-step="4"
+                      {% endif %}
+                       data-toggle="tooltip"
+                       title="Not only an alias can receive emails, it can send emails too">
+                    <i class="fe fe-send"></i> Send Email
+                  </a>
+                  {% endif %}
+                </span>
+              </span>
+            </td>
+            <td class="cell">
+              <span class="badge badge-warning">Default</span>
+            </td>
+            <td class="cell">{{ alias.nb_forward }}</td>
+            <td class="cell">{{ alias.nb_blocked }}</td>
+            <td class="cell">{{ alias.nb_reply }}</td>
+            <td class="cell">
+              <form method="post">
+                <input type="hidden" name="form-name" value="switch-email-forwarding">
+                <input type="hidden" name="gen-email-id" value="{{ alias.gen_email.id }}">
+                <label class="custom-switch cursor mt-2" data-toggle="tooltip"
+                        {% if alias.gen_email.enabled %} title="Block Alias" {% else %}
+                       title="Unblock Alias" {% endif %}
+
+                        {% if loop.index ==1 %}
+                       data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
+                           be forwarded to your inbox. <br><br>
+                           This should be used with care as others might
+                           not be able to reach you after ...
+                            "
+                       data-step="3"
+                        {% endif %}
+                       style="padding-left: 0"
+                >
+                  <input type="hidden" name="alias" class="alias" value="{{ alias.gen_email.email }}">
+                  <input type="checkbox" class="custom-switch-input"
+                          {{ "checked" if alias.gen_email.enabled else "" }}>
+
+                  <span class="custom-switch-indicator"></span>
+                </label>
+              </form>
+            </td>
+            <td>
+              <form method="post">
+                <input type="hidden" name="form-name" value="delete-email">
+                <input type="hidden" name="gen-email-id" value="{{ alias.gen_email.id }}">
+                <input type="hidden" name="alias" class="alias" value="{{ alias.gen_email.email }}">
+
+                <span class="delete-email btn btn-link btn-sm float-right text-danger">
+                      <i class="dropdown-icon fe fe-trash-2 text-danger"></i>
+                </span>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+
+  {% if  client_users %}
+    <div class="page-header row">
+      <h3 class="page-title col"
+          data-intro="Here you can find the list of website/app on which
+    you have used the <em>Connect with SimpleLogin</em> button <br><br>
+    You also see what information that SimpleLogin has communicated to these website/app when you sign in."
+          data-step="5"
+      >
+        Apps
+      </h3>
+    </div>
+
+    <div class="row row-cards row-deck mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table table-hover table-outline table-vcenter text-nowrap card-table">
+              <thead>
+              <tr>
+                <th>
+                  App
+                </th>
+                <th>
+                  Info
+                  <i class="fe fe-help-circle" data-toggle="tooltip"
+                     title="Info sent to this app/website"></i>
+                </th>
+                <th class="text-center">
+                  First used
+                  <i class="fe fe-help-circle" data-toggle="tooltip"
+                     title="The first time you have used the SimpleLogin on this app/website"></i>
+                </th>
+                <!--<th class="text-center">Last used</th>-->
+              </tr>
+              </thead>
+              <tbody>
+              {% for client_user in client_users %}
+                <tr>
+                  <td>
+                    {{ client_user.client.name }}
+                  </td>
+
+                  <td>
+                    {% for scope, val in client_user.get_user_info().items() %}
+                      <div>
+                        {% if scope == "email" %}
+                          Email: <a href="mailto:{{ val }}">{{ val }}</a>
+                        {% elif scope == "name" %}
+                          Name: {{ val }}
+                        {% endif %}
+                      </div>
+                    {% endfor %}
+                  </td>
+
+
+                  <td class="text-center">
+                    {{ client_user.created_at | dt }}
+                  </td>
+
+                  {#            TODO: add last_used#}
+                  <!--
+                    <td class="text-center">
+                      <div>4 minutes ago</div>
+                    </td>
+                  -->
+
+                </tr>
+              {% endfor %}
+
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block script %}
+  <script>
+      var clipboard = new ClipboardJS('.clipboard');
+
+      var introShown = localStorage.getItem("introShown");
+      if ("yes" !== introShown) {
+          // only show intro when screen is big enough to show "developer" tab
+          if (window.innerWidth >= 1024) {
+              introJs().start();
+              localStorage.setItem("introShown", "yes")
+          }
+      }
+
+
+      $(".delete-email").on("click", function (e) {
+          let alias = $(this).parent().find(".alias").val();
+          notie.confirm({
+              text: `Once <b>${alias}</b> is deleted, people/apps ` +
+                  "who used to contact you via this alias cannot reach you any more," +
+                  " please confirm.",
+              cancelCallback: () => {
+                  // nothing to do
+              },
+              submitCallback: () => {
+                  $(this).closest("form").submit();
+              }
+          });
+      });
+
+      $(".trigger-email").on("click", function (e) {
+          notie.confirm({
+              text: "SimpleLogin server will send an email to this alias " +
+                  "and it will arrive to your inbox, please confirm.",
+              cancelCallback: () => {
+                  // nothing to do
+              },
+              submitCallback: () => {
+                  $(this).closest("form").submit();
+              }
+          });
+      });
+
+      $(".custom-switch-input").change(function (e) {
+          var message = "";
+          let alias = $(this).parent().find(".alias").val();
+
+          if (e.target.checked) {
+              message = `After this, you will start receiving email sent to <b>${alias}</b>, please confirm.`;
+          } else {
+              message = `After this, you will stop receiving email sent to <b>${alias}</b>, please confirm.`;
+          }
+
+          notie.confirm({
+              text: message,
+              cancelCallback: () => {
+                  // reset to the original value
+                  var oldValue = !$(this).prop("checked");
+                  $(this).prop("checked", oldValue);
+              },
+              submitCallback: () => {
+                  $(this).closest("form").submit();
+              }
+          });
+      })
+  </script>
+{% endblock %}
