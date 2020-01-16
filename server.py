@@ -46,6 +46,7 @@ from app.models import (
     ApiKey,
     CustomDomain,
     LifetimeCoupon,
+    Directory,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
