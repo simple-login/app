@@ -115,7 +115,7 @@ def send_cannot_create_directory_alias(user, alias, directory):
             directory=directory,
         ),
         _render(
-            "cannot-create-alias-directory.txt",
+            "cannot-create-alias-directory.html",
             name=user.name,
             alias=alias,
             directory=directory,
@@ -134,7 +134,10 @@ def send_cannot_create_domain_alias(user, alias, domain):
             "cannot-create-alias-domain.txt", name=user.name, alias=alias, domain=domain
         ),
         _render(
-            "cannot-create-alias-domain.txt", name=user.name, alias=alias, domain=domain
+            "cannot-create-alias-domain.html",
+            name=user.name,
+            alias=alias,
+            domain=domain,
         ),
     )
 
