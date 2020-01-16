@@ -158,6 +158,10 @@ def fake_data():
     )
     db.session.commit()
 
+    Directory.create(user_id=user.id, name="abcd")
+    Directory.create(user_id=user.id, name="xyzt")
+    db.session.commit()
+
     # Create a client
     client1 = Client.create_new(name="Demo", user_id=user.id)
     client1.oauth_client_id = "client-id"

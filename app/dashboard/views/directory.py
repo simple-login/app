@@ -18,11 +18,6 @@ class NewDirForm(FlaskForm):
 @dashboard_bp.route("/directory", methods=["GET", "POST"])
 @login_required
 def directory():
-    # only premium user can add directory
-    if not current_user.is_premium():
-        flash("Only premium user can add directories", "warning")
-        return redirect(url_for("dashboard.index"))
-
     dirs = Directory.query.filter_by(user_id=current_user.id).all()
 
     new_dir_form = NewDirForm()
@@ -47,6 +42,10 @@ def directory():
             return redirect(url_for("dashboard.directory"))
 
         elif request.form.get("form-name") == "create":
+            if not current_user.is_premium():
+                flash("Only premium plan can add directory", "warning")
+                return redirect(url_for("dashboard.directory"))
+
             if new_dir_form.validate():
                 new_dir_name = new_dir_form.name.data.lower()
 
@@ -60,7 +59,7 @@ def directory():
 
                     flash(f"Directory {new_dir.name} is created", "success")
 
-                    return redirect(url_for("dashboard.directory",))
+                    return redirect(url_for("dashboard.directory"))
 
     return render_template(
         "dashboard/directory.html",
