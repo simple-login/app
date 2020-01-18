@@ -189,8 +189,8 @@ Later, we will setup Postfix to authorize this network.
 
 ```bash
 docker network create -d bridge \
-    --subnet=1.1.1.0/24 \
-    --gateway=1.1.1.1 \
+    --subnet=240.0.0.0/24 \
+    --gateway=240.0.0.1 \
     sl-network
 ```
 
@@ -238,7 +238,7 @@ sudo postconf -e 'mydomain = mydomain.com'
 sudo postconf -e 'myorigin = mydomain.com'
 sudo postconf -e 'mydestination = localhost'
 
-sudo postconf -e 'mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 1.1.1.0/24'
+sudo postconf -e 'mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 240.0.0.0/24'
 
 sudo postconf -e 'relay_domains = pgsql:/etc/postfix/pgsql-relay-domains.cf'
 sudo postconf -e 'transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf'
