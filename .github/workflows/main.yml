@@ -1,4 +1,4 @@
-name: Python package
+name: Run tests
 
 on: [push]
 
@@ -29,3 +29,10 @@ jobs:
       run: |
         pip install black
         black --check .
+
+    - name: Publish to Docker Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: simplelogin/app
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
