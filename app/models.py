@@ -720,6 +720,8 @@ class CustomDomain(db.Model, ModelMixin):
     # an alias is created automatically the first time it receives an email
     catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
+    user = db.relationship(User)
+
     def nb_alias(self):
         return GenEmail.filter_by(custom_domain_id=self.id).count()
 

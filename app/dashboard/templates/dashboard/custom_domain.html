@@ -13,6 +13,12 @@
     <div class="col-md-8 offset-md-2">
       <h1 class="h3"> Custom Domains </h1>
 
+      {% if not current_user.is_premium() %}
+        <div class="alert alert-danger" role="alert">
+          This feature is only available in premium plan.
+        </div>
+      {% endif %}
+
       {% for custom_domain in custom_domains %}
         <div class="card" style="max-width: 50rem">
           <div class="card-body">

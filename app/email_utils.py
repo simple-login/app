@@ -101,6 +101,47 @@ def send_test_email_alias(email, name):
     )
 
 
+def send_cannot_create_directory_alias(user, alias, directory):
+    """when user cancels their subscription, they cannot create alias on the fly.
+    If this happens, send them an email to notify
+    """
+    send_email(
+        user.email,
+        f"Alias {alias} cannot be created",
+        _render(
+            "cannot-create-alias-directory.txt",
+            name=user.name,
+            alias=alias,
+            directory=directory,
+        ),
+        _render(
+            "cannot-create-alias-directory.html",
+            name=user.name,
+            alias=alias,
+            directory=directory,
+        ),
+    )
+
+
+def send_cannot_create_domain_alias(user, alias, domain):
+    """when user cancels their subscription, they cannot create alias on the fly with custom domain.
+    If this happens, send them an email to notify
+    """
+    send_email(
+        user.email,
+        f"Alias {alias} cannot be created",
+        _render(
+            "cannot-create-alias-domain.txt", name=user.name, alias=alias, domain=domain
+        ),
+        _render(
+            "cannot-create-alias-domain.html",
+            name=user.name,
+            alias=alias,
+            domain=domain,
+        ),
+    )
+
+
 def send_email(to_email, subject, plaintext, html):
     if NOT_SEND_EMAIL:
         LOG.d(

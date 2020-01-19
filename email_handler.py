@@ -47,6 +47,8 @@ from app.email_utils import (
     get_email_domain_part,
     add_or_replace_header,
     delete_header,
+    send_cannot_create_directory_alias,
+    send_cannot_create_domain_alias,
 )
 from app.extensions import db
 from app.log import LOG
@@ -110,7 +112,9 @@ class MailHandler:
 
         gen_email = GenEmail.get_by(email=alias)
         if not gen_email:
-            LOG.d("alias %s not exist. Try to see if it can created on the fly", alias)
+            LOG.d(
+                "alias %s not exist. Try to see if it can be created on the fly", alias
+            )
 
             # try to see if alias could be created on-the-fly
             on_the_fly = False
@@ -122,31 +126,56 @@ class MailHandler:
                     LOG.d("directory_name %s", directory_name)
 
                     directory = Directory.get_by(name=directory_name)
-                    if directory:
-                        LOG.d("create alias %s for directory %s", alias, directory)
-                        on_the_fly = True
 
-                        gen_email = GenEmail.create(
-                            email=alias,
-                            user_id=directory.user_id,
-                            directory_id=directory.id,
-                        )
-                        db.session.commit()
+                    # Only premium user can continue using the directory feature
+                    if directory:
+                        dir_user = directory.user
+                        if dir_user.is_premium():
+                            LOG.d("create alias %s for directory %s", alias, directory)
+                            on_the_fly = True
+
+                            gen_email = GenEmail.create(
+                                email=alias,
+                                user_id=directory.user_id,
+                                directory_id=directory.id,
+                            )
+                            db.session.commit()
+                        else:
+                            LOG.error(
+                                "User %s is not premium anymore and cannot create alias with directory",
+                                dir_user,
+                            )
+                            send_cannot_create_directory_alias(
+                                dir_user, alias, directory_name
+                            )
             else:
                 # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
                 alias_domain = get_email_domain_part(alias)
                 custom_domain = CustomDomain.get_by(domain=alias_domain)
-                if custom_domain and custom_domain.catch_all:
-                    LOG.d("create alias %s for domain %s", alias, custom_domain)
-                    on_the_fly = True
 
-                    gen_email = GenEmail.create(
-                        email=alias,
-                        user_id=custom_domain.user_id,
-                        custom_domain_id=custom_domain.id,
-                        automatic_creation=True,
-                    )
-                    db.session.commit()
+                # Only premium user can continue using the catch-all feature
+                if custom_domain and custom_domain.catch_all:
+                    domain_user = custom_domain.user
+                    if domain_user.is_premium():
+                        LOG.d("create alias %s for domain %s", alias, custom_domain)
+                        on_the_fly = True
+
+                        gen_email = GenEmail.create(
+                            email=alias,
+                            user_id=custom_domain.user_id,
+                            custom_domain_id=custom_domain.id,
+                            automatic_creation=True,
+                        )
+                        db.session.commit()
+                    else:
+                        LOG.error(
+                            "User %s is not premium anymore and cannot create alias with domain %s",
+                            domain_user,
+                            alias_domain,
+                        )
+                        send_cannot_create_domain_alias(
+                            domain_user, alias, alias_domain
+                        )
 
             if not on_the_fly:
                 LOG.d("alias %s not exist, return 510", alias)

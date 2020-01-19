@@ -17,11 +17,6 @@ class NewCustomDomainForm(FlaskForm):
 @dashboard_bp.route("/custom_domain", methods=["GET", "POST"])
 @login_required
 def custom_domain():
-    # only premium user can add custom domain
-    if not current_user.is_premium():
-        flash("Only premium user can add custom domains", "warning")
-        return redirect(url_for("dashboard.index"))
-
     custom_domains = CustomDomain.query.filter_by(user_id=current_user.id).all()
 
     new_custom_domain_form = NewCustomDomainForm()
@@ -30,6 +25,10 @@ def custom_domain():
 
     if request.method == "POST":
         if request.form.get("form-name") == "create":
+            if not current_user.is_premium():
+                flash("Only premium plan can add custom domain", "warning")
+                return redirect(url_for("dashboard.custom_domain"))
+
             if new_custom_domain_form.validate():
                 new_domain = new_custom_domain_form.domain.data.strip()
                 if CustomDomain.get_by(domain=new_domain):

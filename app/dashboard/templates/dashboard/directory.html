@@ -10,6 +10,12 @@
     <div class="col-md-8 offset-md-2">
       <h1 class="h3"> Directories </h1>
 
+      {% if not current_user.is_premium() %}
+      <div class="alert alert-danger" role="alert">
+        This feature is only available in premium plan.
+      </div>
+      {% endif %}
+
       <div class="alert alert-primary" role="alert">
         Directory allows you to create aliases <b>on the fly</b>. <br>
         Simply use <em>directory/<b>anything</b>@{{ EMAIL_DOMAIN }}</em>

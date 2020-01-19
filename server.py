@@ -46,6 +46,7 @@ from app.models import (
     ApiKey,
     CustomDomain,
     LifetimeCoupon,
+    Directory,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -156,6 +157,10 @@ def fake_data():
     CustomDomain.create(
         user_id=user.id, domain="very-long-domain.com.net.org", verified=True
     )
+    db.session.commit()
+
+    Directory.create(user_id=user.id, name="abcd")
+    Directory.create(user_id=user.id, name="xyzt")
     db.session.commit()
 
     # Create a client
