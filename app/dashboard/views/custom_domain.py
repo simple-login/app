@@ -31,7 +31,7 @@ def custom_domain():
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             if new_custom_domain_form.validate():
-                new_domain = new_custom_domain_form.domain.data
+                new_domain = new_custom_domain_form.domain.data.strip()
                 if CustomDomain.get_by(domain=new_domain):
                     flash(f"{new_domain} already added", "warning")
                 else:
