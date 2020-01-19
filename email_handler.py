@@ -121,13 +121,20 @@ class MailHandler:
 
             # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
             if alias.endswith(EMAIL_DOMAIN):
-                if "/" in alias:
-                    directory_name = alias[: alias.find("/")]
+                if "/" in alias or "+" in alias or "#" in alias:
+                    if "/" in alias:
+                        sep = "/"
+                    elif "+" in alias:
+                        sep = "+"
+                    else:
+                        sep = "#"
+
+                    directory_name = alias[: alias.find(sep)]
                     LOG.d("directory_name %s", directory_name)
 
                     directory = Directory.get_by(name=directory_name)
 
-                    # Only premium user can continue using the directory feature
+                    # Only premium user can use the directory feature
                     if directory:
                         dir_user = directory.user
                         if dir_user.is_premium():
