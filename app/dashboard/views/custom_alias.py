@@ -1,7 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
 
-from app.config import EMAIL_DOMAIN, HIGHLIGHT_GEN_EMAIL_ID
+from app.config import EMAIL_DOMAIN, HIGHLIGHT_GEN_EMAIL_ID, DISABLE_ALIAS_SUFFIX
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -27,18 +27,20 @@ def custom_alias():
             email_prefix = convert_to_id(email_prefix)
             email_suffix = request.form.get("email-suffix")
 
-            # verify email_suffix
-            if not word_exist(email_suffix):
-                flash(
-                    "nice try :). The suffix is there so no one can take all the *nice* aliases though",
-                    "warning",
-                )
-                return redirect(url_for("dashboard.custom_alias"))
+            # verify email_suffix: do not verify when DISABLE_ALIAS_SUFFIX is set
+            if not DISABLE_ALIAS_SUFFIX:
+                # email suffix must be in the format ".{word}"
+                if email_suffix[0] != "." or not word_exist(email_suffix[1:]):
+                    flash(
+                        "nice try :). The suffix is there so no one can take all the *nice* aliases though",
+                        "warning",
+                    )
+                    return redirect(url_for("dashboard.custom_alias"))
 
             if not email_prefix:
                 error = "alias prefix cannot be empty"
             else:
-                full_email = f"{email_prefix}.{email_suffix}@{EMAIL_DOMAIN}"
+                full_email = f"{email_prefix}{email_suffix}@{EMAIL_DOMAIN}"
                 # check if email already exists
                 if GenEmail.get_by(email=full_email) or DeletedAlias.get_by(
                     email=full_email
@@ -95,7 +97,7 @@ def custom_alias():
                 session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
                 return redirect(url_for("dashboard.index"))
 
-    email_suffix = random_word()
+    email_suffix = "" if DISABLE_ALIAS_SUFFIX else "." + random_word()
     return render_template(
         "dashboard/custom_alias.html",
         error=error,

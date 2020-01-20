@@ -58,6 +58,9 @@ if os.environ.get("IGNORED_EMAILS"):
 else:
     IGNORED_EMAILS = []
 
+# disable the alias suffix, i.e. the ".random_word" part
+DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
+
 DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
 DKIM_PUBLIC_KEY_PATH = get_abs_path(os.environ["DKIM_PUBLIC_KEY_PATH"])
 DKIM_SELECTOR = b"dkim"
