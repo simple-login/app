@@ -437,13 +437,13 @@ john@wick.com / password
 
 ### API
 
-For now the only API client is the Chrome/Firefox extension. This extension relies on `API Code` for authentication.
+SimpleLogin current API clients are Chrome/Firefox/Safari extension and mobile (iOS/Android) app. 
+These clients rely on `API Code` for authentication.
 
-In every request, the extension sends
+Once the `Api Code` is obtained, either via user entering it (in Browser extension case) or by logging in (in Mobile case),
+the client includes the `api code` in `Authentication` header in almost all requests. 
 
-- the `API Code` is set in `Authentication` header. The check is done via the `verify_api_key` wrapper, implemented in `app/api/base.py`
-
-- (Optional but recommended) `hostname` passed in query string. hostname is the the URL hostname (cf https://en.wikipedia.org/wiki/URL), for ex if URL is http://www.example.com/index.html then the hostname is `www.example.com`. This information is important to know where an alias is used in order to suggest user the same alias if they want to create on alias on the same website in the future. 
+For some endpoints, the `hostname` should be passed in query string. `hostname` is the the URL hostname (cf https://en.wikipedia.org/wiki/URL), for ex if URL is http://www.example.com/index.html then the hostname is `www.example.com`. This information is important to know where an alias is used in order to suggest user the same alias if they want to create on alias on the same website in the future. 
 
 If error, the API returns 4** with body containing the error message, for example:
 
@@ -552,6 +552,22 @@ If success, 201 with the new alias, for example
   "alias": "www_groupon_com@my_domain.com"
 }
 ```
+
+#### POST /api/auth/login
+
+Input:
+- email
+- password
+- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
+
+Output:
+- name: user name, could be an empty string
+- mfa_enabled: boolean
+- mfa_key: only useful when user enables MFA. In this case, user needs to enter their OTP token in order to login.
+- api_key: if MFA is not enabled, the `api key` is returned right away.
+
+The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
+If user hasn't enabled MFA, `mfa_key` is empty. 
 
 ### Database migration
 
