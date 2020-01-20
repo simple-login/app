@@ -155,8 +155,10 @@ class MailHandler:
                             send_cannot_create_directory_alias(
                                 dir_user, alias, directory_name
                             )
-            else:
-                # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
+
+            # try to create alias on-the-fly with custom-domain catch-all feature
+            # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
+            if not on_the_fly:
                 alias_domain = get_email_domain_part(alias)
                 custom_domain = CustomDomain.get_by(domain=alias_domain)
 
@@ -185,7 +187,7 @@ class MailHandler:
                         )
 
             if not on_the_fly:
-                LOG.d("alias %s not exist, return 510", alias)
+                LOG.d("alias %s cannot be created on-the-fly, return 510", alias)
                 return "510 Email not exist"
 
         user_email = gen_email.user.email
