@@ -291,6 +291,7 @@ EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
 DKIM_PRIVATE_KEY_PATH=/dkim.key
 DKIM_PUBLIC_KEY_PATH=/dkim.pub.key
 DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
+DISABLE_ALIAS_SUFFIX=1
 ```
 
 
