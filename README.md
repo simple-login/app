@@ -242,6 +242,18 @@ sudo postconf -e 'mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 240.
 
 sudo postconf -e 'relay_domains = pgsql:/etc/postfix/pgsql-relay-domains.cf'
 sudo postconf -e 'transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf'
+
+# HELO restrictions
+sudo postconf -e 'smtpd_delay_reject = yes'
+sudo postconf -e 'smtpd_helo_required = yes'
+sudo postconf -e 'smtpd_helo_restrictions = permit_mynetworks, reject_non_fqdn_helo_hostname, reject_invalid_helo_hostname, permit'
+
+# Sender restriction
+sudo postconf -e 'smtpd_sender_restrictions = permit_mynetworks, reject_non_fqdn_sender, reject_unknown_sender_domain, permit'
+
+# Recipient restrictions
+sudo postconf -e 'smtpd_recipient_restrictions = reject_unauth_pipelining, reject_non_fqdn_recipient, reject_unknown_recipient_domain, permit_mynetworks, reject_unauth_destination, reject_rbl_client zen.spamhaus.org, reject_rbl_client bl.spamcop.net, permit'
+
 ```
 
 
