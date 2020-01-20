@@ -567,6 +567,20 @@ Output:
 - api_key: if MFA is not enabled, the `api key` is returned right away.
 
 The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
+If user hasn't enabled MFA, `mfa_key` is empty.
+
+#### POST /api/auth/mfa
+
+Input:
+- mfa_token: OTP token that user enters
+- mfa_key: MFA key obtained in previous auth request, e.g. /api/auth/login
+- device: the device name, used to create an ApiKey associated with this device
+
+Output:
+- name: user name, could be an empty string
+- api_key: if MFA is not enabled, the `api key` is returned right away.
+
+The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
 If user hasn't enabled MFA, `mfa_key` is empty. 
 
 ### Database migration
