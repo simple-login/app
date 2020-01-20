@@ -51,6 +51,11 @@ def directory():
 
                 if Directory.get_by(name=new_dir_name):
                     flash(f"{new_dir_name} already added", "warning")
+                elif new_dir_name == "reply":
+                    flash(
+                        "directory name cannot be *reply*, please choose another name",
+                        "warning",
+                    )
                 else:
                     new_dir = Directory.create(
                         name=new_dir_name, user_id=current_user.id
