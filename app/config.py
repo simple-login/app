@@ -47,6 +47,16 @@ MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
 # allow to override postfix server locally
 POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 
+if "OTHER_ALIAS_DOMAINS" in os.environ:
+    OTHER_ALIAS_DOMAINS = eval(
+        os.environ["OTHER_ALIAS_DOMAINS"]
+    )  # ["domain1.com", "domain2.com"]
+else:
+    OTHER_ALIAS_DOMAINS = []
+
+# List of domains user can use to create alias
+ALIAS_DOMAINS = OTHER_ALIAS_DOMAINS + [EMAIL_DOMAIN]
+
 # list of (priority, email server)
 EMAIL_SERVERS_WITH_PRIORITY = eval(
     os.environ["EMAIL_SERVERS_WITH_PRIORITY"]
