@@ -1,8 +1,8 @@
 Hi {{name}}
 
-We have recorded an attempt to reply from your alias {{ alias }} from {{ sender }}.
+We have recorded an attempt to send an email from your alias {{ alias }} using {{ sender }}.
 
-Please note that reply from alias only works from your personal email ({{user_email}}): no one else could reply on behalf of your alias.
+Please note that sending from alias only works from your personal email ({{user_email}}): no one else could send emails on behalf of your alias.
 
 Best,
 SimpleLogin team.
