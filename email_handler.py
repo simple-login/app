@@ -38,7 +38,7 @@ from smtplib import SMTP
 
 from aiosmtpd.controller import Controller
 
-from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL
+from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL, ALIAS_DOMAINS
 from app.email_utils import (
     get_email_name,
     get_email_part,
@@ -49,6 +49,7 @@ from app.email_utils import (
     delete_header,
     send_cannot_create_directory_alias,
     send_cannot_create_domain_alias,
+    email_belongs_to_alias_domains,
 )
 from app.extensions import db
 from app.log import LOG
@@ -120,7 +121,7 @@ class MailHandler:
             on_the_fly = False
 
             # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
-            if alias.endswith(EMAIL_DOMAIN):
+            if email_belongs_to_alias_domains(alias):
                 if "/" in alias or "+" in alias or "#" in alias:
                     if "/" in alias:
                         sep = "/"
@@ -284,10 +285,10 @@ class MailHandler:
 
         forward_email = ForwardEmail.get_by(reply_email=reply_email)
         alias: str = forward_email.gen_email.email
-
-        # alias must end with EMAIL_DOMAIN or custom-domain
         alias_domain = alias[alias.find("@") + 1 :]
-        if alias_domain != EMAIL_DOMAIN:
+
+        # alias must end with one of the ALIAS_DOMAINS or custom-domain
+        if not email_belongs_to_alias_domains(alias):
             if not CustomDomain.get_by(domain=alias_domain):
                 return "550 alias unknown by SimpleLogin"
 
@@ -338,9 +339,9 @@ class MailHandler:
             envelope.rcpt_options,
         )
 
-        if alias_domain == EMAIL_DOMAIN:
-            add_dkim_signature(msg, EMAIL_DOMAIN)
-        # add DKIM-Signature for non-custom-domain alias
+        if alias_domain in ALIAS_DOMAINS:
+            add_dkim_signature(msg, alias_domain)
+        # add DKIM-Signature for custom-domain alias
         else:
             custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain.dkim_verified:

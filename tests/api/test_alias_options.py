@@ -27,7 +27,8 @@ def test_different_scenarios(flask_client):
     assert r.status_code == 200
     assert r.json["can_create_custom"]
     assert len(r.json["existing"]) == 1
-    assert r.json["custom"]["suffixes"]
+    assert len(r.json["custom"]["suffixes"]) == 3
+
     assert r.json["custom"]["suggestion"] == ""  # no hostname => no suggestion
 
     # <<< with hostname >>>

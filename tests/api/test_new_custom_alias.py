@@ -1,8 +1,9 @@
 from flask import url_for
 
-from app.config import EMAIL_DOMAIN
+from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
 from app.models import User, ApiKey, GenEmail
+from app.utils import random_word
 
 
 def test_success(flask_client):
@@ -15,14 +16,16 @@ def test_success(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
+    word = random_word()
+
     r = flask_client.post(
         url_for("api.new_custom_alias", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
-        json={"alias_prefix": "prefix", "alias_suffix": f".abcdef@{EMAIL_DOMAIN}"},
+        json={"alias_prefix": "prefix", "alias_suffix": f".{word}@{EMAIL_DOMAIN}"},
     )
 
     assert r.status_code == 201
-    assert r.json["alias"] == f"prefix.abcdef@{EMAIL_DOMAIN}"
+    assert r.json["alias"] == f"prefix.{word}@{EMAIL_DOMAIN}"
 
 
 def test_out_of_quota(flask_client):
@@ -35,15 +38,15 @@ def test_out_of_quota(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    # create 3 custom alias to run out of quota
-    GenEmail.create_new(user.id, prefix="test")
-    GenEmail.create_new(user.id, prefix="test")
-    GenEmail.create_new(user.id, prefix="test")
+    # create MAX_NB_EMAIL_FREE_PLAN custom alias to run out of quota
+    for _ in range(MAX_NB_EMAIL_FREE_PLAN):
+        GenEmail.create_new(user.id, prefix="test")
 
+    word = random_word()
     r = flask_client.post(
         url_for("api.new_custom_alias", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
-        json={"alias_prefix": "prefix", "alias_suffix": f".abcdef@{EMAIL_DOMAIN}"},
+        json={"alias_prefix": "prefix", "alias_suffix": f".{word}@{EMAIL_DOMAIN}"},
     )
 
     assert r.status_code == 400

@@ -9,8 +9,9 @@ from flask_wtf.file import FileField
 from wtforms import StringField, validators
 
 from app import s3, email_utils
-from app.config import URL, EMAIL_DOMAIN
+from app.config import URL
 from app.dashboard.base import dashboard_bp
+from app.email_utils import email_belongs_to_alias_domains
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -92,7 +93,7 @@ def setting():
                         or DeletedAlias.get_by(email=new_email)
                     ):
                         flash(f"Email {new_email} already used", "error")
-                    elif new_email.endswith(EMAIL_DOMAIN):
+                    elif email_belongs_to_alias_domains(new_email):
                         flash(
                             "You cannot use alias as your personal inbox. Nice try though 😉",
                             "error",
