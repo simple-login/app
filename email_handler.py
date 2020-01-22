@@ -296,8 +296,9 @@ class MailHandler:
         user_email = forward_email.gen_email.user.email
         if envelope.mail_from.lower() != user_email.lower():
             LOG.error(
-                f"Reply email can only be used by user email. Actual mail_from: %s. User email %s. reply_email %s",
+                f"Reply email can only be used by user email. Actual mail_from: %s. msg from header: %s, User email %s. reply_email %s",
                 envelope.mail_from,
+                msg["From"],
                 user_email,
                 reply_email,
             )
