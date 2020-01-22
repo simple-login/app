@@ -25,16 +25,17 @@ def custom_alias():
         return redirect(url_for("dashboard.index"))
 
     user_custom_domains = [cd.domain for cd in current_user.verified_custom_domains()]
+    # List of (is_custom_domain, alias-suffix)
     suffixes = []
 
     # put custom domain first
     for alias_domain in user_custom_domains:
-        suffixes.append("@" + alias_domain)
+        suffixes.append((True, "@" + alias_domain))
 
     # then default domain
     for domain in ALIAS_DOMAINS:
         suffixes.append(
-            ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain
+            (False, ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain)
         )
 
     if request.method == "POST":

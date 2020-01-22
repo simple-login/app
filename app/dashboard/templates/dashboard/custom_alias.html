@@ -36,13 +36,17 @@
           {% if suffixes|length > 1 %}
             <select class="form-control" name="suffix">
               {% for suffix in suffixes %}
-                <option value="{{ suffix }}">
-                  {{ suffix }}
+                <option value="{{ suffix[1] }}">
+                  {% if suffix[0] %}
+                    {{ suffix[1] }} (your domain)
+                  {% else %}
+                    {{ suffix[1] }}
+                  {% endif %}
                 </option>
               {% endfor %}
             </select>
           {% else %}
-            <span>{{ suffixes[0] }}</span>
+            <span>{{ suffixes[0][1] }}</span>
           {% endif %}
         </div>
       </div>
