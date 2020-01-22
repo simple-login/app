@@ -32,23 +32,19 @@
         </div>
 
 
-        <div class="col-sm-6 {% if suffixes|length == 1 %} align-self-center {% endif %}"
+        <div class="col-sm-6"
              style="padding-left: 5px">
-          {% if suffixes|length > 1 %}
-            <select class="form-control" name="suffix">
-              {% for suffix in suffixes %}
-                <option value="{{ suffix[1] }}">
-                  {% if suffix[0] %}
-                    {{ suffix[1] }} (your domain)
-                  {% else %}
-                    {{ suffix[1] }}
-                  {% endif %}
-                </option>
-              {% endfor %}
-            </select>
-          {% else %}
-            <span>{{ suffixes[0][1] }}</span>
-          {% endif %}
+          <select class="form-control" name="suffix">
+            {% for suffix in suffixes %}
+              <option value="{{ suffix[1] }}">
+                {% if suffix[0] %}
+                  {{ suffix[1] }} (your domain)
+                {% else %}
+                  {{ suffix[1] }}
+                {% endif %}
+              </option>
+            {% endfor %}
+          </select>
         </div>
       </div>
 
