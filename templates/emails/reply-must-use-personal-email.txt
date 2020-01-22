@@ -1,0 +1,8 @@
+Hi {{name}}
+
+We have recorded an attempt to reply from your alias {{ alias }} from {{ sender }}.
+
+Please note that reply from alias only works from your personal email ({{user_email}}): no one else could reply on behalf of your alias.
+
+Best,
+SimpleLogin team.

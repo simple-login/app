@@ -50,6 +50,7 @@ from app.email_utils import (
     send_cannot_create_directory_alias,
     send_cannot_create_domain_alias,
     email_belongs_to_alias_domains,
+    send_reply_alias_must_use_personal_email,
 )
 from app.extensions import db
 from app.log import LOG
@@ -299,6 +300,12 @@ class MailHandler:
                 envelope.mail_from,
                 user_email,
                 reply_email,
+            )
+
+            send_reply_alias_must_use_personal_email(
+                forward_email.gen_email.user,
+                forward_email.gen_email.email,
+                envelope.mail_from,
             )
 
             send_email(
