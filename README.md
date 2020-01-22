@@ -58,7 +58,7 @@ docker run -it --rm \
     -e RESET_DB=true \
     -e CONFIG=/code/.env.example \
     -p 7777:7777 \
-    simplelogin/app python server.py
+    simplelogin/app:1.0.0 python server.py
 ```
 
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
@@ -316,7 +316,7 @@ docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app flask db upgrade
+    simplelogin/app:1.0.0 flask db upgrade
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
@@ -331,7 +331,7 @@ docker run -d \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 7777:7777 \
     --network="sl-network" \
-    simplelogin/app
+    simplelogin/app:1.0.0
 ```
 
 Next run the `email handler`
@@ -344,7 +344,7 @@ docker run -d \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 20381:20381 \
     --network="sl-network" \
-    simplelogin/app python email_handler.py
+    simplelogin/app:1.0.0 python email_handler.py
 ```
 
 [Optional] If you want to run the cronjob:
@@ -356,7 +356,7 @@ docker run -d \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
-    simplelogin/app yacron -c /code/crontab.yml
+    simplelogin/app:1.0.0 yacron -c /code/crontab.yml
 ```
 
 ### Nginx
