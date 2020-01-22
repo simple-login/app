@@ -72,10 +72,11 @@ def custom_alias():
 
 def verify_prefix_suffix(user, alias_prefix, alias_suffix, user_custom_domains) -> bool:
     """verify if user could create an alias with the given prefix and suffix"""
+    if not alias_prefix or not alias_suffix:  # should be caught on frontend
+        return False
+
     alias_prefix = alias_prefix.strip()
     alias_prefix = convert_to_id(alias_prefix)
-    if not alias_prefix:  # should be caught on frontend
-        return False
 
     # make sure alias_suffix is either .random_word@simplelogin.co or @my-domain.com
     alias_suffix = alias_suffix.strip()
