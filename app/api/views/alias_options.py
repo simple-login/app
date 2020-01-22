@@ -3,7 +3,7 @@ from flask_cors import cross_origin
 from sqlalchemy import desc
 
 from app.api.base import api_bp, verify_api_key
-from app.config import EMAIL_DOMAIN
+from app.config import ALIAS_DOMAINS, DISABLE_ALIAS_SUFFIX
 from app.extensions import db
 from app.log import LOG
 from app.models import AliasUsedOn, GenEmail, User
@@ -67,9 +67,14 @@ def options():
     else:
         ret["custom"]["suggestion"] = ""
 
+    ret["custom"]["suffixes"] = []
     # maybe better to make sure the suffix is never used before
     # but this is ok as there's a check when creating a new custom alias
-    ret["custom"]["suffixes"] = [f".{random_word()}@{EMAIL_DOMAIN}"]
+    for domain in ALIAS_DOMAINS:
+        if DISABLE_ALIAS_SUFFIX:
+            ret["custom"]["suffixes"].append(f"@{domain}")
+        else:
+            ret["custom"]["suffixes"].append(f".{random_word()}@{domain}")
 
     for custom_domain in user.verified_custom_domains():
         ret["custom"]["suffixes"].append("@" + custom_domain.domain)
@@ -144,7 +149,11 @@ def options_v2():
 
     # maybe better to make sure the suffix is never used before
     # but this is ok as there's a check when creating a new custom alias
-    ret["suffixes"] = [f".{random_word()}@{EMAIL_DOMAIN}"]
+    for domain in ALIAS_DOMAINS:
+        if DISABLE_ALIAS_SUFFIX:
+            ret["suffixes"].append(f"@{domain}")
+        else:
+            ret["suffixes"].append(f".{random_word()}@{domain}")
 
     for custom_domain in user.verified_custom_domains():
         ret["suffixes"].append("@" + custom_domain.domain)

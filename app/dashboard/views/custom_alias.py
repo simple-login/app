@@ -1,13 +1,16 @@
 from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, validators, SelectField
 
-from app.config import EMAIL_DOMAIN, HIGHLIGHT_GEN_EMAIL_ID, DISABLE_ALIAS_SUFFIX
+from app.config import (
+    HIGHLIGHT_GEN_EMAIL_ID,
+    DISABLE_ALIAS_SUFFIX,
+    ALIAS_DOMAINS,
+)
 from app.dashboard.base import dashboard_bp
+from app.email_utils import email_belongs_to_alias_domains
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, DeletedAlias, CustomDomain
+from app.models import GenEmail
 from app.utils import convert_to_id, random_word, word_exist
 
 
@@ -22,16 +25,21 @@ def custom_alias():
         return redirect(url_for("dashboard.index"))
 
     user_custom_domains = [cd.domain for cd in current_user.verified_custom_domains()]
+    # List of (is_custom_domain, alias-suffix)
     suffixes = []
 
     # put custom domain first
     for alias_domain in user_custom_domains:
-        suffixes.append("@" + alias_domain)
+        suffixes.append((True, "@" + alias_domain))
 
     # then default domain
-    suffixes.append(
-        ("" if DISABLE_ALIAS_SUFFIX else ".") + random_word() + "@" + EMAIL_DOMAIN
-    )
+    for domain in ALIAS_DOMAINS:
+        suffixes.append(
+            (
+                False,
+                ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain,
+            )
+        )
 
     if request.method == "POST":
         alias_prefix = request.form.get("prefix")
@@ -73,9 +81,12 @@ def verify_prefix_suffix(user, alias_prefix, alias_suffix, user_custom_domains) 
     alias_suffix = alias_suffix.strip()
     if alias_suffix.startswith("@"):
         alias_domain = alias_suffix[1:]
-        # alias_domain can be either custom_domain or if DISABLE_ALIAS_SUFFIX, EMAIL_DOMAIN
+        # alias_domain can be either custom_domain or if DISABLE_ALIAS_SUFFIX, one of the default ALIAS_DOMAINS
         if DISABLE_ALIAS_SUFFIX:
-            if alias_domain not in user_custom_domains and alias_domain != EMAIL_DOMAIN:
+            if (
+                alias_domain not in user_custom_domains
+                and alias_domain not in ALIAS_DOMAINS
+            ):
                 LOG.error("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
         else:
@@ -86,9 +97,11 @@ def verify_prefix_suffix(user, alias_prefix, alias_suffix, user_custom_domains) 
         if not alias_suffix.startswith("."):
             LOG.error("User %s submits a wrong alias suffix %s", user, alias_suffix)
             return False
-        if not alias_suffix.endswith(EMAIL_DOMAIN):
+
+        full_alias = alias_prefix + alias_suffix
+        if not email_belongs_to_alias_domains(full_alias):
             LOG.error(
-                "Alias suffix should end with default alias domain %s",
+                "Alias suffix should end with one of the alias domains %s",
                 user,
                 alias_suffix,
             )

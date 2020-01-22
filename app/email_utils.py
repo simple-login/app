@@ -14,6 +14,7 @@ from app.config import (
     DKIM_SELECTOR,
     DKIM_PRIVATE_KEY,
     DKIM_HEADERS,
+    ALIAS_DOMAINS,
 )
 from app.log import LOG
 
@@ -253,3 +254,12 @@ def delete_header(msg: Message, header: str):
     for h in msg._headers:
         if h[0].lower() == header.lower():
             msg._headers.remove(h)
+
+
+def email_belongs_to_alias_domains(email: str) -> bool:
+    """return True if an emails ends with one of the alias domains provided by SimpleLogin"""
+    for domain in ALIAS_DOMAINS:
+        if email.endswith("@" + domain):
+            return True
+
+    return False

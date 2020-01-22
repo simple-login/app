@@ -23,7 +23,8 @@
     <form method="post">
       <div class="row mb-2">
         <div class="col-sm-6 pr-1 mb-1" style="min-width: 5em">
-          <input name="prefix" class="form-control"#}
+          <input name="prefix" class="form-control"
+                 type="text"
                  pattern="[0-9a-z-_]{1,}"
                  title="Only lowercase letter, number, dash (-), underscore (_) can be used in alias prefix."
                  placeholder="email alias"
@@ -36,13 +37,17 @@
           {% if suffixes|length > 1 %}
             <select class="form-control" name="suffix">
               {% for suffix in suffixes %}
-                <option value="{{ suffix }}">
-                  {{ suffix }}
+                <option value="{{ suffix[1] }}">
+                  {% if suffix[0] %}
+                    {{ suffix[1] }} (your domain)
+                  {% else %}
+                    {{ suffix[1] }}
+                  {% endif %}
                 </option>
               {% endfor %}
             </select>
           {% else %}
-            <span>{{ suffixes[0] }}</span>
+            <span>{{ suffixes[0][1] }}</span>
           {% endif %}
         </div>
       </div>

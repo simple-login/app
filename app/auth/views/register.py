@@ -5,7 +5,8 @@ from wtforms import StringField, validators
 
 from app import email_utils
 from app.auth.base import auth_bp
-from app.config import URL, EMAIL_DOMAIN
+from app.config import URL
+from app.email_utils import email_belongs_to_alias_domains
 from app.extensions import db
 from app.log import LOG
 from app.models import User, ActivationCode
@@ -31,8 +32,7 @@ def register():
 
     if form.validate_on_submit():
         email = form.email.data
-
-        if email.endswith(EMAIL_DOMAIN):
+        if email_belongs_to_alias_domains(email):
             flash(
                 "You cannot use alias as your personal inbox. Nice try though 😉",
                 "error",
