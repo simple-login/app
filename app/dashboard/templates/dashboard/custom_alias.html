@@ -9,82 +9,48 @@
 {% block default_content %}
 
   <div class="bg-white p-6" style="max-width: 60em; margin: auto">
-    <h1 class="h2 mb-5">New Email Alias</h1>
-    {% if error %}
-      <div class="text-danger text-center mb-4">{{ error }}</div>
+    <h1 class="h3 mb-5">New Email Alias</h1>
+
+    {% if  user_custom_domains|length == 0 and not DISABLE_ALIAS_SUFFIX %}
+      <div class="alert alert-primary" role="alert">
+        You might notice a random word after the dot(<em>.</em>) in the alias.
+        This part is to avoid a person taking all the "nice" aliases like <b>hello@{{ EMAIL_DOMAIN }}</b>,
+        <b>me@{{ EMAIL_DOMAIN }}</b>, etc 😉. <br>
+        If you add your own domain, this restriction is removed and you can fully customize the alias. <br>
+      </div>
     {% endif %}
 
     <form method="post">
-      <input type="hidden" name="form-name" value="non-custom-domain-name">
-
-      <div class="container p-0">
-        {% if custom_domains %}
-          <div class="row col">
-            <div class="font-weight-bold h4">With SimpleLogin domain</div>
-          </div>
-        {% endif %}
-
-        <div class="row">
-          <div class="col-sm-6 pr-1 mb-1" style="min-width: 5em">
-            <input name="email-prefix" class="form-control"
-                   pattern="[0-9a-z-_]{1,}"
-                   title="Only lowercase letter, number, dash (-), underscore (_) can be used in alias prefix."
-                   placeholder="email alias"
-                   autofocus required>
-          </div>
-          <div class="col-sm-6 align-self-center" style="height:1.5rem">
-            <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
-            <h4>
-              {{ email_suffix }}@{{ EMAIL_DOMAIN }}
-            </h4>
-          </div>
+      <div class="row mb-2">
+        <div class="col-sm-6 pr-1 mb-1" style="min-width: 5em">
+          <input name="prefix" class="form-control"#}
+                 pattern="[0-9a-z-_]{1,}"
+                 title="Only lowercase letter, number, dash (-), underscore (_) can be used in alias prefix."
+                 placeholder="email alias"
+                 autofocus required>
         </div>
 
-        <div class="row col">
-          <div class="small-text">
-            <span class="badge badge-info">Hint</span>
-            You can use the name of the website that you plan to use the alias on here.<br>
-            This way you can remember where the alias is used.
-          </div>
 
+        <div class="col-sm-6 {% if suffixes|length == 1 %} align-self-center {% endif %}"
+             style="padding-left: 5px">
+          {% if suffixes|length > 1 %}
+            <select class="form-control" name="suffix">
+              {% for suffix in suffixes %}
+                <option value="{{ suffix }}">
+                  {{ suffix }}
+                </option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <span>{{ suffixes[0] }}</span>
+          {% endif %}
         </div>
+      </div>
 
-        <div class="row col">
-          <button class="btn btn-primary mt-1">Create</button>
-        </div>
-
+      <div class="row col">
+        <button class="btn btn-primary mt-1">Create</button>
       </div>
     </form>
-
-    {% if custom_domains %}
-      <hr>
-      <p class="font-weight-bold h4">Or with your custom domains</p>
-      <div class="container p-0">
-        {% for custom_domain in custom_domains %}
-          <form method="post" class="mb-6">
-            <input type="hidden" name="form-name" value="custom-domain-name">
-            <input type="hidden" name="custom-domain-id" value="{{ custom_domain.id }}">
-
-            <div class="row mt-4">
-              <div class="col" style="min-width: 10em">
-                <input name="email" class="form-control">
-                <div>
-                  <span style="font-weight: 600">
-                    @{{ custom_domain.domain }}
-                  </span>
-                </div>
-              </div>
-
-              <div class="col">
-                <button class="submit btn btn-success">Create</button>
-              </div>
-            </div>
-
-
-          </form>
-        {% endfor %}
-      </div>
-    {% endif %}
   </div>
 
 {% endblock %}
