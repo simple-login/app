@@ -35,7 +35,10 @@ def custom_alias():
     # then default domain
     for domain in ALIAS_DOMAINS:
         suffixes.append(
-            (False, ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain)
+            (
+                False,
+                ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain,
+            )
         )
 
     if request.method == "POST":
