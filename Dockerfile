@@ -1,17 +1,14 @@
 FROM python:3.7
 
-RUN apt-get update
-
-RUN apt-get install -y vim
-
 WORKDIR /code
 
-COPY ./requirements.txt ./
-RUN pip3 install -r requirements.txt
-
-
+# copy everything into /code
 COPY . .
+
+# install dependencies
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+EXPOSE 7777
 
 #gunicorn wsgi:app -b 0.0.0.0:7777 -w 2 --timeout 15 --log-level DEBUG
 CMD ["gunicorn","wsgi:app","-b","0.0.0.0:7777","-w","2","--timeout","15"]
-
