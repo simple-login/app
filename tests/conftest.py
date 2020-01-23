@@ -1,7 +1,7 @@
 import os
 
 os.environ["CONFIG"] = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests/env.test")
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests/test.env")
 )
 
 
