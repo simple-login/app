@@ -2,7 +2,6 @@ from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
 
 from app.config import (
-    HIGHLIGHT_GEN_EMAIL_ID,
     DISABLE_ALIAS_SUFFIX,
     ALIAS_DOMAINS,
 )
@@ -68,9 +67,9 @@ def custom_alias():
                 db.session.commit()
                 flash(f"Alias {full_alias} has been created", "success")
 
-                session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
-
-                return redirect(url_for("dashboard.index"))
+                return redirect(
+                    url_for("dashboard.index", highlight_gen_email_id=gen_email.id)
+                )
         # only happen if the request has been "hacked"
         else:
             flash("something went wrong", "warning")
