@@ -2,11 +2,12 @@ FROM python:3.7
 
 WORKDIR /code
 
-# copy everything into /code
-COPY . .
-
 # install dependencies
+COPY ./requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
+
+# copy everything else into /code
+COPY . .
 
 EXPOSE 7777
 
