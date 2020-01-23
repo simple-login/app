@@ -6,3 +6,5 @@ db.sqlite
 .vscode
 .DS_Store
 config
+LICENSE
+README.md
