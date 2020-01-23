@@ -148,10 +148,14 @@ def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasIn
         query = query.strip().lower()
 
     aliases = {}  # dict of alias and AliasInfo
-    q = db.session.query(GenEmail, ForwardEmail, ForwardEmailLog).filter(
-        GenEmail.user_id == user_id,
-        GenEmail.id == ForwardEmail.gen_email_id,
-        ForwardEmail.id == ForwardEmailLog.forward_id,
+    q = (
+        db.session.query(GenEmail, ForwardEmail, ForwardEmailLog)
+        .filter(
+            GenEmail.user_id == user_id,
+            GenEmail.id == ForwardEmail.gen_email_id,
+            ForwardEmail.id == ForwardEmailLog.forward_id,
+        )
+        .order_by(GenEmail.created_at.desc())
     )
 
     if query:
@@ -180,7 +184,7 @@ def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasIn
         db.session.query(GenEmail)
         .filter(GenEmail.email.notin_(aliases.keys()))
         .filter(GenEmail.user_id == user_id)
-    )
+    ).order_by(GenEmail.created_at.desc())
 
     if query:
         q = q.filter(GenEmail.email.contains(query))
