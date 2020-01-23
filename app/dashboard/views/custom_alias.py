@@ -7,10 +7,10 @@ from app.config import (
     ALIAS_DOMAINS,
 )
 from app.dashboard.base import dashboard_bp
-from app.email_utils import email_belongs_to_alias_domains
+from app.email_utils import email_belongs_to_alias_domains, get_email_domain_part
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail
+from app.models import GenEmail, CustomDomain
 from app.utils import convert_to_id, random_word, word_exist
 
 
@@ -49,6 +49,7 @@ def custom_alias():
             current_user, alias_prefix, alias_suffix, user_custom_domains
         ):
             full_alias = alias_prefix + alias_suffix
+
             if GenEmail.get_by(email=full_alias):
                 LOG.d("full alias already used %s", full_alias)
                 flash(
@@ -57,6 +58,13 @@ def custom_alias():
                 )
             else:
                 gen_email = GenEmail.create(user_id=current_user.id, email=full_alias)
+
+                # get the custom_domain_id if alias is created with a custom domain
+                alias_domain = get_email_domain_part(full_alias)
+                custom_domain = CustomDomain.get_by(domain=alias_domain)
+                if custom_domain:
+                    gen_email.custom_domain_id = custom_domain.id
+
                 db.session.commit()
                 flash(f"Alias {full_alias} has been created", "success")
 
