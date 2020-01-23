@@ -392,7 +392,10 @@ At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot
 If all of the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
 By default, new accounts are not premium so don't have unlimited alias. To make your account premium, 
-please go to the database, table "users" and set "lifetime" column to "1" or "TRUE". 
+please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
+
+You don't have to pay anything to SimpleLogin to use all its features. 
+You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though. 
 
 ## Contributing
 
