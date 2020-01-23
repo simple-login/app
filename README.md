@@ -56,7 +56,7 @@ If you have Docker installed, run the following command to start SimpleLogin loc
 ```bash
 docker run -it --rm \
     -e RESET_DB=true \
-    -e CONFIG=/code/.env.example \
+    -e CONFIG=/code/example.env \
     -p 7777:7777 \
     simplelogin/app:1.0.0 python server.py
 ```
@@ -288,7 +288,7 @@ Finally, restart Postfix
 
 ### Run SimpleLogin Docker containers
 
-To run the server, you need a config file. Please have a look at [config example](./.env.example) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
+To run the server, you need a config file. Please have a look at [config example](example.env) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
 Let's put your config file at `~/simplelogin.env`.
 
@@ -415,10 +415,10 @@ Then make sure all tests pass
 pytest
 ```
 
-To run the code locally, please create a local setting file based on `.env.example`:
+To run the code locally, please create a local setting file based on `example.env`:
 
 ```
-cp .env.example .env
+cp example.env .env
 ```
 
 Make sure to uncomment the `RESET_DB=true` to create the database locally.
@@ -426,7 +426,7 @@ Make sure to uncomment the `RESET_DB=true` to create the database locally.
 Feel free to custom your `.env` file, it would be your default setting when developing locally. This file is ignored by git.
 
 You don't need all the parameters, for example, if you don't update images to s3, then
-`BUCKET`, `AWS_ACCESS_KEY_ID` can be empty or if you don't use login with Github locally, `GITHUB_CLIENT_ID` doesn't have to be filled. The `.env.example` file contains minimal requirement so that if you run:
+`BUCKET`, `AWS_ACCESS_KEY_ID` can be empty or if you don't use login with Github locally, `GITHUB_CLIENT_ID` doesn't have to be filled. The `example.env` file contains minimal requirement so that if you run:
 
 ```
 python3 server.py
