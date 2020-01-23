@@ -1,10 +1,9 @@
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
-from app.config import HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -35,14 +34,10 @@ class AliasInfo:
 @dashboard_bp.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    # after creating a gen email, it's helpful to highlight it
-    highlight_gen_email_id = session.get(HIGHLIGHT_GEN_EMAIL_ID)
-
-    # reset as it should not persist
-    if highlight_gen_email_id:
-        del session[HIGHLIGHT_GEN_EMAIL_ID]
-
     query = request.args.get("query") or ""
+    highlight_gen_email_id = None
+    if request.args.get("highlight_gen_email_id"):
+        highlight_gen_email_id = int(request.args.get("highlight_gen_email_id"))
 
     # User generates a new email
     if request.method == "POST":
@@ -78,7 +73,14 @@ def index():
 
                 LOG.d("generate new email %s for user %s", gen_email, current_user)
                 flash(f"Alias {gen_email.email} has been created", "success")
-                session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
+
+                return redirect(
+                    url_for(
+                        "dashboard.index",
+                        highlight_gen_email_id=gen_email.id,
+                        query=query,
+                    )
+                )
             else:
                 flash(f"You need to upgrade your plan to create new alias.", "warning")
 
@@ -94,8 +96,12 @@ def index():
             else:
                 flash(f"Alias {gen_email.email} is disabled", "warning")
 
-            session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
             db.session.commit()
+            return redirect(
+                url_for(
+                    "dashboard.index", highlight_gen_email_id=gen_email.id, query=query
+                )
+            )
 
         elif request.form.get("form-name") == "delete-email":
             gen_email_id = request.form.get("gen-email-id")
