@@ -288,3 +288,23 @@ def email_belongs_to_alias_domains(email: str) -> bool:
             return True
 
     return False
+
+
+def can_be_used_as_personal_email(email: str) -> bool:
+    """return True if an email can be used as a personal email. Currently the only condition is email domain is not
+    - one of ALIAS_DOMAINS
+    - one of custom domains
+    """
+    domain = get_email_domain_part(email)
+    if not domain:
+        return False
+
+    if domain in ALIAS_DOMAINS:
+        return False
+
+    from app.models import CustomDomain
+
+    if CustomDomain.get_by(domain=domain, verified=True):
+        return False
+
+    return True
