@@ -6,7 +6,7 @@ from wtforms import StringField, validators
 from app import email_utils
 from app.auth.base import auth_bp
 from app.config import URL
-from app.email_utils import email_belongs_to_alias_domains
+from app.email_utils import can_be_used_as_personal_email
 from app.extensions import db
 from app.log import LOG
 from app.models import User, ActivationCode
@@ -32,26 +32,25 @@ def register():
 
     if form.validate_on_submit():
         email = form.email.data
-        if email_belongs_to_alias_domains(email):
+        if not can_be_used_as_personal_email(email):
             flash(
-                "You cannot use alias as your personal inbox. Nice try though 😉",
-                "error",
+                "You cannot use this email address as your personal inbox.", "error",
             )
-
-        user = User.filter_by(email=email).first()
-
-        if user:
-            flash(f"Email {form.email.data} already exists", "warning")
         else:
-            LOG.debug("create user %s", form.email.data)
-            user = User.create(
-                email=form.email.data.lower(), name="", password=form.password.data,
-            )
-            db.session.commit()
+            user = User.filter_by(email=email).first()
 
-            send_activation_email(user, next_url)
+            if user:
+                flash(f"Email {form.email.data} already exists", "warning")
+            else:
+                LOG.debug("create user %s", form.email.data)
+                user = User.create(
+                    email=form.email.data.lower(), name="", password=form.password.data,
+                )
+                db.session.commit()
 
-            return render_template("auth/register_waiting_activation.html")
+                send_activation_email(user, next_url)
+
+                return render_template("auth/register_waiting_activation.html")
 
     return render_template("auth/register.html", form=form, next_url=next_url)
 

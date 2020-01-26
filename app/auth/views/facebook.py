@@ -11,6 +11,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import User
 from .login_utils import after_login
+from ...email_utils import can_be_used_as_personal_email
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"
@@ -102,6 +103,12 @@ def facebook_callback():
 
     # create user
     else:
+        if not can_be_used_as_personal_email(email):
+            flash(
+                f"You cannot use {email} as your personal inbox.", "error",
+            )
+            return redirect(url_for("auth.login"))
+
         LOG.d("create facebook user with %s", facebook_user_data)
         user = User.create(
             email=email.lower(), name=facebook_user_data["name"], activated=True

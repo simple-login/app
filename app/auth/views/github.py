@@ -1,4 +1,4 @@
-from flask import request, session, redirect, flash
+from flask import request, session, redirect, flash, url_for
 from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 
@@ -6,6 +6,7 @@ from app import email_utils
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
 from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
+from app.email_utils import can_be_used_as_personal_email
 from app.extensions import db
 from app.log import LOG
 from app.models import User
@@ -84,6 +85,12 @@ def github_callback():
 
     # create user
     if not user:
+        if not can_be_used_as_personal_email(email):
+            flash(
+                f"You cannot use {email} as your personal inbox.", "error",
+            )
+            return redirect(url_for("auth.login"))
+
         LOG.d("create github user")
         user = User.create(
             email=email.lower(), name=github_user_data.get("name") or "", activated=True
