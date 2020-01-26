@@ -95,7 +95,7 @@ class AliasGeneratorEnum(enum.Enum):
 
 class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
-    email = db.Column(db.String(128), unique=True, nullable=False)
+    email = db.Column(db.String(256), unique=True, nullable=False)
     salt = db.Column(db.String(128), nullable=False)
     password = db.Column(db.String(128), nullable=False)
     name = db.Column(db.String(128), nullable=False)
@@ -575,17 +575,17 @@ class ForwardEmail(db.Model, ModelMixin):
     )
 
     # used to be envelope header, should be mail header from instead
-    website_email = db.Column(db.String(128), nullable=False)
+    website_email = db.Column(db.String(256), nullable=False)
 
     # the email from header, e.g. AB CD <ab@cd.com>
     # nullable as this field is added after website_email
-    website_from = db.Column(db.String(128), nullable=True)
+    website_from = db.Column(db.String(256), nullable=True)
 
     # when user clicks on "reply", they will reply to this address.
     # This address allows to hide user personal email
     # this reply email is created every time a website sends an email to user
     # it has the prefix "reply+" to distinguish with other email
-    reply_email = db.Column(db.String(128), nullable=False)
+    reply_email = db.Column(db.String(256), nullable=False)
 
     gen_email = db.relationship(GenEmail, backref="forward_emails")
 
@@ -643,7 +643,7 @@ class DeletedAlias(db.Model, ModelMixin):
     """Store all deleted alias to make sure they are NOT reused"""
 
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-    email = db.Column(db.String(128), unique=True, nullable=False)
+    email = db.Column(db.String(256), unique=True, nullable=False)
 
 
 class EmailChange(db.Model, ModelMixin):
@@ -655,7 +655,7 @@ class EmailChange(db.Model, ModelMixin):
         unique=True,
         index=True,
     )
-    new_email = db.Column(db.String(128), unique=True, nullable=False)
+    new_email = db.Column(db.String(256), unique=True, nullable=False)
     code = db.Column(db.String(128), unique=True, nullable=False)
     expired = db.Column(ArrowType, nullable=False, default=_expiration_12h)
 
