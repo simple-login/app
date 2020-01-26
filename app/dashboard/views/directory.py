@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import EMAIL_DOMAIN
+from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.models import Directory
@@ -71,4 +71,5 @@ def directory():
         dirs=dirs,
         new_dir_form=new_dir_form,
         EMAIL_DOMAIN=EMAIL_DOMAIN,
+        ALIAS_DOMAINS=ALIAS_DOMAINS,
     )

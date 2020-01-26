@@ -25,7 +25,11 @@
         </div>
         next time you need an email address. <br>
         <em><b>anything</b></em> could really be anything, it's up to you to invent the most creative alias 😉. <br>
-        <em>your_directory</em> is the name of one of your directories. <br>
+        <em>your_directory</em> is the name of one of your directories. <br><br>
+        You can use the directory feature on the following domains:
+        {% for alias_domain in ALIAS_DOMAINS %}
+          <div class="font-weight-bold">{{ alias_domain }} </div>
+        {% endfor %}
 
         <div class="h4 text-primary mt-3">
           ℹ️
