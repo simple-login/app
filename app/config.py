@@ -126,7 +126,9 @@ except:
     PADDLE_MONTHLY_PRODUCT_ID = -1
     PADDLE_YEARLY_PRODUCT_ID = -1
 
-PADDLE_PUBLIC_KEY_PATH = get_abs_path(os.environ.get("PADDLE_PUBLIC_KEY_PATH", "local_data/paddle.key.pub"))
+PADDLE_PUBLIC_KEY_PATH = get_abs_path(
+    os.environ.get("PADDLE_PUBLIC_KEY_PATH", "local_data/paddle.key.pub")
+)
 
 # OpenID keys, used to sign id_token
 OPENID_PRIVATE_KEY_PATH = get_abs_path(
