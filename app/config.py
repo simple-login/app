@@ -1,5 +1,6 @@
 import os
 import subprocess
+from uuid import uuid4
 
 from dotenv import load_dotenv
 
@@ -43,7 +44,12 @@ NOT_SEND_EMAIL = "NOT_SEND_EMAIL" in os.environ
 EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"]
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
-MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
+try:
+    MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
+except Exception:
+    print("MAX_NB_EMAIL_FREE_PLAN is not set, use 5 as default value")
+    MAX_NB_EMAIL_FREE_PLAN = 5
+
 # allow to override postfix server locally
 POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 
@@ -95,13 +101,13 @@ DKIM_HEADERS = [b"from", b"to", b"subject"]
 DB_URI = os.environ["DB_URI"]
 
 # Flask secret
-FLASK_SECRET = os.environ["FLASK_SECRET"]
+FLASK_SECRET = os.environ.get("FLASK_SECRET") or str(uuid4())
 
 # AWS
 AWS_REGION = "eu-west-3"
-BUCKET = os.environ["BUCKET"]
-AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
-AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
+BUCKET = os.environ.get("BUCKET")
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
 
 CLOUDWATCH_LOG_GROUP = CLOUDWATCH_LOG_STREAM = ""
 ENABLE_CLOUDWATCH = "ENABLE_CLOUDWATCH" in os.environ
@@ -110,29 +116,41 @@ if ENABLE_CLOUDWATCH:
     CLOUDWATCH_LOG_STREAM = os.environ["CLOUDWATCH_LOG_STREAM"]
 
 # Paddle
-PADDLE_VENDOR_ID = int(os.environ["PADDLE_VENDOR_ID"])
-PADDLE_MONTHLY_PRODUCT_ID = int(os.environ["PADDLE_MONTHLY_PRODUCT_ID"])
-PADDLE_YEARLY_PRODUCT_ID = int(os.environ["PADDLE_YEARLY_PRODUCT_ID"])
-PADDLE_PUBLIC_KEY_PATH = get_abs_path(os.environ["PADDLE_PUBLIC_KEY_PATH"])
+try:
+    PADDLE_VENDOR_ID = int(os.environ["PADDLE_VENDOR_ID"])
+    PADDLE_MONTHLY_PRODUCT_ID = int(os.environ["PADDLE_MONTHLY_PRODUCT_ID"])
+    PADDLE_YEARLY_PRODUCT_ID = int(os.environ["PADDLE_YEARLY_PRODUCT_ID"])
+    PADDLE_PUBLIC_KEY_PATH = get_abs_path(os.environ["PADDLE_PUBLIC_KEY_PATH"])
+except:
+    print("Paddle param not set")
+    PADDLE_VENDOR_ID = (
+        PADDLE_MONTHLY_PRODUCT_ID
+    ) = PADDLE_YEARLY_PRODUCT_ID = PADDLE_PUBLIC_KEY_PATH = None
 
 # OpenID keys, used to sign id_token
-OPENID_PRIVATE_KEY_PATH = get_abs_path(os.environ["OPENID_PRIVATE_KEY_PATH"])
-OPENID_PUBLIC_KEY_PATH = get_abs_path(os.environ["OPENID_PUBLIC_KEY_PATH"])
+OPENID_PRIVATE_KEY_PATH = get_abs_path(
+    os.environ.get("OPENID_PRIVATE_KEY_PATH", "local_data/jwtRS256.key")
+)
+OPENID_PUBLIC_KEY_PATH = get_abs_path(
+    os.environ.get("OPENID_PUBLIC_KEY_PATH", "local_data/jwtRS256.key.pub")
+)
 
 # Used to generate random email
-WORDS_FILE_PATH = get_abs_path(os.environ["WORDS_FILE_PATH"])
+WORDS_FILE_PATH = get_abs_path(
+    os.environ.get("WORDS_FILE_PATH", "local_data/words_alpha.txt")
+)
 
 
 # Github, Google, Facebook client id and secrets
-GITHUB_CLIENT_ID = os.environ["GITHUB_CLIENT_ID"]
-GITHUB_CLIENT_SECRET = os.environ["GITHUB_CLIENT_SECRET"]
+GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
 
 
-GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
-GOOGLE_CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-FACEBOOK_CLIENT_ID = os.environ["FACEBOOK_CLIENT_ID"]
-FACEBOOK_CLIENT_SECRET = os.environ["FACEBOOK_CLIENT_SECRET"]
+FACEBOOK_CLIENT_ID = os.environ.get("FACEBOOK_CLIENT_ID")
+FACEBOOK_CLIENT_SECRET = os.environ.get("FACEBOOK_CLIENT_SECRET")
 
 # in seconds
 AVATAR_URL_EXPIRATION = 3600 * 24 * 7  # 1h*24h/d*7d=1week
