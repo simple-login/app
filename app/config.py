@@ -120,12 +120,13 @@ try:
     PADDLE_VENDOR_ID = int(os.environ["PADDLE_VENDOR_ID"])
     PADDLE_MONTHLY_PRODUCT_ID = int(os.environ["PADDLE_MONTHLY_PRODUCT_ID"])
     PADDLE_YEARLY_PRODUCT_ID = int(os.environ["PADDLE_YEARLY_PRODUCT_ID"])
-    PADDLE_PUBLIC_KEY_PATH = get_abs_path(os.environ["PADDLE_PUBLIC_KEY_PATH"])
 except:
     print("Paddle param not set")
-    PADDLE_VENDOR_ID = (
-        PADDLE_MONTHLY_PRODUCT_ID
-    ) = PADDLE_YEARLY_PRODUCT_ID = PADDLE_PUBLIC_KEY_PATH = None
+    PADDLE_VENDOR_ID = -1
+    PADDLE_MONTHLY_PRODUCT_ID = -1
+    PADDLE_YEARLY_PRODUCT_ID = -1
+
+PADDLE_PUBLIC_KEY_PATH = get_abs_path(os.environ.get("PADDLE_PUBLIC_KEY_PATH", "local_data/paddle.key.pub"))
 
 # OpenID keys, used to sign id_token
 OPENID_PRIVATE_KEY_PATH = get_abs_path(
