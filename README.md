@@ -6,16 +6,16 @@
 
 [SimpleLogin](https://simplelogin.io) | Privacy-First Email Forwarding and Identity Provider Service
 ---
-<p>    
+<p>
 <a href="https://chrome.google.com/webstore/detail/simplelogin-protect-your/dphilobhebphkdjbpfohgikllaljmgbn">
     <img src="https://img.shields.io/chrome-web-store/rating/dphilobhebphkdjbpfohgikllaljmgbn?label=Chrome%20Extension">
 </a>
 
-<a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">    
+<a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">
 <img src="https://img.shields.io/amo/rating/simplelogin?label=Firefox%20Add-On&logo=SimpleLogin">
 </a>
 
-<a href="https://stats.uptimerobot.com/APkzziNWoM">    
+<a href="https://stats.uptimerobot.com/APkzziNWoM">
 <img src="https://img.shields.io/uptimerobot/ratio/7/m782965045-15d8e413b20b5376f58db050">
 </a>
 
@@ -34,12 +34,15 @@
 In some way yes... However, SimpleLogin is a bit different because:
 
 - Fully open source: both the server and client code (browser extension, JS library) are open source so anyone can freely inspect and (hopefully) improve the code.
+
+- The only email forwarding solution that is **self-hostable**: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows `ssh` is able to deploy SimpleLogin on their server.
+
 - Not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that:
     - offers privacy for users
     - is simple to use for developers. SimpleLogin is a privacy-focused alternative to the "Login with Facebook/Google/Twitter" buttons.
-    
-- The only email forwarding solution that is **self-hostable**: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows `ssh` is able to deploy SimpleLogin on their server.
+
 - Plenty of features: browser extension, custom domain, catch-all alias, OAuth libraries, etc.
+
 - Open roadmap at https://trello.com/b/4d6A69I4/open-roadmap: you know the exciting features we are working on.
 
 At the heart of SimpleLogin is `email alias`: an alias is a normal email address but all emails sent to an alias are **forwarded** to your email inbox. SimpleLogin alias can also **send** emails: for your contact, the alias is therefore your email address. Use alias whenever you need to give out your email address to protect your online identity. More info on our website at https://simplelogin.io
@@ -54,17 +57,17 @@ If you have Docker installed, run the following command to start SimpleLogin loc
 
 
 ```bash
-docker run -it --rm \
+docker run --name sl -it --rm \
     -e RESET_DB=true \
     -e CONFIG=/code/example.env \
     -p 7777:7777 \
-    simplelogin/app:1.0.0 python server.py
+    simplelogin/app:1.0.1 python server.py
 ```
 
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
 
 To use SimpleLogin aliases, you need to deploy it on your server with some DNS setup though,
-the following section will show a step-by-step guide on how to get your own email forwarder service!
+the following section will show a step-by-step guide on how to get your own email forwarder service! 
 
 # Table of Contents
 
@@ -93,12 +96,21 @@ SimpleLogin backend consists of 2 main components:
 
 - a Linux server (either a VM or dedicated server). This doc shows the setup for Ubuntu 18.04 LTS but the steps could be adapted for other popular Linux distributions. As most of components run as Docker container and Docker can be a bit heavy, having at least 2 GB of RAM is recommended. The server needs to have the port 25 (email), 80, 443 (for the webapp), 22 (so you can ssh into it) open.
 
-- a domain that you can config the DNS. It could be a sub-domain. In the rest of the doc, let's say it's `mydomain.com` for the email and `app.mydomain.com` for SimpleLogin webapp. Please make sure to replace these values by your domain name whenever they appear in the doc.
+- a domain that you can config the DNS. It could be a sub-domain. In the rest of the doc, let's say it's `mydomain.com` for the email and `app.mydomain.com` for SimpleLogin webapp. Please make sure to replace these values by your domain name whenever they appear in the doc. A trick we use is to download this README file on your computer and replace all `mydomain.com` occurrences by your domain.
 
 - [Optional] AWS S3, Sentry, Google/Facebook/Github developer accounts. These are necessary only if you want to activate these options.
 
 
 Except for the DNS setup that is usually done on your domain registrar interface, all the below steps are to be done on your server. The commands are to run with `bash` (or any bash-compatible shell like `zsh`) being the shell. If you use other shells like `fish`, please make sure to adapt the commands.
+
+### Some utility packages
+
+These packages are used to verify the setup. Install them by:
+
+```bash
+sudo apt install -y dnsutils
+```
+
 
 ### DKIM
 
@@ -121,22 +133,35 @@ For email gurus, we have chosen 1024 key length instead of 2048 for DNS simplici
 
 ### DNS
 
-Please note that DNS changes could take up to 24 hours to propagate. In practice, it's a lot faster though (~1 minute or so in our test).
+Please note that DNS changes could take up to 24 hours to propagate. In practice, it's a lot faster though (~1 minute or so in our test). In DNS setup, we usually use domain with a trailing dot (`.`) at the end to to force using absolute domain.
+
 
 #### MX record
-Create a **MX record** that points `mydomain.com` to `app.mydomain.com` with priority 10.
+Create a **MX record** that points `mydomain.com.` to `app.mydomain.com.` with priority 10.
 
-To verify if the DNS works, `dig mydomain.com mx` should contain the following in the result.
+To verify if the DNS works, the following command
+
+```bash
+dig @1.1.1.1 mydomain.com mx
+```
+
+should return:
 
 ```
 mydomain.com.	3600	IN	MX	10 app.mydomain.com.
 ```
 
 #### A record
-An **A record** that points `app.mydomain.com` to your server IP. To verify, `dig app.mydomain.com a` should return your server IP.
+An **A record** that points `app.mydomain.com.` to your server IP. To verify, the following command
+
+```bash
+dig @1.1.1.1 app.mydomain.com a
+``` 
+
+should return your server IP.
 
 #### DKIM
-Set up DKIM by adding a TXT record for `dkim._domainkey.mydomain.com` with the following value:
+Set up DKIM by adding a TXT record for `dkim._domainkey.mydomain.com.` with the following value:
 
 ```
 v=DKIM1; k=rsa; p=PUBLIC_KEY
@@ -159,7 +184,13 @@ gh
 
 then the `PUBLIC_KEY` would be `abcdefgh`.
 
-To verify, `dig dkim._domainkey.mydomain.com txt` should return the above value.
+To verify, the following command
+
+```bash
+dig @1.1.1.1 dkim._domainkey.mydomain.com txt
+``` 
+
+should return the above value.
 
 #### SPF
 
@@ -168,7 +199,20 @@ From Wikipedia https://en.wikipedia.org/wiki/Sender_Policy_Framework
 > Sender Policy Framework (SPF) is an email authentication method designed to detect forging sender addresses during the delivery of the email
 
 Similar to DKIM, setting up SPF is highly recommended.
-Add a TXT record for `mydomain.com` with the value `v=spf1 mx -all`. What it means is only your server can send email with `@mydomain.com` domain. To verify, you can use `dig mydomain.com txt`
+Add a TXT record for `mydomain.com.` with the value 
+
+```
+v=spf1 mx -all
+``` 
+
+What it means is only your server can send email with `@mydomain.com` domain. To verify, the following commonly 
+
+```bash
+dig @1.1.1.1 mydomain.com txt
+```
+
+should return the above value.
+
 
 ### Docker
 
@@ -176,7 +220,7 @@ Now the boring DNS stuffs are done, let's do something more fun!
 
 If you don't already have Docker installed on your server, please follow the steps on [Docker CE for Ubuntu](https://docs.docker.com/v17.12/install/linux/docker-ce/ubuntu/) to install Docker.
 
-Tips: if you want to run Docker without the `sudo` prefix, add your account to `docker` group:
+Tips: if you are not using `root` user and you want to run Docker without the `sudo` prefix, add your account to `docker` group:
 
 ```bash
 sudo usermod -a -G docker $USER
@@ -208,6 +252,7 @@ docker run -d \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
+    -p 5432:5432 \
     --network="sl-network" \
     postgres
 ```
@@ -218,46 +263,70 @@ To test whether the database operates correctly or not, run the following comman
 docker exec -it sl-db psql -U myuser simplelogin
 ```
 
-you should be logged in the postgres console.
+you should be logged in the postgres console. Type `exit` to exit postgres console.
 
 ### Postfix
 
 Install `postfix` and `postfix-pgsql`. The latter is used to connect Postfix and the Postgres database in the next steps.
 
 ```bash
-sudo apt-get install -y postfix postfix-pgsql
+sudo apt-get install -y postfix postfix-pgsql -y
 ```
 
 Choose "Internet Site" in Postfix installation window then keep using the proposed value as *System mail name* in the next window.
 
-Run the following commands to setup Postfix. Make sure to replace `mydomain.com` with the appropriate value of your domain.
+Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain.
 
-```bash
-sudo postconf -e 'myhostname = app.mydomain.com'
-sudo postconf -e 'mydomain = mydomain.com'
-sudo postconf -e 'myorigin = mydomain.com'
-sudo postconf -e 'mydestination = localhost'
+```
+smtpd_banner = $myhostname ESMTP $mail_name (Ubuntu)
+biff = no
 
-sudo postconf -e 'mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 240.0.0.0/24'
+# appending .domain is the MUA's job.
+append_dot_mydomain = no
 
-sudo postconf -e 'relay_domains = pgsql:/etc/postfix/pgsql-relay-domains.cf'
-sudo postconf -e 'transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf'
+# Uncomment the next line to generate "delayed mail" warnings
+#delay_warning_time = 4h
 
-# HELO restrictions
-sudo postconf -e 'smtpd_delay_reject = yes'
-sudo postconf -e 'smtpd_helo_required = yes'
-sudo postconf -e 'smtpd_helo_restrictions = permit_mynetworks, reject_non_fqdn_helo_hostname, reject_invalid_helo_hostname, permit'
+readme_directory = no
 
-# Sender restriction
-sudo postconf -e 'smtpd_sender_restrictions = permit_mynetworks, reject_non_fqdn_sender, reject_unknown_sender_domain, permit'
+# See http://www.postfix.org/COMPATIBILITY_README.html -- default to 2 on
+# fresh installs.
+compatibility_level = 2
 
-# Recipient restrictions
-sudo postconf -e 'smtpd_recipient_restrictions = reject_unauth_pipelining, reject_non_fqdn_recipient, reject_unknown_recipient_domain, permit_mynetworks, reject_unauth_destination, reject_rbl_client zen.spamhaus.org, reject_rbl_client bl.spamcop.net, permit'
+# TLS parameters
+smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_use_tls=yes
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 
+# See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
+# information on enabling SSL in the smtp client.
+
+smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
+myhostname = app.mydomain.com
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+mydestination = localhost
+relayhost =
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 240.0.0.0/24
+mailbox_size_limit = 0
+recipient_delimiter = +
+inet_interfaces = all
+inet_protocols = all
+mydomain = mydomain.com
+myorigin = mydomain.com
+relay_domains = pgsql:/etc/postfix/pgsql-relay-domains.cf
+transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf
+smtpd_delay_reject = yes
+smtpd_helo_required = yes
+smtpd_helo_restrictions = permit_mynetworks, reject_non_fqdn_helo_hostname, reject_invalid_helo_hostname, permit
+smtpd_sender_restrictions = permit_mynetworks, reject_non_fqdn_sender, reject_unknown_sender_domain, permit
+smtpd_recipient_restrictions = reject_unauth_pipelining, reject_non_fqdn_recipient, reject_unknown_recipient_domain, permit_mynetworks, reject_unauth_destination, reject_rbl_client zen.spamhaus.org, reject_rbl_client bl.spamcop.net, permit
 ```
 
 
-Create the `relay-domains` file at `/etc/postfix/pgsql-relay-domains.cf` and put the following content. Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
+Create the `/etc/postfix/pgsql-relay-domains.cf` file with the following content. Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
 
 ```
 # postgres config
@@ -269,7 +338,7 @@ dbname = simplelogin
 query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true UNION SELECT '%s' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
-Create the `transport-maps` file at `/etc/postfix/pgsql-transport-maps.cf` and put the following lines. Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
+Create the `/etc/postfix/pgsql-transport-maps.cf` file with the following content. Again, make sure that the database config is correctly set and replace `mydomain.com` with your domain.
 
 ```
 # postgres config
@@ -290,20 +359,41 @@ Finally, restart Postfix
 
 To run the server, you need a config file. Please have a look at [config example](example.env) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
-Let's put your config file at `~/simplelogin.env`.
+Let's put your config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to replace `mydomain.com` by your domain and set `FLASK_SECRET` to a secret string.
 
 Make sure to update the following variables and replace these values by yours.
 
 ```.env
-# Server url
+# WebApp URL
 URL=http://app.mydomain.com
+
+# domain used to create alias
 EMAIL_DOMAIN=mydomain.com
+
+# transactional email is sent from this email address
 SUPPORT_EMAIL=support@mydomain.com
+
+# custom domain needs to point to these MX servers
 EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
-DKIM_PRIVATE_KEY_PATH=/dkim.key
-DKIM_PUBLIC_KEY_PATH=/dkim.pub.key
-DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
+
+# By default, new aliases must end with ".{random_word}". This is to avoid a person taking all "nice" aliases.
+# this option doesn't make sense in self-hosted. Set this variable to disable this option.
 DISABLE_ALIAS_SUFFIX=1
+
+# If you want to use another MTA to send email, you could set the address of your MTA here
+# By default, emails are sent using the the same Postfix server that receives emails
+# POSTFIX_SERVER=my-postfix.com
+
+# the DKIM private key used to compute DKIM-Signature
+DKIM_PRIVATE_KEY_PATH=/dkim.key
+
+# the DKIM public key used to setup custom domain DKIM
+DKIM_PUBLIC_KEY_PATH=/dkim.pub.key
+
+# DB Connection
+DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
+
+FLASK_SECRET=put_something_secret_here
 ```
 
 
@@ -316,7 +406,7 @@ docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:1.0.0 flask db upgrade
+    simplelogin/app:1.0.1 flask db upgrade
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
@@ -331,7 +421,7 @@ docker run -d \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 7777:7777 \
     --network="sl-network" \
-    simplelogin/app:1.0.0
+    simplelogin/app:1.0.1
 ```
 
 Next run the `email handler`
@@ -344,19 +434,7 @@ docker run -d \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 20381:20381 \
     --network="sl-network" \
-    simplelogin/app:1.0.0 python email_handler.py
-```
-
-[Optional] If you want to run the cronjob:
-
-```bash
-docker run -d \
-    --name sl-cron \
-    -v $(pwd)/simplelogin.env:/code/.env \
-    -v $(pwd)/dkim.key:/dkim.key \
-    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    --network="sl-network" \
-    simplelogin/app:1.0.0 yacron -c /code/crontab.yml
+    simplelogin/app:1.0.1 python email_handler.py
 ```
 
 ### Nginx
@@ -391,11 +469,11 @@ At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot
 
 If all of the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
-By default, new accounts are not premium so don't have unlimited alias. To make your account premium, 
+By default, new accounts are not premium so don't have unlimited alias. To make your account premium,
 please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
 
-You don't have to pay anything to SimpleLogin to use all its features. 
-You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though. 
+You don't have to pay anything to SimpleLogin to use all its features.
+You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though.
 
 ## Contributing
 
@@ -440,13 +518,13 @@ john@wick.com / password
 
 ### API
 
-SimpleLogin current API clients are Chrome/Firefox/Safari extension and mobile (iOS/Android) app. 
+SimpleLogin current API clients are Chrome/Firefox/Safari extension and mobile (iOS/Android) app.
 These clients rely on `API Code` for authentication.
 
 Once the `Api Code` is obtained, either via user entering it (in Browser extension case) or by logging in (in Mobile case),
-the client includes the `api code` in `Authentication` header in almost all requests. 
+the client includes the `api code` in `Authentication` header in almost all requests.
 
-For some endpoints, the `hostname` should be passed in query string. `hostname` is the the URL hostname (cf https://en.wikipedia.org/wiki/URL), for ex if URL is http://www.example.com/index.html then the hostname is `www.example.com`. This information is important to know where an alias is used in order to suggest user the same alias if they want to create on alias on the same website in the future. 
+For some endpoints, the `hostname` should be passed in query string. `hostname` is the the URL hostname (cf https://en.wikipedia.org/wiki/URL), for ex if URL is http://www.example.com/index.html then the hostname is `www.example.com`. This information is important to know where an alias is used in order to suggest user the same alias if they want to create on alias on the same website in the future.
 
 If error, the API returns 4** with body containing the error message, for example:
 
@@ -456,14 +534,14 @@ If error, the API returns 4** with body containing the error message, for exampl
 }
 ```
 
-The error message could be displayed to user as-is, for example for when user exceeds their alias quota. 
-Some errors should be fixed during development however: for example error like `request body cannot be empty` is there to catch development error and should never be shown to user. 
- 
+The error message could be displayed to user as-is, for example for when user exceeds their alias quota.
+Some errors should be fixed during development however: for example error like `request body cannot be empty` is there to catch development error and should never be shown to user.
+
 All following endpoint return `401` status code if the API Key is incorrect.
 
 #### GET /api/user_info
 
-Given the API Key, return user name and whether user is premium. 
+Given the API Key, return user name and whether user is premium.
 This endpoint could be used to validate the api key.
 
 Input:
@@ -487,7 +565,7 @@ User alias info and suggestion. Used by the first extension screen when user ope
 
 Input:
 - `Authentication` header that contains the api key
-- (Optional but recommended) `hostname` passed in query string. 
+- (Optional but recommended) `hostname` passed in query string.
 
 Output: a json with the following field:
 - can_create: boolean. Whether user can create new alias
@@ -523,7 +601,7 @@ For ex:
 
 Create a new custom alias.
 
-Input: 
+Input:
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
 - Request Message Body in json (`Content-Type` is `application/json`)
@@ -531,7 +609,7 @@ Input:
     - alias_suffix: should be one of the suffixes returned in the `GET /api/v2/alias/options` endpoint.
 
 Output:
-If success, 201 with the new alias, for example 
+If success, 201 with the new alias, for example
 
 ```json
 {
@@ -543,12 +621,12 @@ If success, 201 with the new alias, for example
 
 Create a new random alias.
 
-Input: 
+Input:
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
 
 Output:
-If success, 201 with the new alias, for example 
+If success, 201 with the new alias, for example
 
 ```json
 {
@@ -584,7 +662,7 @@ Output:
 - api_key: if MFA is not enabled, the `api key` is returned right away.
 
 The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
-If user hasn't enabled MFA, `mfa_key` is empty. 
+If user hasn't enabled MFA, `mfa_key` is empty.
 
 ### Database migration
 
@@ -685,10 +763,10 @@ response_type=token
 
 response_type=id_token
     return `id_token` in /authorization endpoint
-    
+
 response_type=id_token token
     return `id_token` in addition to `access_token` in /authorization endpoint
-   
+
 response_type=id_token code
     return `id_token` in addition to `authorization_code` in /authorization endpoint
 
@@ -704,7 +782,7 @@ Thanks go to these wonderful people:
     <td align="center"><a href="https://www.linkedin.com/in/vandungnguyen/"><img src="https://simplelogin.io/about/dung.jpg" width="100px;" alt="Dung Nguyen Van"/><br /><sub><b>Dung Nguyen Van</b></sub></a><br /></td>
     <td align="center"><a href="https://www.linkedin.com/in/giuseppe-f-83449ba4/"><img src="https://simplelogin.io/about/giuseppe.jpeg" width="100px;" alt="Giuseppe Federico"/><br /><sub><b>Giuseppe Federico</b></sub></a><br /></td>
     <td align="center"><a href="https://github.com/NinhDinh"><img src="https://avatars2.githubusercontent.com/u/1419742?s=460&v=4" width="100px;" alt="Ninh Dinh"/><br /><sub><b>Ninh Dinh</b></sub></a><br /></td>
-    <td align="center"><a href="https://github.com/ntung"><img src="https://avatars1.githubusercontent.com/u/663341?s=460&v=4" width="100px;" alt="Tung Nguyen V. N."/><br /><sub><b>Tung Nguyen V. N.</b></sub></a><br /></td>    
-    <td align="center"><a href="https://www.linkedin.com/in/nguyenkims/"><img src="https://simplelogin.io/about/me.jpeg" width="100px;" alt="Son Nguyen Kim"/><br /><sub><b>Son Nguyen Kim</b></sub></a><br /></td>    
+    <td align="center"><a href="https://github.com/ntung"><img src="https://avatars1.githubusercontent.com/u/663341?s=460&v=4" width="100px;" alt="Tung Nguyen V. N."/><br /><sub><b>Tung Nguyen V. N.</b></sub></a><br /></td>
+    <td align="center"><a href="https://www.linkedin.com/in/nguyenkims/"><img src="https://simplelogin.io/about/me.jpeg" width="100px;" alt="Son Nguyen Kim"/><br /><sub><b>Son Nguyen Kim</b></sub></a><br /></td>
 </tr>
 </table>
