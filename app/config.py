@@ -101,7 +101,7 @@ DKIM_HEADERS = [b"from", b"to", b"subject"]
 DB_URI = os.environ["DB_URI"]
 
 # Flask secret
-FLASK_SECRET = os.environ.get("FLASK_SECRET") or str(uuid4())
+FLASK_SECRET = os.environ["FLASK_SECRET"]
 
 # AWS
 AWS_REGION = "eu-west-3"
