@@ -409,7 +409,7 @@ First, I modify the postfix inet protocols to only route via IPv4
 
 First, verify your domain with SES, and check off "Generate DKIM Records".
 
-<img src=https://i.imgur.com/7tLtsL4.png>
+<img src=https://i.imgur.com/9KeIlhA.png>
 
 I use Route53, so pressing the Use Route53 button will automatically generate my DNS values. If you do not use Route53, you will have to create them on your DNS provider.
 
