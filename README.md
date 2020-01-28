@@ -309,6 +309,7 @@ Choose "Internet Site" in Postfix installation window then keep using the propos
 Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain.
 
 ```
+# POSTFIX config file, adapted for SimpleLogin
 smtpd_banner = $myhostname ESMTP $mail_name (Ubuntu)
 biff = no
 
@@ -334,30 +335,47 @@ smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
 # information on enabling SSL in the smtp client.
 
-smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
-myhostname = app.mydomain.com
 alias_maps = hash:/etc/aliases
-alias_database = hash:/etc/aliases
-mydestination = localhost
-relayhost =
 mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 240.0.0.0/24
-mailbox_size_limit = 0
-recipient_delimiter = +
-inet_interfaces = all
-inet_protocols = all
+
+# Set your domain here
+myhostname = app.mydomain.com
 mydomain = mydomain.com
 myorigin = mydomain.com
+
 relay_domains = pgsql:/etc/postfix/pgsql-relay-domains.cf
 transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf
+
+# HELO restrictions
 smtpd_delay_reject = yes
 smtpd_helo_required = yes
-smtpd_helo_restrictions = permit_mynetworks, reject_non_fqdn_helo_hostname, reject_invalid_helo_hostname, permit
-smtpd_sender_restrictions = permit_mynetworks, reject_non_fqdn_sender, reject_unknown_sender_domain, permit
-smtpd_recipient_restrictions = reject_unauth_pipelining, reject_non_fqdn_recipient, reject_unknown_recipient_domain, permit_mynetworks, reject_unauth_destination, reject_rbl_client zen.spamhaus.org, reject_rbl_client bl.spamcop.net, permit
+smtpd_helo_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_helo_hostname,
+    reject_invalid_helo_hostname,
+    permit
+
+# Sender restrictions:
+smtpd_sender_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_sender,
+    reject_unknown_sender_domain,
+    permit
+
+# Recipient restrictions:
+smtpd_recipient_restrictions =
+   reject_unauth_pipelining,
+   reject_non_fqdn_recipient,
+   reject_unknown_recipient_domain,
+   permit_mynetworks,
+   reject_unauth_destination,
+   reject_rbl_client zen.spamhaus.org,
+   reject_rbl_client bl.spamcop.net,
+   permit
 ```
 
-
-Create the `/etc/postfix/pgsql-relay-domains.cf` file with the following content. Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
+Create the `/etc/postfix/pgsql-relay-domains.cf` file with the following content. 
+Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
 
 ```
 # postgres config
@@ -366,10 +384,12 @@ user = myuser
 password = mypassword
 dbname = simplelogin
 
-query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true UNION SELECT '%s' WHERE '%s' = 'mydomain.com' LIMIT 1;
+query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true 
+    UNION SELECT '%s' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
-Create the `/etc/postfix/pgsql-transport-maps.cf` file with the following content. Again, make sure that the database config is correctly set and replace `mydomain.com` with your domain.
+Create the `/etc/postfix/pgsql-transport-maps.cf` file with the following content. 
+Again, make sure that the database config is correctly set and replace `mydomain.com` with your domain.
 
 ```
 # postgres config
@@ -379,7 +399,8 @@ password = mypassword
 dbname = simplelogin
 
 # forward to smtp:127.0.0.1:20381 for custom domain AND email domain
-query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND verified=true UNION SELECT 'smtp:127.0.0.1:20381' WHERE '%s' = 'mydomain.com' LIMIT 1;
+query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND verified=true 
+    UNION SELECT 'smtp:127.0.0.1:20381' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
 Finally, restart Postfix
