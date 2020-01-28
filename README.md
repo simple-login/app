@@ -184,6 +184,12 @@ gh
 
 then the `PUBLIC_KEY` would be `abcdefgh`.
 
+You can get the `PUBLIC_KEY` by running this command:
+
+```bash
+sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n'
+```
+
 To verify, the following command
 
 ```bash
