@@ -15,6 +15,7 @@ from app.config import (
     DKIM_PRIVATE_KEY,
     DKIM_HEADERS,
     ALIAS_DOMAINS,
+    SUPPORT_NAME
 )
 from app.log import LOG
 
@@ -183,7 +184,7 @@ def send_email(to_email, subject, plaintext, html):
     msg = EmailMessage()
 
     msg["Subject"] = subject
-    msg["From"] = f"Son from SimpleLogin <{SUPPORT_EMAIL}>"
+    msg["From"] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
     msg["To"] = to_email
 
     msg.set_content(plaintext)

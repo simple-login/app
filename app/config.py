@@ -43,6 +43,7 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN")
 NOT_SEND_EMAIL = "NOT_SEND_EMAIL" in os.environ
 EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"]
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
+SUPPORT_NAME = os.environ.get("SUPPORT_NAME", "Son from SimpleLogin")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
 try:
     MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
