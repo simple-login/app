@@ -5,7 +5,7 @@ from requests_oauthlib import OAuth2Session
 from app import email_utils
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
-from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
+from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL, DISABLE_REGISTRATION
 from app.email_utils import can_be_used_as_personal_email
 from app.extensions import db
 from app.log import LOG
@@ -85,6 +85,10 @@ def github_callback():
 
     # create user
     if not user:
+        if DISABLE_REGISTRATION:
+            flash("Registration is closed", "error")
+            return redirect(url_for("auth.login"))
+
         if not can_be_used_as_personal_email(email):
             flash(
                 f"You cannot use {email} as your personal inbox.", "error",

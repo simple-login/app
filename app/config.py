@@ -54,6 +54,8 @@ except Exception:
 # allow to override postfix server locally
 POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 
+DISABLE_REGISTRATION = "DISABLE_REGISTRATION" in os.environ
+
 if "OTHER_ALIAS_DOMAINS" in os.environ:
     OTHER_ALIAS_DOMAINS = eval(
         os.environ["OTHER_ALIAS_DOMAINS"]
