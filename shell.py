@@ -3,6 +3,7 @@ from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from app.config import DB_URI
+from app.email_utils import _render
 from app.models import *
 from server import create_app
 from app import email_utils
@@ -33,4 +34,8 @@ def reset_db():
 app = create_app()
 
 with app.app_context():
+    # to test email template
+    # with open("/tmp/email.html", "w") as f:
+    #     f.write(_render("welcome.html", name="John Wick"))
+
     embed()
