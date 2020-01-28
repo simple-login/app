@@ -250,7 +250,8 @@ Now the boring DNS stuffs are done, let's do something more fun!
 
 If you don't already have Docker installed on your server, please follow the steps on [Docker CE for Ubuntu](https://docs.docker.com/v17.12/install/linux/docker-ce/ubuntu/) to install Docker.
 
-Tips: if you are not using `root` user and you want to run Docker without the `sudo` prefix, add your account to `docker` group:
+Tips: if you are not using `root` user and you want to run Docker without the `sudo` prefix, add your account to `docker` group with the following command.
+You might need to exit and ssh again to your server for this to be taken into account.
 
 ```bash
 sudo usermod -a -G docker $USER
@@ -262,7 +263,7 @@ This Docker network will be used by the other Docker containers run in the next 
 Later, we will setup Postfix to authorize this network.
 
 ```bash
-docker network create -d bridge \
+sudo docker network create -d bridge \
     --subnet=240.0.0.0/24 \
     --gateway=240.0.0.1 \
     sl-network
@@ -277,20 +278,20 @@ If you have already had a Postgres database in use, you can skip this section an
 Run a Postgres Docker container as your Postgres database server. Make sure to replace `myuser` and `mypassword` with something more secret 😎.
 
 ```bash
-docker run -d \
+sudo docker run -d \
     --name sl-db \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
     -p 5432:5432 \
     --network="sl-network" \
-    postgres
+    postgres:12.1
 ```
 
 To test whether the database operates correctly or not, run the following command:
 
 ```bash
-docker exec -it sl-db psql -U myuser simplelogin
+sudo docker exec -it sl-db psql -U myuser simplelogin
 ```
 
 you should be logged in the postgres console. Type `exit` to exit postgres console.
@@ -383,7 +384,10 @@ query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND
 
 Finally, restart Postfix
 
-> sudo systemctl restart postfix
+```bash
+sudo systemctl restart postfix
+```
+
 
 ### Run SimpleLogin Docker containers
 
@@ -427,10 +431,10 @@ FLASK_SECRET=put_something_secret_here
 ```
 
 
-Before running the webapp, you need to prepare the database by running the migration
+Before running the webapp, you need to prepare the database by running the migration:
 
 ```bash
-docker run --rm \
+sudo docker run --rm \
     --name sl-migration \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
@@ -444,7 +448,7 @@ This command could take a while to download the `simplelogin/app` docker image.
 Now, it's time to run the `webapp` container!
 
 ```bash
-docker run -d \
+sudo docker run -d \
     --name sl-app \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
@@ -457,7 +461,7 @@ docker run -d \
 Next run the `email handler`
 
 ```bash
-docker run -d \
+sudo docker run -d \
     --name sl-email \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
