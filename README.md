@@ -205,7 +205,7 @@ From Wikipedia https://en.wikipedia.org/wiki/Sender_Policy_Framework
 > Sender Policy Framework (SPF) is an email authentication method designed to detect forging sender addresses during the delivery of the email
 
 Similar to DKIM, setting up SPF is highly recommended.
-Add a TXT record for `mydomain.com.` with the value 
+Add a TXT record for `mydomain.com.` with the value:
 
 ```
 v=spf1 mx -all
@@ -219,6 +219,30 @@ dig @1.1.1.1 mydomain.com txt
 
 should return the above value.
 
+#### DMARC
+
+From Wikipedia https://en.wikipedia.org/wiki/DMARC
+
+> It (DMARC) is designed to give email domain owners the ability to protect their domain from unauthorized use, commonly known as email spoofing
+
+Setting up DMARC is also recommended.
+Add a TXT record for `_dmarc.mydomain.com.` with the following value
+
+```
+v=DMARC1; p=quarantine; adkim=r; aspf=r
+```
+
+This is a `relaxed` DMARC policy. You can also use a more strict policy with `v=DMARC1; p=reject; adkim=s; aspf=s` value.
+
+To verify, the following command
+
+```bash
+dig @1.1.1.1 _dmarc.mydomain.com txt
+```
+
+should return the set value. 
+
+For more information on DMARC, please consult https://tools.ietf.org/html/rfc7489
 
 ### Docker
 
