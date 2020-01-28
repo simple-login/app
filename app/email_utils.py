@@ -15,7 +15,7 @@ from app.config import (
     DKIM_PRIVATE_KEY,
     DKIM_HEADERS,
     ALIAS_DOMAINS,
-    SUPPORT_NAME
+    SUPPORT_NAME,
 )
 from app.log import LOG
 
