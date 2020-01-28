@@ -4,7 +4,7 @@ from requests_oauthlib import OAuth2Session
 
 from app import s3, email_utils
 from app.auth.base import auth_bp
-from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, DISABLE_REGISTRATION
 from app.extensions import db
 from app.log import LOG
 from app.models import User, File
@@ -93,6 +93,10 @@ def google_callback():
             db.session.commit()
     # create user
     else:
+        if DISABLE_REGISTRATION:
+            flash("Registration is closed", "error")
+            return redirect(url_for("auth.login"))
+
         if not can_be_used_as_personal_email(email):
             flash(
                 f"You cannot use {email} as your personal inbox.", "error",

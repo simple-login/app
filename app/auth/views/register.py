@@ -3,9 +3,9 @@ from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app import email_utils
+from app import email_utils, config
 from app.auth.base import auth_bp
-from app.config import URL
+from app.config import URL, DISABLE_REGISTRATION
 from app.email_utils import can_be_used_as_personal_email
 from app.extensions import db
 from app.log import LOG
@@ -26,6 +26,10 @@ def register():
         LOG.d("user is already authenticated, redirect to dashboard")
         flash("You are already logged in", "warning")
         return redirect(url_for("dashboard.index"))
+
+    if config.DISABLE_REGISTRATION:
+        flash("Registration is closed", "error")
+        return redirect(url_for("auth.login"))
 
     form = RegisterForm(request.form)
     next_url = request.args.get("next")

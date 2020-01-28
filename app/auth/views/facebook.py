@@ -6,7 +6,12 @@ from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 from app import email_utils
 from app.auth.base import auth_bp
 from app.auth.views.google import create_file_from_url
-from app.config import URL, FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET
+from app.config import (
+    URL,
+    FACEBOOK_CLIENT_ID,
+    FACEBOOK_CLIENT_SECRET,
+    DISABLE_REGISTRATION,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import User
@@ -103,6 +108,10 @@ def facebook_callback():
 
     # create user
     else:
+        if DISABLE_REGISTRATION:
+            flash("Registration is closed", "error")
+            return redirect(url_for("auth.login"))
+
         if not can_be_used_as_personal_email(email):
             flash(
                 f"You cannot use {email} as your personal inbox.", "error",
