@@ -241,7 +241,7 @@ class MailHandler:
             # replace the email part in from: header
             from_header = (
                 get_email_name(msg["From"])
-                + " - "
+                + ("" if get_email_name(msg["From"]) == "" else " - ")
                 + website_email.replace("@", " at ")
                 + f" <{forward_email.reply_email}>"
             )
