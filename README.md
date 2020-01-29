@@ -211,7 +211,8 @@ Add a TXT record for `mydomain.com.` with the value:
 v=spf1 mx -all
 ``` 
 
-What it means is only your server can send email with `@mydomain.com` domain. To verify, the following commonly 
+What it means is only your server can send email with `@mydomain.com` domain. 
+To verify, the following command 
 
 ```bash
 dig @1.1.1.1 mydomain.com txt
@@ -271,11 +272,11 @@ sudo docker network create -d bridge \
 
 ### Postgres
 
-This section shows how to run a Postgres database using Docker. At the end of this section, you will have a database username and password which will be used in the next steps.
+This section creates a Postgres database using Docker. 
 
-If you have already had a Postgres database in use, you can skip this section and just copy the database configuration (i.e. host, port, username, password, database name).
+If you already have a Postgres database in use, you can skip this section and just copy the database configuration (i.e. host, port, username, password, database name) to use in the next sections.
 
-Run a Postgres Docker container as your Postgres database server. Make sure to replace `myuser` and `mypassword` with something more secret 😎.
+Run a Postgres Docker container as your Postgres database server. Make sure to replace `myuser` and `mypassword` with something more secret.
 
 ```bash
 sudo docker run -d \
@@ -759,7 +760,7 @@ Here are the small sum-ups of the directory structures and their roles:
 The code is formatted using https://github.com/psf/black, to format the code, simply run
 
 ```
-black
+black .
 ```
 
 ### OAuth flow
