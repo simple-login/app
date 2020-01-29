@@ -199,7 +199,13 @@ class MailHandler:
         forward_email = ForwardEmail.get_by(
             gen_email_id=gen_email.id, website_email=website_email
         )
-        if not forward_email:
+        if forward_email:
+            # update the From header if needed
+            if forward_email.website_from != msg["From"]:
+                LOG.d("Update From header for %s", forward_email)
+                forward_email.website_from = msg["From"]
+                db.session.commit()
+        else:
             LOG.debug(
                 "create forward email for alias %s and website email %s",
                 alias,
