@@ -47,9 +47,7 @@ def register():
                 flash(f"Email {email} already used", "error")
             else:
                 LOG.debug("create user %s", form.email.data)
-                user = User.create(
-                    email=email, name="", password=form.password.data,
-                )
+                user = User.create(email=email, name="", password=form.password.data,)
                 db.session.commit()
 
                 send_activation_email(user, next_url)
