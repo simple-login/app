@@ -4,7 +4,8 @@ from urllib.parse import urlparse
 from flask import request, render_template, redirect, flash
 from flask_login import current_user
 
-from app.config import EMAIL_DOMAIN
+from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, DISABLE_ALIAS_SUFFIX
+from app.email_utils import get_email_domain_part
 from app.extensions import db
 from app.jose_utils import make_id_token
 from app.log import LOG
@@ -16,6 +17,7 @@ from app.models import (
     RedirectUri,
     OauthToken,
     DeletedAlias,
+    CustomDomain,
 )
 from app.oauth.base import oauth_bp
 from app.oauth_models import (
@@ -103,21 +105,33 @@ def authorize():
                     client.name
                 )
                 suggested_name, other_names = current_user.suggested_names()
-                email_suffix = random_word()
+
+                user_custom_domains = [
+                    cd.domain for cd in current_user.verified_custom_domains()
+                ]
+                # List of (is_custom_domain, alias-suffix)
+                suffixes = []
+
+                # put custom domain first
+                for alias_domain in user_custom_domains:
+                    suffixes.append((True, "@" + alias_domain))
+
+                # then default domain
+                for domain in ALIAS_DOMAINS:
+                    suffixes.append(
+                        (
+                            False,
+                            ("" if DISABLE_ALIAS_SUFFIX else "." + random_word())
+                            + "@"
+                            + domain,
+                        )
+                    )
 
             return render_template(
                 "oauth/authorize.html",
-                client=client,
-                user_info=user_info,
-                client_user=client_user,
                 Scope=Scope,
-                suggested_email=suggested_email,
-                personal_email=current_user.email,
-                suggested_name=suggested_name,
-                other_names=other_names,
-                other_emails=other_emails,
-                email_suffix=email_suffix,
                 EMAIL_DOMAIN=EMAIL_DOMAIN,
+                **locals(),
             )
         else:
             # after user logs in, redirect user back to this page
@@ -127,7 +141,7 @@ def authorize():
                 next=request.url,
                 Scope=Scope,
             )
-    else:  # user allows or denies
+    else:  # POST - user allows or denies
         if request.form.get("button") == "deny":
             LOG.debug("User %s denies Client %s", current_user, client)
             final_redirect_uri = f"{redirect_uri}?error=deny&state={state}"
@@ -140,32 +154,55 @@ def authorize():
         if client_user:
             LOG.d("user %s has already allowed client %s", current_user, client)
         else:
-            email_suffix = request.form.get("email-suffix")
-            custom_email_prefix = request.form.get("custom-email-prefix")
-            chosen_email = request.form.get("suggested-email")
-
-            suggested_name = request.form.get("suggested-name")
-            custom_name = request.form.get("custom-name")
-
-            use_default_avatar = request.form.get("avatar-choice") == "default"
+            alias_prefix = request.form.get("prefix")
+            alias_suffix = request.form.get("suffix")
 
             gen_email = None
-            if custom_email_prefix:
-                # check if user can generate custom email
+
+            # user creates a new alias, not using suggested alias
+            if alias_prefix:
+                # should never happen as this is checked on the front-end
                 if not current_user.can_create_new_alias():
                     raise Exception(f"User {current_user} cannot create custom email")
 
-                email = f"{convert_to_id(custom_email_prefix)}.{email_suffix}@{EMAIL_DOMAIN}"
-                LOG.d("create custom email alias %s for user %s", email, current_user)
+                user_custom_domains = [
+                    cd.domain for cd in current_user.verified_custom_domains()
+                ]
 
-                if GenEmail.get_by(email=email) or DeletedAlias.get_by(email=email):
-                    LOG.error("email %s already used, very rare!", email)
-                    flash(f"alias {email} already used", "error")
+                from app.dashboard.views.custom_alias import verify_prefix_suffix
+
+                if verify_prefix_suffix(
+                    current_user, alias_prefix, alias_suffix, user_custom_domains
+                ):
+                    full_alias = alias_prefix + alias_suffix
+
+                    if GenEmail.get_by(email=full_alias) or DeletedAlias.get_by(
+                        email=full_alias
+                    ):
+                        LOG.error("alias %s already used, very rare!", full_alias)
+                        flash(f"Alias {full_alias} already used", "error")
+                        return redirect(request.url)
+                    else:
+                        gen_email = GenEmail.create(
+                            user_id=current_user.id, email=full_alias
+                        )
+
+                        # get the custom_domain_id if alias is created with a custom domain
+                        alias_domain = get_email_domain_part(full_alias)
+                        custom_domain = CustomDomain.get_by(domain=alias_domain)
+                        if custom_domain:
+                            gen_email.custom_domain_id = custom_domain.id
+
+                        db.session.flush()
+                        flash(f"Alias {full_alias} has been created", "success")
+                # only happen if the request has been "hacked"
+                else:
+                    flash("something went wrong", "warning")
                     return redirect(request.url)
-
-                gen_email = GenEmail.create(email=email, user_id=current_user.id)
-                db.session.flush()
-            else:  # user picks an email from suggestion
+            # User chooses one of the suggestions
+            else:
+                chosen_email = request.form.get("suggested-email")
+                # todo: add some checks on chosen_email
                 if chosen_email != current_user.email:
                     gen_email = GenEmail.get_by(email=chosen_email)
                     if not gen_email:
@@ -174,6 +211,11 @@ def authorize():
                         )
                         db.session.flush()
 
+            suggested_name = request.form.get("suggested-name")
+            custom_name = request.form.get("custom-name")
+
+            use_default_avatar = request.form.get("avatar-choice") == "default"
+
             client_user = ClientUser.create(
                 client_id=client.id, user_id=current_user.id
             )
@@ -181,20 +223,8 @@ def authorize():
                 client_user.gen_email_id = gen_email.id
 
             if custom_name:
-                LOG.d(
-                    "use custom name %s for user %s client %s",
-                    custom_name,
-                    current_user,
-                    client,
-                )
                 client_user.name = custom_name
             elif suggested_name != current_user.name:
-                LOG.d(
-                    "use another name %s for user %s client %s",
-                    custom_name,
-                    current_user,
-                    client,
-                )
                 client_user.name = suggested_name
 
             if use_default_avatar:

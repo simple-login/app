@@ -84,24 +84,42 @@
           <div class="col-md-9">
             <select class="custom-select custom-select" name="suggested-email">
               <option selected value="{{ suggested_email }}">{{ suggested_email }}</option>
-              <option value="{{ personal_email }}">{{ personal_email }} (Personal Email)</option>
+              <option value="{{ current_user.email }}">{{ current_user.email }} (Personal Email)</option>
               {% for email in other_emails %}
                 <option value="{{ email }}">{{ email }}</option>
               {% endfor %}
             </select>
 
             {% if current_user.can_create_new_alias() %}
-              <div class="mt-2">OR</div>
-              <div style="display: flex; align-items: center" class="mt-2">
-                <input class="form-control"
-                       pattern="[0-9a-z-_]{1,}"
-                       title="Only lowercase letter, number, dash (-), underscore (_) can be used in alias prefix."
-                       style="flex-grow: 2" name="custom-email-prefix">
-                <input type="hidden" name="email-suffix" value="{{ email_suffix }}">
-                <div class="ml-2">
-                  .{{ email_suffix }}@{{ EMAIL_DOMAIN }}
+              <div class="mt-2 mb-2">OR</div>
+
+              <div class="row mb-2">
+                <div class="col-sm-6 pr-1 mb-1" style="min-width: 5em">
+                  <input name="prefix" class="form-control"
+                         type="text"
+                         pattern="[0-9a-z-_]{1,}"
+                         title="Only lowercase letter, number, dash (-), underscore (_) can be used in alias prefix."
+                         placeholder="email alias"
+                         autofocus>
+                </div>
+
+
+                <div class="col-sm-6"
+                     style="padding-left: 5px">
+                  <select class="form-control" name="suffix">
+                    {% for suffix in suffixes %}
+                      <option value="{{ suffix[1] }}">
+                        {% if suffix[0] %}
+                          {{ suffix[1] }} (your domain)
+                        {% else %}
+                          {{ suffix[1] }}
+                        {% endif %}
+                      </option>
+                    {% endfor %}
+                  </select>
                 </div>
               </div>
+
               <small class="text-muted">
                 Alias can use letter, number, dash and cannot be empty
               </small>

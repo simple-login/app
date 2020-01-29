@@ -1,47 +1,64 @@
-{% extends "single.html" %}
+{% extends "base.html" %}
 
-{% block single_content %}
-  <div class="row">
-    <b>{{ client.name }}</b> &nbsp; would like to have access to your following data:
-
-    <ul class="mt-3">
-      {% for scope in client.get_scopes() %}
-        <li>
-          {% if scope == Scope.AVATAR_URL %}
-            avatar
-          {% else %}
-            {{ scope.value }}
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
-
-    <label>
-      In order to accept the request, you need to sign in.
-    </label>
-  </div>
-
-  <div class="row mt-4">
-    <div class="btn-group w-100">
-
-      <a href="{{ url_for('auth.login', next=next) }}" class="btn btn-success">
-        Login
-      </a>
-
-      <a href="{{ url_for('auth.register', next=next) }}" class="btn btn-info">
-        Sign Up
+{% block content %}
+  <div class="bg-white p-6" style="margin: auto; max-width: 600px">
+    <div class="text-center mb-6">
+      <a href="https://simplelogin.io">
+        <img src="/static/logo.png" style="background-color: transparent; height: 40px">
       </a>
     </div>
-  </div>
 
-  <hr>
+    <div>
+      <b>{{ client.name }}</b> would like to have access to your following data:
+    </div>
 
-  <div class="row">
-    <p class="text-center col">Cancel and go back to <b>{{ client.name }}</b></p>
-    <a class="btn btn-block btn-secondary back-or-close">
-      <i class="fe fe-arrow-left mr-2"></i>Cancel
-    </a>
+    <div>
+      <ul class="mt-3">
+        {% for scope in client.get_scopes() %}
+          <li>
+            {% if scope == Scope.AVATAR_URL %}
+              avatar
+            {% else %}
+              {{ scope.value }}
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div>
+      In order to accept the request, you need to sign in.
+    </div>
+
+    <div class="mt-4">
+      <div class="btn-group w-100">
+
+        <a href="{{ url_for('auth.login', next=next) }}" class="btn btn-success">
+          Login
+        </a>
+
+        <a href="{{ url_for('auth.register', next=next) }}" class="btn btn-info">
+          Sign Up
+        </a>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="">
+      <p class="text-center col">Cancel and go back to <b>{{ client.name }}</b></p>
+      <a class="btn btn-block btn-secondary back-or-close">
+        <i class="fe fe-arrow-left mr-2"></i>Cancel
+      </a>
+    </div>
+
+    <div class="small-text mt-4">
+      <a href="https://simplelogin.io">SimpleLogin</a> is an open source social login provider that protects your privacy.
+    </div>
+
   </div>
 
 {% endblock %}
+
+
 
