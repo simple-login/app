@@ -35,20 +35,20 @@ def register():
     next_url = request.args.get("next")
 
     if form.validate_on_submit():
-        email = form.email.data
+        email = form.email.data.lower()
         if not can_be_used_as_personal_email(email):
             flash(
                 "You cannot use this email address as your personal inbox.", "error",
             )
         else:
-            user = User.filter_by(email=email).first()
+            user = User.get_by(email=email)
 
             if user:
-                flash(f"Email {form.email.data} already exists", "warning")
+                flash(f"Email {email} already used", "error")
             else:
                 LOG.debug("create user %s", form.email.data)
                 user = User.create(
-                    email=form.email.data.lower(), name="", password=form.password.data,
+                    email=email, name="", password=form.password.data,
                 )
                 db.session.commit()
 
