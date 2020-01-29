@@ -67,6 +67,7 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
         db.session.query(ForwardEmail, ForwardEmailLog)
         .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
         .filter(ForwardEmail.gen_email_id == gen_email.id)
+        .order_by(ForwardEmailLog.id.desc())
         .limit(_LIMIT)
         .offset(page_id * _LIMIT)
     )
