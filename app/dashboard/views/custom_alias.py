@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request, session
+from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 
 from app.config import (
@@ -9,7 +9,7 @@ from app.dashboard.base import dashboard_bp
 from app.email_utils import email_belongs_to_alias_domains, get_email_domain_part
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, CustomDomain
+from app.models import GenEmail, CustomDomain, DeletedAlias
 from app.utils import convert_to_id, random_word, word_exist
 
 
@@ -49,7 +49,9 @@ def custom_alias():
         ):
             full_alias = alias_prefix + alias_suffix
 
-            if GenEmail.get_by(email=full_alias):
+            if GenEmail.get_by(email=full_alias) or DeletedAlias.get_by(
+                email=full_alias
+            ):
                 LOG.d("full alias already used %s", full_alias)
                 flash(
                     f"Alias {full_alias} already exists, please choose another one",
