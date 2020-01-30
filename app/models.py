@@ -122,6 +122,11 @@ class User(db.Model, ModelMixin, UserMixin):
     # some users could have lifetime premium
     lifetime = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
 
+    # user can use all premium features until this date
+    trial_end = db.Column(
+        ArrowType, default=lambda: arrow.now().shift(days=7), nullable=True
+    )
+
     profile_picture = db.relationship(File)
 
     @classmethod
