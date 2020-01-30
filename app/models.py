@@ -177,7 +177,10 @@ class User(db.Model, ModelMixin, UserMixin):
         if self.lifetime_or_active_subscription():
             return True
 
-        return self.trial_end and arrow.now() < self.trial_end
+        if self.trial_end and arrow.now() < self.trial_end:
+            return True
+
+        return False
 
     def can_create_new_alias(self) -> bool:
         if self.is_premium():
