@@ -13,7 +13,7 @@
       <h1> Billing </h1>
 
       <p>
-        You are on the <b>{{ current_user.plan_name() }}</b> plan. Thank you very much for supporting SimpleLogin. 🙌
+        You are on the <b>{{ current_user.get_subscription().plan_name() }}</b> plan. Thank you very much for supporting SimpleLogin. 🙌
       </p>
 
       {% if sub.cancelled %}

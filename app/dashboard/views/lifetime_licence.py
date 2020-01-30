@@ -24,7 +24,7 @@ class CouponForm(FlaskForm):
 @login_required
 def lifetime_licence():
     # sanity check: make sure this page is only for free user
-    if current_user.is_premium():
+    if current_user.lifetime_or_active_subscription():
         flash("You are already a premium user", "warning")
         return redirect(url_for("dashboard.index"))
 

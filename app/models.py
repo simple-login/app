@@ -124,7 +124,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
     # user can use all premium features until this date
     trial_end = db.Column(
-        ArrowType, default=lambda: arrow.now().shift(days=7), nullable=True
+        ArrowType, default=lambda: arrow.now().shift(days=7, hours=1), nullable=True
     )
 
     profile_picture = db.relationship(File)
@@ -146,11 +146,8 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return user
 
-    def should_upgrade(self):
-        return not self.is_premium()
-
-    def is_premium(self):
-        """user is premium if they have a active subscription"""
+    def lifetime_or_active_subscription(self) -> bool:
+        """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
 
@@ -160,7 +157,29 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return False
 
-    def can_create_new_alias(self):
+    def in_trial(self):
+        """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
+        if self.lifetime_or_active_subscription():
+            return False
+
+        return self.trial_end and arrow.now() < self.trial_end
+
+    def should_upgrade(self):
+        return not self.lifetime_or_active_subscription()
+
+    def is_premium(self) -> bool:
+        """
+        user is premium if they:
+        - have a lifetime deal or
+        - in trial period or
+        - active subscription
+        """
+        if self.lifetime_or_active_subscription():
+            return True
+
+        return self.trial_end and arrow.now() < self.trial_end
+
+    def can_create_new_alias(self) -> bool:
         if self.is_premium():
             return True
 
@@ -202,7 +221,6 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def suggested_names(self) -> (str, [str]):
         """return suggested name and other name choices """
-
         other_name = convert_to_id(self.name)
 
         return self.name, [other_name, "Anonymous", "whoami"]
@@ -210,17 +228,6 @@ class User(db.Model, ModelMixin, UserMixin):
     def get_name_initial(self) -> str:
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
-
-    def plan_name(self) -> str:
-        if self.is_premium():
-            sub = self.get_subscription()
-
-            if sub.plan == PlanEnum.monthly:
-                return "Monthly ($2.99/month)"
-            else:
-                return "Yearly ($29.99/year)"
-        else:
-            return "Free Plan"
 
     def get_subscription(self):
         """return *active* subscription
@@ -642,6 +649,12 @@ class Subscription(db.Model, ModelMixin):
     )
 
     user = db.relationship(User)
+
+    def plan_name(self):
+        if self.plan == PlanEnum.monthly:
+            return "Monthly ($2.99/month)"
+        else:
+            return "Yearly ($29.99/year)"
 
 
 class DeletedAlias(db.Model, ModelMixin):

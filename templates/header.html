@@ -25,15 +25,16 @@
                 {{ current_user.name }}
               </span>
 
-              {% if current_user.is_premium() %}
+              {% if current_user.in_trial() %}
+                <small class="text-success d-block mt-1">Trial ends in {{ current_user.trial_end|dt }}</small>
+              {% elif current_user.lifetime_or_active_subscription() %}
                 <small class="text-success d-block mt-1">Premium</small>
               {% endif %}
+
 						</span>
           </a>
 
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-
-
             <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
               <i class="dropdown-icon fe fe-log-out"></i> Sign out
             </a>
