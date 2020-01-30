@@ -54,7 +54,14 @@ from app.email_utils import (
 )
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ForwardEmail, ForwardEmailLog, CustomDomain, Directory
+from app.models import (
+    GenEmail,
+    ForwardEmail,
+    ForwardEmailLog,
+    CustomDomain,
+    Directory,
+    User,
+)
 from app.utils import random_string
 from server import create_app
 
@@ -138,8 +145,8 @@ class MailHandler:
 
                     # Only premium user can use the directory feature
                     if directory:
-                        dir_user = directory.user
-                        if dir_user.is_premium():
+                        dir_user: User = directory.user
+                        if dir_user.can_create_new_alias():
                             LOG.d("create alias %s for directory %s", alias, directory)
                             on_the_fly = True
 
@@ -166,8 +173,8 @@ class MailHandler:
 
                 # Only premium user can continue using the catch-all feature
                 if custom_domain and custom_domain.catch_all:
-                    domain_user = custom_domain.user
-                    if domain_user.is_premium():
+                    domain_user: User = custom_domain.user
+                    if domain_user.can_create_new_alias():
                         LOG.d("create alias %s for domain %s", alias, custom_domain)
                         on_the_fly = True
 

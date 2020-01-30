@@ -4,7 +4,7 @@ from app.extensions import db
 from app.models import User, ApiKey, AliasUsedOn, GenEmail
 
 
-def test_success(flask_client):
+def test_user_in_trial(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
@@ -19,7 +19,7 @@ def test_success(flask_client):
     )
 
     assert r.status_code == 200
-    assert r.json == {"is_premium": False, "name": "Test User"}
+    assert r.json == {"is_premium": True, "name": "Test User"}
 
 
 def test_wrong_api_key(flask_client):

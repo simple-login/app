@@ -29,12 +29,21 @@ def _render(template_name, **kwargs) -> str:
     return template.render(**kwargs)
 
 
-def send_welcome_email(email, name):
+def send_welcome_email(user):
     send_email(
-        email,
-        f"Welcome to SimpleLogin {name}!",
-        _render("welcome.txt", name=name),
-        _render("welcome.html", name=name),
+        user.email,
+        f"Welcome to SimpleLogin {user.name}",
+        _render("welcome.txt", name=user.name, user=user),
+        _render("welcome.html", name=user.name, user=user),
+    )
+
+
+def send_trial_end_soon_email(user):
+    send_email(
+        user.email,
+        f"Your trial will end soon {user.name}",
+        _render("trial-end.txt", name=user.name, user=user),
+        _render("trial-end.html", name=user.name, user=user),
     )
 
 

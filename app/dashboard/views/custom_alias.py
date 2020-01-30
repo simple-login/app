@@ -20,7 +20,10 @@ def custom_alias():
     if not current_user.can_create_new_alias():
         # notify admin
         LOG.error("user %s tries to create custom alias", current_user)
-        flash("ony premium user can choose custom alias", "warning")
+        flash(
+            "You have reached free plan limit, please upgrade to create new aliases",
+            "warning",
+        )
         return redirect(url_for("dashboard.index"))
 
     user_custom_domains = [cd.domain for cd in current_user.verified_custom_domains()]

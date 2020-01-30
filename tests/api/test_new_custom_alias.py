@@ -32,6 +32,7 @@ def test_out_of_quota(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
+    user.trial_end = None
     db.session.commit()
 
     # create api_key
