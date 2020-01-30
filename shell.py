@@ -36,6 +36,7 @@ app = create_app()
 with app.app_context():
     # to test email template
     # with open("/tmp/email.html", "w") as f:
-    #     f.write(_render("welcome.html", name="John Wick"))
+    #     user = User.get(1)
+    #     f.write(_render("welcome.html", user=user, name=user.name))
 
     embed()

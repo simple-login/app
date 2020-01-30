@@ -101,7 +101,7 @@ def github_callback():
         )
         db.session.commit()
         login_user(user)
-        email_utils.send_welcome_email(user.email, user.name)
+        email_utils.send_welcome_email(user)
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 
