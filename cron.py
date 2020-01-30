@@ -1,7 +1,7 @@
 import arrow
 
 from app.config import IGNORED_EMAILS, ADMIN_EMAIL
-from app.email_utils import send_email
+from app.email_utils import send_email, send_trial_end_soon_email
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -14,6 +14,13 @@ from app.models import (
     Client,
 )
 from server import create_app
+
+
+def send_trial_end_soon():
+    for user in User.query.filter(User.trial_end.isnot(None)).all():
+        if arrow.now().shift(days=3) > user.trial_end >= arrow.now().shift(days=2):
+            LOG.d("Send trial end email to user %s", user)
+            send_trial_end_soon_email(user)
 
 
 def stats():
@@ -103,3 +110,4 @@ if __name__ == "__main__":
 
     with app.app_context():
         stats()
+        send_trial_end_soon()
