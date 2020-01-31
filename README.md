@@ -539,8 +539,8 @@ You could make a donation to SimpleLogin on our Patreon page at https://www.patr
 The above self-hosting instructions correspond to a freshly Ubuntu server and doesn't cover all possible server configuration.
 Below are pointers to different topics:
 
-- [UFW](docs/ufw.md) 
-  
+- [UFW - uncomplicated firewall](docs/ufw.md) 
+- [SES - Amazon Simple Email Service](docs/ses.md)
 
 ## Contributing
 
