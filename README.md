@@ -285,6 +285,7 @@ sudo docker run -d \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
     -p 5432:5432 \
+    --restart always \
     --network="sl-network" \
     postgres:12.1
 ```
@@ -476,6 +477,7 @@ sudo docker run -d \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 7777:7777 \
+    --restart always \
     --network="sl-network" \
     simplelogin/app:1.0.3
 ```
@@ -489,6 +491,7 @@ sudo docker run -d \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 20381:20381 \
+    --restart always \
     --network="sl-network" \
     simplelogin/app:1.0.3 python email_handler.py
 ```
@@ -530,6 +533,14 @@ please go to the database, table "users" and set "lifetime" column to "1" or "TR
 
 You don't have to pay anything to SimpleLogin to use all its features.
 You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though.
+
+### Misc
+
+The above self-hosting instructions correspond to a freshly Ubuntu server and doesn't cover all possible server configuration.
+Below are pointers to different topics:
+
+- [UFW](docs/ufw.md) 
+  
 
 ## Contributing
 
