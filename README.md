@@ -534,6 +534,14 @@ please go to the database, table "users" and set "lifetime" column to "1" or "TR
 You don't have to pay anything to SimpleLogin to use all its features.
 You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though.
 
+### Misc
+
+The above self-hosting instructions correspond to a freshly Ubuntu server and doesn't cover all possible server configuration.
+Below are pointers to different topics:
+
+- [UFW](docs/ufw.md) 
+  
+
 ## Contributing
 
 All work on SimpleLogin happens directly on GitHub.
