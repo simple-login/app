@@ -33,8 +33,8 @@ def send_welcome_email(user):
     send_email(
         user.email,
         f"Welcome to SimpleLogin {user.name}",
-        _render("welcome.txt", name=user.name, user=user),
-        _render("welcome.html", name=user.name, user=user),
+        _render("com/welcome.txt", name=user.name, user=user),
+        _render("com/welcome.html", name=user.name, user=user),
     )
 
 
@@ -42,8 +42,8 @@ def send_trial_end_soon_email(user):
     send_email(
         user.email,
         f"Your trial will end soon {user.name}",
-        _render("trial-end.txt", name=user.name, user=user),
-        _render("trial-end.html", name=user.name, user=user),
+        _render("transactional/trial-end.txt", name=user.name, user=user),
+        _render("transactional/trial-end.html", name=user.name, user=user),
     )
 
 
@@ -52,10 +52,10 @@ def send_activation_email(email, name, activation_link):
         email,
         f"Just one more step to join SimpleLogin {name}",
         _render(
-            "activation.txt", name=name, activation_link=activation_link, email=email
+            "transactional/activation.txt", name=name, activation_link=activation_link, email=email
         ),
         _render(
-            "activation.html", name=name, activation_link=activation_link, email=email
+            "transactional/activation.html", name=name, activation_link=activation_link, email=email
         ),
     )
 
@@ -65,10 +65,10 @@ def send_reset_password_email(email, name, reset_password_link):
         email,
         f"Reset your password on SimpleLogin",
         _render(
-            "reset-password.txt", name=name, reset_password_link=reset_password_link
+            "transactional/reset-password.txt", name=name, reset_password_link=reset_password_link
         ),
         _render(
-            "reset-password.html", name=name, reset_password_link=reset_password_link
+            "transactional/reset-password.html", name=name, reset_password_link=reset_password_link
         ),
     )
 
@@ -78,14 +78,14 @@ def send_change_email(new_email, current_email, name, link):
         new_email,
         f"Confirm email update on SimpleLogin",
         _render(
-            "change-email.txt",
+            "transactional/change-email.txt",
             name=name,
             link=link,
             new_email=new_email,
             current_email=current_email,
         ),
         _render(
-            "change-email.html",
+            "transactional/change-email.html",
             name=name,
             link=link,
             new_email=new_email,
@@ -98,8 +98,8 @@ def send_new_app_email(email, name):
     send_email(
         email,
         f"Any question/feedback for SimpleLogin {name}?",
-        _render("new-app.txt", name=name),
-        _render("new-app.html", name=name),
+        _render("com/new-app.txt", name=name),
+        _render("com/new-app.html", name=name),
     )
 
 
@@ -107,8 +107,8 @@ def send_test_email_alias(email, name):
     send_email(
         email,
         f"This email is sent to {email}",
-        _render("test-email.txt", name=name, alias=email),
-        _render("test-email.html", name=name, alias=email),
+        _render("transactional/test-email.txt", name=name, alias=email),
+        _render("transactional/test-email.html", name=name, alias=email),
     )
 
 
@@ -120,13 +120,13 @@ def send_cannot_create_directory_alias(user, alias, directory):
         user.email,
         f"Alias {alias} cannot be created",
         _render(
-            "cannot-create-alias-directory.txt",
+            "transactional/cannot-create-alias-directory.txt",
             name=user.name,
             alias=alias,
             directory=directory,
         ),
         _render(
-            "cannot-create-alias-directory.html",
+            "transactional/cannot-create-alias-directory.html",
             name=user.name,
             alias=alias,
             directory=directory,
@@ -142,10 +142,10 @@ def send_cannot_create_domain_alias(user, alias, domain):
         user.email,
         f"Alias {alias} cannot be created",
         _render(
-            "cannot-create-alias-domain.txt", name=user.name, alias=alias, domain=domain
+            "transactional/cannot-create-alias-domain.txt", name=user.name, alias=alias, domain=domain
         ),
         _render(
-            "cannot-create-alias-domain.html",
+            "transactional/cannot-create-alias-domain.html",
             name=user.name,
             alias=alias,
             domain=domain,
@@ -162,14 +162,14 @@ def send_reply_alias_must_use_personal_email(user, alias, sender):
         user.email,
         f"Reply from your alias {alias} only works with your personal email",
         _render(
-            "reply-must-use-personal-email.txt",
+            "transactional/reply-must-use-personal-email.txt",
             name=user.name,
             alias=alias,
             sender=sender,
             user_email=user.email,
         ),
         _render(
-            "reply-must-use-personal-email.html",
+            "transactional/reply-must-use-personal-email.html",
             name=user.name,
             alias=alias,
             sender=sender,
