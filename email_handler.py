@@ -294,10 +294,14 @@ class MailHandler:
 
         # reply_email must end with EMAIL_DOMAIN
         if not reply_email.endswith(EMAIL_DOMAIN):
-            LOG.error(f"Reply email {reply_email} has wrong domain")
+            LOG.warning(f"Reply email {reply_email} has wrong domain")
             return "550 wrong reply email"
 
         forward_email = ForwardEmail.get_by(reply_email=reply_email)
+        if not forward_email:
+            LOG.warning(f"No such forward-email with {reply_email} as reply-email")
+            return "550 wrong reply email"
+
         alias: str = forward_email.gen_email.email
         alias_domain = alias[alias.find("@") + 1 :]
 
