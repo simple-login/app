@@ -12,7 +12,6 @@ from app import s3, email_utils
 from app.config import URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
-    email_belongs_to_alias_domains,
     can_be_used_as_personal_email,
 )
 from app.extensions import db
@@ -34,7 +33,7 @@ from app.utils import random_string
 
 class SettingForm(FlaskForm):
     email = StringField("Email")
-    name = StringField("Name", validators=[validators.DataRequired()])
+    name = StringField("Name")
     profile_picture = FileField("Profile Picture")
 
 
