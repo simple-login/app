@@ -1,0 +1,21 @@
+Hi {{name}}
+
+Do you know you can send an email to anyone from your alias?
+This below Youtube video walks you quickly through the steps, make sure to turn the caption on.
+
+https://www.youtube.com/watch?v=cZ-J_lwv-YQ&feature=youtu.be
+
+Here are the steps:
+1. First click "Send Email" on your alias you want to send email from
+2. Enter your contact email, this will generate an "reverse-alias"
+3. Use this reverse-alias instead of your contact email
+4. Your contact will receive this email from your alias.
+
+As usual, let me know if you have any question.
+
+Best regards,
+Son - SimpleLogin founder.
+
+---
+This email was sent to {email} and is part of our onboarding series.
+Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification

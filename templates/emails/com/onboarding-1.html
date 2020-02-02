@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + user.name) }}
+  {{ render_text("Do you know you can send emails to anyone from your alias?") }}
+  {{ render_text("This below Youtube video quickly walks you through the steps, make sure to turn the caption on.") }}
+  {{ render_text('<iframe width="560" height="315" src="https://www.youtube.com/embed/cZ-J_lwv-YQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>') }}
+  {{ render_text('If the video doesn\'t play, its link is  <a href="https://www.youtube.com/watch?v=cZ-J_lwv-YQ">https://www.youtube.com/watch?v=cZ-J_lwv-YQ</a>') }}
+
+  {{ render_text("Here are the steps:") }}
+  {{ render_text("1. First click <b>Send Email</b> on your alias you want to send email from.") }}
+  {{ render_text("2. Enter your contact email, this will generate a <b>reverse-alias</b>.") }}
+  {{ render_text("3. Use this reverse-alias <b>instead of your contact email</b>.") }}
+  {{ render_text("4. Your contact will receive this email from your alias.") }}
+
+  {{ render_text("As usual, let me know if you have any question.") }}
+
+{% endblock %}
+
