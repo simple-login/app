@@ -33,7 +33,8 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Name</label>
+        <label class="form-label mb-0">Name</label>
+        <div class="small-text">Used when you send emails from your alias</div>
         {{ form.name(class="form-control", value=current_user.name) }}
         {{ render_field_errors(form.name) }}
       </div>

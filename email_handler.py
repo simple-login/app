@@ -310,7 +310,8 @@ class MailHandler:
             if not CustomDomain.get_by(domain=alias_domain):
                 return "550 alias unknown by SimpleLogin"
 
-        user_email = forward_email.gen_email.user.email
+        user = forward_email.gen_email.user
+        user_email = user.email
         if envelope.mail_from.lower() != user_email.lower():
             LOG.warning(
                 f"Reply email can only be used by user email. Actual mail_from: %s. msg from header: %s, User email %s. reply_email %s",
@@ -320,12 +321,14 @@ class MailHandler:
                 reply_email,
             )
 
+            # notify user that their alias is used by unknown email
             send_reply_alias_must_use_personal_email(
                 forward_email.gen_email.user,
                 forward_email.gen_email.email,
                 envelope.mail_from,
             )
 
+            # notify sender that this is forbidden
             send_email(
                 envelope.mail_from,
                 f"Your email ({envelope.mail_from}) is not allowed to send email to {reply_email}",
@@ -338,7 +341,12 @@ class MailHandler:
         delete_header(msg, "DKIM-Signature")
 
         # the email comes from alias
-        msg.replace_header("From", alias)
+        if user.name:
+            # make sure there's no quote in user name
+            email_from_name = user.name.replace('"', "")
+            msg.replace_header("From", f'"{email_from_name}" <{alias}>')
+        else:
+            msg.replace_header("From", alias)
 
         # some email providers like ProtonMail adds automatically the Reply-To field
         # make sure to delete it
