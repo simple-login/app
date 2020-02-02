@@ -52,10 +52,16 @@ def send_activation_email(email, name, activation_link):
         email,
         f"Just one more step to join SimpleLogin {name}",
         _render(
-            "transactional/activation.txt", name=name, activation_link=activation_link, email=email
+            "transactional/activation.txt",
+            name=name,
+            activation_link=activation_link,
+            email=email,
         ),
         _render(
-            "transactional/activation.html", name=name, activation_link=activation_link, email=email
+            "transactional/activation.html",
+            name=name,
+            activation_link=activation_link,
+            email=email,
         ),
     )
 
@@ -65,10 +71,14 @@ def send_reset_password_email(email, name, reset_password_link):
         email,
         f"Reset your password on SimpleLogin",
         _render(
-            "transactional/reset-password.txt", name=name, reset_password_link=reset_password_link
+            "transactional/reset-password.txt",
+            name=name,
+            reset_password_link=reset_password_link,
         ),
         _render(
-            "transactional/reset-password.html", name=name, reset_password_link=reset_password_link
+            "transactional/reset-password.html",
+            name=name,
+            reset_password_link=reset_password_link,
         ),
     )
 
@@ -142,7 +152,10 @@ def send_cannot_create_domain_alias(user, alias, domain):
         user.email,
         f"Alias {alias} cannot be created",
         _render(
-            "transactional/cannot-create-alias-domain.txt", name=user.name, alias=alias, domain=domain
+            "transactional/cannot-create-alias-domain.txt",
+            name=user.name,
+            alias=alias,
+            domain=domain,
         ),
         _render(
             "transactional/cannot-create-alias-domain.html",
