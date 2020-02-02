@@ -8,7 +8,8 @@
       font-weight: 600;
       font-size: 14px;
     }
-    .btn-group-border-left{
+
+    .btn-group-border-left {
       border-left: 1px #fbfbfb4f solid;
     }
   </style>
@@ -19,7 +20,7 @@
 {% endblock %}
 
 {% block default_content %}
-  <div class="page-header row">
+  <div class="page-header row" style="margin-top: 0rem">
     <div class="col-lg-3 col-sm-12 p-0 mt-1">
       <form method="get">
         <input type="search" name="query" autofocus placeholder="Enter to search for alias" class="form-control shadow"
@@ -27,7 +28,7 @@
       </form>
     </div>
 
-    <div class="col-lg-4 offset-lg-5 pr-0 mt-1">
+    <div class="col-lg-5 offset-lg-4 pr-0 mt-1">
       <div class="btn-group float-right" role="group">
         <form method="post">
           <input type="hidden" name="form-name" value="create-custom-email">
@@ -73,9 +74,10 @@
     {% for alias_info in aliases %}
       {% set gen_email = alias_info.gen_email %}
 
-      <div class="col-md-6">
+      <div class="col-12 col-lg-6">
         <div class="card p-3 shadow-sm border-0 {% if alias_info.highlight %} highlight-row {% endif %}">
-          <div>
+          <div class="row">
+            <div class="col">
             <span class="clipboard cursor mb-0"
                 {% if loop.index ==1 %}
                   data-intro="This is an <em>alias</em>. <br><br>
@@ -97,7 +99,39 @@
                 </span>
               {% endif %}
             </span>
+            </div>
+            <div class="col text-right">
+              <form method="post">
+                <input type="hidden" name="form-name" value="switch-email-forwarding">
+                <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                <label class="custom-switch cursor"
+                       data-toggle="tooltip"
+                    {% if gen_email.enabled %}
+                       title="Block Alias"
+                    {% else %}
+                       title="Unblock Alias"
+                    {% endif %}
+
+                    {% if loop.index ==1 %}
+                       data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
+                           be forwarded to your inbox. <br><br>
+                           This should be used with care as others might
+                           not be able to reach you after ...
+                            "
+                       data-step="3"
+                    {% endif %}
+                       style="padding-left: 0px"
+                >
+                  <input type="hidden" name="alias" class="alias" value="{{ gen_email.email }}">
+                  <input type="checkbox" class="custom-switch-input"
+                      {{ "checked" if gen_email.enabled else "" }}>
+
+                  <span class="custom-switch-indicator"></span>
+                </label>
+              </form>
+            </div>
           </div>
+
           <hr class="my-2">
 
           <p class="small-text">
@@ -115,37 +149,6 @@
                class="btn btn-sm btn-link">
               See All Activity &nbsp;→
             </a>
-          </div>
-
-          <div>
-            <form method="post">
-              <input type="hidden" name="form-name" value="switch-email-forwarding">
-              <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
-              <label class="custom-switch cursor mt-2"
-                     data-toggle="tooltip"
-                  {% if gen_email.enabled %}
-                     title="Block Alias"
-                  {% else %}
-                     title="Unblock Alias"
-                  {% endif %}
-
-                  {% if loop.index ==1 %}
-                     data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
-                           be forwarded to your inbox. <br><br>
-                           This should be used with care as others might
-                           not be able to reach you after ...
-                            "
-                     data-step="3"
-                  {% endif %}
-                     style="padding-left: 0px"
-              >
-                <input type="hidden" name="alias" class="alias" value="{{ gen_email.email }}">
-                <input type="checkbox" class="custom-switch-input"
-                    {{ "checked" if gen_email.enabled else "" }}>
-
-                <span class="custom-switch-indicator"></span>
-              </label>
-            </form>
           </div>
 
           <div class="row mt-3">
