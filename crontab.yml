@@ -1,6 +1,12 @@
 jobs:
-  - name: SimpleLogin cronjob
-    command: python /code/cron.py
+  - name: SimpleLogin stats
+    command: python /code/cron.py -j stats
     shell: /bin/bash
     schedule: "0 0 * * *"
+    captureStderr: true
+
+  - name: SimpleLogin Notify Trial Ends
+    command: python /code/cron.py -j notify_trial_end
+    shell: /bin/bash
+    schedule: "0 8 * * *"
     captureStderr: true
