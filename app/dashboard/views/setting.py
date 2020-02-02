@@ -11,9 +11,7 @@ from wtforms import StringField, validators
 from app import s3, email_utils
 from app.config import URL
 from app.dashboard.base import dashboard_bp
-from app.email_utils import (
-    can_be_used_as_personal_email,
-)
+from app.email_utils import can_be_used_as_personal_email
 from app.extensions import db
 from app.log import LOG
 from app.models import (
