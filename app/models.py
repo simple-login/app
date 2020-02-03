@@ -10,7 +10,13 @@ from sqlalchemy import text, desc
 from sqlalchemy_utils import ArrowType
 
 from app import s3
-from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, URL, AVATAR_URL_EXPIRATION
+from app.config import (
+    EMAIL_DOMAIN,
+    MAX_NB_EMAIL_FREE_PLAN,
+    URL,
+    AVATAR_URL_EXPIRATION,
+    JOB_ONBOARDING_1,
+)
 from app.email_utils import get_email_name
 from app.extensions import db
 from app.log import LOG
@@ -142,6 +148,14 @@ class User(db.Model, ModelMixin, UserMixin):
 
         # create a first alias mail to show user how to use when they login
         GenEmail.create_new(user.id, prefix="my-first-alias")
+        db.session.flush()
+
+        # Schedule onboarding emails
+        Job.create(
+            name=JOB_ONBOARDING_1,
+            payload={"user_id": user.id},
+            run_at=arrow.now().shift(days=1),
+        )
         db.session.flush()
 
         return user

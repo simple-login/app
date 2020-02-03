@@ -6,9 +6,7 @@ import time
 
 import arrow
 
-from app.config import (
-    JOB_ONBOARDING_1,
-)
+from app.config import JOB_ONBOARDING_1
 from app.email_utils import (
     send_email,
     render,
