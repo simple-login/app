@@ -1,9 +1,13 @@
-Hi {{name}}
+This email is sent to {{ user.email }} and is part of our onboarding series.
+Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+----------------
+
+Hi {{user.name}}
 
 Do you know you can send an email to anyone from your alias?
-This below Youtube video walks you quickly through the steps, make sure to turn the caption on.
+This below Youtube video walks you quickly through the steps:
 
-https://www.youtube.com/watch?v=cZ-J_lwv-YQ&feature=youtu.be
+https://youtu.be/VsypF-DBaow
 
 Here are the steps:
 1. First click "Send Email" on your alias you want to send email from
@@ -11,11 +15,7 @@ Here are the steps:
 3. Use this reverse-alias instead of your contact email
 4. Your contact will receive this email from your alias.
 
-As usual, let me know if you have any question.
+As usual, let me know if you have any question by replying to this email.
 
 Best regards,
 Son - SimpleLogin founder.
-
----
-This email was sent to {email} and is part of our onboarding series.
-Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
