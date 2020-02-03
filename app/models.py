@@ -769,3 +769,17 @@ class Directory(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<Directory {self.name}>"
+
+
+class Job(db.Model, ModelMixin):
+    """Used to schedule one-time job in the future"""
+
+    name = db.Column(db.String(128), nullable=False)
+    payload = db.Column(db.JSON)
+
+    # whether the job has been taken by the job runner
+    taken = db.Column(db.Boolean, default=False, nullable=False)
+    run_at = db.Column(ArrowType)
+
+    def __repr__(self):
+        return f"<Job {self.id} {self.name} {self.payload}>"
