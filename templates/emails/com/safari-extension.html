@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("This email is sent to " + user.email + ".") }}
+
+  {{ render_text('Unsubscribe from our emails on <a href="https://app.simplelogin.io/dashboard/setting#notification">https://app.simplelogin.io/dashboard/setting#notification</a>') }}
+
+  {{ render_text("<hr>") }}
+
+  {{ render_text("Hi " + user.name) }}
+  {{ render_text("If you use Safari on a MacBook or iMac, you should check out our new Safari extension.") }}
+  {{ render_text('It can be installed on <a href="https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io">AppStore</a>.') }}
+
+  {{ render_text('<img src="https://static.simplelogin.io/safari-extension.png" style="max-width: 80%">') }}
+
+  {{ render_text("As usual, let me know if you have any question by replying to this email.") }}
+
+{% endblock %}
+
