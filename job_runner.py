@@ -37,6 +37,10 @@ def new_app():
 
 
 def onboarding_1(user):
+    if not user.notification:
+        LOG.d("User %s disable notification setting", user)
+        return
+
     send_email(
         user.email,
         f"Do you know you can send emails to anyone from your alias?",
