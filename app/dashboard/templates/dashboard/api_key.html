@@ -14,18 +14,22 @@
     <div class="col-md-8 offset-md-2">
       <h1 class="h3"> API Key </h1>
 
-      <p>
-        The API Key is used inside the SimpleLogin Chrome extension. You can install the extension
+      <div class="alert alert-primary" role="alert">
+        The API Key is used on the SimpleLogin Chrome/Firefox/Safari extension. <br>
+        You can install the Chrome extension on
         <a href="https://chrome.google.com/webstore/detail/simplelogin-extension/dphilobhebphkdjbpfohgikllaljmgbn"
-           target="_blank">
-          here <i class="fe fe-external-link"></i>
-        </a>.
+           target="_blank">Chrome Store<i class="fe fe-external-link"></i></a>,
+          Firefox add-on on <a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/" target="_blank">Firefox<i
+              class="fe fe-external-link"></i></a>
+          and Safari extension on <a
+              href="https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io"
+              target="_blank">AppStore<i class="fe fe-external-link"></i></a>
         <br>
-        Please copy and paste the API key below into the browser extension to get started. <br>
+        Please copy and paste the API key below into the extension to get started. <br>
         <span class="text-danger">
-          Your API Keys are secret and should be treated as passwords.
+          ⚠️Your API Keys are secret and should be treated as passwords.
         </span>
-      </p>
+      </div>
 
       {% for api_key in api_keys %}
         <div class="card" style="max-width: 50rem">

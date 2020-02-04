@@ -12,22 +12,12 @@
           </div>
         {% endif %}
 
-        <div class="dropdown d-none d-md-flex">
-          <a class="nav-link icon"
-             data-intro="Welcome to SimpleLogin! <br><br>
-  It seems that this is the first time you are here,
-  let's walk through some SimpleLogin features together! <br><br>
-             You can always show this tutorial again any time by clicking on this <i class='fe fe-help-circle'></i> icon above 👆"
-             onclick="startIntro()">
-            <i class="fe fe-help-circle"></i>
-          </a>
-        </div>
         <div class="dropdown">
           <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
             {% if current_user.profile_picture_id %}
               <span class="avatar" style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
             {% else %}
-              <span class="avatar avatar-blue">{{ current_user.get_name_initial() }}</span>
+              <span class="avatar avatar-blue">{{ current_user.get_name_initial() or "👻" }}</span>
             {% endif %}
 
             <span class="ml-2 d-none d-lg-block">
@@ -35,19 +25,16 @@
                 {{ current_user.name }}
               </span>
 
-              {% if current_user.is_premium() %}
+              {% if current_user.in_trial() %}
+                <small class="text-success d-block mt-1">Trial ends {{ current_user.trial_end|dt }}</small>
+              {% elif current_user.lifetime_or_active_subscription() %}
                 <small class="text-success d-block mt-1">Premium</small>
               {% endif %}
+
 						</span>
           </a>
 
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-            {% if current_user.is_premium() %}
-              <a class="dropdown-item" href="{{ url_for('dashboard.billing') }}">
-                <i class="dropdown-icon fe fe-dollar-sign"></i> Billing
-              </a>
-            {% endif %}
-
             <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
               <i class="dropdown-icon fe fe-log-out"></i> Sign out
             </a>

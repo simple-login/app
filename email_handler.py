@@ -31,23 +31,37 @@ It should contain the following info:
 
 """
 import time
-from email.message import EmailMessage
+from email.message import Message
 from email.parser import Parser
 from email.policy import SMTPUTF8
 from smtplib import SMTP
 
 from aiosmtpd.controller import Controller
 
-from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL
+from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL, ALIAS_DOMAINS
 from app.email_utils import (
     get_email_name,
     get_email_part,
     send_email,
     add_dkim_signature,
+    get_email_domain_part,
+    add_or_replace_header,
+    delete_header,
+    send_cannot_create_directory_alias,
+    send_cannot_create_domain_alias,
+    email_belongs_to_alias_domains,
+    send_reply_alias_must_use_personal_email,
 )
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ForwardEmail, ForwardEmailLog, CustomDomain
+from app.models import (
+    GenEmail,
+    ForwardEmail,
+    ForwardEmailLog,
+    CustomDomain,
+    Directory,
+    User,
+)
 from app.utils import random_string
 from server import create_app
 
@@ -84,11 +98,11 @@ class MailHandler:
         smtp = SMTP(POSTFIX_SERVER, 25)
         msg = Parser(policy=SMTPUTF8).parsestr(message_data)
 
+        rcpt_to = envelope.rcpt_tos[0].lower()
+
         # Reply case
         # reply+ or ra+ (reverse-alias) prefix
-        if envelope.rcpt_tos[0].startswith("reply+") or envelope.rcpt_tos[0].startswith(
-            "ra+"
-        ):
+        if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
             LOG.debug("Reply phase")
             app = new_app()
 
@@ -101,14 +115,89 @@ class MailHandler:
             with app.app_context():
                 return self.handle_forward(envelope, smtp, msg)
 
-    def handle_forward(self, envelope, smtp: SMTP, msg: EmailMessage) -> str:
+    def handle_forward(self, envelope, smtp: SMTP, msg: Message) -> str:
         """return *status_code message*"""
-        alias = envelope.rcpt_tos[0]  # alias@SL
+        alias = envelope.rcpt_tos[0].lower()  # alias@SL
 
         gen_email = GenEmail.get_by(email=alias)
         if not gen_email:
-            LOG.d("alias %s not exist")
-            return "510 Email not exist"
+            LOG.d(
+                "alias %s not exist. Try to see if it can be created on the fly", alias
+            )
+
+            # try to see if alias could be created on-the-fly
+            on_the_fly = False
+
+            # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
+            if email_belongs_to_alias_domains(alias):
+                if "/" in alias or "+" in alias or "#" in alias:
+                    if "/" in alias:
+                        sep = "/"
+                    elif "+" in alias:
+                        sep = "+"
+                    else:
+                        sep = "#"
+
+                    directory_name = alias[: alias.find(sep)]
+                    LOG.d("directory_name %s", directory_name)
+
+                    directory = Directory.get_by(name=directory_name)
+
+                    # Only premium user can use the directory feature
+                    if directory:
+                        dir_user: User = directory.user
+                        if dir_user.can_create_new_alias():
+                            LOG.d("create alias %s for directory %s", alias, directory)
+                            on_the_fly = True
+
+                            gen_email = GenEmail.create(
+                                email=alias,
+                                user_id=directory.user_id,
+                                directory_id=directory.id,
+                            )
+                            db.session.commit()
+                        else:
+                            LOG.error(
+                                "User %s is not premium anymore and cannot create alias with directory",
+                                dir_user,
+                            )
+                            send_cannot_create_directory_alias(
+                                dir_user, alias, directory_name
+                            )
+
+            # try to create alias on-the-fly with custom-domain catch-all feature
+            # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
+            if not on_the_fly:
+                alias_domain = get_email_domain_part(alias)
+                custom_domain = CustomDomain.get_by(domain=alias_domain)
+
+                # Only premium user can continue using the catch-all feature
+                if custom_domain and custom_domain.catch_all:
+                    domain_user: User = custom_domain.user
+                    if domain_user.can_create_new_alias():
+                        LOG.d("create alias %s for domain %s", alias, custom_domain)
+                        on_the_fly = True
+
+                        gen_email = GenEmail.create(
+                            email=alias,
+                            user_id=custom_domain.user_id,
+                            custom_domain_id=custom_domain.id,
+                            automatic_creation=True,
+                        )
+                        db.session.commit()
+                    else:
+                        LOG.error(
+                            "User %s is not premium anymore and cannot create alias with domain %s",
+                            domain_user,
+                            alias_domain,
+                        )
+                        send_cannot_create_domain_alias(
+                            domain_user, alias, alias_domain
+                        )
+
+            if not on_the_fly:
+                LOG.d("alias %s cannot be created on-the-fly, return 510", alias)
+                return "510 Email not exist"
 
         user_email = gen_email.user.email
 
@@ -117,7 +206,13 @@ class MailHandler:
         forward_email = ForwardEmail.get_by(
             gen_email_id=gen_email.id, website_email=website_email
         )
-        if not forward_email:
+        if forward_email:
+            # update the From header if needed
+            if forward_email.website_from != msg["From"]:
+                LOG.d("Update From header for %s", forward_email)
+                forward_email.website_from = msg["From"]
+                db.session.commit()
+        else:
             LOG.debug(
                 "create forward email for alias %s and website email %s",
                 alias,
@@ -146,16 +241,14 @@ class MailHandler:
             add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
 
             # remove reply-to header if present
-            if msg["Reply-To"]:
-                LOG.d("Delete reply-to header %s", msg["Reply-To"])
-                del msg["Reply-To"]
+            delete_header(msg, "Reply-To")
 
             # change the from header so the sender comes from @SL
             # so it can pass DMARC check
             # replace the email part in from: header
             from_header = (
                 get_email_name(msg["From"])
-                + " - "
+                + ("" if get_email_name(msg["From"]) == "" else " - ")
                 + website_email.replace("@", " at ")
                 + f" <{forward_email.reply_email}>"
             )
@@ -196,29 +289,41 @@ class MailHandler:
         db.session.commit()
         return "250 Message accepted for delivery"
 
-    def handle_reply(self, envelope, smtp: SMTP, msg: EmailMessage) -> str:
-        reply_email = envelope.rcpt_tos[0]
+    def handle_reply(self, envelope, smtp: SMTP, msg: Message) -> str:
+        reply_email = envelope.rcpt_tos[0].lower()
 
         # reply_email must end with EMAIL_DOMAIN
         if not reply_email.endswith(EMAIL_DOMAIN):
-            LOG.error(f"Reply email {reply_email} has wrong domain")
+            LOG.warning(f"Reply email {reply_email} has wrong domain")
             return "550 wrong reply email"
 
         forward_email = ForwardEmail.get_by(reply_email=reply_email)
-        alias: str = forward_email.gen_email.email
+        if not forward_email:
+            LOG.warning(f"No such forward-email with {reply_email} as reply-email")
+            return "550 wrong reply email"
 
-        # alias must end with EMAIL_DOMAIN or custom-domain
+        alias: str = forward_email.gen_email.email
         alias_domain = alias[alias.find("@") + 1 :]
-        if alias_domain != EMAIL_DOMAIN:
+
+        # alias must end with one of the ALIAS_DOMAINS or custom-domain
+        if not email_belongs_to_alias_domains(alias):
             if not CustomDomain.get_by(domain=alias_domain):
                 return "550 alias unknown by SimpleLogin"
 
         user_email = forward_email.gen_email.user.email
-        if envelope.mail_from != user_email:
-            LOG.error(
-                f"Reply email can only be used by user email. Actual mail_from: %s. User email %s",
+        if envelope.mail_from.lower() != user_email.lower():
+            LOG.warning(
+                f"Reply email can only be used by user email. Actual mail_from: %s. msg from header: %s, User email %s. reply_email %s",
                 envelope.mail_from,
+                msg["From"],
                 user_email,
+                reply_email,
+            )
+
+            send_reply_alias_must_use_personal_email(
+                forward_email.gen_email.user,
+                forward_email.gen_email.email,
+                envelope.mail_from,
             )
 
             send_email(
@@ -228,15 +333,17 @@ class MailHandler:
                 "",
             )
 
-            return "250 ignored"
+            return "550 ignored"
 
-        # remove DKIM-Signature
-        if msg["DKIM-Signature"]:
-            LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
-            del msg["DKIM-Signature"]
+        delete_header(msg, "DKIM-Signature")
 
-        # email seems to come from alias
+        # the email comes from alias
         msg.replace_header("From", alias)
+
+        # some email providers like ProtonMail adds automatically the Reply-To field
+        # make sure to delete it
+        delete_header(msg, "Reply-To")
+
         msg.replace_header("To", forward_email.website_email)
 
         # add List-Unsubscribe header
@@ -246,6 +353,9 @@ class MailHandler:
             msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
         )
 
+        # Received-SPF is injected by postfix-policyd-spf-python can reveal user original email
+        delete_header(msg, "Received-SPF")
+
         LOG.d(
             "send email from %s to %s, mail_options:%s,rcpt_options:%s",
             alias,
@@ -254,9 +364,9 @@ class MailHandler:
             envelope.rcpt_options,
         )
 
-        if alias_domain == EMAIL_DOMAIN:
-            add_dkim_signature(msg, EMAIL_DOMAIN)
-        # add DKIM-Signature for non-custom-domain alias
+        if alias_domain in ALIAS_DOMAINS:
+            add_dkim_signature(msg, alias_domain)
+        # add DKIM-Signature for custom-domain alias
         else:
             custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain.dkim_verified:
@@ -275,14 +385,6 @@ class MailHandler:
         db.session.commit()
 
         return "250 Message accepted for delivery"
-
-
-def add_or_replace_header(msg: EmailMessage, header: str, value: str):
-    try:
-        msg.add_header(header, value)
-    except ValueError:
-        # the header exists already
-        msg.replace_header(header, value)
 
 
 if __name__ == "__main__":

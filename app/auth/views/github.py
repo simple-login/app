@@ -1,11 +1,12 @@
-from flask import request, session, redirect, flash
+from flask import request, session, redirect, flash, url_for
 from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 
 from app import email_utils
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
-from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
+from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL, DISABLE_REGISTRATION
+from app.email_utils import can_be_used_as_personal_email
 from app.extensions import db
 from app.log import LOG
 from app.models import User
@@ -84,13 +85,23 @@ def github_callback():
 
     # create user
     if not user:
+        if DISABLE_REGISTRATION:
+            flash("Registration is closed", "error")
+            return redirect(url_for("auth.login"))
+
+        if not can_be_used_as_personal_email(email):
+            flash(
+                f"You cannot use {email} as your personal inbox.", "error",
+            )
+            return redirect(url_for("auth.login"))
+
         LOG.d("create github user")
         user = User.create(
-            email=email, name=github_user_data.get("name") or "", activated=True
+            email=email.lower(), name=github_user_data.get("name") or "", activated=True
         )
         db.session.commit()
         login_user(user)
-        email_utils.send_welcome_email(user.email, user.name)
+        email_utils.send_welcome_email(user)
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 

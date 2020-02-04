@@ -41,7 +41,7 @@ def activate():
     user = activation_code.user
     user.activated = True
     login_user(user)
-    email_utils.send_welcome_email(user.email, user.name)
+    email_utils.send_welcome_email(user)
 
     # activation code is to be used only once
     ActivationCode.delete(activation_code.id)

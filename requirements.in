@@ -33,3 +33,4 @@ pycryptodome
 phpserialize
 dkimpy
 pyotp
+flask_profiler

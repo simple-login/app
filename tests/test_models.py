@@ -28,10 +28,16 @@ def test_profile_picture_url(flask_client):
     assert user.profile_picture_url() == "http://sl.test/static/default-avatar.png"
 
 
-def test_suggested_emails_for_user_who_cannot_create_new_email(flask_client):
+def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
+    # make sure user is not in trial
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        trial_end=None,
     )
+
     db.session.commit()
 
     # make sure user runs out of quota to create new email

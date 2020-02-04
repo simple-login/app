@@ -1,0 +1,26 @@
+{
+  "name": "simplelogin",
+  "version": "1.0.0",
+  "description": "Open source email alias solution",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simple-login/app.git"
+  },
+  "keywords": [
+    "email-alias"
+  ],
+  "author": "SimpleLogin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/simple-login/app/issues"
+  },
+  "homepage": "https://github.com/simple-login/app#readme",
+  "dependencies": {
+    "@sentry/browser": "^5.12.0",
+    "font-awesome": "^4.7.0",
+    "intro.js": "^2.9.3",
+    "notie": "^4.3.1",
+    "qrious": "^4.0.2",
+    "toastr": "^2.1.4"
+  }
+}

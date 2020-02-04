@@ -1,11 +1,9 @@
-from dataclasses import dataclass
-
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
-from app.config import HIGHLIGHT_GEN_EMAIL_ID
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -19,7 +17,6 @@ from app.models import (
 )
 
 
-@dataclass
 class AliasInfo:
     gen_email: GenEmail
     nb_forward: int
@@ -29,18 +26,18 @@ class AliasInfo:
     show_intro_test_send_email: bool = False
     highlight: bool = False
 
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    # after creating a gen email, it's helpful to highlight it
-    highlight_gen_email_id = session.get(HIGHLIGHT_GEN_EMAIL_ID)
-
-    # reset as it should not persist
-    if highlight_gen_email_id:
-        del session[HIGHLIGHT_GEN_EMAIL_ID]
-
     query = request.args.get("query") or ""
+    highlight_gen_email_id = None
+    if request.args.get("highlight_gen_email_id"):
+        highlight_gen_email_id = int(request.args.get("highlight_gen_email_id"))
 
     # User generates a new email
     if request.method == "POST":
@@ -76,7 +73,14 @@ def index():
 
                 LOG.d("generate new email %s for user %s", gen_email, current_user)
                 flash(f"Alias {gen_email.email} has been created", "success")
-                session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
+
+                return redirect(
+                    url_for(
+                        "dashboard.index",
+                        highlight_gen_email_id=gen_email.id,
+                        query=query,
+                    )
+                )
             else:
                 flash(f"You need to upgrade your plan to create new alias.", "warning")
 
@@ -92,8 +96,12 @@ def index():
             else:
                 flash(f"Alias {gen_email.email} is disabled", "warning")
 
-            session[HIGHLIGHT_GEN_EMAIL_ID] = gen_email.id
             db.session.commit()
+            return redirect(
+                url_for(
+                    "dashboard.index", highlight_gen_email_id=gen_email.id, query=query
+                )
+            )
 
         elif request.form.get("form-name") == "delete-email":
             gen_email_id = request.form.get("gen-email-id")
@@ -102,12 +110,17 @@ def index():
             LOG.d("delete gen email %s", gen_email)
             email = gen_email.email
             GenEmail.delete(gen_email.id)
-
-            # save deleted alias
-            DeletedAlias.create(user_id=current_user.id, email=gen_email.email)
-
             db.session.commit()
             flash(f"Alias {email} has been deleted", "success")
+
+            # try to save deleted alias
+            try:
+                DeletedAlias.create(user_id=current_user.id, email=email)
+                db.session.commit()
+            # this can happen when a previously deleted alias is re-created via catch-all or directory feature
+            except IntegrityError:
+                LOG.error("alias %s has been added before to DeletedAlias", email)
+                db.session.rollback()
 
         return redirect(url_for("dashboard.index", query=query))
 
@@ -135,10 +148,14 @@ def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasIn
         query = query.strip().lower()
 
     aliases = {}  # dict of alias and AliasInfo
-    q = db.session.query(GenEmail, ForwardEmail, ForwardEmailLog).filter(
-        GenEmail.user_id == user_id,
-        GenEmail.id == ForwardEmail.gen_email_id,
-        ForwardEmail.id == ForwardEmailLog.forward_id,
+    q = (
+        db.session.query(GenEmail, ForwardEmail, ForwardEmailLog)
+        .filter(
+            GenEmail.user_id == user_id,
+            GenEmail.id == ForwardEmail.gen_email_id,
+            ForwardEmail.id == ForwardEmailLog.forward_id,
+        )
+        .order_by(GenEmail.created_at.desc())
     )
 
     if query:
@@ -167,7 +184,7 @@ def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasIn
         db.session.query(GenEmail)
         .filter(GenEmail.email.notin_(aliases.keys()))
         .filter(GenEmail.user_id == user_id)
-    )
+    ).order_by(GenEmail.created_at.desc())
 
     if query:
         q = q.filter(GenEmail.email.contains(query))

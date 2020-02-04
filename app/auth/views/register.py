@@ -3,9 +3,10 @@ from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app import email_utils
+from app import email_utils, config
 from app.auth.base import auth_bp
-from app.config import URL, EMAIL_DOMAIN
+from app.config import URL, DISABLE_REGISTRATION
+from app.email_utils import can_be_used_as_personal_email
 from app.extensions import db
 from app.log import LOG
 from app.models import User, ActivationCode
@@ -17,7 +18,6 @@ class RegisterForm(FlaskForm):
     password = StringField(
         "Password", validators=[validators.DataRequired(), validators.Length(min=8)]
     )
-    name = StringField("Name", validators=[validators.DataRequired()])
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -27,32 +27,32 @@ def register():
         flash("You are already logged in", "warning")
         return redirect(url_for("dashboard.index"))
 
+    if config.DISABLE_REGISTRATION:
+        flash("Registration is closed", "error")
+        return redirect(url_for("auth.login"))
+
     form = RegisterForm(request.form)
     next_url = request.args.get("next")
 
     if form.validate_on_submit():
-        email = form.email.data
-
-        if email.endswith(EMAIL_DOMAIN):
+        email = form.email.data.lower()
+        if not can_be_used_as_personal_email(email):
             flash(
-                "You cannot use alias as your personal inbox. Nice try though 😉",
-                "error",
+                "You cannot use this email address as your personal inbox.", "error",
             )
-
-        user = User.filter_by(email=email).first()
-
-        if user:
-            flash(f"Email {form.email.data} already exists", "warning")
         else:
-            LOG.debug("create user %s", form.email.data)
-            user = User.create(
-                email=form.email.data, name=form.name.data, password=form.password.data
-            )
-            db.session.commit()
+            user = User.get_by(email=email)
 
-            send_activation_email(user, next_url)
+            if user:
+                flash(f"Email {email} already used", "error")
+            else:
+                LOG.debug("create user %s", form.email.data)
+                user = User.create(email=email, name="", password=form.password.data,)
+                db.session.commit()
 
-            return render_template("auth/register_waiting_activation.html")
+                send_activation_email(user, next_url)
+
+                return render_template("auth/register_waiting_activation.html")
 
     return render_template("auth/register.html", form=form, next_url=next_url)
 

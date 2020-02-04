@@ -1,9 +1,0 @@
-Welcome {{name}} 🎉!
-
-I really appreciate you signing up for SimpleLogin, and I'm sure you'll love it when you see how *simple* it is to use.
-
-We built SimpleLogin to help people protecting their online identity, and I hope that we can achieve that for you.
-
-Thanks.
-
-Son - SimpleLogin founder.

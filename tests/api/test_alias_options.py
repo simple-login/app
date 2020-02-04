@@ -27,7 +27,8 @@ def test_different_scenarios(flask_client):
     assert r.status_code == 200
     assert r.json["can_create_custom"]
     assert len(r.json["existing"]) == 1
-    assert r.json["custom"]["suffixes"]
+    assert len(r.json["custom"]["suffixes"]) == 3
+
     assert r.json["custom"]["suggestion"] == ""  # no hostname => no suggestion
 
     # <<< with hostname >>>
@@ -46,6 +47,51 @@ def test_different_scenarios(flask_client):
 
     r = flask_client.get(
         url_for("api.options", hostname="www.test.com"),
+        headers={"Authentication": api_key.code},
+    )
+    assert r.json["recommendation"]["alias"] == alias.email
+    assert r.json["recommendation"]["hostname"] == "www.test.com"
+
+
+def test_different_scenarios_v2(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    # <<< without hostname >>>
+    r = flask_client.get(
+        url_for("api.options_v2"), headers={"Authentication": api_key.code}
+    )
+
+    assert r.status_code == 200
+    # {'can_create': True, 'existing': ['my-first-alias.chat@sl.local'], 'prefix_suggestion': '', 'suffixes': ['.meo@sl.local']}
+
+    assert r.json["can_create"]
+    assert len(r.json["existing"]) == 1
+    assert r.json["suffixes"]
+    assert r.json["prefix_suggestion"] == ""  # no hostname => no suggestion
+
+    # <<< with hostname >>>
+    r = flask_client.get(
+        url_for("api.options_v2", hostname="www.test.com"),
+        headers={"Authentication": api_key.code},
+    )
+
+    assert r.json["prefix_suggestion"] == "test"
+
+    # <<< with recommendation >>>
+    alias = GenEmail.create_new(user.id, prefix="test")
+    db.session.commit()
+    AliasUsedOn.create(gen_email_id=alias.id, hostname="www.test.com")
+    db.session.commit()
+
+    r = flask_client.get(
+        url_for("api.options_v2", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
     )
     assert r.json["recommendation"]["alias"] == alias.email

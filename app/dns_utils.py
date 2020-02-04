@@ -1,22 +1,31 @@
 import dns.resolver
 
 
-def get_mx_domains(hostname, keep_priority=False) -> [str]:
-    """return list of (domain name). priority is also included if `keep_priority`
+def _get_dns_resolver():
+    my_resolver = dns.resolver.Resolver()
+
+    # 1.1.1.1 is CloudFlare's public DNS server
+    my_resolver.nameservers = ["1.1.1.1"]
+
+    return my_resolver
+
+
+def get_mx_domains(hostname) -> [(int, str)]:
+    """return list of (priority, domain name).
+    domain name ends with a "." at the end.
     """
     try:
-        answers = dns.resolver.query(hostname, "MX")
-    except dns.resolver.NoAnswer:
+        answers = _get_dns_resolver().query(hostname, "MX")
+    except Exception:
         return []
 
     ret = []
 
     for a in answers:
         record = a.to_text()  # for ex '20 alt2.aspmx.l.google.com.'
-        if not keep_priority:
-            record = record.split(" ")[1]  # alt2.aspmx.l.google.com.
+        parts = record.split(" ")
 
-        ret.append(record)
+        ret.append((int(parts[0]), parts[1]))
 
     return ret
 
@@ -27,8 +36,8 @@ _include_spf = "include:"
 def get_spf_domain(hostname) -> [str]:
     """return all domains listed in *include:*"""
     try:
-        answers = dns.resolver.query(hostname, "TXT")
-    except dns.resolver.NoAnswer:
+        answers = _get_dns_resolver().query(hostname, "TXT")
+    except Exception:
         return []
 
     ret = []
@@ -48,17 +57,14 @@ def get_spf_domain(hostname) -> [str]:
 
 def get_txt_record(hostname) -> [str]:
     try:
-        answers = dns.resolver.query(hostname, "TXT")
-    except dns.resolver.NoAnswer:
+        answers = _get_dns_resolver().query(hostname, "TXT")
+    except Exception:
         return []
 
     ret = []
 
     for a in answers:  # type: dns.rdtypes.ANY.TXT.TXT
-        for record in a.strings:
-            record = record.decode()  # record is bytes
-
-            ret.append(a)
+        ret.append(a)
 
     return ret
 
@@ -66,8 +72,8 @@ def get_txt_record(hostname) -> [str]:
 def get_dkim_record(hostname) -> str:
     """query the dkim._domainkey.{hostname} record and returns its value"""
     try:
-        answers = dns.resolver.query(f"dkim._domainkey.{hostname}", "TXT")
-    except dns.resolver.NoAnswer:
+        answers = _get_dns_resolver().query(f"dkim._domainkey.{hostname}", "TXT")
+    except Exception:
         return ""
 
     ret = []

@@ -22,7 +22,7 @@
     {% block title %}{% endblock %} | SimpleLogin
   </title>
 
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='node_modules/font-awesome/css/font-awesome.css') }}">
 
   <!-- Dashboard Core -->
   <link href="/static/assets/css/dashboard.css" rel="stylesheet"/>
@@ -43,21 +43,24 @@
   <script src="/static/vendor/clipboard.min.js"></script>
 
   <!-- Notie -->
-  <link rel="stylesheet" type="text/css" href="https://unpkg.com/notie/dist/notie.min.css">
-  <script src="/static/vendor/notie.min.js"></script>
+  <link rel="stylesheet" type="text/css"
+        href="{{ url_for('static', filename='node_modules/notie/dist/notie.min.css') }}">
+  <script src="{{ url_for('static', filename='node_modules/notie/dist/notie.min.js') }}"></script>
 
   <!-- IntroJS -->
-  <link rel="stylesheet" type="text/css" href="/static/vendor/introjs.min.css">
-  <script src="/static/vendor/intro.min.js"></script>
+  <link rel="stylesheet" type="text/css"
+        href="{{ url_for('static', filename='node_modules/intro.js/minified/introjs.min.css') }}">
+  <script src="{{ url_for('static', filename='node_modules/intro.js/minified/intro.min.js') }}"></script>
 
   <!-- Sentry -->
-  <script src="https://browser.sentry-cdn.com/5.4.3/bundle.min.js" crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='node_modules/@sentry/browser/build/bundle.min.js') }}">
+  </script>
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/4.12.0/bootstrap-social.min.css">
+  <link rel="stylesheet" href="/static/vendor/bootstrap-social.min.css">
 
   <!-- Toastr library -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.css') }}">
+  <script src="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.js') }}"></script>
 
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
 
@@ -93,7 +96,50 @@
   {% if SENTRY_DSN %}
     console.log("Init sentry");
     try {
-      Sentry.init({dsn: '{{SENTRY_DSN}}'});
+      Sentry.init({
+        dsn: '{{SENTRY_DSN}}',
+        // https://docs.sentry.io/platforms/javascript/#filter-events--custom-logic
+        // Original gist https://gist.github.com/impressiver/5092952
+        ignoreErrors: [
+          // Random plugins/extensions
+          'top.GLOBALS',
+          // See: http://blog.errorception.com/2012/03/tale-of-unfindable-js-error.html
+          'originalCreateNotification',
+          'canvas.contentDocument',
+          'MyApp_RemoveAllHighlights',
+          'http://tt.epicplay.com',
+          'Can\'t find variable: ZiteReader',
+          'jigsaw is not defined',
+          'ComboSearch is not defined',
+          'http://loading.retry.widdit.com/',
+          'atomicFindClose',
+          // Facebook borked
+          'fb_xd_fragment',
+          // ISP "optimizing" proxy - `Cache-Control: no-transform` seems to
+          // reduce this. (thanks @acdha)
+          // See http://stackoverflow.com/questions/4113268
+          'bmi_SafeAddOnload',
+          'EBCallBackMessageReceived',
+          // See http://toolbar.conduit.com/Developer/HtmlAndGadget/Methods/JSInjection.aspx
+          'conduitPage'
+        ],
+        blacklistUrls: [
+          // Facebook flakiness
+          /graph\.facebook\.com/i,
+          // Facebook blocked
+          /connect\.facebook\.net\/en_US\/all\.js/i,
+          // Woopra flakiness
+          /eatdifferent\.com\.woopra-ns\.com/i,
+          /static\.woopra\.com\/js\/woopra\.js/i,
+          // Chrome extensions
+          /extensions\//i,
+          /^chrome:\/\//i,
+          // Other plugins
+          /127\.0\.0\.1:4001\/isrunning/i,  // Cacaoweb
+          /webappstoolbarba\.texthelp\.com\//i,
+          /metrics\.itunes\.apple\.com\.edgesuite\.net\//i
+        ]
+      });
     } catch (error) {
       console.log("Sentry error, probably due to AdBlocker ...")
     }
@@ -127,6 +173,31 @@
 <!-- For additional script -->
 {% block script %}
 {% endblock %}
+
+<script>
+  (function () {
+    // only enable on prod
+    if (!window.location.host.endsWith('simplelogin.io')) {
+      console.log("GoatCounter should only be enabled in prod");
+      return;
+    }
+
+    if (localStorage.getItem('goatcounter-ignore') === 't') {
+      console.log("GoatCounter is disabled");
+      return;
+    }
+
+    console.log("init GoatCounter");
+
+    var script = document.createElement('script');
+    window.counter = 'https://app.goatcounter.com/count'
+    script.async = 1;
+    script.src = '//gc.zgo.at/count.js';
+
+    var ins = document.getElementsByTagName('script')[0];
+    ins.parentNode.insertBefore(script, ins)
+  })();
+</script>
 
 </body>
 </html>

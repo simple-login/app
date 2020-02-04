@@ -6,11 +6,17 @@ from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 from app import email_utils
 from app.auth.base import auth_bp
 from app.auth.views.google import create_file_from_url
-from app.config import URL, FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET
+from app.config import (
+    URL,
+    FACEBOOK_CLIENT_ID,
+    FACEBOOK_CLIENT_SECRET,
+    DISABLE_REGISTRATION,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import User
 from .login_utils import after_login
+from ...email_utils import can_be_used_as_personal_email
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"
@@ -102,8 +108,20 @@ def facebook_callback():
 
     # create user
     else:
+        if DISABLE_REGISTRATION:
+            flash("Registration is closed", "error")
+            return redirect(url_for("auth.login"))
+
+        if not can_be_used_as_personal_email(email):
+            flash(
+                f"You cannot use {email} as your personal inbox.", "error",
+            )
+            return redirect(url_for("auth.login"))
+
         LOG.d("create facebook user with %s", facebook_user_data)
-        user = User.create(email=email, name=facebook_user_data["name"], activated=True)
+        user = User.create(
+            email=email.lower(), name=facebook_user_data["name"], activated=True
+        )
 
         if picture_url:
             LOG.d("set user profile picture to %s", picture_url)
@@ -112,7 +130,7 @@ def facebook_callback():
 
         db.session.commit()
         login_user(user)
-        email_utils.send_welcome_email(user.email, user.name)
+        email_utils.send_welcome_email(user)
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
 

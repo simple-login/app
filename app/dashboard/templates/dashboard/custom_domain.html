@@ -13,6 +13,18 @@
     <div class="col-md-8 offset-md-2">
       <h1 class="h3"> Custom Domains </h1>
 
+      {% if not current_user.is_premium() %}
+        <div class="alert alert-danger" role="alert">
+          This feature is only available in premium plan.
+        </div>
+      {% endif %}
+
+      <div class="alert alert-primary" role="alert">
+        If you own a domain, let's say <b>example.com</b>, you will be able to create aliases with this domain, for example
+        contact@example.com, help@example.com, etc with SimpleLogin. <br>
+        You could also enable <b>catch-all</b> feature that allows you to create aliases on-the-fly.
+      </div>
+
       {% for custom_domain in custom_domains %}
         <div class="card" style="max-width: 50rem">
           <div class="card-body">
@@ -21,7 +33,11 @@
               {% if custom_domain.verified %}
                 <span class="cursor" data-toggle="tooltip" data-original-title="Domain Verified">✅</span>
               {% else %}
-                <span class="cursor" data-toggle="tooltip" data-original-title="Domain Not Verified">🚫 </span>
+                <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup Needed">
+                  <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
+                     class="text-decoration-none">🚫
+                  </a>
+                </span>
               {% endif %}
             </h5>
             <h6 class="card-subtitle mb-2 text-muted">

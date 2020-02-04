@@ -13,8 +13,8 @@ from app.dashboard.base import dashboard_bp
 @dashboard_bp.route("/pricing", methods=["GET", "POST"])
 @login_required
 def pricing():
-    # sanity check: make sure this page is only for free user
-    if current_user.is_premium():
+    # sanity check: make sure this page is only for free or trial user
+    if not current_user.should_upgrade():
         flash("You are already a premium user", "warning")
         return redirect(url_for("dashboard.index"))
 

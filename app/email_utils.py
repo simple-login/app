@@ -1,5 +1,5 @@
 import os
-from email.message import EmailMessage
+from email.message import EmailMessage, Message
 from email.utils import make_msgid, formatdate
 from smtplib import SMTP
 
@@ -14,11 +14,13 @@ from app.config import (
     DKIM_SELECTOR,
     DKIM_PRIVATE_KEY,
     DKIM_HEADERS,
+    ALIAS_DOMAINS,
+    SUPPORT_NAME,
 )
 from app.log import LOG
 
 
-def _render(template_name, **kwargs) -> str:
+def render(template_name, **kwargs) -> str:
     templates_dir = os.path.join(ROOT_DIR, "templates", "emails")
     env = Environment(loader=FileSystemLoader(templates_dir))
 
@@ -27,24 +29,39 @@ def _render(template_name, **kwargs) -> str:
     return template.render(**kwargs)
 
 
-def send_welcome_email(email, name):
+def send_welcome_email(user):
     send_email(
-        email,
-        f"{name}, welcome to SimpleLogin!",
-        _render("welcome.txt", name=name),
-        _render("welcome.html", name=name),
+        user.email,
+        f"Welcome to SimpleLogin {user.name}",
+        render("com/welcome.txt", name=user.name, user=user),
+        render("com/welcome.html", name=user.name, user=user),
+    )
+
+
+def send_trial_end_soon_email(user):
+    send_email(
+        user.email,
+        f"Your trial will end soon {user.name}",
+        render("transactional/trial-end.txt", name=user.name, user=user),
+        render("transactional/trial-end.html", name=user.name, user=user),
     )
 
 
 def send_activation_email(email, name, activation_link):
     send_email(
         email,
-        f"{name}, just one more step to join SimpleLogin",
-        _render(
-            "activation.txt", name=name, activation_link=activation_link, email=email
+        f"Just one more step to join SimpleLogin {name}",
+        render(
+            "transactional/activation.txt",
+            name=name,
+            activation_link=activation_link,
+            email=email,
         ),
-        _render(
-            "activation.html", name=name, activation_link=activation_link, email=email
+        render(
+            "transactional/activation.html",
+            name=name,
+            activation_link=activation_link,
+            email=email,
         ),
     )
 
@@ -52,12 +69,16 @@ def send_activation_email(email, name, activation_link):
 def send_reset_password_email(email, name, reset_password_link):
     send_email(
         email,
-        f"{name}, reset your password on SimpleLogin",
-        _render(
-            "reset-password.txt", name=name, reset_password_link=reset_password_link
+        f"Reset your password on SimpleLogin",
+        render(
+            "transactional/reset-password.txt",
+            name=name,
+            reset_password_link=reset_password_link,
         ),
-        _render(
-            "reset-password.html", name=name, reset_password_link=reset_password_link
+        render(
+            "transactional/reset-password.html",
+            name=name,
+            reset_password_link=reset_password_link,
         ),
     )
 
@@ -65,16 +86,16 @@ def send_reset_password_email(email, name, reset_password_link):
 def send_change_email(new_email, current_email, name, link):
     send_email(
         new_email,
-        f"{name}, confirm email update on SimpleLogin",
-        _render(
-            "change-email.txt",
+        f"Confirm email update on SimpleLogin",
+        render(
+            "transactional/change-email.txt",
             name=name,
             link=link,
             new_email=new_email,
             current_email=current_email,
         ),
-        _render(
-            "change-email.html",
+        render(
+            "transactional/change-email.html",
             name=name,
             link=link,
             new_email=new_email,
@@ -86,18 +107,87 @@ def send_change_email(new_email, current_email, name, link):
 def send_new_app_email(email, name):
     send_email(
         email,
-        f"{name}, any question/feedback for SimpleLogin?",
-        _render("new-app.txt", name=name),
-        _render("new-app.html", name=name),
+        f"Any question/feedback for SimpleLogin {name}?",
+        render("com/new-app.txt", name=name),
+        render("com/new-app.html", name=name),
     )
 
 
 def send_test_email_alias(email, name):
     send_email(
         email,
-        f"{name}, this email is sent to {email}",
-        _render("test-email.txt", name=name, alias=email),
-        _render("test-email.html", name=name, alias=email),
+        f"This email is sent to {email}",
+        render("transactional/test-email.txt", name=name, alias=email),
+        render("transactional/test-email.html", name=name, alias=email),
+    )
+
+
+def send_cannot_create_directory_alias(user, alias, directory):
+    """when user cancels their subscription, they cannot create alias on the fly.
+    If this happens, send them an email to notify
+    """
+    send_email(
+        user.email,
+        f"Alias {alias} cannot be created",
+        render(
+            "transactional/cannot-create-alias-directory.txt",
+            name=user.name,
+            alias=alias,
+            directory=directory,
+        ),
+        render(
+            "transactional/cannot-create-alias-directory.html",
+            name=user.name,
+            alias=alias,
+            directory=directory,
+        ),
+    )
+
+
+def send_cannot_create_domain_alias(user, alias, domain):
+    """when user cancels their subscription, they cannot create alias on the fly with custom domain.
+    If this happens, send them an email to notify
+    """
+    send_email(
+        user.email,
+        f"Alias {alias} cannot be created",
+        render(
+            "transactional/cannot-create-alias-domain.txt",
+            name=user.name,
+            alias=alias,
+            domain=domain,
+        ),
+        render(
+            "transactional/cannot-create-alias-domain.html",
+            name=user.name,
+            alias=alias,
+            domain=domain,
+        ),
+    )
+
+
+def send_reply_alias_must_use_personal_email(user, alias, sender):
+    """
+    The reply_email can be used only by user personal email.
+    Notify user if it's used by someone else
+    """
+    send_email(
+        user.email,
+        f"Reply from your alias {alias} only works with your personal email",
+        render(
+            "transactional/reply-must-use-personal-email.txt",
+            name=user.name,
+            alias=alias,
+            sender=sender,
+            user_email=user.email,
+        ),
+        render(
+            "transactional/reply-must-use-personal-email.html",
+            name=user.name,
+            alias=alias,
+            sender=sender,
+            user_email=user.email,
+        ),
     )
 
 
@@ -116,7 +206,7 @@ def send_email(to_email, subject, plaintext, html):
     msg = EmailMessage()
 
     msg["Subject"] = subject
-    msg["From"] = f"Son from SimpleLogin <{SUPPORT_EMAIL}>"
+    msg["From"] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
     msg["To"] = to_email
 
     msg.set_content(plaintext)
@@ -161,7 +251,23 @@ def get_email_part(email_from):
     return email_from
 
 
-def add_dkim_signature(msg: EmailMessage, email_domain: str):
+def get_email_local_part(email):
+    """
+    Get the local part from email
+    ab@cd.com -> ab
+    """
+    return email[: email.find("@")]
+
+
+def get_email_domain_part(email):
+    """
+    Get the domain part from email
+    ab@cd.com -> cd.com
+    """
+    return email[email.find("@") + 1 :]
+
+
+def add_dkim_signature(msg: Message, email_domain: str):
     if msg["DKIM-Signature"]:
         LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
         del msg["DKIM-Signature"]
@@ -181,3 +287,47 @@ def add_dkim_signature(msg: EmailMessage, email_domain: str):
     sig = sig.replace("\n", " ").replace("\r", "")
 
     msg.add_header("DKIM-Signature", sig[len("DKIM-Signature: ") :])
+
+
+def add_or_replace_header(msg: Message, header: str, value: str):
+    try:
+        msg.add_header(header, value)
+    except ValueError:
+        # the header exists already
+        msg.replace_header(header, value)
+
+
+def delete_header(msg: Message, header: str):
+    """a header can appear several times in message."""
+    for h in msg._headers:
+        if h[0].lower() == header.lower():
+            msg._headers.remove(h)
+
+
+def email_belongs_to_alias_domains(email: str) -> bool:
+    """return True if an emails ends with one of the alias domains provided by SimpleLogin"""
+    for domain in ALIAS_DOMAINS:
+        if email.endswith("@" + domain):
+            return True
+
+    return False
+
+
+def can_be_used_as_personal_email(email: str) -> bool:
+    """return True if an email can be used as a personal email. Currently the only condition is email domain is not
+    - one of ALIAS_DOMAINS
+    - one of custom domains
+    """
+    domain = get_email_domain_part(email)
+    if not domain:
+        return False
+
+    if domain in ALIAS_DOMAINS:
+        return False
+
+    from app.models import CustomDomain
+
+    if CustomDomain.get_by(domain=domain, verified=True):
+        return False
+
+    return True

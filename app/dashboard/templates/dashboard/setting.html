@@ -8,7 +8,7 @@
 
 {% block default_content %}
 
-  <div class="col-md-8 offset-md-2">
+  <div class="col-md-8 offset-md-2 pb-3">
     <form method="post" enctype="multipart/form-data">
       {{ form.csrf_token }}
       <input type="hidden" name="form-name" value="update-profile">
@@ -90,7 +90,7 @@
 
     <hr>
 
-    <h3 class="mb-0">Notifications</h3>
+    <h3 class="mb-0" id="notification">Notifications</h3>
     <div class="small-text mb-3">Do you want to receive our newsletter?</div>
       <form method="post">
         <input type="hidden" name="form-name" value="notification-preference">
@@ -102,6 +102,18 @@
         </div>
         <button type="submit" class="btn btn-outline-primary">Submit</button>
       </form>
+
+
+    {% if current_user.get_subscription() %}
+      <hr>
+      <h3 class="mb-0">Billing</h3>
+      <div class="small-text mb-3">
+        Manage your current subscription.
+      </div>
+      <a href="{{ url_for('dashboard.billing') }}" class="btn btn-outline-primary">
+        Manage Billing
+      </a>
+    {% endif %}
 
     <hr>
     <h3 class="mb-0">Export Data</h3>

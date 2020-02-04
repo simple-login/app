@@ -1,7 +1,9 @@
+import argparse
+
 import arrow
 
 from app.config import IGNORED_EMAILS, ADMIN_EMAIL
-from app.email_utils import send_email
+from app.email_utils import send_email, send_trial_end_soon_email
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -14,6 +16,13 @@ from app.models import (
     Client,
 )
 from server import create_app
+
+
+def notify_trial_end():
+    for user in User.query.filter(User.trial_end.isnot(None)).all():
+        if arrow.now().shift(days=3) > user.trial_end >= arrow.now().shift(days=2):
+            LOG.d("Send trial end email to user %s", user)
+            send_trial_end_soon_email(user)
 
 
 def stats():
@@ -99,7 +108,22 @@ nb_app: {nb_app} <br>
 
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-j",
+        "--job",
+        help="Choose a cron job to run",
+        type=str,
+        choices=["stats", "notify_trial_end",],
+    )
+    args = parser.parse_args()
+
     app = create_app()
 
     with app.app_context():
-        stats()
+        if args.job == "stats":
+            LOG.d("Compute Stats")
+            stats()
+        elif args.job == "notify_trial_end":
+            LOG.d("Notify users with trial ending soon")
+            notify_trial_end()

@@ -1,0 +1,198 @@
+{% extends 'dashboard/domain_detail/base.html' %}
+
+{% set domain_detail_page = "dns" %}
+
+{% block title %}
+  {{ custom_domain.domain }} DNS
+{% endblock %}
+
+
+{% block domain_detail_content %}
+  <div class="bg-white p-4" style="max-width: 60rem; margin: auto">
+    <h1 class="h3"> {{ custom_domain.domain }} </h1>
+    <div class="">Please follow the steps below to set up your domain.</div>
+
+    <div class="small-text mb-5">
+      DNS changes could take up to 24 hours to propagate. In practice, it's a lot faster though (~1
+      minute or in our experience).
+    </div>
+
+    <div id="mx-form">
+      <div class="font-weight-bold">1. MX record
+
+        {% if custom_domain.verified %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="MX Record Verified">✅</span>
+        {% else %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="MX Record Not Verified">🚫 </span>
+        {% endif %}
+      </div>
+
+      <div class="mb-2">Add the following MX DNS record to your domain. <br>
+        Please note that there's a point (<em>.</em>) at the end target addresses. <br>
+        Also some domain registrars (Namecheap, CloudFlare, etc) might use <em>@</em> for the root domain.
+      </div>
+
+      {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
+        <div class="mb-3 p-3" style="background-color: #eee">
+          Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
+          Priority: {{ priority }} <br>
+          Target: <em>{{ email_server }}</em> <br>
+        </div>
+      {% endfor %}
+
+      <form method="post" action="#mx-form">
+        <input type="hidden" name="form-name" value="check-mx">
+        {% if custom_domain.verified %}
+          <button type="submit" class="btn btn-outline-primary">
+            Re-verify
+          </button>
+        {% else %}
+          <button type="submit" class="btn btn-primary">
+            Verify
+          </button>
+        {% endif %}
+      </form>
+
+      {% if not mx_ok %}
+        <div class="text-danger mt-4">
+          Your DNS is not correctly set. The MX record we obtain is:
+          <div class="mb-3 p-3" style="background-color: #eee">
+            {% if not mx_errors %}
+              (Empty)
+            {% endif %}
+            {% for r in mx_errors %}
+              {{ r }} <br>
+            {% endfor %}
+          </div>
+          {% if custom_domain.verified %}
+            Please make sure to fix this ASAP - your aliases might not work properly.
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <hr>
+
+    <div id="spf-form">
+      <div class="font-weight-bold">2. SPF (Optional)
+        {% if custom_domain.spf_verified %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
+        {% else %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="SPF Not Verified">🚫 </span>
+        {% endif %}
+      </div>
+
+      <div>
+        SPF <a href="https://en.wikipedia.org/wiki/Sender_Policy_Framework" target="_blank">(Wikipedia↗)</a> is an email
+        authentication method
+        designed to detect forging sender addresses during the delivery of the email. <br>
+        Setting up SPF is highly recommended to reduce the chance your emails ending up in the recipient's Spam folder.
+      </div>
+
+      <div class="mb-2">Add the following TXT DNS record to your domain</div>
+
+      <div class="mb-2 p-3" style="background-color: #eee">
+        Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
+        Value:
+        <em>
+          {{ spf_record }}
+        </em>
+      </div>
+
+      <form method="post" action="#spf-form">
+        <input type="hidden" name="form-name" value="check-spf">
+        {% if custom_domain.spf_verified %}
+          <button type="submit" class="btn btn-outline-primary">
+            Re-verify
+          </button>
+        {% else %}
+          <button type="submit" class="btn btn-primary">
+            Verify
+          </button>
+        {% endif %}
+      </form>
+
+      {% if not spf_ok %}
+        <div class="text-danger mt-4">
+          Your DNS is not correctly set. The TXT record we obtain is:
+          <div class="mb-3 p-3" style="background-color: #eee">
+            {% if not spf_errors %}
+              (Empty)
+            {% endif %}
+
+            {% for r in spf_errors %}
+              {{ r }} <br>
+            {% endfor %}
+          </div>
+          {% if custom_domain.spf_verified %}
+            Without SPF setup, emails you sent from your alias might end up in Spam/Junk folder.
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <hr>
+
+    <div id="dkim-form">
+      <div class="font-weight-bold">3. DKIM (Optional)
+        {% if custom_domain.dkim_verified %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="SPF Verified">✅</span>
+        {% else %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="DKIM Not Verified">🚫 </span>
+        {% endif %}
+      </div>
+
+      <div>
+        DKIM <a href="https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail" target="_blank">(Wikipedia↗)</a> is an
+        email
+        authentication method
+        designed to avoid email spoofing. <br>
+        Setting up DKIM is highly recommended to reduce the chance your emails ending up in the recipient's Spam folder.
+      </div>
+
+      <div class="mb-2">Add the following TXT DNS record to your domain</div>
+
+      <div class="mb-2 p-3" style="background-color: #eee">
+        Domain: <em>dkim._domainkey.{{ custom_domain.domain }}</em> <br>
+        Value:
+        <em style="overflow-wrap: break-word">
+          {{ dkim_record }}
+        </em>
+      </div>
+
+      <form method="post" action="#dkim-form">
+        <input type="hidden" name="form-name" value="check-dkim">
+        {% if custom_domain.dkim_verified %}
+          <button type="submit" class="btn btn-outline-primary">
+            Re-verify
+          </button>
+        {% else %}
+          <button type="submit" class="btn btn-primary">
+            Verify
+          </button>
+        {% endif %}
+      </form>
+
+      {% if not dkim_ok %}
+        <div class="text-danger mt-4">
+          Your DNS is not correctly set.
+          {% if dkim_errors %}
+            The TXT record we obtain for
+            <em>dkim._domainkey.{{ custom_domain.domain }}</em> is:
+
+            <div class="mb-3 p-3" style="background-color: #eee">
+              {% for r in dkim_errors %}
+                {{ r }} <br>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if custom_domain.dkim_verified %}
+            Without DKIM setup, emails you sent from your alias might end up in Spam/Junk folder.
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+{% endblock %}

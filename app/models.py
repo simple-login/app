@@ -10,7 +10,13 @@ from sqlalchemy import text, desc
 from sqlalchemy_utils import ArrowType
 
 from app import s3
-from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, URL, AVATAR_URL_EXPIRATION
+from app.config import (
+    EMAIL_DOMAIN,
+    MAX_NB_EMAIL_FREE_PLAN,
+    URL,
+    AVATAR_URL_EXPIRATION,
+    JOB_ONBOARDING_1,
+)
 from app.email_utils import get_email_name
 from app.extensions import db
 from app.log import LOG
@@ -95,7 +101,7 @@ class AliasGeneratorEnum(enum.Enum):
 
 class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
-    email = db.Column(db.String(128), unique=True, nullable=False)
+    email = db.Column(db.String(256), unique=True, nullable=False)
     salt = db.Column(db.String(128), nullable=False)
     password = db.Column(db.String(128), nullable=False)
     name = db.Column(db.String(128), nullable=False)
@@ -119,6 +125,14 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # some users could have lifetime premium
+    lifetime = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+
+    # user can use all premium features until this date
+    trial_end = db.Column(
+        ArrowType, default=lambda: arrow.now().shift(days=7, hours=1), nullable=True
+    )
+
     profile_picture = db.relationship(File)
 
     @classmethod
@@ -136,25 +150,56 @@ class User(db.Model, ModelMixin, UserMixin):
         GenEmail.create_new(user.id, prefix="my-first-alias")
         db.session.flush()
 
+        # Schedule onboarding emails
+        Job.create(
+            name=JOB_ONBOARDING_1,
+            payload={"user_id": user.id},
+            run_at=arrow.now().shift(days=1),
+        )
+        db.session.flush()
+
         return user
 
-    def should_upgrade(self):
-        return not self.is_premium()
+    def lifetime_or_active_subscription(self) -> bool:
+        """True if user has lifetime licence or active subscription"""
+        if self.lifetime:
+            return True
 
-    def is_premium(self):
-        """user is premium if they have a active subscription"""
         sub: Subscription = self.get_subscription()
         if sub:
-            if sub.cancelled:
-                # user is premium until the next billing_date + 1
-                return sub.next_bill_date >= arrow.now().shift(days=-1).date()
-
-            # subscription active, ie not cancelled
             return True
 
         return False
 
-    def can_create_new_alias(self):
+    def in_trial(self):
+        """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
+        if self.lifetime_or_active_subscription():
+            return False
+
+        if self.trial_end and arrow.now() < self.trial_end:
+            return True
+
+        return False
+
+    def should_upgrade(self):
+        return not self.lifetime_or_active_subscription()
+
+    def is_premium(self) -> bool:
+        """
+        user is premium if they:
+        - have a lifetime deal or
+        - in trial period or
+        - active subscription
+        """
+        if self.lifetime_or_active_subscription():
+            return True
+
+        if self.trial_end and arrow.now() < self.trial_end:
+            return True
+
+        return False
+
+    def can_create_new_alias(self) -> bool:
         if self.is_premium():
             return True
 
@@ -196,7 +241,6 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def suggested_names(self) -> (str, [str]):
         """return suggested name and other name choices """
-
         other_name = convert_to_id(self.name)
 
         return self.name, [other_name, "Anonymous", "whoami"]
@@ -205,20 +249,19 @@ class User(db.Model, ModelMixin, UserMixin):
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
 
-    def plan_name(self) -> str:
-        if self.is_premium():
-            sub = self.get_subscription()
-
-            if sub.plan == PlanEnum.monthly:
-                return "Monthly ($2.99/month)"
-            else:
-                return "Yearly ($29.99/year)"
-        else:
-            return "Free Plan"
-
     def get_subscription(self):
+        """return *active* subscription
+        TODO: support user unsubscribe and re-subscribe
+        """
         sub = Subscription.get_by(user_id=self.id)
-        return sub
+        if sub and sub.cancelled:
+            # sub is active until the next billing_date + 1
+            if sub.next_bill_date >= arrow.now().shift(days=-1).date():
+                return sub
+            else:  # past subscription, user is considered not having a subscription
+                return None
+        else:
+            return sub
 
     def verified_custom_domains(self):
         return CustomDomain.query.filter_by(user_id=self.id, verified=True).all()
@@ -423,6 +466,16 @@ class GenEmail(db.Model, ModelMixin):
         db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
     )
 
+    # To know whether an alias is created "on the fly", i.e. via the custom domain catch-all feature
+    automatic_creation = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
+    # to know whether an alias belongs to a directory
+    directory_id = db.Column(
+        db.ForeignKey("directory.id", ondelete="cascade"), nullable=True
+    )
+
     user = db.relationship(User)
 
     @classmethod
@@ -554,17 +607,17 @@ class ForwardEmail(db.Model, ModelMixin):
     )
 
     # used to be envelope header, should be mail header from instead
-    website_email = db.Column(db.String(128), nullable=False)
+    website_email = db.Column(db.String(256), nullable=False)
 
     # the email from header, e.g. AB CD <ab@cd.com>
     # nullable as this field is added after website_email
-    website_from = db.Column(db.String(128), nullable=True)
+    website_from = db.Column(db.String(256), nullable=True)
 
     # when user clicks on "reply", they will reply to this address.
     # This address allows to hide user personal email
     # this reply email is created every time a website sends an email to user
     # it has the prefix "reply+" to distinguish with other email
-    reply_email = db.Column(db.String(128), nullable=False)
+    reply_email = db.Column(db.String(256), nullable=False)
 
     gen_email = db.relationship(GenEmail, backref="forward_emails")
 
@@ -617,12 +670,18 @@ class Subscription(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
+    def plan_name(self):
+        if self.plan == PlanEnum.monthly:
+            return "Monthly ($2.99/month)"
+        else:
+            return "Yearly ($29.99/year)"
+
 
 class DeletedAlias(db.Model, ModelMixin):
     """Store all deleted alias to make sure they are NOT reused"""
 
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-    email = db.Column(db.String(128), unique=True, nullable=False)
+    email = db.Column(db.String(256), unique=True, nullable=False)
 
 
 class EmailChange(db.Model, ModelMixin):
@@ -634,7 +693,7 @@ class EmailChange(db.Model, ModelMixin):
         unique=True,
         index=True,
     )
-    new_email = db.Column(db.String(128), unique=True, nullable=False)
+    new_email = db.Column(db.String(256), unique=True, nullable=False)
     code = db.Column(db.String(128), unique=True, nullable=False)
     expired = db.Column(ArrowType, nullable=False, default=_expiration_12h)
 
@@ -696,5 +755,45 @@ class CustomDomain(db.Model, ModelMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # an alias is created automatically the first time it receives an email
+    catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
+    user = db.relationship(User)
+
     def nb_alias(self):
         return GenEmail.filter_by(custom_domain_id=self.id).count()
+
+    def __repr__(self):
+        return f"<Custom Domain {self.domain}>"
+
+
+class LifetimeCoupon(db.Model, ModelMixin):
+    code = db.Column(db.String(128), nullable=False, unique=True)
+    nb_used = db.Column(db.Integer, nullable=False)
+
+
+class Directory(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    name = db.Column(db.String(128), unique=True, nullable=False)
+
+    user = db.relationship(User)
+
+    def nb_alias(self):
+        return GenEmail.filter_by(directory_id=self.id).count()
+
+    def __repr__(self):
+        return f"<Directory {self.name}>"
+
+
+class Job(db.Model, ModelMixin):
+    """Used to schedule one-time job in the future"""
+
+    name = db.Column(db.String(128), nullable=False)
+    payload = db.Column(db.JSON)
+
+    # whether the job has been taken by the job runner
+    taken = db.Column(db.Boolean, default=False, nullable=False)
+    run_at = db.Column(ArrowType)
+
+    def __repr__(self):
+        return f"<Job {self.id} {self.name} {self.payload}>"

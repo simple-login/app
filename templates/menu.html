@@ -18,7 +18,8 @@
   <li class="nav-item">
     <a href="{{ url_for('dashboard.api_key') }}"
        class="nav-link {{ 'active' if active_page == 'api_key' }}">
-      <i class="fe fe-chrome"></i> API Key
+      <i><img src="/static/key.svg"></i>
+      API Key
     </a>
   </li>
 
@@ -27,6 +28,14 @@
        class="nav-link {{ 'active' if active_page == 'custom_domain' }}">
       <i class="fe fe-server"></i> Custom Domains
       <span class="badge badge-success" style="font-size: .5rem; top: 5px">Premium</span>
+    </a>
+  </li>
+
+  <li class="nav-item">
+    <a href="{{ url_for('dashboard.directory') }}"
+       class="nav-link {{ 'active' if active_page == 'directory' }}">
+      <i class="fe fe-folder"></i> Alias Directory
+      <span class="badge badge-info" style="font-size: .5rem; top: 5px">Beta</span>
     </a>
   </li>
 
@@ -40,10 +49,7 @@
   </li>
   -->
 
-  <li class="nav-item"
-      data-intro="If you want to add SimpleLogin to your website/application, this tab is for you 😀"
-      data-step="5"
-  >
+  <li class="nav-item">
     <a href="{{ url_for('developer.index') }}"
        class="nav-link {{ 'active' if active_page == 'developer' }}">
       <i class="fe fe-terminal"></i>

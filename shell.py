@@ -3,9 +3,9 @@ from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from app.config import DB_URI
+from app.email_utils import send_email, render
 from app.models import *
 from server import create_app
-from app import email_utils
 
 
 def create_db():
@@ -30,7 +30,22 @@ def reset_db():
     create_db()
 
 
+def send_safari_extension_newsletter():
+    for user in User.query.all():
+        send_email(
+            user.email,
+            "Quickly create alias with our Safari extension",
+            render("com/safari-extension.txt", user=user),
+            render("com/safari-extension.html", user=user),
+        )
+
+
 app = create_app()
 
 with app.app_context():
+    # to test email template
+    # with open("/tmp/email.html", "w") as f:
+    #     user = User.get(1)
+    #     f.write(_render("welcome.html", user=user, name=user.name))
+
     embed()

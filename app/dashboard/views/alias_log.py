@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 import arrow
 from flask import render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
@@ -8,8 +6,9 @@ from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.models import GenEmail, ForwardEmailLog, ForwardEmail
 
+_LIMIT = 15
 
-@dataclass
+
 class AliasLog:
     website_email: str
     website_from: str
@@ -18,11 +17,18 @@ class AliasLog:
     is_reply: bool
     blocked: bool
 
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
-@dashboard_bp.route("/alias_log/<alias>", methods=["GET"])
+
+@dashboard_bp.route(
+    "/alias_log/<int:alias_id>", methods=["GET"], defaults={"page_id": 0}
+)
+@dashboard_bp.route("/alias_log/<int:alias_id>/<int:page_id>")
 @login_required
-def alias_log(alias):
-    gen_email = GenEmail.get_by(email=alias)
+def alias_log(alias_id, page_id):
+    gen_email = GenEmail.get(alias_id)
 
     # sanity check
     if not gen_email:
@@ -33,19 +39,37 @@ def alias_log(alias):
         flash("You do not have access to this page", "warning")
         return redirect(url_for("dashboard.index"))
 
-    return render_template(
-        "dashboard/alias_log.html", logs=get_alias_log(gen_email), alias=alias
+    logs = get_alias_log(gen_email, page_id)
+    base = (
+        db.session.query(ForwardEmail, ForwardEmailLog)
+        .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
+        .filter(ForwardEmail.gen_email_id == gen_email.id)
     )
+    total = base.count()
+    email_forwarded = (
+        base.filter(ForwardEmailLog.is_reply == False)
+        .filter(ForwardEmailLog.blocked == False)
+        .count()
+    )
+    email_replied = base.filter(ForwardEmailLog.is_reply == True).count()
+    email_blocked = base.filter(ForwardEmailLog.blocked == True).count()
+    last_page = (
+        len(logs) < _LIMIT
+    )  # lightweight pagination without counting all objects
+
+    return render_template("dashboard/alias_log.html", **locals())
 
 
-def get_alias_log(gen_email: GenEmail):
+def get_alias_log(gen_email: GenEmail, page_id=0):
     logs: [AliasLog] = []
 
     q = (
         db.session.query(ForwardEmail, ForwardEmailLog)
         .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
         .filter(ForwardEmail.gen_email_id == gen_email.id)
-        .all()
+        .order_by(ForwardEmailLog.id.desc())
+        .limit(_LIMIT)
+        .offset(page_id * _LIMIT)
     )
 
     for fe, fel in q:
@@ -58,7 +82,6 @@ def get_alias_log(gen_email: GenEmail):
             blocked=fel.blocked,
         )
         logs.append(al)
-
     logs = sorted(logs, key=lambda l: l.when, reverse=True)
 
     return logs

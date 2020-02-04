@@ -9,8 +9,9 @@ from flask_wtf.file import FileField
 from wtforms import StringField, validators
 
 from app import s3, email_utils
-from app.config import URL, EMAIL_DOMAIN
+from app.config import URL
 from app.dashboard.base import dashboard_bp
+from app.email_utils import can_be_used_as_personal_email
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -30,7 +31,7 @@ from app.utils import random_string
 
 class SettingForm(FlaskForm):
     email = StringField("Email")
-    name = StringField("Name", validators=[validators.DataRequired()])
+    name = StringField("Name")
     profile_picture = FileField("Profile Picture")
 
 
@@ -92,9 +93,9 @@ def setting():
                         or DeletedAlias.get_by(email=new_email)
                     ):
                         flash(f"Email {new_email} already used", "error")
-                    elif new_email.endswith(EMAIL_DOMAIN):
+                    elif not can_be_used_as_personal_email(new_email):
                         flash(
-                            "You cannot use alias as your personal inbox. Nice try though 😉",
+                            "You cannot use this email address as your personal inbox.",
                             "error",
                         )
                     else:
