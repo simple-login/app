@@ -122,6 +122,8 @@ if __name__ == "__main__":
 
     with app.app_context():
         if args.job == "stats":
+            LOG.d("Compute Stats")
             stats()
         elif args.job == "notify_trial_end":
+            LOG.d("Notify users with trial ending soon")
             notify_trial_end()
