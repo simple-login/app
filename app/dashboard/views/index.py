@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
+from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -18,6 +19,7 @@ from app.models import (
 
 
 class AliasInfo:
+    id: int
     gen_email: GenEmail
     nb_forward: int
     nb_blocked: int
@@ -143,7 +145,9 @@ def index():
     )
 
 
-def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasInfo]:
+def get_alias_info(
+    user_id, query=None, highlight_gen_email_id=None, page_id=None
+) -> [AliasInfo]:
     if query:
         query = query.strip().lower()
 
@@ -162,9 +166,14 @@ def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasIn
     if query:
         q = q.filter(GenEmail.email.contains(query))
 
+    # pagination activated
+    if page_id is not None:
+        q = q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT)
+
     for ge, fe, fel in q:
         if ge.email not in aliases:
             aliases[ge.email] = AliasInfo(
+                id=ge.id,
                 gen_email=ge,
                 nb_blocked=0,
                 nb_forward=0,
