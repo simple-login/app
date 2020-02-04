@@ -26,6 +26,7 @@ def options():
         existing: array of existing aliases
 
     """
+    LOG.error("/v2/alias/options should be used instead")
     user = g.user
     hostname = request.args.get("hostname")
 
