@@ -18,6 +18,7 @@
   "dependencies": {
     "font-awesome": "^4.7.0",
     "intro.js": "^2.9.3",
-    "notie": "^4.3.1"
+    "notie": "^4.3.1",
+    "toastr": "^2.1.4"
   }
 }

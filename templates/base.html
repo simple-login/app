@@ -61,8 +61,8 @@
   <link rel="stylesheet" href="/static/vendor/bootstrap-social.min.css">
 
   <!-- Toastr library -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.css') }}">
+  <script src="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.js') }}"></script>
 
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
 
