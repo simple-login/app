@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block head %}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <script src="{{ url_for('static', filename='node_modules/qrious/dist/qrious.min.js') }}"></script>
 {% endblock %}
 
 {% block default_content %}
