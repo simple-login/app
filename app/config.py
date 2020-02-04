@@ -166,3 +166,7 @@ MFA_USER_ID = "mfa_user_id"
 
 FLASK_PROFILER_PATH = os.environ.get("FLASK_PROFILER_PATH")
 FLASK_PROFILER_PASSWORD = os.environ.get("FLASK_PROFILER_PASSWORD")
+
+
+# Job names
+JOB_ONBOARDING_1 = "onboarding-1"

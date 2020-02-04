@@ -10,7 +10,13 @@ from sqlalchemy import text, desc
 from sqlalchemy_utils import ArrowType
 
 from app import s3
-from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, URL, AVATAR_URL_EXPIRATION
+from app.config import (
+    EMAIL_DOMAIN,
+    MAX_NB_EMAIL_FREE_PLAN,
+    URL,
+    AVATAR_URL_EXPIRATION,
+    JOB_ONBOARDING_1,
+)
 from app.email_utils import get_email_name
 from app.extensions import db
 from app.log import LOG
@@ -142,6 +148,14 @@ class User(db.Model, ModelMixin, UserMixin):
 
         # create a first alias mail to show user how to use when they login
         GenEmail.create_new(user.id, prefix="my-first-alias")
+        db.session.flush()
+
+        # Schedule onboarding emails
+        Job.create(
+            name=JOB_ONBOARDING_1,
+            payload={"user_id": user.id},
+            run_at=arrow.now().shift(days=1),
+        )
         db.session.flush()
 
         return user
@@ -769,3 +783,17 @@ class Directory(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<Directory {self.name}>"
+
+
+class Job(db.Model, ModelMixin):
+    """Used to schedule one-time job in the future"""
+
+    name = db.Column(db.String(128), nullable=False)
+    payload = db.Column(db.JSON)
+
+    # whether the job has been taken by the job runner
+    taken = db.Column(db.Boolean, default=False, nullable=False)
+    run_at = db.Column(ArrowType)
+
+    def __repr__(self):
+        return f"<Job {self.id} {self.name} {self.payload}>"
