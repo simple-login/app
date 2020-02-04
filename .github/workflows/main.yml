@@ -45,4 +45,4 @@ jobs:
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
-        args: New Docker image pushed
+        args: Docker image pushed on ${{ github.ref }}
