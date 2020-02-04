@@ -16,7 +16,7 @@ def test_auth_login_success_mfa_disabled(flask_client):
     assert r.status_code == 200
     assert r.json["api_key"]
     assert r.json["mfa_enabled"] == False
-    assert r.json["mfa_key"] == ""
+    assert r.json["mfa_key"] is None
     assert r.json["name"] == "Test User"
 
 
@@ -36,7 +36,7 @@ def test_auth_login_success_mfa_enabled(flask_client):
     )
 
     assert r.status_code == 200
-    assert r.json["api_key"] == ""
+    assert r.json["api_key"] is None
     assert r.json["mfa_enabled"] == True
     assert r.json["mfa_key"]
     assert r.json["name"] == "Test User"

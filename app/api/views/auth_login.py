@@ -54,11 +54,11 @@ def auth_login():
     if user.enable_otp:
         s = Signer(FLASK_SECRET)
         ret["mfa_key"] = s.sign(str(user.id))
-        ret["api_key"] = ""
+        ret["api_key"] = None
     else:
         api_key = ApiKey.create(user.id, device)
         db.session.commit()
-        ret["mfa_key"] = ""
+        ret["mfa_key"] = None
         ret["api_key"] = api_key.code
 
     return jsonify(**ret), 200
