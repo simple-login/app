@@ -2,11 +2,10 @@ import arrow
 from flask import render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
 
+from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.models import GenEmail, ForwardEmailLog, ForwardEmail
-
-_LIMIT = 15
 
 
 class AliasLog:
@@ -54,7 +53,7 @@ def alias_log(alias_id, page_id):
     email_replied = base.filter(ForwardEmailLog.is_reply == True).count()
     email_blocked = base.filter(ForwardEmailLog.blocked == True).count()
     last_page = (
-        len(logs) < _LIMIT
+        len(logs) < PAGE_LIMIT
     )  # lightweight pagination without counting all objects
 
     return render_template("dashboard/alias_log.html", **locals())
@@ -68,8 +67,8 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
         .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
         .filter(ForwardEmail.gen_email_id == gen_email.id)
         .order_by(ForwardEmailLog.id.desc())
-        .limit(_LIMIT)
-        .offset(page_id * _LIMIT)
+        .limit(PAGE_LIMIT)
+        .offset(page_id * PAGE_LIMIT)
     )
 
     for fe, fel in q:
