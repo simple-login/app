@@ -53,10 +53,8 @@
   <script src="{{ url_for('static', filename='node_modules/intro.js/minified/intro.min.js') }}"></script>
 
   <!-- Sentry -->
-  <script
-      src="https://browser.sentry-cdn.com/5.11.2/bundle.min.js"
-      integrity="sha384-FLzYisBa7tvsi/ZP1ISnzZJqBkmw5mvwk7KOmH82W9wdPZKG3bG9hSO8GQFVSlOu"
-      crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='node_modules/@sentry/browser/build/bundle.min.js') }}">
+  </script>
 
   <link rel="stylesheet" href="/static/vendor/bootstrap-social.min.css">
 
