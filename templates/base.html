@@ -43,8 +43,9 @@
   <script src="/static/vendor/clipboard.min.js"></script>
 
   <!-- Notie -->
-  <link rel="stylesheet" type="text/css" href="https://unpkg.com/notie/dist/notie.min.css">
-  <script src="/static/vendor/notie.min.js"></script>
+  <link rel="stylesheet" type="text/css"
+        href="{{ url_for('static', filename='node_modules/notie/dist/notie.min.css') }}">
+  <script src="{{ url_for('static', filename='node_modules/notie/dist/notie.min.js') }}"></script>
 
   <!-- IntroJS -->
   <link rel="stylesheet" type="text/css" href="/static/vendor/introjs.min.css">
