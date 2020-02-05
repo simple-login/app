@@ -273,12 +273,12 @@
   <script>
     var clipboard = new ClipboardJS('.clipboard');
 
-    var introShown = localStorage.getItem("introShown");
+    var introShown = store.get("introShown");
     if ("yes" !== introShown) {
       // only show intro when screen is big enough to show "developer" tab
       if (window.innerWidth >= 1024) {
         introJs().start();
-        localStorage.setItem("introShown", "yes")
+        store.set("introShown", "yes")
       }
     }
 
