@@ -39,6 +39,9 @@ print(">>> URL:", URL)
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
+# can use another sentry project for the front-end to avoid noises
+SENTRY_FRONT_END_DSN = os.environ.get("SENTRY_FRONT_END_DSN") or SENTRY_DSN
+
 # Email related settings
 NOT_SEND_EMAIL = "NOT_SEND_EMAIL" in os.environ
 EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"]
