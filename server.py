@@ -28,6 +28,7 @@ from app.config import (
     RESET_DB,
     FLASK_PROFILER_PATH,
     FLASK_PROFILER_PASSWORD,
+    SENTRY_FRONT_END_DSN,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -301,7 +302,12 @@ def jinja2_filter(app):
 
     @app.context_processor
     def inject_stage_and_region():
-        return dict(YEAR=arrow.now().year, URL=URL, SENTRY_DSN=SENTRY_DSN, VERSION=SHA1)
+        return dict(
+            YEAR=arrow.now().year,
+            URL=URL,
+            SENTRY_DSN=SENTRY_FRONT_END_DSN,
+            VERSION=SHA1,
+        )
 
 
 def setup_paddle_callback(app: Flask):
