@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -179,7 +180,7 @@ def get_alias_info(
     )
 
     if query:
-        q = q.filter(GenEmail.email.contains(query))
+        q = q.filter(or_(GenEmail.email.contains(query), GenEmail.note.contains(query)))
 
     # pagination activated
     if page_id is not None:
