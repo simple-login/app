@@ -77,3 +77,29 @@ def delete_alias(alias_id):
     db.session.commit()
 
     return jsonify(deleted=True), 200
+
+
+@api_bp.route("/aliases/<int:alias_id>/toggle", methods=["POST"])
+@cross_origin()
+@verify_api_key
+def toggle_alias(alias_id):
+    """
+    Enable/disable alias
+    Input:
+        alias_id: in url
+    Output:
+        200 along with new status:
+        - enabled
+
+
+    """
+    user = g.user
+    gen_email: GenEmail = GenEmail.get(alias_id)
+
+    if gen_email.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    gen_email.enabled = not gen_email.enabled
+    db.session.commit()
+
+    return jsonify(enabled=gen_email.enabled), 200

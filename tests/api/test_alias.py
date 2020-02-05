@@ -76,3 +76,25 @@ def test_delete_alias(flask_client):
 
     assert r.status_code == 200
     assert r.json == {"deleted": True}
+
+
+def test_toggle_alias(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    gen_email = GenEmail.create_new_random(user.id)
+    db.session.commit()
+
+    r = flask_client.post(
+        url_for("api.toggle_alias", alias_id=gen_email.id),
+        headers={"Authentication": api_key.code},
+    )
+
+    assert r.status_code == 200
+    assert r.json == {"enabled": False}

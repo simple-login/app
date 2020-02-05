@@ -793,6 +793,23 @@ If success, 200.
 }
 ```
 
+#### POST /api/aliases/:alias_id/toggle
+
+Enable/disable alias
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url. 
+
+Output:
+If success, 200 along with the new alias status:
+
+```json
+{
+    "enabled": false
+}
+```
+
 
 ### Database migration
 
