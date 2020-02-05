@@ -46,6 +46,7 @@ def get_aliases():
                     "nb_forward": alias.nb_forward,
                     "nb_block": alias.nb_blocked,
                     "nb_reply": alias.nb_reply,
+                    "enabled": alias.gen_email.enabled,
                 }
                 for alias in aliases
             ]

@@ -758,7 +758,8 @@ If success, 200 with the list of aliases, for example:
             "id": 4,
             "nb_block": 0,
             "nb_forward": 0,
-            "nb_reply": 0
+            "nb_reply": 0,
+            "enabled": true 
         },
         {
             "creation_date": "2020-02-04 16:23:02+00:00",
@@ -767,7 +768,8 @@ If success, 200 with the list of aliases, for example:
             "id": 3,
             "nb_block": 0,
             "nb_forward": 0,
-            "nb_reply": 0
+            "nb_reply": 0,
+            "enabled": false
         }
     ]
 }
