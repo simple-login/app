@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
+from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -18,6 +19,7 @@ from app.models import (
 
 
 class AliasInfo:
+    id: int
     gen_email: GenEmail
     nb_forward: int
     nb_blocked: int
@@ -143,27 +145,35 @@ def index():
     )
 
 
-def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasInfo]:
+def get_alias_info(
+    user_id, query=None, highlight_gen_email_id=None, page_id=None
+) -> [AliasInfo]:
     if query:
         query = query.strip().lower()
 
     aliases = {}  # dict of alias and AliasInfo
+
     q = (
         db.session.query(GenEmail, ForwardEmail, ForwardEmailLog)
-        .filter(
-            GenEmail.user_id == user_id,
-            GenEmail.id == ForwardEmail.gen_email_id,
-            ForwardEmail.id == ForwardEmailLog.forward_id,
+        .join(ForwardEmail, GenEmail.id == ForwardEmail.gen_email_id, isouter=True)
+        .join(
+            ForwardEmailLog, ForwardEmail.id == ForwardEmailLog.forward_id, isouter=True
         )
+        .filter(GenEmail.user_id == user_id)
         .order_by(GenEmail.created_at.desc())
     )
 
     if query:
         q = q.filter(GenEmail.email.contains(query))
 
+    # pagination activated
+    if page_id is not None:
+        q = q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT)
+
     for ge, fe, fel in q:
         if ge.email not in aliases:
             aliases[ge.email] = AliasInfo(
+                id=ge.id,
                 gen_email=ge,
                 nb_blocked=0,
                 nb_forward=0,
@@ -172,31 +182,15 @@ def get_alias_info(user_id, query=None, highlight_gen_email_id=None) -> [AliasIn
             )
 
         alias_info = aliases[ge.email]
+        if not fel:
+            continue
+
         if fel.is_reply:
             alias_info.nb_reply += 1
         elif fel.blocked:
             alias_info.nb_blocked += 1
         else:
             alias_info.nb_forward += 1
-
-    # also add alias that has no forward email or log
-    q = (
-        db.session.query(GenEmail)
-        .filter(GenEmail.email.notin_(aliases.keys()))
-        .filter(GenEmail.user_id == user_id)
-    ).order_by(GenEmail.created_at.desc())
-
-    if query:
-        q = q.filter(GenEmail.email.contains(query))
-
-    for ge in q:
-        aliases[ge.email] = AliasInfo(
-            gen_email=ge,
-            nb_blocked=0,
-            nb_forward=0,
-            nb_reply=0,
-            highlight=ge.id == highlight_gen_email_id,
-        )
 
     ret = list(aliases.values())
 

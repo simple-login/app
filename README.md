@@ -737,6 +737,43 @@ Output:
 The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
 If user hasn't enabled MFA, `mfa_key` is empty.
 
+#### GET /api/aliases
+
+Get user aliases.
+
+Input:
+- `Authentication` header that contains the api key
+- `page_id` used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts at 0.
+
+Output:
+If success, 200 with the list of aliases, for example:
+
+```json
+{
+    "aliases": [
+        {
+            "creation_date": "2020-02-04 16:23:02+00:00",
+            "creation_timestamp": 1580833382,
+            "email": "e3@.alo@sl.local",
+            "id": 4,
+            "nb_block": 0,
+            "nb_forward": 0,
+            "nb_reply": 0
+        },
+        {
+            "creation_date": "2020-02-04 16:23:02+00:00",
+            "creation_timestamp": 1580833382,
+            "email": "e2@.meo@sl.local",
+            "id": 3,
+            "nb_block": 0,
+            "nb_forward": 0,
+            "nb_reply": 0
+        }
+    ]
+}
+```
+
+
 ### Database migration
 
 The database migration is handled by `alembic`

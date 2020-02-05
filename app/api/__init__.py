@@ -5,4 +5,5 @@ from .views import (
     user_info,
     auth_login,
     auth_mfa,
+    alias,
 )
