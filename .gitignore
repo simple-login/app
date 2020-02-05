@@ -2,6 +2,7 @@
 *.pyc
 db.sqlite
 .env
+env/
 .pytest_cache
 .vscode
 .DS_Store
