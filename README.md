@@ -810,6 +810,37 @@ If success, 200 along with the new alias status:
 }
 ```
 
+#### GET /api/aliases/:alias_id/activities
+
+Get activities for a given alias.
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id`: the alias id, passed in url.
+- `page_id` used in request query (`?page_id=0`). The endpoint returns maximum 20 aliases for each page. `page_id` starts at 0.
+
+Output:
+If success, 200 with the list of activities, for example:
+
+```json
+{
+  "activities": [
+    {
+      "action": "reply",
+      "from": "yes_meo_chat@sl.local",
+      "timestamp": 1580903760,
+      "to": "marketing@example.com"
+    },
+    {
+      "action": "reply",
+      "from": "yes_meo_chat@sl.local",
+      "timestamp": 1580903760,
+      "to": "marketing@example.com"
+    }
+  ]
+}
+```
+
 
 ### Database migration
 

@@ -3,6 +3,7 @@ from flask import jsonify, request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
+from app.dashboard.views.alias_log import get_alias_log
 from app.dashboard.views.index import get_alias_info, AliasInfo
 from app.extensions import db
 from app.models import GenEmail
@@ -103,3 +104,56 @@ def toggle_alias(alias_id):
     db.session.commit()
 
     return jsonify(enabled=gen_email.enabled), 200
+
+
+@api_bp.route("/aliases/<int:alias_id>/activities")
+@cross_origin()
+@verify_api_key
+def get_alias_activities(alias_id):
+    """
+    Get aliases
+    Input:
+        page_id: in query
+    Output:
+        - activities: list of activity:
+            - from
+            - to
+            - timestamp
+            - action: forward|reply|block
+
+    """
+    user = g.user
+    try:
+        page_id = int(request.args.get("page_id"))
+    except (ValueError, TypeError):
+        return jsonify(error="page_id must be provided in request query"), 400
+
+    gen_email: GenEmail = GenEmail.get(alias_id)
+
+    if gen_email.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    alias_logs = get_alias_log(gen_email, page_id)
+
+    activities = []
+    for alias_log in alias_logs:
+        activity = {"timestamp": alias_log.when.timestamp}
+        if alias_log.is_reply:
+            activity["from"] = alias_log.alias
+            activity["to"] = alias_log.website_from or alias_log.website_email
+            activity["action"] = "reply"
+        else:
+            activity["to"] = alias_log.alias
+            activity["from"] = alias_log.website_from or alias_log.website_email
+
+            if alias_log.blocked:
+                activity["action"] = "block"
+            else:
+                activity["action"] = "forward"
+
+        activities.append(activity)
+
+    return (
+        jsonify(activities=activities),
+        200,
+    )
