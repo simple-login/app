@@ -46,6 +46,7 @@ def custom_alias():
     if request.method == "POST":
         alias_prefix = request.form.get("prefix")
         alias_suffix = request.form.get("suffix")
+        alias_note = request.form.get("note")
 
         if verify_prefix_suffix(
             current_user, alias_prefix, alias_suffix, user_custom_domains
@@ -61,7 +62,9 @@ def custom_alias():
                     "warning",
                 )
             else:
-                gen_email = GenEmail.create(user_id=current_user.id, email=full_alias)
+                gen_email = GenEmail.create(
+                    user_id=current_user.id, email=full_alias, note=alias_note
+                )
 
                 # get the custom_domain_id if alias is created with a custom domain
                 alias_domain = get_email_domain_part(full_alias)

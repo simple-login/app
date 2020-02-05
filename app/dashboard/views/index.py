@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -124,6 +125,21 @@ def index():
                 LOG.error("alias %s has been added before to DeletedAlias", email)
                 db.session.rollback()
 
+        elif request.form.get("form-name") == "set-note":
+            gen_email_id = request.form.get("gen-email-id")
+            gen_email: GenEmail = GenEmail.get(gen_email_id)
+            note = request.form.get("note")
+
+            gen_email.note = note
+            db.session.commit()
+
+            flash(f"Update note for alias {gen_email.email}", "success")
+            return redirect(
+                url_for(
+                    "dashboard.index", highlight_gen_email_id=gen_email.id, query=query
+                )
+            )
+
         return redirect(url_for("dashboard.index", query=query))
 
     client_users = (
@@ -164,7 +180,7 @@ def get_alias_info(
     )
 
     if query:
-        q = q.filter(GenEmail.email.contains(query))
+        q = q.filter(or_(GenEmail.email.contains(query), GenEmail.note.contains(query)))
 
     # pagination activated
     if page_id is not None:

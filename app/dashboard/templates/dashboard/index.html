@@ -151,6 +151,28 @@
             </a>
           </div>
 
+          <form method="post">
+            <div class="row mt-2">
+
+              <div class="col-10">
+                <textarea
+                    name="note"
+                    class="form-control"
+                    rows="2"
+                    placeholder="Alias Note.">{{ gen_email.note or "" }}</textarea>
+              </div>
+
+              <div class="col-2">
+                <input type="hidden" name="form-name" value="set-note">
+                <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+
+                <button class="btn btn-sm btn-outline-success">
+                  Save
+                </button>
+              </div>
+            </div>
+          </form>
+
           <div class="row mt-3">
             <div class="col">
               {% if gen_email.enabled %}
