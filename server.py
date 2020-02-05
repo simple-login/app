@@ -412,10 +412,12 @@ def setup_do_not_track(app):
     @app.route("/dnt")
     def do_not_track():
         return """
+        <script src="/static/local-storage-polyfill.js"></script>
+        
         <script>
 // Disable GoatCounter if this script is called
 
-window.localStorage.setItem('goatcounter-ignore', 't');
+store.set('goatcounter-ignore', 't');
 
 alert("GoatCounter disabled");
 
