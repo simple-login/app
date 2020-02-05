@@ -54,3 +54,25 @@ def test_success_with_pagination(flask_client):
     )
     assert r.status_code == 200
     assert len(r.json["aliases"]) == 2
+
+
+def test_delete_alias(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    gen_email = GenEmail.create_new_random(user.id)
+    db.session.commit()
+
+    r = flask_client.delete(
+        url_for("api.delete_alias", alias_id=gen_email.id),
+        headers={"Authentication": api_key.code},
+    )
+
+    assert r.status_code == 200
+    assert r.json == {"deleted": True}

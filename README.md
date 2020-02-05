@@ -773,6 +773,24 @@ If success, 200 with the list of aliases, for example:
 }
 ```
 
+#### DELETE /api/aliases/:alias_id
+
+Delete an alias
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url. 
+
+Output:
+If success, 200.
+
+
+```json
+{
+    "deleted": true
+}
+```
+
 
 ### Database migration
 

@@ -3,13 +3,9 @@ from flask import jsonify, request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
-from app.config import MAX_NB_EMAIL_FREE_PLAN
-from app.dashboard.views.custom_alias import verify_prefix_suffix
 from app.dashboard.views.index import get_alias_info, AliasInfo
 from app.extensions import db
-from app.log import LOG
-from app.models import GenEmail, AliasUsedOn
-from app.utils import convert_to_id
+from app.models import GenEmail
 
 
 @api_bp.route("/aliases")
@@ -56,3 +52,27 @@ def get_aliases():
         ),
         200,
     )
+
+
+@api_bp.route("/aliases/<int:alias_id>", methods=["DELETE"])
+@cross_origin()
+@verify_api_key
+def delete_alias(alias_id):
+    """
+    Delete alias
+    Input:
+        alias_id: in url
+    Output:
+        200 if deleted successfully
+
+    """
+    user = g.user
+    gen_email = GenEmail.get(alias_id)
+
+    if gen_email.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    GenEmail.delete(alias_id)
+    db.session.commit()
+
+    return jsonify(deleted=True), 200
