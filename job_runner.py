@@ -37,6 +37,10 @@ def new_app():
 
 
 def onboarding_1(user):
+    if not user.activated:
+        LOG.d("User %s is not activated", user)
+        return
+
     if not user.notification:
         LOG.d("User %s disable notification setting", user)
         return
