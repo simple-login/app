@@ -3,7 +3,8 @@
 {% block content %}
   {{ render_text("Hi " + name) }}
   {{ render_text("Thank you for choosing SimpleLogin.") }}
-  {{ render_text("To get started, please confirm that <b>" + email + "</b> is your email address by clicking on the button below or use this link " + activation_link + " within 1 hour.") }}
-  {{ render_button("Verify", activation_link) }}
+  {{ render_text("To get started, please confirm that <b>" + email + "</b> is your email address by clicking on the
+            button below or use this link " + activation_link + " within 1 hour.") }}
+  {{ render_button("Verify email", activation_link) }}
 {% endblock %}
 
