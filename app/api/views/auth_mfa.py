@@ -6,6 +6,7 @@ from itsdangerous import Signer, BadSignature
 from app.api.base import api_bp
 from app.config import FLASK_SECRET
 from app.extensions import db
+from app.log import LOG
 from app.models import User, ApiKey
 
 
@@ -58,8 +59,12 @@ def auth_mfa():
         "name": user.name,
     }
 
-    api_key = ApiKey.create(user.id, device)
-    db.session.commit()
+    api_key = ApiKey.get_by(user_id=user.id, name=device)
+    if not api_key:
+        LOG.d("create new api key for %s and %s", user, device)
+        api_key = ApiKey.create(user.id, device)
+        db.session.commit()
+
     ret["api_key"] = api_key.code
 
     return jsonify(**ret), 200

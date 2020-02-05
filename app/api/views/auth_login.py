@@ -56,8 +56,11 @@ def auth_login():
         ret["mfa_key"] = s.sign(str(user.id))
         ret["api_key"] = None
     else:
-        api_key = ApiKey.create(user.id, device)
-        db.session.commit()
+        api_key = ApiKey.get_by(user_id=user.id, name=device)
+        if not api_key:
+            LOG.d("create new api key for %s and %s", user, device)
+            api_key = ApiKey.create(user.id, device)
+            db.session.commit()
         ret["mfa_key"] = None
         ret["api_key"] = api_key.code
 

@@ -758,7 +758,8 @@ If success, 200 with the list of aliases, for example:
             "id": 4,
             "nb_block": 0,
             "nb_forward": 0,
-            "nb_reply": 0
+            "nb_reply": 0,
+            "enabled": true 
         },
         {
             "creation_date": "2020-02-04 16:23:02+00:00",
@@ -767,9 +768,76 @@ If success, 200 with the list of aliases, for example:
             "id": 3,
             "nb_block": 0,
             "nb_forward": 0,
-            "nb_reply": 0
+            "nb_reply": 0,
+            "enabled": false
         }
     ]
+}
+```
+
+#### DELETE /api/aliases/:alias_id
+
+Delete an alias
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url. 
+
+Output:
+If success, 200.
+
+
+```json
+{
+    "deleted": true
+}
+```
+
+#### POST /api/aliases/:alias_id/toggle
+
+Enable/disable alias
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url. 
+
+Output:
+If success, 200 along with the new alias status:
+
+```json
+{
+    "enabled": false
+}
+```
+
+#### GET /api/aliases/:alias_id/activities
+
+Get activities for a given alias.
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id`: the alias id, passed in url.
+- `page_id` used in request query (`?page_id=0`). The endpoint returns maximum 20 aliases for each page. `page_id` starts at 0.
+
+Output:
+If success, 200 with the list of activities, for example:
+
+```json
+{
+  "activities": [
+    {
+      "action": "reply",
+      "from": "yes_meo_chat@sl.local",
+      "timestamp": 1580903760,
+      "to": "marketing@example.com"
+    },
+    {
+      "action": "reply",
+      "from": "yes_meo_chat@sl.local",
+      "timestamp": 1580903760,
+      "to": "marketing@example.com"
+    }
+  ]
 }
 ```
 
