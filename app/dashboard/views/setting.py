@@ -194,7 +194,7 @@ def send_reset_password_email(user):
     email_utils.send_reset_password_email(user.email, user.name, reset_password_link)
 
     flash(
-        "You are going to receive an email containing instruction to change your password",
+        "You are going to receive an email containing instructions to change your password",
         "success",
     )
 
