@@ -290,11 +290,11 @@ def add_dkim_signature(msg: Message, email_domain: str):
 
 
 def add_or_replace_header(msg: Message, header: str, value: str):
-    try:
-        msg.add_header(header, value)
-    except ValueError:
-        # the header exists already
-        msg.replace_header(header, value)
+    """
+    Remove all occurrences of `header` and add `header` with `value`.
+    """
+    delete_header(msg, header)
+    msg[header] = value
 
 
 def delete_header(msg: Message, header: str):
