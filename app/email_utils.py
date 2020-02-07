@@ -299,9 +299,11 @@ def add_or_replace_header(msg: Message, header: str, value: str):
 
 def delete_header(msg: Message, header: str):
     """a header can appear several times in message."""
-    for h in msg._headers:
-        if h[0].lower() == header.lower():
-            msg._headers.remove(h)
+    # inspired from https://stackoverflow.com/a/47903323/1428034
+    for i in reversed(range(len(msg._headers))):
+        header_name = msg._headers[i][0].lower()
+        if header_name == header.lower():
+            del msg._headers[i]
 
 
 def email_belongs_to_alias_domains(email: str) -> bool:

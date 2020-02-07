@@ -1,3 +1,5 @@
+from email.message import EmailMessage
+
 from app.email_utils import (
     get_email_name,
     get_email_part,
@@ -5,6 +7,7 @@ from app.email_utils import (
     get_email_domain_part,
     email_belongs_to_alias_domains,
     can_be_used_as_personal_email,
+    delete_header,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -55,3 +58,16 @@ def test_can_be_used_as_personal_email(flask_client):
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     db.session.commit()
     assert not can_be_used_as_personal_email("hey@ab.cd")
+
+
+def test_delete_header():
+    msg = EmailMessage()
+    assert msg._headers == []
+
+    msg["H"] = "abcd"
+    msg["H"] = "xyzt"
+
+    assert msg._headers == [("H", "abcd"), ("H", "xyzt")]
+
+    delete_header(msg, "H")
+    assert msg._headers == []
