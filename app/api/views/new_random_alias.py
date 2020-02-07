@@ -3,11 +3,10 @@ from flask import jsonify, request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
-from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
+from app.config import MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, AliasUsedOn
-from app.utils import convert_to_id
+from app.models import GenEmail, AliasUsedOn, AliasGeneratorEnum
 
 
 @api_bp.route("/alias/random/new", methods=["POST"])
@@ -32,6 +31,15 @@ def new_random_alias():
         )
 
     scheme = user.alias_generator
+    mode = request.args.get("mode")
+    if mode:
+        if mode == "word":
+            scheme = AliasGeneratorEnum.word.value
+        elif mode == "uuid":
+            scheme = AliasGeneratorEnum.uuid.value
+        else:
+            return jsonify(error=f"{mode} must be either word or alias"), 400
+
     gen_email = GenEmail.create_new_random(user_id=user.id, scheme=scheme)
     db.session.commit()
 

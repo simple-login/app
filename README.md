@@ -697,6 +697,7 @@ Create a new random alias.
 Input:
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
+- (Optional) mode: either `uuid` or `word`. By default, use the user setting when creating new random alias.
 
 Output:
 If success, 201 with the new alias, for example
