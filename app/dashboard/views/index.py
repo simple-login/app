@@ -180,7 +180,9 @@ def get_alias_info(
     )
 
     if query:
-        q = q.filter(or_(GenEmail.email.contains(query), GenEmail.note.contains(query)))
+        q = q.filter(
+            or_(GenEmail.email.ilike(f"%{query}%"), GenEmail.note.ilike(f"%{query}%"))
+        )
 
     # pagination activated
     if page_id is not None:
