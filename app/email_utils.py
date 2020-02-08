@@ -268,9 +268,7 @@ def get_email_domain_part(email):
 
 
 def add_dkim_signature(msg: Message, email_domain: str):
-    if msg["DKIM-Signature"]:
-        LOG.d("Remove DKIM-Signature %s", msg["DKIM-Signature"])
-        del msg["DKIM-Signature"]
+    delete_header(msg, "DKIM-Signature")
 
     # Specify headers in "byte" form
     # Generate message signature
@@ -285,23 +283,24 @@ def add_dkim_signature(msg: Message, email_domain: str):
 
     # remove linebreaks from sig
     sig = sig.replace("\n", " ").replace("\r", "")
-
-    msg.add_header("DKIM-Signature", sig[len("DKIM-Signature: ") :])
+    msg["DKIM-Signature"] = sig[len("DKIM-Signature: ") :]
 
 
 def add_or_replace_header(msg: Message, header: str, value: str):
-    try:
-        msg.add_header(header, value)
-    except ValueError:
-        # the header exists already
-        msg.replace_header(header, value)
+    """
+    Remove all occurrences of `header` and add `header` with `value`.
+    """
+    delete_header(msg, header)
+    msg[header] = value
 
 
 def delete_header(msg: Message, header: str):
     """a header can appear several times in message."""
-    for h in msg._headers:
-        if h[0].lower() == header.lower():
-            msg._headers.remove(h)
+    # inspired from https://stackoverflow.com/a/47903323/1428034
+    for i in reversed(range(len(msg._headers))):
+        header_name = msg._headers[i][0].lower()
+        if header_name == header.lower():
+            del msg._headers[i]
 
 
 def email_belongs_to_alias_domains(email: str) -> bool:
