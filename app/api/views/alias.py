@@ -34,7 +34,7 @@ def get_aliases():
     except (ValueError, TypeError):
         return jsonify(error="page_id must be provided in request query"), 400
 
-    aliases: [AliasInfo] = get_alias_info(user.id, page_id=page_id)
+    aliases: [AliasInfo] = get_alias_info(user, page_id=page_id)
 
     return (
         jsonify(

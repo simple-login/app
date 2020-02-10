@@ -484,7 +484,7 @@ class GenEmail(db.Model, ModelMixin):
     )
 
     user = db.relationship(User)
-    mailbox = db.relationship('Mailbox')
+    mailbox = db.relationship("Mailbox")
 
     @classmethod
     def create_new(cls, user_id, prefix, note=None):

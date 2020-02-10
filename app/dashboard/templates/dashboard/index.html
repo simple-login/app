@@ -134,6 +134,12 @@
 
           <hr class="my-2">
 
+          {% if alias_info.mailbox != None %}
+            <div class="small-text">
+              Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
+            </div>
+          {% endif %}
+
           <p class="small-text">
             Created {{ gen_email.created_at | dt }}
             {% if alias_info.highlight %}
