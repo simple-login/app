@@ -14,4 +14,5 @@ from .views import (
     domain_detail,
     lifetime_licence,
     directory,
+    mailbox,
 )

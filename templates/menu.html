@@ -39,6 +39,14 @@
     </a>
   </li>
 
+  <li class="nav-item">
+    <a href="{{ url_for('dashboard.mailbox_route') }}"
+       class="nav-link {{ 'active' if active_page == 'mailbox' }}">
+      <i class="fe fe-inbox"></i> Mailboxes
+      <span class="badge badge-info" style="font-size: .5rem; top: 5px">Beta</span>
+    </a>
+  </li>
+
   <!--
   <li class="nav-item">
     <a href="{{ url_for('discover.index') }}"

@@ -1,0 +1,111 @@
+{% extends 'default.html' %}
+{% set active_page = "mailbox" %}
+
+{% block title %}
+  Mailboxes
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h1 class="h3"> Mailboxes </h1>
+
+      {% if not current_user.is_premium() %}
+        <div class="alert alert-danger" role="alert">
+          This feature is only available in premium plan.
+        </div>
+      {% endif %}
+
+      <div class="alert alert-primary" role="alert">
+        A <em>mailbox</em> is just another personal email address. When creating a new alias, you could choose the
+        mailbox that <em>owns</em> this alias, i.e: <br>
+        - all emails sent to this alias will be forwarded to this mailbox <br>
+        - from this mailbox, you can reply/send emails from the alias. <br>
+
+        By default, all aliases are owned by your email <b>{{ current_user.email }}</b>. <br><br>
+
+        The mailbox doesn't have to be your email: it can be your friend's email
+        if you want to create aliases for your buddy. <br>
+        They just need to validate this mailbox when they receive the activation email.
+      </div>
+
+      {% for mailbox in mailboxes %}
+        <div class="card" style="max-width: 50rem">
+          <div class="card-body">
+            <h5 class="card-title">
+              {{ mailbox.email }}
+              {% if mailbox.verified %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Verified">✅</span>
+              {% else %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Not Verified">
+                  🚫
+                </span>
+              {% endif %}
+
+            </h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              Created {{ mailbox.created_at | dt }} <br>
+              <span class="font-weight-bold">{{ mailbox.nb_alias() }}</span> aliases.
+            </h6>
+          </div>
+
+          <div class="card-footer p-0">
+            <div class="row">
+              <div class="col">
+                <form method="post">
+                  <input type="hidden" name="form-name" value="delete">
+                  <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
+                  <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
+                  <span class="card-link btn btn-link float-right delete-mailbox">
+                    Delete
+                  </span>
+                </form>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      {% endfor %}
+
+      {% if mailboxs|length > 0 %}
+        <hr>
+      {% endif %}
+
+      <form method="post" class="mt-6">
+        {{ new_mailbox_form.csrf_token }}
+        <input type="hidden" name="form-name" value="create">
+
+        <div class="font-weight-bold">Email</div>
+        <div class="small-text">
+          A verification email will be sent to this email to make sure you have access to this email.
+        </div>
+
+        {{ new_mailbox_form.email(class="form-control", placeholder="email@example.com",
+            autofocus="1") }}
+        {{ render_field_errors(new_mailbox_form.email) }}
+        <button class="btn btn-lg btn-success mt-2">Create</button>
+      </form>
+
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-mailbox").on("click", function (e) {
+      let mailbox = $(this).parent().find(".mailbox").val();
+      notie.confirm({
+        text: `All aliases owned by this mailbox <b>${mailbox}</b> will be also deleted, ` +
+          " please confirm.",
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+  </script>
+{% endblock %}
