@@ -199,7 +199,10 @@ class MailHandler:
                 LOG.d("alias %s cannot be created on-the-fly, return 510", alias)
                 return "510 Email not exist"
 
-        user_email = gen_email.user.email
+        if gen_email.mailbox_id:
+            mailbox_email = gen_email.mailbox.email
+        else:
+            mailbox_email = gen_email.user.email
 
         website_email = get_email_part(msg["From"])
 
@@ -267,7 +270,7 @@ class MailHandler:
             LOG.d(
                 "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
                 website_email,
-                user_email,
+                mailbox_email,
                 envelope.mail_options,
                 envelope.rcpt_options,
             )
@@ -277,7 +280,7 @@ class MailHandler:
             msg_raw = msg.as_string().encode()
             smtp.sendmail(
                 forward_email.reply_email,
-                user_email,
+                mailbox_email,
                 msg_raw,
                 envelope.mail_options,
                 envelope.rcpt_options,
