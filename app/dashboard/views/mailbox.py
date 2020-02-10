@@ -75,7 +75,7 @@ def mailbox_route():
                         + f"?mailbox_id={mailbox_id_signed}"
                     )
                     send_email(
-                        current_user.email,
+                        mailbox_email,
                         f"Please confirm your email {mailbox_email}",
                         render(
                             "transactional/verify-mailbox.txt",
