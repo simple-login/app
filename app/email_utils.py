@@ -18,6 +18,7 @@ from app.config import (
     SUPPORT_NAME,
 )
 from app.log import LOG
+from app.models import Mailbox, User
 
 
 def render(template_name, **kwargs) -> str:
@@ -330,3 +331,17 @@ def can_be_used_as_personal_email(email: str) -> bool:
         return False
 
     return True
+
+
+def email_already_used(email: str) -> bool:
+    """test if an email can be used when:
+    - user signs up
+    - add a new mailbox
+    """
+    if User.get_by(email=email):
+        return True
+
+    if Mailbox.get_by(email=email):
+        return True
+
+    return False

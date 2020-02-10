@@ -6,7 +6,7 @@ from app import email_utils
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
 from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL, DISABLE_REGISTRATION
-from app.email_utils import can_be_used_as_personal_email
+from app.email_utils import can_be_used_as_personal_email, email_already_used
 from app.extensions import db
 from app.log import LOG
 from app.models import User
@@ -89,7 +89,7 @@ def github_callback():
             flash("Registration is closed", "error")
             return redirect(url_for("auth.login"))
 
-        if not can_be_used_as_personal_email(email):
+        if not can_be_used_as_personal_email(email) or email_already_used(email):
             flash(
                 f"You cannot use {email} as your personal inbox.", "error",
             )

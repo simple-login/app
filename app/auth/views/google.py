@@ -10,7 +10,7 @@ from app.log import LOG
 from app.models import User, File
 from app.utils import random_string
 from .login_utils import after_login
-from ...email_utils import can_be_used_as_personal_email
+from ...email_utils import can_be_used_as_personal_email, email_already_used
 
 _authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
 _token_url = "https://www.googleapis.com/oauth2/v4/token"
@@ -97,7 +97,7 @@ def google_callback():
             flash("Registration is closed", "error")
             return redirect(url_for("auth.login"))
 
-        if not can_be_used_as_personal_email(email):
+        if not can_be_used_as_personal_email(email) or email_already_used(email):
             flash(
                 f"You cannot use {email} as your personal inbox.", "error",
             )
