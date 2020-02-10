@@ -141,6 +141,7 @@ def alias_contact_manager(alias_id, forward_email_id=None):
         "dashboard/alias_contact_manager.html",
         forward_emails=forward_emails,
         alias=gen_email.email,
+        gen_email=gen_email,
         new_contact_form=new_contact_form,
         forward_email_id=forward_email_id,
     )
