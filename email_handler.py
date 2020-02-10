@@ -313,13 +313,18 @@ class MailHandler:
             if not CustomDomain.get_by(domain=alias_domain):
                 return "550 alias unknown by SimpleLogin"
 
-        user_email = forward_email.gen_email.user.email
-        if envelope.mail_from.lower() != user_email.lower():
+        gen_email = forward_email.gen_email
+        if gen_email.mailbox_id:
+            mailbox_email = gen_email.mailbox.email
+        else:
+            mailbox_email = gen_email.user.email
+
+        if envelope.mail_from.lower() != mailbox_email.lower():
             LOG.warning(
                 f"Reply email can only be used by user email. Actual mail_from: %s. msg from header: %s, User email %s. reply_email %s",
                 envelope.mail_from,
                 msg["From"],
-                user_email,
+                mailbox_email,
                 reply_email,
             )
 
