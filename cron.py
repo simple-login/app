@@ -20,7 +20,7 @@ from server import create_app
 
 def notify_trial_end():
     for user in User.query.filter(
-        User.activated == True, User.trial_end.isnot(None)
+        User.activated == True, User.trial_end.isnot(None), User.lifetime == False
     ).all():
         if arrow.now().shift(days=3) > user.trial_end >= arrow.now().shift(days=2):
             LOG.d("Send trial end email to user %s", user)
