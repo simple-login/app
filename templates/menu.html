@@ -38,6 +38,7 @@
     </a>
   </li>
 
+  {% if current_user.can_use_multiple_mailbox %}
   <li class="nav-item">
     <a href="{{ url_for('dashboard.mailbox_route') }}"
        class="nav-link {{ 'active' if active_page == 'mailbox' }}">
@@ -45,6 +46,7 @@
       <span class="badge badge-info" style="font-size: .5rem; top: 5px">Beta</span>
     </a>
   </li>
+  {% endif %}
 
   <!--
   <li class="nav-item">

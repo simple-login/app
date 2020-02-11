@@ -27,6 +27,10 @@ class NewMailboxForm(FlaskForm):
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
 def mailbox_route():
+    if not current_user.can_use_multiple_mailbox:
+        flash("You don't have access to this page, redirect to home page", "warning")
+        return redirect(url_for("dashboard.index"))
+
     mailboxes = Mailbox.query.filter_by(user_id=current_user.id).all()
 
     new_mailbox_form = NewMailboxForm()
@@ -48,9 +52,10 @@ def mailbox_route():
             return redirect(url_for("dashboard.mailbox_route"))
 
         elif request.form.get("form-name") == "create":
-            if not current_user.is_premium():
-                flash("Only premium plan can add additional mailbox", "warning")
-                return redirect(url_for("dashboard.mailbox_route"))
+            # todo: only premium user can add additional mailbox?
+            # if not current_user.is_premium():
+            #     flash("Only premium plan can add additional mailbox", "warning")
+            #     return redirect(url_for("dashboard.mailbox_route"))
 
             if new_mailbox_form.validate():
                 mailbox_email = new_mailbox_form.email.data.lower()
