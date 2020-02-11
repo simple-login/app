@@ -50,7 +50,7 @@ from app.email_utils import (
     send_cannot_create_directory_alias,
     send_cannot_create_domain_alias,
     email_belongs_to_alias_domains,
-    send_reply_alias_must_use_personal_email,
+    render,
 )
 from app.extensions import db
 from app.log import LOG
@@ -328,10 +328,24 @@ class MailHandler:
                 reply_email,
             )
 
-            send_reply_alias_must_use_personal_email(
-                forward_email.gen_email.user,
-                forward_email.gen_email.email,
-                envelope.mail_from,
+            user = gen_email.user
+            send_email(
+                mailbox_email,
+                f"Reply from your alias {alias} only works from your mailbox",
+                render(
+                    "transactional/reply-must-use-personal-email.txt",
+                    name=user.name,
+                    alias=alias,
+                    sender=envelope.mail_from,
+                    mailbox_email=mailbox_email,
+                ),
+                render(
+                    "transactional/reply-must-use-personal-email.html",
+                    name=user.name,
+                    alias=alias,
+                    sender=envelope.mail_from,
+                    mailbox_email=mailbox_email,
+                ),
             )
 
             send_email(
