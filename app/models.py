@@ -133,6 +133,10 @@ class User(db.Model, ModelMixin, UserMixin):
         ArrowType, default=lambda: arrow.now().shift(days=7, hours=1), nullable=True
     )
 
+    can_use_multiple_mailbox = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     profile_picture = db.relationship(File)
 
     @classmethod
