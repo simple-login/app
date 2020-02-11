@@ -186,7 +186,7 @@ def send_email(to_email, subject, plaintext, html):
     msg["To"] = to_email
 
     msg.set_content(plaintext)
-    if html is not None:
+    if html:
         msg.add_alternative(html, subtype="html")
 
     msg_id_header = make_msgid()

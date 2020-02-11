@@ -348,10 +348,15 @@ class MailHandler:
                 ),
             )
 
+            # Notify sender that they cannot send emails to this address
             send_email(
                 envelope.mail_from,
-                f"Your email ({envelope.mail_from}) is not allowed to send email to {reply_email}",
-                "",
+                f"Your email ({envelope.mail_from}) is not allowed to send emails to {reply_email}",
+                render(
+                    "transactional/send-from-alias-from-unknown-sender.txt",
+                    sender=envelope.mail_from,
+                    reply_email=reply_email,
+                ),
                 "",
             )
 
