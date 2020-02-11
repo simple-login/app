@@ -27,7 +27,6 @@
     <a href="{{ url_for('dashboard.custom_domain') }}"
        class="nav-link {{ 'active' if active_page == 'custom_domain' }}">
       <i class="fe fe-server"></i> Custom Domains
-      <span class="badge badge-success" style="font-size: .5rem; top: 5px">Premium</span>
     </a>
   </li>
 
@@ -39,13 +38,13 @@
   </li>
 
   {% if current_user.can_use_multiple_mailbox %}
-  <li class="nav-item">
-    <a href="{{ url_for('dashboard.mailbox_route') }}"
-       class="nav-link {{ 'active' if active_page == 'mailbox' }}">
-      <i class="fe fe-inbox"></i> Mailboxes
-      <span class="badge badge-info" style="font-size: .5rem; top: 5px">Beta</span>
-    </a>
-  </li>
+    <li class="nav-item">
+      <a href="{{ url_for('dashboard.mailbox_route') }}"
+         class="nav-link {{ 'active' if active_page == 'mailbox' }}">
+        <i class="fe fe-inbox"></i> Mailboxes
+        <span class="badge badge-info" style="font-size: .5rem; top: 5px">Beta</span>
+      </a>
+    </li>
   {% endif %}
 
   <!--
