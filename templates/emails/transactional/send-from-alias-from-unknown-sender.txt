@@ -4,7 +4,8 @@ This is an automated email from SimpleLogin.
 
 We have recorded an attempt to send an email from your email ({{sender}}) to {{reply_email}}.
 
-{{reply_email}} is a special email address that only receive emails from its authorized user.
+{{reply_email}} is a special email address that only receives emails from its authorized user.
+This user has been also informed of this incident.
 
 If you have any question, you can contact us by replying to this email or consult our website at https://simplelogin.io.
 
