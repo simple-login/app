@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + user.name) }}
+  {{ render_text("You have added "+ mailbox_email +" as an additional mailbox.") }}
+  {{ render_text("To confirm, please click on the button below or use this link: <br> " + link) }}
+  {{ render_button("Confirm email", link) }}
+{% endblock %}
+

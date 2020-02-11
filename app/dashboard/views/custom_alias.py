@@ -9,7 +9,7 @@ from app.dashboard.base import dashboard_bp
 from app.email_utils import email_belongs_to_alias_domains, get_email_domain_part
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, CustomDomain, DeletedAlias
+from app.models import GenEmail, CustomDomain, DeletedAlias, Mailbox
 from app.utils import convert_to_id, random_word, word_exist
 
 
@@ -43,10 +43,22 @@ def custom_alias():
             )
         )
 
+    mailboxes = [current_user.email]
+    for mailbox in Mailbox.query.filter_by(user_id=current_user.id):
+        mailboxes.append(mailbox.email)
+
     if request.method == "POST":
         alias_prefix = request.form.get("prefix")
         alias_suffix = request.form.get("suffix")
+        mailbox_email = request.form.get("mailbox")
         alias_note = request.form.get("note")
+
+        # check if mailbox is not tempered with
+        if mailbox_email != current_user.email:
+            mailbox = Mailbox.get_by(email=mailbox_email)
+            if not mailbox or mailbox.user_id != current_user.id:
+                flash("Something went wrong, please retry", "warning")
+                return redirect(url_for("dashboard.custom_alias"))
 
         if verify_prefix_suffix(
             current_user, alias_prefix, alias_suffix, user_custom_domains
@@ -70,7 +82,13 @@ def custom_alias():
                 alias_domain = get_email_domain_part(full_alias)
                 custom_domain = CustomDomain.get_by(domain=alias_domain)
                 if custom_domain:
+                    LOG.d("Set alias %s domain to %s", full_alias, custom_domain)
                     gen_email.custom_domain_id = custom_domain.id
+
+                if mailbox_email != current_user.email:
+                    mailbox = Mailbox.get_by(email=mailbox_email)
+                    gen_email.mailbox_id = mailbox.id
+                    LOG.d("Set alias %s mailbox to %s", full_alias, mailbox)
 
                 db.session.commit()
                 flash(f"Alias {full_alias} has been created", "success")

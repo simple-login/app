@@ -50,7 +50,7 @@ from app.email_utils import (
     send_cannot_create_directory_alias,
     send_cannot_create_domain_alias,
     email_belongs_to_alias_domains,
-    send_reply_alias_must_use_personal_email,
+    render,
 )
 from app.extensions import db
 from app.log import LOG
@@ -199,7 +199,10 @@ class MailHandler:
                 LOG.d("alias %s cannot be created on-the-fly, return 510", alias)
                 return "510 Email not exist"
 
-        user_email = gen_email.user.email
+        if gen_email.mailbox_id:
+            mailbox_email = gen_email.mailbox.email
+        else:
+            mailbox_email = gen_email.user.email
 
         website_email = get_email_part(msg["From"])
 
@@ -267,7 +270,7 @@ class MailHandler:
             LOG.d(
                 "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
                 website_email,
-                user_email,
+                mailbox_email,
                 envelope.mail_options,
                 envelope.rcpt_options,
             )
@@ -277,7 +280,7 @@ class MailHandler:
             msg_raw = msg.as_string().encode()
             smtp.sendmail(
                 forward_email.reply_email,
-                user_email,
+                mailbox_email,
                 msg_raw,
                 envelope.mail_options,
                 envelope.rcpt_options,
@@ -310,26 +313,50 @@ class MailHandler:
             if not CustomDomain.get_by(domain=alias_domain):
                 return "550 alias unknown by SimpleLogin"
 
-        user_email = forward_email.gen_email.user.email
-        if envelope.mail_from.lower() != user_email.lower():
+        gen_email = forward_email.gen_email
+        if gen_email.mailbox_id:
+            mailbox_email = gen_email.mailbox.email
+        else:
+            mailbox_email = gen_email.user.email
+
+        if envelope.mail_from.lower() != mailbox_email.lower():
             LOG.warning(
                 f"Reply email can only be used by user email. Actual mail_from: %s. msg from header: %s, User email %s. reply_email %s",
                 envelope.mail_from,
                 msg["From"],
-                user_email,
+                mailbox_email,
                 reply_email,
             )
 
-            send_reply_alias_must_use_personal_email(
-                forward_email.gen_email.user,
-                forward_email.gen_email.email,
-                envelope.mail_from,
+            user = gen_email.user
+            send_email(
+                mailbox_email,
+                f"Reply from your alias {alias} only works from your mailbox",
+                render(
+                    "transactional/reply-must-use-personal-email.txt",
+                    name=user.name,
+                    alias=alias,
+                    sender=envelope.mail_from,
+                    mailbox_email=mailbox_email,
+                ),
+                render(
+                    "transactional/reply-must-use-personal-email.html",
+                    name=user.name,
+                    alias=alias,
+                    sender=envelope.mail_from,
+                    mailbox_email=mailbox_email,
+                ),
             )
 
+            # Notify sender that they cannot send emails to this address
             send_email(
                 envelope.mail_from,
-                f"Your email ({envelope.mail_from}) is not allowed to send email to {reply_email}",
-                "",
+                f"Your email ({envelope.mail_from}) is not allowed to send emails to {reply_email}",
+                render(
+                    "transactional/send-from-alias-from-unknown-sender.txt",
+                    sender=envelope.mail_from,
+                    reply_email=reply_email,
+                ),
                 "",
             )
 

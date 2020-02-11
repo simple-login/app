@@ -16,7 +16,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import User
 from .login_utils import after_login
-from ...email_utils import can_be_used_as_personal_email
+from ...email_utils import can_be_used_as_personal_email, email_already_used
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"
@@ -112,7 +112,7 @@ def facebook_callback():
             flash("Registration is closed", "error")
             return redirect(url_for("auth.login"))
 
-        if not can_be_used_as_personal_email(email):
+        if not can_be_used_as_personal_email(email) or email_already_used(email):
             flash(
                 f"You cannot use {email} as your personal inbox.", "error",
             )

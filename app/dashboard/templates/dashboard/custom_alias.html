@@ -48,6 +48,25 @@
         </div>
       </div>
 
+      {% if mailboxes|length > 1 %}
+        <div class="row mb-2">
+          <div class="col">
+            <select class="form-control" name="mailbox">
+              {% for mailbox in mailboxes %}
+                <option value="{{ mailbox }}">
+                  {{ mailbox }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="small-text">
+              The mailbox that owns this alias.
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <input type="hidden" name="mailbox" value="{{ mailboxes[0] }}">
+      {% endif %}
+
       <div class="row mb-2">
         <div class="col">
         <textarea name="note"

@@ -7,3 +7,4 @@ db.sqlite
 .DS_Store
 config
 static/node_modules
+db.sqlite-journal

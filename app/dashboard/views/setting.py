@@ -11,7 +11,7 @@ from wtforms import StringField, validators
 from app import s3, email_utils
 from app.config import URL
 from app.dashboard.base import dashboard_bp
-from app.email_utils import can_be_used_as_personal_email
+from app.email_utils import can_be_used_as_personal_email, email_already_used
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -88,7 +88,7 @@ def setting():
 
                     # check if this email is not used by other user, or as alias
                     if (
-                        User.get_by(email=new_email)
+                        email_already_used(new_email)
                         or GenEmail.get_by(email=new_email)
                         or DeletedAlias.get_by(email=new_email)
                     ):

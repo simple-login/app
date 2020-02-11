@@ -48,6 +48,7 @@ from app.models import (
     CustomDomain,
     LifetimeCoupon,
     Directory,
+    Mailbox,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -129,6 +130,7 @@ def fake_data():
         activated=True,
         is_admin=True,
         otp_secret="base32secret3232",
+        can_use_multiple_mailbox=True,
     )
     db.session.commit()
 
@@ -179,6 +181,7 @@ def fake_data():
     client2.published = True
     db.session.commit()
 
+    Mailbox.create(user_id=user.id, email="ab@cd.ef", verified=True)
     db.session.commit()
 
 

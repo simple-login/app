@@ -17,7 +17,7 @@ from app.config import (
     AVATAR_URL_EXPIRATION,
     JOB_ONBOARDING_1,
 )
-from app.email_utils import get_email_name
+
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
@@ -131,6 +131,10 @@ class User(db.Model, ModelMixin, UserMixin):
     # user can use all premium features until this date
     trial_end = db.Column(
         ArrowType, default=lambda: arrow.now().shift(days=7, hours=1), nullable=True
+    )
+
+    can_use_multiple_mailbox = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
     )
 
     profile_picture = db.relationship(File)
@@ -478,7 +482,13 @@ class GenEmail(db.Model, ModelMixin):
 
     note = db.Column(db.Text, default=None, nullable=True)
 
+    # an alias can be owned by another mailbox
+    mailbox_id = db.Column(
+        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=True, default=None
+    )
+
     user = db.relationship(User)
+    mailbox = db.relationship("Mailbox")
 
     @classmethod
     def create_new(cls, user_id, prefix, note=None):
@@ -626,6 +636,8 @@ class ForwardEmail(db.Model, ModelMixin):
     def website_send_to(self):
         """return the email address with name.
         to use when user wants to send an email from the alias"""
+        from app.email_utils import get_email_name
+
         if self.website_from:
             name = get_email_name(self.website_from)
             if name:
@@ -799,3 +811,17 @@ class Job(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<Job {self.id} {self.name} {self.payload}>"
+
+
+class Mailbox(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    email = db.Column(db.String(256), unique=True, nullable=False)
+    verified = db.Column(db.Boolean, default=False, nullable=False)
+
+    user = db.relationship(User)
+
+    def nb_alias(self):
+        return GenEmail.filter_by(mailbox_id=self.id).count()
+
+    def __repr__(self):
+        return f"<Mailbox {self.email}>"

@@ -15,13 +15,23 @@
 
   <div class="alert alert-primary" role="alert">
     <p>
-      To send an email from your alias, just send the email to a special email address that we call
-      <em>reverse-alias</em>
-      and SimpleLogin will send it from the alias to the destination.
+      To send an email from your alias to someone, says <b>friend@example.com</b>, you need to: <br>
+
+      1. Create a special email address called <em>reverse-alias</em> for friend@example.com using the form below <br>
+      2. Send the email to the reverse-alias <em>instead of</em> friend@example.com
+      <br>
+      3. SimpleLogin will send this email from the alias to friend@example.com for you
     </p>
     <p>
-      Make sure you send the email from your personal email address ({{ current_user.email }}).
-      This special email address can <em>only</em> be used by you.
+      This might sound complicated but trust us, only the first time is a bit awkward.
+    </p>
+    <p>
+      {% if gen_email.mailbox_id %}
+        Make sure you send the email from the mailbox <b>{{ gen_email.mailbox.email }}</b>.
+        This is because only the mailbox that owns the alias can send emails from it.
+      {% else %}
+        Make sure you send the email from your personal email address ({{ current_user.email }}).
+      {% endif %}
     </p>
   </div>
 

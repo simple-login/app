@@ -18,6 +18,7 @@ from app.config import (
     SUPPORT_NAME,
 )
 from app.log import LOG
+from app.models import Mailbox, User
 
 
 def render(template_name, **kwargs) -> str:
@@ -166,31 +167,6 @@ def send_cannot_create_domain_alias(user, alias, domain):
     )
 
 
-def send_reply_alias_must_use_personal_email(user, alias, sender):
-    """
-    The reply_email can be used only by user personal email.
-    Notify user if it's used by someone else
-    """
-    send_email(
-        user.email,
-        f"Reply from your alias {alias} only works with your personal email",
-        render(
-            "transactional/reply-must-use-personal-email.txt",
-            name=user.name,
-            alias=alias,
-            sender=sender,
-            user_email=user.email,
-        ),
-        render(
-            "transactional/reply-must-use-personal-email.html",
-            name=user.name,
-            alias=alias,
-            sender=sender,
-            user_email=user.email,
-        ),
-    )
-
-
 def send_email(to_email, subject, plaintext, html):
     if NOT_SEND_EMAIL:
         LOG.d(
@@ -210,7 +186,7 @@ def send_email(to_email, subject, plaintext, html):
     msg["To"] = to_email
 
     msg.set_content(plaintext)
-    if html is not None:
+    if html:
         msg.add_alternative(html, subtype="html")
 
     msg_id_header = make_msgid()
@@ -330,3 +306,17 @@ def can_be_used_as_personal_email(email: str) -> bool:
         return False
 
     return True
+
+
+def email_already_used(email: str) -> bool:
+    """test if an email can be used when:
+    - user signs up
+    - add a new mailbox
+    """
+    if User.get_by(email=email):
+        return True
+
+    if Mailbox.get_by(email=email):
+        return True
+
+    return False

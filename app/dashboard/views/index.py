@@ -16,12 +16,14 @@ from app.models import (
     ForwardEmailLog,
     DeletedAlias,
     AliasGeneratorEnum,
+    Mailbox,
 )
 
 
 class AliasInfo:
     id: int
     gen_email: GenEmail
+    mailbox: Mailbox
     nb_forward: int
     nb_blocked: int
     nb_reply: int
@@ -154,7 +156,7 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        aliases=get_alias_info(current_user.id, query, highlight_gen_email_id),
+        aliases=get_alias_info(current_user, query, highlight_gen_email_id),
         highlight_gen_email_id=highlight_gen_email_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
@@ -162,7 +164,7 @@ def index():
 
 
 def get_alias_info(
-    user_id, query=None, highlight_gen_email_id=None, page_id=None
+    user, query=None, highlight_gen_email_id=None, page_id=None
 ) -> [AliasInfo]:
     if query:
         query = query.strip().lower()
@@ -170,12 +172,13 @@ def get_alias_info(
     aliases = {}  # dict of alias and AliasInfo
 
     q = (
-        db.session.query(GenEmail, ForwardEmail, ForwardEmailLog)
+        db.session.query(GenEmail, ForwardEmail, ForwardEmailLog, Mailbox)
         .join(ForwardEmail, GenEmail.id == ForwardEmail.gen_email_id, isouter=True)
         .join(
             ForwardEmailLog, ForwardEmail.id == ForwardEmailLog.forward_id, isouter=True
         )
-        .filter(GenEmail.user_id == user_id)
+        .join(Mailbox, GenEmail.mailbox_id == Mailbox.id, isouter=True)
+        .filter(GenEmail.user_id == user.id)
         .order_by(GenEmail.created_at.desc())
     )
 
@@ -188,7 +191,7 @@ def get_alias_info(
     if page_id is not None:
         q = q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT)
 
-    for ge, fe, fel in q:
+    for ge, fe, fel, mb in q:
         if ge.email not in aliases:
             aliases[ge.email] = AliasInfo(
                 id=ge.id,
@@ -197,6 +200,7 @@ def get_alias_info(
                 nb_forward=0,
                 nb_reply=0,
                 highlight=ge.id == highlight_gen_email_id,
+                mailbox=mb,
             )
 
         alias_info = aliases[ge.email]
