@@ -1,12 +1,16 @@
 {% extends "base.html" %}
 
-{% block content %}
-  {% if name %}
-    {{ render_text("Hi " + name + ",") }}
-  {% else %}
-    {{ render_text("Hi,") }}
-  {% endif %}
+{% block greeting %}
+  <h1 style="margin-top: 0; color: #333333; font-size: 22px; font-weight: bold; text-align: left;" align="left">
+    {% if name %}
+    Welcome, {{ name }}!
+    {% else %}
+    Welcome!
+    {% endif %}
+  </h1>
+{% endblock %}
 
+{% block content %}
   {{ render_text("My name is Son. I’m the founder of SimpleLogin and I wanted to be the first to welcome you on board.") }}
 
   {{ render_text('To better secure your account, I recommend enabling Multi-Factor Authentication (MFA) on your <a href="https://app.simplelogin.io/dashboard/setting">Setting page</a>.') }}
@@ -22,7 +26,9 @@ and create your <b>business emails</b> using email alias. This is cheaper and mo
 
   {{ render_text('In the next coming days, you are going to receive some onboarding emails to quickly present SimpleLogin features. If you don\'t want to receive these emails, you can disable them on <a href="https://app.simplelogin.io/dashboard/setting#notification">Settings</a>.') }}
 
-  {{ render_text('If there\'s anything that\'s bugging you, even the smallest of issues that could be done better, I want to hear about it - so hit the reply button.') }}
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+
+  {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
 
 {% endblock %}
 
