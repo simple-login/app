@@ -25,11 +25,6 @@ def new_client():
 
         flash("Your app has been created", "success")
 
-        # if this is the first app user creates, sends an email to ask for feedback
-        if db.session.query(Client).filter_by(user_id=current_user.id).count() == 1:
-            LOG.d(f"send feedback email to user {current_user}")
-            email_utils.send_new_app_email(current_user.email, current_user.name)
-
         return redirect(
             url_for("developer.client_detail", client_id=client.id, is_new=1)
         )
