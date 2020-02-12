@@ -1,8 +1,11 @@
-Hi {{name}} <br><br>
+{% extends "base.html" %}
 
-An email has been sent to the alias <b>{{alias}}</b> that would be created automatically as you own the directory <b>{{directory}}</b>. However as your plan is no longer premium, this creation cannot happen.<br><br>
+{% block content %}
+  {{ render_text("Hi " + name) }}
+  {{ render_text("An email has been sent to the alias <b>" + alias + "</b> that would be created automatically as you own the directory <b>" + directory + "</b>.") }}
 
-Please upgrade to premium plan in order to use this feature.<br><br>
+  {{ render_text("However as your plan is no longer premium, this creation cannot happen.") }}
+  {{ render_text('Please upgrade to premium plan in order to use this feature.') }}
 
-Best,<br>
-SimpleLogin team.
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+{% endblock %}
