@@ -1,9 +1,12 @@
-Hi {{name}} <br><br>
+{% extends "base.html" %}
 
-We have recorded an attempt to send an email from your alias <b>{{ alias }}</b> using <b>{{ sender }}</b>. <br><br>
+{% block content %}
+  {{ render_text("Hi " + name) }}
+  {{ render_text("We have recorded an attempt to send an email from your alias <b>"+ alias +"</b> using <b>" + sender + "</b>.") }}
+  {{ render_text("Please note that sending from this alias only works from <b>" + mailbox_email + "</b>.") }}
+  {{ render_text("Indeed, only you (or the mailbox that owns <b>" + alias + "</b>) can send emails on behalf of this alias.") }}
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ raw_url(link) }}
+{% endblock %}
 
-Please note that sending from this alias only works from {{mailbox_email}}. <br>
-Indeed, only you (or the mailbox that owns {{ alias }}) can send emails on behalf of this alias. <br><br>
 
-Best, <br>
-SimpleLogin team.
