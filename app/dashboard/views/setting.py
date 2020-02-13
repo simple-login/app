@@ -7,6 +7,7 @@ from flask_login import login_required, current_user, logout_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from wtforms import StringField, validators
+from wtforms.fields.html5 import EmailField
 
 from app import s3, email_utils
 from app.config import URL
@@ -30,9 +31,14 @@ from app.utils import random_string
 
 
 class SettingForm(FlaskForm):
-    email = StringField("Email")
     name = StringField("Name")
     profile_picture = FileField("Profile Picture")
+
+
+class ChangeEmailForm(FlaskForm):
+    email = EmailField(
+        "email", validators=[validators.DataRequired(), validators.Email()]
+    )
 
 
 class PromoCodeForm(FlaskForm):
@@ -44,6 +50,7 @@ class PromoCodeForm(FlaskForm):
 def setting():
     form = SettingForm()
     promo_form = PromoCodeForm()
+    change_email_form = ChangeEmailForm()
 
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
@@ -52,6 +59,37 @@ def setting():
         pending_email = None
 
     if request.method == "POST":
+        if request.form.get("form-name") == "update-email":
+            if change_email_form.validate():
+                if form.email.data != current_user.email and not pending_email:
+                    new_email = form.email.data
+
+                    # check if this email is not already used
+                    if (
+                        email_already_used(new_email)
+                        or GenEmail.get_by(email=new_email)
+                        or DeletedAlias.get_by(email=new_email)
+                    ):
+                        flash(f"Email {new_email} already used", "error")
+                    elif not can_be_used_as_personal_email(new_email):
+                        flash(
+                            "You cannot use this email address as your personal inbox.",
+                            "error",
+                        )
+                    else:
+                        email_change = EmailChange.create(
+                            user_id=current_user.id,
+                            code=random_string(
+                                60
+                            ),  # todo: make sure the code is unique
+                            new_email=new_email,
+                        )
+                        db.session.commit()
+                        send_change_email_confirmation(current_user, email_change)
+                        flash(
+                            "A confirmation email is on the way, please check your inbox",
+                            "success",
+                        )
         if request.form.get("form-name") == "update-profile":
             if form.validate():
                 profile_updated = False
@@ -78,40 +116,6 @@ def setting():
 
                 if profile_updated:
                     flash(f"Your profile has been updated", "success")
-
-                if (
-                    form.email.data
-                    and form.email.data != current_user.email
-                    and not pending_email
-                ):
-                    new_email = form.email.data
-
-                    # check if this email is not used by other user, or as alias
-                    if (
-                        email_already_used(new_email)
-                        or GenEmail.get_by(email=new_email)
-                        or DeletedAlias.get_by(email=new_email)
-                    ):
-                        flash(f"Email {new_email} already used", "error")
-                    elif not can_be_used_as_personal_email(new_email):
-                        flash(
-                            "You cannot use this email address as your personal inbox.",
-                            "error",
-                        )
-                    else:
-                        email_change = EmailChange.create(
-                            user_id=current_user.id,
-                            code=random_string(
-                                60
-                            ),  # todo: make sure the code is unique
-                            new_email=new_email,
-                        )
-                        db.session.commit()
-                        send_change_email_confirmation(current_user, email_change)
-                        flash(
-                            "A confirmation email is on the way, please check your inbox",
-                            "success",
-                        )
 
         elif request.form.get("form-name") == "change-password":
             send_reset_password_email(current_user)
@@ -174,6 +178,7 @@ def setting():
         form=form,
         PlanEnum=PlanEnum,
         promo_form=promo_form,
+        change_email_form=change_email_form,
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
     )

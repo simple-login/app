@@ -9,46 +9,68 @@
 {% block default_content %}
 
   <div class="col-md-8 offset-md-2 pb-3">
-    <form method="post" enctype="multipart/form-data">
-      {{ form.csrf_token }}
-      <input type="hidden" name="form-name" value="update-profile">
+    <!-- Change email -->
+    <div class="card">
+      <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="form-name" value="update-email">
+        {{ change_email_form.csrf_token }}
 
-      <h1 class="h3">Profile</h1>
-
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <!-- Not allow user to change email if there's a pending change -->
-        {{ form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
-        {{ render_field_errors(form.email) }}
-
-        {% if pending_email %}
-          <div class="mt-2">
-            <span class="text-danger">Pending email change: {{ pending_email }}</span>
-            <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Resend
-              confirmation email</a>
-            <a href="{{ url_for('dashboard.cancel_email_change') }}" class="btn btn-secondary btn-sm">Cancel email
-              change</a>
+        <div class="card-body">
+          <div class="card-title">
+            Email
           </div>
-        {% endif %}
-      </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
 
-      <div class="form-group">
-        <label class="form-label">Name</label>
-        {{ form.name(class="form-control", value=current_user.name) }}
-        {{ render_field_errors(form.name) }}
-      </div>
+            <!-- Not allow user to change email if there's a pending change -->
+            {{ change_email_form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
+            {{ render_field_errors(change_email_form.email) }}
 
-      <div class="form-group">
-        <div class="form-label">Profile picture</div>
-        {{ form.profile_picture(class="form-control-file") }}
-        {{ render_field_errors(form.profile_picture) }}
-        {% if current_user.profile_picture_id %}
-          <img src="{{ current_user.profile_picture_url() }}" class="profile-picture">
-        {% endif %}
-      </div>
+            {% if pending_email %}
+              <div class="mt-2">
+                <span class="text-danger">Pending email change: {{ pending_email }}</span>
+                <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Resend
+                  confirmation email</a>
+                <a href="{{ url_for('dashboard.cancel_email_change') }}" class="btn btn-secondary btn-sm">Cancel email
+                  change</a>
+              </div>
+            {% endif %}
+          </div>
+          <button class="btn btn-primary">Change Email</button>
+        </div>
+      </form>
+    </div>
+    <!-- END Change email -->
 
-      <button class="btn btn-primary">Update</button>
-    </form>
+    <!-- Change name & profile picture -->
+    <div class="card">
+      <form method="post" enctype="multipart/form-data">
+        {{ form.csrf_token }}
+        <input type="hidden" name="form-name" value="update-profile">
+
+        <div class="card-body">
+          <div class="card-title">
+            Profile
+          </div>
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            {{ form.name(class="form-control", value=current_user.name) }}
+            {{ render_field_errors(form.name) }}
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">Profile picture</div>
+            {{ form.profile_picture(class="form-control-file") }}
+            {{ render_field_errors(form.profile_picture) }}
+            {% if current_user.profile_picture_id %}
+              <img src="{{ current_user.profile_picture_url() }}" class="profile-picture">
+            {% endif %}
+          </div>
+          <button class="btn btn-primary">Update</button>
+        </div>
+      </form>
+    </div>
+    <!-- END change name & profile picture -->
 
 
     <hr>
@@ -92,16 +114,17 @@
 
     <h3 class="mb-0" id="notification">Notifications</h3>
     <div class="small-text mb-3">Do you want to receive our newsletter?</div>
-      <form method="post">
-        <input type="hidden" name="form-name" value="notification-preference">
-        <div class="form-inline mb-3">
-          <div class="form-group">
-              <input type="checkbox" id="notification" name="notification" {% if current_user.notification %} checked {% endif %} class="form-check-input">
-              <label for="notification">I want to receive your newsletter</label>
-          </div>
+    <form method="post">
+      <input type="hidden" name="form-name" value="notification-preference">
+      <div class="form-inline mb-3">
+        <div class="form-group">
+          <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
+                 checked {% endif %} class="form-check-input">
+          <label for="notification">I want to receive your newsletter</label>
         </div>
-        <button type="submit" class="btn btn-outline-primary">Submit</button>
-      </form>
+      </div>
+      <button type="submit" class="btn btn-outline-primary">Submit</button>
+    </form>
 
 
     {% if current_user.get_subscription() %}
