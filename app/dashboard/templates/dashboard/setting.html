@@ -17,7 +17,7 @@
 
         <div class="card-body">
           <div class="card-title">
-            Email
+            Change Email Address
           </div>
           <div class="form-group">
             <label class="form-label">Email</label>
@@ -50,7 +50,7 @@
 
         <div class="card-body">
           <div class="card-title">
-            Profile
+            Change Profile
           </div>
           <div class="form-group">
             <label class="form-label">Name</label>
@@ -73,90 +73,122 @@
     <!-- END change name & profile picture -->
 
 
-    <hr>
-    <h3 class="mb-0">Multi-Factor Authentication (MFA)</h3>
-    <div class="small-text mb-3">
-      Secure your account with Multi-Factor Authentication.
-      This requires having applications like Google Authenticator, Authy, FreeOTP, etc.
-    </div>
-    {% if not current_user.enable_otp %}
-      <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Enable</a>
-    {% else %}
-      <a href="{{ url_for('dashboard.mfa_cancel') }}" class="btn btn-outline-danger">Cancel MFA</a>
-    {% endif %}
-
-    <hr>
-    <h3 class="mb-0">Change password</h3>
-    <div class="small-text mb-3">You will receive an email containing instructions on how to change password.</div>
-    <form method="post">
-      <input type="hidden" name="form-name" value="change-password">
-      <button class="btn btn-outline-primary">Change password</button>
-    </form>
-
-    <hr>
-
-    <h3 class="mb-0">Random Alias</h3>
-    <div class="small-text mb-3">Choose how to create your email alias by default</div>
-    <form method="post" class="form-inline">
-      <input type="hidden" name="form-name" value="change-alias-generator">
-      <select class="custom-select mr-sm-2" name="alias-generator-scheme">
-        <option value="{{ AliasGeneratorEnum.word.value }}"
-            {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected {% endif %} >Based on
-          Random {{ AliasGeneratorEnum.word.name.capitalize() }}</option>
-        <option value="{{ AliasGeneratorEnum.uuid.value }}"
-            {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
-          on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
-      </select>
-      <button class="btn btn-outline-primary">Update Preference</button>
-    </form>
-
-    <hr>
-
-    <h3 class="mb-0" id="notification">Notifications</h3>
-    <div class="small-text mb-3">Do you want to receive our newsletter?</div>
-    <form method="post">
-      <input type="hidden" name="form-name" value="notification-preference">
-      <div class="form-inline mb-3">
-        <div class="form-group">
-          <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
-                 checked {% endif %} class="form-check-input">
-          <label for="notification">I want to receive your newsletter</label>
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Multi-Factor Authentication (MFA)
+          <div class="small-text mt-1 mb-3">
+            Secure your account with Multi-Factor Authentication. <br>
+            This requires having applications like Google Authenticator, Authy, FreeOTP, etc.
+          </div>
         </div>
+        {% if not current_user.enable_otp %}
+          <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Enable</a>
+        {% else %}
+          <a href="{{ url_for('dashboard.mfa_cancel') }}" class="btn btn-outline-danger">Cancel MFA</a>
+        {% endif %}
       </div>
-      <button type="submit" class="btn btn-outline-primary">Submit</button>
-    </form>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">
+          Change password
+          <div class="small-text mt-1 mb-3">
+            You will receive an email containing instructions on how to change password.
+          </div>
+        </div>
+        <form method="post">
+          <input type="hidden" name="form-name" value="change-password">
+          <button class="btn btn-outline-primary">Change password</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Random Alias
+          <div class="small-text mt-1 mb-3">Choose how to create your email alias by default</div>
+        </div>
+        <form method="post" class="form-inline">
+          <input type="hidden" name="form-name" value="change-alias-generator">
+          <select class="custom-select mr-sm-2" name="alias-generator-scheme">
+            <option value="{{ AliasGeneratorEnum.word.value }}"
+                {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected {% endif %} >Based on
+              Random {{ AliasGeneratorEnum.word.name.capitalize() }}</option>
+            <option value="{{ AliasGeneratorEnum.uuid.value }}"
+                {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
+              on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
+          </select>
+          <button class="btn btn-outline-primary">Update Preference</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title" id="notification">Notifications
+          <div class="small-text mt-1 mb-3">Do you want to receive our newsletters?</div>
+        </div>
+        <form method="post">
+          <input type="hidden" name="form-name" value="notification-preference">
+          <div class="form-inline mb-3">
+            <div class="form-group">
+              <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
+                     checked {% endif %} class="form-check-input">
+              <label for="notification">I want to receive your newsletter</label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Submit</button>
+        </form>
+      </div>
+    </div>
+
+
 
 
     {% if current_user.get_subscription() %}
-      <hr>
-      <h3 class="mb-0">Billing</h3>
-      <div class="small-text mb-3">
-        Manage your current subscription.
+      <div class="card">
+        <div class="card-body">
+          <div class="card-title">Billing
+            <div class="small-text mt-1 mb-3">
+              Manage your current subscription.
+            </div>
+          </div>
+          <a href="{{ url_for('dashboard.billing') }}" class="btn btn-outline-primary">
+            Manage Billing
+          </a>
+        </div>
       </div>
-      <a href="{{ url_for('dashboard.billing') }}" class="btn btn-outline-primary">
-        Manage Billing
-      </a>
     {% endif %}
 
-    <hr>
-    <h3 class="mb-0">Export Data</h3>
-    <div class="small-text mb-3">
-      You can download all aliases you have created on SimpleLogin along with other data.
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Export Data
+          <div class="small-text mt-1 mb-3">
+            You can download all aliases you have created on SimpleLogin along with other data.
+          </div>
+        </div>
+        <form method="post">
+          <input type="hidden" name="form-name" value="export-data">
+          <button class="btn btn-outline-info">Export Data</button>
+        </form>
+      </div>
     </div>
-    <form method="post">
-      <input type="hidden" name="form-name" value="export-data">
-      <button class="btn btn-outline-info">Export Data</button>
-    </form>
 
-    <hr>
-    <h3 class="mb-0">Delete Account</h3>
-    <div class="small-text mb-3">Please note that this operation is irreversible.
 
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Delete Account
+          <div class="small-text mt-1 mb-3">Please note that this operation is irreversible.
+          </div>
+
+        </div>
+        <form method="post">
+          <input type="hidden" name="form-name" value="delete-account">
+          <span class="delete-account btn btn-outline-danger">Delete account</span>
+        </form>
+      </div>
     </div>
-    <form method="post">
-      <input type="hidden" name="form-name" value="delete-account">
-      <span class="delete-account btn btn-outline-danger">Delete account</span>
-    </form>
 
   </div>
 
