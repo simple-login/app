@@ -46,6 +46,23 @@ with app.app_context():
     # to test email template
     # with open("/tmp/email.html", "w") as f:
     #     user = User.get(1)
-    #     f.write(_render("welcome.html", user=user, name=user.name))
+    #     f.write(
+    #         render(
+    #             "transactional/reset-password.html",
+    #             email=user.email,
+    #             user=user,
+    #             name=user.name,
+    #             activation_link="https://ab.cd",
+    #             alias="alias@ab.cd",
+    #             directory="dir",
+    #             domain="domain",
+    #             new_email="new@email.com",
+    #             current_email="current@email.com",
+    #             link="https://link.com",
+    #             mailbox_email="mailbox_email@email.com",
+    #             sender="sender@example.com",
+    #             reset_password_link="http://reset_password_link",
+    #         )
+    #     )
 
     embed()
