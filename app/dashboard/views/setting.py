@@ -61,8 +61,11 @@ def setting():
     if request.method == "POST":
         if request.form.get("form-name") == "update-email":
             if change_email_form.validate():
-                if form.email.data != current_user.email and not pending_email:
-                    new_email = form.email.data
+                if (
+                    change_email_form.email.data != current_user.email
+                    and not pending_email
+                ):
+                    new_email = change_email_form.email.data
 
                     # check if this email is not already used
                     if (
@@ -90,6 +93,7 @@ def setting():
                             "A confirmation email is on the way, please check your inbox",
                             "success",
                         )
+                        return redirect(url_for("dashboard.setting"))
         if request.form.get("form-name") == "update-profile":
             if form.validate():
                 profile_updated = False
@@ -116,9 +120,15 @@ def setting():
 
                 if profile_updated:
                     flash(f"Your profile has been updated", "success")
+                    return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "change-password":
+            flash(
+                "You are going to receive an email containing instructions to change your password",
+                "success",
+            )
             send_reset_password_email(current_user)
+            return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "notification-preference":
             choose = request.form.get("notification")
@@ -128,6 +138,7 @@ def setting():
                 current_user.notification = False
             db.session.commit()
             flash("Your notification preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "delete-account":
             User.delete(current_user.id)
@@ -142,6 +153,7 @@ def setting():
                 current_user.alias_generator = scheme
                 db.session.commit()
             flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "export-data":
             data = {
@@ -171,8 +183,6 @@ def setting():
                 headers={"Content-Disposition": "attachment;filename=data.json"},
             )
 
-        return redirect(url_for("dashboard.setting"))
-
     return render_template(
         "dashboard/setting.html",
         form=form,
@@ -197,11 +207,6 @@ def send_reset_password_email(user):
     reset_password_link = f"{URL}/auth/reset_password?code={reset_password_code.code}"
 
     email_utils.send_reset_password_email(user.email, user.name, reset_password_link)
-
-    flash(
-        "You are going to receive an email containing instructions to change your password",
-        "success",
-    )
 
 
 def send_change_email_confirmation(user: User, email_change: EmailChange):
