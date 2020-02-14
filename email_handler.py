@@ -198,7 +198,9 @@ class MailHandler:
                     domain_user: User = custom_domain.user
                     if domain_user.can_create_new_alias():
                         # if alias has been deleted before, do not auto-create it
-                        if DeletedAlias.get_by(email=alias, user_id=custom_domain.user_id):
+                        if DeletedAlias.get_by(
+                            email=alias, user_id=custom_domain.user_id
+                        ):
                             LOG.error(
                                 "Alias %s has been deleted before, cannot auto-create using domain catch-all %s, user %s",
                                 alias,
