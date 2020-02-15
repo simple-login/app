@@ -401,7 +401,6 @@ def setup_paddle_callback(app: Flask):
 
 
 def init_extensions(app: Flask):
-    LOG.debug("init extensions")
     login_manager.init_app(app)
     db.init_app(app)
     migrate.init_app(app)
