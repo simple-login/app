@@ -75,8 +75,10 @@ if __name__ == "__main__":
                     user_id = job.payload.get("user_id")
                     user = User.get(user_id)
 
-                    LOG.d("run onboarding_1 for user %s", user)
-                    onboarding_1(user)
+                    # user might delete their account in the meantime
+                    if user:
+                        LOG.d("run onboarding_1 for user %s", user)
+                        onboarding_1(user)
                 else:
                     LOG.error("Unknown job name %s", job.name)
 
