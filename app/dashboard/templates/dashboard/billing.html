@@ -8,35 +8,32 @@
 {% endblock %}
 
 {% block default_content %}
-  <div class="row">
-    <div class="col-md-8 offset-md-2">
-      <h1> Billing </h1>
+  <div class="bg-white p-6" style="max-width: 60em; margin: auto">
+    <h1 class="h3 mb-5"> Billing </h1>
 
+    <p>
+      You are on the <b>{{ current_user.get_subscription().plan_name() }}</b> plan. Thank you very much for supporting
+      SimpleLogin. 🙌
+    </p>
+
+    {% if sub.cancelled %}
       <p>
-        You are on the <b>{{ current_user.get_subscription().plan_name() }}</b> plan. Thank you very much for supporting SimpleLogin. 🙌
+        Sad to see you go 😢. Your subscription ends {{ current_user.get_subscription().next_bill_date | dt }}.
       </p>
 
-      {% if sub.cancelled %}
-        <p>
-          Sad to see you go 😢. Your subscription ends {{ current_user.get_subscription().next_bill_date | dt }}.
-        </p>
+    {% else %}
+      <div class="mt-3">
+        Click here to update billing information on Paddle, our payment partner: <br>
+        <a class="btn btn-success" href="{{ sub.update_url }}"> Update billing information </a>
+      </div>
 
-      {% else %}
-        <div class="mt-3">
-          Click here to update billing information on Paddle, our payment partner: <br>
-          <a class="btn btn-success" href="{{ sub.update_url }}"> Update billing information </a>
-        </div>
+      <hr>
 
-        <hr>
-
-        <div>
-          Don't want to protect your inbox anymore? <br>
-          <a class="btn btn-warning" href="{{ sub.cancel_url }}"> Cancel subscription 😔 </a>
-        </div>
-      {% endif %}
-
-    </div>
-
+      <div>
+        Don't want to protect your inbox anymore? <br>
+        <a class="btn btn-warning" href="{{ sub.cancel_url }}"> Cancel subscription 😔 </a>
+      </div>
+    {% endif %}
   </div>
 
 
