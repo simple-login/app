@@ -49,6 +49,7 @@ from app.models import (
     LifetimeCoupon,
     Directory,
     Mailbox,
+    DeletedAlias,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -182,6 +183,10 @@ def fake_data():
     db.session.commit()
 
     Mailbox.create(user_id=user.id, email="ab@cd.ef", verified=True)
+    db.session.commit()
+
+    DeletedAlias.create(user_id=user.id, email="d1@ab.cd")
+    DeletedAlias.create(user_id=user.id, email="d2@ab.cd")
     db.session.commit()
 
 
