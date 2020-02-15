@@ -135,10 +135,10 @@
         <form method="post">
           <input type="hidden" name="form-name" value="notification-preference">
           <div class="form-check">
-              <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
-                     checked {% endif %} class="form-check-input">
-              <label for="notification">I want to receive your newsletter</label>
-            </div>
+            <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
+                   checked {% endif %} class="form-check-input">
+            <label for="notification">I want to receive your newsletter</label>
+          </div>
           <button type="submit" class="btn btn-outline-primary">Submit</button>
         </form>
       </div>
@@ -159,6 +159,22 @@
         </div>
       </div>
     {% endif %}
+
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Deleted Aliases
+          <div class="small-text mt-1 mb-3" style="max-width: 40rem">
+            When an alias is deleted, all its activities are deleted and no emails can be sent to it. <br>
+            It is moved to another location and only used to check when new alias is created. <br>
+            This check is necessary to avoid someone else accidentally taking this alias. <br>
+            Because in this case, the other person might receive inadvertently information that belong to you. <br>
+          </div>
+        </div>
+        <a href="{{ url_for('dashboard.deleted_alias_route') }}" class="btn btn-outline-primary">
+          See deleted aliases
+        </a>
+      </div>
+    </div>
 
     <div class="card">
       <div class="card-body">

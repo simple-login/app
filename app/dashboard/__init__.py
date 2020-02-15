@@ -15,4 +15,5 @@ from .views import (
     lifetime_licence,
     directory,
     mailbox,
+    deleted_alias,
 )
