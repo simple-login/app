@@ -38,7 +38,14 @@ from smtplib import SMTP
 
 from aiosmtpd.controller import Controller
 
-from app.config import EMAIL_DOMAIN, POSTFIX_SERVER, URL, ALIAS_DOMAINS
+from app.config import (
+    EMAIL_DOMAIN,
+    POSTFIX_SERVER,
+    URL,
+    ALIAS_DOMAINS,
+    ADMIN_EMAIL,
+    SUPPORT_EMAIL,
+)
 from app.email_utils import (
     get_email_name,
     get_email_part,
@@ -319,6 +326,32 @@ class MailHandler:
         else:
             mailbox_email = gen_email.user.email
 
+        # bounce email initiated by Postfix
+        # can happen in case emails cannot be delivered to user-email
+        # in this case Postfix will try to send a bounce report to original sender, which is
+        # the "reply email"
+        if envelope.mail_from == "<>":
+            LOG.error(
+                "Bounce when sending to alias %s, user %s, from header: %s",
+                alias,
+                gen_email.user,
+                msg["From"],
+            )
+            # send the bounce email payload to admin
+            msg.replace_header("From", SUPPORT_EMAIL)
+            msg.replace_header("To", ADMIN_EMAIL)
+            add_dkim_signature(msg, get_email_domain_part(SUPPORT_EMAIL))
+
+            smtp.sendmail(
+                SUPPORT_EMAIL,
+                ADMIN_EMAIL,
+                msg.as_string().encode(),
+                envelope.mail_options,
+                envelope.rcpt_options,
+            )
+            return "550 ignored"
+
+        # only mailbox can send email to the reply-email
         if envelope.mail_from.lower() != mailbox_email.lower():
             LOG.warning(
                 f"Reply email can only be used by user email. Actual mail_from: %s. msg from header: %s, User email %s. reply_email %s",
