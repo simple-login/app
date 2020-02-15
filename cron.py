@@ -22,7 +22,9 @@ def notify_trial_end():
     for user in User.query.filter(
         User.activated == True, User.trial_end.isnot(None), User.lifetime == False
     ).all():
-        if arrow.now().shift(days=3) > user.trial_end >= arrow.now().shift(days=2):
+        if user.in_trial() and arrow.now().shift(
+            days=3
+        ) > user.trial_end >= arrow.now().shift(days=2):
             LOG.d("Send trial end email to user %s", user)
             send_trial_end_soon_email(user)
 
