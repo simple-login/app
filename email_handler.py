@@ -68,6 +68,7 @@ from app.models import (
     CustomDomain,
     Directory,
     User,
+    DeletedAlias,
 )
 from app.utils import random_string
 from server import create_app
@@ -154,15 +155,29 @@ class MailHandler:
                     if directory:
                         dir_user: User = directory.user
                         if dir_user.can_create_new_alias():
-                            LOG.d("create alias %s for directory %s", alias, directory)
-                            on_the_fly = True
+                            # if alias has been deleted before, do not auto-create it
+                            if DeletedAlias.get_by(
+                                email=alias, user_id=directory.user_id
+                            ):
+                                LOG.error(
+                                    "Alias %s has been deleted before, cannot auto-create using directory %s, user %s",
+                                    alias,
+                                    directory_name,
+                                    dir_user,
+                                )
+                            else:
 
-                            gen_email = GenEmail.create(
-                                email=alias,
-                                user_id=directory.user_id,
-                                directory_id=directory.id,
-                            )
-                            db.session.commit()
+                                LOG.d(
+                                    "create alias %s for directory %s", alias, directory
+                                )
+                                on_the_fly = True
+
+                                gen_email = GenEmail.create(
+                                    email=alias,
+                                    user_id=directory.user_id,
+                                    directory_id=directory.id,
+                                )
+                                db.session.commit()
                         else:
                             LOG.error(
                                 "User %s is not premium anymore and cannot create alias with directory",
@@ -182,16 +197,27 @@ class MailHandler:
                 if custom_domain and custom_domain.catch_all:
                     domain_user: User = custom_domain.user
                     if domain_user.can_create_new_alias():
-                        LOG.d("create alias %s for domain %s", alias, custom_domain)
-                        on_the_fly = True
+                        # if alias has been deleted before, do not auto-create it
+                        if DeletedAlias.get_by(
+                            email=alias, user_id=custom_domain.user_id
+                        ):
+                            LOG.error(
+                                "Alias %s has been deleted before, cannot auto-create using domain catch-all %s, user %s",
+                                alias,
+                                custom_domain,
+                                domain_user,
+                            )
+                        else:
+                            LOG.d("create alias %s for domain %s", alias, custom_domain)
+                            on_the_fly = True
 
-                        gen_email = GenEmail.create(
-                            email=alias,
-                            user_id=custom_domain.user_id,
-                            custom_domain_id=custom_domain.id,
-                            automatic_creation=True,
-                        )
-                        db.session.commit()
+                            gen_email = GenEmail.create(
+                                email=alias,
+                                user_id=custom_domain.user_id,
+                                custom_domain_id=custom_domain.id,
+                                automatic_creation=True,
+                            )
+                            db.session.commit()
                     else:
                         LOG.error(
                             "User %s is not premium anymore and cannot create alias with domain %s",
