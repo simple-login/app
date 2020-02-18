@@ -24,6 +24,7 @@ def email_validator():
 
     def _check(form, field):
         email = field.data
+        email = email.strip()
         email_part = email
 
         if "<" in email and ">" in email:
@@ -66,7 +67,7 @@ def alias_contact_manager(alias_id, forward_email_id=None):
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             if new_contact_form.validate():
-                contact_email = new_contact_form.email.data
+                contact_email = new_contact_form.email.data.strip()
 
                 # generate a reply_email, make sure it is unique
                 # not use while to avoid infinite loop
