@@ -22,18 +22,20 @@
 
     <form method="post">
       <div class="row mb-2">
-        <div class="col-sm-6 pr-1 mb-1" style="min-width: 5em">
+        <div class="col-sm-6 mb-1 p-1" style="min-width: 4em">
           <input name="prefix" class="form-control"
                  type="text"
                  pattern="[0-9a-z-_]{1,}"
                  title="Only lowercase letter, number, dash (-), underscore (_) can be used in alias prefix."
-                 placeholder="email alias"
+                 placeholder="email alias, for example newsletter-123_xyz"
                  autofocus required>
+          <div class="small-text">
+            Only lowercase letter, number, dash (-), underscore (_) can be used.
+          </div>
         </div>
 
 
-        <div class="col-sm-6"
-             style="padding-left: 5px">
+        <div class="col-sm-6 p-1">
           <select class="form-control" name="suffix">
             {% for suffix in suffixes %}
               <option value="{{ suffix[1] }}">
@@ -50,7 +52,7 @@
 
       {% if mailboxes|length > 1 %}
         <div class="row mb-2">
-          <div class="col">
+          <div class="col p-1">
             <select class="form-control" name="mailbox">
               {% for mailbox in mailboxes %}
                 <option value="{{ mailbox }}">
@@ -68,7 +70,7 @@
       {% endif %}
 
       <div class="row mb-2">
-        <div class="col">
+        <div class="col p-1">
         <textarea name="note"
                   class="form-control"
                   rows="3"
@@ -78,7 +80,7 @@
 
 
       <div class="row">
-        <div class="col">
+        <div class="col p-1">
           <button class="btn btn-primary mt-1">Create</button>
         </div>
       </div>
