@@ -12,11 +12,15 @@
     <h1 class="h3 mb-5">New Email Alias</h1>
 
     {% if  user_custom_domains|length == 0 and not DISABLE_ALIAS_SUFFIX %}
-      <div class="alert alert-primary" role="alert">
-        You might notice a random word after the dot(<em>.</em>) in the alias.
-        This part is to avoid a person taking all the "nice" aliases like <b>hello@{{ EMAIL_DOMAIN }}</b>,
-        <b>me@{{ EMAIL_DOMAIN }}</b>, etc 😉. <br>
-        If you add your own domain, this restriction is removed and you can fully customize the alias. <br>
+      <div class="row">
+        <div class="col p-1">
+          <div class="alert alert-primary" role="alert">
+            You might notice a random word after the dot(<em>.</em>) in the alias.
+            This part is to avoid a person taking all the "nice" aliases like <b>hello@{{ EMAIL_DOMAIN }}</b>,
+            <b>me@{{ EMAIL_DOMAIN }}</b>, etc. <br>
+            If you add your own domain, this restriction is removed and you can fully customize the alias. <br>
+          </div>
+        </div>
       </div>
     {% endif %}
 
