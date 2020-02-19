@@ -106,26 +106,25 @@ class MailHandler:
         smtp = SMTP(POSTFIX_SERVER, 25)
         msg = Parser(policy=SMTPUTF8).parsestr(message_data)
 
-        rcpt_to = envelope.rcpt_tos[0].lower()
+        for rcpt_to in envelope.rcpt_tos:
+            # Reply case
+            # reply+ or ra+ (reverse-alias) prefix
+            if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
+                LOG.debug("Reply phase")
+                app = new_app()
 
-        # Reply case
-        # reply+ or ra+ (reverse-alias) prefix
-        if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
-            LOG.debug("Reply phase")
-            app = new_app()
+                with app.app_context():
+                    return self.handle_reply(envelope, smtp, msg, rcpt_to)
+            else:  # Forward case
+                LOG.debug("Forward phase")
+                app = new_app()
 
-            with app.app_context():
-                return self.handle_reply(envelope, smtp, msg)
-        else:  # Forward case
-            LOG.debug("Forward phase")
-            app = new_app()
+                with app.app_context():
+                    return self.handle_forward(envelope, smtp, msg, rcpt_to)
 
-            with app.app_context():
-                return self.handle_forward(envelope, smtp, msg)
-
-    def handle_forward(self, envelope, smtp: SMTP, msg: Message) -> str:
+    def handle_forward(self, envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         """return *status_code message*"""
-        alias = envelope.rcpt_tos[0].lower()  # alias@SL
+        alias = rcpt_to.lower()  # alias@SL
 
         gen_email = GenEmail.get_by(email=alias)
         if not gen_email:
@@ -325,8 +324,8 @@ class MailHandler:
         db.session.commit()
         return "250 Message accepted for delivery"
 
-    def handle_reply(self, envelope, smtp: SMTP, msg: Message) -> str:
-        reply_email = envelope.rcpt_tos[0].lower()
+    def handle_reply(self, envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
+        reply_email = rcpt_to.lower()
 
         # reply_email must end with EMAIL_DOMAIN
         if not reply_email.endswith(EMAIL_DOMAIN):
