@@ -280,7 +280,7 @@ def delete_header(msg: Message, header: str):
 
 
 def email_belongs_to_alias_domains(email: str) -> bool:
-    """return True if an emails ends with one of the alias domains provided by SimpleLogin"""
+    """return True if an email ends with one of the alias domains provided by SimpleLogin"""
     for domain in ALIAS_DOMAINS:
         if email.endswith("@" + domain):
             return True
