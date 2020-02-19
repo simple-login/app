@@ -176,6 +176,49 @@ def try_auto_create(alias: str) -> Optional[GenEmail]:
     return gen_email
 
 
+def get_or_create_forward_email(
+    website_from_header: str, gen_email: GenEmail
+) -> ForwardEmail:
+    """
+    website_from_header can be the full-form email, i.e. "First Last <email@example.com>"
+    """
+    website_email = get_email_part(website_from_header)
+    forward_email = ForwardEmail.get_by(
+        gen_email_id=gen_email.id, website_email=website_email
+    )
+    if forward_email:
+        # update the website_from if needed
+        if forward_email.website_from != website_from_header:
+            LOG.d("Update From header for %s", forward_email)
+            forward_email.website_from = website_from_header
+            db.session.commit()
+    else:
+        LOG.debug(
+            "create forward email for alias %s and website email %s",
+            gen_email,
+            website_from_header,
+        )
+
+        # generate a reply_email, make sure it is unique
+        # not use while loop to avoid infinite loop
+        reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
+        for _ in range(1000):
+            if not ForwardEmail.get_by(reply_email=reply_email):
+                # found!
+                break
+            reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
+
+        forward_email = ForwardEmail.create(
+            gen_email_id=gen_email.id,
+            website_email=website_email,
+            website_from=website_from_header,
+            reply_email=reply_email,
+        )
+        db.session.commit()
+
+    return forward_email
+
+
 def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     """return *status_code message*"""
     alias = rcpt_to.lower()  # alias@SL
@@ -193,39 +236,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     else:
         mailbox_email = gen_email.user.email
 
-    website_email = get_email_part(msg["From"])
-
-    forward_email = ForwardEmail.get_by(
-        gen_email_id=gen_email.id, website_email=website_email
-    )
-    if forward_email:
-        # update the From header if needed
-        if forward_email.website_from != msg["From"]:
-            LOG.d("Update From header for %s", forward_email)
-            forward_email.website_from = msg["From"]
-            db.session.commit()
-    else:
-        LOG.debug(
-            "create forward email for alias %s and website email %s",
-            alias,
-            website_email,
-        )
-
-        # generate a reply_email, make sure it is unique
-        # not use while to avoid infinite loop
-        for _ in range(1000):
-            reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
-            if not ForwardEmail.get_by(reply_email=reply_email):
-                break
-
-        forward_email = ForwardEmail.create(
-            gen_email_id=gen_email.id,
-            website_email=website_email,
-            website_from=msg["From"],
-            reply_email=reply_email,
-        )
-        db.session.commit()
-
+    forward_email = get_or_create_forward_email(msg["From"], gen_email)
     forward_log = ForwardEmailLog.create(forward_id=forward_email.id)
 
     if gen_email.enabled:
@@ -238,9 +249,11 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         # change the from header so the sender comes from @SL
         # so it can pass DMARC check
         # replace the email part in from: header
+        website_from_header = msg["From"]
+        website_email = get_email_part(website_from_header)
         from_header = (
-            get_email_name(msg["From"])
-            + ("" if get_email_name(msg["From"]) == "" else " - ")
+            get_email_name(website_from_header)
+            + ("" if get_email_name(website_from_header) == "" else " - ")
             + website_email.replace("@", " at ")
             + f" <{forward_email.reply_email}>"
         )
