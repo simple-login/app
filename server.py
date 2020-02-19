@@ -151,7 +151,10 @@ def fake_data():
     db.session.commit()
 
     api_key = ApiKey.create(user_id=user.id, name="Chrome")
-    api_key.code = "code"
+    api_key.code = "codeCH"
+
+    api_key = ApiKey.create(user_id=user.id, name="Firefox")
+    api_key.code = "codeFF"
 
     GenEmail.create_new(user.id, "e1@")
     GenEmail.create_new(user.id, "e2@")
