@@ -45,7 +45,16 @@
               {% endif %}
             </h6>
 
-            <input class="form-control w-100" id="apikey-{{ api_key.id }}" readonly value="**********">
+            <div class="input-group">
+              <input class="form-control" id="apikey-{{ api_key.id }}" readonly value="**********">
+              <div class="input-group-append">
+                <span class="input-group-text">
+                  <i class="fe fe-eye toggle-api-key" data-show="off" data-secret="{{ api_key.code }}"
+                  ></i>
+                </span>
+              </div>
+            </div>
+
             <br>
 
             <div class="row">
@@ -105,6 +114,24 @@
           $(this).closest("form").submit();
         }
       });
+    });
+
+    $(".toggle-api-key").on('click', function (event) {
+      let that = $(this);
+      let apiInput = that.parent().parent().parent().find("input");
+      if (that.attr("data-show") === "off") {
+        let apiKey = $(this).attr("data-secret");
+        apiInput.val(apiKey);
+        that.addClass("fe-eye-off");
+        that.removeClass("fe-eye");
+        that.attr("data-show", "on");
+      } else {
+        that.removeClass("fe-eye-off");
+        that.addClass("fe-eye");
+        apiInput.val("**********");
+        that.attr("data-show", "off");
+      }
+
     });
   </script>
 {% endblock %}
