@@ -74,7 +74,7 @@ def github_callback():
     email = None
 
     for e in emails:
-        if e.get("verified") and e.get("primary"):
+        if e.get("verified"):
             email = e.get("email")
             break
 
