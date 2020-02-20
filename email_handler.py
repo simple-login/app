@@ -94,6 +94,17 @@ def new_app():
 def try_auto_create(alias: str) -> Optional[GenEmail]:
     """Try to auto-create the alias using directory or catch-all domain
     """
+    gen_email = try_auto_create_catch_all_domain(alias)
+    if not gen_email:
+        gen_email = try_auto_create_directory(alias)
+
+    return gen_email
+
+
+def try_auto_create_directory(alias: str) -> Optional[GenEmail]:
+    """
+    Try to create an alias with directory
+    """
     # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
     if email_belongs_to_alias_domains(alias):
         # if there's no directory separator in the alias, no way to auto-create it
@@ -139,12 +150,20 @@ def try_auto_create(alias: str) -> Optional[GenEmail]:
         db.session.commit()
         return gen_email
 
+
+def try_auto_create_catch_all_domain(alias: str) -> Optional[GenEmail]:
+    """Try to create an alias with catch-all domain"""
+
     # try to create alias on-the-fly with custom-domain catch-all feature
     # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
     alias_domain = get_email_domain_part(alias)
     custom_domain = CustomDomain.get_by(domain=alias_domain)
 
-    if not custom_domain or custom_domain.catch_all:
+    if not custom_domain:
+        return None
+
+    # custom_domain exists
+    if not custom_domain.catch_all:
         return None
 
     # custom_domain has catch-all enabled
