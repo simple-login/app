@@ -44,7 +44,7 @@ def custom_alias():
         )
 
     mailboxes = [current_user.email]
-    for mailbox in Mailbox.query.filter_by(user_id=current_user.id):
+    for mailbox in Mailbox.query.filter_by(user_id=current_user.id, verified=True):
         mailboxes.append(mailbox.email)
 
     if request.method == "POST":
