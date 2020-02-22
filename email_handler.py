@@ -134,7 +134,7 @@ def try_auto_create_directory(alias: str) -> Optional[GenEmail]:
 
         # if alias has been deleted before, do not auto-create it
         if DeletedAlias.get_by(email=alias, user_id=directory.user_id):
-            LOG.error(
+            LOG.warning(
                 "Alias %s was deleted before, cannot auto-create using directory %s, user %s",
                 alias,
                 directory_name,
@@ -175,7 +175,7 @@ def try_auto_create_catch_all_domain(alias: str) -> Optional[GenEmail]:
 
     # if alias has been deleted before, do not auto-create it
     if DeletedAlias.get_by(email=alias, user_id=custom_domain.user_id):
-        LOG.error(
+        LOG.warning(
             "Alias %s was deleted before, cannot auto-create using domain catch-all %s, user %s",
             alias,
             custom_domain,
