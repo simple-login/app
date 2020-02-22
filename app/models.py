@@ -665,6 +665,10 @@ class ForwardEmailLog(db.Model, ModelMixin):
     # for ex if alias is disabled, this forwarding is blocked
     blocked = db.Column(db.Boolean, nullable=False, default=False)
 
+    # can happen when user email service refuses the forwarded email
+    # usually because the forwarded email is too spammy
+    bounced = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
 
 class Subscription(db.Model, ModelMixin):
     # Come from Paddle
