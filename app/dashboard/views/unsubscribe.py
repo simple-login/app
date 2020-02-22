@@ -31,6 +31,6 @@ def unsubscribe(gen_email_id):
         flash(f"Alias {gen_email.email} has been blocked", "success")
         db.session.commit()
 
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("dashboard.index", highlight_gen_email_id=gen_email.id))
     else:  # ask user confirmation
         return render_template("dashboard/unsubscribe.html", alias=gen_email.email)
