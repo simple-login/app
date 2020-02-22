@@ -399,7 +399,7 @@ def setup_paddle_callback(app: Flask):
 
         elif request.form.get("alert_name") == "subscription_cancelled":
             subscription_id = request.form.get("subscription_id")
-            LOG.error("Cancel subscription %s", subscription_id)
+            LOG.warning("Cancel subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
