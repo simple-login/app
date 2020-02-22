@@ -1,7 +1,13 @@
+import email
 import os
 from email.message import EmailMessage, Message
+from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate
 from smtplib import SMTP
+from typing import Optional
 
 import dkim
 from jinja2 import Environment, FileSystemLoader
@@ -167,7 +173,9 @@ def send_cannot_create_domain_alias(user, alias, domain):
     )
 
 
-def send_email(to_email, subject, plaintext, html):
+def send_email(
+    to_email, subject, plaintext, html, bounced_email: Optional[Message] = None
+):
     if NOT_SEND_EMAIL:
         LOG.d(
             "send email with subject %s to %s, plaintext: %s",
@@ -179,15 +187,31 @@ def send_email(to_email, subject, plaintext, html):
 
     # host IP, setup via Docker network
     smtp = SMTP(POSTFIX_SERVER, 25)
-    msg = EmailMessage()
+
+    if bounced_email:
+        msg = MIMEMultipart("mixed")
+
+        # add email main body
+        body = MIMEMultipart("alternative")
+        body.attach(MIMEText(plaintext, "text"))
+        if html:
+            body.attach(MIMEText(html, "html"))
+
+        msg.attach(body)
+
+        # add attachment
+        rfcmessage = MIMEBase("message", "rfc822")
+        rfcmessage.attach(bounced_email)
+        msg.attach(rfcmessage)
+    else:
+        msg = MIMEMultipart("alternative")
+        msg.attach(MIMEText(plaintext, "text"))
+        if html:
+            msg.attach(MIMEText(html, "html"))
 
     msg["Subject"] = subject
     msg["From"] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
     msg["To"] = to_email
-
-    msg.set_content(plaintext)
-    if html:
-        msg.add_alternative(html, subtype="html")
 
     msg_id_header = make_msgid()
     LOG.d("message-id %s", msg_id_header)

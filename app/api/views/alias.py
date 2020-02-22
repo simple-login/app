@@ -146,7 +146,9 @@ def get_alias_activities(alias_id):
             activity["to"] = alias_log.alias
             activity["from"] = alias_log.website_from or alias_log.website_email
 
-            if alias_log.blocked:
+            if alias_log.bounced:
+                activity["action"] = "bounced"
+            elif alias_log.blocked:
                 activity["action"] = "block"
             else:
                 activity["action"] = "forward"

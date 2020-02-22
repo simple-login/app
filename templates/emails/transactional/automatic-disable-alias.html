@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + name) }}
+  {{ render_text("There are at least 2 emails sent to your alias <b>" + alias + "</b> from <b>" + website_email +
+  "</b> that have been <b>refused</b> (or bounced) by your email provider.") }}
+
+  {{ render_text("This is usually due to the email being considered as <b>spam</b> by your email provider.
+  The email is included at the end of this message so you can take a look at its content.") }}
+
+  {{ render_text('As security measure, we have <b>disabled</b> the alias ' + alias) }}
+
+  {{ render_text('Please let us know if you have any question.') }}
+
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+{% endblock %}

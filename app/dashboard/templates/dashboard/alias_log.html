@@ -108,11 +108,21 @@
     {% for log in logs %}
       <div class="col-12">
         <div class="my-2 p-2 card border-light">
-          <div class="font-weight-bold">{{ log.when | dt }}</div>
-          <div>
-            <span class="mr-2">{{ log.website_from or log.website_email }}</span>
+          <div class="font-weight-bold">{{ log.when | dt }}
+            {% if log.bounced %}  ⚠️ {% endif %}
+          </div>
 
-            <span>
+          <div>
+            {% if log.bounced %}
+              <span class="mr-2">{{ log.website_from or log.website_email }}</span>
+              <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
+              <span class="ml-2">{{ log.alias }}</span>
+              <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
+              <span class="ml-2">{{ log.mailbox }}</span>
+            {% else %}
+              <span class="mr-2">{{ log.website_from or log.website_email }}</span>
+
+              <span>
               {% if log.is_reply %}
                 <img src="{{ url_for('static', filename='arrows/reply-arrow.svg') }}" class="arrow">
               {% elif log.blocked %}
@@ -122,9 +132,8 @@
               {% endif %}
             </span>
 
-            <span class="ml-2">
-              {{ log.alias }}
-            </span>
+              <span class="ml-2">{{ log.alias }}</span>
+            {% endif %}
           </div>
         </div>
       </div>

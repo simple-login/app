@@ -1,0 +1,21 @@
+Hi {{name}}
+
+An email sent to your alias {{alias}} from {{website_from}} was refused (or bounced) by your email provider.
+
+This is usually due to the email being considered as spam by your email provider.
+The email is included at the end  of this message so you can take a look at its content.
+
+To avoid spams forwarded by SimpleLogin server, please consider the following options:
+
+1. If the email is not spam at all, it means your email provider has wrongly classified it as spam. In this case you can create a "filter" to whitelist it. The filter could be based on the sender, email subject, etc. As how to create the filter differs for each email provider, please check with your email provider on how to whitelist an email. Let us know if you need help to setup the filter by replying to this email.
+
+2. If this email is spam, it means your alias {{alias}} is now in the hands of a spammer. In this case, you should disable or delete the alias immediately. Or, do nothing and we'll automatically disable this alias the second time the email is refused. Don't worry, we'll send you another email when that happens. You can disable the alias using this link:
+
+{{disable_alias_link}}
+
+Please let us know if you have any question.
+
+Best,
+SimpleLogin team.
+---------------------------------------------------------------------
+Below if the email that was refused:

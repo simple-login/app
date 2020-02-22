@@ -15,6 +15,8 @@ class AliasLog:
     when: arrow.Arrow
     is_reply: bool
     blocked: bool
+    bounced: bool
+    mailbox: str
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -61,6 +63,7 @@ def alias_log(alias_id, page_id):
 
 def get_alias_log(gen_email: GenEmail, page_id=0):
     logs: [AliasLog] = []
+    mailbox = gen_email.mailbox_email()
 
     q = (
         db.session.query(ForwardEmail, ForwardEmailLog)
@@ -79,6 +82,8 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
             when=fel.created_at,
             is_reply=fel.is_reply,
             blocked=fel.blocked,
+            bounced=fel.bounced,
+            mailbox=mailbox,
         )
         logs.append(al)
     logs = sorted(logs, key=lambda l: l.when, reverse=True)
