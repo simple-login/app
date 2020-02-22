@@ -117,6 +117,8 @@
                 <img src="{{ url_for('static', filename='arrows/reply-arrow.svg') }}" class="arrow">
               {% elif log.blocked %}
                 <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
+              {% elif log.bounced %}
+                <span class="text-danger"> --- Refused (or bounced) ---> </span>
               {% else %}
                 <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
               {% endif %}
