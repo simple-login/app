@@ -513,6 +513,12 @@ class GenEmail(db.Model, ModelMixin):
         random_email = generate_email(scheme=scheme, in_hex=in_hex)
         return GenEmail.create(user_id=user_id, email=random_email)
 
+    def mailbox_email(self):
+        if self.mailbox_id:
+            return self.mailbox.email
+        else:
+            return self.user.email
+
     def __repr__(self):
         return f"<GenEmail {self.id} {self.email}>"
 

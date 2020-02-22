@@ -250,11 +250,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             LOG.d("alias %s cannot be created on-the-fly, return 510", alias)
             return "510 Email not exist"
 
-    if gen_email.mailbox_id:
-        mailbox_email = gen_email.mailbox.email
-    else:
-        mailbox_email = gen_email.user.email
-
+    mailbox_email = gen_email.mailbox_email()
     forward_email = get_or_create_forward_email(msg["From"], gen_email)
     forward_log = ForwardEmailLog.create(forward_id=forward_email.id)
 
@@ -337,10 +333,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 
     gen_email = forward_email.gen_email
     user = gen_email.user
-    if gen_email.mailbox_id:
-        mailbox_email = gen_email.mailbox.email
-    else:
-        mailbox_email = gen_email.user.email
+    mailbox_email = gen_email.mailbox_email()
 
     # bounce email initiated by Postfix
     # can happen in case emails cannot be delivered to user-email
