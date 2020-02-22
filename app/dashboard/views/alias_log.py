@@ -83,7 +83,7 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
             is_reply=fel.is_reply,
             blocked=fel.blocked,
             bounced=fel.bounced,
-            mailbox=mailbox
+            mailbox=mailbox,
         )
         logs.append(al)
     logs = sorted(logs, key=lambda l: l.when, reverse=True)
