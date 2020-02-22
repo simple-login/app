@@ -336,6 +336,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             return "550 alias unknown by SimpleLogin"
 
     gen_email = forward_email.gen_email
+    user = gen_email.user
     if gen_email.mailbox_id:
         mailbox_email = gen_email.mailbox.email
     else:
@@ -352,17 +353,9 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             gen_email.user,
             msg["From"],
         )
-        # send the bounce email payload to admin
-        msg.replace_header("From", SUPPORT_EMAIL)
-        msg.replace_header("To", ADMIN_EMAIL)
-        add_dkim_signature(msg, get_email_domain_part(SUPPORT_EMAIL))
 
-        smtp.sendmail(
-            SUPPORT_EMAIL,
-            ADMIN_EMAIL,
-            msg.as_string().encode(),
-            envelope.mail_options,
-            envelope.rcpt_options,
+        handle_bounce(
+            alias, envelope, forward_email, gen_email, msg, smtp, user, mailbox_email
         )
         return "550 ignored"
 
@@ -458,6 +451,77 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     db.session.commit()
 
     return "250 Message accepted for delivery"
+
+
+def handle_bounce(
+    alias, envelope, forward_email, gen_email, msg, smtp, user, mailbox_email
+):
+    ForwardEmailLog.create(forward_id=forward_email.id, bounced=True)
+    db.session.commit()
+
+    nb_bounced = ForwardEmailLog.filter_by(
+        forward_id=forward_email.id, bounced=True
+    ).count()
+    disable_alias_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
+
+    # inform user if this is the first bounced email
+    if nb_bounced == 1:
+        LOG.d(
+            "Inform user %s about bounced email sent by %s to alias %s",
+            user,
+            forward_email.website_from,
+            alias,
+        )
+        send_email(
+            mailbox_email,
+            f"Email from {forward_email.website_from} to {alias} cannot be delivered to your inbox",
+            render(
+                "transactional/bounced-email.txt",
+                name=user.name,
+                alias=alias,
+                website_from=forward_email.website_from,
+                website_email=forward_email.website_email,
+                disable_alias_link=disable_alias_link,
+            ),
+            render(
+                "transactional/bounced-email.html",
+                name=user.name,
+                alias=alias,
+                website_from=forward_email.website_from,
+                website_email=forward_email.website_email,
+                disable_alias_link=disable_alias_link,
+            ),
+            bounced_email=msg,
+        )
+    # disable the alias the second time email is bounced
+    elif nb_bounced >= 2:
+        LOG.d(
+            "Bounce happens again with alias %s from %s. Disable alias now ",
+            alias,
+            forward_email.website_from,
+        )
+        gen_email.enabled = False
+        db.session.commit()
+
+        send_email(
+            mailbox_email,
+            f"Alias {alias} has been disabled due to second undelivered email from {forward_email.website_from}",
+            render(
+                "transactional/automatic-disable-alias.txt",
+                name=user.name,
+                alias=alias,
+                website_from=forward_email.website_from,
+                website_email=forward_email.website_email,
+            ),
+            render(
+                "transactional/automatic-disable-alias.html",
+                name=user.name,
+                alias=alias,
+                website_from=forward_email.website_from,
+                website_email=forward_email.website_email,
+            ),
+            bounced_email=msg,
+        )
 
 
 class MailHandler:
