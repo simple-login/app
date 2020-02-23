@@ -43,9 +43,7 @@ def custom_alias():
             )
         )
 
-    mailboxes = [current_user.email]
-    for mailbox in Mailbox.query.filter_by(user_id=current_user.id, verified=True):
-        mailboxes.append(mailbox.email)
+    mailboxes = current_user.mailboxes()
 
     if request.method == "POST":
         alias_prefix = request.form.get("prefix")

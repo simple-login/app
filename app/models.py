@@ -278,6 +278,18 @@ class User(db.Model, ModelMixin, UserMixin):
     def verified_custom_domains(self):
         return CustomDomain.query.filter_by(user_id=self.id, verified=True).all()
 
+    def mailboxes(self) -> [str]:
+        """list of mailbox emails that user own"""
+        if self.full_mailbox:
+            mailboxes = []
+        else:
+            mailboxes = [self.email]
+
+        for mailbox in Mailbox.query.filter_by(user_id=self.id, verified=True):
+            mailboxes.append(mailbox.email)
+
+        return mailboxes
+
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
 
