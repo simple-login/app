@@ -162,6 +162,13 @@ class User(db.Model, ModelMixin, UserMixin):
         GenEmail.create_new(user.id, prefix="my-first-alias")
         db.session.flush()
 
+        # todo: uncomment when all existing users are full_mailbox
+        # to run just after migrating all existing user to full mailbox
+        # so new users are automatically full-mailbox
+        # Mailbox.create(user_id=user.id, email=user.email, verified=True)
+        # user.full_mailbox = True
+        # db.session.flush()
+
         # Schedule onboarding emails
         Job.create(
             name=JOB_ONBOARDING_1,
@@ -511,7 +518,7 @@ class GenEmail(db.Model, ModelMixin):
     mailbox = db.relationship("Mailbox")
 
     @classmethod
-    def create_new(cls, user_id, prefix, note=None):
+    def create_new(cls, user_id, prefix, note=None, mailbox_id=None):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
 
@@ -523,7 +530,9 @@ class GenEmail(db.Model, ModelMixin):
             if not cls.get_by(email=email):
                 break
 
-        return GenEmail.create(user_id=user_id, email=email, note=note)
+        return GenEmail.create(
+            user_id=user_id, email=email, note=note, mailbox_id=mailbox_id
+        )
 
     @classmethod
     def create_new_random(
