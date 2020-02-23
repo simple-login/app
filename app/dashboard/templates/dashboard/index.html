@@ -176,7 +176,7 @@
 
               </div>
             </form>
-          {% elif alias_info.mailbox != None %}
+          {% elif alias_info.mailbox != None and alias_info.mailbox.email != current_user.email %}
             <div class="small-text">
               Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
             </div>
