@@ -40,6 +40,23 @@ def send_safari_extension_newsletter():
         )
 
 
+def convert_user_full_mailbox(user):
+    # create a default mailbox
+    default_mb = Mailbox.get_by(user_id=user.id, email=user.email)
+    if not default_mb:
+        LOG.d("create default mailbox for user %s", user)
+        default_mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
+        db.session.commit()
+
+    # assign existing alias to this mailbox
+    for gen_email in GenEmail.query.filter_by(user_id=user.id):
+        gen_email.mailbox_id = default_mb.id
+
+    # finally set user to full_mailbox
+    user.full_mailbox = True
+    db.session.commit()
+
+
 app = create_app()
 
 with app.app_context():
