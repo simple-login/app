@@ -857,6 +857,9 @@ class Mailbox(db.Model, ModelMixin):
     email = db.Column(db.String(256), unique=True, nullable=False)
     verified = db.Column(db.Boolean, default=False, nullable=False)
 
+    # used when user wants to update mailbox email
+    new_email = db.Column(db.String(256), unique=True)
+
     user = db.relationship(User)
 
     def nb_alias(self):
