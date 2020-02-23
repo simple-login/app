@@ -137,6 +137,14 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # only use mailbox instead of default to user email
+    # this requires a migration before to:
+    # 1. create default mailbox for the user email address
+    # 2. assign existing aliases to this default mailbox
+    full_mailbox = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     profile_picture = db.relationship(File)
 
     @classmethod
