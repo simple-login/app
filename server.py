@@ -132,6 +132,7 @@ def fake_data():
         is_admin=True,
         otp_secret="base32secret3232",
         can_use_multiple_mailbox=True,
+        full_mailbox=True,
     )
     db.session.commit()
 
@@ -156,9 +157,15 @@ def fake_data():
     api_key = ApiKey.create(user_id=user.id, name="Firefox")
     api_key.code = "codeFF"
 
-    GenEmail.create_new(user.id, "e1@")
-    GenEmail.create_new(user.id, "e2@")
-    GenEmail.create_new(user.id, "e3@")
+    m1 = Mailbox.create(user_id=user.id, email="m1@cd.ef", verified=True)
+    m2 = Mailbox.create(user_id=user.id, email="m2@zt.com", verified=False)
+    m3 = Mailbox.create(user_id=user.id, email="m3@cd.ef", verified=True)
+    db.session.commit()
+
+    user.default_mailbox_id = m1.id
+
+    GenEmail.create_new(user.id, "e1@", mailbox_id=m1.id)
+    GenEmail.create_new(user.id, "e2@", mailbox_id=m3.id)
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(
@@ -183,10 +190,6 @@ def fake_data():
     client2.oauth_client_id = "client-id2"
     client2.oauth_client_secret = "client-secret2"
     client2.published = True
-    db.session.commit()
-
-    Mailbox.create(user_id=user.id, email="ab@cd.ef", verified=True)
-    Mailbox.create(user_id=user.id, email="xy@zt.com", verified=False)
     db.session.commit()
 
     DeletedAlias.create(user_id=user.id, email="d1@ab.cd")

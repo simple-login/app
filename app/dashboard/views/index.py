@@ -74,6 +74,16 @@ def index():
                 gen_email = GenEmail.create_new_random(
                     user_id=current_user.id, scheme=scheme
                 )
+
+                if current_user.full_mailbox:
+                    if not current_user.default_mailbox_id:
+                        LOG.error(
+                            "Full mailbox User %s does not have default mailbox ",
+                            current_user,
+                        )
+                    else:
+                        gen_email.mailbox_id = current_user.default_mailbox_id
+
                 db.session.commit()
 
                 LOG.d("generate new email %s for user %s", gen_email, current_user)
@@ -142,6 +152,31 @@ def index():
                 )
             )
 
+        elif request.form.get("form-name") == "set-mailbox":
+            gen_email_id = request.form.get("gen-email-id")
+            gen_email: GenEmail = GenEmail.get(gen_email_id)
+            mailbox_email = request.form.get("mailbox")
+
+            mailbox = Mailbox.get_by(email=mailbox_email)
+            if not mailbox or mailbox.user_id != current_user.id:
+                flash("Something went wrong, please retry", "warning")
+            else:
+                gen_email.mailbox_id = mailbox.id
+                db.session.commit()
+                LOG.d("Set alias %s mailbox to %s", gen_email, mailbox)
+
+                flash(
+                    f"Update mailbox for {gen_email.email} to {mailbox_email}",
+                    "success",
+                )
+                return redirect(
+                    url_for(
+                        "dashboard.index",
+                        highlight_gen_email_id=gen_email.id,
+                        query=query,
+                    )
+                )
+
         return redirect(url_for("dashboard.index", query=query))
 
     client_users = (
@@ -153,6 +188,8 @@ def index():
 
     sorted(client_users, key=lambda cu: cu.client.name)
 
+    mailboxes = current_user.mailboxes()
+
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
@@ -160,6 +197,7 @@ def index():
         highlight_gen_email_id=highlight_gen_email_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
+        mailboxes=mailboxes,
     )
 
 

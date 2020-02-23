@@ -29,7 +29,7 @@
     </a>
   </li>
 
-  {% if current_user.can_use_multiple_mailbox %}
+  {% if current_user.can_use_multiple_mailbox or current_user.full_mailbox  %}
     <li class="nav-item">
       <a href="{{ url_for('dashboard.mailbox_route') }}"
          class="nav-link {{ 'active' if active_page == 'mailbox' }}">

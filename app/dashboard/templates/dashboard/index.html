@@ -134,12 +134,6 @@
 
           <hr class="my-2">
 
-          {% if alias_info.mailbox != None %}
-            <div class="small-text">
-              Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
-            </div>
-          {% endif %}
-
           <p class="small-text">
             Created {{ gen_email.created_at | dt }}
             {% if alias_info.highlight %}
@@ -157,10 +151,42 @@
             </a>
           </div>
 
+          {% if current_user.full_mailbox and mailboxes|length > 1 %}
+            <form method="post">
+              <div class="small-text mt-2">Current mailbox</div>
+              <div class="row">
+                <div class="col-lg-10">
+                  <select class="form-control form-control-sm custom-select" name="mailbox">
+                    {% for mailbox in mailboxes %}
+                      <option value="{{ mailbox }}" {% if mailbox == alias_info.mailbox.email %} selected {% endif %}>
+                        {{ mailbox }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-lg-2">
+                  <input type="hidden" name="form-name" value="set-mailbox">
+                  <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+
+                  <button class="btn btn-sm btn-outline-info w-100">
+                    Update
+                  </button>
+                </div>
+
+              </div>
+            </form>
+          {% elif alias_info.mailbox != None and alias_info.mailbox.email != current_user.email %}
+            <div class="small-text">
+              Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
+            </div>
+          {% endif %}
+
+
           <form method="post">
             <div class="row mt-2">
 
-              <div class="col-10">
+              <div class="col-lg-10">
                 <textarea
                     name="note"
                     class="form-control"
@@ -168,11 +194,11 @@
                     placeholder="Alias Note.">{{ gen_email.note or "" }}</textarea>
               </div>
 
-              <div class="col-2">
+              <div class="col-lg-2">
                 <input type="hidden" name="form-name" value="set-note">
                 <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
 
-                <button class="btn btn-sm btn-outline-success">
+                <button class="btn btn-sm btn-outline-success w-100">
                   Save
                 </button>
               </div>

@@ -185,6 +185,8 @@ def send_email(
         )
         return
 
+    LOG.d("send email to %s, subject %s", to_email, subject)
+
     # host IP, setup via Docker network
     smtp = SMTP(POSTFIX_SERVER, 25)
 
@@ -214,11 +216,9 @@ def send_email(
     msg["To"] = to_email
 
     msg_id_header = make_msgid()
-    LOG.d("message-id %s", msg_id_header)
     msg["Message-ID"] = msg_id_header
 
     date_header = formatdate()
-    LOG.d("Date header: %s", date_header)
     msg["Date"] = date_header
 
     # add DKIM

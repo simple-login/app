@@ -1,0 +1,10 @@
+Hi {{user.name}}
+
+You recently requested to change mailbox {{mailbox_email}} to {{mailbox_new_email}}
+
+To confirm, please click on this link:
+
+{{link}}
+
+Regards,
+Son - SimpleLogin founder.

@@ -137,6 +137,19 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # only use mailbox instead of default to user email
+    # this requires a migration before to:
+    # 1. create default mailbox for the user email address
+    # 2. assign existing aliases to this default mailbox
+    full_mailbox = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
+    # the mailbox used when create random alias
+    default_mailbox_id = db.Column(
+        db.ForeignKey("mailbox.id"), nullable=True, default=None
+    )
+
     profile_picture = db.relationship(File)
 
     @classmethod
@@ -153,6 +166,14 @@ class User(db.Model, ModelMixin, UserMixin):
         # create a first alias mail to show user how to use when they login
         GenEmail.create_new(user.id, prefix="my-first-alias")
         db.session.flush()
+
+        # todo: uncomment when all existing users are full_mailbox
+        # to run just after migrating all existing user to full mailbox
+        # so new users are automatically full-mailbox
+        # mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
+        # db.session.flush()
+        # user.full_mailbox = True
+        # user.default_mailbox_id = mb.id
 
         # Schedule onboarding emails
         Job.create(
@@ -269,6 +290,18 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def verified_custom_domains(self):
         return CustomDomain.query.filter_by(user_id=self.id, verified=True).all()
+
+    def mailboxes(self) -> [str]:
+        """list of mailbox emails that user own"""
+        if self.full_mailbox:
+            mailboxes = []
+        else:
+            mailboxes = [self.email]
+
+        for mailbox in Mailbox.query.filter_by(user_id=self.id, verified=True):
+            mailboxes.append(mailbox.email)
+
+        return mailboxes
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
@@ -491,7 +524,7 @@ class GenEmail(db.Model, ModelMixin):
     mailbox = db.relationship("Mailbox")
 
     @classmethod
-    def create_new(cls, user_id, prefix, note=None):
+    def create_new(cls, user_id, prefix, note=None, mailbox_id=None):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
 
@@ -503,7 +536,9 @@ class GenEmail(db.Model, ModelMixin):
             if not cls.get_by(email=email):
                 break
 
-        return GenEmail.create(user_id=user_id, email=email, note=note)
+        return GenEmail.create(
+            user_id=user_id, email=email, note=note, mailbox_id=mailbox_id
+        )
 
     @classmethod
     def create_new_random(
@@ -828,7 +863,8 @@ class Mailbox(db.Model, ModelMixin):
     email = db.Column(db.String(256), unique=True, nullable=False)
     verified = db.Column(db.Boolean, default=False, nullable=False)
 
-    user = db.relationship(User)
+    # used when user wants to update mailbox email
+    new_email = db.Column(db.String(256), unique=True)
 
     def nb_alias(self):
         return GenEmail.filter_by(mailbox_id=self.id).count()

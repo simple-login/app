@@ -27,7 +27,7 @@ class NewMailboxForm(FlaskForm):
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
 def mailbox_route():
-    if not current_user.can_use_multiple_mailbox:
+    if not current_user.can_use_multiple_mailbox and not current_user.full_mailbox:
         flash("You don't have access to this page, redirect to home page", "warning")
         return redirect(url_for("dashboard.index"))
 
@@ -44,10 +44,35 @@ def mailbox_route():
                 flash("Unknown error. Refresh the page", "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
 
+            if mailbox.id == current_user.default_mailbox_id:
+                flash("You cannot delete default mailbox", "error")
+                return redirect(url_for("dashboard.mailbox_route"))
+
             email = mailbox.email
             Mailbox.delete(mailbox_id)
             db.session.commit()
             flash(f"Mailbox {email} has been deleted", "success")
+
+            return redirect(url_for("dashboard.mailbox_route"))
+        if request.form.get("form-name") == "set-default":
+            mailbox_id = request.form.get("mailbox-id")
+            mailbox = Mailbox.get(mailbox_id)
+
+            if not mailbox or mailbox.user_id != current_user.id:
+                flash("Unknown error. Refresh the page", "warning")
+                return redirect(url_for("dashboard.mailbox_route"))
+
+            if mailbox.id == current_user.default_mailbox_id:
+                flash("This mailbox is already default one", "error")
+                return redirect(url_for("dashboard.mailbox_route"))
+
+            if not mailbox.verified:
+                flash("Cannot set unverified mailbox as default", "error")
+                return redirect(url_for("dashboard.mailbox_route"))
+
+            current_user.default_mailbox_id = mailbox.id
+            db.session.commit()
+            flash(f"Mailbox {mailbox.email} is set as Default Mailbox", "success")
 
             return redirect(url_for("dashboard.mailbox_route"))
 
