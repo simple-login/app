@@ -26,6 +26,7 @@ from app.models import (
     CustomDomain,
     Client,
     AliasGeneratorEnum,
+    ManualSubscription,
 )
 from app.utils import random_string
 
@@ -183,6 +184,7 @@ def setting():
                 headers={"Content-Disposition": "attachment;filename=data.json"},
             )
 
+    manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     return render_template(
         "dashboard/setting.html",
         form=form,
@@ -191,6 +193,7 @@ def setting():
         change_email_form=change_email_form,
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
+        manual_sub=manual_sub,
     )
 
 

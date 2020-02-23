@@ -3,7 +3,7 @@ import argparse
 import arrow
 
 from app.config import IGNORED_EMAILS, ADMIN_EMAIL
-from app.email_utils import send_email, send_trial_end_soon_email
+from app.email_utils import send_email, send_trial_end_soon_email, render
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -14,6 +14,7 @@ from app.models import (
     ForwardEmail,
     CustomDomain,
     Client,
+    ManualSubscription,
 )
 from server import create_app
 
@@ -27,6 +28,35 @@ def notify_trial_end():
         ) > user.trial_end >= arrow.now().shift(days=2):
             LOG.d("Send trial end email to user %s", user)
             send_trial_end_soon_email(user)
+
+
+def notify_manual_sub_end():
+    for manual_sub in ManualSubscription.query.all():
+        need_reminder = False
+        if arrow.now().shift(days=14) > manual_sub.end_at > arrow.now().shift(days=13):
+            need_reminder = True
+        elif arrow.now().shift(days=4) > manual_sub.end_at > arrow.now().shift(days=3):
+            need_reminder = True
+
+        if need_reminder:
+            user = manual_sub.user
+            LOG.debug("Remind user %s that their manual sub is ending soon", user)
+            send_email(
+                user.email,
+                f"Your trial will end soon {user.name}",
+                render(
+                    "transactional/manual-subscription-end.txt",
+                    name=user.name,
+                    user=user,
+                    manual_sub=manual_sub,
+                ),
+                render(
+                    "transactional/manual-subscription-end.html",
+                    name=user.name,
+                    user=user,
+                    manual_sub=manual_sub,
+                ),
+            )
 
 
 def stats():
@@ -118,7 +148,7 @@ if __name__ == "__main__":
         "--job",
         help="Choose a cron job to run",
         type=str,
-        choices=["stats", "notify_trial_end",],
+        choices=["stats", "notify_trial_end", "notify_manual_subscription_end"],
     )
     args = parser.parse_args()
 
@@ -131,3 +161,6 @@ if __name__ == "__main__":
         elif args.job == "notify_trial_end":
             LOG.d("Notify users with trial ending soon")
             notify_trial_end()
+        elif args.job == "notify_manual_subscription_end":
+            LOG.d("Notify users with manual subscription ending soon")
+            notify_manual_sub_end()

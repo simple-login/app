@@ -194,6 +194,10 @@ class User(db.Model, ModelMixin, UserMixin):
         if sub:
             return True
 
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
+        if manual_sub and manual_sub.end_at > arrow.now():
+            return True
+
         return False
 
     def in_trial(self):
@@ -734,6 +738,24 @@ class Subscription(db.Model, ModelMixin):
             return "Monthly ($2.99/month)"
         else:
             return "Yearly ($29.99/year)"
+
+
+class ManualSubscription(db.Model, ModelMixin):
+    """
+    For users who use other forms of payment and therefore not pass by Paddle
+    """
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    # an reminder is sent several days before the subscription ends
+    end_at = db.Column(ArrowType, nullable=False)
+
+    # for storing note about this subscription
+    comment = db.Column(db.Text, nullable=True)
+
+    user = db.relationship(User)
 
 
 class DeletedAlias(db.Model, ModelMixin):
