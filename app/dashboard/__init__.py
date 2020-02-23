@@ -16,4 +16,5 @@ from .views import (
     directory,
     mailbox,
     deleted_alias,
+    mailbox_detail,
 )

@@ -1,0 +1,58 @@
+{% extends 'default.html' %}
+
+{% set active_page = "mailbox" %}
+
+{% block title %}
+  Mailbox {{ mailbox.email }}
+{% endblock %}
+
+{% block default_content %}
+
+  <div class="col-md-8 offset-md-2 pb-3">
+    <h1 class="h3">{{ mailbox.email }}
+      {% if mailbox.verified %}
+        <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Verified">✅</span>
+      {% else %}
+        <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Not Verified">
+          🚫
+        </span>
+      {% endif %}
+    </h1>
+
+    <!-- Change email -->
+    <div class="card">
+      <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="form-name" value="update-email">
+        {{ change_email_form.csrf_token }}
+
+        <div class="card-body">
+          <div class="card-title">
+            Change Mailbox Address
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address</label>
+
+            <!-- Not allow user to change mailbox if there's a pending change -->
+            {{ change_email_form.email(class="form-control", value=mailbox.email, readonly=pending_email != None) }}
+            {{ render_field_errors(change_email_form.email) }}
+
+            {% if pending_email %}
+              <div class="mt-2">
+                <span class="text-danger">Pending change: {{ pending_email }}</span>
+                <a href="{{ url_for('dashboard.cancel_mailbox_change_route', mailbox_id=mailbox.id) }}"
+                   class="btn btn-secondary btn-sm">
+                  Cancel mailbox change
+                </a>
+              </div>
+            {% endif %}
+          </div>
+          <button class="btn btn-primary">Change</button>
+        </div>
+      </form>
+    </div>
+    <!-- END Change email -->
+
+  </div>
+{% endblock %}
+
+

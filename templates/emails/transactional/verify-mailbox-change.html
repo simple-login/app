@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + user.name) }}
+  {{ render_text("You recently requested to change mailbox <b>"+ mailbox_email +"</b> to <b>" + mailbox_new_email + "</b>.") }}
+  {{ render_text("To confirm, please click on the button below.") }}
+  {{ render_button("Confirm mailbox change", link) }}
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ raw_url(link) }}
+{% endblock %}
+
