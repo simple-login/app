@@ -45,7 +45,7 @@
               {% endif %}
               {% if mailbox.id == current_user.default_mailbox_id %}
                 <div class="badge badge-primary float-right" data-toggle="tooltip"
-                     title="A random alias belongs to the default mailbox">Default Mailbox
+                     title="When a new random alias is created, it belongs to the default mailbox">Default Mailbox
                 </div>
               {% endif %}
             </h5>
@@ -61,6 +61,21 @@
 
           <div class="card-footer p-0">
             <div class="row">
+              {% if mailbox.verified %}
+                <div class="col">
+                  <form method="post">
+                    <input type="hidden" name="form-name" value="set-default">
+                    <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
+                    <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
+                    <button class="card-link btn btn-link
+                    {% if mailbox.id == current_user.default_mailbox_id %} disabled {% endif %}"
+                    >
+                    Set As Default Mailbox
+                  </button>
+                  </form>
+                </div>
+              {% endif %}
+
               <div class="col">
                 <form method="post">
                   <input type="hidden" name="form-name" value="delete">

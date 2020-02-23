@@ -54,6 +54,27 @@ def mailbox_route():
             flash(f"Mailbox {email} has been deleted", "success")
 
             return redirect(url_for("dashboard.mailbox_route"))
+        if request.form.get("form-name") == "set-default":
+            mailbox_id = request.form.get("mailbox-id")
+            mailbox = Mailbox.get(mailbox_id)
+
+            if not mailbox or mailbox.user_id != current_user.id:
+                flash("Unknown error. Refresh the page", "warning")
+                return redirect(url_for("dashboard.mailbox_route"))
+
+            if mailbox.id == current_user.default_mailbox_id:
+                flash("This mailbox is already default one", "error")
+                return redirect(url_for("dashboard.mailbox_route"))
+
+            if not mailbox.verified:
+                flash("Cannot set unverified mailbox as default", "error")
+                return redirect(url_for("dashboard.mailbox_route"))
+
+            current_user.default_mailbox_id = mailbox.id
+            db.session.commit()
+            flash(f"Mailbox {mailbox.email} is set as Default Mailbox", "success")
+
+            return redirect(url_for("dashboard.mailbox_route"))
 
         elif request.form.get("form-name") == "create":
             # todo: only premium user can add additional mailbox?
