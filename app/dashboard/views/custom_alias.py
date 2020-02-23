@@ -83,7 +83,8 @@ def custom_alias():
                     LOG.d("Set alias %s domain to %s", full_alias, custom_domain)
                     gen_email.custom_domain_id = custom_domain.id
 
-                if mailbox_email != current_user.email:
+                # assign alias to a mailbox
+                if current_user.full_mailbox or mailbox_email != current_user.email:
                     mailbox = Mailbox.get_by(email=mailbox_email)
                     gen_email.mailbox_id = mailbox.id
                     LOG.d("Set alias %s mailbox to %s", full_alias, mailbox)
