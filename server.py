@@ -162,6 +162,8 @@ def fake_data():
     m3 = Mailbox.create(user_id=user.id, email="m3@cd.ef", verified=True)
     db.session.commit()
 
+    user.default_mailbox_id = m1.id
+
     GenEmail.create_new(user.id, "e1@", mailbox_id=m1.id)
     GenEmail.create_new(user.id, "e2@", mailbox_id=m3.id)
 

@@ -54,6 +54,7 @@ def convert_user_full_mailbox(user):
 
     # finally set user to full_mailbox
     user.full_mailbox = True
+    user.default_mailbox_id = default_mb.id
     db.session.commit()
 
 
