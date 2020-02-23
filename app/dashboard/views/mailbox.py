@@ -27,7 +27,7 @@ class NewMailboxForm(FlaskForm):
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
 def mailbox_route():
-    if not current_user.can_use_multiple_mailbox:
+    if not current_user.can_use_multiple_mailbox and not current_user.full_mailbox:
         flash("You don't have access to this page, redirect to home page", "warning")
         return redirect(url_for("dashboard.index"))
 
