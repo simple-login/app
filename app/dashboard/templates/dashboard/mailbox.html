@@ -85,8 +85,7 @@
           A verification email will be sent to this email to make sure you have access to this email.
         </div>
 
-        {{ new_mailbox_form.email(class="form-control", placeholder="email@example.com",
-            autofocus="1") }}
+        {{ new_mailbox_form.email(class="form-control", placeholder="email@example.com") }}
         {{ render_field_errors(new_mailbox_form.email) }}
         <button class="btn btn-lg btn-success mt-2">Create</button>
       </form>

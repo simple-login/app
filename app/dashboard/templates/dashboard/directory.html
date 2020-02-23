@@ -85,8 +85,7 @@
 
         {{ new_dir_form.name(class="form-control", placeholder="my-directory",
             pattern="[0-9a-z-_]{3,}",
-            title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.",
-            autofocus="1") }}
+            title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.") }}
         {{ render_field_errors(new_dir_form.name) }}
         <button class="btn btn-lg btn-success mt-2">Create</button>
       </form>
