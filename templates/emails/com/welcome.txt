@@ -22,6 +22,7 @@ and create your business emails backed by your personal email! By the way, all o
 {% if user.in_trial() %}
 You can use all premium features like custom domain or alias directory during the trial period.
 Your trial will end {{ user.trial_end.humanize() }}.
+All aliases you create during the trial will continue to work normally when the trial ends.
 {% endif %}
 
 If there's anything that's bugging you, even the smallest of issues that could be done better, I want to hear about it - so hit the reply button.
