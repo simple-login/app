@@ -74,6 +74,16 @@ def index():
                 gen_email = GenEmail.create_new_random(
                     user_id=current_user.id, scheme=scheme
                 )
+
+                if current_user.full_mailbox:
+                    if not current_user.default_mailbox_id:
+                        LOG.error(
+                            "Full mailbox User %s does not have default mailbox ",
+                            current_user,
+                        )
+                    else:
+                        gen_email.mailbox_id = current_user.default_mailbox_id
+
                 db.session.commit()
 
                 LOG.d("generate new email %s for user %s", gen_email, current_user)
