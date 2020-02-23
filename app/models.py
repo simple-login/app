@@ -736,6 +736,22 @@ class Subscription(db.Model, ModelMixin):
             return "Yearly ($29.99/year)"
 
 
+class ManualSubscription(db.Model, ModelMixin):
+    """
+    For users who use other forms of payment and therefore not pass by Paddle
+    """
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    # an reminder is sent several days before the subscription ends
+    end_at = db.Column(ArrowType, nullable=False)
+
+    # for storing note about this subscription
+    comment = db.Column(db.Text, nullable=True)
+
+
 class DeletedAlias(db.Model, ModelMixin):
     """Store all deleted alias to make sure they are NOT reused"""
 
