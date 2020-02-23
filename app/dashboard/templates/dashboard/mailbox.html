@@ -61,7 +61,7 @@
 
           <div class="card-footer p-0">
             <div class="row">
-              {% if mailbox.verified %}
+              {% if mailbox.verified and current_user.full_mailbox %}
                 <div class="col">
                   <form method="post">
                     <input type="hidden" name="form-name" value="set-default">
