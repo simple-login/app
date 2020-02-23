@@ -755,6 +755,8 @@ class ManualSubscription(db.Model, ModelMixin):
     # for storing note about this subscription
     comment = db.Column(db.Text, nullable=True)
 
+    user = db.relationship(User)
+
 
 class DeletedAlias(db.Model, ModelMixin):
     """Store all deleted alias to make sure they are NOT reused"""

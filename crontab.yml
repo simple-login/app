@@ -10,3 +10,9 @@ jobs:
     shell: /bin/bash
     schedule: "0 8 * * *"
     captureStderr: true
+
+  - name: SimpleLogin Notify Manual Subscription Ends
+    command: python /code/cron.py -j notify_manual_subscription_end
+    shell: /bin/bash
+    schedule: "0 9 * * *"
+    captureStderr: true
