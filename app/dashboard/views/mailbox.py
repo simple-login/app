@@ -44,6 +44,10 @@ def mailbox_route():
                 flash("Unknown error. Refresh the page", "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
 
+            if mailbox.id == current_user.default_mailbox_id:
+                flash("You cannot delete default mailbox", "error")
+                return redirect(url_for("dashboard.mailbox_route"))
+
             email = mailbox.email
             Mailbox.delete(mailbox_id)
             db.session.commit()
