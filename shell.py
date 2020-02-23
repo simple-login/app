@@ -50,7 +50,9 @@ def convert_user_full_mailbox(user):
 
     # assign existing alias to this mailbox
     for gen_email in GenEmail.query.filter_by(user_id=user.id):
-        gen_email.mailbox_id = default_mb.id
+        if not gen_email.mailbox_id:
+            LOG.d("Set alias  %s mailbox to default mailbox", gen_email)
+            gen_email.mailbox_id = default_mb.id
 
     # finally set user to full_mailbox
     user.full_mailbox = True
