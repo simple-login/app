@@ -11,6 +11,12 @@
   <div style="max-width: 60em; margin: auto">
     <h1 class="h3 mb-5"> Deleted Aliases </h1>
 
+    {% if deleted_aliases|length == 0 %}
+      <div class="my-4 p-4 card">
+        You haven't deleted any alias.
+      </div>
+    {% endif %}
+
     {% for deleted_alias in deleted_aliases %}
       <div class="my-4 p-4 card border-light">
         {{ deleted_alias.email }}
