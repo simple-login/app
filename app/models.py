@@ -194,6 +194,10 @@ class User(db.Model, ModelMixin, UserMixin):
         if sub:
             return True
 
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
+        if manual_sub and manual_sub.end_at > arrow.now():
+            return True
+
         return False
 
     def in_trial(self):
