@@ -145,6 +145,11 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # the mailbox used when create random alias
+    default_mailbox_id = db.Column(
+        db.ForeignKey("mailbox.id"), nullable=True, default=None
+    )
+
     profile_picture = db.relationship(File)
 
     @classmethod
@@ -165,9 +170,10 @@ class User(db.Model, ModelMixin, UserMixin):
         # todo: uncomment when all existing users are full_mailbox
         # to run just after migrating all existing user to full mailbox
         # so new users are automatically full-mailbox
-        # Mailbox.create(user_id=user.id, email=user.email, verified=True)
-        # user.full_mailbox = True
+        # mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
         # db.session.flush()
+        # user.full_mailbox = True
+        # user.default_mailbox_id = mb.id
 
         # Schedule onboarding emails
         Job.create(
@@ -859,8 +865,6 @@ class Mailbox(db.Model, ModelMixin):
 
     # used when user wants to update mailbox email
     new_email = db.Column(db.String(256), unique=True)
-
-    user = db.relationship(User)
 
     def nb_alias(self):
         return GenEmail.filter_by(mailbox_id=self.id).count()
