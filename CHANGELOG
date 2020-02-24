@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 Support multiple Mailboxes
 
+## [1.0.5] - 2020-02-24
+Improve email forwarding.
+Minor improvements on monitoring.
+
 ## [1.0.4] - 2020-02-09
 Fix duplicate "List-Unsubscribe"  email header.
 
