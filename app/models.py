@@ -160,7 +160,8 @@ class User(db.Model, ModelMixin, UserMixin):
 
         if password:
             user.set_password(password)
-            db.session.flush()
+
+        db.session.flush()
 
         # create a first alias mail to show user how to use when they login
         GenEmail.create_new(user.id, prefix="my-first-alias")
