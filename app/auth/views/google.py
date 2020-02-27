@@ -128,8 +128,8 @@ def google_callback():
         # reset the next_url to avoid user getting redirected at each login :)
         session.pop("google_next_url", None)
 
-    if not SocialAuth.get_by(user_id=user.id, social="github"):
-        SocialAuth.create(user_id=user.id, social="github")
+    if not SocialAuth.get_by(user_id=user.id, social="google"):
+        SocialAuth.create(user_id=user.id, social="google")
         db.session.commit()
 
     return after_login(user, next_url)
