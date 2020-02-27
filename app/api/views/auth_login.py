@@ -45,6 +45,10 @@ def auth_login():
     elif not user.activated:
         return jsonify(error="Account not activated"), 400
 
+    return jsonify(**auth_payload(user, device)), 200
+
+
+def auth_payload(user, device) -> dict:
     ret = {
         "name": user.name,
         "mfa_enabled": user.enable_otp,
@@ -64,4 +68,4 @@ def auth_login():
         ret["mfa_key"] = None
         ret["api_key"] = api_key.code
 
-    return jsonify(**ret), 200
+    return ret
