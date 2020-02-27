@@ -738,6 +738,21 @@ Output:
 The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
 If user hasn't enabled MFA, `mfa_key` is empty.
 
+#### POST /api/auth/facebook
+
+Input:
+- facebook_token: Facebook access token
+- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
+
+Output: Same output as for `/api/auth/login` endpoint
+- name: user name, could be an empty string
+- mfa_enabled: boolean
+- mfa_key: only useful when user enables MFA. In this case, user needs to enter their OTP token in order to login.
+- api_key: if MFA is not enabled, the `api key` is returned right away.
+
+The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
+If user hasn't enabled MFA, `mfa_key` is empty.
+
 #### GET /api/aliases
 
 Get user aliases.
