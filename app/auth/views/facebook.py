@@ -14,7 +14,7 @@ from app.config import (
 )
 from app.extensions import db
 from app.log import LOG
-from app.models import User
+from app.models import User, SocialAuth
 from .login_utils import after_login
 from ...email_utils import can_be_used_as_personal_email, email_already_used
 
@@ -142,5 +142,9 @@ def facebook_callback():
 
         # reset the next_url to avoid user getting redirected at each login :)
         session.pop("facebook_next_url", None)
+
+    if not SocialAuth.get_by(user_id=user.id, social="facebook"):
+        SocialAuth.create(user_id=user.id, social="facebook")
+        db.session.commit()
 
     return after_login(user, next_url)
