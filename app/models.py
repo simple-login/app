@@ -103,7 +103,7 @@ class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
     email = db.Column(db.String(256), unique=True, nullable=False)
     salt = db.Column(db.String(128), nullable=False)
-    password = db.Column(db.String(128), nullable=False)
+    password = db.Column(db.String(128), nullable=True)
     name = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     alias_generator = db.Column(
@@ -156,12 +156,9 @@ class User(db.Model, ModelMixin, UserMixin):
     def create(cls, email, name, password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
 
-        if not password:
-            # set a random password
-            password = random_string(20)
-
-        user.set_password(password)
-        db.session.flush()
+        if password:
+            user.set_password(password)
+            db.session.flush()
 
         # create a first alias mail to show user how to use when they login
         GenEmail.create_new(user.id, prefix="my-first-alias")
@@ -241,6 +238,8 @@ class User(db.Model, ModelMixin, UserMixin):
         self.password = password_hash
 
     def check_password(self, password) -> bool:
+        if not self.password:
+            return False
         password_hash = bcrypt.hashpw(password.encode(), self.salt.encode())
         return self.password.encode() == password_hash
 
@@ -349,6 +348,17 @@ class ResetPasswordCode(db.Model, ModelMixin):
 
     def is_expired(self):
         return self.expired < arrow.now()
+
+
+class SocialAuth(db.Model, ModelMixin):
+    """Store how user authenticates with social login"""
+
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+
+    # name of the social login used, could be facebook, google or github
+    social = db.Column(db.String(128), nullable=False)
+
+    __table_args__ = (db.UniqueConstraint("user_id", "social", name="uq_social_auth"),)
 
 
 # <<< OAUTH models >>>
