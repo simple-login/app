@@ -102,8 +102,10 @@ class AliasGeneratorEnum(enum.Enum):
 class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
     email = db.Column(db.String(256), unique=True, nullable=False)
-    salt = db.Column(db.String(128), nullable=False)
+
+    salt = db.Column(db.String(128), nullable=True)
     password = db.Column(db.String(128), nullable=True)
+
     name = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     alias_generator = db.Column(
