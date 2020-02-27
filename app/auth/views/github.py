@@ -9,7 +9,7 @@ from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL, DISABLE_REGI
 from app.email_utils import can_be_used_as_personal_email, email_already_used
 from app.extensions import db
 from app.log import LOG
-from app.models import User
+from app.models import User, SocialAuth
 from app.utils import encode_url
 
 _authorization_base_url = "https://github.com/login/oauth/authorize"
@@ -104,6 +104,10 @@ def github_callback():
         email_utils.send_welcome_email(user)
 
         flash(f"Welcome to SimpleLogin {user.name}!", "success")
+
+    if not SocialAuth.get_by(user_id=user.id, social="github"):
+        SocialAuth.create(user_id=user.id, social="github")
+        db.session.commit()
 
     # The activation link contains the original page, for ex authorize page
     next_url = request.args.get("next") if request.args else None

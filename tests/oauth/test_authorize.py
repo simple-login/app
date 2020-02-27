@@ -39,8 +39,9 @@ def test_construct_url():
 def test_authorize_page_non_login_user(flask_client):
     """make sure to display login page for non-authenticated user"""
     user = User.create("test@test.com", "test user")
-    client = Client.create_new("test client", user.id)
+    db.session.commit()
 
+    client = Client.create_new("test client", user.id)
     db.session.commit()
 
     r = flask_client.get(
