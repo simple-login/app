@@ -5,54 +5,55 @@
 #    pip-compile
 #
 aiohttp==3.5.4            # via raven-aiohttp, yacron
-aiosmtpd==1.2
+aiosmtpd==1.2             # via -r requirements.in
 aiosmtplib==1.0.6         # via yacron
 alembic==1.0.10           # via flask-migrate
 appnope==0.1.0            # via ipython
-arrow==0.14.2
+arrow==0.14.2             # via -r requirements.in
 asn1crypto==0.24.0        # via cryptography
 async-timeout==3.0.1      # via aiohttp
 atomicwrites==1.3.0       # via pytest
 atpublic==1.0             # via aiosmtpd
 attrs==19.1.0             # via aiohttp, pytest
 backcall==0.1.0           # via ipython
-bcrypt==3.1.6
-blinker==1.4
-boto3==1.9.167
+bcrypt==3.1.6             # via -r requirements.in
+blinker==1.4              # via -r requirements.in, flask-debugtoolbar
+boto3==1.9.167            # via -r requirements.in, watchtower
 botocore==1.12.167        # via boto3, s3transfer
 certifi==2019.3.9         # via requests, sentry-sdk
 cffi==1.12.3              # via bcrypt, cryptography
 chardet==3.0.4            # via aiohttp, requests
 click==7.0                # via flask, pip-tools
-coloredlogs==10.0
+coloredlogs==10.0         # via -r requirements.in
 crontab==0.22.5           # via yacron
 cryptography==2.7         # via jwcrypto, pyopenssl
 decorator==4.4.0          # via ipython, traitlets
-dkimpy==1.0.1
-dnspython==1.16.0
+dkimpy==1.0.1             # via -r requirements.in
+dnspython==1.16.0         # via -r requirements.in, dkimpy
 docutils==0.14            # via botocore
-flask-admin==1.5.3
-flask-cors==3.0.8
-flask-debugtoolbar==0.10.1
+facebook-sdk==3.1.0       # via -r requirements.in
+flask-admin==1.5.3        # via -r requirements.in
+flask-cors==3.0.8         # via -r requirements.in
+flask-debugtoolbar==0.10.1  # via -r requirements.in
 flask-httpauth==3.3.0     # via flask-profiler
-flask-login==0.4.1
-flask-migrate==2.5.2
-flask-profiler==1.8.1
-flask-sqlalchemy==2.4.0
-flask-wtf==0.14.2
-flask==1.0.3
-gunicorn==19.9.0
+flask-login==0.4.1        # via -r requirements.in
+flask-migrate==2.5.2      # via -r requirements.in
+flask-profiler==1.8.1     # via -r requirements.in
+flask-sqlalchemy==2.4.0   # via -r requirements.in, flask-migrate
+flask-wtf==0.14.2         # via -r requirements.in
+flask==1.0.3              # via -r requirements.in, flask-admin, flask-cors, flask-debugtoolbar, flask-httpauth, flask-login, flask-migrate, flask-profiler, flask-sqlalchemy, flask-wtf
+gunicorn==19.9.0          # via -r requirements.in
 humanfriendly==4.18       # via coloredlogs
 idna-ssl==1.1.0           # via aiohttp
 idna==2.8                 # via idna-ssl, requests, yarl
 importlib-metadata==0.18  # via pluggy, pytest
 ipython-genutils==0.2.0   # via traitlets
-ipython==7.5.0
+ipython==7.5.0            # via -r requirements.in
 itsdangerous==1.1.0       # via flask, flask-debugtoolbar
 jedi==0.13.3              # via ipython
 jinja2==2.10.1            # via flask, yacron
 jmespath==0.9.4           # via boto3, botocore
-jwcrypto==0.6.0
+jwcrypto==0.6.0           # via -r requirements.in
 mako==1.0.12              # via alembic
 markupsafe==1.1.1         # via jinja2, mako
 more-itertools==7.0.0     # via pytest
@@ -61,47 +62,47 @@ oauthlib==3.0.2           # via requests-oauthlib
 packaging==19.0           # via pytest
 parso==0.4.0              # via jedi
 pexpect==4.7.0            # via ipython
-phpserialize==1.3
+phpserialize==1.3         # via -r requirements.in
 pickleshare==0.7.5        # via ipython
-pip-tools==3.8.0
+pip-tools==3.8.0          # via -r requirements.in
 pluggy==0.12.0            # via pytest
 prompt-toolkit==2.0.9     # via ipython
-psycopg2-binary==2.8.2
+psycopg2-binary==2.8.2    # via -r requirements.in
 ptyprocess==0.6.0         # via pexpect
 py==1.8.0                 # via pytest
 pycparser==2.19           # via cffi
-pycryptodome==3.9.4
+pycryptodome==3.9.4       # via -r requirements.in
 pygments==2.4.2           # via ipython
-pyopenssl==19.0.0
-pyotp==2.3.0
+pyopenssl==19.0.0         # via -r requirements.in
+pyotp==2.3.0              # via -r requirements.in
 pyparsing==2.4.0          # via packaging
-pytest==4.6.3
+pytest==4.6.3             # via -r requirements.in
 python-dateutil==2.8.0    # via alembic, arrow, botocore, strictyaml
-python-dotenv==0.10.3
+python-dotenv==0.10.3     # via -r requirements.in
 python-editor==1.0.4      # via alembic
 raven-aiohttp==0.7.0      # via yacron
 raven==6.10.0             # via raven-aiohttp, yacron
-requests-oauthlib==1.2.0
-requests==2.22.0          # via requests-oauthlib
+requests-oauthlib==1.2.0  # via -r requirements.in
+requests==2.22.0          # via facebook-sdk, requests-oauthlib
 ruamel.yaml==0.15.97      # via strictyaml
 s3transfer==0.2.1         # via boto3
-sentry-sdk==0.14.1
+sentry-sdk==0.14.1        # via -r requirements.in
 simplejson==3.17.0        # via flask-profiler
 six==1.12.0               # via bcrypt, cryptography, flask-cors, packaging, pip-tools, prompt-toolkit, pyopenssl, pytest, python-dateutil, sqlalchemy-utils, traitlets
-sqlalchemy-utils==0.36.1
+sqlalchemy-utils==0.36.1  # via -r requirements.in
 sqlalchemy==1.3.12        # via alembic, flask-sqlalchemy, sqlalchemy-utils
 strictyaml==1.0.2         # via yacron
 traitlets==4.3.2          # via ipython
 typing-extensions==3.7.4.1  # via aiohttp
-unidecode==1.0.23
+unidecode==1.0.23         # via -r requirements.in
 urllib3==1.25.3           # via botocore, requests, sentry-sdk
-watchtower==0.6.0
+watchtower==0.6.0         # via -r requirements.in
 wcwidth==0.1.7            # via prompt-toolkit, pytest
 werkzeug==0.15.4          # via flask, flask-debugtoolbar
-wtforms==2.2.1
-yacron==0.9.0
+wtforms==2.2.1            # via -r requirements.in, flask-admin, flask-wtf
+yacron==0.9.0             # via -r requirements.in
 yarl==1.3.0               # via aiohttp
 zipp==0.5.1               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools==45.2.0        # via ipython
+# setuptools

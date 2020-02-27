@@ -34,3 +34,4 @@ phpserialize
 dkimpy
 pyotp
 flask_profiler
+facebook-sdk
