@@ -34,3 +34,6 @@ phpserialize
 dkimpy
 pyotp
 flask_profiler
+facebook-sdk
+google-api-python-client
+google-auth-httplib2
