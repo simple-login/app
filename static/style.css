@@ -44,8 +44,8 @@
 
 /* highlighted table row */
 .highlight-row {
-    background-color: #eee;
     font-weight: bolder;
+    border-top: solid #5675E2;
 }
 
 .arrow {
