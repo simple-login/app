@@ -75,14 +75,7 @@ def index():
                     user_id=current_user.id, scheme=scheme
                 )
 
-                if current_user.full_mailbox:
-                    if not current_user.default_mailbox_id:
-                        LOG.error(
-                            "Full mailbox User %s does not have default mailbox ",
-                            current_user,
-                        )
-                    else:
-                        gen_email.mailbox_id = current_user.default_mailbox_id
+                gen_email.mailbox_id = current_user.default_mailbox_id
 
                 db.session.commit()
 

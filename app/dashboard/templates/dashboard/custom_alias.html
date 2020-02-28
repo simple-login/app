@@ -54,24 +54,20 @@
         </div>
       </div>
 
-      {% if mailboxes|length > 1 or current_user.full_mailbox %}
-        <div class="row mb-2">
-          <div class="col p-1">
-            <select class="form-control custom-select" name="mailbox">
-              {% for mailbox in mailboxes %}
-                <option value="{{ mailbox }}">
-                  {{ mailbox }}
-                </option>
-              {% endfor %}
-            </select>
-            <div class="small-text">
-              The mailbox that owns this alias.
-            </div>
+      <div class="row mb-2">
+        <div class="col p-1">
+          <select class="form-control custom-select" name="mailbox">
+            {% for mailbox in mailboxes %}
+              <option value="{{ mailbox }}">
+                {{ mailbox }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="small-text">
+            The mailbox that owns this alias.
           </div>
         </div>
-      {% else %}
-        <input type="hidden" name="mailbox" value="{{ mailboxes[0] }}">
-      {% endif %}
+      </div>
 
       <div class="row mb-2">
         <div class="col p-1">

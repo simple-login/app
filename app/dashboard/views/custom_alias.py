@@ -84,10 +84,9 @@ def custom_alias():
                     gen_email.custom_domain_id = custom_domain.id
 
                 # assign alias to a mailbox
-                if current_user.full_mailbox or mailbox_email != current_user.email:
-                    mailbox = Mailbox.get_by(email=mailbox_email)
-                    gen_email.mailbox_id = mailbox.id
-                    LOG.d("Set alias %s mailbox to %s", full_alias, mailbox)
+                mailbox = Mailbox.get_by(email=mailbox_email)
+                gen_email.mailbox_id = mailbox.id
+                LOG.d("Set alias %s mailbox to %s", full_alias, mailbox)
 
                 db.session.commit()
                 flash(f"Alias {full_alias} has been created", "success")

@@ -22,10 +22,8 @@
         - all emails sent to this alias will be forwarded to this mailbox <br>
         - from this mailbox, you can reply/send emails from the alias. <br><br>
 
-        {% if current_user.full_mailbox %}
-          When you signed up, a mailbox is automatically created with your email <b>{{ current_user.email }}</b>
-          <br><br>
-        {% endif %}
+        When you signed up, a mailbox is automatically created with your email <b>{{ current_user.email }}</b>
+        <br><br>
 
         The mailbox doesn't have to be your email: it can be your friend's email
         if you want to create aliases for your buddy.
@@ -61,7 +59,7 @@
 
           <div class="card-footer p-0">
             <div class="row">
-              {% if mailbox.verified and current_user.full_mailbox %}
+              {% if mailbox.verified %}
                 <div class="col">
                   <form method="post">
                     <input type="hidden" name="form-name" value="set-default">
@@ -70,8 +68,8 @@
                     <button class="card-link btn btn-link
                     {% if mailbox.id == current_user.default_mailbox_id %} disabled {% endif %}"
                     >
-                    Set As Default Mailbox
-                  </button>
+                      Set As Default Mailbox
+                    </button>
                   </form>
                 </div>
               {% endif %}

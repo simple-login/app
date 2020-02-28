@@ -135,18 +135,6 @@ class User(db.Model, ModelMixin, UserMixin):
         ArrowType, default=lambda: arrow.now().shift(days=7, hours=1), nullable=True
     )
 
-    can_use_multiple_mailbox = db.Column(
-        db.Boolean, default=False, nullable=False, server_default="0"
-    )
-
-    # only use mailbox instead of default to user email
-    # this requires a migration before to:
-    # 1. create default mailbox for the user email address
-    # 2. assign existing aliases to this default mailbox
-    full_mailbox = db.Column(
-        db.Boolean, default=False, nullable=False, server_default="0"
-    )
-
     # the mailbox used when create random alias
     default_mailbox_id = db.Column(
         db.ForeignKey("mailbox.id"), nullable=True, default=None
@@ -169,7 +157,6 @@ class User(db.Model, ModelMixin, UserMixin):
 
         mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
         db.session.flush()
-        user.full_mailbox = True
         user.default_mailbox_id = mb.id
 
         # Schedule onboarding emails
@@ -296,10 +283,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def mailboxes(self) -> [str]:
         """list of mailbox emails that user own"""
-        if self.full_mailbox:
-            mailboxes = []
-        else:
-            mailboxes = [self.email]
+        mailboxes = []
 
         for mailbox in Mailbox.query.filter_by(user_id=self.id, verified=True):
             mailboxes.append(mailbox.email)

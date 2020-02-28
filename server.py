@@ -131,8 +131,6 @@ def fake_data():
         activated=True,
         is_admin=True,
         otp_secret="base32secret3232",
-        can_use_multiple_mailbox=True,
-        full_mailbox=True,
     )
     db.session.commit()
 
