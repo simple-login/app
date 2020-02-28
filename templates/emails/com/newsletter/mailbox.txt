@@ -1,0 +1,28 @@
+This email is sent to {{ user.email }} and is part of our onboarding series.
+Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+----------------
+
+Hi {{user.name}}
+
+Our most requested feature is finally ready: you can now add several *real* email addresses into SimpleLogin
+and choose which one to use when creating aliases!
+
+A real email address is called *mailbox* in SimpleLogin.
+
+This feature is particularly useful if you have several email addresses,
+maybe for different uses: a Gmail account for social networks & forums, a Prontonmail account for professional emails, etc.
+
+When creating an alias, you can choose which mailbox that *owns* this alias, meaning:
+
+- emails sent to this alias are *forwarded* to the owning mailbox.
+
+- the owning mailbox can *send* or reply emails from this alias.
+
+You can also change the owning mailbox for an existing alias.
+
+The mailbox doesn't have to be your personal email: you can also create aliases for your friend by adding his/her email as a mailbox.
+
+As usual, let us know if you have any question by replying to this email.
+
+Best regards,
+SimpleLogin team.

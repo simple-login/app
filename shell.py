@@ -40,6 +40,21 @@ def send_safari_extension_newsletter():
         )
 
 
+def send_mailbox_newsletter():
+    for user in User.query.all():
+        if user.notification and user.activated:
+            try:
+                LOG.d("Send newsletter to %s", user)
+                send_email(
+                    user.email,
+                    "Introducing Mailbox - our most requested feature",
+                    render("com/newsletter/mailbox.txt", user=user),
+                    render("com/newsletter/mailbox.html", user=user),
+                )
+            except Exception:
+                LOG.warning("Cannot send to user %s", user)
+
+
 app = create_app()
 
 with app.app_context():
