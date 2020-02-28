@@ -915,7 +915,7 @@ class AccountActivation(db.Model, ModelMixin):
         db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
     )
     # the activation code is usually 6 digits
-    code = db.Column(db.String(10), unique=True, nullable=False)
+    code = db.Column(db.String(10), nullable=False)
 
     # nb tries decrements each time user enters wrong code
     tries = db.Column(db.Integer, default=3, nullable=False)
