@@ -4,5 +4,5 @@ Thank you for choosing SimpleLogin.
 
 To get started, please confirm that {{email}} is your email address using this link {{activation_link}} within 1 hour.
 
-Cheers,
-Son - SimpleLogin founder.
+Thanks,
+SimpleLogin Team.
