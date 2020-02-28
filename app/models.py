@@ -167,13 +167,10 @@ class User(db.Model, ModelMixin, UserMixin):
         GenEmail.create_new(user.id, prefix="my-first-alias")
         db.session.flush()
 
-        # todo: uncomment when all existing users are full_mailbox
-        # to run just after migrating all existing user to full mailbox
-        # so new users are automatically full-mailbox
-        # mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
-        # db.session.flush()
-        # user.full_mailbox = True
-        # user.default_mailbox_id = mb.id
+        mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
+        db.session.flush()
+        user.full_mailbox = True
+        user.default_mailbox_id = mb.id
 
         # Schedule onboarding emails
         Job.create(
