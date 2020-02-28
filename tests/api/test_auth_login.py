@@ -1,7 +1,7 @@
 from flask import url_for
 
 from app.extensions import db
-from app.models import User
+from app.models import User, AccountActivation
 
 
 def test_auth_login_success_mfa_disabled(flask_client):
@@ -63,3 +63,140 @@ def test_auth_login_device_exist(flask_client):
         json={"email": "a@b.c", "password": "password", "device": "Test Device"},
     )
     assert r.json["api_key"] == api_key
+
+
+def test_auth_register_success(flask_client):
+    assert AccountActivation.get(1) is None
+
+    r = flask_client.post(
+        url_for("api.auth_register"), json={"email": "a@b.c", "password": "password"},
+    )
+
+    assert r.status_code == 200
+    assert r.json["msg"]
+
+    # make sure an activation code is created
+    act_code = AccountActivation.get(1)
+    assert act_code
+    assert len(act_code.code) == 6
+    assert act_code.tries == 3
+
+
+def test_auth_register_too_short_password(flask_client):
+    r = flask_client.post(
+        url_for("api.auth_register"), json={"email": "a@b.c", "password": "short"},
+    )
+
+    assert r.status_code == 400
+    assert r.json["error"] == "password too short"
+
+
+def test_auth_activate_success(flask_client):
+    r = flask_client.post(
+        url_for("api.auth_register"), json={"email": "a@b.c", "password": "password"},
+    )
+
+    assert r.status_code == 200
+    assert r.json["msg"]
+
+    # get the activation code
+    act_code = AccountActivation.get(1)
+    assert act_code
+    assert len(act_code.code) == 6
+
+    r = flask_client.post(
+        url_for("api.auth_activate"), json={"email": "a@b.c", "code": act_code.code},
+    )
+    assert r.status_code == 200
+
+
+def test_auth_activate_wrong_email(flask_client):
+    r = flask_client.post(
+        url_for("api.auth_activate"), json={"email": "a@b.c", "code": "123456"},
+    )
+    assert r.status_code == 400
+
+
+def test_auth_activate_user_already_activated(flask_client):
+    User.create(email="a@b.c", password="password", name="Test User", activated=True)
+    db.session.commit()
+
+    r = flask_client.post(
+        url_for("api.auth_activate"), json={"email": "a@b.c", "code": "123456"},
+    )
+    assert r.status_code == 400
+
+
+def test_auth_activate_wrong_code(flask_client):
+    r = flask_client.post(
+        url_for("api.auth_register"), json={"email": "a@b.c", "password": "password"},
+    )
+
+    assert r.status_code == 200
+    assert r.json["msg"]
+
+    # get the activation code
+    act_code = AccountActivation.get(1)
+    assert act_code
+    assert len(act_code.code) == 6
+    assert act_code.tries == 3
+
+    # make sure to create a wrong code
+    wrong_code = act_code.code + "123"
+
+    r = flask_client.post(
+        url_for("api.auth_activate"), json={"email": "a@b.c", "code": wrong_code},
+    )
+    assert r.status_code == 400
+
+    # make sure the nb tries decrements
+    act_code = AccountActivation.get(1)
+    assert act_code.tries == 2
+
+
+def test_auth_activate_too_many_wrong_code(flask_client):
+    r = flask_client.post(
+        url_for("api.auth_register"), json={"email": "a@b.c", "password": "password"},
+    )
+
+    assert r.status_code == 200
+    assert r.json["msg"]
+
+    # get the activation code
+    act_code = AccountActivation.get(1)
+    assert act_code
+    assert len(act_code.code) == 6
+    assert act_code.tries == 3
+
+    # make sure to create a wrong code
+    wrong_code = act_code.code + "123"
+
+    for _ in range(2):
+        r = flask_client.post(
+            url_for("api.auth_activate"), json={"email": "a@b.c", "code": wrong_code},
+        )
+        assert r.status_code == 400
+
+    # the activation code is deleted
+    r = flask_client.post(
+        url_for("api.auth_activate"), json={"email": "a@b.c", "code": wrong_code},
+    )
+
+    assert r.status_code == 410
+
+    # make sure the nb tries decrements
+    assert AccountActivation.get(1) is None
+
+
+def test_auth_reactivate_success(flask_client):
+    User.create(email="a@b.c", password="password", name="Test User")
+    db.session.commit()
+
+    r = flask_client.post(url_for("api.auth_reactivate"), json={"email": "a@b.c"},)
+    assert r.status_code == 200
+
+    # make sure an activation code is created
+    act_code = AccountActivation.get(1)
+    assert act_code
+    assert len(act_code.code) == 6
+    assert act_code.tries == 3

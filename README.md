@@ -755,6 +755,35 @@ Input:
 
 Output: Same output as for `/api/auth/login` endpoint
 
+
+#### POST /api/auth/register
+
+Input:
+- email
+- password 
+
+Output: 200 means user is going to receive an email that contains an *activation code*. User needs to enter this code to confirm their account -> next endpoint.
+
+
+#### POST /api/auth/activate
+
+Input:
+- email
+- code: the activation code 
+
+Output:
+- 200: account is activated. User can login now
+- 400: wrong email, code
+- 410: wrong code too many times. User needs to ask for an reactivation -> next endpoint
+
+#### POST /api/auth/reactivate
+
+Input:
+- email
+
+Output:
+- 200: user is going to receive an email that contains the activation code. 
+
 #### GET /api/aliases
 
 Get user aliases.

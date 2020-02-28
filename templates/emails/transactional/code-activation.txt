@@ -1,0 +1,10 @@
+Hi,
+
+Thank you for choosing SimpleLogin.
+
+To get started, please activate your account by entering the following code into the application:
+
+{{code}}
+
+Thanks,
+SimpleLogin Team.

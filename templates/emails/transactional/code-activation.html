@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi") }}
+  {{ render_text("Thank you for choosing SimpleLogin.") }}
+  {{ render_text("To get started, please activate your account by entering the following code into the application:") }}
+  {{ render_text("<h1>" + code + "</h1>")}}
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+{% endblock %}
+

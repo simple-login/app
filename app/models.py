@@ -6,7 +6,7 @@ import arrow
 import bcrypt
 from flask import url_for
 from flask_login import UserMixin
-from sqlalchemy import text, desc
+from sqlalchemy import text, desc, CheckConstraint
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -906,3 +906,21 @@ class Mailbox(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<Mailbox {self.email}>"
+
+
+class AccountActivation(db.Model, ModelMixin):
+    """contains code to activate the user account when they sign up on mobile"""
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
+    )
+    # the activation code is usually 6 digits
+    code = db.Column(db.String(10), nullable=False)
+
+    # nb tries decrements each time user enters wrong code
+    tries = db.Column(db.Integer, default=3, nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(tries >= 0, name="account_activation_tries_positive"),
+        {},
+    )
