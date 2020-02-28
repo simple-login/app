@@ -1,4 +1,5 @@
-from flask import jsonify, request
+import random
+
 import facebook
 import google.oauth2.credentials
 import googleapiclient.discovery
@@ -12,10 +13,15 @@ from app.config import (
     FLASK_SECRET,
     DISABLE_REGISTRATION,
 )
-from app.email_utils import can_be_used_as_personal_email, email_already_used
+from app.email_utils import (
+    can_be_used_as_personal_email,
+    email_already_used,
+    send_email,
+    render,
+)
 from app.extensions import db
 from app.log import LOG
-from app.models import User, ApiKey, SocialAuth
+from app.models import User, ApiKey, SocialAuth, AccountActivation
 
 
 @api_bp.route("/auth/login", methods=["POST"])
@@ -53,6 +59,145 @@ def auth_login():
         return jsonify(error="Account not activated"), 400
 
     return jsonify(**auth_payload(user, device)), 200
+
+
+@api_bp.route("/auth/register", methods=["POST"])
+@cross_origin()
+def auth_register():
+    """
+    User signs up - will need to activate their account with an activation code.
+    Input:
+        email
+        password
+    Output:
+        200: user needs to confirm their account
+
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify(error="request body cannot be empty"), 400
+
+    email = data.get("email")
+    password = data.get("password")
+
+    if DISABLE_REGISTRATION:
+        return jsonify(error="registration is closed"), 400
+    if not can_be_used_as_personal_email(email) or email_already_used(email):
+        return jsonify(error=f"cannot use {email} as personal inbox"), 400
+
+    if not password or len(password) < 8:
+        return jsonify(error="password too short"), 400
+
+    LOG.debug("create user %s", email)
+    user = User.create(email=email, name="", password=password)
+    db.session.flush()
+
+    # create activation code
+    code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    AccountActivation.create(user_id=user.id, code=code)
+    db.session.commit()
+
+    send_email(
+        email,
+        f"Just one more step to join SimpleLogin",
+        render("transactional/code-activation.txt", code=code),
+        render("transactional/code-activation.html", code=code),
+    )
+
+    return jsonify(msg="User needs to confirm their account"), 200
+
+
+@api_bp.route("/auth/activate", methods=["POST"])
+@cross_origin()
+def auth_activate():
+    """
+    User enters the activation code to confirm their account.
+    Input:
+        email
+        code
+    Output:
+        200: user account is now activated, user can login now
+        400: wrong email, code
+        410: wrong code too many times
+
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify(error="request body cannot be empty"), 400
+
+    email = data.get("email")
+    code = data.get("code")
+
+    user = User.get_by(email=email)
+
+    # do not use a different message to avoid exposing existing email
+    if not user or user.activated:
+        return jsonify(error="Wrong email or code"), 400
+
+    account_activation = AccountActivation.get_by(user_id=user.id)
+    if not account_activation:
+        return jsonify(error="Wrong email or code"), 400
+
+    if account_activation.code != code:
+        # decrement nb tries
+        account_activation.tries -= 1
+        db.session.commit()
+
+        if account_activation.tries == 0:
+            AccountActivation.delete(account_activation.id)
+            db.session.commit()
+            return jsonify(error="Too many wrong tries"), 410
+
+        return jsonify(error="Wrong email or code"), 400
+
+    LOG.debug("activate user %s", user)
+    user.activated = True
+    AccountActivation.delete(account_activation.id)
+    db.session.commit()
+
+    return jsonify(msg="Account is activated, user can login now"), 200
+
+
+@api_bp.route("/auth/reactivate", methods=["POST"])
+@cross_origin()
+def auth_reactivate():
+    """
+    User asks for another activation code
+    Input:
+        email
+    Output:
+        200: user is going to receive an email for activate their account
+
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify(error="request body cannot be empty"), 400
+
+    email = data.get("email")
+    user = User.get_by(email=email)
+
+    # do not use a different message to avoid exposing existing email
+    if not user or user.activated:
+        return jsonify(error="Something went wrong"), 400
+
+    account_activation = AccountActivation.get_by(user_id=user.id)
+    if account_activation:
+        AccountActivation.delete(account_activation.id)
+        db.session.commit()
+
+    # create activation code
+    code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    AccountActivation.create(user_id=user.id, code=code)
+    db.session.commit()
+
+    send_email(
+        email,
+        f"Just one more step to join SimpleLogin",
+        render("transactional/code-activation.txt", code=code),
+        render("transactional/code-activation.html", code=code),
+    )
+
+    return jsonify(msg="User needs to confirm their account"), 200
 
 
 @api_bp.route("/auth/facebook", methods=["POST"])
