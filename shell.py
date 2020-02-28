@@ -41,7 +41,7 @@ def send_safari_extension_newsletter():
 
 
 def send_mailbox_newsletter():
-    for user in User.query.all():
+    for user in User.query.order_by(User.id).all():
         if user.notification and user.activated:
             try:
                 LOG.d("Send newsletter to %s", user)
