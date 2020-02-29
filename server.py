@@ -156,14 +156,11 @@ def fake_data():
     api_key.code = "codeFF"
 
     m1 = Mailbox.create(user_id=user.id, email="m1@cd.ef", verified=True)
-    m2 = Mailbox.create(user_id=user.id, email="m2@zt.com", verified=False)
-    m3 = Mailbox.create(user_id=user.id, email="m3@cd.ef", verified=True)
     db.session.commit()
 
     user.default_mailbox_id = m1.id
 
     GenEmail.create_new(user.id, "e1@", mailbox_id=m1.id)
-    GenEmail.create_new(user.id, "e2@", mailbox_id=m3.id)
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(

@@ -5,7 +5,7 @@ from itsdangerous import Signer, BadSignature
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
-from app.config import FLASK_SECRET
+from app.config import MAILBOX_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import can_be_used_as_personal_email, email_already_used
@@ -61,7 +61,7 @@ def mailbox_detail_route(mailbox_id):
                 mailbox.new_email = new_email
                 db.session.commit()
 
-                s = Signer(FLASK_SECRET)
+                s = Signer(MAILBOX_SECRET)
                 mailbox_id_signed = s.sign(str(mailbox.id)).decode()
                 verification_url = (
                     URL
@@ -125,7 +125,7 @@ def cancel_mailbox_change_route(mailbox_id):
 
 @dashboard_bp.route("/mailbox/confirm_change")
 def mailbox_confirm_change_route():
-    s = Signer(FLASK_SECRET)
+    s = Signer(MAILBOX_SECRET)
     mailbox_id = request.args.get("mailbox_id")
 
     try:

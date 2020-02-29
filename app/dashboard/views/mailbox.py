@@ -5,7 +5,7 @@ from itsdangerous import Signer, BadSignature
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
-from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, FLASK_SECRET, URL
+from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, MAILBOX_SECRET, URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
     send_email,
@@ -92,7 +92,7 @@ def mailbox_route():
                     )
                     db.session.commit()
 
-                    s = Signer(FLASK_SECRET)
+                    s = Signer(MAILBOX_SECRET)
                     mailbox_id_signed = s.sign(str(new_mailbox.id)).decode()
                     verification_url = (
                         URL
@@ -134,7 +134,7 @@ def mailbox_route():
 
 @dashboard_bp.route("/mailbox_verify")
 def mailbox_verify():
-    s = Signer(FLASK_SECRET)
+    s = Signer(MAILBOX_SECRET)
     mailbox_id = request.args.get("mailbox_id")
 
     try:
