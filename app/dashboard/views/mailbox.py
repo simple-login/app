@@ -73,10 +73,9 @@ def mailbox_route():
             return redirect(url_for("dashboard.mailbox_route"))
 
         elif request.form.get("form-name") == "create":
-            # todo: only premium user can add additional mailbox?
-            # if not current_user.is_premium():
-            #     flash("Only premium plan can add additional mailbox", "warning")
-            #     return redirect(url_for("dashboard.mailbox_route"))
+            if not current_user.is_premium():
+                flash("Only premium plan can add additional mailbox", "warning")
+                return redirect(url_for("dashboard.mailbox_route"))
 
             if new_mailbox_form.validate():
                 mailbox_email = new_mailbox_form.email.data.lower()
