@@ -379,6 +379,10 @@ def setup_paddle_callback(app: Flask):
                 ).date()
                 sub.plan = plan
 
+                # make sure to set the new plan as not-cancelled
+                # in case user cancels a plan and subscribes a new plan
+                sub.cancelled = False
+
             LOG.debug("User %s upgrades!", user)
 
             db.session.commit()
