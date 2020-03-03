@@ -46,6 +46,7 @@ from app.config import (
     ALIAS_DOMAINS,
     ADMIN_EMAIL,
     SUPPORT_EMAIL,
+    POSTFIX_SUBMISSION_TLS,
 )
 from app.email_utils import (
     get_email_name,
@@ -525,7 +526,12 @@ class MailHandler:
         LOG.debug("Rcpt to %s", envelope.rcpt_tos)
         message_data = envelope.content.decode("utf8", errors="replace")
 
-        smtp = SMTP(POSTFIX_SERVER, 25)
+        if POSTFIX_SUBMISSION_TLS:
+            smtp = SMTP(POSTFIX_SERVER, 587)
+            smtp.starttls()
+        else:
+            smtp = SMTP(POSTFIX_SERVER, 25)
+
         msg = Parser(policy=SMTPUTF8).parsestr(message_data)
 
         for rcpt_to in envelope.rcpt_tos:

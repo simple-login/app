@@ -22,6 +22,7 @@ from app.config import (
     DKIM_HEADERS,
     ALIAS_DOMAINS,
     SUPPORT_NAME,
+    POSTFIX_SUBMISSION_TLS,
 )
 from app.log import LOG
 from app.models import Mailbox, User
@@ -174,7 +175,7 @@ def send_cannot_create_domain_alias(user, alias, domain):
 
 
 def send_email(
-    to_email, subject, plaintext, html, bounced_email: Optional[Message] = None
+    to_email, subject, plaintext, html=None, bounced_email: Optional[Message] = None
 ):
     if NOT_SEND_EMAIL:
         LOG.d(
@@ -187,8 +188,11 @@ def send_email(
 
     LOG.d("send email to %s, subject %s", to_email, subject)
 
-    # host IP, setup via Docker network
-    smtp = SMTP(POSTFIX_SERVER, 25)
+    if POSTFIX_SUBMISSION_TLS:
+        smtp = SMTP(POSTFIX_SERVER, 587)
+        smtp.starttls()
+    else:
+        smtp = SMTP(POSTFIX_SERVER, 25)
 
     if bounced_email:
         msg = MIMEMultipart("mixed")
