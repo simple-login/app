@@ -59,6 +59,10 @@ POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 
 DISABLE_REGISTRATION = "DISABLE_REGISTRATION" in os.environ
 
+# Use port 587 instead of 25 when sending emails through Postfix
+# Useful when calling Postfix from an external network
+POSTFIX_SUBMISSION_TLS = "POSTFIX_SUBMISSION_TLS" in os.environ
+
 if "OTHER_ALIAS_DOMAINS" in os.environ:
     OTHER_ALIAS_DOMAINS = eval(
         os.environ["OTHER_ALIAS_DOMAINS"]
