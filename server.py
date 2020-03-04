@@ -330,6 +330,7 @@ def setup_paddle_callback(app: Flask):
             request.form.get("customer_name"),
             request.form.get("subscription_id"),
             request.form.get("subscription_plan_id"),
+            request.form.get("next_bill_date"),
         )
 
         # make sure the request comes from Paddle
