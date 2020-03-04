@@ -750,7 +750,7 @@ Output: Same output as for `/api/auth/login` endpoint
 #### POST /api/auth/google
 
 Input:
-- google_token: Facebook access token
+- google_token: Google access token
 - device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
 
 Output: Same output as for `/api/auth/login` endpoint
