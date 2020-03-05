@@ -244,6 +244,17 @@ def get_or_create_forward_email(
     return forward_email
 
 
+def should_append_alias(msg, alias):
+    """whether an alias should be appened to TO header in message"""
+
+    if msg["To"] and alias in msg["To"]:
+        return False
+    if msg["Cc"] and alias in msg["Cc"]:
+        return False
+
+    return True
+
+
 def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     """return *status_code message*"""
     alias = rcpt_to.lower()  # alias@SL
@@ -280,6 +291,16 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         )
         msg.replace_header("From", from_header)
         LOG.d("new from header:%s", from_header)
+
+        # append alias into the TO header if it's not present in To or CC
+        if should_append_alias(msg, alias):
+            LOG.d("append alias %s  to TO header %s", alias, msg["To"])
+            if msg["To"]:
+                to_header = msg["To"] + "," + alias
+            else:
+                to_header = alias
+
+            msg.replace_header("To", to_header)
 
         # add List-Unsubscribe header
         unsubscribe_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
