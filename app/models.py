@@ -136,6 +136,9 @@ class User(db.Model, ModelMixin, UserMixin):
     )
 
     # the mailbox used when create random alias
+    # this field is nullable but in practice, it's always set
+    # it cannot be set to non-nullable though
+    # as this will create foreign key cycle between User and Mailbox
     default_mailbox_id = db.Column(
         db.ForeignKey("mailbox.id"), nullable=True, default=None
     )
@@ -543,7 +546,7 @@ class GenEmail(db.Model, ModelMixin):
 
     # an alias can be owned by another mailbox
     mailbox_id = db.Column(
-        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=True, default=None
+        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=False
     )
 
     user = db.relationship(User)
