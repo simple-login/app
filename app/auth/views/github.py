@@ -78,7 +78,12 @@ def github_callback():
             break
 
     if not email:
-        raise Exception("cannot get email for github user")
+        LOG.error(f"cannot get email for github user {github_user_data} {emails}")
+        flash(
+            "Cannot get a valid email from Github, please another way to login/sign up",
+            "error",
+        )
+        return redirect(url_for("auth.login"))
 
     email = email.lower()
     user = User.get_by(email=email)
