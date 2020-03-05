@@ -12,13 +12,15 @@
     <h1 class="h3 mb-5"> Billing </h1>
 
     <p>
-      You are on the <b>{{ current_user.get_subscription().plan_name() }}</b> plan. Thank you very much for supporting
+      You are on the <b>{{ sub.plan_name() }}</b> plan. Thank you very much for supporting
       SimpleLogin. 🙌
     </p>
 
     {% if sub.cancelled %}
       <p>
-        Sad to see you go 😢. Your subscription ends {{ current_user.get_subscription().next_bill_date | dt }}.
+        Sad to see you go 😢. Your subscription ends on
+        {{ sub.next_bill_date.year }}-{{ sub.next_bill_date.month}}-{{ sub.next_bill_date.day }}
+        ({{ sub.next_bill_date | dt }}).
       </p>
 
     {% else %}
