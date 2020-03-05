@@ -30,6 +30,25 @@ def notify_trial_end():
             send_trial_end_soon_email(user)
 
 
+def notify_premium_end():
+    """sent to user who has canceled their subscription and who has their subscription ending soon"""
+    for sub in Subscription.query.filter(Subscription.cancelled == True).all():
+        if (
+            arrow.now().shift(days=3).date()
+            > sub.next_bill_date
+            >= arrow.now().shift(days=2).date()
+        ):
+            user = sub.user
+            LOG.d(f"Send subscription ending soon email to user {user}")
+
+            send_email(
+                user.email,
+                f"Your subscription will end soon {user.name}",
+                render("transactional/subscription-end.txt", user=user),
+                render("transactional/subscription-end.html", user=user),
+            )
+
+
 def notify_manual_sub_end():
     for manual_sub in ManualSubscription.query.all():
         need_reminder = False
@@ -148,7 +167,12 @@ if __name__ == "__main__":
         "--job",
         help="Choose a cron job to run",
         type=str,
-        choices=["stats", "notify_trial_end", "notify_manual_subscription_end"],
+        choices=[
+            "stats",
+            "notify_trial_end",
+            "notify_manual_subscription_end",
+            "notify_premium_end",
+        ],
     )
     args = parser.parse_args()
 
@@ -164,3 +188,6 @@ if __name__ == "__main__":
         elif args.job == "notify_manual_subscription_end":
             LOG.d("Notify users with manual subscription ending soon")
             notify_manual_sub_end()
+        elif args.job == "notify_premium_end":
+            LOG.d("Notify users with premium ending soon")
+            notify_premium_end()
