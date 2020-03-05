@@ -571,11 +571,13 @@ class GenEmail(db.Model, ModelMixin):
 
     @classmethod
     def create_new_random(
-        cls, user_id, scheme: int = AliasGeneratorEnum.word.value, in_hex: bool = False
+        cls, user, scheme: int = AliasGeneratorEnum.word.value, in_hex: bool = False
     ):
         """create a new random alias"""
         random_email = generate_email(scheme=scheme, in_hex=in_hex)
-        return GenEmail.create(user_id=user_id, email=random_email)
+        return GenEmail.create(
+            user_id=user.id, email=random_email, mailbox_id=user.default_mailbox_id
+        )
 
     def mailbox_email(self):
         if self.mailbox_id:

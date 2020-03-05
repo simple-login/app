@@ -61,5 +61,5 @@ def test_gen_email_create_random(flask_client):
     )
     db.session.commit()
 
-    alias = GenEmail.create_new_random(user.id)
+    alias = GenEmail.create_new_random(user)
     assert alias.email.endswith(EMAIL_DOMAIN)

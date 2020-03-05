@@ -40,7 +40,7 @@ def new_random_alias():
         else:
             return jsonify(error=f"{mode} must be either word or alias"), 400
 
-    gen_email = GenEmail.create_new_random(user_id=user.id, scheme=scheme)
+    gen_email = GenEmail.create_new_random(user=user, scheme=scheme)
     db.session.commit()
 
     hostname = request.args.get("hostname")

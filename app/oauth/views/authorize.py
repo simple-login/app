@@ -184,7 +184,9 @@ def authorize():
                         return redirect(request.url)
                     else:
                         gen_email = GenEmail.create(
-                            user_id=current_user.id, email=full_alias
+                            user_id=current_user.id,
+                            email=full_alias,
+                            mailbox_id=current_user.default_mailbox_id,
                         )
 
                         # get the custom_domain_id if alias is created with a custom domain
@@ -207,7 +209,9 @@ def authorize():
                     gen_email = GenEmail.get_by(email=chosen_email)
                     if not gen_email:
                         gen_email = GenEmail.create(
-                            email=chosen_email, user_id=current_user.id
+                            email=chosen_email,
+                            user_id=current_user.id,
+                            mailbox_id=current_user.default_mailbox_id,
                         )
                         db.session.flush()
 

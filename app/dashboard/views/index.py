@@ -71,9 +71,7 @@ def index():
                 )
                 if not scheme or not AliasGeneratorEnum.has_value(scheme):
                     scheme = current_user.alias_generator
-                gen_email = GenEmail.create_new_random(
-                    user_id=current_user.id, scheme=scheme
-                )
+                gen_email = GenEmail.create_new_random(user=current_user, scheme=scheme)
 
                 gen_email.mailbox_id = current_user.default_mailbox_id
 

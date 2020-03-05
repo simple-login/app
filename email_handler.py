@@ -146,7 +146,10 @@ def try_auto_create_directory(alias: str) -> Optional[GenEmail]:
         LOG.d("create alias %s for directory %s", alias, directory)
 
         gen_email = GenEmail.create(
-            email=alias, user_id=directory.user_id, directory_id=directory.id,
+            email=alias,
+            user_id=directory.user_id,
+            directory_id=directory.id,
+            mailbox_id=dir_user.default_mailbox_id,
         )
         db.session.commit()
         return gen_email
@@ -191,7 +194,9 @@ def try_auto_create_catch_all_domain(alias: str) -> Optional[GenEmail]:
         user_id=custom_domain.user_id,
         custom_domain_id=custom_domain.id,
         automatic_creation=True,
+        mailbox_id=domain_user.default_mailbox_id,
     )
+
     db.session.commit()
     return gen_email
 

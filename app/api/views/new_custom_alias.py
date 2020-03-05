@@ -7,7 +7,7 @@ from app.config import MAX_NB_EMAIL_FREE_PLAN
 from app.dashboard.views.custom_alias import verify_prefix_suffix
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, AliasUsedOn
+from app.models import GenEmail, AliasUsedOn, User
 from app.utils import convert_to_id
 
 
@@ -26,7 +26,7 @@ def new_custom_alias():
         409 if the alias already exists
 
     """
-    user = g.user
+    user: User = g.user
     if not user.can_create_new_alias():
         LOG.d("user %s cannot create any custom alias", user)
         return (
@@ -56,7 +56,9 @@ def new_custom_alias():
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
-    gen_email = GenEmail.create(user_id=user.id, email=full_alias)
+    gen_email = GenEmail.create(
+        user_id=user.id, email=full_alias, mailbox_id=user.default_mailbox_id
+    )
     db.session.commit()
 
     if hostname:

@@ -38,7 +38,7 @@ def test_success_with_pagination(flask_client):
 
     # create more aliases than PAGE_LIMIT
     for _ in range(PAGE_LIMIT + 1):
-        GenEmail.create_new_random(user.id)
+        GenEmail.create_new_random(user)
     db.session.commit()
 
     # get aliases on the 1st page, should return PAGE_LIMIT aliases
@@ -68,7 +68,7 @@ def test_delete_alias(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user.id)
+    gen_email = GenEmail.create_new_random(user)
     db.session.commit()
 
     r = flask_client.delete(
@@ -90,7 +90,7 @@ def test_toggle_alias(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user.id)
+    gen_email = GenEmail.create_new_random(user)
     db.session.commit()
 
     r = flask_client.post(
@@ -112,7 +112,7 @@ def test_alias_activities(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user.id)
+    gen_email = GenEmail.create_new_random(user)
     db.session.commit()
 
     # create some alias log
