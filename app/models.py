@@ -154,13 +154,13 @@ class User(db.Model, ModelMixin, UserMixin):
 
         db.session.flush()
 
-        # create a first alias mail to show user how to use when they login
-        GenEmail.create_new(user.id, prefix="my-first-alias")
-        db.session.flush()
-
         mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
         db.session.flush()
         user.default_mailbox_id = mb.id
+
+        # create a first alias mail to show user how to use when they login
+        GenEmail.create_new(user, prefix="my-first-alias", mailbox_id=mb.id)
+        db.session.flush()
 
         # Schedule onboarding emails
         Job.create(
@@ -272,9 +272,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
         all_gen_emails = [ge.email for ge in GenEmail.filter_by(user_id=self.id)]
         if self.can_create_new_alias():
-            suggested_gen_email = GenEmail.create_new(
-                self.id, prefix=website_name
-            ).email
+            suggested_gen_email = GenEmail.create_new(self, prefix=website_name).email
         else:
             # pick an email from the list of gen emails
             suggested_gen_email = random.choice(all_gen_emails)
@@ -553,7 +551,7 @@ class GenEmail(db.Model, ModelMixin):
     mailbox = db.relationship("Mailbox")
 
     @classmethod
-    def create_new(cls, user_id, prefix, note=None, mailbox_id=None):
+    def create_new(cls, user, prefix, note=None, mailbox_id=None):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
 
@@ -566,7 +564,10 @@ class GenEmail(db.Model, ModelMixin):
                 break
 
         return GenEmail.create(
-            user_id=user_id, email=email, note=note, mailbox_id=mailbox_id
+            user_id=user.id,
+            email=email,
+            note=note,
+            mailbox_id=mailbox_id or user.default_mailbox_id,
         )
 
     @classmethod

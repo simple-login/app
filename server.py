@@ -160,7 +160,7 @@ def fake_data():
 
     user.default_mailbox_id = m1.id
 
-    GenEmail.create_new(user.id, "e1@", mailbox_id=m1.id)
+    GenEmail.create_new(user, "e1@", mailbox_id=m1.id)
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(

@@ -41,7 +41,7 @@ def test_out_of_quota(flask_client):
 
     # create MAX_NB_EMAIL_FREE_PLAN custom alias to run out of quota
     for _ in range(MAX_NB_EMAIL_FREE_PLAN):
-        GenEmail.create_new(user.id, prefix="test")
+        GenEmail.create_new(user, prefix="test")
 
     word = random_word()
     r = flask_client.post(

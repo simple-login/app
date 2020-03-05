@@ -27,7 +27,7 @@ def test_different_scenarios(flask_client):
     assert r.status_code == 200
     assert r.json["can_create_custom"]
     assert len(r.json["existing"]) == 1
-    assert len(r.json["custom"]["suffixes"]) == 3
+    assert len(r.json["custom"]["suffixes"]) == 4
 
     assert r.json["custom"]["suggestion"] == ""  # no hostname => no suggestion
 
@@ -40,7 +40,7 @@ def test_different_scenarios(flask_client):
     assert r.json["custom"]["suggestion"] == "test"
 
     # <<< with recommendation >>>
-    alias = GenEmail.create_new(user.id, prefix="test")
+    alias = GenEmail.create_new(user, prefix="test")
     db.session.commit()
     AliasUsedOn.create(gen_email_id=alias.id, hostname="www.test.com")
     db.session.commit()
@@ -85,7 +85,7 @@ def test_different_scenarios_v2(flask_client):
     assert r.json["prefix_suggestion"] == "test"
 
     # <<< with recommendation >>>
-    alias = GenEmail.create_new(user.id, prefix="test")
+    alias = GenEmail.create_new(user, prefix="test")
     db.session.commit()
     AliasUsedOn.create(gen_email_id=alias.id, hostname="www.test.com")
     db.session.commit()
