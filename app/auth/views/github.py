@@ -59,7 +59,6 @@ def github_callback():
 
     # a dict with "name", "login"
     github_user_data = github.get("https://api.github.com/user").json()
-    LOG.d("user login with github %s", github_user_data)
 
     # return list of emails
     # {
@@ -74,7 +73,7 @@ def github_callback():
     email = None
 
     for e in emails:
-        if e.get("verified"):
+        if e.get("verified") and e.get("primary"):
             email = e.get("email")
             break
 
