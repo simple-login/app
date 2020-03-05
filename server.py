@@ -349,7 +349,7 @@ def setup_paddle_callback(app: Flask):
             sub = Subscription.get_by(user_id=user.id)
 
             if not sub:
-                LOG.d("create a new sub")
+                LOG.d(f"create a new Subscription for user {user}")
                 Subscription.create(
                     user_id=user.id,
                     cancel_url=request.form.get("cancel_url"),
@@ -362,7 +362,7 @@ def setup_paddle_callback(app: Flask):
                     plan=plan,
                 )
             else:
-                LOG.d("update existing sub %s", sub)
+                LOG.d(f"Update an existing Subscription for user {user}")
                 sub.cancel_url = request.form.get("cancel_url")
                 sub.update_url = request.form.get("update_url")
                 sub.subscription_id = request.form.get("subscription_id")

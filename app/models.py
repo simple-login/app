@@ -195,7 +195,34 @@ class User(db.Model, ModelMixin, UserMixin):
         return False
 
     def should_upgrade(self):
-        return not self.lifetime_or_active_subscription()
+        if self.lifetime_or_active_subscription():
+            # user who has canceled can also re-subscribe
+            sub: Subscription = self.get_subscription()
+            if sub and sub.cancelled:
+                return True
+
+            return False
+
+        return True
+
+    def next_bill_date(self) -> str:
+        sub: Subscription = self.get_subscription()
+        if sub:
+            return sub.next_bill_date.strftime("%Y-%m-%d")
+
+        LOG.error(
+            f"next_bill_date() should be called only on user with active subscription. User {self}"
+        )
+        return ""
+
+    def is_cancel(self) -> bool:
+        """User has canceled their subscription but the subscription is still active,
+        i.e. next_bill_date > now"""
+        sub: Subscription = self.get_subscription()
+        if sub and sub.cancelled:
+            return True
+
+        return False
 
     def is_premium(self) -> bool:
         """
@@ -273,7 +300,8 @@ class User(db.Model, ModelMixin, UserMixin):
             # sub is active until the next billing_date + 1
             if sub.next_bill_date >= arrow.now().shift(days=-1).date():
                 return sub
-            else:  # past subscription, user is considered not having a subscription
+            # past subscription, user is considered not having a subscription = free plan
+            else:
                 return None
         else:
             return sub
