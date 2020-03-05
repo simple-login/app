@@ -55,9 +55,7 @@ def auth_mfa():
     if not totp.verify(mfa_token):
         return jsonify(error="Wrong TOTP Token"), 400
 
-    ret = {
-        "name": user.name,
-    }
+    ret = {"name": user.name}
 
     api_key = ApiKey.get_by(user_id=user.id, name=device)
     if not api_key:

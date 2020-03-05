@@ -9,16 +9,10 @@ from app.config import MAILBOX_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import can_be_used_as_personal_email, email_already_used
-from app.email_utils import (
-    send_email,
-    render,
-)
+from app.email_utils import send_email, render
 from app.extensions import db
 from app.log import LOG
-from app.models import (
-    GenEmail,
-    DeletedAlias,
-)
+from app.models import GenEmail, DeletedAlias
 from app.models import Mailbox
 
 
@@ -54,9 +48,7 @@ def mailbox_detail_route(mailbox_id):
             ):
                 flash(f"Email {new_email} already used", "error")
             elif not can_be_used_as_personal_email(new_email):
-                flash(
-                    "You cannot use this email address as your mailbox", "error",
-                )
+                flash("You cannot use this email address as your mailbox", "error")
             else:
                 mailbox.new_email = new_email
                 db.session.commit()
@@ -96,7 +88,7 @@ def mailbox_detail_route(mailbox_id):
                     url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                 )
 
-    return render_template("dashboard/mailbox_detail.html", **locals(),)
+    return render_template("dashboard/mailbox_detail.html", **locals())
 
 
 @dashboard_bp.route(
@@ -142,9 +134,7 @@ def mailbox_confirm_change_route():
         db.session.commit()
 
         LOG.d("Mailbox change %s is verified", mailbox)
-        flash(
-            f"The {mailbox.email} is updated", "success",
-        )
+        flash(f"The {mailbox.email} is updated", "success")
         return redirect(
             url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
         )

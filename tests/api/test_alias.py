@@ -19,7 +19,7 @@ def test_error_without_pagination(flask_client):
     db.session.commit()
 
     r = flask_client.get(
-        url_for("api.get_aliases"), headers={"Authentication": api_key.code},
+        url_for("api.get_aliases"), headers={"Authentication": api_key.code}
     )
 
     assert r.status_code == 400
@@ -43,7 +43,7 @@ def test_success_with_pagination(flask_client):
 
     # get aliases on the 1st page, should return PAGE_LIMIT aliases
     r = flask_client.get(
-        url_for("api.get_aliases", page_id=0), headers={"Authentication": api_key.code},
+        url_for("api.get_aliases", page_id=0), headers={"Authentication": api_key.code}
     )
     assert r.status_code == 200
     assert len(r.json["aliases"]) == PAGE_LIMIT
@@ -52,7 +52,7 @@ def test_success_with_pagination(flask_client):
     # as the total number of aliases is PAGE_LIMIT +2
     # 1 alias is created when user is created
     r = flask_client.get(
-        url_for("api.get_aliases", page_id=1), headers={"Authentication": api_key.code},
+        url_for("api.get_aliases", page_id=1), headers={"Authentication": api_key.code}
     )
     assert r.status_code == 200
     assert len(r.json["aliases"]) == 2

@@ -7,16 +7,10 @@ import time
 import arrow
 
 from app.config import JOB_ONBOARDING_1
-from app.email_utils import (
-    send_email,
-    render,
-)
+from app.email_utils import send_email, render
 from app.extensions import db
 from app.log import LOG
-from app.models import (
-    User,
-    Job,
-)
+from app.models import User, Job
 from server import create_app
 
 

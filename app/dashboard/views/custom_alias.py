@@ -1,10 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 
-from app.config import (
-    DISABLE_ALIAS_SUFFIX,
-    ALIAS_DOMAINS,
-)
+from app.config import DISABLE_ALIAS_SUFFIX, ALIAS_DOMAINS
 from app.dashboard.base import dashboard_bp
 from app.email_utils import email_belongs_to_alias_domains, get_email_domain_part
 from app.extensions import db

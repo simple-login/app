@@ -9,10 +9,7 @@ from itsdangerous import Signer
 
 from app import email_utils
 from app.api.base import api_bp
-from app.config import (
-    FLASK_SECRET,
-    DISABLE_REGISTRATION,
-)
+from app.config import FLASK_SECRET, DISABLE_REGISTRATION
 from app.email_utils import (
     can_be_used_as_personal_email,
     email_already_used,
@@ -302,10 +299,7 @@ def auth_google():
 
 
 def auth_payload(user, device) -> dict:
-    ret = {
-        "name": user.name,
-        "mfa_enabled": user.enable_otp,
-    }
+    ret = {"name": user.name, "mfa_enabled": user.enable_otp}
 
     # do not give api_key, user can only obtain api_key after OTP verification
     if user.enable_otp:

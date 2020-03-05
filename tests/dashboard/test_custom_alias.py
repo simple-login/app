@@ -36,7 +36,7 @@ def test_not_show_unverified_mailbox(flask_client):
     Mailbox.create(user_id=user.id, email="m2@example.com", verified=False)
     db.session.commit()
 
-    r = flask_client.get(url_for("dashboard.custom_alias"),)
+    r = flask_client.get(url_for("dashboard.custom_alias"))
 
     assert "m1@example.com" in str(r.data)
     assert "m2@example.com" not in str(r.data)

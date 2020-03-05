@@ -91,9 +91,7 @@ def github_callback():
             return redirect(url_for("auth.login"))
 
         if not can_be_used_as_personal_email(email) or email_already_used(email):
-            flash(
-                f"You cannot use {email} as your personal inbox.", "error",
-            )
+            flash(f"You cannot use {email} as your personal inbox.", "error")
             return redirect(url_for("auth.login"))
 
         LOG.d("create github user")

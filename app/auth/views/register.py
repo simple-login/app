@@ -37,15 +37,13 @@ def register():
     if form.validate_on_submit():
         email = form.email.data.lower()
         if not can_be_used_as_personal_email(email):
-            flash(
-                "You cannot use this email address as your personal inbox.", "error",
-            )
+            flash("You cannot use this email address as your personal inbox.", "error")
         else:
             if email_already_used(email):
                 flash(f"Email {email} already used", "error")
             else:
                 LOG.debug("create user %s", form.email.data)
-                user = User.create(email=email, name="", password=form.password.data,)
+                user = User.create(email=email, name="", password=form.password.data)
                 db.session.commit()
 
                 send_activation_email(user, next_url)

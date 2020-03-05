@@ -155,7 +155,4 @@ def get_alias_activities(alias_id):
 
         activities.append(activity)
 
-    return (
-        jsonify(activities=activities),
-        200,
-    )
+    return (jsonify(activities=activities), 200)

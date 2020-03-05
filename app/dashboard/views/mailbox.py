@@ -83,9 +83,7 @@ def mailbox_route():
                 if email_already_used(mailbox_email):
                     flash(f"{mailbox_email} already used", "error")
                 elif not can_be_used_as_personal_email(mailbox_email):
-                    flash(
-                        f"You cannot use {mailbox_email}.", "error",
-                    )
+                    flash(f"You cannot use {mailbox_email}.", "error")
                 else:
                     new_mailbox = Mailbox.create(
                         email=mailbox_email, user_id=current_user.id
