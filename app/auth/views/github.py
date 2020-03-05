@@ -81,6 +81,7 @@ def github_callback():
     if not email:
         raise Exception("cannot get email for github user")
 
+    email = email.lower()
     user = User.get_by(email=email)
 
     # create user
