@@ -14,6 +14,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, DeletedAlias
 from app.models import Mailbox
+from app.pgp_utils import PGPException, load_public_key
 
 
 class ChangeEmailForm(FlaskForm):
@@ -96,13 +97,16 @@ def mailbox_detail_route(mailbox_id):
         elif request.form.get("form-name") == "pgp":
             if request.form.get("action") == "save":
                 mailbox.pgp_public_key = request.form.get("pgp")
-                # TODO
-                # mailbox.pgp_finger_print = load_public_key(mailbox.pgp_public_key)
-                db.session.commit()
-                flash("Your PGP public key is saved successfully", "success")
-                return redirect(
-                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
-                )
+                try:
+                    mailbox.pgp_finger_print = load_public_key(mailbox.pgp_public_key)
+                except PGPException:
+                    flash("Cannot add the public key, please verify it", "error")
+                else:
+                    db.session.commit()
+                    flash("Your PGP public key is saved successfully", "success")
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
             elif request.form.get("action") == "remove":
                 mailbox.pgp_public_key = None
                 mailbox.pgp_finger_print = None
