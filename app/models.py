@@ -297,6 +297,10 @@ class User(db.Model, ModelMixin, UserMixin):
         TODO: support user unsubscribe and re-subscribe
         """
         sub = Subscription.get_by(user_id=self.id)
+        # TODO: sub is active only if sub.next_bill_date > now
+        # due to a bug on next_bill_date, wait until next month (April 8)
+        # when all next_bill_date are correctly updated to add this check
+
         if sub and sub.cancelled:
             # sub is active until the next billing_date + 1
             if sub.next_bill_date >= arrow.now().shift(days=-1).date():
