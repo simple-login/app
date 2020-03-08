@@ -52,6 +52,31 @@
     </div>
     <!-- END Change email -->
 
+
+    <!-- Change PGP Public key -->
+    <div class="card">
+      <form method="post">
+        <input type="hidden" name="form-name" value="pgp">
+
+        <div class="card-body">
+          <div class="card-title">
+            PGP
+          </div>
+          <div class="form-group">
+            <label class="form-label">PGP Public Key</label>
+
+            <textarea name="pgp" class="form-control" rows=10>{{mailbox.pgp_public_key or ""}}</textarea>
+          </div>
+
+          <button class="btn btn-primary" name="action" value="save">Save</button>
+          <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+
+        </div>
+      </form>
+
+    </div>
+    <!-- END PGP Public key -->
+
   </div>
 {% endblock %}
 
