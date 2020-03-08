@@ -1,5 +1,8 @@
 import os
+import random
+import string
 import subprocess
+import tempfile
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -154,6 +157,17 @@ WORDS_FILE_PATH = get_abs_path(
     os.environ.get("WORDS_FILE_PATH", "local_data/words_alpha.txt")
 )
 
+# Used to generate random email
+if os.environ.get("GNUPGHOME"):
+    GNUPGHOME = get_abs_path(os.environ.get("GNUPGHOME"))
+else:
+    letters = string.ascii_lowercase
+    random_dir_name = "".join(random.choice(letters) for _ in range(20))
+    GNUPGHOME = f"/tmp/{random_dir_name}"
+    if not os.path.exists(GNUPGHOME):
+        os.mkdir(GNUPGHOME, mode=0o700)
+
+    print("WARNING: Use a temp directory for GNUPGHOME", GNUPGHOME)
 
 # Github, Google, Facebook client id and secrets
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
