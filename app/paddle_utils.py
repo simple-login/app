@@ -8,15 +8,18 @@ import collections
 
 # PHPSerialize can be found at https://pypi.python.org/pypi/phpserialize
 import phpserialize
+import requests
 from Crypto.Hash import SHA1
 
 # Crypto can be found at https://pypi.org/project/pycryptodome/
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 
-from app.config import PADDLE_PUBLIC_KEY_PATH
+from app.config import PADDLE_PUBLIC_KEY_PATH, PADDLE_VENDOR_ID, PADDLE_AUTH_CODE
 
 # Your Paddle public key.
+from app.log import LOG
+
 with open(PADDLE_PUBLIC_KEY_PATH) as f:
     public_key = f.read()
 
@@ -55,3 +58,21 @@ def verify_incoming_request(form_data: dict) -> bool:
     if verifier.verify(digest, signature):
         return True
     return False
+
+
+def cancel_subscription(subscription_id: int) -> bool:
+    r = requests.post(
+        "https://vendors.paddle.com/api/2.0/subscription/users_cancel",
+        data={
+            "vendor_id": PADDLE_VENDOR_ID,
+            "vendor_auth_code": PADDLE_AUTH_CODE,
+            "subscription_id": subscription_id,
+        },
+    )
+    res = r.json()
+    if not res["success"]:
+        LOG.error(
+            f"cannot cancel subscription {subscription_id}, paddle response: {res}"
+        )
+
+    return res["success"]
