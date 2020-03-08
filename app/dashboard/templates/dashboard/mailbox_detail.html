@@ -57,6 +57,7 @@
 
 
     <!-- Change PGP Public key -->
+    {% if current_user.can_use_pgp %}
     <div class="card">
       <form method="post">
         <input type="hidden" name="form-name" value="pgp">
@@ -82,6 +83,7 @@
       </form>
 
     </div>
+    {% endif %}
     <!-- END PGP Public key -->
 
   </div>

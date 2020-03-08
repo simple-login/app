@@ -95,6 +95,12 @@ def mailbox_detail_route(mailbox_id):
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                     )
         elif request.form.get("form-name") == "pgp":
+            if not current_user.can_use_pgp:
+                flash("You cannot use PGP", "error")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                )
+
             if request.form.get("action") == "save":
                 mailbox.pgp_public_key = request.form.get("pgp")
                 try:
