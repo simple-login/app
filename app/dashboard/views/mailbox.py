@@ -120,7 +120,11 @@ def mailbox_route():
                         "success",
                     )
 
-                    return redirect(url_for("dashboard.mailbox_route"))
+                    return redirect(
+                        url_for(
+                            "dashboard.mailbox_detail_route", mailbox_id=new_mailbox.id
+                        )
+                    )
 
     return render_template(
         "dashboard/mailbox.html",
@@ -150,4 +154,6 @@ def mailbox_verify():
             f"The {mailbox.email} is now verified, you can start creating alias with it",
             "success",
         )
-        return redirect(url_for("dashboard.mailbox_route"))
+        return redirect(
+            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
+        )
