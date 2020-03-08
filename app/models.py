@@ -916,6 +916,9 @@ class Mailbox(db.Model, ModelMixin):
     # used when user wants to update mailbox email
     new_email = db.Column(db.String(256), unique=True)
 
+    pgp_public_key = db.Column(db.Text, nullable=True)
+    pgp_finger_print = db.Column(db.String(512), nullable=True)
+
     def nb_alias(self):
         return GenEmail.filter_by(mailbox_id=self.id).count()
 
