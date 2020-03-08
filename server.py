@@ -394,12 +394,23 @@ def setup_paddle_callback(app: Flask):
 
         elif request.form.get("alert_name") == "subscription_cancelled":
             subscription_id = request.form.get("subscription_id")
-            LOG.warning("Cancel subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
+                # cancellation_effective_date should be the same as next_bill_date
+                LOG.error(
+                    "Cancel subscription %s %s on %s, next bill date %s",
+                    subscription_id,
+                    sub.user,
+                    request.form.get("cancellation_effective_date"),
+                    sub.next_bill_date
+                )
+                sub.event_time = arrow.now()
+
                 sub.cancelled = True
                 db.session.commit()
+            else:
+                return "No such subscription", 400
 
         return "OK"
 
@@ -425,7 +436,7 @@ def setup_do_not_track(app):
     def do_not_track():
         return """
         <script src="/static/local-storage-polyfill.js"></script>
-        
+
         <script>
 // Disable GoatCounter if this script is called
 
