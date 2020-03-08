@@ -403,7 +403,7 @@ def setup_paddle_callback(app: Flask):
                     subscription_id,
                     sub.user,
                     request.form.get("cancellation_effective_date"),
-                    sub.next_bill_date
+                    sub.next_bill_date,
                 )
                 sub.event_time = arrow.now()
 
