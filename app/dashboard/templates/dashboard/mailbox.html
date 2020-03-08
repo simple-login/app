@@ -41,6 +41,10 @@
                   🚫
                 </span>
               {% endif %}
+              {% if mailbox.pgp_finger_print %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+              {% endif %}
+
               {% if mailbox.id == current_user.default_mailbox_id %}
                 <div class="badge badge-primary float-right" data-toggle="tooltip"
                      title="When a new random alias is created, it belongs to the default mailbox">Default Mailbox

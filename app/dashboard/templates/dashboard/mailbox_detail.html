@@ -17,6 +17,9 @@
           🚫
         </span>
       {% endif %}
+      {% if mailbox.pgp_finger_print %}
+        <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+      {% endif %}
     </h1>
 
     <!-- Change email -->
@@ -60,8 +63,12 @@
 
         <div class="card-body">
           <div class="card-title">
-            PGP
+            Pretty Good Privacy (PGP)
+            <div class="small-text">
+              By importing your PGP Public Key into SimpleLogin, all emails sent to {{mailbox.email}} are <b>encrypted</b> with your key.
+            </div>
           </div>
+
           <div class="form-group">
             <label class="form-label">PGP Public Key</label>
 
