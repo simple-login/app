@@ -323,7 +323,7 @@ def jinja2_filter(app):
 def setup_paddle_callback(app: Flask):
     @app.route("/paddle", methods=["GET", "POST"])
     def paddle():
-        LOG.debug(f"paddle callback{request.form.get('alert_name')} {request.form}")
+        LOG.debug(f"paddle callback {request.form.get('alert_name')} {request.form}")
 
         # make sure the request comes from Paddle
         if not paddle_utils.verify_incoming_request(dict(request.form)):
@@ -380,7 +380,7 @@ def setup_paddle_callback(app: Flask):
 
             db.session.commit()
 
-        elif request.form.get("alert_name") == "subscription_updated":
+        elif request.form.get("alert_name") == "subscription_payment_succeeded":
             subscription_id = request.form.get("subscription_id")
             LOG.debug("Update subscription %s", subscription_id)
 
