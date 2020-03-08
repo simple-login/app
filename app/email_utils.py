@@ -348,3 +348,18 @@ def email_already_used(email: str) -> bool:
         return True
 
     return False
+
+
+def mailbox_already_used(email: str, user) -> bool:
+    if Mailbox.get_by(email=email):
+        return True
+
+    # support the case user wants to re-add their real email as mailbox
+    # can happen when user changes their root email and wants to add this new email as mailbox
+    if email == user.email:
+        return False
+
+    if User.get_by(email=email):
+        return True
+
+    return False
