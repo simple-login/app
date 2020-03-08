@@ -143,6 +143,11 @@ class User(db.Model, ModelMixin, UserMixin):
         db.ForeignKey("mailbox.id"), nullable=True, default=None
     )
 
+    # feature flag
+    can_use_pgp = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     profile_picture = db.relationship(File)
 
     @classmethod
