@@ -4,8 +4,10 @@ from app.config import GNUPGHOME
 
 gpg = gnupg.GPG(gnupghome=GNUPGHOME)
 
+
 class PGPException(Exception):
     pass
+
 
 def load_public_key(public_key: str) -> str:
     """Load a public key into keyring and return the fingerprint. If error, raise Exception"""

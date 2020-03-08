@@ -31,13 +31,17 @@ It should contain the following info:
 
 """
 import time
+from email import encoders
 from email.message import Message
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
 from email.parser import Parser
 from email.policy import SMTPUTF8
 from smtplib import SMTP
 from typing import Optional
 
 from aiosmtpd.controller import Controller
+import gnupg
 
 from app.config import (
     EMAIL_DOMAIN,
@@ -47,6 +51,7 @@ from app.config import (
     ADMIN_EMAIL,
     SUPPORT_EMAIL,
     POSTFIX_SUBMISSION_TLS,
+    GNUPGHOME,
 )
 from app.email_utils import (
     get_email_name,
@@ -74,6 +79,7 @@ from app.models import (
 )
 from app.utils import random_string
 from server import create_app
+from app import pgp_utils
 
 
 # fix the database connection leak issue
@@ -255,6 +261,31 @@ def should_append_alias(msg, alias):
     return True
 
 
+def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
+    msg = MIMEMultipart("encrypted", protocol="application/pgp-encrypted")
+
+    # copy all headers from original message except the "Content-Type"
+    for i in reversed(range(len(orig_msg._headers))):
+        header_name = orig_msg._headers[i][0].lower()
+        if header_name != "Content-Type".lower():
+            msg[header_name] = orig_msg._headers[i][1]
+
+    first = MIMEApplication(
+        _subtype="pgp-encrypted", _encoder=encoders.encode_7or8bit, _data=""
+    )
+    first.set_payload("Version: 1")
+    msg.attach(first)
+
+    second = MIMEApplication("octet-stream", _encoder=encoders.encode_7or8bit)
+    second.add_header("Content-Disposition", "inline")
+    # encrypt original message
+    encrypted_data = pgp_utils.encrypt(orig_msg.as_string(), pgp_fingerprint)
+    second.set_payload(encrypted_data)
+    msg.attach(second)
+
+    return msg
+
+
 def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     """return *status_code message*"""
     alias = rcpt_to.lower()  # alias@SL
@@ -267,7 +298,14 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             LOG.d("alias %s cannot be created on-the-fly, return 510", alias)
             return "510 Email not exist"
 
-    mailbox_email = gen_email.mailbox_email()
+    mailbox = gen_email.mailbox
+    mailbox_email = mailbox.email
+
+    # create PGP email if needed
+    if mailbox.pgp_finger_print:
+        LOG.d("Encrypt message using mailbox %s", mailbox)
+        msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
+
     forward_email = get_or_create_forward_email(msg["From"], gen_email)
     forward_log = ForwardEmailLog.create(forward_id=forward_email.id)
 
