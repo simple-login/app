@@ -38,7 +38,7 @@ def auth_mfa():
     s = Signer(FLASK_SECRET)
     try:
         user_id = int(s.unsign(mfa_key))
-    except BadSignature:
+    except Exception:
         return jsonify(error="Invalid mfa_key"), 400
 
     user = User.get(user_id)

@@ -156,7 +156,7 @@ def mailbox_confirm_change_route():
 
     try:
         r_id = int(s.unsign(mailbox_id))
-    except BadSignature:
+    except Exception:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.index"))
     else:
@@ -179,4 +179,3 @@ def mailbox_confirm_change_route():
         else:
             flash("Invalid link", "error")
             return redirect(url_for("dashboard.index"))
-

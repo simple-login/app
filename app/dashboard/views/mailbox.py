@@ -142,8 +142,9 @@ def mailbox_verify():
 
     try:
         r_id = int(s.unsign(mailbox_id))
-    except BadSignature:
+    except Exception:
         flash("Invalid link. Please delete and re-add your mailbox", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
     else:
         mailbox = Mailbox.get(r_id)
         mailbox.verified = True
