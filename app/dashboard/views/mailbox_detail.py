@@ -158,17 +158,25 @@ def mailbox_confirm_change_route():
         r_id = int(s.unsign(mailbox_id))
     except BadSignature:
         flash("Invalid link", "error")
+        return redirect(url_for("dashboard.index"))
     else:
         mailbox = Mailbox.get(r_id)
-        mailbox.email = mailbox.new_email
-        mailbox.new_email = None
 
-        # mark mailbox as verified if the change request is sent from an unverified mailbox
-        mailbox.verified = True
-        db.session.commit()
+        # new_email can be None if user cancels change in the meantime
+        if mailbox and mailbox.new_email:
+            mailbox.email = mailbox.new_email
+            mailbox.new_email = None
 
-        LOG.d("Mailbox change %s is verified", mailbox)
-        flash(f"The {mailbox.email} is updated", "success")
-        return redirect(
-            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
-        )
+            # mark mailbox as verified if the change request is sent from an unverified mailbox
+            mailbox.verified = True
+            db.session.commit()
+
+            LOG.d("Mailbox change %s is verified", mailbox)
+            flash(f"The {mailbox.email} is updated", "success")
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
+            )
+        else:
+            flash("Invalid link", "error")
+            return redirect(url_for("dashboard.index"))
+
