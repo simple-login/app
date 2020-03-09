@@ -406,10 +406,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # the "reply email"
     if envelope.mail_from == "<>":
         LOG.error(
-            "Bounce when sending to alias %s, user %s, from header: %s",
-            alias,
-            gen_email.user,
-            msg["From"],
+            "Bounce when sending to alias %s, user %s", alias, gen_email.user,
         )
 
         handle_bounce(
