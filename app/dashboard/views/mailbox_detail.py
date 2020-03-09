@@ -14,6 +14,8 @@ from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, DeletedAlias
 from app.models import Mailbox
+from app.pgp_utils import PGPException, load_public_key
+from smtplib import SMTPRecipientsRefused
 
 
 class ChangeEmailForm(FlaskForm):
@@ -37,53 +39,92 @@ def mailbox_detail_route(mailbox_id):
     else:
         pending_email = None
 
-    if change_email_form.validate_on_submit():
-        new_email = change_email_form.email.data
-        if new_email != mailbox.email and not pending_email:
-            # check if this email is not already used
-            if (
-                email_already_used(new_email)
-                or GenEmail.get_by(email=new_email)
-                or DeletedAlias.get_by(email=new_email)
-            ):
-                flash(f"Email {new_email} already used", "error")
-            elif not can_be_used_as_personal_email(new_email):
-                flash("You cannot use this email address as your mailbox", "error")
-            else:
-                mailbox.new_email = new_email
+    if request.method == "POST":
+        if (
+            request.form.get("form-name") == "update-email"
+            and change_email_form.validate_on_submit()
+        ):
+            new_email = change_email_form.email.data
+            if new_email != mailbox.email and not pending_email:
+                # check if this email is not already used
+                if (
+                    email_already_used(new_email)
+                    or GenEmail.get_by(email=new_email)
+                    or DeletedAlias.get_by(email=new_email)
+                ):
+                    flash(f"Email {new_email} already used", "error")
+                elif not can_be_used_as_personal_email(new_email):
+                    flash(
+                        "You cannot use this email address as your mailbox", "error",
+                    )
+                else:
+                    mailbox.new_email = new_email
+                    db.session.commit()
+
+                    s = Signer(MAILBOX_SECRET)
+                    mailbox_id_signed = s.sign(str(mailbox.id)).decode()
+                    verification_url = (
+                        URL
+                        + "/dashboard/mailbox/confirm_change"
+                        + f"?mailbox_id={mailbox_id_signed}"
+                    )
+
+                    try:
+                        send_email(
+                            new_email,
+                            f"Confirm mailbox change on SimpleLogin",
+                            render(
+                                "transactional/verify-mailbox-change.txt",
+                                user=current_user,
+                                link=verification_url,
+                                mailbox_email=mailbox.email,
+                                mailbox_new_email=new_email,
+                            ),
+                            render(
+                                "transactional/verify-mailbox-change.html",
+                                user=current_user,
+                                link=verification_url,
+                                mailbox_email=mailbox.email,
+                                mailbox_new_email=new_email,
+                            ),
+                        )
+                    except SMTPRecipientsRefused:
+                        flash(
+                            f"Incorrect mailbox, please recheck {mailbox.email}",
+                            "error",
+                        )
+                    else:
+                        flash(
+                            f"You are going to receive an email to confirm {new_email}.",
+                            "success",
+                        )
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
+        elif request.form.get("form-name") == "pgp":
+            if not current_user.can_use_pgp:
+                flash("You cannot use PGP", "error")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                )
+
+            if request.form.get("action") == "save":
+                mailbox.pgp_public_key = request.form.get("pgp")
+                try:
+                    mailbox.pgp_finger_print = load_public_key(mailbox.pgp_public_key)
+                except PGPException:
+                    flash("Cannot add the public key, please verify it", "error")
+                else:
+                    db.session.commit()
+                    flash("Your PGP public key is saved successfully", "success")
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
+            elif request.form.get("action") == "remove":
+                mailbox.pgp_public_key = None
+                mailbox.pgp_finger_print = None
                 db.session.commit()
-
-                s = Signer(MAILBOX_SECRET)
-                mailbox_id_signed = s.sign(str(mailbox.id)).decode()
-                verification_url = (
-                    URL
-                    + "/dashboard/mailbox/confirm_change"
-                    + f"?mailbox_id={mailbox_id_signed}"
-                )
-
-                send_email(
-                    new_email,
-                    f"Confirm mailbox change on SimpleLogin",
-                    render(
-                        "transactional/verify-mailbox-change.txt",
-                        user=current_user,
-                        link=verification_url,
-                        mailbox_email=mailbox.email,
-                        mailbox_new_email=new_email,
-                    ),
-                    render(
-                        "transactional/verify-mailbox-change.html",
-                        user=current_user,
-                        link=verification_url,
-                        mailbox_email=mailbox.email,
-                        mailbox_new_email=new_email,
-                    ),
-                )
-
-                flash(
-                    f"You are going to receive an email to confirm {new_email}.",
-                    "success",
-                )
+                flash("Your PGP public key is removed successfully", "success")
                 return redirect(
                     url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                 )
@@ -122,19 +163,26 @@ def mailbox_confirm_change_route():
 
     try:
         r_id = int(s.unsign(mailbox_id))
-    except BadSignature:
+    except Exception:
         flash("Invalid link", "error")
+        return redirect(url_for("dashboard.index"))
     else:
         mailbox = Mailbox.get(r_id)
-        mailbox.email = mailbox.new_email
-        mailbox.new_email = None
 
-        # mark mailbox as verified if the change request is sent from an unverified mailbox
-        mailbox.verified = True
-        db.session.commit()
+        # new_email can be None if user cancels change in the meantime
+        if mailbox and mailbox.new_email:
+            mailbox.email = mailbox.new_email
+            mailbox.new_email = None
 
-        LOG.d("Mailbox change %s is verified", mailbox)
-        flash(f"The {mailbox.email} is updated", "success")
-        return redirect(
-            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
-        )
+            # mark mailbox as verified if the change request is sent from an unverified mailbox
+            mailbox.verified = True
+            db.session.commit()
+
+            LOG.d("Mailbox change %s is verified", mailbox)
+            flash(f"The {mailbox.email} is updated", "success")
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
+            )
+        else:
+            flash("Invalid link", "error")
+            return redirect(url_for("dashboard.index"))

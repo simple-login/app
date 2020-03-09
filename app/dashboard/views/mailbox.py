@@ -120,7 +120,11 @@ def mailbox_route():
                         "success",
                     )
 
-                    return redirect(url_for("dashboard.mailbox_route"))
+                    return redirect(
+                        url_for(
+                            "dashboard.mailbox_detail_route", mailbox_id=new_mailbox.id
+                        )
+                    )
 
     return render_template(
         "dashboard/mailbox.html",
@@ -138,8 +142,9 @@ def mailbox_verify():
 
     try:
         r_id = int(s.unsign(mailbox_id))
-    except BadSignature:
+    except Exception:
         flash("Invalid link. Please delete and re-add your mailbox", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
     else:
         mailbox = Mailbox.get(r_id)
         mailbox.verified = True
@@ -150,4 +155,6 @@ def mailbox_verify():
             f"The {mailbox.email} is now verified, you can start creating alias with it",
             "success",
         )
-        return redirect(url_for("dashboard.mailbox_route"))
+        return redirect(
+            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
+        )
