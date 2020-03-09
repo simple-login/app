@@ -154,8 +154,8 @@
           {% if mailboxes|length > 1 %}
             <form method="post">
               <div class="small-text mt-2">Current mailbox</div>
-              <div class="row">
-                <div class="col-lg-10">
+              <div class="d-flex">
+                <div class="flex-grow-1 mr-2">
                   <select class="form-control form-control-sm custom-select" name="mailbox">
                     {% for mailbox in mailboxes %}
                       <option value="{{ mailbox }}" {% if mailbox == alias_info.mailbox.email %} selected {% endif %}>
@@ -165,7 +165,7 @@
                   </select>
                 </div>
 
-                <div class="col-lg-2">
+                <div class="">
                   <input type="hidden" name="form-name" value="set-mailbox">
                   <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
 
@@ -184,9 +184,9 @@
 
 
           <form method="post">
-            <div class="row mt-2">
+            <div class="d-flex mt-2">
 
-              <div class="col-lg-10">
+              <div class="flex-grow-1 mr-2">
                 <textarea
                     name="note"
                     class="form-control"
@@ -194,7 +194,7 @@
                     placeholder="Alias Note.">{{ gen_email.note or "" }}</textarea>
               </div>
 
-              <div class="col-lg-2">
+              <div class="">
                 <input type="hidden" name="form-name" value="set-note">
                 <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
 
