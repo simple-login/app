@@ -81,7 +81,7 @@
           <div class="form-group">
             <label class="form-label">PGP Public Key</label>
 
-            <textarea name="pgp" class="form-control" rows=10>{{mailbox.pgp_public_key or ""}}</textarea>
+            <textarea name="pgp" class="form-control" rows=10 placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{mailbox.pgp_public_key or ""}}</textarea>
           </div>
 
           <button class="btn btn-primary" name="action" value="save">Save</button>
