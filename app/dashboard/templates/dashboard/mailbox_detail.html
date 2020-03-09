@@ -22,6 +22,14 @@
       {% endif %}
     </h1>
 
+    {% if not mailbox.verified %}
+      <div class="alert alert-info">
+        Mailbox not verified, please check your inbox/spam folder for the verification email.
+        <br>
+        To receive the verification email again, you can delete and re-add the mailbox.
+      </div>
+    {% endif %}
+
     <!-- Change email -->
     <div class="card">
       <form method="post" enctype="multipart/form-data">
