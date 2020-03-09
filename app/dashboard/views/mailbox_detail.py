@@ -15,6 +15,7 @@ from app.log import LOG
 from app.models import GenEmail, DeletedAlias
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key
+from smtplib import SMTPRecipientsRefused
 
 
 class ChangeEmailForm(FlaskForm):
@@ -68,29 +69,35 @@ def mailbox_detail_route(mailbox_id):
                         + f"?mailbox_id={mailbox_id_signed}"
                     )
 
-                    send_email(
-                        new_email,
-                        f"Confirm mailbox change on SimpleLogin",
-                        render(
-                            "transactional/verify-mailbox-change.txt",
-                            user=current_user,
-                            link=verification_url,
-                            mailbox_email=mailbox.email,
-                            mailbox_new_email=new_email,
-                        ),
-                        render(
-                            "transactional/verify-mailbox-change.html",
-                            user=current_user,
-                            link=verification_url,
-                            mailbox_email=mailbox.email,
-                            mailbox_new_email=new_email,
-                        ),
-                    )
-
-                    flash(
-                        f"You are going to receive an email to confirm {new_email}.",
-                        "success",
-                    )
+                    try:
+                        send_email(
+                            new_email,
+                            f"Confirm mailbox change on SimpleLogin",
+                            render(
+                                "transactional/verify-mailbox-change.txt",
+                                user=current_user,
+                                link=verification_url,
+                                mailbox_email=mailbox.email,
+                                mailbox_new_email=new_email,
+                            ),
+                            render(
+                                "transactional/verify-mailbox-change.html",
+                                user=current_user,
+                                link=verification_url,
+                                mailbox_email=mailbox.email,
+                                mailbox_new_email=new_email,
+                            ),
+                        )
+                    except SMTPRecipientsRefused:
+                        flash(
+                            f"Incorrect mailbox, please recheck {mailbox.email}",
+                            "error",
+                        )
+                    else:
+                        flash(
+                            f"You are going to receive an email to confirm {new_email}.",
+                            "success",
+                        )
                     return redirect(
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                     )
