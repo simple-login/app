@@ -45,11 +45,35 @@
 
       <div>
         Don't want to protect your inbox anymore? <br>
-        <a class="btn btn-warning" href="{{ sub.cancel_url }}"> Cancel subscription 😔 </a>
+
+        <form method="post">
+          <input type="hidden" name="form-name" value="cancel">
+
+          <span class="cancel btn btn-warning">
+            Cancel subscription <i class="fe fe-alert-triangle text-danger"></i>
+          </span>
+        </form>
+
       </div>
     {% endif %}
   </div>
 
+{% endblock %}
 
+{% block script %}
+  <script>
 
+    $(".cancel").on("click", function (e) {
+      notie.confirm({
+        text: `This operation is irreversible, please confirm`,
+        cancelCallback: () => {
+          // nothing to do
+        },
+        submitCallback: () => {
+          $(this).closest("form").submit();
+        }
+      });
+    });
+
+  </script>
 {% endblock %}
