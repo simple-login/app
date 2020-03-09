@@ -20,7 +20,7 @@ def billing():
 
     if request.method == "POST":
         if request.form.get("form-name") == "cancel":
-            LOG.error(f"User {current_user} cancels their subscription")
+            LOG.warning(f"User {current_user} cancels their subscription")
             success = cancel_subscription(sub.subscription_id)
 
             if success:
