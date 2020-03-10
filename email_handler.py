@@ -327,7 +327,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             + website_email.replace("@", " at ")
             + f" <{forward_email.reply_email}>"
         )
-        msg.replace_header("From", from_header)
+        add_or_replace_header(msg, "From", from_header)
         LOG.d("new from header:%s", from_header)
 
         # append alias into the TO header if it's not present in To or CC
@@ -338,7 +338,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             else:
                 to_header = alias
 
-            msg.replace_header("To", to_header)
+            add_or_replace_header(msg, "To", to_header)
 
         # add List-Unsubscribe header
         unsubscribe_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
@@ -461,13 +461,13 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     delete_header(msg, "DKIM-Signature")
 
     # the email comes from alias
-    msg.replace_header("From", alias)
+    add_or_replace_header(msg, "From", alias)
 
     # some email providers like ProtonMail adds automatically the Reply-To field
     # make sure to delete it
     delete_header(msg, "Reply-To")
 
-    msg.replace_header("To", forward_email.website_email)
+    add_or_replace_header(msg, "To", forward_email.website_email)
 
     # add List-Unsubscribe header
     unsubscribe_link = f"{URL}/dashboard/unsubscribe/{forward_email.gen_email_id}"
