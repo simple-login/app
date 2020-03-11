@@ -30,6 +30,7 @@ class AliasInfo:
 
     show_intro_test_send_email: bool = False
     highlight: bool = False
+    note: str
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -230,6 +231,7 @@ def get_alias_info(
                 nb_reply=0,
                 highlight=ge.id == highlight_gen_email_id,
                 mailbox=mb,
+                note=ge.note,
             )
 
         alias_info = aliases[ge.email]

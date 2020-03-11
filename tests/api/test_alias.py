@@ -48,6 +48,18 @@ def test_success_with_pagination(flask_client):
     assert r.status_code == 200
     assert len(r.json["aliases"]) == PAGE_LIMIT
 
+    # assert returned field
+    for a in r.json["aliases"]:
+        assert "id" in a
+        assert "email" in a
+        assert "creation_date" in a
+        assert "creation_timestamp" in a
+        assert "nb_forward" in a
+        assert "nb_block" in a
+        assert "nb_reply" in a
+        assert "enabled" in a
+        assert "note" in a
+
     # get aliases on the 2nd page, should return 2 aliases
     # as the total number of aliases is PAGE_LIMIT +2
     # 1 alias is created when user is created
