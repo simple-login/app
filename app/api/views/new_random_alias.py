@@ -33,7 +33,7 @@ def new_random_alias():
         )
 
     note = None
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if data:
         note = data.get("note")
 
