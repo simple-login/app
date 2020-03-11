@@ -34,6 +34,17 @@ def test_success(flask_client):
     new_ge = GenEmail.get_by(email=r.json["alias"])
     assert new_ge.note == "test note"
 
+
+def test_create_custom_alias_without_note(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
     # create alias without note
     word = random_word()
     r = flask_client.post(
