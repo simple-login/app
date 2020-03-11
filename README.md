@@ -699,6 +699,8 @@ Input:
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
 - (Optional) mode: either `uuid` or `word`. By default, use the user setting when creating new random alias.
+- Request Message Body in json (`Content-Type` is `application/json`)
+    - (Optional) note: alias note
 
 Output:
 If success, 201 with the new alias, for example

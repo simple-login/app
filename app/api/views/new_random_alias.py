@@ -15,6 +15,8 @@ from app.models import GenEmail, AliasUsedOn, AliasGeneratorEnum
 def new_random_alias():
     """
     Create a new random alias
+    Input:
+        (Optional) note
     Output:
         201 if success
 
@@ -30,6 +32,11 @@ def new_random_alias():
             400,
         )
 
+    note = None
+    data = request.get_json()
+    if data:
+        note = data.get("note")
+
     scheme = user.alias_generator
     mode = request.args.get("mode")
     if mode:
@@ -40,7 +47,7 @@ def new_random_alias():
         else:
             return jsonify(error=f"{mode} must be either word or alias"), 400
 
-    gen_email = GenEmail.create_new_random(user=user, scheme=scheme)
+    gen_email = GenEmail.create_new_random(user=user, scheme=scheme, note=note)
     db.session.commit()
 
     hostname = request.args.get("hostname")
