@@ -21,6 +21,7 @@ def new_custom_alias():
         alias_prefix, for ex "www_groupon_com"
         alias_suffix, either .random_letters@simplelogin.co or @my-domain.com
         optional "hostname" in args
+        optional "note"
     Output:
         201 if success
         409 if the alias already exists
@@ -46,6 +47,7 @@ def new_custom_alias():
 
     alias_prefix = data.get("alias_prefix", "").strip()
     alias_suffix = data.get("alias_suffix", "").strip()
+    note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
     if not verify_prefix_suffix(user, alias_prefix, alias_suffix, user_custom_domains):
@@ -57,7 +59,7 @@ def new_custom_alias():
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
     gen_email = GenEmail.create(
-        user_id=user.id, email=full_alias, mailbox_id=user.default_mailbox_id
+        user_id=user.id, email=full_alias, mailbox_id=user.default_mailbox_id, note=note
     )
     db.session.commit()
 

@@ -680,6 +680,7 @@ Input:
 - Request Message Body in json (`Content-Type` is `application/json`)
     - alias_prefix: string. The first part of the alias that user can choose.
     - alias_suffix: should be one of the suffixes returned in the `GET /api/v2/alias/options` endpoint.
+    - (Optional) note: alias note
 
 Output:
 If success, 201 with the new alias, for example
