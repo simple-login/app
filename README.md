@@ -67,7 +67,7 @@ docker run --name sl -it --rm \
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
 
 To use SimpleLogin aliases, you need to deploy it on your server with some DNS setup though,
-the following section will show a step-by-step guide on how to get your own email forwarder service! 
+the following section will show a step-by-step guide on how to get your own email forwarder service!
 
 # Table of Contents
 
@@ -156,7 +156,7 @@ An **A record** that points `app.mydomain.com.` to your server IP. To verify, th
 
 ```bash
 dig @1.1.1.1 app.mydomain.com a
-``` 
+```
 
 should return your server IP.
 
@@ -194,7 +194,7 @@ To verify, the following command
 
 ```bash
 dig @1.1.1.1 dkim._domainkey.mydomain.com txt
-``` 
+```
 
 should return the above value.
 
@@ -209,10 +209,10 @@ Add a TXT record for `mydomain.com.` with the value:
 
 ```
 v=spf1 mx -all
-``` 
+```
 
-What it means is only your server can send email with `@mydomain.com` domain. 
-To verify, the following command 
+What it means is only your server can send email with `@mydomain.com` domain.
+To verify, the following command
 
 ```bash
 dig @1.1.1.1 mydomain.com txt
@@ -241,7 +241,7 @@ To verify, the following command
 dig @1.1.1.1 _dmarc.mydomain.com txt
 ```
 
-should return the set value. 
+should return the set value.
 
 For more information on DMARC, please consult https://tools.ietf.org/html/rfc7489
 
@@ -272,7 +272,7 @@ sudo docker network create -d bridge \
 
 ### Postgres
 
-This section creates a Postgres database using Docker. 
+This section creates a Postgres database using Docker.
 
 If you already have a Postgres database in use, you can skip this section and just copy the database configuration (i.e. host, port, username, password, database name) to use in the next sections.
 
@@ -376,7 +376,7 @@ smtpd_recipient_restrictions =
    permit
 ```
 
-Create the `/etc/postfix/pgsql-relay-domains.cf` file with the following content. 
+Create the `/etc/postfix/pgsql-relay-domains.cf` file with the following content.
 Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
 
 ```
@@ -386,11 +386,11 @@ user = myuser
 password = mypassword
 dbname = simplelogin
 
-query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true 
+query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true
     UNION SELECT '%s' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
-Create the `/etc/postfix/pgsql-transport-maps.cf` file with the following content. 
+Create the `/etc/postfix/pgsql-transport-maps.cf` file with the following content.
 Again, make sure that the database config is correctly set and replace `mydomain.com` with your domain.
 
 ```
@@ -401,7 +401,7 @@ password = mypassword
 dbname = simplelogin
 
 # forward to smtp:127.0.0.1:20381 for custom domain AND email domain
-query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND verified=true 
+query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND verified=true
     UNION SELECT 'smtp:127.0.0.1:20381' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
@@ -539,7 +539,7 @@ You could make a donation to SimpleLogin on our Patreon page at https://www.patr
 The above self-hosting instructions correspond to a freshly Ubuntu server and doesn't cover all possible server configuration.
 Below are pointers to different topics:
 
-- [UFW - uncomplicated firewall](docs/ufw.md) 
+- [UFW - uncomplicated firewall](docs/ufw.md)
 - [SES - Amazon Simple Email Service](docs/ses.md)
 
 ## Contributing
@@ -560,7 +560,7 @@ Then make sure all tests pass
 pytest
 ```
 
-Install npm packages 
+Install npm packages
 
 ```bash
 cd static && npm install
@@ -680,6 +680,7 @@ Input:
 - Request Message Body in json (`Content-Type` is `application/json`)
     - alias_prefix: string. The first part of the alias that user can choose.
     - alias_suffix: should be one of the suffixes returned in the `GET /api/v2/alias/options` endpoint.
+    - (Optional) note: alias note
 
 Output:
 If success, 201 with the new alias, for example
@@ -698,6 +699,8 @@ Input:
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
 - (Optional) mode: either `uuid` or `word`. By default, use the user setting when creating new random alias.
+- Request Message Body in json (`Content-Type` is `application/json`)
+    - (Optional) note: alias note
 
 Output:
 If success, 201 with the new alias, for example
@@ -760,7 +763,7 @@ Output: Same output as for `/api/auth/login` endpoint
 
 Input:
 - email
-- password 
+- password
 
 Output: 200 means user is going to receive an email that contains an *activation code*. User needs to enter this code to confirm their account -> next endpoint.
 
@@ -769,7 +772,7 @@ Output: 200 means user is going to receive an email that contains an *activation
 
 Input:
 - email
-- code: the activation code 
+- code: the activation code
 
 Output:
 - 200: account is activated. User can login now
@@ -782,7 +785,7 @@ Input:
 - email
 
 Output:
-- 200: user is going to receive an email that contains the activation code. 
+- 200: user is going to receive an email that contains the activation code.
 
 #### GET /api/aliases
 
@@ -806,7 +809,8 @@ If success, 200 with the list of aliases, for example:
             "nb_block": 0,
             "nb_forward": 0,
             "nb_reply": 0,
-            "enabled": true 
+            "enabled": true,
+            "note": "This is a note"
         },
         {
             "creation_date": "2020-02-04 16:23:02+00:00",
@@ -816,7 +820,8 @@ If success, 200 with the list of aliases, for example:
             "nb_block": 0,
             "nb_forward": 0,
             "nb_reply": 0,
-            "enabled": false
+            "enabled": false,
+            "note": null
         }
     ]
 }
@@ -828,7 +833,7 @@ Delete an alias
 
 Input:
 - `Authentication` header that contains the api key
-- `alias_id` in url. 
+- `alias_id` in url.
 
 Output:
 If success, 200.
@@ -846,7 +851,7 @@ Enable/disable alias
 
 Input:
 - `Authentication` header that contains the api key
-- `alias_id` in url. 
+- `alias_id` in url.
 
 Output:
 If success, 200 along with the new alias status:

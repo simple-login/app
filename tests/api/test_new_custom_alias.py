@@ -16,16 +16,37 @@ def test_success(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
+    # create new alias with note
     word = random_word()
-
     r = flask_client.post(
         url_for("api.new_custom_alias", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
-        json={"alias_prefix": "prefix", "alias_suffix": f".{word}@{EMAIL_DOMAIN}"},
+        json={
+            "alias_prefix": "prefix",
+            "alias_suffix": f".{word}@{EMAIL_DOMAIN}",
+            "note": "test note",
+        },
     )
 
     assert r.status_code == 201
     assert r.json["alias"] == f"prefix.{word}@{EMAIL_DOMAIN}"
+
+    new_ge = GenEmail.get_by(email=r.json["alias"])
+    assert new_ge.note == "test note"
+
+    # create alias without note
+    word = random_word()
+    r = flask_client.post(
+        url_for("api.new_custom_alias", hostname="www.test.com"),
+        headers={"Authentication": api_key.code},
+        json={"alias_prefix": "prefix", "alias_suffix": f".{word}@{EMAIL_DOMAIN}",},
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"] == f"prefix.{word}@{EMAIL_DOMAIN}"
+
+    new_ge = GenEmail.get_by(email=r.json["alias"])
+    assert new_ge.note is None
 
 
 def test_out_of_quota(flask_client):

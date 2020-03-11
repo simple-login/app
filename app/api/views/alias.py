@@ -26,6 +26,7 @@ def get_aliases():
             - nb_forward
             - nb_block
             - nb_reply
+            - note
 
     """
     user = g.user
@@ -48,6 +49,7 @@ def get_aliases():
                     "nb_block": alias.nb_blocked,
                     "nb_reply": alias.nb_reply,
                     "enabled": alias.gen_email.enabled,
+                    "note": alias.note,
                 }
                 for alias in aliases
             ]

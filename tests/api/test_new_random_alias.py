@@ -36,6 +36,7 @@ def test_custom_mode(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
+    # without note
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
         headers={"Authentication": api_key.code},
@@ -46,6 +47,18 @@ def test_custom_mode(flask_client):
     alias = r.json["alias"]
     uuid_part = alias[: len(alias) - len(EMAIL_DOMAIN) - 1]
     assert is_valid_uuid(uuid_part)
+
+    # with note
+    r = flask_client.post(
+        url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
+        headers={"Authentication": api_key.code},
+        json={"note": "test note",},
+    )
+
+    assert r.status_code == 201
+    alias = r.json["alias"]
+    ge = GenEmail.get_by(email=alias)
+    assert ge.note == "test note"
 
 
 def test_out_of_quota(flask_client):
