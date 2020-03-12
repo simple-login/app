@@ -554,6 +554,13 @@ The project uses Python 3.7+ and Node v10. First, install all dependencies by ru
 pip3 install -r requirements.txt
 ```
 
+You also need to install `gpg`, on Mac it can be done with:
+
+```bash
+brew install gnupg
+```
+
+
 Then make sure all tests pass
 
 ```bash
