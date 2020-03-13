@@ -313,8 +313,9 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         # add custom header
         add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
 
-        # remove reply-to header if present
+        # remove reply-to & sender header if present
         delete_header(msg, "Reply-To")
+        delete_header(msg, "Sender")
 
         # change the from header so the sender comes from @SL
         # so it can pass DMARC check
@@ -466,6 +467,9 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # some email providers like ProtonMail adds automatically the Reply-To field
     # make sure to delete it
     delete_header(msg, "Reply-To")
+
+    # remove sender header if present as this could reveal user real email
+    delete_header(msg, "Sender")
 
     add_or_replace_header(msg, "To", forward_email.website_email)
 
