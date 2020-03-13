@@ -8,10 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 Support PGP
-Take into account Sender header
 
-## [1.1.0] - 2020-03-13
+## [2.0.0] - 2020-03-13
 Support multiple Mailboxes
+Take into account Sender header
 
 ## [1.0.5] - 2020-02-24
 Improve email forwarding.
