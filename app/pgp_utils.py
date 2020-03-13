@@ -3,6 +3,7 @@ import gnupg
 from app.config import GNUPGHOME
 
 gpg = gnupg.GPG(gnupghome=GNUPGHOME)
+gpg.encoding = "utf-8"
 
 
 class PGPException(Exception):
