@@ -52,7 +52,7 @@ def test_custom_mode(flask_client):
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
         headers={"Authentication": api_key.code},
-        json={"note": "test note",},
+        json={"note": "test note"},
     )
 
     assert r.status_code == 201

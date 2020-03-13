@@ -54,9 +54,7 @@ def mailbox_detail_route(mailbox_id):
                 ):
                     flash(f"Email {new_email} already used", "error")
                 elif not can_be_used_as_personal_email(new_email):
-                    flash(
-                        "You cannot use this email address as your mailbox", "error",
-                    )
+                    flash("You cannot use this email address as your mailbox", "error")
                 else:
                     mailbox.new_email = new_email
                     db.session.commit()

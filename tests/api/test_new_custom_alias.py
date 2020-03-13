@@ -50,7 +50,7 @@ def test_create_custom_alias_without_note(flask_client):
     r = flask_client.post(
         url_for("api.new_custom_alias", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
-        json={"alias_prefix": "prefix", "alias_suffix": f".{word}@{EMAIL_DOMAIN}",},
+        json={"alias_prefix": "prefix", "alias_suffix": f".{word}@{EMAIL_DOMAIN}"},
     )
 
     assert r.status_code == 201

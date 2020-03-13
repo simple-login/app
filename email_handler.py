@@ -313,8 +313,9 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         # add custom header
         add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
 
-        # remove reply-to header if present
+        # remove reply-to & sender header if present
         delete_header(msg, "Reply-To")
+        delete_header(msg, "Sender")
 
         # change the from header so the sender comes from @SL
         # so it can pass DMARC check
@@ -405,9 +406,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # in this case Postfix will try to send a bounce report to original sender, which is
     # the "reply email"
     if envelope.mail_from == "<>":
-        LOG.error(
-            "Bounce when sending to alias %s, user %s", alias, gen_email.user,
-        )
+        LOG.error("Bounce when sending to alias %s, user %s", alias, gen_email.user)
 
         handle_bounce(
             alias, envelope, forward_email, gen_email, msg, smtp, user, mailbox_email
@@ -466,6 +465,9 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # some email providers like ProtonMail adds automatically the Reply-To field
     # make sure to delete it
     delete_header(msg, "Reply-To")
+
+    # remove sender header if present as this could reveal user real email
+    delete_header(msg, "Sender")
 
     add_or_replace_header(msg, "To", forward_email.website_email)
 
