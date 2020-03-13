@@ -406,9 +406,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # in this case Postfix will try to send a bounce report to original sender, which is
     # the "reply email"
     if envelope.mail_from == "<>":
-        LOG.error(
-            "Bounce when sending to alias %s, user %s", alias, gen_email.user,
-        )
+        LOG.error("Bounce when sending to alias %s, user %s", alias, gen_email.user)
 
         handle_bounce(
             alias, envelope, forward_email, gen_email, msg, smtp, user, mailbox_email
