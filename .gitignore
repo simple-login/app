@@ -8,3 +8,4 @@ db.sqlite
 config
 static/node_modules
 db.sqlite-journal
+static/upload

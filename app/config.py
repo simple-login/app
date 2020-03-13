@@ -197,3 +197,14 @@ JOB_ONBOARDING_1 = "onboarding-1"
 
 # for pagination
 PAGE_LIMIT = 20
+
+# Upload to static/upload instead of s3
+LOCAL_FILE_UPLOAD = "LOCAL_FILE_UPLOAD" in os.environ
+UPLOAD_DIR = None
+
+if LOCAL_FILE_UPLOAD:
+    print("Upload files to local dir")
+    UPLOAD_DIR = os.path.join(ROOT_DIR, "static/upload")
+    if not os.path.exists(UPLOAD_DIR):
+        print("Create upload dir")
+        os.makedirs(UPLOAD_DIR)
