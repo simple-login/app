@@ -2,7 +2,7 @@ Upgrading SimpleLogin usually consists of simply pulling the latest version, sto
 
 No emails or any data is lost in the upgrade process. The same process is by the way used by the SimpleLogin SaaS version which is deployed several times per day.
 
-Sometimes upgrade to a major version might require running a manual migration. This is for example the case when upgrading to 2.0.0.
+Sometimes upgrading to a major version might require running a manual migration. This is for example the case when upgrading to 2.0.0.
 
 ```bash
 # Pull the latest version
