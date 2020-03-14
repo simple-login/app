@@ -37,21 +37,19 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.parser import Parser
 from email.policy import SMTPUTF8
+from io import BytesIO
 from smtplib import SMTP
 from typing import Optional
 
 from aiosmtpd.controller import Controller
-import gnupg
 
+from app import pgp_utils, s3
 from app.config import (
     EMAIL_DOMAIN,
     POSTFIX_SERVER,
     URL,
     ALIAS_DOMAINS,
-    ADMIN_EMAIL,
-    SUPPORT_EMAIL,
     POSTFIX_SUBMISSION_TLS,
-    GNUPGHOME,
 )
 from app.email_utils import (
     get_email_name,
@@ -65,6 +63,7 @@ from app.email_utils import (
     send_cannot_create_domain_alias,
     email_belongs_to_alias_domains,
     render,
+    get_orig_message_from_bounce,
 )
 from app.extensions import db
 from app.log import LOG
@@ -76,10 +75,10 @@ from app.models import (
     Directory,
     User,
     DeletedAlias,
+    RefusedEmail,
 )
 from app.utils import random_string
 from server import create_app
-from app import pgp_utils
 
 
 # fix the database connection leak issue
@@ -406,7 +405,12 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # in this case Postfix will try to send a bounce report to original sender, which is
     # the "reply email"
     if envelope.mail_from == "<>":
-        LOG.error("Bounce when sending to alias %s, user %s", alias, gen_email.user)
+        LOG.error(
+            "Bounce when sending to alias %s from %s, user %s",
+            alias,
+            forward_email.website_from,
+            gen_email.user,
+        )
 
         handle_bounce(
             alias, envelope, forward_email, gen_email, msg, smtp, user, mailbox_email
@@ -513,13 +517,39 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 def handle_bounce(
     alias, envelope, forward_email, gen_email, msg, smtp, user, mailbox_email
 ):
-    ForwardEmailLog.create(forward_id=forward_email.id, bounced=True)
+    fel: ForwardEmailLog = ForwardEmailLog.create(
+        forward_id=forward_email.id, bounced=True
+    )
     db.session.commit()
 
     nb_bounced = ForwardEmailLog.filter_by(
         forward_id=forward_email.id, bounced=True
     ).count()
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
+
+    # Store the bounced email
+    random_name = random_string(50)
+
+    full_report_path = f"refused-emails/full-{random_name}.eml"
+    s3.upload_from_bytesio(full_report_path, BytesIO(msg.as_bytes()))
+
+    file_path = f"refused-emails/{random_name}.eml"
+    orig_msg = get_orig_message_from_bounce(msg)
+    s3.upload_from_bytesio(file_path, BytesIO(orig_msg.as_bytes()))
+
+    refused_email = RefusedEmail.create(
+        path=file_path, full_report_path=full_report_path, user_id=user.id
+    )
+    db.session.flush()
+
+    fel.refused_email_id = refused_email.id
+    db.session.commit()
+
+    LOG.d("Create refused email %s", refused_email)
+
+    refused_email_url = (
+        URL + f"/dashboard/refused_email?highlight_fel_id=" + str(fel.id)
+    )
 
     # inform user if this is the first bounced email
     if nb_bounced == 1:
@@ -530,7 +560,9 @@ def handle_bounce(
             alias,
         )
         send_email(
-            mailbox_email,
+            # TOOD: use mailbox_email instead
+            user.email,
+            # mailbox_email,
             f"Email from {forward_email.website_from} to {alias} cannot be delivered to your inbox",
             render(
                 "transactional/bounced-email.txt",
@@ -539,6 +571,7 @@ def handle_bounce(
                 website_from=forward_email.website_from,
                 website_email=forward_email.website_email,
                 disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email_url,
             ),
             render(
                 "transactional/bounced-email.html",
@@ -547,8 +580,10 @@ def handle_bounce(
                 website_from=forward_email.website_from,
                 website_email=forward_email.website_email,
                 disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email_url,
             ),
-            bounced_email=msg,
+            # cannot include bounce email as it can contain spammy text
+            # bounced_email=msg,
         )
     # disable the alias the second time email is bounced
     elif nb_bounced >= 2:

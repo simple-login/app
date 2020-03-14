@@ -363,3 +363,18 @@ def mailbox_already_used(email: str, user) -> bool:
         return True
 
     return False
+
+
+def get_orig_message_from_bounce(msg: Message) -> Message:
+    """parse the original email from Bounce"""
+    i = 0
+    for part in msg.walk():
+        i += 1
+
+        # the original message is the 4th part
+        # 1st part is the root part,  multipart/report
+        # 2nd is text/plain, Postfix log
+        # ...
+        # 7th is original message
+        if i == 7:
+            return part
