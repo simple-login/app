@@ -3,7 +3,8 @@ Hi {{name}}
 An email sent to your alias {{alias}} from {{website_from}} was refused (or bounced) by your email provider.
 
 This is usually due to the email being considered as spam by your email provider.
-The email is included at the end  of this message so you can take a look at its content.
+You can view this email here:
+{{ refused_email_url }}
 
 To avoid spams forwarded by SimpleLogin server, please consider the following options:
 
