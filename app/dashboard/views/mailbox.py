@@ -151,10 +151,5 @@ def mailbox_verify():
         db.session.commit()
 
         LOG.d("Mailbox %s is verified", mailbox)
-        flash(
-            f"The {mailbox.email} is now verified, you can start creating alias with it",
-            "success",
-        )
-        return redirect(
-            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
-        )
+
+        return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)
