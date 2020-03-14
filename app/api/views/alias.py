@@ -3,10 +3,26 @@ from flask import jsonify, request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
+from app.config import PAGE_LIMIT
 from app.dashboard.views.alias_log import get_alias_log
 from app.dashboard.views.index import get_alias_info, AliasInfo
 from app.extensions import db
-from app.models import GenEmail
+from app.models import GenEmail, ForwardEmail, ForwardEmailLog
+from app.utils import random_string
+import re
+
+from flask import render_template, request, redirect, url_for, flash
+from flask_login import login_required, current_user
+from flask_wtf import FlaskForm
+from wtforms import StringField, validators, ValidationError
+
+from app.config import EMAIL_DOMAIN
+from app.dashboard.base import dashboard_bp
+from app.email_utils import get_email_part
+from app.extensions import db
+from app.log import LOG
+from app.models import GenEmail, ForwardEmail
+from app.utils import random_string
 
 
 @api_bp.route("/aliases")
@@ -157,4 +173,157 @@ def get_alias_activities(alias_id):
 
         activities.append(activity)
 
-    return (jsonify(activities=activities), 200)
+    return jsonify(activities=activities), 200
+
+
+@api_bp.route("/aliases/<int:alias_id>", methods=["PUT"])
+@cross_origin()
+@verify_api_key
+def update_alias(alias_id):
+    """
+    Update alias note
+    Input:
+        alias_id: in url
+        note: in body
+    Output:
+        200
+
+
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify(error="request body cannot be empty"), 400
+
+    user = g.user
+    gen_email: GenEmail = GenEmail.get(alias_id)
+
+    if gen_email.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    new_note = data.get("note")
+    gen_email.note = new_note
+    db.session.commit()
+
+    return jsonify(note=new_note), 200
+
+
+def serialize_forward_email(fe: ForwardEmail) -> dict:
+
+    res = {
+        "creation_date": fe.created_at.format(),
+        "creation_timestamp": fe.created_at.timestamp,
+        "last_email_sent_date": None,
+        "last_email_sent_timestamp": None,
+        "contact": fe.website_from or fe.website_email,
+        "reverse_alias": fe.website_send_to(),
+    }
+
+    fel: ForwardEmailLog = fe.last_reply()
+    if fel:
+        res["last_email_sent_date"] = fel.created_at.format()
+        res["last_email_sent_timestamp"] = fel.created_at.timestamp
+
+    return res
+
+
+def get_alias_contacts(gen_email, page_id: int) -> [dict]:
+    q = (
+        ForwardEmail.query.filter_by(gen_email_id=gen_email.id)
+        .order_by(ForwardEmail.id.desc())
+        .limit(PAGE_LIMIT)
+        .offset(page_id * PAGE_LIMIT)
+    )
+
+    res = []
+    for fe in q.all():
+        res.append(serialize_forward_email(fe))
+
+    return res
+
+
+@api_bp.route("/aliases/<int:alias_id>/contacts")
+@cross_origin()
+@verify_api_key
+def get_alias_contacts_route(alias_id):
+    """
+    Get alias contacts
+    Input:
+        page_id: in query
+    Output:
+        - contacts: list of contacts:
+            - creation_date
+            - creation_timestamp
+            - last_email_sent_date
+            - last_email_sent_timestamp
+            - contact
+            - reverse_alias
+
+    """
+    user = g.user
+    try:
+        page_id = int(request.args.get("page_id"))
+    except (ValueError, TypeError):
+        return jsonify(error="page_id must be provided in request query"), 400
+
+    gen_email: GenEmail = GenEmail.get(alias_id)
+
+    if gen_email.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    contacts = get_alias_contacts(gen_email, page_id)
+
+    return jsonify(contacts=contacts), 200
+
+
+@api_bp.route("/aliases/<int:alias_id>/contacts", methods=["POST"])
+@cross_origin()
+@verify_api_key
+def create_contact_route(alias_id):
+    """
+    Create contact for an alias
+    Input:
+        alias_id: in url
+        contact: in body
+    Output:
+        201 if success
+        409 if contact already added
+
+
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify(error="request body cannot be empty"), 400
+
+    user = g.user
+    gen_email: GenEmail = GenEmail.get(alias_id)
+
+    if gen_email.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    contact_email = data.get("contact")
+
+    # generate a reply_email, make sure it is unique
+    # not use while to avoid infinite loop
+    reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
+    for _ in range(1000):
+        reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
+        if not ForwardEmail.get_by(reply_email=reply_email):
+            break
+
+    website_email = get_email_part(contact_email)
+
+    # already been added
+    if ForwardEmail.get_by(gen_email_id=gen_email.id, website_email=website_email):
+        return jsonify(error="Contact already added"), 409
+
+    forward_email = ForwardEmail.create(
+        gen_email_id=gen_email.id,
+        website_email=website_email,
+        website_from=contact_email,
+        reply_email=reply_email,
+    )
+
+    LOG.d("create reverse-alias for %s %s", contact_email, gen_email)
+    db.session.commit()
+
+    return jsonify(**serialize_forward_email(forward_email)), 201

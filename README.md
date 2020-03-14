@@ -901,6 +901,79 @@ If success, 200 with the list of activities, for example:
 }
 ```
 
+#### PUT /api/aliases/:alias_id
+
+Update alias note. In the future, the endpoint will support other updates (e.g. mailbox update) as well.
+ 
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url.
+- `note` in request body
+
+Output:
+If success, return 200
+
+#### GET /api/aliases/:alias_id/contacts
+
+Get contacts for a given alias.
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id`: the alias id, passed in url.
+- `page_id` used in request query (`?page_id=0`). The endpoint returns maximum 20 contacts for each page. `page_id` starts at 0.
+
+Output:
+If success, 200 with the list of contacts, for example:
+
+```json
+{
+  "contacts": [
+    {
+      "contact": "marketing@example.com",
+      "creation_date": "2020-02-21 11:35:00+00:00",
+      "creation_timestamp": 1582284900,
+      "last_email_sent_date": null,
+      "last_email_sent_timestamp": null,
+      "reverse_alias": "marketing at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>"
+    },
+    {
+      "contact": "newsletter@example.com",
+      "creation_date": "2020-02-21 11:35:00+00:00",
+      "creation_timestamp": 1582284900,
+      "last_email_sent_date": "2020-02-21 11:35:00+00:00",,
+      "last_email_sent_timestamp": 1582284900,
+      "reverse_alias": "newsletter at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>"
+    }
+  ]
+}
+```
+
+Please note that last_email_sent_timestamp and last_email_sent_date can be null.
+
+
+#### POST /api/aliases/:alias_id/contacts
+
+Create a new contact for an alias.
+ 
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url.
+- `contact` in request body
+
+Output:
+If success, return 201
+Return 409 if contact is already added.
+
+```
+{
+  "contact": "First Last <first@example.com>",
+  "creation_date": "2020-03-14 11:52:41+00:00",
+  "creation_timestamp": 1584186761,
+  "last_email_sent_date": null,
+  "last_email_sent_timestamp": null,
+  "reverse_alias": "First Last first@example.com <ra+qytyzjhrumrreuszrbjxqjlkh@sl.local>"
+}
+```
 
 ### Database migration
 
