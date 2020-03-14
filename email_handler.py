@@ -64,6 +64,7 @@ from app.email_utils import (
     email_belongs_to_alias_domains,
     render,
     get_orig_message_from_bounce,
+    delete_all_headers_except,
 )
 from app.extensions import db
 from app.log import LOG
@@ -268,6 +269,17 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
         header_name = orig_msg._headers[i][0].lower()
         if header_name != "Content-Type".lower():
             msg[header_name] = orig_msg._headers[i][1]
+
+    # Delete unnecessary headers in orig_msg except to save space
+    delete_all_headers_except(
+        orig_msg,
+        [
+            "MIME-Version",
+            "Content-Type",
+            "Content-Disposition",
+            "Content-Transfer-Encoding",
+        ],
+    )
 
     first = MIMEApplication(
         _subtype="pgp-encrypted", _encoder=encoders.encode_7or8bit, _data=""

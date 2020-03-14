@@ -150,7 +150,7 @@ def fake_data():
     db.session.commit()
 
     api_key = ApiKey.create(user_id=user.id, name="Chrome")
-    api_key.code = "codeCH"
+    api_key.code = "code"
 
     api_key = ApiKey.create(user_id=user.id, name="Firefox")
     api_key.code = "codeFF"
