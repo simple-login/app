@@ -339,6 +339,10 @@ def _expiration_5m():
     return arrow.now().shift(minutes=5)
 
 
+def _expiration_7d():
+    return arrow.now().shift(days=7)
+
+
 class ActivationCode(db.Model, ModelMixin):
     """For activate user account"""
 
@@ -753,6 +757,14 @@ class ForwardEmailLog(db.Model, ModelMixin):
     # usually because the forwarded email is too spammy
     bounced = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
+    # Point to the email that has been refused
+    refused_email_id = db.Column(
+        db.ForeignKey("refused_email.id", ondelete="SET NULL"), nullable=True
+    )
+
+    refused_email = db.relationship("RefusedEmail")
+    forward = db.relationship(ForwardEmail)
+
 
 class Subscription(db.Model, ModelMixin):
     # Come from Paddle
@@ -953,3 +965,24 @@ class AccountActivation(db.Model, ModelMixin):
         CheckConstraint(tries >= 0, name="account_activation_tries_positive"),
         {},
     )
+
+
+class RefusedEmail(db.Model, ModelMixin):
+    """Store emails that have been refused, i.e. bounced or classified as spams"""
+
+    # Store the full report, including logs from Sending & Receiving MTA
+    full_report_path = db.Column(db.String(128), unique=True, nullable=False)
+
+    # The original email, to display to user
+    path = db.Column(db.String(128), unique=True, nullable=False)
+
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+
+    # the email content will be deleted at this date
+    delete_at = db.Column(ArrowType, nullable=False, default=_expiration_7d)
+
+    def get_url(self, expires_in=3600):
+        return s3.get_url(self.path, expires_in)
+
+    def __repr__(self):
+        return f"<Refused Email {self.id} {self.path} {self.delete_at}>"
