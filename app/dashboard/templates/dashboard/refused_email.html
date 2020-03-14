@@ -1,0 +1,39 @@
+{% extends 'default.html' %}
+
+{% block title %}
+  Refused Emails
+{% endblock %}
+
+{% set active_page = "setting" %}
+
+{% block default_content %}
+  <div style="max-width: 60em; margin: auto">
+    <h1 class="h3 mb-5"> Refused Emails </h1>
+
+    {% if fels|length == 0 %}
+      <div class="my-4 p-4 card">
+        You don't have any refused email.
+      </div>
+    {% endif %}
+
+    {% for fel in fels %}
+      {% set refused_email = fel.refused_email %}
+      {% set forward = fel.forward %}
+
+      <div class="card p-4 shadow-sm {% if fel.id == highlight_fel_id %} highlight-row {% endif %}">
+        From: {{ forward.website_from or forward.website_email }} <br>
+        To: {{ forward.gen_email.email }} <br>
+        <div class="small-text">
+          Sent {{ refused_email.created_at | dt }}
+        </div>
+
+
+        <a href="{{ refused_email.get_url() }}" class="mt-4">View →</a>
+        <div class="small-text">This will download a ".eml" file that you can open in your favorite email client</div>
+
+      </div>
+    {% endfor %}
+
+
+  </div>
+{% endblock %}

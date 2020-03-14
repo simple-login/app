@@ -17,4 +17,5 @@ from .views import (
     mailbox,
     deleted_alias,
     mailbox_detail,
+    refused_email,
 )
