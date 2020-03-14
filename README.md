@@ -950,6 +950,31 @@ If success, 200 with the list of contacts, for example:
 
 Please note that last_email_sent_timestamp and last_email_sent_date can be null.
 
+
+#### POST /api/aliases/:alias_id/contacts
+
+Create a new contact for an alias.
+ 
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url.
+- `contact` in request body
+
+Output:
+If success, return 201
+Return 409 if contact is already added.
+
+```
+{
+  "contact": "First Last <first@example.com>",
+  "creation_date": "2020-03-14 11:52:41+00:00",
+  "creation_timestamp": 1584186761,
+  "last_email_sent_date": null,
+  "last_email_sent_timestamp": null,
+  "reverse_alias": "First Last first@example.com <ra+qytyzjhrumrreuszrbjxqjlkh@sl.local>"
+}
+```
+
 ### Database migration
 
 The database migration is handled by `alembic`

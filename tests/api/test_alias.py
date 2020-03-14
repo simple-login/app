@@ -231,3 +231,39 @@ def test_alias_contacts(flask_client):
         headers={"Authentication": api_key.code},
     )
     assert len(r.json["contacts"]) == 1
+
+
+def test_create_contact_route(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    gen_email = GenEmail.create_new_random(user)
+    db.session.commit()
+
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=gen_email.id),
+        headers={"Authentication": api_key.code},
+        json={"contact": "First Last <first@example.com>"},
+    )
+
+    assert r.status_code == 201
+    assert r.json["contact"] == "First Last <first@example.com>"
+    assert "creation_date" in r.json
+    assert "creation_timestamp" in r.json
+    assert r.json["last_email_sent_date"] is None
+    assert r.json["last_email_sent_timestamp"] is None
+    assert r.json["reverse_alias"]
+
+    # re-add a contact, should return 409
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=gen_email.id),
+        headers={"Authentication": api_key.code},
+        json={"contact": "First2 Last2 <first@example.com>"},
+    )
+    assert r.status_code == 409
