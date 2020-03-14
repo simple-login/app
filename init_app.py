@@ -22,6 +22,8 @@ def load_pgp_public_keys(app):
 
         db.session.commit()
 
+    LOG.d("Finish load_pgp_public_keys")
+
 
 if __name__ == "__main__":
     app = create_app()

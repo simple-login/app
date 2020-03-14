@@ -307,6 +307,15 @@ def delete_header(msg: Message, header: str):
             del msg._headers[i]
 
 
+def delete_all_headers_except(msg: Message, headers: [str]):
+    headers = [h.lower() for h in headers]
+
+    for i in reversed(range(len(msg._headers))):
+        header_name = msg._headers[i][0].lower()
+        if header_name not in headers:
+            del msg._headers[i]
+
+
 def email_belongs_to_alias_domains(email: str) -> bool:
     """return True if an email ends with one of the alias domains provided by SimpleLogin"""
     for domain in ALIAS_DOMAINS:
