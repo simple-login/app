@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+  Mailbox Validation
+{% endblock %}
+
+
+{% block content %}
+  <div class="mx-auto p-7 card" style="max-width: 50rem">
+    <div class="text-center mb-7">Mailbox <b>{{ mailbox.email }}</b> verified, you can now start creating alias with it
+    </div>
+
+    <div class="mx-auto">
+      <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Go To Home Page</a>
+    </div>
+  </div>
+
+{% endblock %}
