@@ -158,3 +158,34 @@ def get_alias_activities(alias_id):
         activities.append(activity)
 
     return (jsonify(activities=activities), 200)
+
+
+@api_bp.route("/aliases/<int:alias_id>", methods=["PUT"])
+@cross_origin()
+@verify_api_key
+def update_alias(alias_id):
+    """
+    Update alias note
+    Input:
+        alias_id: in url
+        note: in body
+    Output:
+        200
+
+
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify(error="request body cannot be empty"), 400
+
+    user = g.user
+    gen_email: GenEmail = GenEmail.get(alias_id)
+
+    if gen_email.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    new_note = data.get("note")
+    gen_email.note = new_note
+    db.session.commit()
+
+    return jsonify(note=new_note), 200

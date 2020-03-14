@@ -901,6 +901,18 @@ If success, 200 with the list of activities, for example:
 }
 ```
 
+#### PUT /api/aliases/:alias_id
+
+Update alias note. In the future, the endpoint will support other updates (e.g. mailbox update) as well.
+ 
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url.
+- `note` in request body
+
+Output:
+If success, return 200
+
 
 ### Database migration
 

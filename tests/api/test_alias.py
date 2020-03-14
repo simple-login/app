@@ -160,3 +160,26 @@ def test_alias_activities(flask_client):
         headers={"Authentication": api_key.code},
     )
     assert len(r.json["activities"]) < 3
+
+
+def test_update_alias(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    gen_email = GenEmail.create_new_random(user)
+    db.session.commit()
+
+    r = flask_client.put(
+        url_for("api.update_alias", alias_id=gen_email.id),
+        headers={"Authentication": api_key.code},
+        json={"note": "test note"},
+    )
+
+    assert r.status_code == 200
+    assert r.json == {"note": "test note"}
