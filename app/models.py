@@ -691,7 +691,7 @@ class ClientUser(db.Model, ModelMixin):
 
 class ForwardEmail(db.Model, ModelMixin):
     """
-    Emails that are forwarded through SL: email that is sent by website to user via SL alias
+    Store configuration of sender (website-email) and alias.
     """
 
     __table_args__ = (
