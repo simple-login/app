@@ -572,9 +572,7 @@ def handle_bounce(
             alias,
         )
         send_email(
-            # TOOD: use mailbox_email instead
-            user.email,
-            # mailbox_email,
+            mailbox_email,
             f"Email from {forward_email.website_from} to {alias} cannot be delivered to your inbox",
             render(
                 "transactional/bounced-email.txt",
