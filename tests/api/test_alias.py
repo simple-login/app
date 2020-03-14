@@ -183,3 +183,51 @@ def test_update_alias(flask_client):
 
     assert r.status_code == 200
     assert r.json == {"note": "test note"}
+
+
+def test_alias_contacts(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    gen_email = GenEmail.create_new_random(user)
+    db.session.commit()
+
+    # create some alias log
+    for i in range(PAGE_LIMIT + 1):
+        forward_email = ForwardEmail.create(
+            website_email=f"marketing-{i}@example.com",
+            reply_email=f"reply-{i}@a.b",
+            gen_email_id=gen_email.id,
+        )
+        db.session.commit()
+
+        ForwardEmailLog.create(forward_id=forward_email.id, is_reply=True)
+        db.session.commit()
+
+    r = flask_client.get(
+        url_for("api.get_alias_contacts_route", alias_id=gen_email.id, page_id=0),
+        headers={"Authentication": api_key.code},
+    )
+
+    assert r.status_code == 200
+    assert len(r.json["contacts"]) == PAGE_LIMIT
+    for ac in r.json["contacts"]:
+        assert ac["creation_date"]
+        assert ac["creation_timestamp"]
+        assert ac["last_email_sent_date"]
+        assert ac["last_email_sent_timestamp"]
+        assert ac["contact"]
+        assert ac["reverse_alias"]
+
+    # second page, should return 1 result only
+    r = flask_client.get(
+        url_for("api.get_alias_contacts_route", alias_id=gen_email.id, page_id=1),
+        headers={"Authentication": api_key.code},
+    )
+    assert len(r.json["contacts"]) == 1
