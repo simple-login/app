@@ -1,6 +1,7 @@
 import enum
 import random
 import uuid
+from email.utils import parseaddr, formataddr
 
 import arrow
 import bcrypt
@@ -17,7 +18,6 @@ from app.config import (
     AVATAR_URL_EXPIRATION,
     JOB_ONBOARDING_1,
 )
-
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
@@ -729,14 +729,16 @@ class ForwardEmail(db.Model, ModelMixin):
     def website_send_to(self):
         """return the email address with name.
         to use when user wants to send an email from the alias"""
-        from app.email_utils import get_email_name
 
         if self.website_from:
-            name = get_email_name(self.website_from)
-            if name:
-                return name + " " + self.website_email + f" <{self.reply_email}>"
+            website_name, _ = parseaddr(self.website_from)
 
-        return self.website_email.replace("@", " at ") + f" <{self.reply_email}>"
+            if website_name:
+                return formataddr(
+                    (website_name + " " + self.website_email, self.reply_email)
+                )
+
+        return formataddr((self.website_email.replace("@", " at "), self.reply_email))
 
     def last_reply(self) -> "ForwardEmailLog":
         """return the most recent reply"""

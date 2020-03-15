@@ -233,17 +233,6 @@ def send_email(
     smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
 
 
-def get_email_name(email_from):
-    """parse email from header and return the name part
-    First Last <ab@cd.com> -> First Last
-    ab@cd.com -> ""
-    """
-    if "<" in email_from:
-        return email_from[: email_from.find("<")].strip()
-
-    return ""
-
-
 def get_email_part(email_from):
     """parse email from header and return the email part
     First Last <ab@cd.com> -> ab@cd.com
