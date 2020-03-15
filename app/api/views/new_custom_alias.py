@@ -3,7 +3,7 @@ from flask import jsonify, request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
-from app.config import MAX_NB_EMAIL_FREE_PLAN
+from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_DOMAINS
 from app.dashboard.views.custom_alias import verify_prefix_suffix
 from app.extensions import db
 from app.log import LOG
@@ -64,8 +64,10 @@ def new_custom_alias():
 
     if alias_suffix.startswith("@"):
         alias_domain = alias_suffix[1:]
-        domain = CustomDomain.get_by(domain=alias_domain)
-        gen_email.custom_domain_id = domain.id
+        if alias_domain not in ALIAS_DOMAINS:
+            domain = CustomDomain.get_by(domain=alias_domain)
+            LOG.d("set alias %s to domain %s", full_alias, domain)
+            gen_email.custom_domain_id = domain.id
 
     db.session.commit()
 
