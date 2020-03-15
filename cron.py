@@ -189,7 +189,7 @@ if __name__ == "__main__":
             "notify_trial_end",
             "notify_manual_subscription_end",
             "notify_premium_end",
-            "delete_refused_emails"
+            "delete_refused_emails",
         ],
     )
     args = parser.parse_args()
