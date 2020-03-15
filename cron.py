@@ -2,6 +2,7 @@ import argparse
 
 import arrow
 
+from app import s3
 from app.config import IGNORED_EMAILS, ADMIN_EMAIL
 from app.email_utils import send_email, send_trial_end_soon_email, render
 from app.extensions import db
@@ -15,6 +16,7 @@ from app.models import (
     CustomDomain,
     Client,
     ManualSubscription,
+    RefusedEmail,
 )
 from server import create_app
 
@@ -28,6 +30,21 @@ def notify_trial_end():
         ) > user.trial_end >= arrow.now().shift(days=2):
             LOG.d("Send trial end email to user %s", user)
             send_trial_end_soon_email(user)
+
+
+def delete_refused_emails():
+    for refused_email in RefusedEmail.query.filter(RefusedEmail.deleted == False).all():
+        if arrow.now().shift(days=1) > refused_email.deleted_at >= arrow.now():
+            LOG.d("Delete refused email %s", refused_email)
+            s3.delete(refused_email.path)
+            s3.delete(refused_email.full_report_path)
+
+            # do not set path and full_report_path to null
+            # so we can check later that the files are indeed deleted
+            refused_email.deleted = True
+            db.session.commit()
+
+    LOG.d("Finish delete_refused_emails")
 
 
 def notify_premium_end():
@@ -172,6 +189,7 @@ if __name__ == "__main__":
             "notify_trial_end",
             "notify_manual_subscription_end",
             "notify_premium_end",
+            "delete_refused_emails"
         ],
     )
     args = parser.parse_args()
@@ -191,3 +209,6 @@ if __name__ == "__main__":
         elif args.job == "notify_premium_end":
             LOG.d("Notify users with premium ending soon")
             notify_premium_end()
+        elif args.job == "delete_refused_emails":
+            LOG.d("Deleted refused emails")
+            delete_refused_emails()

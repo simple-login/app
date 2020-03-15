@@ -22,3 +22,9 @@ jobs:
     shell: /bin/bash
     schedule: "0 10 * * *"
     captureStderr: true
+
+  - name: SimpleLogin Delete Refused Emails
+    command: python /code/cron.py -j delete_refused_emails
+    shell: /bin/bash
+    schedule: "0 11 * * *"
+    captureStderr: true
