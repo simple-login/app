@@ -7,7 +7,7 @@ from app.config import MAX_NB_EMAIL_FREE_PLAN
 from app.dashboard.views.custom_alias import verify_prefix_suffix
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, AliasUsedOn, User
+from app.models import GenEmail, AliasUsedOn, User, CustomDomain
 from app.utils import convert_to_id
 
 
@@ -61,6 +61,12 @@ def new_custom_alias():
     gen_email = GenEmail.create(
         user_id=user.id, email=full_alias, mailbox_id=user.default_mailbox_id, note=note
     )
+
+    if alias_suffix.startswith("@"):
+        alias_domain = alias_suffix[1:]
+        domain = CustomDomain.get_by(domain=alias_domain)
+        gen_email.custom_domain_id = domain.id
+
     db.session.commit()
 
     if hostname:
