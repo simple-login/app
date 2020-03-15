@@ -30,14 +30,15 @@ It should contain the following info:
 
 
 """
-import uuid
 import time
+import uuid
 from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.parser import Parser
 from email.policy import SMTPUTF8
+from email.utils import parseaddr, formataddr
 from io import BytesIO
 from smtplib import SMTP
 from typing import Optional
@@ -53,8 +54,6 @@ from app.config import (
     POSTFIX_SUBMISSION_TLS,
 )
 from app.email_utils import (
-    get_email_name,
-    get_email_part,
     send_email,
     add_dkim_signature,
     get_email_domain_part,
@@ -214,7 +213,7 @@ def get_or_create_forward_email(
     """
     website_from_header can be the full-form email, i.e. "First Last <email@example.com>"
     """
-    website_email = get_email_part(website_from_header)
+    _, website_email = parseaddr(website_from_header)
     forward_email = ForwardEmail.get_by(
         gen_email_id=gen_email.id, website_email=website_email
     )
@@ -333,13 +332,13 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         # so it can pass DMARC check
         # replace the email part in from: header
         website_from_header = msg["From"]
-        website_email = get_email_part(website_from_header)
-        from_header = (
-            get_email_name(website_from_header)
-            + ("" if get_email_name(website_from_header) == "" else " - ")
+        website_name, website_email = parseaddr(website_from_header)
+        new_website_name = (
+            website_name
+            + (" - " if website_name else "")
             + website_email.replace("@", " at ")
-            + f" <{forward_email.reply_email}>"
         )
+        from_header = formataddr((new_website_name, forward_email.reply_email))
         add_or_replace_header(msg, "From", from_header)
         LOG.d("new from header:%s", from_header)
 

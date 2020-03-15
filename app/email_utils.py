@@ -1,7 +1,5 @@
-import email
 import os
-from email.message import EmailMessage, Message
-from email.mime.application import MIMEApplication
+from email.message import Message
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -231,28 +229,6 @@ def send_email(
 
     msg_raw = msg.as_string().encode()
     smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
-
-
-def get_email_name(email_from):
-    """parse email from header and return the name part
-    First Last <ab@cd.com> -> First Last
-    ab@cd.com -> ""
-    """
-    if "<" in email_from:
-        return email_from[: email_from.find("<")].strip()
-
-    return ""
-
-
-def get_email_part(email_from):
-    """parse email from header and return the email part
-    First Last <ab@cd.com> -> ab@cd.com
-    ab@cd.com -> ""
-    """
-    if "<" in email_from:
-        return email_from[email_from.find("<") + 1 : email_from.find(">")].strip()
-
-    return email_from
 
 
 def get_email_local_part(email):
