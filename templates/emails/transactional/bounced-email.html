@@ -2,9 +2,11 @@
 
 {% block content %}
   {{ render_text("Hi " + name) }}
-  {{ render_text("An email sent to your alias <b>" + alias + "</b> from <b>" + website_email + "</b> was <b>refused</b> (or <em>bounced</em>) by your email provider.") }}
+  {{ render_text("An email sent to your alias <b>" + alias + "</b> from <b>" + website_email + "</b> was <b>refused</b> (or bounced) by your mailbox " + mailbox_email + ".") }}
 
-  {{ render_text("This is usually due to the email being considered as <b>spam</b> by your email provider. The email is included at the end  of this message so you can take a look at its content.") }}
+  {{ render_text('This is usually due to the email being considered as <b>spam</b> by your email provider.') }}
+
+  {{ render_button("View the refused email", refused_email_url) }}
 
   {{ render_text('To avoid spams forwarded by SimpleLogin server, please consider the following options:') }}
 

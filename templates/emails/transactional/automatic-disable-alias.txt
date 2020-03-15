@@ -1,9 +1,11 @@
 Hi {{name}}
 
-There are at least 2 emails sent to your alias {{alias}} from {{website_from}} that have been refused (or bounced) by your email provider.
+There are at least 2 emails sent to your alias {{alias}} from {{website_from}} that have been refused (or bounced) by your mailbox {{mailbox_email}}.
 
 This is usually due to the email being considered as spam by your email provider.
-The email is included at the end of this message so you can take a look at its content.
+You can view this email here:
+{{ refused_email_url }}
+
 
 As security measure, we have disabled the alias {{alias}}.
 

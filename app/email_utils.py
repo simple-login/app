@@ -307,6 +307,15 @@ def delete_header(msg: Message, header: str):
             del msg._headers[i]
 
 
+def delete_all_headers_except(msg: Message, headers: [str]):
+    headers = [h.lower() for h in headers]
+
+    for i in reversed(range(len(msg._headers))):
+        header_name = msg._headers[i][0].lower()
+        if header_name not in headers:
+            del msg._headers[i]
+
+
 def email_belongs_to_alias_domains(email: str) -> bool:
     """return True if an email ends with one of the alias domains provided by SimpleLogin"""
     for domain in ALIAS_DOMAINS:
@@ -363,3 +372,18 @@ def mailbox_already_used(email: str, user) -> bool:
         return True
 
     return False
+
+
+def get_orig_message_from_bounce(msg: Message) -> Message:
+    """parse the original email from Bounce"""
+    i = 0
+    for part in msg.walk():
+        i += 1
+
+        # the original message is the 4th part
+        # 1st part is the root part,  multipart/report
+        # 2nd is text/plain, Postfix log
+        # ...
+        # 7th is original message
+        if i == 7:
+            return part
