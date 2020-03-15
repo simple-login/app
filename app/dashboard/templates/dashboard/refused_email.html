@@ -28,7 +28,7 @@
         </div>
 
         {% if refused_email.deleted %}
-          Email deleted {{ refused_email.deleted_at | dt }}
+          Email deleted {{ refused_email.delete_at | dt }}
         {% else %}
           <a href="{{ refused_email.get_url() }}" class="mt-4">Download →</a>
           <div class="small-text">This will download a ".eml" file that you can open in your favorite email client</div>
