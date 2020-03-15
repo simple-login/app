@@ -30,6 +30,7 @@ It should contain the following info:
 
 
 """
+import uuid
 import time
 from email import encoders
 from email.message import Message
@@ -540,14 +541,15 @@ def handle_bounce(
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
 
     # Store the bounced email
-    random_name = random_string(50)
+    orig_msg = get_orig_message_from_bounce(msg)
+    # generate a name for the email
+    random_name = str(uuid.uuid4())
 
     full_report_path = f"refused-emails/full-{random_name}.eml"
-    s3.upload_from_bytesio(full_report_path, BytesIO(msg.as_bytes()))
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
 
     file_path = f"refused-emails/{random_name}.eml"
-    orig_msg = get_orig_message_from_bounce(msg)
-    s3.upload_from_bytesio(file_path, BytesIO(orig_msg.as_bytes()))
+    s3.upload_email_from_bytesio(file_path, BytesIO(orig_msg.as_bytes()), random_name)
 
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id
