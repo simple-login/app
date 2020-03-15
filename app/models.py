@@ -986,6 +986,9 @@ class RefusedEmail(db.Model, ModelMixin):
     # the email content will be deleted at this date
     delete_at = db.Column(ArrowType, nullable=False, default=_expiration_7d)
 
+    # toggle this when email content (stored at full_report_path & path are deleted)
+    deleted = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     def get_url(self, expires_in=3600):
         return s3.get_url(self.path, expires_in)
 
