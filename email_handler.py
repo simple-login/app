@@ -54,7 +54,6 @@ from app.config import (
     POSTFIX_SUBMISSION_TLS,
 )
 from app.email_utils import (
-    get_email_part,
     send_email,
     add_dkim_signature,
     get_email_domain_part,
@@ -214,7 +213,7 @@ def get_or_create_forward_email(
     """
     website_from_header can be the full-form email, i.e. "First Last <email@example.com>"
     """
-    website_email = get_email_part(website_from_header)
+    _, website_email = parseaddr(website_from_header)
     forward_email = ForwardEmail.get_by(
         gen_email_id=gen_email.id, website_email=website_email
     )

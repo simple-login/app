@@ -1,7 +1,6 @@
 from email.message import EmailMessage
 
 from app.email_utils import (
-    get_email_part,
     get_email_domain_part,
     email_belongs_to_alias_domains,
     can_be_used_as_personal_email,
@@ -10,13 +9,6 @@ from app.email_utils import (
 )
 from app.extensions import db
 from app.models import User, CustomDomain
-
-
-def test_get_email_part():
-    assert get_email_part("First Last <ab@cd.com>") == "ab@cd.com"
-    assert get_email_part("First Last<ab@cd.com>") == "ab@cd.com"
-    assert get_email_part("  First Last   <ab@cd.com>") == "ab@cd.com"
-    assert get_email_part("ab@cd.com") == "ab@cd.com"
 
 
 def test_get_email_domain_part():

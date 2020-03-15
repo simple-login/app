@@ -1,4 +1,5 @@
 import re
+from email.utils import parseaddr
 
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -7,7 +8,6 @@ from wtforms import StringField, validators, ValidationError
 
 from app.config import EMAIL_DOMAIN
 from app.dashboard.base import dashboard_bp
-from app.email_utils import get_email_part
 from app.extensions import db
 from app.log import LOG
 from app.models import GenEmail, ForwardEmail
@@ -76,7 +76,7 @@ def alias_contact_manager(alias_id, forward_email_id=None):
                     if not ForwardEmail.get_by(reply_email=reply_email):
                         break
 
-                website_email = get_email_part(contact_email)
+                _, website_email = parseaddr(contact_email)
 
                 # already been added
                 if ForwardEmail.get_by(
