@@ -734,11 +734,18 @@ class ForwardEmail(db.Model, ModelMixin):
             website_name, _ = parseaddr(self.website_from)
 
             if website_name:
-                return formataddr(
-                    (website_name + " " + self.website_email, self.reply_email)
-                )
+                # remove all double quote
+                website_name = website_name.replace('"', "")
+                return f'"{website_name} {self.website_email}" <{self.reply_email}>'
 
-        return formataddr((self.website_email.replace("@", " at "), self.reply_email))
+                # cannot use formataddr here as this field is for email client, not for MTA
+                # return formataddr(
+                #     (website_name + " " + self.website_email, self.reply_email)
+                # )
+
+        name = self.website_email.replace("@", " at ").replace('"', "")
+        return f'"{name}" <{self.reply_email}>'
+        # return formataddr((self.website_email.replace("@", " at "), self.reply_email))
 
     def last_reply(self) -> "ForwardEmailLog":
         """return the most recent reply"""
