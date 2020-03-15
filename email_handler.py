@@ -614,6 +614,7 @@ def handle_bounce(
                 alias=alias,
                 website_from=forward_email.website_from,
                 website_email=forward_email.website_email,
+                refused_email_url=refused_email_url,
             ),
             render(
                 "transactional/automatic-disable-alias.html",
@@ -621,8 +622,10 @@ def handle_bounce(
                 alias=alias,
                 website_from=forward_email.website_from,
                 website_email=forward_email.website_email,
+                refused_email_url=refused_email_url,
             ),
-            bounced_email=msg,
+            # cannot include bounce email as it can contain spammy text
+            # bounced_email=msg,
         )
 
 
