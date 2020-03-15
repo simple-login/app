@@ -1,26 +1,18 @@
+from email.utils import parseaddr
+
 from flask import g
-from flask import jsonify, request
+from flask import jsonify
+from flask import request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
+from app.config import EMAIL_DOMAIN
 from app.config import PAGE_LIMIT
 from app.dashboard.views.alias_log import get_alias_log
 from app.dashboard.views.index import get_alias_info, AliasInfo
 from app.extensions import db
-from app.models import GenEmail, ForwardEmail, ForwardEmailLog
-from app.utils import random_string
-import re
-
-from flask import render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, validators, ValidationError
-
-from app.config import EMAIL_DOMAIN
-from app.dashboard.base import dashboard_bp
-from app.email_utils import get_email_part
-from app.extensions import db
 from app.log import LOG
+from app.models import ForwardEmailLog
 from app.models import GenEmail, ForwardEmail
 from app.utils import random_string
 
@@ -310,7 +302,7 @@ def create_contact_route(alias_id):
         if not ForwardEmail.get_by(reply_email=reply_email):
             break
 
-    website_email = get_email_part(contact_email)
+    _, website_email = parseaddr(contact_email)
 
     # already been added
     if ForwardEmail.get_by(gen_email_id=gen_email.id, website_email=website_email):
