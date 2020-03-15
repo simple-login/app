@@ -53,3 +53,11 @@ def get_url(key: str, expires_in=3600) -> str:
             ClientMethod="get_object",
             Params={"Bucket": BUCKET, "Key": key},
         )
+
+
+def delete(path: str):
+    if LOCAL_FILE_UPLOAD:
+        os.remove(os.path.join(UPLOAD_DIR, path))
+    else:
+        o = _session.resource("s3").Bucket(BUCKET).Object(path)
+        o.delete()
