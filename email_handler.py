@@ -583,7 +583,7 @@ def handle_bounce(
                 website_email=forward_email.website_email,
                 disable_alias_link=disable_alias_link,
                 refused_email_url=refused_email_url,
-                mailbox_email=mailbox_email
+                mailbox_email=mailbox_email,
             ),
             render(
                 "transactional/bounced-email.html",
@@ -593,7 +593,7 @@ def handle_bounce(
                 website_email=forward_email.website_email,
                 disable_alias_link=disable_alias_link,
                 refused_email_url=refused_email_url,
-                mailbox_email=mailbox_email
+                mailbox_email=mailbox_email,
             ),
             # cannot include bounce email as it can contain spammy text
             # bounced_email=msg,
@@ -619,7 +619,7 @@ def handle_bounce(
                 website_from=forward_email.website_from,
                 website_email=forward_email.website_email,
                 refused_email_url=refused_email_url,
-                mailbox_email=mailbox_email
+                mailbox_email=mailbox_email,
             ),
             render(
                 "transactional/automatic-disable-alias.html",
@@ -628,7 +628,7 @@ def handle_bounce(
                 website_from=forward_email.website_from,
                 website_email=forward_email.website_email,
                 refused_email_url=refused_email_url,
-                mailbox_email=mailbox_email
+                mailbox_email=mailbox_email,
             ),
             # cannot include bounce email as it can contain spammy text
             # bounced_email=msg,
