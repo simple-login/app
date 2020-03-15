@@ -572,7 +572,8 @@ def handle_bounce(
             alias,
         )
         send_email(
-            mailbox_email,
+            # use user mail here as only user is authenticated to see the refused email
+            user.email,
             f"Email from {forward_email.website_from} to {alias} cannot be delivered to your inbox",
             render(
                 "transactional/bounced-email.txt",
@@ -582,6 +583,7 @@ def handle_bounce(
                 website_email=forward_email.website_email,
                 disable_alias_link=disable_alias_link,
                 refused_email_url=refused_email_url,
+                mailbox_email=mailbox_email
             ),
             render(
                 "transactional/bounced-email.html",
@@ -591,6 +593,7 @@ def handle_bounce(
                 website_email=forward_email.website_email,
                 disable_alias_link=disable_alias_link,
                 refused_email_url=refused_email_url,
+                mailbox_email=mailbox_email
             ),
             # cannot include bounce email as it can contain spammy text
             # bounced_email=msg,
@@ -606,7 +609,8 @@ def handle_bounce(
         db.session.commit()
 
         send_email(
-            mailbox_email,
+            # use user mail here as only user is authenticated to see the refused email
+            user.email,
             f"Alias {alias} has been disabled due to second undelivered email from {forward_email.website_from}",
             render(
                 "transactional/automatic-disable-alias.txt",
@@ -615,6 +619,7 @@ def handle_bounce(
                 website_from=forward_email.website_from,
                 website_email=forward_email.website_email,
                 refused_email_url=refused_email_url,
+                mailbox_email=mailbox_email
             ),
             render(
                 "transactional/automatic-disable-alias.html",
@@ -623,6 +628,7 @@ def handle_bounce(
                 website_from=forward_email.website_from,
                 website_email=forward_email.website_email,
                 refused_email_url=refused_email_url,
+                mailbox_email=mailbox_email
             ),
             # cannot include bounce email as it can contain spammy text
             # bounced_email=msg,
