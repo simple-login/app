@@ -34,7 +34,28 @@ def upload_from_bytesio(key: str, bs: BytesIO, content_type="string"):
 
     else:
         _session.resource("s3").Bucket(BUCKET).put_object(
-            Key=key, Body=bs, ContentType=content_type
+            Key=key, Body=bs, ContentType=content_type,
+        )
+
+
+def upload_email_from_bytesio(path: str, bs: BytesIO, filename):
+    bs.seek(0)
+
+    if LOCAL_FILE_UPLOAD:
+        file_path = os.path.join(UPLOAD_DIR, path)
+        file_dir = os.path.dirname(file_path)
+        os.makedirs(file_dir, exist_ok=True)
+        with open(file_path, "wb") as f:
+            f.write(bs.read())
+
+    else:
+        _session.resource("s3").Bucket(BUCKET).put_object(
+            Key=path,
+            Body=bs,
+            # Support saving a remote file using Http header
+            # Also supports Safari. More info at
+            # https://github.com/eligrey/FileSaver.js/wiki/Saving-a-remote-file#using-http-header
+            ContentDisposition=f'attachment; filename="{filename}.eml";',
         )
 
 
