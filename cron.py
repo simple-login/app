@@ -34,7 +34,7 @@ def notify_trial_end():
 
 def delete_refused_emails():
     for refused_email in RefusedEmail.query.filter(RefusedEmail.deleted == False).all():
-        if arrow.now().shift(days=1) > refused_email.deleted_at >= arrow.now():
+        if arrow.now().shift(days=1) > refused_email.delete_at >= arrow.now():
             LOG.d("Delete refused email %s", refused_email)
             s3.delete(refused_email.path)
             s3.delete(refused_email.full_report_path)
