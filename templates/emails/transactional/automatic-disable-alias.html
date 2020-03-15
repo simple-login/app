@@ -2,14 +2,14 @@
 
 {% block content %}
   {{ render_text("Hi " + name) }}
-  {{ render_text("There are at least 2 emails sent to your alias <b>" + alias + "</b> from <b>" + website_email +
-  "</b> that have been <b>refused</b> (or bounced) by your email provider.") }}
+  {{ render_text("There are at least 2 emails sent to your alias <b>" + alias + "</b>" +  " (mailbox "+ mailbox_email +  ") from <b>" + website_email + "</b> that have been <b>refused</b> (or bounced) by your email provider.") }}
+
 
   {{ render_text("This is usually due to the email being considered as <b>spam</b> by your email provider.") }}
 
   {{ render_button("View the refused email", refused_email_url) }}
 
-  {{ render_text('As security measure, we have <b>disabled</b> the alias ' + alias) }}
+  {{ render_text('As security measure, we have <b>disabled</b> the alias ' + alias + ".") }}
 
   {{ render_text('Please let us know if you have any question.') }}
 
