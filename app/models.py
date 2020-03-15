@@ -725,21 +725,18 @@ class ForwardEmail(db.Model, ModelMixin):
         """return the email address with name.
         to use when user wants to send an email from the alias"""
 
+        name = self.website_email.replace("@", " at ")
+
         if self.website_from:
             website_name, _ = parseaddr(self.website_from)
 
             if website_name:
                 # remove all double quote
                 website_name = website_name.replace('"', "")
-                return f'"{website_name} {self.website_email}" <{self.reply_email}>'
+                name = website_name + " | " + name
 
-                # cannot use formataddr here as this field is for email client, not for MTA
-                # return formataddr(
-                #     (website_name + " " + self.website_email, self.reply_email)
-                # )
-
-        name = self.website_email.replace("@", " at ").replace('"', "")
         return f'"{name}" <{self.reply_email}>'
+        # cannot use formataddr here as this field is for email client, not for MTA
         # return formataddr((self.website_email.replace("@", " at "), self.reply_email))
 
     def last_reply(self) -> "ForwardEmailLog":
