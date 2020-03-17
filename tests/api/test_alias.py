@@ -267,3 +267,32 @@ def test_create_contact_route(flask_client):
         json={"contact": "First2 Last2 <first@example.com>"},
     )
     assert r.status_code == 409
+
+
+def test_delete_contact(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    contact = Contact.create(
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="reply+random@sl.io",
+    )
+    db.session.commit()
+
+    r = flask_client.delete(
+        url_for("api.delete_contact", contact_id=contact.id),
+        headers={"Authentication": api_key.code},
+    )
+
+    assert r.status_code == 200
+    assert r.json == {"deleted": True}

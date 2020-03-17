@@ -995,6 +995,24 @@ Return 409 if contact is already added.
 }
 ```
 
+#### DELETE /api/contacts/:contact_id
+
+Delete a contact
+
+Input:
+- `Authentication` header that contains the api key
+- `contact_id` in url.
+
+Output:
+If success, 200.
+
+
+```json
+{
+    "deleted": true
+}
+```
+
 ### Database migration
 
 The database migration is handled by `alembic`
