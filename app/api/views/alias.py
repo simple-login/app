@@ -17,7 +17,7 @@ from app.models import Alias, Contact
 from app.utils import random_string
 
 
-@api_bp.route("/aliases")
+@api_bp.route("/aliases", methods=["GET", "POST"])
 @cross_origin()
 @verify_api_key
 def get_aliases():
@@ -43,7 +43,12 @@ def get_aliases():
     except (ValueError, TypeError):
         return jsonify(error="page_id must be provided in request query"), 400
 
-    alias_infos: [AliasInfo] = get_alias_info(user, page_id=page_id)
+    query = None
+    data = request.get_json(silent=True)
+    if data:
+        query = data.get("query")
+
+    alias_infos: [AliasInfo] = get_alias_info(user, page_id=page_id, query=query)
 
     return (
         jsonify(
