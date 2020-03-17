@@ -739,16 +739,16 @@ class Contact(db.Model, ModelMixin):
         # cannot use formataddr here as this field is for email client, not for MTA
         # return formataddr((self.website_email.replace("@", " at "), self.reply_email))
 
-    def last_reply(self) -> "ForwardEmailLog":
+    def last_reply(self) -> "EmailLog":
         """return the most recent reply"""
         return (
-            ForwardEmailLog.query.filter_by(contact_id=self.id, is_reply=True)
-            .order_by(desc(ForwardEmailLog.created_at))
+            EmailLog.query.filter_by(contact_id=self.id, is_reply=True)
+            .order_by(desc(EmailLog.created_at))
             .first()
         )
 
 
-class ForwardEmailLog(db.Model, ModelMixin):
+class EmailLog(db.Model, ModelMixin):
     contact_id = db.Column(
         db.ForeignKey(Contact.id, ondelete="cascade"), nullable=False
     )

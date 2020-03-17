@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
-from app.models import GenEmail, ForwardEmailLog, Contact
+from app.models import GenEmail, EmailLog, Contact
 
 
 class AliasLog:
@@ -42,18 +42,18 @@ def alias_log(alias_id, page_id):
 
     logs = get_alias_log(gen_email, page_id)
     base = (
-        db.session.query(Contact, ForwardEmailLog)
-        .filter(Contact.id == ForwardEmailLog.contact_id)
+        db.session.query(Contact, EmailLog)
+        .filter(Contact.id == EmailLog.contact_id)
         .filter(Contact.gen_email_id == gen_email.id)
     )
     total = base.count()
     email_forwarded = (
-        base.filter(ForwardEmailLog.is_reply == False)
-        .filter(ForwardEmailLog.blocked == False)
+        base.filter(EmailLog.is_reply == False)
+        .filter(EmailLog.blocked == False)
         .count()
     )
-    email_replied = base.filter(ForwardEmailLog.is_reply == True).count()
-    email_blocked = base.filter(ForwardEmailLog.blocked == True).count()
+    email_replied = base.filter(EmailLog.is_reply == True).count()
+    email_blocked = base.filter(EmailLog.blocked == True).count()
     last_page = (
         len(logs) < PAGE_LIMIT
     )  # lightweight pagination without counting all objects
@@ -66,10 +66,10 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
     mailbox = gen_email.mailbox_email()
 
     q = (
-        db.session.query(Contact, ForwardEmailLog)
-        .filter(Contact.id == ForwardEmailLog.contact_id)
+        db.session.query(Contact, EmailLog)
+        .filter(Contact.id == EmailLog.contact_id)
         .filter(Contact.gen_email_id == gen_email.id)
-        .order_by(ForwardEmailLog.id.desc())
+        .order_by(EmailLog.id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_id * PAGE_LIMIT)
     )
