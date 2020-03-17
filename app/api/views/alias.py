@@ -320,3 +320,28 @@ def create_contact_route(alias_id):
     db.session.commit()
 
     return jsonify(**serialize_contact(contact)), 201
+
+
+@api_bp.route("/contacts/<int:contact_id>", methods=["DELETE"])
+@cross_origin()
+@verify_api_key
+def delete_contact(contact_id):
+    """
+    Delete contact
+    Input:
+        contact_id: in url
+    Output:
+        200
+
+
+    """
+    user = g.user
+    contact = Contact.get(contact_id)
+
+    if not contact or contact.alias.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    Contact.delete(contact_id)
+    db.session.commit()
+
+    return jsonify(deleted=True), 200
