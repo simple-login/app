@@ -747,14 +747,14 @@ class Contact(db.Model, ModelMixin):
     def last_reply(self) -> "ForwardEmailLog":
         """return the most recent reply"""
         return (
-            ForwardEmailLog.query.filter_by(forward_id=self.id, is_reply=True)
+            ForwardEmailLog.query.filter_by(contact_id=self.id, is_reply=True)
             .order_by(desc(ForwardEmailLog.created_at))
             .first()
         )
 
 
 class ForwardEmailLog(db.Model, ModelMixin):
-    forward_id = db.Column(
+    contact_id = db.Column(
         db.ForeignKey(Contact.id, ondelete="cascade"), nullable=False
     )
 

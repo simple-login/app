@@ -314,7 +314,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
 
     contact = get_or_create_contact(msg["From"], gen_email)
-    forward_log = ForwardEmailLog.create(forward_id=contact.id)
+    forward_log = ForwardEmailLog.create(contact_id=contact.id)
 
     if gen_email.enabled:
         # add custom header
@@ -516,17 +516,17 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         envelope.rcpt_options,
     )
 
-    ForwardEmailLog.create(forward_id=contact.id, is_reply=True)
+    ForwardEmailLog.create(contact_id=contact.id, is_reply=True)
     db.session.commit()
 
     return "250 Message accepted for delivery"
 
 
 def handle_bounce(alias, envelope, contact, gen_email, msg, smtp, user, mailbox_email):
-    fel: ForwardEmailLog = ForwardEmailLog.create(forward_id=contact.id, bounced=True)
+    fel: ForwardEmailLog = ForwardEmailLog.create(contact_id=contact.id, bounced=True)
     db.session.commit()
 
-    nb_bounced = ForwardEmailLog.filter_by(forward_id=contact.id, bounced=True).count()
+    nb_bounced = ForwardEmailLog.filter_by(contact_id=contact.id, bounced=True).count()
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
 
     # Store the bounced email

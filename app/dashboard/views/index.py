@@ -204,7 +204,7 @@ def get_alias_info(
     q = (
         db.session.query(GenEmail, Contact, ForwardEmailLog, Mailbox)
         .join(Contact, GenEmail.id == Contact.gen_email_id, isouter=True)
-        .join(ForwardEmailLog, Contact.id == ForwardEmailLog.forward_id, isouter=True)
+        .join(ForwardEmailLog, Contact.id == ForwardEmailLog.contact_id, isouter=True)
         .join(Mailbox, GenEmail.mailbox_id == Mailbox.id, isouter=True)
         .filter(GenEmail.user_id == user.id)
         .order_by(GenEmail.created_at.desc())
