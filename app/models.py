@@ -159,7 +159,7 @@ class User(db.Model, ModelMixin, UserMixin):
         user.default_mailbox_id = mb.id
 
         # create a first alias mail to show user how to use when they login
-        GenEmail.create_new(user, prefix="my-first-alias", mailbox_id=mb.id)
+        Alias.create_new(user, prefix="my-first-alias", mailbox_id=mb.id)
         db.session.flush()
 
         # Schedule onboarding emails
@@ -246,7 +246,7 @@ class User(db.Model, ModelMixin, UserMixin):
         if self.is_premium():
             return True
 
-        return GenEmail.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
+        return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
 
     def set_password(self, password):
         salt = bcrypt.gensalt()
@@ -270,16 +270,16 @@ class User(db.Model, ModelMixin, UserMixin):
         """return suggested email and other email choices """
         website_name = convert_to_id(website_name)
 
-        all_gen_emails = [ge.email for ge in GenEmail.filter_by(user_id=self.id)]
+        all_aliases = [ge.email for ge in Alias.filter_by(user_id=self.id)]
         if self.can_create_new_alias():
-            suggested_gen_email = GenEmail.create_new(self, prefix=website_name).email
+            suggested_alias = Alias.create_new(self, prefix=website_name).email
         else:
             # pick an email from the list of gen emails
-            suggested_gen_email = random.choice(all_gen_emails)
+            suggested_alias = random.choice(all_aliases)
 
         return (
-            suggested_gen_email,
-            list(set(all_gen_emails).difference({suggested_gen_email})),
+            suggested_alias,
+            list(set(all_aliases).difference({suggested_alias})),
         )
 
     def suggested_names(self) -> (str, [str]):
@@ -515,7 +515,7 @@ def generate_email(
         random_email = random_words() + "@" + EMAIL_DOMAIN
 
     # check that the client does not exist yet
-    if not GenEmail.get_by(email=random_email) and not DeletedAlias.get_by(
+    if not Alias.get_by(email=random_email) and not DeletedAlias.get_by(
         email=random_email
     ):
         LOG.debug("generate email %s", random_email)
@@ -526,8 +526,8 @@ def generate_email(
     return generate_email(scheme=scheme, in_hex=in_hex)
 
 
-class GenEmail(db.Model, ModelMixin):
-    """Generated email"""
+class Alias(db.Model, ModelMixin):
+    """Alias"""
 
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = db.Column(db.String(128), unique=True, nullable=False)
@@ -571,7 +571,7 @@ class GenEmail(db.Model, ModelMixin):
             if not cls.get_by(email=email):
                 break
 
-        return GenEmail.create(
+        return Alias.create(
             user_id=user.id,
             email=email,
             note=note,
@@ -588,7 +588,7 @@ class GenEmail(db.Model, ModelMixin):
     ):
         """create a new random alias"""
         random_email = generate_email(scheme=scheme, in_hex=in_hex)
-        return GenEmail.create(
+        return Alias.create(
             user_id=user.id,
             email=random_email,
             mailbox_id=user.default_mailbox_id,
@@ -602,7 +602,7 @@ class GenEmail(db.Model, ModelMixin):
             return self.user.email
 
     def __repr__(self):
-        return f"<GenEmail {self.id} {self.email}>"
+        return f"<Alias {self.id} {self.email}>"
 
 
 class ClientUser(db.Model, ModelMixin):
@@ -614,9 +614,7 @@ class ClientUser(db.Model, ModelMixin):
     client_id = db.Column(db.ForeignKey(Client.id, ondelete="cascade"), nullable=False)
 
     # Null means client has access to user original email
-    gen_email_id = db.Column(
-        db.ForeignKey(GenEmail.id, ondelete="cascade"), nullable=True
-    )
+    gen_email_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=True)
 
     # user can decide to send to client another name
     name = db.Column(
@@ -628,13 +626,13 @@ class ClientUser(db.Model, ModelMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
-    gen_email = db.relationship(GenEmail, backref="client_users")
+    alias = db.relationship(Alias, backref="client_users")
 
     user = db.relationship(User)
     client = db.relationship(Client)
 
     def get_email(self):
-        return self.gen_email.email if self.gen_email_id else self.user.email
+        return self.alias.email if self.gen_email_id else self.user.email
 
     def get_user_name(self):
         if self.name:
@@ -685,7 +683,7 @@ class ClientUser(db.Model, ModelMixin):
                     LOG.debug(
                         "Use gen email for user %s, client %s", self.user, self.client
                     )
-                    res[Scope.EMAIL.value] = self.gen_email.email
+                    res[Scope.EMAIL.value] = self.alias.email
                 # Use user original email
                 else:
                     res[Scope.EMAIL.value] = self.user.email
@@ -703,7 +701,7 @@ class Contact(db.Model, ModelMixin):
     )
 
     gen_email_id = db.Column(
-        db.ForeignKey(GenEmail.id, ondelete="cascade"), nullable=False
+        db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False
     )
 
     # used to be envelope header, should be mail header from instead
@@ -719,7 +717,7 @@ class Contact(db.Model, ModelMixin):
     # it has the prefix "reply+" to distinguish with other email
     reply_email = db.Column(db.String(512), nullable=False)
 
-    gen_email = db.relationship(GenEmail, backref="contacts")
+    alias = db.relationship(Alias, backref="contacts")
 
     def website_send_to(self):
         """return the email address with name.
@@ -849,7 +847,7 @@ class AliasUsedOn(db.Model, ModelMixin):
     )
 
     gen_email_id = db.Column(
-        db.ForeignKey(GenEmail.id, ondelete="cascade"), nullable=False
+        db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False
     )
 
     hostname = db.Column(db.String(1024), nullable=False)
@@ -899,7 +897,7 @@ class CustomDomain(db.Model, ModelMixin):
     user = db.relationship(User)
 
     def nb_alias(self):
-        return GenEmail.filter_by(custom_domain_id=self.id).count()
+        return Alias.filter_by(custom_domain_id=self.id).count()
 
     def __repr__(self):
         return f"<Custom Domain {self.domain}>"
@@ -917,7 +915,7 @@ class Directory(db.Model, ModelMixin):
     user = db.relationship(User)
 
     def nb_alias(self):
-        return GenEmail.filter_by(directory_id=self.id).count()
+        return Alias.filter_by(directory_id=self.id).count()
 
     def __repr__(self):
         return f"<Directory {self.name}>"
@@ -949,7 +947,7 @@ class Mailbox(db.Model, ModelMixin):
     pgp_finger_print = db.Column(db.String(512), nullable=True)
 
     def nb_alias(self):
-        return GenEmail.filter_by(mailbox_id=self.id).count()
+        return Alias.filter_by(mailbox_id=self.id).count()
 
     def __repr__(self):
         return f"<Mailbox {self.email}>"

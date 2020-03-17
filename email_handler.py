@@ -69,7 +69,7 @@ from app.email_utils import (
 from app.extensions import db
 from app.log import LOG
 from app.models import (
-    GenEmail,
+    Alias,
     Contact,
     EmailLog,
     CustomDomain,
@@ -98,35 +98,35 @@ def new_app():
     return app
 
 
-def try_auto_create(alias: str) -> Optional[GenEmail]:
+def try_auto_create(address: str) -> Optional[Alias]:
     """Try to auto-create the alias using directory or catch-all domain
     """
-    gen_email = try_auto_create_catch_all_domain(alias)
-    if not gen_email:
-        gen_email = try_auto_create_directory(alias)
+    alias = try_auto_create_catch_all_domain(address)
+    if not alias:
+        alias = try_auto_create_directory(address)
 
-    return gen_email
+    return alias
 
 
-def try_auto_create_directory(alias: str) -> Optional[GenEmail]:
+def try_auto_create_directory(address: str) -> Optional[Alias]:
     """
     Try to create an alias with directory
     """
     # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
-    if email_belongs_to_alias_domains(alias):
+    if email_belongs_to_alias_domains(address):
         # if there's no directory separator in the alias, no way to auto-create it
-        if "/" not in alias and "+" not in alias and "#" not in alias:
+        if "/" not in address and "+" not in address and "#" not in address:
             return None
 
         # alias contains one of the 3 special directory separator: "/", "+" or "#"
-        if "/" in alias:
+        if "/" in address:
             sep = "/"
-        elif "+" in alias:
+        elif "+" in address:
             sep = "+"
         else:
             sep = "#"
 
-        directory_name = alias[: alias.find(sep)]
+        directory_name = address[: address.find(sep)]
         LOG.d("directory_name %s", directory_name)
 
         directory = Directory.get_by(name=directory_name)
@@ -136,37 +136,37 @@ def try_auto_create_directory(alias: str) -> Optional[GenEmail]:
         dir_user: User = directory.user
 
         if not dir_user.can_create_new_alias():
-            send_cannot_create_directory_alias(dir_user, alias, directory_name)
+            send_cannot_create_directory_alias(dir_user, address, directory_name)
             return None
 
         # if alias has been deleted before, do not auto-create it
-        if DeletedAlias.get_by(email=alias, user_id=directory.user_id):
+        if DeletedAlias.get_by(email=address, user_id=directory.user_id):
             LOG.warning(
                 "Alias %s was deleted before, cannot auto-create using directory %s, user %s",
-                alias,
+                address,
                 directory_name,
                 dir_user,
             )
             return None
 
-        LOG.d("create alias %s for directory %s", alias, directory)
+        LOG.d("create alias %s for directory %s", address, directory)
 
-        gen_email = GenEmail.create(
-            email=alias,
+        alias = Alias.create(
+            email=address,
             user_id=directory.user_id,
             directory_id=directory.id,
             mailbox_id=dir_user.default_mailbox_id,
         )
         db.session.commit()
-        return gen_email
+        return alias
 
 
-def try_auto_create_catch_all_domain(alias: str) -> Optional[GenEmail]:
+def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
     """Try to create an alias with catch-all domain"""
 
     # try to create alias on-the-fly with custom-domain catch-all feature
     # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
-    alias_domain = get_email_domain_part(alias)
+    alias_domain = get_email_domain_part(address)
     custom_domain = CustomDomain.get_by(domain=alias_domain)
 
     if not custom_domain:
@@ -180,23 +180,23 @@ def try_auto_create_catch_all_domain(alias: str) -> Optional[GenEmail]:
     domain_user: User = custom_domain.user
 
     if not domain_user.can_create_new_alias():
-        send_cannot_create_domain_alias(domain_user, alias, alias_domain)
+        send_cannot_create_domain_alias(domain_user, address, alias_domain)
         return None
 
     # if alias has been deleted before, do not auto-create it
-    if DeletedAlias.get_by(email=alias, user_id=custom_domain.user_id):
+    if DeletedAlias.get_by(email=address, user_id=custom_domain.user_id):
         LOG.warning(
             "Alias %s was deleted before, cannot auto-create using domain catch-all %s, user %s",
-            alias,
+            address,
             custom_domain,
             domain_user,
         )
         return None
 
-    LOG.d("create alias %s for domain %s", alias, custom_domain)
+    LOG.d("create alias %s for domain %s", address, custom_domain)
 
-    gen_email = GenEmail.create(
-        email=alias,
+    alias = Alias.create(
+        email=address,
         user_id=custom_domain.user_id,
         custom_domain_id=custom_domain.id,
         automatic_creation=True,
@@ -204,15 +204,15 @@ def try_auto_create_catch_all_domain(alias: str) -> Optional[GenEmail]:
     )
 
     db.session.commit()
-    return gen_email
+    return alias
 
 
-def get_or_create_contact(website_from_header: str, gen_email: GenEmail) -> Contact:
+def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
     """
     website_from_header can be the full-form email, i.e. "First Last <email@example.com>"
     """
     _, website_email = parseaddr(website_from_header)
-    contact = Contact.get_by(gen_email_id=gen_email.id, website_email=website_email)
+    contact = Contact.get_by(gen_email_id=alias.id, website_email=website_email)
     if contact:
         # update the website_from if needed
         if contact.website_from != website_from_header:
@@ -222,7 +222,7 @@ def get_or_create_contact(website_from_header: str, gen_email: GenEmail) -> Cont
     else:
         LOG.debug(
             "create forward email for alias %s and website email %s",
-            gen_email,
+            alias,
             website_from_header,
         )
 
@@ -236,7 +236,7 @@ def get_or_create_contact(website_from_header: str, gen_email: GenEmail) -> Cont
             reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
 
         contact = Contact.create(
-            gen_email_id=gen_email.id,
+            gen_email_id=alias.id,
             website_email=website_email,
             website_from=website_from_header,
             reply_email=reply_email,
@@ -297,15 +297,15 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     """return *status_code message*"""
     alias = rcpt_to.lower()  # alias@SL
 
-    gen_email = GenEmail.get_by(email=alias)
-    if not gen_email:
+    alias = Alias.get_by(email=alias)
+    if not alias:
         LOG.d("alias %s not exist. Try to see if it can be created on the fly", alias)
-        gen_email = try_auto_create(alias)
-        if not gen_email:
+        alias = try_auto_create(alias)
+        if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 510", alias)
             return "510 Email not exist"
 
-    mailbox = gen_email.mailbox
+    mailbox = alias.mailbox
     mailbox_email = mailbox.email
 
     # create PGP email if needed
@@ -313,10 +313,10 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         LOG.d("Encrypt message using mailbox %s", mailbox)
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
 
-    contact = get_or_create_contact(msg["From"], gen_email)
+    contact = get_or_create_contact(msg["From"], alias)
     forward_log = EmailLog.create(contact_id=contact.id)
 
-    if gen_email.enabled:
+    if alias.enabled:
         # add custom header
         add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
 
@@ -349,7 +349,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             add_or_replace_header(msg, "To", to_header)
 
         # add List-Unsubscribe header
-        unsubscribe_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
+        unsubscribe_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
         add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
         add_or_replace_header(
             msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
@@ -376,7 +376,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             envelope.rcpt_options,
         )
     else:
-        LOG.d("%s is disabled, do not forward", gen_email)
+        LOG.d("%s is disabled, do not forward", alias)
         forward_log.blocked = True
 
     db.session.commit()
@@ -396,17 +396,17 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         LOG.warning(f"No such forward-email with {reply_email} as reply-email")
         return "550 wrong reply email"
 
-    alias: str = contact.gen_email.email
-    alias_domain = alias[alias.find("@") + 1 :]
+    address: str = contact.alias.email
+    alias_domain = address[address.find("@") + 1 :]
 
     # alias must end with one of the ALIAS_DOMAINS or custom-domain
-    if not email_belongs_to_alias_domains(alias):
+    if not email_belongs_to_alias_domains(address):
         if not CustomDomain.get_by(domain=alias_domain):
             return "550 alias unknown by SimpleLogin"
 
-    gen_email = contact.gen_email
-    user = gen_email.user
-    mailbox_email = gen_email.mailbox_email()
+    alias = contact.alias
+    user = alias.user
+    mailbox_email = alias.mailbox_email()
 
     # bounce email initiated by Postfix
     # can happen in case emails cannot be delivered to user-email
@@ -415,14 +415,12 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     if envelope.mail_from == "<>":
         LOG.error(
             "Bounce when sending to alias %s from %s, user %s",
-            alias,
+            address,
             contact.website_from,
-            gen_email.user,
+            alias.user,
         )
 
-        handle_bounce(
-            alias, envelope, contact, gen_email, msg, smtp, user, mailbox_email
-        )
+        handle_bounce(address, envelope, contact, alias, msg, smtp, user, mailbox_email)
         return "550 ignored"
 
     # only mailbox can send email to the reply-email
@@ -435,21 +433,21 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             reply_email,
         )
 
-        user = gen_email.user
+        user = alias.user
         send_email(
             mailbox_email,
-            f"Reply from your alias {alias} only works from your mailbox",
+            f"Reply from your alias {address} only works from your mailbox",
             render(
                 "transactional/reply-must-use-personal-email.txt",
                 name=user.name,
-                alias=alias,
+                alias=address,
                 sender=envelope.mail_from,
                 mailbox_email=mailbox_email,
             ),
             render(
                 "transactional/reply-must-use-personal-email.html",
                 name=user.name,
-                alias=alias,
+                alias=address,
                 sender=envelope.mail_from,
                 mailbox_email=mailbox_email,
             ),
@@ -472,7 +470,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     delete_header(msg, "DKIM-Signature")
 
     # the email comes from alias
-    add_or_replace_header(msg, "From", alias)
+    add_or_replace_header(msg, "From", address)
 
     # some email providers like ProtonMail adds automatically the Reply-To field
     # make sure to delete it
@@ -493,7 +491,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 
     LOG.d(
         "send email from %s to %s, mail_options:%s,rcpt_options:%s",
-        alias,
+        address,
         contact.website_email,
         envelope.mail_options,
         envelope.rcpt_options,
@@ -509,7 +507,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 
     msg_raw = msg.as_string().encode()
     smtp.sendmail(
-        alias,
+        address,
         contact.website_email,
         msg_raw,
         envelope.mail_options,
@@ -522,12 +520,12 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     return "250 Message accepted for delivery"
 
 
-def handle_bounce(alias, envelope, contact, gen_email, msg, smtp, user, mailbox_email):
+def handle_bounce(address, envelope, contact, alias, msg, smtp, user, mailbox_email):
     fel: EmailLog = EmailLog.create(contact_id=contact.id, bounced=True)
     db.session.commit()
 
     nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
-    disable_alias_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
+    disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
     # Store the bounced email
     orig_msg = get_orig_message_from_bounce(msg)
@@ -560,12 +558,12 @@ def handle_bounce(alias, envelope, contact, gen_email, msg, smtp, user, mailbox_
             "Inform user %s about bounced email sent by %s to alias %s",
             user,
             contact.website_from,
-            alias,
+            address,
         )
         send_email(
             # use user mail here as only user is authenticated to see the refused email
             user.email,
-            f"Email from {contact.website_from} to {alias} cannot be delivered to your inbox",
+            f"Email from {contact.website_from} to {address} cannot be delivered to your inbox",
             render(
                 "transactional/bounced-email.txt",
                 name=user.name,
@@ -593,16 +591,16 @@ def handle_bounce(alias, envelope, contact, gen_email, msg, smtp, user, mailbox_
     elif nb_bounced >= 2:
         LOG.d(
             "Bounce happens again with alias %s from %s. Disable alias now ",
-            alias,
+            address,
             contact.website_from,
         )
-        gen_email.enabled = False
+        alias.enabled = False
         db.session.commit()
 
         send_email(
             # use user mail here as only user is authenticated to see the refused email
             user.email,
-            f"Alias {alias} has been disabled due to second undelivered email from {contact.website_from}",
+            f"Alias {address} has been disabled due to second undelivered email from {contact.website_from}",
             render(
                 "transactional/automatic-disable-alias.txt",
                 name=user.name,

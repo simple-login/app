@@ -13,7 +13,7 @@ from app.dashboard.views.index import get_alias_info, AliasInfo
 from app.extensions import db
 from app.log import LOG
 from app.models import EmailLog
-from app.models import GenEmail, Contact
+from app.models import Alias, Contact
 from app.utils import random_string
 
 
@@ -43,23 +43,23 @@ def get_aliases():
     except (ValueError, TypeError):
         return jsonify(error="page_id must be provided in request query"), 400
 
-    aliases: [AliasInfo] = get_alias_info(user, page_id=page_id)
+    alias_infos: [AliasInfo] = get_alias_info(user, page_id=page_id)
 
     return (
         jsonify(
             aliases=[
                 {
-                    "id": alias.id,
-                    "email": alias.gen_email.email,
-                    "creation_date": alias.gen_email.created_at.format(),
-                    "creation_timestamp": alias.gen_email.created_at.timestamp,
-                    "nb_forward": alias.nb_forward,
-                    "nb_block": alias.nb_blocked,
-                    "nb_reply": alias.nb_reply,
-                    "enabled": alias.gen_email.enabled,
-                    "note": alias.note,
+                    "id": alias_info.id,
+                    "email": alias_info.alias.email,
+                    "creation_date": alias_info.alias.created_at.format(),
+                    "creation_timestamp": alias_info.alias.created_at.timestamp,
+                    "nb_forward": alias_info.nb_forward,
+                    "nb_block": alias_info.nb_blocked,
+                    "nb_reply": alias_info.nb_reply,
+                    "enabled": alias_info.alias.enabled,
+                    "note": alias_info.note,
                 }
-                for alias in aliases
+                for alias_info in alias_infos
             ]
         ),
         200,
@@ -79,12 +79,12 @@ def delete_alias(alias_id):
 
     """
     user = g.user
-    gen_email = GenEmail.get(alias_id)
+    alias = Alias.get(alias_id)
 
-    if gen_email.user_id != user.id:
+    if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    GenEmail.delete(alias_id)
+    Alias.delete(alias_id)
     db.session.commit()
 
     return jsonify(deleted=True), 200
@@ -105,15 +105,15 @@ def toggle_alias(alias_id):
 
     """
     user = g.user
-    gen_email: GenEmail = GenEmail.get(alias_id)
+    alias: Alias = Alias.get(alias_id)
 
-    if gen_email.user_id != user.id:
+    if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    gen_email.enabled = not gen_email.enabled
+    alias.enabled = not alias.enabled
     db.session.commit()
 
-    return jsonify(enabled=gen_email.enabled), 200
+    return jsonify(enabled=alias.enabled), 200
 
 
 @api_bp.route("/aliases/<int:alias_id>/activities")
@@ -138,12 +138,12 @@ def get_alias_activities(alias_id):
     except (ValueError, TypeError):
         return jsonify(error="page_id must be provided in request query"), 400
 
-    gen_email: GenEmail = GenEmail.get(alias_id)
+    alias: Alias = Alias.get(alias_id)
 
-    if gen_email.user_id != user.id:
+    if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    alias_logs = get_alias_log(gen_email, page_id)
+    alias_logs = get_alias_log(alias, page_id)
 
     activities = []
     for alias_log in alias_logs:
@@ -187,13 +187,13 @@ def update_alias(alias_id):
         return jsonify(error="request body cannot be empty"), 400
 
     user = g.user
-    gen_email: GenEmail = GenEmail.get(alias_id)
+    alias: Alias = Alias.get(alias_id)
 
-    if gen_email.user_id != user.id:
+    if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
     new_note = data.get("note")
-    gen_email.note = new_note
+    alias.note = new_note
     db.session.commit()
 
     return jsonify(note=new_note), 200
@@ -218,9 +218,9 @@ def serialize_contact(fe: Contact) -> dict:
     return res
 
 
-def get_alias_contacts(gen_email, page_id: int) -> [dict]:
+def get_alias_contacts(alias, page_id: int) -> [dict]:
     q = (
-        Contact.query.filter_by(gen_email_id=gen_email.id)
+        Contact.query.filter_by(gen_email_id=alias.id)
         .order_by(Contact.id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_id * PAGE_LIMIT)
@@ -257,12 +257,12 @@ def get_alias_contacts_route(alias_id):
     except (ValueError, TypeError):
         return jsonify(error="page_id must be provided in request query"), 400
 
-    gen_email: GenEmail = GenEmail.get(alias_id)
+    alias: Alias = Alias.get(alias_id)
 
-    if gen_email.user_id != user.id:
+    if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    contacts = get_alias_contacts(gen_email, page_id)
+    contacts = get_alias_contacts(alias, page_id)
 
     return jsonify(contacts=contacts), 200
 
@@ -287,9 +287,9 @@ def create_contact_route(alias_id):
         return jsonify(error="request body cannot be empty"), 400
 
     user = g.user
-    gen_email: GenEmail = GenEmail.get(alias_id)
+    alias: Alias = Alias.get(alias_id)
 
-    if gen_email.user_id != user.id:
+    if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
     contact_email = data.get("contact")
@@ -305,17 +305,17 @@ def create_contact_route(alias_id):
     _, website_email = parseaddr(contact_email)
 
     # already been added
-    if Contact.get_by(gen_email_id=gen_email.id, website_email=website_email):
+    if Contact.get_by(gen_email_id=alias.id, website_email=website_email):
         return jsonify(error="Contact already added"), 409
 
     contact = Contact.create(
-        gen_email_id=gen_email.id,
+        gen_email_id=alias.id,
         website_email=website_email,
         website_from=contact_email,
         reply_email=reply_email,
     )
 
-    LOG.d("create reverse-alias for %s %s", contact_email, gen_email)
+    LOG.d("create reverse-alias for %s %s", contact_email, alias)
     db.session.commit()
 
     return jsonify(**serialize_contact(contact)), 201

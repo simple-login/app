@@ -31,7 +31,7 @@
     {% for fel in fels %}
       {% set refused_email = fel.refused_email %}
       {% set forward = fel.forward %}
-      {% set gen_email = forward.gen_email %}
+      {% set alias = forward.alias %}
 
       <div class="card p-4 shadow-sm {% if fel.id == highlight_fel_id %} highlight-row {% endif %}">
         <div class="small-text">
@@ -41,8 +41,8 @@
         From: {{ forward.website_from or forward.website_email }} <br>
 
         <span>
-          To: {{ gen_email.email }}
-          <a href='{{ url_for("dashboard.index", highlight_gen_email_id=gen_email.id) }}'
+          To: {{ alias.email }}
+          <a href='{{ url_for("dashboard.index", highlight_alias_id=alias.id) }}'
              class="btn btn-sm btn-outline-danger">Disable Alias</a>
         </span>
 

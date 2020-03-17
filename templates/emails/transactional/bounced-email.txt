@@ -1,6 +1,6 @@
 Hi {{name}}
 
-An email sent to your alias {{alias}} from {{website_from}} was refused (or bounced) by your mailbox {{mailbox_email}}.
+An email sent to your alias {{alias.email}} from {{website_from}} was refused (or bounced) by your mailbox {{mailbox_email}}.
 
 This is usually due to the email being considered as spam by your email provider.
 You can view this email here:

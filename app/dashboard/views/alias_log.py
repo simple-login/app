@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
-from app.models import GenEmail, EmailLog, Contact
+from app.models import Alias, EmailLog, Contact
 
 
 class AliasLog:
@@ -29,22 +29,22 @@ class AliasLog:
 @dashboard_bp.route("/alias_log/<int:alias_id>/<int:page_id>")
 @login_required
 def alias_log(alias_id, page_id):
-    gen_email = GenEmail.get(alias_id)
+    alias = Alias.get(alias_id)
 
     # sanity check
-    if not gen_email:
+    if not alias:
         flash("You do not have access to this page", "warning")
         return redirect(url_for("dashboard.index"))
 
-    if gen_email.user_id != current_user.id:
+    if alias.user_id != current_user.id:
         flash("You do not have access to this page", "warning")
         return redirect(url_for("dashboard.index"))
 
-    logs = get_alias_log(gen_email, page_id)
+    logs = get_alias_log(alias, page_id)
     base = (
         db.session.query(Contact, EmailLog)
         .filter(Contact.id == EmailLog.contact_id)
-        .filter(Contact.gen_email_id == gen_email.id)
+        .filter(Contact.gen_email_id == alias.id)
     )
     total = base.count()
     email_forwarded = (
@@ -61,14 +61,14 @@ def alias_log(alias_id, page_id):
     return render_template("dashboard/alias_log.html", **locals())
 
 
-def get_alias_log(gen_email: GenEmail, page_id=0):
+def get_alias_log(alias: Alias, page_id=0):
     logs: [AliasLog] = []
-    mailbox = gen_email.mailbox_email()
+    mailbox = alias.mailbox_email()
 
     q = (
         db.session.query(Contact, EmailLog)
         .filter(Contact.id == EmailLog.contact_id)
-        .filter(Contact.gen_email_id == gen_email.id)
+        .filter(Contact.gen_email_id == alias.id)
         .order_by(EmailLog.id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_id * PAGE_LIMIT)
@@ -78,7 +78,7 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
         al = AliasLog(
             website_email=fe.website_email,
             website_from=fe.website_from,
-            alias=gen_email.email,
+            alias=alias.email,
             when=fel.created_at,
             is_reply=fel.is_reply,
             blocked=fel.blocked,
