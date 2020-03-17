@@ -9,7 +9,7 @@ from app.api.base import api_bp, verify_api_key
 from app.config import EMAIL_DOMAIN
 from app.config import PAGE_LIMIT
 from app.dashboard.views.alias_log import get_alias_log
-from app.dashboard.views.index import get_alias_info, AliasInfo
+from app.dashboard.views.index import get_alias_infos, AliasInfo
 from app.extensions import db
 from app.log import LOG
 from app.models import EmailLog
@@ -48,7 +48,7 @@ def get_aliases():
     if data:
         query = data.get("query")
 
-    alias_infos: [AliasInfo] = get_alias_info(user, page_id=page_id, query=query)
+    alias_infos: [AliasInfo] = get_alias_infos(user, page_id=page_id, query=query)
 
     return (
         jsonify(
