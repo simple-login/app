@@ -2,7 +2,7 @@ from flask import url_for
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
-from app.models import User, ApiKey, GenEmail
+from app.models import User, ApiKey, Alias
 from app.utils import random_word
 
 
@@ -31,7 +31,7 @@ def test_success(flask_client):
     assert r.status_code == 201
     assert r.json["alias"] == f"prefix.{word}@{EMAIL_DOMAIN}"
 
-    new_ge = GenEmail.get_by(email=r.json["alias"])
+    new_ge = Alias.get_by(email=r.json["alias"])
     assert new_ge.note == "test note"
 
 
@@ -56,7 +56,7 @@ def test_create_custom_alias_without_note(flask_client):
     assert r.status_code == 201
     assert r.json["alias"] == f"prefix.{word}@{EMAIL_DOMAIN}"
 
-    new_ge = GenEmail.get_by(email=r.json["alias"])
+    new_ge = Alias.get_by(email=r.json["alias"])
     assert new_ge.note is None
 
 
@@ -73,7 +73,7 @@ def test_out_of_quota(flask_client):
 
     # create MAX_NB_EMAIL_FREE_PLAN custom alias to run out of quota
     for _ in range(MAX_NB_EMAIL_FREE_PLAN):
-        GenEmail.create_new(user, prefix="test")
+        Alias.create_new(user, prefix="test")
 
     word = random_word()
     r = flask_client.post(

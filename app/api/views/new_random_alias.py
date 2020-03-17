@@ -6,7 +6,7 @@ from app.api.base import api_bp, verify_api_key
 from app.config import MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, AliasUsedOn, AliasGeneratorEnum
+from app.models import Alias, AliasUsedOn, AliasGeneratorEnum
 
 
 @api_bp.route("/alias/random/new", methods=["POST"])
@@ -47,12 +47,12 @@ def new_random_alias():
         else:
             return jsonify(error=f"{mode} must be either word or alias"), 400
 
-    gen_email = GenEmail.create_new_random(user=user, scheme=scheme, note=note)
+    alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
     db.session.commit()
 
     hostname = request.args.get("hostname")
     if hostname:
-        AliasUsedOn.create(gen_email_id=gen_email.id, hostname=hostname)
+        AliasUsedOn.create(gen_email_id=alias.id, hostname=hostname)
         db.session.commit()
 
-    return jsonify(alias=gen_email.email), 201
+    return jsonify(alias=alias.email), 201

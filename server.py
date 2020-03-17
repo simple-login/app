@@ -40,7 +40,7 @@ from app.models import (
     Client,
     User,
     ClientUser,
-    GenEmail,
+    Alias,
     RedirectUri,
     Subscription,
     PlanEnum,
@@ -161,7 +161,7 @@ def fake_data():
 
     user.default_mailbox_id = m1.id
 
-    GenEmail.create_new(user, "e1@", mailbox_id=m1.id)
+    Alias.create_new(user, "e1@", mailbox_id=m1.id)
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(
@@ -428,7 +428,7 @@ def init_admin(app):
     admin.init_app(app, index_view=SLAdminIndexView())
     admin.add_view(SLModelView(User, db.session))
     admin.add_view(SLModelView(Client, db.session))
-    admin.add_view(SLModelView(GenEmail, db.session))
+    admin.add_view(SLModelView(Alias, db.session))
     admin.add_view(SLModelView(ClientUser, db.session))
 
 

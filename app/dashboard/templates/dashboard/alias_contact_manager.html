@@ -9,7 +9,7 @@
 {% block default_content %}
   <div class="page-header row">
     <h3 class="page-title col">
-      {{ alias }}
+      {{ alias.email }}
     </h3>
   </div>
 
@@ -26,8 +26,8 @@
       This might sound complicated but trust us, only the first time is a bit awkward.
     </p>
     <p>
-      {% if gen_email.mailbox_id %}
-        Make sure you send the email from the mailbox <b>{{ gen_email.mailbox.email }}</b>.
+      {% if alias.mailbox_id %}
+        Make sure you send the email from the mailbox <b>{{ alias.mailbox.email }}</b>.
         This is because only the mailbox that owns the alias can send emails from it.
       {% else %}
         Make sure you send the email from your personal email address ({{ current_user.email }}).

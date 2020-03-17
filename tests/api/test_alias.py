@@ -4,7 +4,7 @@ from flask import url_for
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, PAGE_LIMIT
 from app.extensions import db
-from app.models import User, ApiKey, GenEmail, Contact, EmailLog
+from app.models import User, ApiKey, Alias, Contact, EmailLog
 from app.utils import random_word
 
 
@@ -38,7 +38,7 @@ def test_success_with_pagination(flask_client):
 
     # create more aliases than PAGE_LIMIT
     for _ in range(PAGE_LIMIT + 1):
-        GenEmail.create_new_random(user)
+        Alias.create_new_random(user)
     db.session.commit()
 
     # get aliases on the 1st page, should return PAGE_LIMIT aliases
@@ -80,11 +80,11 @@ def test_delete_alias(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user)
+    alias = Alias.create_new_random(user)
     db.session.commit()
 
     r = flask_client.delete(
-        url_for("api.delete_alias", alias_id=gen_email.id),
+        url_for("api.delete_alias", alias_id=alias.id),
         headers={"Authentication": api_key.code},
     )
 
@@ -102,11 +102,11 @@ def test_toggle_alias(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user)
+    alias = Alias.create_new_random(user)
     db.session.commit()
 
     r = flask_client.post(
-        url_for("api.toggle_alias", alias_id=gen_email.id),
+        url_for("api.toggle_alias", alias_id=alias.id),
         headers={"Authentication": api_key.code},
     )
 
@@ -124,14 +124,14 @@ def test_alias_activities(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user)
+    alias = Alias.create_new_random(user)
     db.session.commit()
 
     # create some alias log
     contact = Contact.create(
         website_email="marketing@example.com",
         reply_email="reply@a.b",
-        gen_email_id=gen_email.id,
+        gen_email_id=alias.id,
     )
     db.session.commit()
 
@@ -142,7 +142,7 @@ def test_alias_activities(flask_client):
         EmailLog.create(contact_id=contact.id, blocked=True)
 
     r = flask_client.get(
-        url_for("api.get_alias_activities", alias_id=gen_email.id, page_id=0),
+        url_for("api.get_alias_activities", alias_id=alias.id, page_id=0),
         headers={"Authentication": api_key.code},
     )
 
@@ -156,7 +156,7 @@ def test_alias_activities(flask_client):
 
     # second page, should return 1 or 2 results only
     r = flask_client.get(
-        url_for("api.get_alias_activities", alias_id=gen_email.id, page_id=1),
+        url_for("api.get_alias_activities", alias_id=alias.id, page_id=1),
         headers={"Authentication": api_key.code},
     )
     assert len(r.json["activities"]) < 3
@@ -172,11 +172,11 @@ def test_update_alias(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user)
+    alias = Alias.create_new_random(user)
     db.session.commit()
 
     r = flask_client.put(
-        url_for("api.update_alias", alias_id=gen_email.id),
+        url_for("api.update_alias", alias_id=alias.id),
         headers={"Authentication": api_key.code},
         json={"note": "test note"},
     )
@@ -195,7 +195,7 @@ def test_alias_contacts(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user)
+    alias = Alias.create_new_random(user)
     db.session.commit()
 
     # create some alias log
@@ -203,7 +203,7 @@ def test_alias_contacts(flask_client):
         contact = Contact.create(
             website_email=f"marketing-{i}@example.com",
             reply_email=f"reply-{i}@a.b",
-            gen_email_id=gen_email.id,
+            gen_email_id=alias.id,
         )
         db.session.commit()
 
@@ -211,7 +211,7 @@ def test_alias_contacts(flask_client):
         db.session.commit()
 
     r = flask_client.get(
-        url_for("api.get_alias_contacts_route", alias_id=gen_email.id, page_id=0),
+        url_for("api.get_alias_contacts_route", alias_id=alias.id, page_id=0),
         headers={"Authentication": api_key.code},
     )
 
@@ -227,7 +227,7 @@ def test_alias_contacts(flask_client):
 
     # second page, should return 1 result only
     r = flask_client.get(
-        url_for("api.get_alias_contacts_route", alias_id=gen_email.id, page_id=1),
+        url_for("api.get_alias_contacts_route", alias_id=alias.id, page_id=1),
         headers={"Authentication": api_key.code},
     )
     assert len(r.json["contacts"]) == 1
@@ -243,11 +243,11 @@ def test_create_contact_route(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
-    gen_email = GenEmail.create_new_random(user)
+    alias = Alias.create_new_random(user)
     db.session.commit()
 
     r = flask_client.post(
-        url_for("api.create_contact_route", alias_id=gen_email.id),
+        url_for("api.create_contact_route", alias_id=alias.id),
         headers={"Authentication": api_key.code},
         json={"contact": "First Last <first@example.com>"},
     )
@@ -262,7 +262,7 @@ def test_create_contact_route(flask_client):
 
     # re-add a contact, should return 409
     r = flask_client.post(
-        url_for("api.create_contact_route", alias_id=gen_email.id),
+        url_for("api.create_contact_route", alias_id=alias.id),
         headers={"Authentication": api_key.code},
         json={"contact": "First2 Last2 <first@example.com>"},
     )

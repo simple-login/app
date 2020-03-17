@@ -10,7 +10,7 @@ from app.config import EMAIL_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, Contact
+from app.models import Alias, Contact
 from app.utils import random_string
 
 
@@ -51,14 +51,14 @@ class NewContactForm(FlaskForm):
 )
 @login_required
 def alias_contact_manager(alias_id, contact_id=None):
-    gen_email = GenEmail.get(alias_id)
+    alias = Alias.get(alias_id)
 
     # sanity check
-    if not gen_email:
+    if not alias:
         flash("You do not have access to this page", "warning")
         return redirect(url_for("dashboard.index"))
 
-    if gen_email.user_id != current_user.id:
+    if alias.user_id != current_user.id:
         flash("You do not have access to this page", "warning")
         return redirect(url_for("dashboard.index"))
 
@@ -80,16 +80,14 @@ def alias_contact_manager(alias_id, contact_id=None):
                 _, website_email = parseaddr(contact_email)
 
                 # already been added
-                if Contact.get_by(
-                    gen_email_id=gen_email.id, website_email=website_email
-                ):
+                if Contact.get_by(gen_email_id=alias.id, website_email=website_email):
                     flash(f"{website_email} is already added", "error")
                     return redirect(
                         url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                     )
 
                 contact = Contact.create(
-                    gen_email_id=gen_email.id,
+                    gen_email_id=alias.id,
                     website_email=website_email,
                     website_from=contact_email,
                     reply_email=reply_email,
@@ -115,7 +113,7 @@ def alias_contact_manager(alias_id, contact_id=None):
                 return redirect(
                     url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                 )
-            elif contact.gen_email_id != gen_email.id:
+            elif contact.gen_email_id != alias.id:
                 flash("You cannot delete reverse-alias", "warning")
                 return redirect(
                     url_for("dashboard.alias_contact_manager", alias_id=alias_id)
@@ -132,7 +130,7 @@ def alias_contact_manager(alias_id, contact_id=None):
             )
 
     # make sure highlighted contact is at array start
-    contacts = gen_email.contacts
+    contacts = alias.contacts
 
     if contact_id:
         contacts = sorted(contacts, key=lambda fe: fe.id == contact_id, reverse=True)
@@ -140,8 +138,7 @@ def alias_contact_manager(alias_id, contact_id=None):
     return render_template(
         "dashboard/alias_contact_manager.html",
         contacts=contacts,
-        alias=gen_email.email,
-        gen_email=gen_email,
+        alias=alias,
         new_contact_form=new_contact_form,
         contact_id=contact_id,
     )

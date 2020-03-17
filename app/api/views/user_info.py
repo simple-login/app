@@ -6,7 +6,7 @@ from app.api.base import api_bp, verify_api_key
 from app.config import EMAIL_DOMAIN
 from app.extensions import db
 from app.log import LOG
-from app.models import AliasUsedOn, GenEmail, User
+from app.models import AliasUsedOn, Alias, User
 from app.utils import convert_to_id, random_word
 
 

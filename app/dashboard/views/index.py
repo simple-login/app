@@ -10,7 +10,7 @@ from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
 from app.models import (
-    GenEmail,
+    Alias,
     ClientUser,
     Contact,
     EmailLog,
@@ -22,7 +22,7 @@ from app.models import (
 
 class AliasInfo:
     id: int
-    gen_email: GenEmail
+    alias: Alias
     mailbox: Mailbox
     nb_forward: int
     nb_blocked: int
@@ -41,21 +41,21 @@ class AliasInfo:
 @login_required
 def index():
     query = request.args.get("query") or ""
-    highlight_gen_email_id = None
-    if request.args.get("highlight_gen_email_id"):
-        highlight_gen_email_id = int(request.args.get("highlight_gen_email_id"))
+    highlight_alias_id = None
+    if request.args.get("highlight_alias_id"):
+        highlight_alias_id = int(request.args.get("highlight_alias_id"))
 
     # User generates a new email
     if request.method == "POST":
         if request.form.get("form-name") == "trigger-email":
-            gen_email_id = request.form.get("gen-email-id")
-            gen_email = GenEmail.get(gen_email_id)
+            alias_id = request.form.get("alias-id")
+            alias = Alias.get(alias_id)
 
-            LOG.d("trigger an email to %s", gen_email)
-            email_utils.send_test_email_alias(gen_email.email, gen_email.user.name)
+            LOG.d("trigger an email to %s", alias)
+            email_utils.send_test_email_alias(alias.email, alias.user.name)
 
             flash(
-                f"An email sent to {gen_email.email} is on its way, please check your inbox/spam folder",
+                f"An email sent to {alias.email} is on its way, please check your inbox/spam folder",
                 "success",
             )
 
@@ -72,51 +72,47 @@ def index():
                 )
                 if not scheme or not AliasGeneratorEnum.has_value(scheme):
                     scheme = current_user.alias_generator
-                gen_email = GenEmail.create_new_random(user=current_user, scheme=scheme)
+                alias = Alias.create_new_random(user=current_user, scheme=scheme)
 
-                gen_email.mailbox_id = current_user.default_mailbox_id
+                alias.mailbox_id = current_user.default_mailbox_id
 
                 db.session.commit()
 
-                LOG.d("generate new email %s for user %s", gen_email, current_user)
-                flash(f"Alias {gen_email.email} has been created", "success")
+                LOG.d("generate new email %s for user %s", alias, current_user)
+                flash(f"Alias {alias.email} has been created", "success")
 
                 return redirect(
                     url_for(
-                        "dashboard.index",
-                        highlight_gen_email_id=gen_email.id,
-                        query=query,
+                        "dashboard.index", highlight_alias_id=alias.id, query=query,
                     )
                 )
             else:
                 flash(f"You need to upgrade your plan to create new alias.", "warning")
 
         elif request.form.get("form-name") == "switch-email-forwarding":
-            gen_email_id = request.form.get("gen-email-id")
-            gen_email: GenEmail = GenEmail.get(gen_email_id)
+            alias_id = request.form.get("alias-id")
+            alias: Alias = Alias.get(alias_id)
 
-            LOG.d("switch email forwarding for %s", gen_email)
+            LOG.d("switch email forwarding for %s", alias)
 
-            gen_email.enabled = not gen_email.enabled
-            if gen_email.enabled:
-                flash(f"Alias {gen_email.email} is enabled", "success")
+            alias.enabled = not alias.enabled
+            if alias.enabled:
+                flash(f"Alias {alias.email} is enabled", "success")
             else:
-                flash(f"Alias {gen_email.email} is disabled", "warning")
+                flash(f"Alias {alias.email} is disabled", "warning")
 
             db.session.commit()
             return redirect(
-                url_for(
-                    "dashboard.index", highlight_gen_email_id=gen_email.id, query=query
-                )
+                url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
             )
 
         elif request.form.get("form-name") == "delete-email":
-            gen_email_id = request.form.get("gen-email-id")
-            gen_email: GenEmail = GenEmail.get(gen_email_id)
+            alias_id = request.form.get("alias-id")
+            alias: Alias = Alias.get(alias_id)
 
-            LOG.d("delete gen email %s", gen_email)
-            email = gen_email.email
-            GenEmail.delete(gen_email.id)
+            LOG.d("delete gen email %s", alias)
+            email = alias.email
+            Alias.delete(alias.id)
             db.session.commit()
             flash(f"Alias {email} has been deleted", "success")
 
@@ -130,42 +126,37 @@ def index():
                 db.session.rollback()
 
         elif request.form.get("form-name") == "set-note":
-            gen_email_id = request.form.get("gen-email-id")
-            gen_email: GenEmail = GenEmail.get(gen_email_id)
+            alias_id = request.form.get("alias-id")
+            alias: Alias = Alias.get(alias_id)
             note = request.form.get("note")
 
-            gen_email.note = note
+            alias.note = note
             db.session.commit()
 
-            flash(f"Update note for alias {gen_email.email}", "success")
+            flash(f"Update note for alias {alias.email}", "success")
             return redirect(
-                url_for(
-                    "dashboard.index", highlight_gen_email_id=gen_email.id, query=query
-                )
+                url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
             )
 
         elif request.form.get("form-name") == "set-mailbox":
-            gen_email_id = request.form.get("gen-email-id")
-            gen_email: GenEmail = GenEmail.get(gen_email_id)
+            alias_id = request.form.get("alias-id")
+            alias: Alias = Alias.get(alias_id)
             mailbox_email = request.form.get("mailbox")
 
             mailbox = Mailbox.get_by(email=mailbox_email)
             if not mailbox or mailbox.user_id != current_user.id:
                 flash("Something went wrong, please retry", "warning")
             else:
-                gen_email.mailbox_id = mailbox.id
+                alias.mailbox_id = mailbox.id
                 db.session.commit()
-                LOG.d("Set alias %s mailbox to %s", gen_email, mailbox)
+                LOG.d("Set alias %s mailbox to %s", alias, mailbox)
 
                 flash(
-                    f"Update mailbox for {gen_email.email} to {mailbox_email}",
-                    "success",
+                    f"Update mailbox for {alias.email} to {mailbox_email}", "success",
                 )
                 return redirect(
                     url_for(
-                        "dashboard.index",
-                        highlight_gen_email_id=gen_email.id,
-                        query=query,
+                        "dashboard.index", highlight_alias_id=alias.id, query=query,
                     )
                 )
 
@@ -174,7 +165,7 @@ def index():
     client_users = (
         ClientUser.filter_by(user_id=current_user.id)
         .options(joinedload(ClientUser.client))
-        .options(joinedload(ClientUser.gen_email))
+        .options(joinedload(ClientUser.alias))
         .all()
     )
 
@@ -185,8 +176,8 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        aliases=get_alias_info(current_user, query, highlight_gen_email_id),
-        highlight_gen_email_id=highlight_gen_email_id,
+        aliases=get_alias_info(current_user, query, highlight_alias_id),
+        highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
         mailboxes=mailboxes,
@@ -194,7 +185,7 @@ def index():
 
 
 def get_alias_info(
-    user, query=None, highlight_gen_email_id=None, page_id=None
+    user, query=None, highlight_alias_id=None, page_id=None
 ) -> [AliasInfo]:
     if query:
         query = query.strip().lower()
@@ -202,17 +193,17 @@ def get_alias_info(
     aliases = {}  # dict of alias and AliasInfo
 
     q = (
-        db.session.query(GenEmail, Contact, EmailLog, Mailbox)
-        .join(Contact, GenEmail.id == Contact.gen_email_id, isouter=True)
+        db.session.query(Alias, Contact, EmailLog, Mailbox)
+        .join(Contact, Alias.id == Contact.gen_email_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
-        .join(Mailbox, GenEmail.mailbox_id == Mailbox.id, isouter=True)
-        .filter(GenEmail.user_id == user.id)
-        .order_by(GenEmail.created_at.desc())
+        .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
+        .filter(Alias.user_id == user.id)
+        .order_by(Alias.created_at.desc())
     )
 
     if query:
         q = q.filter(
-            or_(GenEmail.email.ilike(f"%{query}%"), GenEmail.note.ilike(f"%{query}%"))
+            or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
         )
 
     # pagination activated
@@ -223,11 +214,11 @@ def get_alias_info(
         if ge.email not in aliases:
             aliases[ge.email] = AliasInfo(
                 id=ge.id,
-                gen_email=ge,
+                alias=ge,
                 nb_blocked=0,
                 nb_forward=0,
                 nb_reply=0,
-                highlight=ge.id == highlight_gen_email_id,
+                highlight=ge.id == highlight_alias_id,
                 mailbox=mb,
                 note=ge.note,
             )
@@ -257,7 +248,7 @@ def get_alias_info(
 
     # only show intro on the first enabled alias
     for alias in ret:
-        if alias.gen_email.enabled:
+        if alias.alias.enabled:
             alias.show_intro_test_send_email = True
             break
 

@@ -7,7 +7,7 @@ from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_DOMAINS
 from app.dashboard.views.custom_alias import verify_prefix_suffix
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, AliasUsedOn, User, CustomDomain
+from app.models import Alias, AliasUsedOn, User, CustomDomain
 from app.utils import convert_to_id
 
 
@@ -54,11 +54,11 @@ def new_custom_alias():
         return jsonify(error="wrong alias prefix or suffix"), 400
 
     full_alias = alias_prefix + alias_suffix
-    if GenEmail.get_by(email=full_alias):
+    if Alias.get_by(email=full_alias):
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
-    gen_email = GenEmail.create(
+    alias = Alias.create(
         user_id=user.id, email=full_alias, mailbox_id=user.default_mailbox_id, note=note
     )
 
@@ -67,12 +67,12 @@ def new_custom_alias():
         if alias_domain not in ALIAS_DOMAINS:
             domain = CustomDomain.get_by(domain=alias_domain)
             LOG.d("set alias %s to domain %s", full_alias, domain)
-            gen_email.custom_domain_id = domain.id
+            alias.custom_domain_id = domain.id
 
     db.session.commit()
 
     if hostname:
-        AliasUsedOn.create(gen_email_id=gen_email.id, hostname=hostname)
+        AliasUsedOn.create(gen_email_id=alias.id, hostname=hostname)
         db.session.commit()
 
     return jsonify(alias=full_alias), 201

@@ -7,18 +7,18 @@ from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
-from app.models import GenEmail
+from app.models import Alias
 
 
-@dashboard_bp.route("/unsubscribe/<gen_email_id>", methods=["GET", "POST"])
+@dashboard_bp.route("/unsubscribe/<alias_id>", methods=["GET", "POST"])
 @login_required
-def unsubscribe(gen_email_id):
-    gen_email = GenEmail.get(gen_email_id)
-    if not gen_email:
+def unsubscribe(alias_id):
+    alias = Alias.get(alias_id)
+    if not alias:
         flash("Incorrect link. Redirect you to the home page", "warning")
         return redirect(url_for("dashboard.index"))
 
-    if gen_email.user_id != current_user.id:
+    if alias.user_id != current_user.id:
         flash(
             "You don't have access to this page. Redirect you to the home page",
             "warning",
@@ -27,10 +27,10 @@ def unsubscribe(gen_email_id):
 
     # automatic unsubscribe, according to https://tools.ietf.org/html/rfc8058
     if request.method == "POST":
-        gen_email.enabled = False
-        flash(f"Alias {gen_email.email} has been blocked", "success")
+        alias.enabled = False
+        flash(f"Alias {alias.email} has been blocked", "success")
         db.session.commit()
 
-        return redirect(url_for("dashboard.index", highlight_gen_email_id=gen_email.id))
+        return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))
     else:  # ask user confirmation
-        return render_template("dashboard/unsubscribe.html", alias=gen_email.email)
+        return render_template("dashboard/unsubscribe.html", alias=alias.email)

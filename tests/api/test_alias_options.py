@@ -1,7 +1,7 @@
 from flask import url_for
 
 from app.extensions import db
-from app.models import User, ApiKey, AliasUsedOn, GenEmail
+from app.models import User, ApiKey, AliasUsedOn, Alias
 
 
 def test_different_scenarios(flask_client):
@@ -40,7 +40,7 @@ def test_different_scenarios(flask_client):
     assert r.json["custom"]["suggestion"] == "test"
 
     # <<< with recommendation >>>
-    alias = GenEmail.create_new(user, prefix="test")
+    alias = Alias.create_new(user, prefix="test")
     db.session.commit()
     AliasUsedOn.create(gen_email_id=alias.id, hostname="www.test.com")
     db.session.commit()
@@ -85,7 +85,7 @@ def test_different_scenarios_v2(flask_client):
     assert r.json["prefix_suggestion"] == "test"
 
     # <<< with recommendation >>>
-    alias = GenEmail.create_new(user, prefix="test")
+    alias = Alias.create_new(user, prefix="test")
     db.session.commit()
     AliasUsedOn.create(gen_email_id=alias.id, hostname="www.test.com")
     db.session.commit()

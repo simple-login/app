@@ -25,7 +25,7 @@ docker exec -it sl-app python shell.py
 """
 from app.extensions import db
 from app.log import LOG
-from app.models import Mailbox, GenEmail, User
+from app.models import Mailbox, Alias, User
 
 for user in User.query.all():
     if user.default_mailbox_id:
@@ -40,7 +40,7 @@ for user in User.query.all():
         db.session.commit()
 
     # assign existing alias to this mailbox
-    for gen_email in GenEmail.query.filter_by(user_id=user.id):
+    for gen_email in Alias.query.filter_by(user_id=user.id):
         if not gen_email.mailbox_id:
             LOG.d("Set alias  %s mailbox to default mailbox", gen_email)
             gen_email.mailbox_id = default_mb.id
