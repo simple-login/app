@@ -4,7 +4,7 @@ from flask import url_for
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, PAGE_LIMIT
 from app.extensions import db
-from app.models import User, ApiKey, GenEmail, Contact, ForwardEmailLog
+from app.models import User, ApiKey, GenEmail, Contact, EmailLog
 from app.utils import random_word
 
 
@@ -136,10 +136,10 @@ def test_alias_activities(flask_client):
     db.session.commit()
 
     for _ in range(int(PAGE_LIMIT / 2)):
-        ForwardEmailLog.create(contact_id=contact.id, is_reply=True)
+        EmailLog.create(contact_id=contact.id, is_reply=True)
 
     for _ in range(int(PAGE_LIMIT / 2) + 2):
-        ForwardEmailLog.create(contact_id=contact.id, blocked=True)
+        EmailLog.create(contact_id=contact.id, blocked=True)
 
     r = flask_client.get(
         url_for("api.get_alias_activities", alias_id=gen_email.id, page_id=0),
@@ -207,7 +207,7 @@ def test_alias_contacts(flask_client):
         )
         db.session.commit()
 
-        ForwardEmailLog.create(contact_id=contact.id, is_reply=True)
+        EmailLog.create(contact_id=contact.id, is_reply=True)
         db.session.commit()
 
     r = flask_client.get(

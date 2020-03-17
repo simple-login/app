@@ -12,7 +12,7 @@ from app.dashboard.views.alias_log import get_alias_log
 from app.dashboard.views.index import get_alias_info, AliasInfo
 from app.extensions import db
 from app.log import LOG
-from app.models import ForwardEmailLog
+from app.models import EmailLog
 from app.models import GenEmail, Contact
 from app.utils import random_string
 
@@ -210,7 +210,7 @@ def serialize_contact(fe: Contact) -> dict:
         "reverse_alias": fe.website_send_to(),
     }
 
-    fel: ForwardEmailLog = fe.last_reply()
+    fel: EmailLog = fe.last_reply()
     if fel:
         res["last_email_sent_date"] = fel.created_at.format()
         res["last_email_sent_timestamp"] = fel.created_at.timestamp

@@ -11,7 +11,7 @@ from app.models import (
     Subscription,
     User,
     GenEmail,
-    ForwardEmailLog,
+    EmailLog,
     Contact,
     CustomDomain,
     Client,
@@ -119,8 +119,8 @@ def stats():
     LOG.d("total number alias %s", nb_gen_email)
 
     # nb mails forwarded
-    q = db.session.query(ForwardEmailLog, Contact, GenEmail, User).filter(
-        ForwardEmailLog.contact_id == Contact.id,
+    q = db.session.query(EmailLog, Contact, GenEmail, User).filter(
+        EmailLog.contact_id == Contact.id,
         Contact.gen_email_id == GenEmail.id,
         GenEmail.user_id == User.id,
     )
