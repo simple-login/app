@@ -420,13 +420,14 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             alias.user,
         )
 
-        handle_bounce(address, envelope, contact, alias, msg, smtp, user, mailbox_email)
+        handle_bounce(contact, alias, msg, user, mailbox_email)
         return "550 ignored"
 
     # only mailbox can send email to the reply-email
     if envelope.mail_from.lower() != mailbox_email.lower():
         LOG.warning(
-            f"Reply email can only be used by user email. Actual mail_from: %s. msg from header: %s, User email %s. reply_email %s",
+            f"Reply email can only be used by mailbox. "
+            f"Actual mail_from: %s. msg from header: %s, Mailbox %s. reply_email %s",
             envelope.mail_from,
             msg["From"],
             mailbox_email,
@@ -520,7 +521,10 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     return "250 Message accepted for delivery"
 
 
-def handle_bounce(address, envelope, contact, alias, msg, smtp, user, mailbox_email):
+def handle_bounce(
+    contact: Contact, alias: Alias, msg: Message, user: User, mailbox_email: str
+):
+    address = alias.email
     fel: EmailLog = EmailLog.create(contact_id=contact.id, bounced=True)
     db.session.commit()
 
