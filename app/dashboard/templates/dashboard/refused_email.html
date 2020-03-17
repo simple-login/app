@@ -1,20 +1,22 @@
 {% extends 'default.html' %}
 
 {% block title %}
-  Refused Emails
+  Quarantine
 {% endblock %}
 
 {% set active_page = "setting" %}
 
 {% block default_content %}
   <div style="max-width: 60em; margin: auto">
-    <h1 class="h3 mb-5"> Refused Emails </h1>
+    <h1 class="h3 mb-5"> Quarantine </h1>
 
     <div class="alert alert-info">
-      This page shows all emails that have been <b>refused</b> (or bounced) by your mailbox. <br>
-      Usually this is because your mailbox thinks these emails are <b>spams</b>. <br>
-      - If a refused email is indeed spam, this means the alias is now in the hands of a spammer,
+      This page shows all emails that are potentially spams or malicious.
+      Usually these emails have been <b>refused</b> (or bounced) by your mailbox. <br>
+
+      - If an email is indeed spam, this means the alias is now in the hands of a spammer,
       in this case you should <b>disable</b> this alias. <br>
+
       - Otherwise, you should create a <b>filter</b> to avoid your email provider from blocking these emails. <br>
       <a href="mailto:hi@simplelogin.io">Contact us↗</a> if you need any help.
 
@@ -22,23 +24,32 @@
 
     {% if fels|length == 0 %}
       <div class="my-4 p-4 card">
-        You don't have any refused email.
+        You don't have any emails in Quarantine.
       </div>
     {% endif %}
 
     {% for fel in fels %}
       {% set refused_email = fel.refused_email %}
       {% set forward = fel.forward %}
+      {% set gen_email = forward.gen_email %}
 
       <div class="card p-4 shadow-sm {% if fel.id == highlight_fel_id %} highlight-row {% endif %}">
-        From: {{ forward.website_from or forward.website_email }} <br>
-        To: {{ forward.gen_email.email }} <br>
         <div class="small-text">
           Sent {{ refused_email.created_at | dt }}
         </div>
 
+        From: {{ forward.website_from or forward.website_email }} <br>
+
+        <span>
+          To: {{ gen_email.email }}
+          <a href='{{ url_for("dashboard.index", highlight_gen_email_id=gen_email.id) }}'
+             class="btn btn-sm btn-outline-danger">Disable Alias</a>
+        </span>
+
         {% if refused_email.deleted %}
-          Email deleted {{ refused_email.delete_at | dt }}
+          <div>
+            Email deleted {{ refused_email.delete_at | dt }}
+          </div>
         {% else %}
           <a href="{{ refused_email.get_url() }}" download
              class="mt-4">Download →</a>
