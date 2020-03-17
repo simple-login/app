@@ -194,7 +194,7 @@ def get_alias_info(
 
     q = (
         db.session.query(Alias, Contact, EmailLog, Mailbox)
-        .join(Contact, Alias.id == Contact.gen_email_id, isouter=True)
+        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
         .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
         .filter(Alias.user_id == user.id)

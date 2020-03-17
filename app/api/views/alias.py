@@ -220,7 +220,7 @@ def serialize_contact(fe: Contact) -> dict:
 
 def get_alias_contacts(alias, page_id: int) -> [dict]:
     q = (
-        Contact.query.filter_by(gen_email_id=alias.id)
+        Contact.query.filter_by(alias_id=alias.id)
         .order_by(Contact.id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_id * PAGE_LIMIT)
@@ -305,11 +305,11 @@ def create_contact_route(alias_id):
     _, website_email = parseaddr(contact_email)
 
     # already been added
-    if Contact.get_by(gen_email_id=alias.id, website_email=website_email):
+    if Contact.get_by(alias_id=alias.id, website_email=website_email):
         return jsonify(error="Contact already added"), 409
 
     contact = Contact.create(
-        gen_email_id=alias.id,
+        alias_id=alias.id,
         website_email=website_email,
         website_from=contact_email,
         reply_email=reply_email,

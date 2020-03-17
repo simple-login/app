@@ -41,7 +41,7 @@ def options():
         q = (
             db.session.query(AliasUsedOn, Alias, User)
             .filter(
-                AliasUsedOn.gen_email_id == Alias.id,
+                AliasUsedOn.alias_id == Alias.id,
                 Alias.user_id == user.id,
                 AliasUsedOn.hostname == hostname,
             )
@@ -124,7 +124,7 @@ def options_v2():
         q = (
             db.session.query(AliasUsedOn, Alias, User)
             .filter(
-                AliasUsedOn.gen_email_id == Alias.id,
+                AliasUsedOn.alias_id == Alias.id,
                 Alias.user_id == user.id,
                 AliasUsedOn.hostname == hostname,
             )

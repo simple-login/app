@@ -619,7 +619,7 @@ class ClientUser(db.Model, ModelMixin):
     client_id = db.Column(db.ForeignKey(Client.id, ondelete="cascade"), nullable=False)
 
     # Null means client has access to user original email
-    gen_email_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=True)
+    alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=True)
 
     # user can decide to send to client another name
     name = db.Column(
@@ -637,7 +637,7 @@ class ClientUser(db.Model, ModelMixin):
     client = db.relationship(Client)
 
     def get_email(self):
-        return self.alias.email if self.gen_email_id else self.user.email
+        return self.alias.email if self.alias_id else self.user.email
 
     def get_user_name(self):
         if self.name:
@@ -684,7 +684,7 @@ class ClientUser(db.Model, ModelMixin):
                     res[Scope.AVATAR_URL.value] = None
             elif scope == Scope.EMAIL:
                 # Use generated email
-                if self.gen_email_id:
+                if self.alias_id:
                     LOG.debug(
                         "Use gen email for user %s, client %s", self.user, self.client
                     )
@@ -702,12 +702,10 @@ class Contact(db.Model, ModelMixin):
     """
 
     __table_args__ = (
-        db.UniqueConstraint("gen_email_id", "website_email", name="uq_forward_email"),
+        db.UniqueConstraint("alias_id", "website_email", name="uq_contact"),
     )
 
-    gen_email_id = db.Column(
-        db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False
-    )
+    alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
 
     # used to be envelope header, should be mail header from instead
     website_email = db.Column(db.String(512), nullable=False)
@@ -848,12 +846,10 @@ class AliasUsedOn(db.Model, ModelMixin):
     """Used to know where an alias is created"""
 
     __table_args__ = (
-        db.UniqueConstraint("gen_email_id", "hostname", name="uq_alias_used"),
+        db.UniqueConstraint("alias_id", "hostname", name="uq_alias_used"),
     )
 
-    gen_email_id = db.Column(
-        db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False
-    )
+    alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
 
     hostname = db.Column(db.String(1024), nullable=False)
 

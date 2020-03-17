@@ -224,7 +224,7 @@ def authorize():
                 client_id=client.id, user_id=current_user.id
             )
             if alias:
-                client_user.gen_email_id = alias.id
+                client_user.alias_id = alias.id
 
             if custom_name:
                 client_user.name = custom_name
