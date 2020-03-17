@@ -202,6 +202,7 @@ def update_alias(alias_id):
 def serialize_contact(fe: Contact) -> dict:
 
     res = {
+        "id": fe.id,
         "creation_date": fe.created_at.format(),
         "creation_timestamp": fe.created_at.timestamp,
         "last_email_sent_date": None,

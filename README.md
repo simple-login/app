@@ -946,6 +946,7 @@ If success, 200 with the list of contacts, for example:
 {
   "contacts": [
     {
+      "id": 1,
       "contact": "marketing@example.com",
       "creation_date": "2020-02-21 11:35:00+00:00",
       "creation_timestamp": 1582284900,
@@ -954,6 +955,7 @@ If success, 200 with the list of contacts, for example:
       "reverse_alias": "marketing at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>"
     },
     {
+      "id": 2,
       "contact": "newsletter@example.com",
       "creation_date": "2020-02-21 11:35:00+00:00",
       "creation_timestamp": 1582284900,
@@ -983,6 +985,7 @@ Return 409 if contact is already added.
 
 ```
 {
+  "id": 1,
   "contact": "First Last <first@example.com>",
   "creation_date": "2020-03-14 11:52:41+00:00",
   "creation_timestamp": 1584186761,
