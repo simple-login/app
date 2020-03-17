@@ -176,7 +176,7 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        aliases=get_alias_info(current_user, query, highlight_alias_id),
+        aliases=get_alias_infos(current_user, query, highlight_alias_id),
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
@@ -184,7 +184,7 @@ def index():
     )
 
 
-def get_alias_info(
+def get_alias_infos(
     user, query=None, highlight_alias_id=None, page_id=None
 ) -> [AliasInfo]:
     if query:
