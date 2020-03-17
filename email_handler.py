@@ -70,7 +70,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import (
     GenEmail,
-    ForwardEmail,
+    Contact,
     ForwardEmailLog,
     CustomDomain,
     Directory,
@@ -207,21 +207,17 @@ def try_auto_create_catch_all_domain(alias: str) -> Optional[GenEmail]:
     return gen_email
 
 
-def get_or_create_forward_email(
-    website_from_header: str, gen_email: GenEmail
-) -> ForwardEmail:
+def get_or_create_contact(website_from_header: str, gen_email: GenEmail) -> Contact:
     """
     website_from_header can be the full-form email, i.e. "First Last <email@example.com>"
     """
     _, website_email = parseaddr(website_from_header)
-    forward_email = ForwardEmail.get_by(
-        gen_email_id=gen_email.id, website_email=website_email
-    )
-    if forward_email:
+    contact = Contact.get_by(gen_email_id=gen_email.id, website_email=website_email)
+    if contact:
         # update the website_from if needed
-        if forward_email.website_from != website_from_header:
-            LOG.d("Update From header for %s", forward_email)
-            forward_email.website_from = website_from_header
+        if contact.website_from != website_from_header:
+            LOG.d("Update From header for %s", contact)
+            contact.website_from = website_from_header
             db.session.commit()
     else:
         LOG.debug(
@@ -234,12 +230,12 @@ def get_or_create_forward_email(
         # not use while loop to avoid infinite loop
         reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
         for _ in range(1000):
-            if not ForwardEmail.get_by(reply_email=reply_email):
+            if not Contact.get_by(reply_email=reply_email):
                 # found!
                 break
             reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
 
-        forward_email = ForwardEmail.create(
+        contact = Contact.create(
             gen_email_id=gen_email.id,
             website_email=website_email,
             website_from=website_from_header,
@@ -247,7 +243,7 @@ def get_or_create_forward_email(
         )
         db.session.commit()
 
-    return forward_email
+    return contact
 
 
 def should_append_alias(msg, alias):
@@ -317,8 +313,8 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         LOG.d("Encrypt message using mailbox %s", mailbox)
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
 
-    forward_email = get_or_create_forward_email(msg["From"], gen_email)
-    forward_log = ForwardEmailLog.create(forward_id=forward_email.id)
+    contact = get_or_create_contact(msg["From"], gen_email)
+    forward_log = ForwardEmailLog.create(forward_id=contact.id)
 
     if gen_email.enabled:
         # add custom header
@@ -338,7 +334,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             + (" - " if website_name else "")
             + website_email.replace("@", " at ")
         )
-        from_header = formataddr((new_website_name, forward_email.reply_email))
+        from_header = formataddr((new_website_name, contact.reply_email))
         add_or_replace_header(msg, "From", from_header)
         LOG.d("new from header:%s", from_header)
 
@@ -373,7 +369,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         # encode message raw directly instead
         msg_raw = msg.as_string().encode()
         smtp.sendmail(
-            forward_email.reply_email,
+            contact.reply_email,
             mailbox_email,
             msg_raw,
             envelope.mail_options,
@@ -395,12 +391,12 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         LOG.warning(f"Reply email {reply_email} has wrong domain")
         return "550 wrong reply email"
 
-    forward_email = ForwardEmail.get_by(reply_email=reply_email)
-    if not forward_email:
+    contact = Contact.get_by(reply_email=reply_email)
+    if not contact:
         LOG.warning(f"No such forward-email with {reply_email} as reply-email")
         return "550 wrong reply email"
 
-    alias: str = forward_email.gen_email.email
+    alias: str = contact.gen_email.email
     alias_domain = alias[alias.find("@") + 1 :]
 
     # alias must end with one of the ALIAS_DOMAINS or custom-domain
@@ -408,7 +404,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         if not CustomDomain.get_by(domain=alias_domain):
             return "550 alias unknown by SimpleLogin"
 
-    gen_email = forward_email.gen_email
+    gen_email = contact.gen_email
     user = gen_email.user
     mailbox_email = gen_email.mailbox_email()
 
@@ -420,12 +416,12 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         LOG.error(
             "Bounce when sending to alias %s from %s, user %s",
             alias,
-            forward_email.website_from,
+            contact.website_from,
             gen_email.user,
         )
 
         handle_bounce(
-            alias, envelope, forward_email, gen_email, msg, smtp, user, mailbox_email
+            alias, envelope, contact, gen_email, msg, smtp, user, mailbox_email
         )
         return "550 ignored"
 
@@ -485,10 +481,10 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # remove sender header if present as this could reveal user real email
     delete_header(msg, "Sender")
 
-    add_or_replace_header(msg, "To", forward_email.website_email)
+    add_or_replace_header(msg, "To", contact.website_email)
 
     # add List-Unsubscribe header
-    unsubscribe_link = f"{URL}/dashboard/unsubscribe/{forward_email.gen_email_id}"
+    unsubscribe_link = f"{URL}/dashboard/unsubscribe/{contact.gen_email_id}"
     add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
     add_or_replace_header(msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
 
@@ -498,7 +494,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     LOG.d(
         "send email from %s to %s, mail_options:%s,rcpt_options:%s",
         alias,
-        forward_email.website_email,
+        contact.website_email,
         envelope.mail_options,
         envelope.rcpt_options,
     )
@@ -514,29 +510,23 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     msg_raw = msg.as_string().encode()
     smtp.sendmail(
         alias,
-        forward_email.website_email,
+        contact.website_email,
         msg_raw,
         envelope.mail_options,
         envelope.rcpt_options,
     )
 
-    ForwardEmailLog.create(forward_id=forward_email.id, is_reply=True)
+    ForwardEmailLog.create(forward_id=contact.id, is_reply=True)
     db.session.commit()
 
     return "250 Message accepted for delivery"
 
 
-def handle_bounce(
-    alias, envelope, forward_email, gen_email, msg, smtp, user, mailbox_email
-):
-    fel: ForwardEmailLog = ForwardEmailLog.create(
-        forward_id=forward_email.id, bounced=True
-    )
+def handle_bounce(alias, envelope, contact, gen_email, msg, smtp, user, mailbox_email):
+    fel: ForwardEmailLog = ForwardEmailLog.create(forward_id=contact.id, bounced=True)
     db.session.commit()
 
-    nb_bounced = ForwardEmailLog.filter_by(
-        forward_id=forward_email.id, bounced=True
-    ).count()
+    nb_bounced = ForwardEmailLog.filter_by(forward_id=contact.id, bounced=True).count()
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{gen_email.id}"
 
     # Store the bounced email
@@ -569,19 +559,19 @@ def handle_bounce(
         LOG.d(
             "Inform user %s about bounced email sent by %s to alias %s",
             user,
-            forward_email.website_from,
+            contact.website_from,
             alias,
         )
         send_email(
             # use user mail here as only user is authenticated to see the refused email
             user.email,
-            f"Email from {forward_email.website_from} to {alias} cannot be delivered to your inbox",
+            f"Email from {contact.website_from} to {alias} cannot be delivered to your inbox",
             render(
                 "transactional/bounced-email.txt",
                 name=user.name,
                 alias=alias,
-                website_from=forward_email.website_from,
-                website_email=forward_email.website_email,
+                website_from=contact.website_from,
+                website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox_email,
@@ -590,8 +580,8 @@ def handle_bounce(
                 "transactional/bounced-email.html",
                 name=user.name,
                 alias=alias,
-                website_from=forward_email.website_from,
-                website_email=forward_email.website_email,
+                website_from=contact.website_from,
+                website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox_email,
@@ -604,7 +594,7 @@ def handle_bounce(
         LOG.d(
             "Bounce happens again with alias %s from %s. Disable alias now ",
             alias,
-            forward_email.website_from,
+            contact.website_from,
         )
         gen_email.enabled = False
         db.session.commit()
@@ -612,13 +602,13 @@ def handle_bounce(
         send_email(
             # use user mail here as only user is authenticated to see the refused email
             user.email,
-            f"Alias {alias} has been disabled due to second undelivered email from {forward_email.website_from}",
+            f"Alias {alias} has been disabled due to second undelivered email from {contact.website_from}",
             render(
                 "transactional/automatic-disable-alias.txt",
                 name=user.name,
                 alias=alias,
-                website_from=forward_email.website_from,
-                website_email=forward_email.website_email,
+                website_from=contact.website_from,
+                website_email=contact.website_email,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox_email,
             ),
@@ -626,8 +616,8 @@ def handle_bounce(
                 "transactional/automatic-disable-alias.html",
                 name=user.name,
                 alias=alias,
-                website_from=forward_email.website_from,
-                website_email=forward_email.website_email,
+                website_from=contact.website_from,
+                website_email=contact.website_email,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox_email,
             ),

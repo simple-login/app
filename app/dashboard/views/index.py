@@ -12,7 +12,7 @@ from app.log import LOG
 from app.models import (
     GenEmail,
     ClientUser,
-    ForwardEmail,
+    Contact,
     ForwardEmailLog,
     DeletedAlias,
     AliasGeneratorEnum,
@@ -202,11 +202,9 @@ def get_alias_info(
     aliases = {}  # dict of alias and AliasInfo
 
     q = (
-        db.session.query(GenEmail, ForwardEmail, ForwardEmailLog, Mailbox)
-        .join(ForwardEmail, GenEmail.id == ForwardEmail.gen_email_id, isouter=True)
-        .join(
-            ForwardEmailLog, ForwardEmail.id == ForwardEmailLog.forward_id, isouter=True
-        )
+        db.session.query(GenEmail, Contact, ForwardEmailLog, Mailbox)
+        .join(Contact, GenEmail.id == Contact.gen_email_id, isouter=True)
+        .join(ForwardEmailLog, Contact.id == ForwardEmailLog.forward_id, isouter=True)
         .join(Mailbox, GenEmail.mailbox_id == Mailbox.id, isouter=True)
         .filter(GenEmail.user_id == user.id)
         .order_by(GenEmail.created_at.desc())

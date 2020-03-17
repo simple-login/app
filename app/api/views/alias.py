@@ -13,7 +13,7 @@ from app.dashboard.views.index import get_alias_info, AliasInfo
 from app.extensions import db
 from app.log import LOG
 from app.models import ForwardEmailLog
-from app.models import GenEmail, ForwardEmail
+from app.models import GenEmail, Contact
 from app.utils import random_string
 
 
@@ -199,7 +199,7 @@ def update_alias(alias_id):
     return jsonify(note=new_note), 200
 
 
-def serialize_forward_email(fe: ForwardEmail) -> dict:
+def serialize_contact(fe: Contact) -> dict:
 
     res = {
         "creation_date": fe.created_at.format(),
@@ -220,15 +220,15 @@ def serialize_forward_email(fe: ForwardEmail) -> dict:
 
 def get_alias_contacts(gen_email, page_id: int) -> [dict]:
     q = (
-        ForwardEmail.query.filter_by(gen_email_id=gen_email.id)
-        .order_by(ForwardEmail.id.desc())
+        Contact.query.filter_by(gen_email_id=gen_email.id)
+        .order_by(Contact.id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_id * PAGE_LIMIT)
     )
 
     res = []
     for fe in q.all():
-        res.append(serialize_forward_email(fe))
+        res.append(serialize_contact(fe))
 
     return res
 
@@ -299,16 +299,16 @@ def create_contact_route(alias_id):
     reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
     for _ in range(1000):
         reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
-        if not ForwardEmail.get_by(reply_email=reply_email):
+        if not Contact.get_by(reply_email=reply_email):
             break
 
     _, website_email = parseaddr(contact_email)
 
     # already been added
-    if ForwardEmail.get_by(gen_email_id=gen_email.id, website_email=website_email):
+    if Contact.get_by(gen_email_id=gen_email.id, website_email=website_email):
         return jsonify(error="Contact already added"), 409
 
-    forward_email = ForwardEmail.create(
+    contact = Contact.create(
         gen_email_id=gen_email.id,
         website_email=website_email,
         website_from=contact_email,
@@ -318,4 +318,4 @@ def create_contact_route(alias_id):
     LOG.d("create reverse-alias for %s %s", contact_email, gen_email)
     db.session.commit()
 
-    return jsonify(**serialize_forward_email(forward_email)), 201
+    return jsonify(**serialize_contact(contact)), 201

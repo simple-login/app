@@ -12,7 +12,7 @@ from app.models import (
     User,
     GenEmail,
     ForwardEmailLog,
-    ForwardEmail,
+    Contact,
     CustomDomain,
     Client,
     ManualSubscription,
@@ -119,9 +119,9 @@ def stats():
     LOG.d("total number alias %s", nb_gen_email)
 
     # nb mails forwarded
-    q = db.session.query(ForwardEmailLog, ForwardEmail, GenEmail, User).filter(
-        ForwardEmailLog.forward_id == ForwardEmail.id,
-        ForwardEmail.gen_email_id == GenEmail.id,
+    q = db.session.query(ForwardEmailLog, Contact, GenEmail, User).filter(
+        ForwardEmailLog.forward_id == Contact.id,
+        Contact.gen_email_id == GenEmail.id,
         GenEmail.user_id == User.id,
     )
     for ie in IGNORED_EMAILS:

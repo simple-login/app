@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
-from app.models import GenEmail, ForwardEmailLog, ForwardEmail
+from app.models import GenEmail, ForwardEmailLog, Contact
 
 
 class AliasLog:
@@ -42,9 +42,9 @@ def alias_log(alias_id, page_id):
 
     logs = get_alias_log(gen_email, page_id)
     base = (
-        db.session.query(ForwardEmail, ForwardEmailLog)
-        .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
-        .filter(ForwardEmail.gen_email_id == gen_email.id)
+        db.session.query(Contact, ForwardEmailLog)
+        .filter(Contact.id == ForwardEmailLog.forward_id)
+        .filter(Contact.gen_email_id == gen_email.id)
     )
     total = base.count()
     email_forwarded = (
@@ -66,9 +66,9 @@ def get_alias_log(gen_email: GenEmail, page_id=0):
     mailbox = gen_email.mailbox_email()
 
     q = (
-        db.session.query(ForwardEmail, ForwardEmailLog)
-        .filter(ForwardEmail.id == ForwardEmailLog.forward_id)
-        .filter(ForwardEmail.gen_email_id == gen_email.id)
+        db.session.query(Contact, ForwardEmailLog)
+        .filter(Contact.id == ForwardEmailLog.forward_id)
+        .filter(Contact.gen_email_id == gen_email.id)
         .order_by(ForwardEmailLog.id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_id * PAGE_LIMIT)
