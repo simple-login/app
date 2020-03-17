@@ -120,7 +120,7 @@ def stats():
 
     # nb mails forwarded
     q = db.session.query(ForwardEmailLog, Contact, GenEmail, User).filter(
-        ForwardEmailLog.forward_id == Contact.id,
+        ForwardEmailLog.contact_id == Contact.id,
         Contact.gen_email_id == GenEmail.id,
         GenEmail.user_id == User.id,
     )
