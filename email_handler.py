@@ -246,12 +246,12 @@ def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
     return contact
 
 
-def should_append_alias(msg, alias):
+def should_append_alias(msg: Message, address: str):
     """whether an alias should be appened to TO header in message"""
 
-    if msg["To"] and alias in msg["To"]:
+    if msg["To"] and address in msg["To"]:
         return False
-    if msg["Cc"] and alias in msg["Cc"]:
+    if msg["Cc"] and address in msg["Cc"]:
         return False
 
     return True
@@ -339,7 +339,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         LOG.d("new from header:%s", from_header)
 
         # append alias into the TO header if it's not present in To or CC
-        if should_append_alias(msg, alias):
+        if should_append_alias(msg, alias.email):
             LOG.d("append alias %s  to TO header %s", alias, msg["To"])
             if msg["To"]:
                 to_header = msg["To"] + "," + alias
