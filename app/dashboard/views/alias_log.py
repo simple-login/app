@@ -44,7 +44,7 @@ def alias_log(alias_id, page_id):
     base = (
         db.session.query(Contact, EmailLog)
         .filter(Contact.id == EmailLog.contact_id)
-        .filter(Contact.gen_email_id == alias.id)
+        .filter(Contact.alias_id == alias.id)
     )
     total = base.count()
     email_forwarded = (
@@ -68,7 +68,7 @@ def get_alias_log(alias: Alias, page_id=0):
     q = (
         db.session.query(Contact, EmailLog)
         .filter(Contact.id == EmailLog.contact_id)
-        .filter(Contact.gen_email_id == alias.id)
+        .filter(Contact.alias_id == alias.id)
         .order_by(EmailLog.id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_id * PAGE_LIMIT)

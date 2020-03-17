@@ -52,7 +52,7 @@ def new_random_alias():
 
     hostname = request.args.get("hostname")
     if hostname:
-        AliasUsedOn.create(gen_email_id=alias.id, hostname=hostname)
+        AliasUsedOn.create(alias_id=alias.id, hostname=hostname)
         db.session.commit()
 
     return jsonify(alias=alias.email), 201

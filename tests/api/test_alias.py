@@ -131,7 +131,7 @@ def test_alias_activities(flask_client):
     contact = Contact.create(
         website_email="marketing@example.com",
         reply_email="reply@a.b",
-        gen_email_id=alias.id,
+        alias_id=alias.id,
     )
     db.session.commit()
 
@@ -203,7 +203,7 @@ def test_alias_contacts(flask_client):
         contact = Contact.create(
             website_email=f"marketing-{i}@example.com",
             reply_email=f"reply-{i}@a.b",
-            gen_email_id=alias.id,
+            alias_id=alias.id,
         )
         db.session.commit()
 

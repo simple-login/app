@@ -121,7 +121,7 @@ def stats():
     # nb mails forwarded
     q = db.session.query(EmailLog, Contact, Alias, User).filter(
         EmailLog.contact_id == Contact.id,
-        Contact.gen_email_id == Alias.id,
+        Contact.alias_id == Alias.id,
         Alias.user_id == User.id,
     )
     for ie in IGNORED_EMAILS:

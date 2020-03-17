@@ -212,7 +212,7 @@ def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
     website_from_header can be the full-form email, i.e. "First Last <email@example.com>"
     """
     _, website_email = parseaddr(website_from_header)
-    contact = Contact.get_by(gen_email_id=alias.id, website_email=website_email)
+    contact = Contact.get_by(alias_id=alias.id, website_email=website_email)
     if contact:
         # update the website_from if needed
         if contact.website_from != website_from_header:
@@ -236,7 +236,7 @@ def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
             reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
 
         contact = Contact.create(
-            gen_email_id=alias.id,
+            alias_id=alias.id,
             website_email=website_email,
             website_from=website_from_header,
             reply_email=reply_email,
@@ -482,7 +482,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     add_or_replace_header(msg, "To", contact.website_email)
 
     # add List-Unsubscribe header
-    unsubscribe_link = f"{URL}/dashboard/unsubscribe/{contact.gen_email_id}"
+    unsubscribe_link = f"{URL}/dashboard/unsubscribe/{contact.alias_id}"
     add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
     add_or_replace_header(msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
 

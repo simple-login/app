@@ -42,7 +42,7 @@ def test_different_scenarios(flask_client):
     # <<< with recommendation >>>
     alias = Alias.create_new(user, prefix="test")
     db.session.commit()
-    AliasUsedOn.create(gen_email_id=alias.id, hostname="www.test.com")
+    AliasUsedOn.create(alias_id=alias.id, hostname="www.test.com")
     db.session.commit()
 
     r = flask_client.get(
@@ -87,7 +87,7 @@ def test_different_scenarios_v2(flask_client):
     # <<< with recommendation >>>
     alias = Alias.create_new(user, prefix="test")
     db.session.commit()
-    AliasUsedOn.create(gen_email_id=alias.id, hostname="www.test.com")
+    AliasUsedOn.create(alias_id=alias.id, hostname="www.test.com")
     db.session.commit()
 
     r = flask_client.get(

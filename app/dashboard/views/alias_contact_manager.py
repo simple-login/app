@@ -80,14 +80,14 @@ def alias_contact_manager(alias_id, contact_id=None):
                 _, website_email = parseaddr(contact_email)
 
                 # already been added
-                if Contact.get_by(gen_email_id=alias.id, website_email=website_email):
+                if Contact.get_by(alias_id=alias.id, website_email=website_email):
                     flash(f"{website_email} is already added", "error")
                     return redirect(
                         url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                     )
 
                 contact = Contact.create(
-                    gen_email_id=alias.id,
+                    alias_id=alias.id,
                     website_email=website_email,
                     website_from=contact_email,
                     reply_email=reply_email,
@@ -113,7 +113,7 @@ def alias_contact_manager(alias_id, contact_id=None):
                 return redirect(
                     url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                 )
-            elif contact.gen_email_id != alias.id:
+            elif contact.alias_id != alias.id:
                 flash("You cannot delete reverse-alias", "warning")
                 return redirect(
                     url_for("dashboard.alias_contact_manager", alias_id=alias_id)
