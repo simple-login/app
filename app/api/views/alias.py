@@ -9,15 +9,18 @@ from app.api.base import api_bp, verify_api_key
 from app.config import EMAIL_DOMAIN
 from app.config import PAGE_LIMIT
 from app.dashboard.views.alias_log import get_alias_log
-from app.dashboard.views.index import get_alias_info, AliasInfo
+from app.dashboard.views.index import (
+    AliasInfo,
+    get_alias_infos_with_pagination,
+)
 from app.extensions import db
 from app.log import LOG
-from app.models import EmailLog
 from app.models import Alias, Contact
+from app.models import EmailLog
 from app.utils import random_string
 
 
-@api_bp.route("/aliases")
+@api_bp.route("/aliases", methods=["GET", "POST"])
 @cross_origin()
 @verify_api_key
 def get_aliases():
@@ -43,7 +46,14 @@ def get_aliases():
     except (ValueError, TypeError):
         return jsonify(error="page_id must be provided in request query"), 400
 
-    alias_infos: [AliasInfo] = get_alias_info(user, page_id=page_id)
+    query = None
+    data = request.get_json(silent=True)
+    if data:
+        query = data.get("query")
+
+    alias_infos: [AliasInfo] = get_alias_infos_with_pagination(
+        user, page_id=page_id, query=query
+    )
 
     return (
         jsonify(
@@ -202,6 +212,7 @@ def update_alias(alias_id):
 def serialize_contact(fe: Contact) -> dict:
 
     res = {
+        "id": fe.id,
         "creation_date": fe.created_at.format(),
         "creation_timestamp": fe.created_at.timestamp,
         "last_email_sent_date": None,
@@ -319,3 +330,28 @@ def create_contact_route(alias_id):
     db.session.commit()
 
     return jsonify(**serialize_contact(contact)), 201
+
+
+@api_bp.route("/contacts/<int:contact_id>", methods=["DELETE"])
+@cross_origin()
+@verify_api_key
+def delete_contact(contact_id):
+    """
+    Delete contact
+    Input:
+        contact_id: in url
+    Output:
+        200
+
+
+    """
+    user = g.user
+    contact = Contact.get(contact_id)
+
+    if not contact or contact.alias.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    Contact.delete(contact_id)
+    db.session.commit()
+
+    return jsonify(deleted=True), 200

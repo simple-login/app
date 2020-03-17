@@ -8,7 +8,7 @@ from app.models import User, ApiKey, Alias, Contact, EmailLog
 from app.utils import random_word
 
 
-def test_error_without_pagination(flask_client):
+def test_get_aliases_error_without_pagination(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
@@ -26,7 +26,7 @@ def test_error_without_pagination(flask_client):
     assert r.json["error"]
 
 
-def test_success_with_pagination(flask_client):
+def test_get_aliases_with_pagination(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
@@ -68,6 +68,38 @@ def test_success_with_pagination(flask_client):
     )
     assert r.status_code == 200
     assert len(r.json["aliases"]) == 2
+
+
+def test_get_aliases_with_pagination(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    # create more aliases than PAGE_LIMIT
+    Alias.create_new(user, "prefix1")
+    Alias.create_new(user, "prefix2")
+    db.session.commit()
+
+    # get aliases without query, should return 3 aliases as one alias is created when user is created
+    r = flask_client.get(
+        url_for("api.get_aliases", page_id=0), headers={"Authentication": api_key.code}
+    )
+    assert r.status_code == 200
+    assert len(r.json["aliases"]) == 3
+
+    # get aliases with "prefix1" query, should return 1 alias
+    r = flask_client.get(
+        url_for("api.get_aliases", page_id=0),
+        headers={"Authentication": api_key.code},
+        json={"query": "prefix1"},
+    )
+    assert r.status_code == 200
+    assert len(r.json["aliases"]) == 1
 
 
 def test_delete_alias(flask_client):
@@ -267,3 +299,32 @@ def test_create_contact_route(flask_client):
         json={"contact": "First2 Last2 <first@example.com>"},
     )
     assert r.status_code == 409
+
+
+def test_delete_contact(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    contact = Contact.create(
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="reply+random@sl.io",
+    )
+    db.session.commit()
+
+    r = flask_client.delete(
+        url_for("api.delete_contact", contact_id=contact.id),
+        headers={"Authentication": api_key.code},
+    )
+
+    assert r.status_code == 200
+    assert r.json == {"deleted": True}
