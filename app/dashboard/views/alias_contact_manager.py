@@ -10,7 +10,7 @@ from app.config import EMAIL_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, ForwardEmail
+from app.models import GenEmail, Contact
 from app.utils import random_string
 
 
@@ -47,10 +47,10 @@ class NewContactForm(FlaskForm):
 
 @dashboard_bp.route("/alias_contact_manager/<alias_id>/", methods=["GET", "POST"])
 @dashboard_bp.route(
-    "/alias_contact_manager/<alias_id>/<int:forward_email_id>", methods=["GET", "POST"]
+    "/alias_contact_manager/<alias_id>/<contact_id>", methods=["GET", "POST"]
 )
 @login_required
-def alias_contact_manager(alias_id, forward_email_id=None):
+def alias_contact_manager(alias_id, contact_id=None):
     gen_email = GenEmail.get(alias_id)
 
     # sanity check
@@ -71,15 +71,16 @@ def alias_contact_manager(alias_id, forward_email_id=None):
 
                 # generate a reply_email, make sure it is unique
                 # not use while to avoid infinite loop
+                reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
                 for _ in range(1000):
                     reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
-                    if not ForwardEmail.get_by(reply_email=reply_email):
+                    if not Contact.get_by(reply_email=reply_email):
                         break
 
                 _, website_email = parseaddr(contact_email)
 
                 # already been added
-                if ForwardEmail.get_by(
+                if Contact.get_by(
                     gen_email_id=gen_email.id, website_email=website_email
                 ):
                     flash(f"{website_email} is already added", "error")
@@ -87,7 +88,7 @@ def alias_contact_manager(alias_id, forward_email_id=None):
                         url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                     )
 
-                forward_email = ForwardEmail.create(
+                contact = Contact.create(
                     gen_email_id=gen_email.id,
                     website_email=website_email,
                     website_from=contact_email,
@@ -102,26 +103,26 @@ def alias_contact_manager(alias_id, forward_email_id=None):
                     url_for(
                         "dashboard.alias_contact_manager",
                         alias_id=alias_id,
-                        forward_email_id=forward_email.id,
+                        contact_id=contact.id,
                     )
                 )
         elif request.form.get("form-name") == "delete":
-            forward_email_id = request.form.get("forward-email-id")
-            forward_email = ForwardEmail.get(forward_email_id)
+            contact_id = request.form.get("contact-id")
+            contact = Contact.get(contact_id)
 
-            if not forward_email:
+            if not contact:
                 flash("Unknown error. Refresh the page", "warning")
                 return redirect(
                     url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                 )
-            elif forward_email.gen_email_id != gen_email.id:
+            elif contact.gen_email_id != gen_email.id:
                 flash("You cannot delete reverse-alias", "warning")
                 return redirect(
                     url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                 )
 
-            contact_name = forward_email.website_from
-            ForwardEmail.delete(forward_email_id)
+            contact_name = contact.website_from
+            Contact.delete(contact_id)
             db.session.commit()
 
             flash(f"Reverse-alias for {contact_name} has been deleted", "success")
@@ -130,19 +131,17 @@ def alias_contact_manager(alias_id, forward_email_id=None):
                 url_for("dashboard.alias_contact_manager", alias_id=alias_id)
             )
 
-    # make sure highlighted forward_email is at array start
-    forward_emails = gen_email.forward_emails
+    # make sure highlighted contact is at array start
+    contacts = gen_email.contacts
 
-    if forward_email_id:
-        forward_emails = sorted(
-            forward_emails, key=lambda fe: fe.id == forward_email_id, reverse=True
-        )
+    if contact_id:
+        contacts = sorted(contacts, key=lambda fe: fe.id == contact_id, reverse=True)
 
     return render_template(
         "dashboard/alias_contact_manager.html",
-        forward_emails=forward_emails,
+        contacts=contacts,
         alias=gen_email.email,
         gen_email=gen_email,
         new_contact_form=new_contact_form,
-        forward_email_id=forward_email_id,
+        contact_id=contact_id,
     )

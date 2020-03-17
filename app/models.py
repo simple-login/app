@@ -698,7 +698,7 @@ class ClientUser(db.Model, ModelMixin):
         return res
 
 
-class ForwardEmail(db.Model, ModelMixin):
+class Contact(db.Model, ModelMixin):
     """
     Store configuration of sender (website-email) and alias.
     """
@@ -724,7 +724,7 @@ class ForwardEmail(db.Model, ModelMixin):
     # it has the prefix "reply+" to distinguish with other email
     reply_email = db.Column(db.String(512), nullable=False)
 
-    gen_email = db.relationship(GenEmail, backref="forward_emails")
+    gen_email = db.relationship(GenEmail, backref="contacts")
 
     def website_send_to(self):
         """return the email address with name.
@@ -755,7 +755,7 @@ class ForwardEmail(db.Model, ModelMixin):
 
 class ForwardEmailLog(db.Model, ModelMixin):
     forward_id = db.Column(
-        db.ForeignKey(ForwardEmail.id, ondelete="cascade"), nullable=False
+        db.ForeignKey(Contact.id, ondelete="cascade"), nullable=False
     )
 
     # whether this is a reply
@@ -774,7 +774,7 @@ class ForwardEmailLog(db.Model, ModelMixin):
     )
 
     refused_email = db.relationship("RefusedEmail")
-    forward = db.relationship(ForwardEmail)
+    forward = db.relationship(Contact)
 
 
 class Subscription(db.Model, ModelMixin):
