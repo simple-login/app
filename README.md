@@ -651,7 +651,8 @@ Output: if api key is correct, return a json with user name and whether user is 
 {
   "name": "John Wick",
   "is_premium": false,
-  "email": "john@wick.com"
+  "email": "john@wick.com",
+  "in_trial": true
 }
 ```
 

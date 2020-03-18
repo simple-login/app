@@ -14,5 +14,10 @@ def user_info():
     user = g.user
 
     return jsonify(
-        {"name": user.name, "is_premium": user.is_premium(), "email": user.email}
+        {
+            "name": user.name,
+            "is_premium": user.is_premium(),
+            "email": user.email,
+            "in_trial": user.in_trial(),
+        }
     )
