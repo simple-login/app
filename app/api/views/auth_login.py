@@ -332,16 +332,14 @@ def forgot_password():
 
     """
     data = request.get_json()
-    if not data:
-        return jsonify(error="request body cannot be empty"), 400
+    if not data or not data.get("email"):
+        return jsonify(error="request body must contain email"), 400
 
-    email = data.get("email")
+    email = data.get("email").lower()
 
     user = User.get_by(email=email)
 
-    if not user:
-        return jsonify(error="Email not found"), 400
+    if user:
+        send_reset_password_email(user)
 
-    send_reset_password_email(user)
-
-    return jsonify(reset_sent=True)
+    return jsonify(ok=True)
