@@ -819,9 +819,7 @@ Output:
 Input:
 - email
 
-Output:
-- 200: user is going to receive an email to reset the password
-- 400 if error (email not found)
+Output: always return 200, even if email doesn't exist. User need to enter correctly their email.
 
 #### GET /api/aliases
 
