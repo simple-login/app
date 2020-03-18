@@ -19,6 +19,10 @@ https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKg
 If you have a domain, for example for your business or your project, you can import your domain into SimpleLogin
 and create your business emails backed by your personal email! By the way, all our business emails are actually aliases.
 
+If you use PGP (Pretty Good Privacy), you can import your public key into SimpleLogin and all emails will be encrypted
+before being forwarded to your mailbox. You can add your PGP key in "Mailbox" tab on
+https://app.simplelogin.io/dashboard/mailbox
+
 {% if user.in_trial() %}
 You can use all premium features like custom domain or alias directory during the trial period.
 Your trial will end {{ user.trial_end.humanize() }}.
