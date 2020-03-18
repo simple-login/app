@@ -19,7 +19,12 @@ def test_user_in_trial(flask_client):
     )
 
     assert r.status_code == 200
-    assert r.json == {"is_premium": True, "name": "Test User", "email": "a@b.c"}
+    assert r.json == {
+        "is_premium": True,
+        "name": "Test User",
+        "email": "a@b.c",
+        "in_trial": True,
+    }
 
 
 def test_wrong_api_key(flask_client):
