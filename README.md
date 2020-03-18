@@ -813,6 +813,15 @@ Input:
 Output:
 - 200: user is going to receive an email that contains the activation code.
 
+#### POST /api/auth/forgot_password
+
+Input:
+- email
+
+Output:
+- 200: user is going to receive an email to reset the password
+- 400 if error (email not found)
+
 #### GET /api/aliases
 
 Get user aliases.
