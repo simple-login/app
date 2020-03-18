@@ -340,7 +340,7 @@ def forgot_password():
     user = User.get_by(email=email)
 
     if not user:
-        return jsonify(error="Error"), 400
+        return jsonify(error="Email not found"), 400
 
     send_reset_password_email(user)
 
