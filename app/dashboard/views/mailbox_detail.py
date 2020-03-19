@@ -101,6 +101,12 @@ def mailbox_detail_route(mailbox_id):
                     )
         elif request.form.get("form-name") == "pgp":
             if request.form.get("action") == "save":
+                if not current_user.is_premium():
+                    flash("Only premium plan can add PGP Key", "warning")
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
+
                 mailbox.pgp_public_key = request.form.get("pgp")
                 try:
                     mailbox.pgp_finger_print = load_public_key(mailbox.pgp_public_key)
@@ -113,6 +119,7 @@ def mailbox_detail_route(mailbox_id):
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                     )
             elif request.form.get("action") == "remove":
+                # Free user can decide to remove their added PGP key
                 mailbox.pgp_public_key = None
                 mailbox.pgp_finger_print = None
                 db.session.commit()

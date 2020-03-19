@@ -72,18 +72,33 @@
           <div class="card-title">
             Pretty Good Privacy (PGP)
             <div class="small-text">
-              By importing your PGP Public Key into SimpleLogin, all emails sent to {{mailbox.email}} are <b>encrypted</b> with your key.
+              By importing your PGP Public Key into SimpleLogin, all emails sent to {{ mailbox.email }} are
+              <b>encrypted</b> with your key.
             </div>
           </div>
+
+          {% if not current_user.is_premium() %}
+            <div class="alert alert-danger" role="alert">
+              This feature is only available in premium plan.
+            </div>
+          {% endif %}
 
           <div class="form-group">
             <label class="form-label">PGP Public Key</label>
 
-            <textarea name="pgp" class="form-control" rows=10 placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{mailbox.pgp_public_key or ""}}</textarea>
+            <textarea name="pgp"
+                {% if not current_user.is_premium() %} disabled {% endif %}
+                      class="form-control" rows=10
+                      placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
           </div>
 
-          <button class="btn btn-primary" name="action" value="save">Save</button>
-          <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+          <button class="btn btn-primary" name="action"
+              {% if not current_user.is_premium() %} disabled {% endif %}
+                  value="save">Save
+          </button>
+          {% if mailbox.pgp_finger_print %}
+            <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+          {% endif %}
 
         </div>
       </form>
