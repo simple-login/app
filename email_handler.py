@@ -295,14 +295,14 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
 
 def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     """return *status_code message*"""
-    alias = rcpt_to.lower()  # alias@SL
+    address = rcpt_to.lower()  # alias@SL
 
-    alias = Alias.get_by(email=alias)
+    alias = Alias.get_by(email=address)
     if not alias:
         LOG.d("alias %s not exist. Try to see if it can be created on the fly", alias)
-        alias = try_auto_create(alias)
+        alias = try_auto_create(address)
         if not alias:
-            LOG.d("alias %s cannot be created on-the-fly, return 510", alias)
+            LOG.d("alias %s cannot be created on-the-fly, return 510", address)
             return "510 Email not exist"
 
     mailbox = alias.mailbox
