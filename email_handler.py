@@ -307,9 +307,10 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 
     mailbox = alias.mailbox
     mailbox_email = mailbox.email
+    user = alias.user
 
     # create PGP email if needed
-    if mailbox.pgp_finger_print:
+    if mailbox.pgp_finger_print and user.is_premium():
         LOG.d("Encrypt message using mailbox %s", mailbox)
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
 
