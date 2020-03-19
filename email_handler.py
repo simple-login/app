@@ -342,9 +342,9 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         if should_append_alias(msg, alias.email):
             LOG.d("append alias %s  to TO header %s", alias, msg["To"])
             if msg["To"]:
-                to_header = msg["To"] + "," + alias
+                to_header = msg["To"] + "," + alias.email
             else:
-                to_header = alias
+                to_header = alias.email
 
             add_or_replace_header(msg, "To", to_header)
 
