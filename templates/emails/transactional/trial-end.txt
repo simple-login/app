@@ -8,6 +8,7 @@ When the trial ends:
 - You cannot create new aliases if you exceed the free plan limit, i.e. have more than 5 aliases.
 - As features like "catch-all" or "directory" allow you to create aliases on-the-fly, those aliases cannot be automatically created if you have more than 5 aliases.
 - You cannot add new domain or directory.
+- If you enable PGP Encryption, forwarded emails are not encrypted anymore.
 
 You can upgrade today to continue using all these Premium features (and much more coming).
 
