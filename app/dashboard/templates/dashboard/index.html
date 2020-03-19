@@ -72,7 +72,7 @@
 
   <div class="row">
     {% for alias_info in aliases %}
-      {% set gen_email = alias_info.gen_email %}
+      {% set alias = alias_info.alias %}
 
       <div class="col-12 col-lg-6">
         <div class="card p-4 shadow-sm {% if alias_info.highlight %} highlight-row {% endif %} ">
@@ -86,14 +86,14 @@
         use it whenever possible, for example when signing up for a newsletter or creating a new account on a suspicious website 😎"
                   data-step="2"
                 {% endif %}
-                {% if gen_email.enabled %}
+                {% if alias.enabled %}
                   data-toggle="tooltip"
                   title="Copy to clipboard"
-                  data-clipboard-text="{{ gen_email.email }}"
+                  data-clipboard-text="{{ alias.email }}"
                 {% endif %}
             >
-              <span class="font-weight-bold">{{ gen_email.email }}</span>
-              {% if gen_email.enabled %}
+              <span class="font-weight-bold">{{ alias.email }}</span>
+              {% if alias.enabled %}
                 <span class="btn btn-sm btn-success copy-btn">
                   Copy
                 </span>
@@ -103,10 +103,10 @@
             <div class="col text-right">
               <form method="post">
                 <input type="hidden" name="form-name" value="switch-email-forwarding">
-                <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                <input type="hidden" name="alias-id" value="{{ alias.id }}">
                 <label class="custom-switch cursor"
                        data-toggle="tooltip"
-                    {% if gen_email.enabled %}
+                    {% if alias.enabled %}
                        title="Block Alias"
                     {% else %}
                        title="Unblock Alias"
@@ -122,9 +122,9 @@
                     {% endif %}
                        style="padding-left: 0px"
                 >
-                  <input type="hidden" name="alias" class="alias" value="{{ gen_email.email }}">
+                  <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
                   <input type="checkbox" class="custom-switch-input"
-                      {{ "checked" if gen_email.enabled else "" }}>
+                      {{ "checked" if alias.enabled else "" }}>
 
                   <span class="custom-switch-indicator"></span>
                 </label>
@@ -135,7 +135,7 @@
           <hr class="my-2">
 
           <p class="small-text">
-            Created {{ gen_email.created_at | dt }}
+            Created {{ alias.created_at | dt }}
             {% if alias_info.highlight %}
               - <span class="font-weight-bold text-success small-text">New</span>
             {% endif %}
@@ -145,7 +145,7 @@
             <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwards,
             <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
             <span class="alias-activity">{{ alias_info.nb_reply }}</span> replies
-            <a href="{{ url_for('dashboard.alias_log', alias_id=gen_email.id) }}"
+            <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
                class="btn btn-sm btn-link">
               See All Activity &nbsp;→
             </a>
@@ -167,7 +167,7 @@
 
                 <div class="">
                   <input type="hidden" name="form-name" value="set-mailbox">
-                  <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                  <input type="hidden" name="alias-id" value="{{ alias.id }}">
 
                   <button class="btn btn-sm btn-outline-info w-100">
                     Update
@@ -191,12 +191,12 @@
                     name="note"
                     class="form-control"
                     rows="2"
-                    placeholder="Alias Note.">{{ gen_email.note or "" }}</textarea>
+                    placeholder="Alias Note.">{{ alias.note or "" }}</textarea>
               </div>
 
               <div class="">
                 <input type="hidden" name="form-name" value="set-note">
-                <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
+                <input type="hidden" name="alias-id" value="{{ alias.id }}">
 
                 <button class="btn btn-sm btn-outline-success w-100">
                   Save
@@ -207,8 +207,8 @@
 
           <div class="row mt-3">
             <div class="col">
-              {% if gen_email.enabled %}
-                <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=gen_email.id) }}"
+              {% if alias.enabled %}
+                <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}"
                     {% if alias_info.show_intro_test_send_email %}
                    data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
                    You can add a new <em>contact</em> to for your alias here. <br><br>
@@ -228,8 +228,8 @@
             <div class="col">
               <form method="post">
                 <input type="hidden" name="form-name" value="delete-email">
-                <input type="hidden" name="gen-email-id" value="{{ gen_email.id }}">
-                <input type="hidden" name="alias" class="alias" value="{{ gen_email.email }}">
+                <input type="hidden" name="alias-id" value="{{ alias.id }}">
+                <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
 
                 <span class="delete-email btn btn-link btn-sm float-right text-danger">
                   Delete&nbsp; &nbsp;<i class="dropdown-icon fe fe-trash-2 text-danger"></i>

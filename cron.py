@@ -10,9 +10,9 @@ from app.log import LOG
 from app.models import (
     Subscription,
     User,
-    GenEmail,
-    ForwardEmailLog,
-    ForwardEmail,
+    Alias,
+    EmailLog,
+    Contact,
     CustomDomain,
     Client,
     ManualSubscription,
@@ -111,18 +111,18 @@ def stats():
     LOG.d("total number user %s", nb_user)
 
     # nb gen emails
-    q = db.session.query(GenEmail, User).filter(GenEmail.user_id == User.id)
+    q = db.session.query(Alias, User).filter(Alias.user_id == User.id)
     for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))
 
-    nb_gen_email = q.count()
-    LOG.d("total number alias %s", nb_gen_email)
+    nb_alias = q.count()
+    LOG.d("total number alias %s", nb_alias)
 
     # nb mails forwarded
-    q = db.session.query(ForwardEmailLog, ForwardEmail, GenEmail, User).filter(
-        ForwardEmailLog.forward_id == ForwardEmail.id,
-        ForwardEmail.gen_email_id == GenEmail.id,
-        GenEmail.user_id == User.id,
+    q = db.session.query(EmailLog, Contact, Alias, User).filter(
+        EmailLog.contact_id == Contact.id,
+        Contact.alias_id == Alias.id,
+        Alias.user_id == User.id,
     )
     for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))
@@ -141,11 +141,11 @@ def stats():
     nb_premium = Subscription.query.count()
     nb_custom_domain = CustomDomain.query.count()
 
-    nb_custom_domain_alias = GenEmail.query.filter(
-        GenEmail.custom_domain_id.isnot(None)
+    nb_custom_domain_alias = Alias.query.filter(
+        Alias.custom_domain_id.isnot(None)
     ).count()
 
-    nb_disabled_alias = GenEmail.query.filter(GenEmail.enabled == False).count()
+    nb_disabled_alias = Alias.query.filter(Alias.enabled == False).count()
 
     nb_app = Client.query.count()
 
@@ -153,7 +153,7 @@ def stats():
 
     send_email(
         ADMIN_EMAIL,
-        subject=f"SimpleLogin Stats for {today}, {nb_user} users, {nb_gen_email} aliases, {nb_forward} forwards",
+        subject=f"SimpleLogin Stats for {today}, {nb_user} users, {nb_alias} aliases, {nb_forward} forwards",
         plaintext="",
         html=f"""
 Stats for {today} <br>
@@ -161,7 +161,7 @@ Stats for {today} <br>
 nb_user: {nb_user} <br>
 nb_premium: {nb_premium} <br>
 
-nb_alias: {nb_gen_email} <br>
+nb_alias: {nb_alias} <br>
 nb_disabled_alias: {nb_disabled_alias} <br>
 
 nb_custom_domain: {nb_custom_domain} <br>

@@ -10,7 +10,7 @@ from app.dns_utils import (
     get_txt_record,
 )
 from app.extensions import db
-from app.models import CustomDomain, GenEmail
+from app.models import CustomDomain, Alias
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
@@ -129,6 +129,6 @@ def domain_detail(custom_domain_id):
 
             return redirect(url_for("dashboard.custom_domain"))
 
-    nb_alias = GenEmail.filter_by(custom_domain_id=custom_domain.id).count()
+    nb_alias = Alias.filter_by(custom_domain_id=custom_domain.id).count()
 
     return render_template("dashboard/domain_detail/info.html", **locals())

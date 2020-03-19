@@ -5,7 +5,7 @@ import pytest
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
-from app.models import generate_email, User, GenEmail
+from app.models import generate_email, User, Alias
 
 
 def test_generate_email(flask_client):
@@ -42,24 +42,24 @@ def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
 
     # make sure user runs out of quota to create new email
     for i in range(MAX_NB_EMAIL_FREE_PLAN):
-        GenEmail.create_new(user=user, prefix="test")
+        Alias.create_new(user=user, prefix="test")
     db.session.commit()
 
     suggested_email, other_emails = user.suggested_emails(website_name="test")
 
-    # the suggested email is chosen from existing GenEmail
-    assert GenEmail.get_by(email=suggested_email)
+    # the suggested email is chosen from existing Alias
+    assert Alias.get_by(email=suggested_email)
 
     # all other emails are generated emails
     for email in other_emails:
-        assert GenEmail.get_by(email=email)
+        assert Alias.get_by(email=email)
 
 
-def test_gen_email_create_random(flask_client):
+def test_alias_create_random(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
     db.session.commit()
 
-    alias = GenEmail.create_new_random(user)
+    alias = Alias.create_new_random(user)
     assert alias.email.endswith(EMAIL_DOMAIN)

@@ -6,7 +6,7 @@ from app.dashboard.base import dashboard_bp
 from app.email_utils import email_belongs_to_alias_domains, get_email_domain_part
 from app.extensions import db
 from app.log import LOG
-from app.models import GenEmail, CustomDomain, DeletedAlias, Mailbox
+from app.models import Alias, CustomDomain, DeletedAlias, Mailbox
 from app.utils import convert_to_id, random_word, word_exist
 
 
@@ -60,9 +60,7 @@ def custom_alias():
         ):
             full_alias = alias_prefix + alias_suffix
 
-            if GenEmail.get_by(email=full_alias) or DeletedAlias.get_by(
-                email=full_alias
-            ):
+            if Alias.get_by(email=full_alias) or DeletedAlias.get_by(email=full_alias):
                 LOG.d("full alias already used %s", full_alias)
                 flash(
                     f"Alias {full_alias} already exists, please choose another one",
@@ -71,7 +69,7 @@ def custom_alias():
             else:
                 mailbox = Mailbox.get_by(email=mailbox_email)
 
-                gen_email = GenEmail.create(
+                alias = Alias.create(
                     user_id=current_user.id,
                     email=full_alias,
                     note=alias_note,
@@ -83,14 +81,12 @@ def custom_alias():
                 custom_domain = CustomDomain.get_by(domain=alias_domain)
                 if custom_domain:
                     LOG.d("Set alias %s domain to %s", full_alias, custom_domain)
-                    gen_email.custom_domain_id = custom_domain.id
+                    alias.custom_domain_id = custom_domain.id
 
                 db.session.commit()
                 flash(f"Alias {full_alias} has been created", "success")
 
-                return redirect(
-                    url_for("dashboard.index", highlight_gen_email_id=gen_email.id)
-                )
+                return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))
         # only happen if the request has been "hacked"
         else:
             flash("something went wrong", "warning")

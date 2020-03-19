@@ -6,7 +6,7 @@ from app.api.base import api_bp, verify_api_key
 from app.config import ALIAS_DOMAINS, DISABLE_ALIAS_SUFFIX
 from app.extensions import db
 from app.log import LOG
-from app.models import AliasUsedOn, GenEmail, User
+from app.models import AliasUsedOn, Alias, User
 from app.utils import convert_to_id, random_word
 
 
@@ -31,7 +31,7 @@ def options():
     hostname = request.args.get("hostname")
 
     ret = {
-        "existing": [ge.email for ge in GenEmail.query.filter_by(user_id=user.id)],
+        "existing": [ge.email for ge in Alias.query.filter_by(user_id=user.id)],
         "can_create_custom": user.can_create_new_alias(),
     }
 
@@ -39,10 +39,10 @@ def options():
     if hostname:
         # put the latest used alias first
         q = (
-            db.session.query(AliasUsedOn, GenEmail, User)
+            db.session.query(AliasUsedOn, Alias, User)
             .filter(
-                AliasUsedOn.gen_email_id == GenEmail.id,
-                GenEmail.user_id == user.id,
+                AliasUsedOn.alias_id == Alias.id,
+                Alias.user_id == user.id,
                 AliasUsedOn.hostname == hostname,
             )
             .order_by(desc(AliasUsedOn.created_at))
@@ -111,7 +111,7 @@ def options_v2():
 
     ret = {
         "existing": [
-            ge.email for ge in GenEmail.query.filter_by(user_id=user.id, enabled=True)
+            ge.email for ge in Alias.query.filter_by(user_id=user.id, enabled=True)
         ],
         "can_create": user.can_create_new_alias(),
         "suffixes": [],
@@ -122,10 +122,10 @@ def options_v2():
     if hostname:
         # put the latest used alias first
         q = (
-            db.session.query(AliasUsedOn, GenEmail, User)
+            db.session.query(AliasUsedOn, Alias, User)
             .filter(
-                AliasUsedOn.gen_email_id == GenEmail.id,
-                GenEmail.user_id == user.id,
+                AliasUsedOn.alias_id == Alias.id,
+                Alias.user_id == user.id,
                 AliasUsedOn.hostname == hostname,
             )
             .order_by(desc(AliasUsedOn.created_at))

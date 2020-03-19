@@ -13,7 +13,7 @@ from app.models import (
     Client,
     AuthorizationCode,
     ClientUser,
-    GenEmail,
+    Alias,
     RedirectUri,
     OauthToken,
     DeletedAlias,
@@ -157,7 +157,7 @@ def authorize():
             alias_prefix = request.form.get("prefix")
             alias_suffix = request.form.get("suffix")
 
-            gen_email = None
+            alias = None
 
             # user creates a new alias, not using suggested alias
             if alias_prefix:
@@ -176,14 +176,14 @@ def authorize():
                 ):
                     full_alias = alias_prefix + alias_suffix
 
-                    if GenEmail.get_by(email=full_alias) or DeletedAlias.get_by(
+                    if Alias.get_by(email=full_alias) or DeletedAlias.get_by(
                         email=full_alias
                     ):
                         LOG.error("alias %s already used, very rare!", full_alias)
                         flash(f"Alias {full_alias} already used", "error")
                         return redirect(request.url)
                     else:
-                        gen_email = GenEmail.create(
+                        alias = Alias.create(
                             user_id=current_user.id,
                             email=full_alias,
                             mailbox_id=current_user.default_mailbox_id,
@@ -193,7 +193,7 @@ def authorize():
                         alias_domain = get_email_domain_part(full_alias)
                         custom_domain = CustomDomain.get_by(domain=alias_domain)
                         if custom_domain:
-                            gen_email.custom_domain_id = custom_domain.id
+                            alias.custom_domain_id = custom_domain.id
 
                         db.session.flush()
                         flash(f"Alias {full_alias} has been created", "success")
@@ -206,9 +206,9 @@ def authorize():
                 chosen_email = request.form.get("suggested-email")
                 # todo: add some checks on chosen_email
                 if chosen_email != current_user.email:
-                    gen_email = GenEmail.get_by(email=chosen_email)
-                    if not gen_email:
-                        gen_email = GenEmail.create(
+                    alias = Alias.get_by(email=chosen_email)
+                    if not alias:
+                        alias = Alias.create(
                             email=chosen_email,
                             user_id=current_user.id,
                             mailbox_id=current_user.default_mailbox_id,
@@ -223,8 +223,8 @@ def authorize():
             client_user = ClientUser.create(
                 client_id=client.id, user_id=current_user.id
             )
-            if gen_email:
-                client_user.gen_email_id = gen_email.id
+            if alias:
+                client_user.alias_id = alias.id
 
             if custom_name:
                 client_user.name = custom_name

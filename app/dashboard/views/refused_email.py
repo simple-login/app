@@ -2,7 +2,7 @@ from flask import render_template, request
 from flask_login import login_required
 
 from app.dashboard.base import dashboard_bp
-from app.models import ForwardEmailLog
+from app.models import EmailLog
 
 
 @dashboard_bp.route("/refused_email", methods=["GET", "POST"])
@@ -13,9 +13,7 @@ def refused_email_route():
     if highlight_fel_id:
         highlight_fel_id = int(highlight_fel_id)
 
-    fels: [ForwardEmailLog] = ForwardEmailLog.query.filter(
-        ForwardEmailLog.refused_email_id != None
-    ).all()
+    fels: [EmailLog] = EmailLog.query.filter(EmailLog.refused_email_id != None).all()
 
     # make sure the highlighted fel is the first fel
     highlight_index = None

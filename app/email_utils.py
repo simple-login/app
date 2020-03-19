@@ -231,20 +231,20 @@ def send_email(
     smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
 
 
-def get_email_local_part(email):
+def get_email_local_part(address):
     """
     Get the local part from email
     ab@cd.com -> ab
     """
-    return email[: email.find("@")]
+    return address[: address.find("@")]
 
 
-def get_email_domain_part(email):
+def get_email_domain_part(address):
     """
     Get the domain part from email
     ab@cd.com -> cd.com
     """
-    return email[email.find("@") + 1 :]
+    return address[address.find("@") + 1 :]
 
 
 def add_dkim_signature(msg: Message, email_domain: str):
@@ -292,10 +292,10 @@ def delete_all_headers_except(msg: Message, headers: [str]):
             del msg._headers[i]
 
 
-def email_belongs_to_alias_domains(email: str) -> bool:
+def email_belongs_to_alias_domains(address: str) -> bool:
     """return True if an email ends with one of the alias domains provided by SimpleLogin"""
     for domain in ALIAS_DOMAINS:
-        if email.endswith("@" + domain):
+        if address.endswith("@" + domain):
             return True
 
     return False

@@ -632,8 +632,10 @@ Output: if api key is correct, return a json with user name and whether user is 
 
 ```json
 {
-	"name": "John Wick",
-	"is_premium": false
+  "name": "John Wick",
+  "is_premium": false,
+  "email": "john@wick.com",
+  "in_trial": true
 }
 ```
 
@@ -795,6 +797,13 @@ Input:
 Output:
 - 200: user is going to receive an email that contains the activation code.
 
+#### POST /api/auth/forgot_password
+
+Input:
+- email
+
+Output: always return 200, even if email doesn't exist. User need to enter correctly their email.
+
 #### GET /api/aliases
 
 Get user aliases.
@@ -802,6 +811,7 @@ Get user aliases.
 Input:
 - `Authentication` header that contains the api key
 - `page_id` used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts at 0.
+- (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this case this endpoint also supports POST. 
 
 Output:
 If success, 200 with the list of aliases, for example:
@@ -929,6 +939,7 @@ If success, 200 with the list of contacts, for example:
 {
   "contacts": [
     {
+      "id": 1,
       "contact": "marketing@example.com",
       "creation_date": "2020-02-21 11:35:00+00:00",
       "creation_timestamp": 1582284900,
@@ -937,6 +948,7 @@ If success, 200 with the list of contacts, for example:
       "reverse_alias": "marketing at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>"
     },
     {
+      "id": 2,
       "contact": "newsletter@example.com",
       "creation_date": "2020-02-21 11:35:00+00:00",
       "creation_timestamp": 1582284900,
@@ -966,12 +978,31 @@ Return 409 if contact is already added.
 
 ```
 {
+  "id": 1,
   "contact": "First Last <first@example.com>",
   "creation_date": "2020-03-14 11:52:41+00:00",
   "creation_timestamp": 1584186761,
   "last_email_sent_date": null,
   "last_email_sent_timestamp": null,
   "reverse_alias": "First Last first@example.com <ra+qytyzjhrumrreuszrbjxqjlkh@sl.local>"
+}
+```
+
+#### DELETE /api/contacts/:contact_id
+
+Delete a contact
+
+Input:
+- `Authentication` header that contains the api key
+- `contact_id` in url.
+
+Output:
+If success, 200.
+
+
+```json
+{
+    "deleted": true
 }
 ```
 

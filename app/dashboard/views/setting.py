@@ -21,7 +21,7 @@ from app.models import (
     ResetPasswordCode,
     EmailChange,
     User,
-    GenEmail,
+    Alias,
     DeletedAlias,
     CustomDomain,
     Client,
@@ -71,7 +71,7 @@ def setting():
                     # check if this email is not already used
                     if (
                         email_already_used(new_email)
-                        or GenEmail.get_by(email=new_email)
+                        or Alias.get_by(email=new_email)
                         or DeletedAlias.get_by(email=new_email)
                     ):
                         flash(f"Email {new_email} already used", "error")
@@ -165,9 +165,7 @@ def setting():
                 "custom_domains": [],
             }
 
-            for alias in GenEmail.filter_by(
-                user_id=current_user.id
-            ).all():  # type: GenEmail
+            for alias in Alias.filter_by(user_id=current_user.id).all():  # type: Alias
                 data["aliases"].append(dict(email=alias.email, enabled=alias.enabled))
 
             for custom_domain in CustomDomain.filter_by(user_id=current_user.id).all():
