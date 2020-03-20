@@ -169,10 +169,10 @@ def test_alias_activities(flask_client):
     db.session.commit()
 
     for _ in range(int(PAGE_LIMIT / 2)):
-        EmailLog.create(contact_id=contact.id, is_reply=True)
+        EmailLog.create(contact_id=contact.id, is_reply=True, user_id=contact.user_id)
 
     for _ in range(int(PAGE_LIMIT / 2) + 2):
-        EmailLog.create(contact_id=contact.id, blocked=True)
+        EmailLog.create(contact_id=contact.id, blocked=True, user_id=contact.user_id)
 
     r = flask_client.get(
         url_for("api.get_alias_activities", alias_id=alias.id, page_id=0),
@@ -241,7 +241,7 @@ def test_alias_contacts(flask_client):
         )
         db.session.commit()
 
-        EmailLog.create(contact_id=contact.id, is_reply=True)
+        EmailLog.create(contact_id=contact.id, is_reply=True, user_id=contact.user_id)
         db.session.commit()
 
     r = flask_client.get(

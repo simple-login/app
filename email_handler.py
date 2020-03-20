@@ -316,7 +316,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
 
     contact = get_or_create_contact(msg["From"], alias)
-    forward_log = EmailLog.create(contact_id=contact.id)
+    forward_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
 
     if alias.enabled:
         # add custom header
@@ -517,7 +517,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         envelope.rcpt_options,
     )
 
-    EmailLog.create(contact_id=contact.id, is_reply=True)
+    EmailLog.create(contact_id=contact.id, is_reply=True, user_id=contact.user_id)
     db.session.commit()
 
     return "250 Message accepted for delivery"
@@ -527,7 +527,9 @@ def handle_bounce(
     contact: Contact, alias: Alias, msg: Message, user: User, mailbox_email: str
 ):
     address = alias.email
-    fel: EmailLog = EmailLog.create(contact_id=contact.id, bounced=True)
+    fel: EmailLog = EmailLog.create(
+        contact_id=contact.id, bounced=True, user_id=contact.user_id
+    )
     db.session.commit()
 
     nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
