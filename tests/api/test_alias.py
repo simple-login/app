@@ -164,6 +164,7 @@ def test_alias_activities(flask_client):
         website_email="marketing@example.com",
         reply_email="reply@a.b",
         alias_id=alias.id,
+        user_id=alias.user_id,
     )
     db.session.commit()
 
@@ -236,6 +237,7 @@ def test_alias_contacts(flask_client):
             website_email=f"marketing-{i}@example.com",
             reply_email=f"reply-{i}@a.b",
             alias_id=alias.id,
+            user_id=alias.user_id,
         )
         db.session.commit()
 
@@ -318,6 +320,7 @@ def test_delete_contact(flask_client):
         alias_id=alias.id,
         website_email="contact@example.com",
         reply_email="reply+random@sl.io",
+        user_id=alias.user_id,
     )
     db.session.commit()
 

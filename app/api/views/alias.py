@@ -320,6 +320,7 @@ def create_contact_route(alias_id):
         return jsonify(error="Contact already added"), 409
 
     contact = Contact.create(
+        user_id=alias.user_id,
         alias_id=alias.id,
         website_email=website_email,
         website_from=contact_email,
