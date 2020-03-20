@@ -106,7 +106,7 @@ def setting():
 
                 if form.profile_picture.data:
                     file_path = random_string(30)
-                    file = File.create(path=file_path)
+                    file = File.create(user_id=current_user.id, path=file_path)
 
                     s3.upload_from_bytesio(
                         file_path, BytesIO(form.profile_picture.data.read())

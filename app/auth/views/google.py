@@ -88,7 +88,7 @@ def google_callback():
     if user:
         if picture_url and not user.profile_picture_id:
             LOG.d("set user profile picture to %s", picture_url)
-            file = create_file_from_url(picture_url)
+            file = create_file_from_url(user, picture_url)
             user.profile_picture_id = file.id
             db.session.commit()
     # create user
@@ -105,10 +105,11 @@ def google_callback():
         user = User.create(
             email=email.lower(), name=google_user_data["name"], activated=True
         )
+        db.session.flush()
 
         if picture_url:
             LOG.d("set user profile picture to %s", picture_url)
-            file = create_file_from_url(picture_url)
+            file = create_file_from_url(user, picture_url)
             user.profile_picture_id = file.id
 
         db.session.commit()
@@ -133,9 +134,9 @@ def google_callback():
     return after_login(user, next_url)
 
 
-def create_file_from_url(url) -> File:
+def create_file_from_url(user, url) -> File:
     file_path = random_string(30)
-    file = File.create(path=file_path)
+    file = File.create(path=file_path, user_id=user.id)
 
     s3.upload_from_url(url, file_path)
 

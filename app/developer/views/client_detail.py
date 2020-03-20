@@ -45,7 +45,7 @@ def client_detail(client_id):
             # todo: remove current icon if any
             # todo: handle remove icon
             file_path = random_string(30)
-            file = File.create(path=file_path)
+            file = File.create(path=file_path, user_id=client.user_id)
 
             s3.upload_from_bytesio(file_path, BytesIO(form.icon.data.read()))
 
