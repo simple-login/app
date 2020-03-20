@@ -1,5 +1,5 @@
 from flask import render_template, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
 from app.models import EmailLog
@@ -13,7 +13,9 @@ def refused_email_route():
     if highlight_fel_id:
         highlight_fel_id = int(highlight_fel_id)
 
-    fels: [EmailLog] = EmailLog.query.filter(EmailLog.refused_email_id != None).all()
+    fels: [EmailLog] = EmailLog.query.filter(
+        EmailLog.user_id == current_user.id, EmailLog.refused_email_id != None
+    ).all()
 
     # make sure the highlighted fel is the first fel
     highlight_index = None
