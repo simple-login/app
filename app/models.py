@@ -80,7 +80,7 @@ class ModelMixin(object):
 
 class File(db.Model, ModelMixin):
     path = db.Column(db.String(128), unique=True, nullable=False)
-    user_id = db.Column(db.ForeignKey("users.id", ondelete="cascade"), nullable=True)
+    user_id = db.Column(db.ForeignKey("users.id", ondelete="cascade"), nullable=False)
 
     def get_url(self, expires_in=3600):
         return s3.get_url(self.path, expires_in)
@@ -701,7 +701,7 @@ class Contact(db.Model, ModelMixin):
         db.UniqueConstraint("alias_id", "website_email", name="uq_contact"),
     )
 
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
 
     # used to be envelope header, should be mail header from instead
@@ -747,7 +747,7 @@ class Contact(db.Model, ModelMixin):
 
 
 class EmailLog(db.Model, ModelMixin):
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     contact_id = db.Column(
         db.ForeignKey(Contact.id, ondelete="cascade"), nullable=False
     )
@@ -769,6 +769,8 @@ class EmailLog(db.Model, ModelMixin):
 
     refused_email = db.relationship("RefusedEmail")
     forward = db.relationship(Contact)
+
+    contact = db.relationship(Contact)
 
 
 class Subscription(db.Model, ModelMixin):
