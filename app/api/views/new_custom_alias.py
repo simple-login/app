@@ -72,7 +72,7 @@ def new_custom_alias():
     db.session.commit()
 
     if hostname:
-        AliasUsedOn.create(alias_id=alias.id, hostname=hostname)
+        AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
         db.session.commit()
 
     return jsonify(alias=full_alias), 201
