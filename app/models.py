@@ -850,7 +850,7 @@ class AliasUsedOn(db.Model, ModelMixin):
     )
 
     alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
     alias = db.relationship(Alias)
 
