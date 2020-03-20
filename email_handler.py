@@ -236,6 +236,7 @@ def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
             reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
 
         contact = Contact.create(
+            user_id=alias.user_id,
             alias_id=alias.id,
             website_email=website_email,
             website_from=website_from_header,

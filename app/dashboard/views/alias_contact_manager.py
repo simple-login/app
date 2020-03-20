@@ -87,6 +87,7 @@ def alias_contact_manager(alias_id, contact_id=None):
                     )
 
                 contact = Contact.create(
+                    user_id=alias.user_id,
                     alias_id=alias.id,
                     website_email=website_email,
                     website_from=contact_email,
