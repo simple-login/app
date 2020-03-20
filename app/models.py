@@ -80,6 +80,7 @@ class ModelMixin(object):
 
 class File(db.Model, ModelMixin):
     path = db.Column(db.String(128), unique=True, nullable=False)
+    user_id = db.Column(db.ForeignKey("users.id", ondelete="cascade"), nullable=True)
 
     def get_url(self, expires_in=3600):
         return s3.get_url(self.path, expires_in)
@@ -143,7 +144,7 @@ class User(db.Model, ModelMixin, UserMixin):
         db.ForeignKey("mailbox.id"), nullable=True, default=None
     )
 
-    profile_picture = db.relationship(File)
+    profile_picture = db.relationship(File, foreign_keys=[profile_picture_id])
 
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
@@ -700,6 +701,7 @@ class Contact(db.Model, ModelMixin):
         db.UniqueConstraint("alias_id", "website_email", name="uq_contact"),
     )
 
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=True)
     alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
 
     # used to be envelope header, should be mail header from instead
@@ -745,6 +747,7 @@ class Contact(db.Model, ModelMixin):
 
 
 class EmailLog(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=True)
     contact_id = db.Column(
         db.ForeignKey(Contact.id, ondelete="cascade"), nullable=False
     )
