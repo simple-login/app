@@ -102,7 +102,7 @@ def facebook_callback():
     if user:
         if picture_url and not user.profile_picture_id:
             LOG.d("set user profile picture to %s", picture_url)
-            file = create_file_from_url(picture_url)
+            file = create_file_from_url(user, picture_url)
             user.profile_picture_id = file.id
             db.session.commit()
 
@@ -120,10 +120,11 @@ def facebook_callback():
         user = User.create(
             email=email.lower(), name=facebook_user_data["name"], activated=True
         )
+        db.session.flush()
 
         if picture_url:
             LOG.d("set user profile picture to %s", picture_url)
-            file = create_file_from_url(picture_url)
+            file = create_file_from_url(user, picture_url)
             user.profile_picture_id = file.id
 
         db.session.commit()
