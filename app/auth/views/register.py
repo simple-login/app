@@ -46,7 +46,11 @@ def register():
                 user = User.create(email=email, name="", password=form.password.data)
                 db.session.commit()
 
-                send_activation_email(user, next_url)
+                try:
+                    send_activation_email(user, next_url)
+                except:
+                    flash("Invalid email, are you sure the email is correct?", "error")
+                    return redirect(url_for("auth.register"))
 
                 return render_template("auth/register_waiting_activation.html")
 
