@@ -548,8 +548,12 @@ def handle_bounce(
     full_report_path = f"refused-emails/full-{random_name}.eml"
     s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
 
-    file_path = f"refused-emails/{random_name}.eml"
-    s3.upload_email_from_bytesio(file_path, BytesIO(orig_msg.as_bytes()), random_name)
+    file_path = None
+    if orig_msg:
+        file_path = f"refused-emails/{random_name}.eml"
+        s3.upload_email_from_bytesio(
+            file_path, BytesIO(orig_msg.as_bytes()), random_name
+        )
 
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id

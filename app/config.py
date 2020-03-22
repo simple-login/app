@@ -108,7 +108,7 @@ with open(DKIM_PUBLIC_KEY_PATH) as f:
     )
 
 
-DKIM_HEADERS = [b"from", b"to", b"subject"]
+DKIM_HEADERS = [b"from", b"to"]
 
 # Database
 DB_URI = os.environ["DB_URI"]

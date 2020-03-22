@@ -982,7 +982,7 @@ class RefusedEmail(db.Model, ModelMixin):
     full_report_path = db.Column(db.String(128), unique=True, nullable=False)
 
     # The original email, to display to user
-    path = db.Column(db.String(128), unique=True, nullable=False)
+    path = db.Column(db.String(128), unique=True, nullable=True)
 
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
@@ -993,7 +993,10 @@ class RefusedEmail(db.Model, ModelMixin):
     deleted = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
     def get_url(self, expires_in=3600):
-        return s3.get_url(self.path, expires_in)
+        if self.path:
+            return s3.get_url(self.path, expires_in)
+        else:
+            return s3.get_url(self.full_report_path, expires_in)
 
     def __repr__(self):
         return f"<Refused Email {self.id} {self.path} {self.delete_at}>"
