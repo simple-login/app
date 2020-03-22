@@ -768,7 +768,6 @@ Input:
 
 Output: Same output as for `/api/auth/login` endpoint
 
-
 #### POST /api/auth/register
 
 Input:
