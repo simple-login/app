@@ -335,10 +335,15 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             website_name
             + (" - " if website_name else "")
             + website_email.replace("@", " at ")
-        )
+        ).strip()
         from_header = formataddr((new_website_name, contact.reply_email))
-        add_or_replace_header(msg, "From", from_header)
-        LOG.d("new from header:%s", from_header)
+        add_or_replace_header(msg, "From", from_header.strip())
+        LOG.d(
+            "new from header:%s, website_name %s, website_email %s",
+            from_header.strip(),
+            website_name,
+            website_email,
+        )
 
         # append alias into the TO header if it's not present in To or CC
         if should_append_alias(msg, alias.email):
@@ -348,7 +353,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             else:
                 to_header = alias.email
 
-            add_or_replace_header(msg, "To", to_header)
+            add_or_replace_header(msg, "To", to_header.strip())
 
         # add List-Unsubscribe header
         unsubscribe_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
