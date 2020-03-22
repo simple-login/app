@@ -226,14 +226,7 @@ def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
             website_from_header,
         )
 
-        # generate a reply_email, make sure it is unique
-        # not use while loop to avoid infinite loop
-        reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
-        for _ in range(1000):
-            if not Contact.get_by(reply_email=reply_email):
-                # found!
-                break
-            reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
+        reply_email = generate_reply_email()
 
         contact = Contact.create(
             user_id=alias.user_id,
@@ -245,6 +238,19 @@ def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
         db.session.commit()
 
     return contact
+
+
+def generate_reply_email():
+    # generate a reply_email, make sure it is unique
+    # not use while loop to avoid infinite loop
+    reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
+    for _ in range(1000):
+        if not Contact.get_by(reply_email=reply_email):
+            # found!
+            break
+        reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
+
+    return reply_email
 
 
 def should_append_alias(msg: Message, address: str):
