@@ -68,11 +68,9 @@
 {% endblock %}
 
 {% block default_content %}
-  <div class="page-header row ml-0">
-    <h3 class="page-title col">
-      {{ alias }}
-    </h3>
-  </div>
+  <h1 class="h3">
+    {{ alias.email }}
+  </h1>
   <div class="row">
     <div class="col-md-3 col-sm-6">
       <div class="card-counter primary">
@@ -103,8 +101,7 @@
       </div>
     </div>
   </div>
-  <h2 class="pt-4">Activities</h2>
-  <div class="row">
+  <div class="row mt-4">
     {% for log in logs %}
       <div class="col-12">
         <div class="my-2 p-2 card border-light">
