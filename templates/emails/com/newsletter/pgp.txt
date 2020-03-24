@@ -1,0 +1,32 @@
+This email is sent to {{ user.email }}.
+Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+----------------
+
+Hi {{user.name}}
+
+If you happen to use Gmail, Yahoo, Outlook, etc, do you know these services can read your emails?
+
+If you want to keep your emails only readable by you, Pretty Good Privacy (PGP) is maybe the solution.
+
+Highly recommended, open source and free, PGP is unfortunately not widely supported. However with SimpleLogin most recent PGP support, you can now enable PGP on emails sent to your aliases easily.
+
+Without PGP the emails sent to an alias are forwarded by SimpleLogin as-is to your mailbox, leaving anyone in-between or your email service able to read your emails:
+
+https://simplelogin.io/blog/without-pgp.png
+
+With PGP enabled, all emails arrived at SimpleLogin are encrypted with your public key before being forwarded to your mailbox:
+
+https://simplelogin.io/blog/with-pgp.png
+
+You can find more info on our announcement post on https://simplelogin.io/blog/introducing-pgp/
+
+You can create and manage your PGP keys when adding or editing your mailboxes. Check it out on your mailbox dashboard at  https://app.simplelogin.io/dashboard/mailbox
+
+Our next important feature is the coming of an iOS app. If you use iPhone or iPad want to help us testing out the app, please reply to this email so we can add you into the TestFlight program.
+
+For Android users, don't worry: the Android version is already in progress.
+
+As usual, let us know if you have any question by replying to this email.
+
+Best regards,
+SimpleLogin team.
