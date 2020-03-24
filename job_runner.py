@@ -91,8 +91,8 @@ if __name__ == "__main__":
                     # user might delete their account in the meantime
                     # or disable the notification
                     if user and user.notification and user.activated:
-                        LOG.d("send onboarding pgp email to user %s", user)
-                        onboarding_pgp(user)
+                        LOG.d("send onboarding mailbox email to user %s", user)
+                        onboarding_mailbox(user)
                 elif job.name == JOB_ONBOARDING_3:
                     user_id = job.payload.get("user_id")
                     user = User.get(user_id)
@@ -100,8 +100,9 @@ if __name__ == "__main__":
                     # user might delete their account in the meantime
                     # or disable the notification
                     if user and user.notification and user.activated:
-                        LOG.d("send onboarding mailbox email to user %s", user)
-                        onboarding_mailbox(user)
+                        LOG.d("send onboarding pgp email to user %s", user)
+                        onboarding_pgp(user)
+
                 else:
                     LOG.error("Unknown job name %s", job.name)
 
