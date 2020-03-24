@@ -55,6 +55,21 @@ def send_mailbox_newsletter():
                 LOG.warning("Cannot send to user %s", user)
 
 
+def send_pgp_newsletter():
+    for user in User.query.order_by(User.id).all():
+        if user.notification and user.activated:
+            try:
+                LOG.d("Send PGP newsletter to %s", user)
+                send_email(
+                    user.email,
+                    "Introducing PGP - encrypt your emails so only you can read them",
+                    render("com/newsletter/pgp.txt", user=user),
+                    render("com/newsletter/pgp.html", user=user),
+                )
+            except Exception:
+                LOG.warning("Cannot send to user %s", user)
+
+
 app = create_app()
 
 with app.app_context():
