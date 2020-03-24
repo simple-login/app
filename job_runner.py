@@ -42,8 +42,8 @@ def onboarding_1(user):
     send_email(
         user.email,
         f"Do you know you can send emails to anyone from your alias?",
-        render("com/onboarding-1.txt", user=user),
-        render("com/onboarding-1.html", user=user),
+        render("com/onboarding/send-from-alias.txt", user=user),
+        render("com/onboarding/send-from-alias.html", user=user),
     )
 
 
