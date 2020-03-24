@@ -20,8 +20,6 @@
   {{ render_text('If you have a domain, for example for your business or your project, you can import your domain into SimpleLogin
 and create your <b>business emails</b> using email alias. This is cheaper and more convenient than buying a dedicated solution like GSuite. By the way, all our business emails are actually aliases.') }}
 
-  {{ render_text('If you use <b>PGP</b> (Pretty Good Privacy), you can import your public key into SimpleLogin and all emails will be <b>encrypted</b> before being forwarded to your mailbox. You can add your PGP key on <a href="https://app.simplelogin.io/dashboard/mailbox">mailbox</a>.') }}
-
   {% if user.in_trial() %}
     {{ render_text('You can use all premium features like <em>custom domain</em> or <em>alias directory</em> during the <b>trial period</b>. Your trial will end ' + user.trial_end.humanize() + ". All aliases you create during the trial will continue to work normally when the trial ends.") }}
   {% endif %}
