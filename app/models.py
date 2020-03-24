@@ -17,6 +17,7 @@ from app.config import (
     URL,
     AVATAR_URL_EXPIRATION,
     JOB_ONBOARDING_1,
+    JOB_ONBOARDING_2,
 )
 from app.extensions import db
 from app.log import LOG
@@ -168,6 +169,11 @@ class User(db.Model, ModelMixin, UserMixin):
             name=JOB_ONBOARDING_1,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=1),
+        )
+        Job.create(
+            name=JOB_ONBOARDING_2,
+            payload={"user_id": user.id},
+            run_at=arrow.now().shift(days=2),
         )
         db.session.flush()
 

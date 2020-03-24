@@ -6,7 +6,7 @@ import time
 
 import arrow
 
-from app.config import JOB_ONBOARDING_1
+from app.config import JOB_ONBOARDING_1, JOB_ONBOARDING_2
 from app.email_utils import send_email, render
 from app.extensions import db
 from app.log import LOG
@@ -30,20 +30,21 @@ def new_app():
     return app
 
 
-def onboarding_1(user):
-    if not user.activated:
-        LOG.d("User %s is not activated", user)
-        return
-
-    if not user.notification:
-        LOG.d("User %s disable notification setting", user)
-        return
-
+def onboarding_send_from_alias(user):
     send_email(
         user.email,
         f"Do you know you can send emails to anyone from your alias?",
         render("com/onboarding/send-from-alias.txt", user=user),
         render("com/onboarding/send-from-alias.html", user=user),
+    )
+
+
+def onboarding_pgp(user):
+    send_email(
+        user.email,
+        f"Do you know you can encrypt your emails so only you can read them",
+        render("com/onboarding/pgp.txt", user=user),
+        render("com/onboarding/pgp.html", user=user),
     )
 
 
@@ -70,9 +71,19 @@ if __name__ == "__main__":
                     user = User.get(user_id)
 
                     # user might delete their account in the meantime
-                    if user:
-                        LOG.d("run onboarding_1 for user %s", user)
-                        onboarding_1(user)
+                    # or disable the notification
+                    if user and user.notification and user.activated:
+                        LOG.d("send onboarding send-from-alias email to user %s", user)
+                        onboarding_send_from_alias(user)
+                elif job.name == JOB_ONBOARDING_2:
+                    user_id = job.payload.get("user_id")
+                    user = User.get(user_id)
+
+                    # user might delete their account in the meantime
+                    # or disable the notification
+                    if user and user.notification and user.activated:
+                        LOG.d("send onboarding pgp email to user %s", user)
+                        onboarding_pgp(user)
                 else:
                     LOG.error("Unknown job name %s", job.name)
 
