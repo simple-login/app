@@ -1,0 +1,26 @@
+This email is sent to {{ user.email }} and is part of our onboarding series.
+Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+----------------
+
+Hi {{user.name}}
+
+If you have several email addresses, e.g. Gmail for work and Protonmail for personal stuffs, you can add them into SimpleLogin and create aliases for them.
+
+A (real) email address is called *mailbox* in SimpleLogin.
+
+When creating an alias, you can choose which mailbox that *owns* this alias, meaning:
+
+- emails sent to this alias are *forwarded* to the owning mailbox.
+
+- the owning mailbox can *send* or reply emails from this alias.
+
+You can also change the owning mailbox for an existing alias.
+
+The mailbox doesn't have to be your personal email: you can also create aliases for your friend by adding his/her email as a mailbox.
+
+Start create you mailbox on https://app.simplelogin.io/dashboard/mailbox
+
+As usual, let us know if you have any question by replying to this email.
+
+Best regards,
+SimpleLogin team.

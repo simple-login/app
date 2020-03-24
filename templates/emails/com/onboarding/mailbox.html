@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + user.name) }}
+  {{ render_text("If you have several email addresses, e.g. Gmail for work and Protonmail for personal stuffs, you can add them into SimpleLogin and create aliases for them.") }}
+
+  {{ render_text("A real email address is called <b>mailbox</b> in SimpleLogin.") }}
+
+  <img src="https://simplelogin.io/blog/mailbox-gmail.png" alt="Mailbox Gmail">
+  <img src="https://simplelogin.io/blog/mailbox-protonmail.png" alt="Mailbox Protonmail">
+
+  {{ render_text("When creating an alias, you can choose which mailbox that <b>owns</b> this alias, meaning:") }}
+
+  {{ render_text("1. Emails sent to this alias are *forwarded* to the owning mailbox.") }}
+
+  {{ render_text("2. The owning mailbox can *send* or reply emails from this alias.") }}
+
+  {{ render_text("You can also change the owning mailbox for an existing alias.") }}
+
+  {{ render_text('The mailbox doesn\'t have to be your personal email: you can also create aliases for your friend by adding his/her email as a mailbox.') }}
+
+  {{ render_button("Create mailbox", "https://app.simplelogin.io/dashboard/mailbox") }}
+
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
+
+  {{ raw_url("https://app.simplelogin.io/dashboard/mailbox") }}
+
+{% endblock %}
+
+{% block footer %}
+  This email is sent to {{ user.email }} and is part of our onboarding series. Unsubscribe on
+  <a href="https://app.simplelogin.io/dashboard/setting#notification">Settings</a>
+{% endblock %}

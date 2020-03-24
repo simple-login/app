@@ -6,7 +6,7 @@ import time
 
 import arrow
 
-from app.config import JOB_ONBOARDING_1, JOB_ONBOARDING_2
+from app.config import JOB_ONBOARDING_1, JOB_ONBOARDING_2, JOB_ONBOARDING_3
 from app.email_utils import send_email, render
 from app.extensions import db
 from app.log import LOG
@@ -42,9 +42,18 @@ def onboarding_send_from_alias(user):
 def onboarding_pgp(user):
     send_email(
         user.email,
-        f"Do you know you can encrypt your emails so only you can read them",
+        f"Do you know you can encrypt your emails so only you can read them?",
         render("com/onboarding/pgp.txt", user=user),
         render("com/onboarding/pgp.html", user=user),
+    )
+
+
+def onboarding_mailbox(user):
+    send_email(
+        user.email,
+        f"Do you know SimpleLogin can manage several email addresses?",
+        render("com/onboarding/mailbox.txt", user=user),
+        render("com/onboarding/mailbox.html", user=user),
     )
 
 
@@ -84,6 +93,15 @@ if __name__ == "__main__":
                     if user and user.notification and user.activated:
                         LOG.d("send onboarding pgp email to user %s", user)
                         onboarding_pgp(user)
+                elif job.name == JOB_ONBOARDING_3:
+                    user_id = job.payload.get("user_id")
+                    user = User.get(user_id)
+
+                    # user might delete their account in the meantime
+                    # or disable the notification
+                    if user and user.notification and user.activated:
+                        LOG.d("send onboarding mailbox email to user %s", user)
+                        onboarding_mailbox(user)
                 else:
                     LOG.error("Unknown job name %s", job.name)
 
