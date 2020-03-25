@@ -56,7 +56,7 @@ for user in User.query.all():
 
 ```bash
 # Pull the latest version
-sudo docker pull simplelogin/app:2.0.0
+sudo docker pull simplelogin/app:2.1.0
 
 # Stop SimpleLogin containers
 sudo docker stop sl-email sl-migration sl-app
@@ -67,32 +67,35 @@ sudo docker rm -f sl-email sl-migration sl-app
 # Run the database migration
 sudo docker run --rm \
     --name sl-migration \
+    -v $(pwd)/sl:/sl \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:2.0.0 flask db upgrade
+    simplelogin/app:2.1.0 flask db upgrade
 
 # Run the webapp container
 sudo docker run -d \
     --name sl-app \
+    -v $(pwd)/sl:/sl \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:2.0.0
+    simplelogin/app:2.1.0
 
 # Run the email handler container
 sudo docker run -d \
     --name sl-email \
+    -v $(pwd)/sl:/sl \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:2.0.0 python email_handler.py
+    simplelogin/app:2.1.0 python email_handler.py
 ```
 
