@@ -5,6 +5,31 @@ No emails or any data is lost in the upgrade process. The same process is by the
 Sometimes upgrading to a major version might require running a manual migration. This is for example the case when upgrading to 2.0.0. In this case please follow the corresponding migration first before running these scripts.
 
 <details>
+<summary>Upgrade to 2.1.0 from 2.0.0</summary>
+<p>
+
+2.1.0 comes with PGP support. If you use PGP, please follow these steps to enable this feature:
+
+1) Create directory to store SimpleLogin data
+
+```bash
+mkdir sl
+mkdir sl/pgp # to store PGP key
+mkdir sl/db # to store database 
+```
+
+2) Then add this line to your config simplelogin.env file
+
+```
+GNUPGHOME=/sl/pgp # where to store PGP keys
+```
+
+Now you can follow the usual steps to upgrade SimpleLogin.
+
+</p>
+</details>
+
+<details>
 <summary>Upgrade to 2.0.0</summary>
 <p>
 
