@@ -10,7 +10,7 @@ Sometimes upgrading to a major version might require running a manual migration.
 
 2.1.0 comes with PGP support. If you use PGP, please follow these steps to enable this feature:
 
-1) Create directory to store SimpleLogin data
+1) In your home directory (where `dkim.key` is located), create directory to store SimpleLogin data
 
 ```bash
 mkdir sl
