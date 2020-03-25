@@ -99,6 +99,18 @@ sudo docker run --rm \
     --network="sl-network" \
     simplelogin/app:2.1.0 flask db upgrade
 
+# Run init data
+sudo docker run --rm \
+    --name sl-init \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -p 7777:7777 \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:2.1.0 python init_app.py
+
 # Run the webapp container
 sudo docker run -d \
     --name sl-app \
