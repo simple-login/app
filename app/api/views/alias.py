@@ -12,6 +12,7 @@ from app.dashboard.views.alias_log import get_alias_log
 from app.dashboard.views.index import (
     AliasInfo,
     get_alias_infos_with_pagination,
+    get_alias_info,
 )
 from app.extensions import db
 from app.log import LOG
@@ -208,6 +209,27 @@ def update_alias(alias_id):
     db.session.commit()
 
     return jsonify(note=new_note), 200
+
+
+@api_bp.route("/aliases/<int:alias_id>", methods=["GET"])
+@cross_origin()
+@verify_api_key
+def get_alias(alias_id):
+    """
+    Get alias
+    Input:
+        alias_id: in url
+    Output:
+        Alias info, same as in get_aliases
+
+    """
+    user = g.user
+    alias: Alias = Alias.get(alias_id)
+
+    if alias.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    return jsonify(**serialize_alias_info(get_alias_info(alias))), 200
 
 
 def serialize_contact(fe: Contact) -> dict:

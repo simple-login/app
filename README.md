@@ -861,6 +861,31 @@ If success, 200 with the list of aliases, for example:
 }
 ```
 
+#### GET /api/aliases/:alias_id
+
+Get alias info
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url
+
+Output:
+Alias info
+
+```json
+{
+    "creation_date": "2020-02-04 16:23:02+00:00",
+    "creation_timestamp": 1580833382,
+    "email": "e3@.alo@sl.local",
+    "id": 4,
+    "nb_block": 0,
+    "nb_forward": 0,
+    "nb_reply": 0,
+    "enabled": true,
+    "note": "This is a note"
+}
+```
+
 #### DELETE /api/aliases/:alias_id
 
 Delete an alias
