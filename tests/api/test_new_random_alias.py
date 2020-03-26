@@ -25,6 +25,18 @@ def test_success(flask_client):
     assert r.status_code == 201
     assert r.json["alias"].endswith(EMAIL_DOMAIN)
 
+    # assert returned field
+    res = r.json
+    assert "id" in res
+    assert "email" in res
+    assert "creation_date" in res
+    assert "creation_timestamp" in res
+    assert "nb_forward" in res
+    assert "nb_block" in res
+    assert "nb_reply" in res
+    assert "enabled" in res
+    assert "note" in res
+
 
 def test_custom_mode(flask_client):
     user = User.create(
