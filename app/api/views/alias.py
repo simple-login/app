@@ -57,23 +57,24 @@ def get_aliases():
 
     return (
         jsonify(
-            aliases=[
-                {
-                    "id": alias_info.id,
-                    "email": alias_info.alias.email,
-                    "creation_date": alias_info.alias.created_at.format(),
-                    "creation_timestamp": alias_info.alias.created_at.timestamp,
-                    "nb_forward": alias_info.nb_forward,
-                    "nb_block": alias_info.nb_blocked,
-                    "nb_reply": alias_info.nb_reply,
-                    "enabled": alias_info.alias.enabled,
-                    "note": alias_info.note,
-                }
-                for alias_info in alias_infos
-            ]
+            aliases=[serialize_alias_info(alias_info) for alias_info in alias_infos]
         ),
         200,
     )
+
+
+def serialize_alias_info(alias_info: AliasInfo) -> dict:
+    return {
+        "id": alias_info.id,
+        "email": alias_info.alias.email,
+        "creation_date": alias_info.alias.created_at.format(),
+        "creation_timestamp": alias_info.alias.created_at.timestamp,
+        "nb_forward": alias_info.nb_forward,
+        "nb_block": alias_info.nb_blocked,
+        "nb_reply": alias_info.nb_reply,
+        "enabled": alias_info.alias.enabled,
+        "note": alias_info.note,
+    }
 
 
 @api_bp.route("/aliases/<int:alias_id>", methods=["DELETE"])
