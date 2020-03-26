@@ -331,11 +331,12 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         # replace the email part in from: header
         website_from_header = msg["From"]
         website_name, website_email = parseaddr(website_from_header)
-        new_website_name = (
-            website_name
-            + (" - " if website_name else "")
-            + website_email.replace("@", " at ")
-        ).strip()
+        # new_website_name = (
+        #     website_name
+        #     + (" - " if website_name else "")
+        #     + website_email.replace("@", " at ")
+        # ).strip()
+        new_website_name = f"{website_email} via SimpleLogin"
         from_header = formataddr((new_website_name, contact.reply_email))
         add_or_replace_header(msg, "From", from_header.strip())
         LOG.d(
