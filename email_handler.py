@@ -1,32 +1,32 @@
 """
 Handle the email *forward* and *reply*. phase. There are 3 actors:
-- website: who sends emails to alias@sl.co address
+- contact: who sends emails to alias@sl.co address
 - SL email handler (this script)
-- user personal email: to be protected. Should never leak to website.
+- user personal email: to be protected. Should never leak to contact.
 
 This script makes sure that in the forward phase, the email that is forwarded to user personal email has the following
 envelope and header fields:
 Envelope:
-    mail from: @website
+    mail from: @contact
     rcpt to: @personal_email
 Header:
-    From: @website
+    From: @contact
     To: alias@sl.co # so user knows this email is sent to alias
     Reply-to: special@sl.co # magic HERE
 
 And in the reply phase:
 Envelope:
-    mail from: @website
-    rcpt to: @website
+    mail from: @contact
+    rcpt to: @contact
 
 Header:
-    From: alias@sl.co # so for website the email comes from alias. magic HERE
-    To: @website
+    From: alias@sl.co # so for contact the email comes from alias. magic HERE
+    To: @contact
 
 The special@sl.co allows to hide user personal email when user clicks "Reply" to the forwarded email.
 It should contain the following info:
 - alias
-- @website
+- @contact
 
 
 """
@@ -329,21 +329,16 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         # change the from header so the sender comes from @SL
         # so it can pass DMARC check
         # replace the email part in from: header
-        website_from_header = msg["From"]
-        website_name, website_email = parseaddr(website_from_header)
-        # new_website_name = (
-        #     website_name
-        #     + (" - " if website_name else "")
-        #     + website_email.replace("@", " at ")
-        # ).strip()
-        new_website_name = f"{website_email} via SimpleLogin"
-        from_header = formataddr((new_website_name, contact.reply_email))
-        add_or_replace_header(msg, "From", from_header.strip())
+        contact_from_header = msg["From"]
+        contact_name, contact_email = parseaddr(contact_from_header)
+        new_contact_name = f"{contact_email} via SimpleLogin"
+        new_from_header = formataddr((new_contact_name, contact.reply_email)).strip()
+        add_or_replace_header(msg, "From", new_from_header)
         LOG.d(
-            "new from header:%s, website_name %s, website_email %s",
-            from_header.strip(),
-            website_name,
-            website_email,
+            "new from header:%s, contact_name %s, contact_email %s",
+            new_from_header,
+            contact_name,
+            contact_email,
         )
 
         # append alias into the TO header if it's not present in To or CC
@@ -367,7 +362,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 
         LOG.d(
             "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
-            website_email,
+            contact_email,
             mailbox_email,
             envelope.mail_options,
             envelope.rcpt_options,
