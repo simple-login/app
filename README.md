@@ -714,7 +714,16 @@ If success, 201 with the new alias, for example
 
 ```json
 {
-  "alias": "www_groupon_com@my_domain.com"
+    "alias": "www_groupon_com@my_domain.com",
+    "creation_date": "2020-02-04 16:23:02+00:00",
+    "creation_timestamp": 1580833382,
+    "email": "www_groupon_com@my_domain.com",
+    "id": 4,
+    "nb_block": 0,
+    "nb_forward": 0,
+    "nb_reply": 0,
+    "enabled": true,
+    "note": "This is a note"
 }
 ```
 
