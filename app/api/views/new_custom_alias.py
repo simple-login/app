@@ -3,8 +3,10 @@ from flask import jsonify, request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
+from app.api.views.alias import serialize_alias_info
 from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_DOMAINS
 from app.dashboard.views.custom_alias import verify_prefix_suffix
+from app.dashboard.views.index import get_alias_info
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, AliasUsedOn, User, CustomDomain
@@ -75,4 +77,4 @@ def new_custom_alias():
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
         db.session.commit()
 
-    return jsonify(alias=full_alias), 201
+    return jsonify(alias=full_alias, **serialize_alias_info(get_alias_info(alias))), 201

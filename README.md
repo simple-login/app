@@ -714,7 +714,16 @@ If success, 201 with the new alias, for example
 
 ```json
 {
-  "alias": "www_groupon_com@my_domain.com"
+    "alias": "www_groupon_com@my_domain.com",
+    "creation_date": "2020-02-04 16:23:02+00:00",
+    "creation_timestamp": 1580833382,
+    "email": "www_groupon_com@my_domain.com",
+    "id": 4,
+    "nb_block": 0,
+    "nb_forward": 0,
+    "nb_reply": 0,
+    "enabled": true,
+    "note": "This is a note"
 }
 ```
 
@@ -734,7 +743,16 @@ If success, 201 with the new alias, for example
 
 ```json
 {
-  "alias": "www_groupon_com@my_domain.com"
+    "alias": "prefix.suffix@my_domain.com",
+    "creation_date": "2020-02-04 16:23:02+00:00",
+    "creation_timestamp": 1580833382,
+    "email": "www_groupon_com@my_domain.com",
+    "id": 4,
+    "nb_block": 0,
+    "nb_forward": 0,
+    "nb_reply": 0,
+    "enabled": true,
+    "note": "This is a note"
 }
 ```
 
@@ -858,6 +876,31 @@ If success, 200 with the list of aliases, for example:
             "note": null
         }
     ]
+}
+```
+
+#### GET /api/aliases/:alias_id
+
+Get alias info
+
+Input:
+- `Authentication` header that contains the api key
+- `alias_id` in url
+
+Output:
+Alias info
+
+```json
+{
+    "creation_date": "2020-02-04 16:23:02+00:00",
+    "creation_timestamp": 1580833382,
+    "email": "e3@.alo@sl.local",
+    "id": 4,
+    "nb_block": 0,
+    "nb_forward": 0,
+    "nb_reply": 0,
+    "enabled": true,
+    "note": "This is a note"
 }
 ```
 

@@ -331,3 +331,37 @@ def test_delete_contact(flask_client):
 
     assert r.status_code == 200
     assert r.json == {"deleted": True}
+
+
+def test_get_alias(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    # create more aliases than PAGE_LIMIT
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    # get aliases on the 1st page, should return PAGE_LIMIT aliases
+    r = flask_client.get(
+        url_for("api.get_alias", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 200
+
+    # assert returned field
+    res = r.json
+    assert "id" in res
+    assert "email" in res
+    assert "creation_date" in res
+    assert "creation_timestamp" in res
+    assert "nb_forward" in res
+    assert "nb_block" in res
+    assert "nb_reply" in res
+    assert "enabled" in res
+    assert "note" in res
