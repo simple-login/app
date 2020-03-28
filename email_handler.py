@@ -38,7 +38,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.parser import Parser
 from email.policy import SMTPUTF8
-from email.utils import parseaddr, formataddr
+from email.utils import parseaddr, formataddr, getaddresses
 from io import BytesIO
 from smtplib import SMTP
 from typing import Optional
@@ -65,6 +65,8 @@ from app.email_utils import (
     render,
     get_orig_message_from_bounce,
     delete_all_headers_except,
+    new_addr,
+    get_addrs_from_header,
 )
 from app.extensions import db
 from app.log import LOG
@@ -240,6 +242,104 @@ def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
     return contact
 
 
+def replace_header_when_forward(msg: Message, alias: Alias, header: str):
+    """
+    Replace CC or To header by Reply emails in forward phase
+    """
+    addrs = get_addrs_from_header(msg, header)
+
+    # Nothing to do
+    if not addrs:
+        return
+
+    new_addrs: [str] = []
+    need_replace = False
+
+    for addr in addrs:
+        name, email = parseaddr(addr)
+
+        # no transformation when alias is already in the header
+        if email == alias.email:
+            new_addrs.append(addr)
+            continue
+
+        contact = Contact.get_by(alias_id=alias.id, website_email=email)
+        if contact:
+            # update the website_from if needed
+            if contact.website_from != addr:
+                LOG.d("Update website_from for %s to %s", contact, addr)
+                contact.website_from = addr
+                db.session.commit()
+        else:
+            LOG.debug(
+                "create contact for alias %s and email %s, header %s",
+                alias,
+                email,
+                header,
+            )
+
+            reply_email = generate_reply_email()
+
+            contact = Contact.create(
+                user_id=alias.user_id,
+                alias_id=alias.id,
+                website_email=email,
+                website_from=addr,
+                reply_email=reply_email,
+                is_cc=header.lower() == "cc",
+            )
+            db.session.commit()
+
+        new_addrs.append(new_addr(contact.website_from, contact.reply_email))
+        need_replace = True
+
+    if need_replace:
+        new_header = ",".join(new_addrs)
+        LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
+        add_or_replace_header(msg, header, new_header)
+    else:
+        LOG.d("No need to replace %s header", header)
+
+
+def replace_header_when_reply(msg: Message, alias: Alias, header: str):
+    """
+    Replace CC or To Reply emails by original emails
+    """
+    addrs = get_addrs_from_header(msg, header)
+
+    # Nothing to do
+    if not addrs:
+        return
+
+    new_addrs: [str] = []
+    need_replace = False
+
+    for addr in addrs:
+        name, email = parseaddr(addr)
+
+        # no transformation when alias is already in the header
+        if email == alias.email:
+            new_addrs.append(addr)
+            continue
+
+        contact = Contact.get_by(reply_email=email)
+        if not contact:
+            LOG.warning("CC email in reply phase %s must be reply emails", email)
+            # still keep this email in header
+            new_addrs.append(addr)
+            continue
+
+        new_addrs.append(contact.website_from or contact.website_email)
+        need_replace = True
+
+    if need_replace:
+        new_header = ",".join(new_addrs)
+        LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
+        add_or_replace_header(msg, header, new_header)
+    else:
+        LOG.d("No need to replace %s header", header)
+
+
 def generate_reply_email():
     # generate a reply_email, make sure it is unique
     # not use while loop to avoid infinite loop
@@ -254,7 +354,7 @@ def generate_reply_email():
 
 
 def should_append_alias(msg: Message, address: str):
-    """whether an alias should be appened to TO header in message"""
+    """whether an alias should be appended to TO header in message"""
 
     if msg["To"] and address in msg["To"]:
         return False
@@ -337,15 +437,13 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         # replace the email part in from: header
         contact_from_header = msg["From"]
         contact_name, contact_email = parseaddr(contact_from_header)
-        new_contact_name = f"{contact_email} via SimpleLogin"
-        new_from_header = formataddr((new_contact_name, contact.reply_email)).strip()
+        new_from_header = new_addr(contact_from_header, contact.reply_email)
         add_or_replace_header(msg, "From", new_from_header)
-        LOG.d(
-            "new from header:%s, contact_name %s, contact_email %s",
-            new_from_header,
-            contact_name,
-            contact_email,
-        )
+        LOG.d("new_from_header:%s, old header %s", new_from_header, contact_from_header)
+
+        # replace CC & To emails by reply-email for all emails that are not alias
+        replace_header_when_forward(msg, alias, "Cc")
+        replace_header_when_forward(msg, alias, "To")
 
         # append alias into the TO header if it's not present in To or CC
         if should_append_alias(msg, alias.email):
@@ -405,15 +503,15 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         LOG.warning(f"No such forward-email with {reply_email} as reply-email")
         return "550 SL wrong reply email"
 
+    alias = contact.alias
     address: str = contact.alias.email
     alias_domain = address[address.find("@") + 1 :]
 
     # alias must end with one of the ALIAS_DOMAINS or custom-domain
-    if not email_belongs_to_alias_domains(address):
+    if not email_belongs_to_alias_domains(alias.email):
         if not CustomDomain.get_by(domain=alias_domain):
             return "550 SL alias unknown by SimpleLogin"
 
-    alias = contact.alias
     user = alias.user
     mailbox_email = alias.mailbox_email()
 
@@ -424,7 +522,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     if envelope.mail_from == "<>":
         LOG.error(
             "Bounce when sending to alias %s from %s, user %s",
-            address,
+            alias,
             contact.website_from,
             alias.user,
         )
@@ -443,21 +541,20 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             reply_email,
         )
 
-        user = alias.user
         send_email(
             mailbox_email,
-            f"Reply from your alias {address} only works from your mailbox",
+            f"Reply from your alias {alias.email} only works from your mailbox",
             render(
                 "transactional/reply-must-use-personal-email.txt",
                 name=user.name,
-                alias=address,
+                alias=alias.email,
                 sender=envelope.mail_from,
                 mailbox_email=mailbox_email,
             ),
             render(
                 "transactional/reply-must-use-personal-email.html",
                 name=user.name,
-                alias=address,
+                alias=alias.email,
                 sender=envelope.mail_from,
                 mailbox_email=mailbox_email,
             ),
@@ -479,8 +576,8 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 
     delete_header(msg, "DKIM-Signature")
 
-    # the email comes from alias
-    add_or_replace_header(msg, "From", address)
+    # make the email comes from alias
+    add_or_replace_header(msg, "From", alias.email)
 
     # some email providers like ProtonMail adds automatically the Reply-To field
     # make sure to delete it
@@ -489,19 +586,15 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # remove sender header if present as this could reveal user real email
     delete_header(msg, "Sender")
 
-    add_or_replace_header(msg, "To", contact.website_email)
-
-    # add List-Unsubscribe header
-    unsubscribe_link = f"{URL}/dashboard/unsubscribe/{contact.alias_id}"
-    add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
-    add_or_replace_header(msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
+    replace_header_when_reply(msg, alias, "To")
+    replace_header_when_reply(msg, alias, "Cc")
 
     # Received-SPF is injected by postfix-policyd-spf-python can reveal user original email
     delete_header(msg, "Received-SPF")
 
     LOG.d(
         "send email from %s to %s, mail_options:%s,rcpt_options:%s",
-        address,
+        alias.email,
         contact.website_email,
         envelope.mail_options,
         envelope.rcpt_options,
@@ -517,7 +610,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 
     msg_raw = msg.as_string().encode()
     smtp.sendmail(
-        address,
+        alias.email,
         contact.website_email,
         msg_raw,
         envelope.mail_options,
