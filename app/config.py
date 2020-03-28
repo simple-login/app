@@ -90,6 +90,9 @@ else:
 # disable the alias suffix, i.e. the ".random_word" part
 DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 
+# the email address that receives all unsubscription request
+UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
+
 DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
 DKIM_PUBLIC_KEY_PATH = get_abs_path(os.environ["DKIM_PUBLIC_KEY_PATH"])
 DKIM_SELECTOR = b"dkim"

@@ -52,6 +52,7 @@ from app.config import (
     URL,
     ALIAS_DOMAINS,
     POSTFIX_SUBMISSION_TLS,
+    UNSUBSCRIBER,
 )
 from app.email_utils import (
     send_email,
@@ -459,11 +460,15 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
             add_or_replace_header(msg, "To", to_header.strip())
 
         # add List-Unsubscribe header
-        unsubscribe_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
-        add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
-        add_or_replace_header(
-            msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
-        )
+        if UNSUBSCRIBER:
+            unsubscribe_link = f"mailto:{UNSUBSCRIBER}?subject={alias.id}="
+            add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+        else:
+            unsubscribe_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
+            add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+            add_or_replace_header(
+                msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
+            )
 
         add_dkim_signature(msg, EMAIL_DOMAIN)
 
@@ -743,6 +748,54 @@ def handle_bounce(
         )
 
 
+def handle_unsubscribe(envelope):
+    message_data = envelope.content.decode("utf8", errors="replace")
+    msg = Parser(policy=SMTPUTF8).parsestr(message_data)
+
+    # format: alias_id:
+    subject = msg["Subject"]
+    try:
+        alias_id = int(subject[:-1])
+        alias = Alias.get(alias_id)
+    except Exception:
+        LOG.warning("Cannot parse alias from subject %s", msg["Subject"])
+        return "550 SL ignored"
+
+    if not alias:
+        LOG.warning("No such alias %s", alias_id)
+        return "550 SL ignored"
+
+    # This sender cannot unsubscribe
+    if alias.mailbox_email() != envelope.mail_from:
+        LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
+        return "550 SL ignored"
+
+    # Sender is owner of this alias
+    alias.enabled = False
+    db.session.commit()
+    user = alias.user
+
+    enable_alias_url = URL + f"/dashboard/?highlight_alias_id={alias.id}"
+    send_email(
+        envelope.mail_from,
+        f"Alias {alias.email} has been disabled successfully",
+        render(
+            "transactional/unsubscribe-disable-alias.txt",
+            user=user,
+            alias=alias.email,
+            enable_alias_url=enable_alias_url,
+        ),
+        render(
+            "transactional/unsubscribe-disable-alias.html",
+            user=user,
+            alias=alias.email,
+            enable_alias_url=enable_alias_url,
+        ),
+    )
+
+    return "250 Unsubscribe request accepted"
+
+
 class MailHandler:
     async def handle_DATA(self, server, session, envelope):
         LOG.debug(
@@ -756,6 +809,14 @@ class MailHandler:
             smtp.starttls()
         else:
             smtp = SMTP(POSTFIX_SERVER, 25)
+
+        # unsubscribe request
+        if UNSUBSCRIBER and envelope.rcpt_tos == [UNSUBSCRIBER]:
+            LOG.d("Handle unsubscribe request from %s", envelope.mail_from)
+            app = new_app()
+
+            with app.app_context():
+                return handle_unsubscribe(envelope)
 
         # result of all deliveries
         # each element is a couple of whether the delivery is successful and the smtp status
