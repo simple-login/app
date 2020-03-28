@@ -300,11 +300,11 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
 
     alias = Alias.get_by(email=address)
     if not alias:
-        LOG.d("alias %s not exist. Try to see if it can be created on the fly", alias)
+        LOG.d("alias %s not exist. Try to see if it can be created on the fly", address)
         alias = try_auto_create(address)
         if not alias:
-            LOG.d("alias %s cannot be created on-the-fly, return 510", address)
-            return "510 Email not exist"
+            LOG.d("alias %s cannot be created on-the-fly, return 550", address)
+            return "550 SL Email not exist"
 
     mailbox = alias.mailbox
     mailbox_email = mailbox.email
