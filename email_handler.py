@@ -38,7 +38,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.parser import Parser
 from email.policy import SMTPUTF8
-from email.utils import parseaddr, formataddr, getaddresses
+from email.utils import parseaddr
 from io import BytesIO
 from smtplib import SMTP
 from typing import Optional
@@ -319,7 +319,6 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
 
         # no transformation when alias is already in the header
         if email == alias.email:
-            new_addrs.append(addr)
             continue
 
         contact = Contact.get_by(reply_email=email)
