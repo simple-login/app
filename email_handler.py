@@ -399,8 +399,10 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
     return msg
 
 
-def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
-    """return *status_code message*"""
+def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str):
+    """return whether an email has been delivered and
+    the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
+    """
     address = rcpt_to.lower()  # alias@SL
 
     alias = Alias.get_by(email=address)
@@ -409,7 +411,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         alias = try_auto_create(address)
         if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
-            return "550 SL Email not exist"
+            return False, "550 SL Email not exist"
 
     mailbox = alias.mailbox
     mailbox_email = mailbox.email
@@ -486,21 +488,25 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         forward_log.blocked = True
 
     db.session.commit()
-    return "250 Message accepted for delivery"
+    return True, "250 Message accepted for delivery"
 
 
-def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
+def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str):
+    """
+    return whether an email has been delivered and
+    the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
+    """
     reply_email = rcpt_to.lower()
 
     # reply_email must end with EMAIL_DOMAIN
     if not reply_email.endswith(EMAIL_DOMAIN):
         LOG.warning(f"Reply email {reply_email} has wrong domain")
-        return "550 SL wrong reply email"
+        return False, "550 SL wrong reply email"
 
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
         LOG.warning(f"No such forward-email with {reply_email} as reply-email")
-        return "550 SL wrong reply email"
+        return False, "550 SL wrong reply email"
 
     alias = contact.alias
     address: str = contact.alias.email
@@ -509,7 +515,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # alias must end with one of the ALIAS_DOMAINS or custom-domain
     if not email_belongs_to_alias_domains(alias.email):
         if not CustomDomain.get_by(domain=alias_domain):
-            return "550 SL alias unknown by SimpleLogin"
+            return False, "550 SL alias unknown by SimpleLogin"
 
     user = alias.user
     mailbox_email = alias.mailbox_email()
@@ -527,7 +533,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         )
 
         handle_bounce(contact, alias, msg, user, mailbox_email)
-        return "550 SL ignored"
+        return False, "550 SL ignored"
 
     # only mailbox can send email to the reply-email
     if envelope.mail_from.lower() != mailbox_email.lower():
@@ -571,7 +577,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             "",
         )
 
-        return "550 SL ignored"
+        return False, "550 SL ignored"
 
     delete_header(msg, "DKIM-Signature")
 
@@ -619,7 +625,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     EmailLog.create(contact_id=contact.id, is_reply=True, user_id=contact.user_id)
     db.session.commit()
 
-    return "250 Message accepted for delivery"
+    return True, "250 Message accepted for delivery"
 
 
 def handle_bounce(
@@ -737,11 +743,11 @@ def handle_bounce(
 
 class MailHandler:
     async def handle_DATA(self, server, session, envelope):
-        LOG.debug(">>> New message <<<")
-
-        LOG.debug("Mail from %s", envelope.mail_from)
-        LOG.debug("Rcpt to %s", envelope.rcpt_tos)
-        message_data = envelope.content.decode("utf8", errors="replace")
+        LOG.debug(
+            "===>> New message, mail from %s, rctp tos %s ",
+            envelope.mail_from,
+            envelope.rcpt_tos,
+        )
 
         if POSTFIX_SUBMISSION_TLS:
             smtp = SMTP(POSTFIX_SERVER, 587)
@@ -749,23 +755,42 @@ class MailHandler:
         else:
             smtp = SMTP(POSTFIX_SERVER, 25)
 
-        msg = Parser(policy=SMTPUTF8).parsestr(message_data)
+        # result of all deliveries
+        # each element is a couple of whether the delivery is successful and the smtp status
+        res: [(bool, str)] = []
 
         for rcpt_to in envelope.rcpt_tos:
+            message_data = envelope.content.decode("utf8", errors="replace")
+            msg = Parser(policy=SMTPUTF8).parsestr(message_data)
+
             # Reply case
             # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
             if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
-                LOG.debug("Reply phase")
+                LOG.debug(">>> Reply phase %s -> %s", envelope.mail_from, rcpt_to)
                 app = new_app()
 
                 with app.app_context():
-                    return handle_reply(envelope, smtp, msg, rcpt_to)
+                    is_delivered, smtp_status = handle_reply(
+                        envelope, smtp, msg, rcpt_to
+                    )
+                    res.append((is_delivered, smtp_status))
             else:  # Forward case
-                LOG.debug("Forward phase")
+                LOG.debug(">>> Forward phase %s -> %s", envelope.mail_from, rcpt_to)
                 app = new_app()
 
                 with app.app_context():
-                    return handle_forward(envelope, smtp, msg, rcpt_to)
+                    is_delivered, smtp_status = handle_forward(
+                        envelope, smtp, msg, rcpt_to
+                    )
+                    res.append((is_delivered, smtp_status))
+
+        for (is_success, smtp_status) in res:
+            # Consider all deliveries successful if 1 delivery is successful
+            if is_success:
+                return smtp_status
+
+        # Failed delivery for all, return the first failure
+        return res[0][1]
 
 
 if __name__ == "__main__":
