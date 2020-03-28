@@ -365,16 +365,22 @@ def get_orig_message_from_bounce(msg: Message) -> Message:
             return part
 
 
-def new_addr(old_addr, new_email) -> str:
+def new_addr(old_addr, new_email, user: User) -> str:
     """replace First Last <first@example.com> by
     first@example.com by SimpleLogin <new_email>
 
     `new_email` is a special reply address
     """
     name, old_email = parseaddr(old_addr)
-    new_name = f"{old_email} via SimpleLogin"
-    new_addr = formataddr((new_name, new_email)).strip()
+    if user.use_via_format_for_sender:
+        new_name = f"{old_email} via SimpleLogin"
+    else:
+        name = name or ""
+        new_name = (
+            name + (" - " if name else "") + old_email.replace("@", " at ")
+        ).strip()
 
+    new_addr = formataddr((new_name, new_email)).strip()
     return new_addr.strip()
 
 

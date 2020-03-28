@@ -148,6 +148,12 @@ class User(db.Model, ModelMixin, UserMixin):
 
     profile_picture = db.relationship(File, foreign_keys=[profile_picture_id])
 
+    # Use the "via" format for sender address, i.e. "name@example.com via SimpleLogin"
+    # If False, use the format "Name - name at example.com"
+    use_via_format_for_sender = db.Column(
+        db.Boolean, default=True, nullable=False, server_default="1"
+    )
+
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)

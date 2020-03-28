@@ -166,6 +166,41 @@
       </div>
     </div>
 
+    <div class="card" id="sender-format">
+      <div class="card-body">
+        <div class="card-title">Sender address format</div>
+        <div class="mt-1 mb-3">
+          When your alias receives an email, says from <b>John Wick &lt;john@wick.com&gt;</b>,
+          SimpleLogin forwards it to your mailbox. <br>
+
+          Due to some email constraints, SimpleLogin cannot keep the sender email address
+          in the original form and needs to <b>transform</b> it to one of the 2 below formats.
+        </div>
+
+        <form method="post" action="#sender-format">
+          <input type="hidden" name="form-name" value="change-sender-format">
+
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="sender-format" id="exampleRadios1" value="1"
+                {% if current_user.use_via_format_for_sender %} checked {% endif %}>
+            <label class="form-check-label" for="exampleRadios1">
+              <b>john@wick.com via SimpleLogin</b>
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="sender-format" id="exampleRadios2" value="0"
+                {% if not current_user.use_via_format_for_sender %} checked {% endif %}>
+            <label class="form-check-label" for="exampleRadios2">
+              <b>John Wick - john at wick.com</b>
+            </label>
+          </div>
+
+          <button class="btn btn-outline-primary mt-3">Update</button>
+        </form>
+      </div>
+    </div>
+
 
     <div class="card">
       <div class="card-body">
@@ -183,7 +218,7 @@
       </div>
     </div>
 
-   <div class="card">
+    <div class="card">
       <div class="card-body">
         <div class="card-title">Quarantine
           <div class="small-text mt-1 mb-3" style="max-width: 40rem">
