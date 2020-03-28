@@ -290,7 +290,9 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             )
             db.session.commit()
 
-        new_addrs.append(new_addr(contact.website_from, contact.reply_email))
+        new_addrs.append(
+            new_addr(contact.website_from, contact.reply_email, alias.user)
+        )
         need_replace = True
 
     if need_replace:
@@ -438,7 +440,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         # replace the email part in from: header
         contact_from_header = msg["From"]
         contact_name, contact_email = parseaddr(contact_from_header)
-        new_from_header = new_addr(contact_from_header, contact.reply_email)
+        new_from_header = new_addr(contact_from_header, contact.reply_email, user)
         add_or_replace_header(msg, "From", new_from_header)
         LOG.d("new_from_header:%s, old header %s", new_from_header, contact_from_header)
 
