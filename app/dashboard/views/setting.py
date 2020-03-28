@@ -155,6 +155,15 @@ def setting():
                 db.session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "change-sender-format":
+            sender_format = int(request.form.get("sender-format"))
+            if sender_format == 0:
+                current_user.use_via_format_for_sender = False
+            else:
+                current_user.use_via_format_for_sender = True
+            db.session.commit()
+            flash("Your sender format preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "export-data":
             data = {
