@@ -392,12 +392,12 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # reply_email must end with EMAIL_DOMAIN
     if not reply_email.endswith(EMAIL_DOMAIN):
         LOG.warning(f"Reply email {reply_email} has wrong domain")
-        return "550 wrong reply email"
+        return "550 SL wrong reply email"
 
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
         LOG.warning(f"No such forward-email with {reply_email} as reply-email")
-        return "550 wrong reply email"
+        return "550 SL wrong reply email"
 
     address: str = contact.alias.email
     alias_domain = address[address.find("@") + 1 :]
@@ -405,7 +405,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
     # alias must end with one of the ALIAS_DOMAINS or custom-domain
     if not email_belongs_to_alias_domains(address):
         if not CustomDomain.get_by(domain=alias_domain):
-            return "550 alias unknown by SimpleLogin"
+            return "550 SL alias unknown by SimpleLogin"
 
     alias = contact.alias
     user = alias.user
@@ -424,7 +424,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
         )
 
         handle_bounce(contact, alias, msg, user, mailbox_email)
-        return "550 ignored"
+        return "550 SL ignored"
 
     # only mailbox can send email to the reply-email
     if envelope.mail_from.lower() != mailbox_email.lower():
@@ -469,7 +469,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> str:
             "",
         )
 
-        return "550 ignored"
+        return "550 SL ignored"
 
     delete_header(msg, "DKIM-Signature")
 
