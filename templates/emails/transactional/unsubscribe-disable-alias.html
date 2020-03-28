@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + user.name) }}
+  {{ render_text("Your alias <b>"+ alias +"</b> has been disabled successfully.") }}
+  {{ render_text("If this is a mistake, you can re-enable the alias on the dashboard.") }}
+  {{ render_button("Enable Alias", enable_alias_url) }}
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ raw_url(enable_alias_url) }}
+{% endblock %}
+
