@@ -3,7 +3,7 @@ from email.message import Message
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import make_msgid, formatdate
+from email.utils import make_msgid, formatdate, parseaddr, formataddr
 from smtplib import SMTP
 from typing import Optional
 
@@ -363,3 +363,33 @@ def get_orig_message_from_bounce(msg: Message) -> Message:
         # 7th is original message
         if i == 7:
             return part
+
+
+def new_addr(old_addr, new_email) -> str:
+    """replace First Last <first@example.com> by
+    first@example.com by SimpleLogin <new_email>
+
+    `new_email` is a special reply address
+    """
+    name, old_email = parseaddr(old_addr)
+    new_name = f"{old_email} via SimpleLogin"
+    new_addr = formataddr((new_name, new_email)).strip()
+
+    return new_addr.strip()
+
+
+def get_addrs_from_header(msg: Message, header) -> [str]:
+    """Get all addresses contained in `header`
+    Used for To or CC header.
+    """
+    ret = []
+    header_content = msg.get_all(header)
+    if not header_content:
+        return ret
+
+    for addrs in header_content:
+        for addr in addrs.split(","):
+            ret.append(addr.strip())
+
+    # do not return empty string
+    return [r for r in ret if r]

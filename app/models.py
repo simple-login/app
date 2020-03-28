@@ -729,6 +729,9 @@ class Contact(db.Model, ModelMixin):
     # it has the prefix "reply+" to distinguish with other email
     reply_email = db.Column(db.String(512), nullable=False)
 
+    # whether a contact is created via CC
+    is_cc = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     alias = db.relationship(Alias, backref="contacts")
 
     def website_send_to(self):
@@ -756,6 +759,9 @@ class Contact(db.Model, ModelMixin):
             .order_by(desc(EmailLog.created_at))
             .first()
         )
+
+    def __repr__(self):
+        return f"<Contact {self.id} {self.website_email} {self.alias_id}>"
 
 
 class EmailLog(db.Model, ModelMixin):
