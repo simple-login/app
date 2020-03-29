@@ -659,7 +659,7 @@ Output: if api key is correct, return a json with user name and whether user is 
 If api key is incorrect, return 401.
 
 
-#### GET /api/v2/alias/options
+#### GET /api/v3/alias/options
 
 User alias info and suggestion. Used by the first extension screen when user opens the extension.
 
@@ -671,19 +671,12 @@ Output: a json with the following field:
 - can_create: boolean. Whether user can create new alias
 - suffixes: list of string. List of alias `suffix` that user can use. If user doesn't have custom domain, this list has a single element which is the alias default domain (simplelogin.co).
 - prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted from `hostname`. If no `hostname`, then the `prefix_suggestion` is empty.
-- existing: list of string. List of existing alias.
 - recommendation: optional field, dictionary. If an alias is already used for this website, the recommendation will be returned. There are 2 subfields in `recommendation`: `alias` which is the recommended alias and `hostname` is the website on which this alias is used before.
 
 For ex:
 ```json
 {
     "can_create": true,
-    "existing": [
-        "my-first-alias.meo@sl.local",
-        "e1.cat@sl.local",
-        "e2.chat@sl.local",
-        "e3.cat@sl.local"
-    ],
     "prefix_suggestion": "test",
     "recommendation": {
         "alias": "e1.cat@sl.local",
@@ -844,7 +837,7 @@ Get user aliases.
 
 Input:
 - `Authentication` header that contains the api key
-- `page_id` used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts at 0.
+- `page_id` in query. Used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts at 0.
 - (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this case this endpoint also supports POST. 
 
 Output:

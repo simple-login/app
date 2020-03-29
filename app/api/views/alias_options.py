@@ -163,3 +163,79 @@ def options_v2():
     ret["suffixes"] = list(reversed(ret["suffixes"]))
 
     return jsonify(ret)
+
+
+@api_bp.route("/v3/alias/options")
+@cross_origin()
+@verify_api_key
+def options_v3():
+    """
+    Return what options user has when creating new alias.
+    Same as v2 but do NOT return existing alias
+    Input:
+        a valid api-key in "Authentication" header and
+        optional "hostname" in args
+    Output: cf README
+        can_create: bool
+        suffixes: [str]
+        prefix_suggestion: str
+        recommendation: Optional dict
+            alias: str
+            hostname: str
+
+
+    """
+    user = g.user
+    hostname = request.args.get("hostname")
+
+    ret = {
+        "can_create": user.can_create_new_alias(),
+        "suffixes": [],
+        "prefix_suggestion": "",
+    }
+
+    # recommendation alias if exist
+    if hostname:
+        # put the latest used alias first
+        q = (
+            db.session.query(AliasUsedOn, Alias, User)
+            .filter(
+                AliasUsedOn.alias_id == Alias.id,
+                Alias.user_id == user.id,
+                AliasUsedOn.hostname == hostname,
+            )
+            .order_by(desc(AliasUsedOn.created_at))
+        )
+
+        r = q.first()
+        if r:
+            _, alias, _ = r
+            LOG.d("found alias %s %s %s", alias, hostname, user)
+            ret["recommendation"] = {"alias": alias.email, "hostname": hostname}
+
+    # custom alias suggestion and suffix
+    if hostname:
+        # keep only the domain name of hostname, ignore TLD and subdomain
+        # for ex www.groupon.com -> groupon
+        domain_name = hostname
+        if "." in hostname:
+            parts = hostname.split(".")
+            domain_name = parts[-2]
+            domain_name = convert_to_id(domain_name)
+        ret["prefix_suggestion"] = domain_name
+
+    # maybe better to make sure the suffix is never used before
+    # but this is ok as there's a check when creating a new custom alias
+    for domain in ALIAS_DOMAINS:
+        if DISABLE_ALIAS_SUFFIX:
+            ret["suffixes"].append(f"@{domain}")
+        else:
+            ret["suffixes"].append(f".{random_word()}@{domain}")
+
+    for custom_domain in user.verified_custom_domains():
+        ret["suffixes"].append("@" + custom_domain.domain)
+
+    # custom domain should be put first
+    ret["suffixes"] = list(reversed(ret["suffixes"]))
+
+    return jsonify(ret)
