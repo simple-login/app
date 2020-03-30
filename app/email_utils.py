@@ -365,6 +365,21 @@ def get_orig_message_from_bounce(msg: Message) -> Message:
             return part
 
 
+def get_orig_message_from_spamassassin_report(msg: Message) -> Message:
+    """parse the original email from Spamassassin report"""
+    i = 0
+    for part in msg.walk():
+        i += 1
+
+        # the original message is the 4th part
+        # 1st part is the root part,  multipart/report
+        # 2nd is text/plain, SpamAssassin part
+        # 3rd is the original message in message/rfc822 content type
+        # 4th is original message
+        if i == 4:
+            return part
+
+
 def new_addr(old_addr, new_email, user: User) -> str:
     """replace First Last <first@example.com> by
     first@example.com by SimpleLogin <new_email>
@@ -399,3 +414,21 @@ def get_addrs_from_header(msg: Message, header) -> [str]:
 
     # do not return empty string
     return [r for r in ret if r]
+
+
+def get_spam_info(msg: Message) -> (bool, str):
+    """parse SpamAssassin header to detect whether a message is classified as spam.
+    Return (is spam, spam status detail)
+    The header format is
+    ```X-Spam-Status: No, score=-0.1 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
+  DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
+  URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2```
+    """
+    spamassassin_status = msg["X-Spam-Status"]
+    if not spamassassin_status:
+        return False, ""
+
+    # yes or no
+    spamassassin_answer = spamassassin_status[: spamassassin_status.find(",")]
+
+    return spamassassin_answer.lower() == "yes", spamassassin_status

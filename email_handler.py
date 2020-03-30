@@ -68,6 +68,8 @@ from app.email_utils import (
     delete_all_headers_except,
     new_addr,
     get_addrs_from_header,
+    get_spam_info,
+    get_orig_message_from_spamassassin_report,
 )
 from app.extensions import db
 from app.log import LOG
@@ -424,12 +426,25 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         LOG.d("Forward from %s to %s, nothing to do", envelope.mail_from, mailbox_email)
         return False, "550 SL ignored"
 
+    contact = get_or_create_contact(msg["From"], alias)
+
+    spam_check = True
+
     # create PGP email if needed
     if mailbox.pgp_finger_print and user.is_premium():
         LOG.d("Encrypt message using mailbox %s", mailbox)
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
 
-    contact = get_or_create_contact(msg["From"], alias)
+        # no need to spam check for encrypted message
+        spam_check = False
+
+    if spam_check:
+        is_spam, spam_status = get_spam_info(msg)
+        if is_spam:
+            LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
+            handle_spam(contact, alias, msg, user, mailbox_email, spam_status)
+            return False, "550 SL ignored"
+
     forward_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
 
     if alias.enabled:
@@ -748,6 +763,81 @@ def handle_bounce(
             # cannot include bounce email as it can contain spammy text
             # bounced_email=msg,
         )
+
+
+def handle_spam(
+    contact: Contact,
+    alias: Alias,
+    msg: Message,
+    user: User,
+    mailbox_email: str,
+    spam_status: str,
+):
+    email_log: EmailLog = EmailLog.create(
+        contact_id=contact.id,
+        user_id=contact.user_id,
+        is_spam=True,
+        spam_status=spam_status,
+    )
+    db.session.commit()
+
+    # Store the report & original email
+    orig_msg = get_orig_message_from_spamassassin_report(msg)
+    # generate a name for the email
+    random_name = str(uuid.uuid4())
+
+    full_report_path = f"refused-emails/full-{random_name}.eml"
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
+
+    file_path = None
+    if orig_msg:
+        file_path = f"refused-emails/{random_name}.eml"
+        s3.upload_email_from_bytesio(
+            file_path, BytesIO(orig_msg.as_bytes()), random_name
+        )
+
+    refused_email = RefusedEmail.create(
+        path=file_path, full_report_path=full_report_path, user_id=user.id
+    )
+    db.session.flush()
+
+    email_log.refused_email_id = refused_email.id
+    db.session.commit()
+
+    LOG.d("Create spam email %s", refused_email)
+
+    refused_email_url = URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
+    disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
+
+    # inform user
+    LOG.d(
+        "Inform user %s about spam email sent by %s to alias %s",
+        user,
+        contact.website_from,
+        alias.email,
+    )
+    send_email(
+        mailbox_email,
+        f"Email from {contact.website_from} to {alias.email} is detected as spam",
+        render(
+            "transactional/spam-email.txt",
+            name=user.name,
+            alias=alias,
+            website_from=contact.website_from,
+            website_email=contact.website_email,
+            disable_alias_link=disable_alias_link,
+            refused_email_url=refused_email_url,
+        ),
+        render(
+            "transactional/spam-email.html",
+            name=user.name,
+            alias=alias,
+            website_from=contact.website_from,
+            website_email=contact.website_email,
+            disable_alias_link=disable_alias_link,
+            refused_email_url=refused_email_url,
+        ),
+    )
 
 
 def handle_unsubscribe(envelope):
