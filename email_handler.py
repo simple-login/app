@@ -421,10 +421,11 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
 
     # Sometimes when user clicks on "reply all"
     # an email is sent to the same alias that the previous message is destined to
-    if envelope.mail_from == mailbox_email:
-        # nothing to do
-        LOG.d("Forward from %s to %s, nothing to do", envelope.mail_from, mailbox_email)
-        return False, "550 SL ignored"
+    # todo: uncomment this
+    # if envelope.mail_from == mailbox_email:
+    #     # nothing to do
+    #     LOG.d("Forward from %s to %s, nothing to do", envelope.mail_from, mailbox_email)
+    #     return False, "550 SL ignored"
 
     contact = get_or_create_contact(msg["From"], alias)
 
