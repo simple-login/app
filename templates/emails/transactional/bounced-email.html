@@ -8,6 +8,8 @@
 
   {{ render_button("View the refused email", refused_email_url) }}
 
+  {{ render_text('The email is automatically deleted in 7 days.') }}
+
   {{ render_text('To avoid spams forwarded by SimpleLogin server, please consider the following options:') }}
 
   {{ render_text('1. If the email is not spam at all, it means your email provider has wrongly classified it as spam. In this case you can <b>create a filter to whitelist</b> it. The filter could be based on the sender, email subject, etc. As how to create the filter differs for each email provider, please check with your email provider on how to whitelist an email. Let us know if you need help to setup the filter by replying to this email.') }}

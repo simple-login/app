@@ -6,6 +6,8 @@ This is usually due to the email being considered as spam by your email provider
 You can view this email here:
 {{ refused_email_url }}
 
+The email is automatically deleted in 7 days.
+
 To avoid spams forwarded by SimpleLogin server, please consider the following options:
 
 1. If the email is not spam at all, it means your email provider has wrongly classified it as spam. In this case you can create a "filter" to whitelist it. The filter could be based on the sender, email subject, etc. As how to create the filter differs for each email provider, please check with your email provider on how to whitelist an email. Let us know if you need help to setup the filter by replying to this email.
@@ -18,5 +20,3 @@ Please let us know if you have any question.
 
 Best,
 SimpleLogin team.
----------------------------------------------------------------------
-Below if the email that was refused:
