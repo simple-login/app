@@ -46,11 +46,12 @@ class NewContactForm(FlaskForm):
 
 
 @dashboard_bp.route("/alias_contact_manager/<alias_id>/", methods=["GET", "POST"])
-@dashboard_bp.route(
-    "/alias_contact_manager/<alias_id>/<contact_id>", methods=["GET", "POST"]
-)
 @login_required
-def alias_contact_manager(alias_id, contact_id=None):
+def alias_contact_manager(alias_id):
+    highlight_contact_id = None
+    if request.args.get("highlight_contact_id"):
+        highlight_contact_id = int(request.args.get("highlight_contact_id"))
+
     alias = Alias.get(alias_id)
 
     # sanity check
@@ -79,11 +80,16 @@ def alias_contact_manager(alias_id, contact_id=None):
 
                 _, website_email = parseaddr(contact_email)
 
+                contact = Contact.get_by(alias_id=alias.id, website_email=website_email)
                 # already been added
-                if Contact.get_by(alias_id=alias.id, website_email=website_email):
+                if contact:
                     flash(f"{website_email} is already added", "error")
                     return redirect(
-                        url_for("dashboard.alias_contact_manager", alias_id=alias_id)
+                        url_for(
+                            "dashboard.alias_contact_manager",
+                            alias_id=alias_id,
+                            highlight_contact_id=contact.id,
+                        )
                     )
 
                 contact = Contact.create(
@@ -102,7 +108,7 @@ def alias_contact_manager(alias_id, contact_id=None):
                     url_for(
                         "dashboard.alias_contact_manager",
                         alias_id=alias_id,
-                        contact_id=contact.id,
+                        highlight_contact_id=contact.id,
                     )
                 )
         elif request.form.get("form-name") == "delete":
@@ -133,13 +139,15 @@ def alias_contact_manager(alias_id, contact_id=None):
     # make sure highlighted contact is at array start
     contacts = alias.contacts
 
-    if contact_id:
-        contacts = sorted(contacts, key=lambda fe: fe.id == contact_id, reverse=True)
+    if highlight_contact_id:
+        contacts = sorted(
+            contacts, key=lambda fe: fe.id == highlight_contact_id, reverse=True
+        )
 
     return render_template(
         "dashboard/alias_contact_manager.html",
         contacts=contacts,
         alias=alias,
         new_contact_form=new_contact_form,
-        contact_id=contact_id,
+        highlight_contact_id=highlight_contact_id,
     )
