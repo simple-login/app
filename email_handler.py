@@ -315,7 +315,6 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
         return
 
     new_addrs: [str] = []
-    need_replace = False
 
     for addr in addrs:
         name, email = parseaddr(addr)
@@ -326,20 +325,18 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
 
         contact = Contact.get_by(reply_email=email)
         if not contact:
-            LOG.warning("CC email in reply phase %s must be reply emails", email)
+            LOG.warning(
+                "%s email in reply phase %s must be reply emails", header, email
+            )
             # still keep this email in header
             new_addrs.append(addr)
             continue
 
         new_addrs.append(contact.website_from or contact.website_email)
-        need_replace = True
 
-    if need_replace:
-        new_header = ",".join(new_addrs)
-        LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
-        add_or_replace_header(msg, header, new_header)
-    else:
-        LOG.d("No need to replace %s header", header)
+    new_header = ",".join(new_addrs)
+    LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
+    add_or_replace_header(msg, header, new_header)
 
 
 def generate_reply_email():
