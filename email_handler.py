@@ -417,6 +417,13 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
     mailbox_email = mailbox.email
     user = alias.user
 
+    # Sometimes when user clicks on "reply all"
+    # an email is sent to the same alias that the previous message is destined to
+    if envelope.mail_from == mailbox_email:
+        # nothing to do
+        LOG.d("Forward from %s to %s, nothing to do", envelope.mail_from, mailbox_email)
+        return False, "550 SL ignored"
+
     # create PGP email if needed
     if mailbox.pgp_finger_print and user.is_premium():
         LOG.d("Encrypt message using mailbox %s", mailbox)
