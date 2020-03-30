@@ -669,9 +669,7 @@ def handle_bounce(
 
     LOG.d("Create refused email %s", refused_email)
 
-    refused_email_url = (
-        URL + f"/dashboard/refused_email?highlight_fel_id=" + str(fel.id)
-    )
+    refused_email_url = URL + f"/dashboard/refused_email?highlight_id=" + str(fel.id)
 
     # inform user if this is the first bounced email
     if nb_bounced == 1:

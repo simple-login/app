@@ -9,22 +9,22 @@ from app.models import EmailLog
 @login_required
 def refused_email_route():
     # Highlight a refused email
-    highlight_fel_id = request.args.get("highlight_fel_id")
-    if highlight_fel_id:
-        highlight_fel_id = int(highlight_fel_id)
+    highlight_id = request.args.get("highlight_id")
+    if highlight_id:
+        highlight_id = int(highlight_id)
 
-    fels: [EmailLog] = EmailLog.query.filter(
+    email_logs: [EmailLog] = EmailLog.query.filter(
         EmailLog.user_id == current_user.id, EmailLog.refused_email_id != None
-    ).all()
+    ).order_by(EmailLog.id.desc()).all()
 
     # make sure the highlighted fel is the first fel
     highlight_index = None
-    for ix, fel in enumerate(fels):
-        if fel.id == highlight_fel_id:
+    for ix, fel in enumerate(email_logs):
+        if fel.id == highlight_id:
             highlight_index = ix
             break
 
     if highlight_index:
-        fels.insert(0, fels.pop(highlight_index))
+        email_logs.insert(0, email_logs.pop(highlight_index))
 
     return render_template("dashboard/refused_email.html", **locals())
