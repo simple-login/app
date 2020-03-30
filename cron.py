@@ -149,6 +149,9 @@ def stats():
 
     nb_app = Client.query.count()
 
+    nb_bounced_email = EmailLog.query.filter(EmailLog.bounced).count()
+    nb_spam = EmailLog.query.filter(EmailLog.is_spam).count()
+
     today = arrow.now().format()
 
     send_email(
@@ -172,6 +175,9 @@ nb_reply: {nb_reply} <br>
 nb_block: {nb_block} <br>
 
 nb_app: {nb_app} <br>
+
+nb_bounced_email: {nb_bounced_email} <br>
+nb_spam: {nb_spam} <br>
     """,
     )
 
