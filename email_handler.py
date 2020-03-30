@@ -808,7 +808,9 @@ def handle_spam(
 
     LOG.d("Create spam email %s", refused_email)
 
-    refused_email_url = URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
+    refused_email_url = (
+        URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
+    )
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
     # inform user
