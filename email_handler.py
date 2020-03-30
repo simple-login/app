@@ -607,6 +607,8 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
 
     delete_header(msg, "DKIM-Signature")
 
+    delete_header(msg, "Received")
+
     # make the email comes from alias
     add_or_replace_header(msg, "From", alias.email)
 
