@@ -786,6 +786,10 @@ class EmailLog(db.Model, ModelMixin):
     # usually because the forwarded email is too spammy
     bounced = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
+    # SpamAssassin result
+    is_spam = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+    spam_status = db.Column(db.Text, nullable=True, default=None)
+
     # Point to the email that has been refused
     refused_email_id = db.Column(
         db.ForeignKey("refused_email.id", ondelete="SET NULL"), nullable=True
