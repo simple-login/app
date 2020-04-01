@@ -621,6 +621,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
 
     # remove sender header if present as this could reveal user real email
     delete_header(msg, "Sender")
+    delete_header(msg, "X-Sender")
 
     replace_header_when_reply(msg, alias, "To")
     replace_header_when_reply(msg, alias, "Cc")
