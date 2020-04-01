@@ -86,6 +86,9 @@ from app.models import (
 from app.utils import random_string
 from server import create_app
 
+# used when an alias receives email from its own mailbox
+# can happen when user "Reply All" on some email clients
+_SELF_FORWARDING_STATUS = "550 SL self-forward"
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -424,7 +427,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
     if envelope.mail_from == mailbox_email:
         # nothing to do
         LOG.d("Forward from %s to %s, nothing to do", envelope.mail_from, mailbox_email)
-        return False, "550 SL ignored"
+        return False, _SELF_FORWARDING_STATUS
 
     contact = get_or_create_contact(msg["From"], alias)
 
@@ -942,6 +945,12 @@ class MailHandler:
                         envelope, smtp, msg, rcpt_to
                     )
                     res.append((is_delivered, smtp_status))
+
+        # special handling for self-forwarding
+        # just consider success delivery in this case
+        if len(res) == 1 and res[0][1] == _SELF_FORWARDING_STATUS:
+            LOG.d("Self-forwarding, ignore")
+            return "250 SL OK"
 
         for (is_success, smtp_status) in res:
             # Consider all deliveries successful if 1 delivery is successful
