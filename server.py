@@ -4,7 +4,7 @@ import ssl
 import arrow
 import flask_profiler
 import sentry_sdk
-from flask import Flask, redirect, url_for, render_template, request, jsonify
+from flask import Flask, redirect, url_for, render_template, request, jsonify, flash
 from flask_admin import Admin
 from flask_cors import cross_origin
 from flask_login import current_user
@@ -281,7 +281,8 @@ def setup_error_page(app):
 
     @app.errorhandler(401)
     def page_not_found(e):
-        return render_template("error/401.html", current_url=request.full_path), 401
+        flash("You need to login to see this page", "error")
+        return redirect(url_for("auth.login", next=request.full_path))
 
     @app.errorhandler(403)
     def page_not_found(e):
