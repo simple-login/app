@@ -326,7 +326,7 @@ def create_contact_route(alias_id):
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    contact_addr = data.get("contact").lower()
+    contact_addr = data.get("contact")
 
     # generate a reply_email, make sure it is unique
     # not use while to avoid infinite loop
@@ -337,6 +337,7 @@ def create_contact_route(alias_id):
             break
 
     _, contact_email = parseaddr(contact_addr)
+    contact_email = contact_email.lower()
 
     # already been added
     if Contact.get_by(alias_id=alias.id, website_email=contact_email):
