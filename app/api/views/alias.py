@@ -326,7 +326,7 @@ def create_contact_route(alias_id):
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    contact_email = data.get("contact")
+    contact_addr = data.get("contact").lower()
 
     # generate a reply_email, make sure it is unique
     # not use while to avoid infinite loop
@@ -336,21 +336,21 @@ def create_contact_route(alias_id):
         if not Contact.get_by(reply_email=reply_email):
             break
 
-    _, website_email = parseaddr(contact_email)
+    _, contact_email = parseaddr(contact_addr)
 
     # already been added
-    if Contact.get_by(alias_id=alias.id, website_email=website_email):
+    if Contact.get_by(alias_id=alias.id, website_email=contact_email):
         return jsonify(error="Contact already added"), 409
 
     contact = Contact.create(
         user_id=alias.user_id,
         alias_id=alias.id,
-        website_email=website_email,
-        website_from=contact_email,
+        website_email=contact_email,
+        website_from=contact_addr,
         reply_email=reply_email,
     )
 
-    LOG.d("create reverse-alias for %s %s", contact_email, alias)
+    LOG.d("create reverse-alias for %s %s", contact_addr, alias)
     db.session.commit()
 
     return jsonify(**serialize_contact(contact)), 201
