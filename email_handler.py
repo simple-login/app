@@ -30,20 +30,20 @@ It should contain the following info:
 
 
 """
+import email
 import time
 import uuid
 from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from email.parser import Parser
-from email.policy import SMTPUTF8
 from email.utils import parseaddr
 from io import BytesIO
 from smtplib import SMTP
 from typing import Optional
 
 from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import Envelope
 
 from app import pgp_utils, s3
 from app.config import (
@@ -846,9 +846,8 @@ def handle_spam(
     )
 
 
-def handle_unsubscribe(envelope):
-    message_data = envelope.content.decode("utf8", errors="replace")
-    msg = Parser(policy=SMTPUTF8).parsestr(message_data)
+def handle_unsubscribe(envelope: Envelope):
+    msg = email.message_from_bytes(envelope.original_content)
 
     # format: alias_id:
     subject = msg["Subject"]
@@ -895,7 +894,7 @@ def handle_unsubscribe(envelope):
 
 
 class MailHandler:
-    async def handle_DATA(self, server, session, envelope):
+    async def handle_DATA(self, server, session, envelope: Envelope):
         LOG.debug(
             "===>> New message, mail from %s, rctp tos %s ",
             envelope.mail_from,
@@ -921,8 +920,7 @@ class MailHandler:
         res: [(bool, str)] = []
 
         for rcpt_to in envelope.rcpt_tos:
-            message_data = envelope.content.decode("utf8", errors="replace")
-            msg = Parser(policy=SMTPUTF8).parsestr(message_data)
+            msg = email.message_from_bytes(envelope.original_content)
 
             # Reply case
             # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
