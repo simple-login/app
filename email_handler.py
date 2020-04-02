@@ -790,12 +790,12 @@ def handle_spam(
     # generate a name for the email
     random_name = str(uuid.uuid4())
 
-    full_report_path = f"refused-emails/full-{random_name}.eml"
+    full_report_path = f"spams/full-{random_name}.eml"
     s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
 
     file_path = None
     if orig_msg:
-        file_path = f"refused-emails/{random_name}.eml"
+        file_path = f"spams/{random_name}.eml"
         s3.upload_email_from_bytesio(
             file_path, BytesIO(orig_msg.as_bytes()), random_name
         )
