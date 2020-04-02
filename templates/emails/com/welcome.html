@@ -15,20 +15,19 @@
 
   {{ render_text('To better secure your account, I recommend enabling Multi-Factor Authentication (MFA) on your <a href="https://app.simplelogin.io/dashboard/setting">Setting page</a>.') }}
 
-  {{ render_text('SimpleLogin browser extension could be handy to quickly manage aliases. Chrome (or other Chromium-based browsers like Brave or Vivaldi) extension can be installed on <a href="https://chrome.google.com/webstore/detail/simplelogin-your-anti-spa/dphilobhebphkdjbpfohgikllaljmgbn">Chrome Store</a>, Firefox on <a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">Firefox Store</a> and Safari on <a href="https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io">AppStore</a>.') }}
+  {{ render_text('If you have any feedback or improvement ideas please let me know by simply replying to this email. Yes, this email is not sent from a no-reply address.
+') }}
 
-  {{ render_text('If you have a domain, for example for your business or your project, you can import your domain into SimpleLogin
-and create your <b>business emails</b> using email alias. This is cheaper and more convenient than buying a dedicated solution like GSuite. By the way, all our business emails are actually aliases.') }}
+  {{ render_text('To be informed of SimpleLogin latest features, you can follow our
+ <a href="https://twitter.com/simple_login">Twitter</a> or join our <a href="https://www.reddit.com/r/Simplelogin/">Reddit sub</a>.') }}
 
   {% if user.in_trial() %}
     {{ render_text('You can use all premium features like <em>custom domain</em> or <em>alias directory</em> during the <b>trial period</b>. Your trial will end ' + user.trial_end.humanize() + ". All aliases you create during the trial will continue to work normally when the trial ends.") }}
   {% endif %}
 
-  {{ render_text('In the next coming days, you are going to receive some onboarding emails to quickly present SimpleLogin features. If you don\'t want to receive these emails, you can disable them on <a href="https://app.simplelogin.io/dashboard/setting#notification">Settings</a>.') }}
+  {{ render_text('In the next coming days, you are going to receive some onboarding emails to quickly present some SimpleLogin features. If you don\'t want to receive these emails, you can disable them in your <a href="https://app.simplelogin.io/dashboard/setting#notification">notification settings</a>.') }}
 
   {{ render_text('Thanks, <br />SimpleLogin Team.') }}
-
-  {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
 
 {% endblock %}
 
