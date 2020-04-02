@@ -19,6 +19,7 @@ from app.config import (
     JOB_ONBOARDING_1,
     JOB_ONBOARDING_2,
     JOB_ONBOARDING_3,
+    JOB_ONBOARDING_4,
 )
 from app.extensions import db
 from app.log import LOG
@@ -186,6 +187,11 @@ class User(db.Model, ModelMixin, UserMixin):
             name=JOB_ONBOARDING_3,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=3),
+        )
+        Job.create(
+            name=JOB_ONBOARDING_4,
+            payload={"user_id": user.id},
+            run_at=arrow.now().shift(days=4),
         )
         db.session.flush()
 

@@ -199,6 +199,7 @@ FLASK_PROFILER_PASSWORD = os.environ.get("FLASK_PROFILER_PASSWORD")
 JOB_ONBOARDING_1 = "onboarding-1"
 JOB_ONBOARDING_2 = "onboarding-2"
 JOB_ONBOARDING_3 = "onboarding-3"
+JOB_ONBOARDING_4 = "onboarding-4"
 
 # for pagination
 PAGE_LIMIT = 20

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + user.name) }}
+
+  {{ render_text('If you want to quickly create aliases without going to SimpleLogin website, you can do that with SimpleLogin <a href="https://chrome.google.com/webstore/detail/simplelogin-your-anti-spa/dphilobhebphkdjbpfohgikllaljmgbn">Chrome</a> (or other Chromium-based browsers like Brave or Vivaldi), <a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">Firefox</a> and <a href="https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io
+">Safari</a> extension.
+') }}
+
+  {{ render_text("The Android and iOS apps are also coming. To try out our iOS beta version, please reply to this email so we can invite you our TestFlight program.
+") }}
+
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
+
+
+{% endblock %}
+
+{% block footer %}
+  This email is sent to {{ user.email }} and is part of our onboarding series. Unsubscribe on
+  <a href="https://app.simplelogin.io/dashboard/setting#notification">Settings</a>
+{% endblock %}
