@@ -1,4 +1,6 @@
-from app.pgp_utils import load_public_key, gpg, encrypt
+from io import BytesIO
+
+from app.pgp_utils import load_public_key, gpg, encrypt_file
 
 pubkey = """-----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: Keybase OpenPGP v1.0.0
@@ -101,5 +103,5 @@ def test_load_public_key():
 
 def test_encrypt():
     fingerprint = load_public_key(pubkey)
-    secret = encrypt("abcd", fingerprint)
+    secret = encrypt_file(BytesIO(b"abcd"), fingerprint)
     assert secret != ""

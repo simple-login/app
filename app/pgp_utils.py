@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import gnupg
 
 from app.config import GNUPGHOME
@@ -19,8 +21,8 @@ def load_public_key(public_key: str) -> str:
         raise PGPException("Cannot load key") from e
 
 
-def encrypt(data: str, fingerprint: str) -> str:
-    r = gpg.encrypt(data, fingerprint, always_trust=True)
+def encrypt_file(data: BytesIO, fingerprint: str) -> str:
+    r = gpg.encrypt_file(data, fingerprint, always_trust=True)
     if not r.ok:
         raise PGPException("Cannot encrypt")
 
