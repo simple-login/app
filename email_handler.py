@@ -504,11 +504,10 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
 
         # smtp.send_message has UnicodeEncodeErroremail issue
         # encode message raw directly instead
-        msg_raw = msg.as_string().encode()
         smtp.sendmail(
             contact.reply_email,
             mailbox_email,
-            msg_raw,
+            msg.as_bytes(),
             envelope.mail_options,
             envelope.rcpt_options,
         )
@@ -645,11 +644,10 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         if custom_domain.dkim_verified:
             add_dkim_signature(msg, alias_domain)
 
-    msg_raw = msg.as_string().encode()
     smtp.sendmail(
         alias.email,
         contact.website_email,
-        msg_raw,
+        msg.as_bytes(),
         envelope.mail_options,
         envelope.rcpt_options,
     )
