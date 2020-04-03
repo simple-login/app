@@ -604,7 +604,11 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
                 sender=envelope.mail_from,
                 reply_email=reply_email,
             ),
-            "",
+            render(
+                "transactional/send-from-alias-from-unknown-sender.html",
+                sender=envelope.mail_from,
+                reply_email=reply_email,
+            ),
         )
 
         return False, "550 SL ignored"
