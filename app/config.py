@@ -208,6 +208,14 @@ PAGE_LIMIT = 20
 LOCAL_FILE_UPLOAD = "LOCAL_FILE_UPLOAD" in os.environ
 UPLOAD_DIR = None
 
+# Greylisting features
+# minimal time in seconds an alias can receive/send emails
+MIN_TIME_BETWEEN_ACTIVITY_PER_ALIAS = 8
+
+# minimal time in seconds a mailbox can receive/send emails
+MIN_TIME_BETWEEN_ACTIVITY_PER_MAILBOX = 3
+
+
 if LOCAL_FILE_UPLOAD:
     print("Upload files to local dir")
     UPLOAD_DIR = os.path.join(ROOT_DIR, "static/upload")

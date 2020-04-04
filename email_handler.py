@@ -69,6 +69,7 @@ from app.email_utils import (
     get_orig_message_from_spamassassin_report,
 )
 from app.extensions import db
+from app.greylisting import greylisting_needed
 from app.log import LOG
 from app.models import (
     Alias,
@@ -791,6 +792,13 @@ def handle(envelope: Envelope, smtp: SMTP) -> str:
     if UNSUBSCRIBER and envelope.rcpt_tos == [UNSUBSCRIBER]:
         LOG.d("Handle unsubscribe request from %s", envelope.mail_from)
         return handle_unsubscribe(envelope)
+
+    # Whether it's necessary to apply greylisting
+    if greylisting_needed(envelope.mail_from, envelope.rcpt_tos):
+        LOG.warning(
+            "Grey listing applied for %s %s", envelope.mail_from, envelope.rcpt_tos
+        )
+        return "421 SL Retry later"
 
     # result of all deliveries
     # each element is a couple of whether the delivery is successful and the smtp status
