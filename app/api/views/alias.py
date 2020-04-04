@@ -142,6 +142,7 @@ def get_alias_activities(alias_id):
             - to
             - timestamp
             - action: forward|reply|block
+            - reverse_alias
 
     """
     user = g.user
@@ -159,7 +160,10 @@ def get_alias_activities(alias_id):
 
     activities = []
     for alias_log in alias_logs:
-        activity = {"timestamp": alias_log.when.timestamp}
+        activity = {
+            "timestamp": alias_log.when.timestamp,
+            "reverse_alias": alias_log.reverse_alias,
+        }
         if alias_log.is_reply:
             activity["from"] = alias_log.alias
             activity["to"] = alias_log.website_from or alias_log.website_email

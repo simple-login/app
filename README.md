@@ -951,13 +951,15 @@ If success, 200 with the list of activities, for example:
       "action": "reply",
       "from": "yes_meo_chat@sl.local",
       "timestamp": 1580903760,
-      "to": "marketing@example.com"
+      "to": "marketing@example.com",
+      "reverse_alias": "\"marketing at example.com\" <reply@a.b>",
     },
     {
       "action": "reply",
       "from": "yes_meo_chat@sl.local",
       "timestamp": 1580903760,
-      "to": "marketing@example.com"
+      "to": "marketing@example.com",
+      "reverse_alias": "\"marketing at example.com\" <reply@a.b>",
     }
   ]
 }

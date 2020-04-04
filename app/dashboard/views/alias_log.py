@@ -11,6 +11,7 @@ from app.models import Alias, EmailLog, Contact
 class AliasLog:
     website_email: str
     website_from: str
+    reverse_alias: str
     alias: str
     when: arrow.Arrow
     is_reply: bool
@@ -78,6 +79,7 @@ def get_alias_log(alias: Alias, page_id=0):
         al = AliasLog(
             website_email=contact.website_email,
             website_from=contact.website_from,
+            reverse_alias=contact.website_send_to(),
             alias=alias.email,
             when=email_log.created_at,
             is_reply=email_log.is_reply,

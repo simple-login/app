@@ -1,11 +1,10 @@
-import json
+from flask import url_for
 
 from flask import url_for
 
-from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, PAGE_LIMIT
+from app.config import PAGE_LIMIT
 from app.extensions import db
 from app.models import User, ApiKey, Alias, Contact, EmailLog
-from app.utils import random_word
 
 
 def test_get_aliases_error_without_pagination(flask_client):
@@ -182,10 +181,11 @@ def test_alias_activities(flask_client):
     assert r.status_code == 200
     assert len(r.json["activities"]) == PAGE_LIMIT
     for ac in r.json["activities"]:
-        assert ac["action"]
         assert ac["from"]
+        assert ac["to"]
+        assert ac["timestamp"]
         assert ac["action"]
-        assert ac["action"]
+        assert ac["reverse_alias"]
 
     # second page, should return 1 or 2 results only
     r = flask_client.get(
