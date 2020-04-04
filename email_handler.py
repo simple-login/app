@@ -102,23 +102,23 @@ def new_app():
     return app
 
 
-def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
+def get_or_create_contact(contact_from_header: str, alias: Alias) -> Contact:
     """
     website_from_header can be the full-form email, i.e. "First Last <email@example.com>"
     """
-    _, website_email = parseaddr(website_from_header)
-    contact = Contact.get_by(alias_id=alias.id, website_email=website_email)
+    _, contact_email = parseaddr(contact_from_header)
+    contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
         # update the website_from if needed
-        if contact.website_from != website_from_header:
+        if contact.website_from != contact_from_header:
             LOG.d("Update From header for %s", contact)
-            contact.website_from = website_from_header
+            contact.website_from = contact_from_header
             db.session.commit()
     else:
         LOG.debug(
             "create forward email for alias %s and website email %s",
             alias,
-            website_from_header,
+            contact_from_header,
         )
 
         reply_email = generate_reply_email()
@@ -126,8 +126,8 @@ def get_or_create_contact(website_from_header: str, alias: Alias) -> Contact:
         contact = Contact.create(
             user_id=alias.user_id,
             alias_id=alias.id,
-            website_email=website_email,
-            website_from=website_from_header,
+            website_email=contact_email,
+            website_from=contact_from_header,
             reply_email=reply_email,
         )
         db.session.commit()
