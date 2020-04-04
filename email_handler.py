@@ -795,7 +795,7 @@ def handle(envelope: Envelope, smtp: SMTP) -> str:
 
     # Whether it's necessary to apply greylisting
     if greylisting_needed(envelope.mail_from, envelope.rcpt_tos):
-        LOG.warning(
+        LOG.error(
             "Grey listing applied for %s %s", envelope.mail_from, envelope.rcpt_tos
         )
         return "421 SL Retry later"
