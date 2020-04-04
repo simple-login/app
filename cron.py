@@ -130,10 +130,10 @@ def stats():
         q = q.filter(~User.email.contains(ie))
 
     nb_forward = nb_block = nb_reply = 0
-    for fel, _, _, _ in q:
-        if fel.is_reply:
+    for email_log, _, _, _ in q:
+        if email_log.is_reply:
             nb_reply += 1
-        elif fel.blocked:
+        elif email_log.blocked:
             nb_block += 1
         else:
             nb_forward += 1

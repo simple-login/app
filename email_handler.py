@@ -555,7 +555,7 @@ def handle_bounce(
     contact: Contact, alias: Alias, msg: Message, user: User, mailbox_email: str
 ):
     address = alias.email
-    fel: EmailLog = EmailLog.create(
+    email_log: EmailLog = EmailLog.create(
         contact_id=contact.id, bounced=True, user_id=contact.user_id
     )
     db.session.commit()
@@ -583,12 +583,14 @@ def handle_bounce(
     )
     db.session.flush()
 
-    fel.refused_email_id = refused_email.id
+    email_log.refused_email_id = refused_email.id
     db.session.commit()
 
     LOG.d("Create refused email %s", refused_email)
 
-    refused_email_url = URL + f"/dashboard/refused_email?highlight_id=" + str(fel.id)
+    refused_email_url = (
+        URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
+    )
 
     # inform user if this is the first bounced email
     if nb_bounced == 1:

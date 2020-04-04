@@ -254,26 +254,26 @@ def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
             or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
         )
 
-    for ge, fe, fel, mb in q:
-        if ge.email not in aliases:
-            aliases[ge.email] = AliasInfo(
-                id=ge.id,
-                alias=ge,
+    for alias, contact, email_log, mailbox in q:
+        if alias.email not in aliases:
+            aliases[alias.email] = AliasInfo(
+                id=alias.id,
+                alias=alias,
                 nb_blocked=0,
                 nb_forward=0,
                 nb_reply=0,
-                highlight=ge.id == highlight_alias_id,
-                mailbox=mb,
-                note=ge.note,
+                highlight=alias.id == highlight_alias_id,
+                mailbox=mailbox,
+                note=alias.note,
             )
 
-        alias_info = aliases[ge.email]
-        if not fel:
+        alias_info = aliases[alias.email]
+        if not email_log:
             continue
 
-        if fel.is_reply:
+        if email_log.is_reply:
             alias_info.nb_reply += 1
-        elif fel.blocked:
+        elif email_log.blocked:
             alias_info.nb_blocked += 1
         else:
             alias_info.nb_forward += 1

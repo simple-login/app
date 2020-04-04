@@ -248,10 +248,10 @@ def serialize_contact(fe: Contact) -> dict:
         "reverse_alias": fe.website_send_to(),
     }
 
-    fel: EmailLog = fe.last_reply()
-    if fel:
-        res["last_email_sent_date"] = fel.created_at.format()
-        res["last_email_sent_timestamp"] = fel.created_at.timestamp
+    email_log: EmailLog = fe.last_reply()
+    if email_log:
+        res["last_email_sent_date"] = email_log.created_at.format()
+        res["last_email_sent_timestamp"] = email_log.created_at.timestamp
 
     return res
 

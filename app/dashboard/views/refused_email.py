@@ -17,10 +17,10 @@ def refused_email_route():
         EmailLog.user_id == current_user.id, EmailLog.refused_email_id != None
     ).order_by(EmailLog.id.desc()).all()
 
-    # make sure the highlighted fel is the first fel
+    # make sure the highlighted email_log is the first email_log
     highlight_index = None
-    for ix, fel in enumerate(email_logs):
-        if fel.id == highlight_id:
+    for ix, email_log in enumerate(email_logs):
+        if email_log.id == highlight_id:
             highlight_index = ix
             break
 
