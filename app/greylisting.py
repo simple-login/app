@@ -15,12 +15,9 @@ def greylisting_needed_for_alias(alias: Alias) -> bool:
 
     # get the nb of activity on this alias
     nb_activity = (
-        db.session.query(EmailLog, Contact)
-        .filter(
-            EmailLog.contact_id == Contact.id,
-            Contact.alias_id == alias.id,
-            EmailLog.created_at > min_time,
-        )
+        db.session.query(EmailLog)
+        .join(Contact, EmailLog.contact_id == Contact.id)
+        .filter(Contact.alias_id == alias.id, EmailLog.created_at > min_time,)
         .group_by(EmailLog.id)
         .count()
     )
@@ -39,13 +36,10 @@ def greylisting_needed_for_mailbox(alias: Alias) -> bool:
 
     # get nb of activity on this mailbox
     nb_activity = (
-        db.session.query(EmailLog, Contact, Alias)
-        .filter(
-            EmailLog.contact_id == Contact.id,
-            Contact.alias_id == Alias.id,
-            Alias.mailbox_id == alias.mailbox_id,
-            EmailLog.created_at > min_time,
-        )
+        db.session.query(EmailLog)
+        .join(Contact, EmailLog.contact_id == Contact.id)
+        .join(Alias, Contact.alias_id == Alias.id)
+        .filter(Alias.mailbox_id == alias.mailbox_id, EmailLog.created_at > min_time,)
         .group_by(EmailLog.id)
         .count()
     )
