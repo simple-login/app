@@ -785,6 +785,46 @@ def handle_unsubscribe(envelope: Envelope):
     return "250 Unsubscribe request accepted"
 
 
+def handle(envelope: Envelope, smtp: SMTP) -> str:
+    """Return SMTP status"""
+    # unsubscribe request
+    if UNSUBSCRIBER and envelope.rcpt_tos == [UNSUBSCRIBER]:
+        LOG.d("Handle unsubscribe request from %s", envelope.mail_from)
+        return handle_unsubscribe(envelope)
+
+    # result of all deliveries
+    # each element is a couple of whether the delivery is successful and the smtp status
+    res: [(bool, str)] = []
+
+    for rcpt_to in envelope.rcpt_tos:
+        msg = email.message_from_bytes(envelope.original_content)
+
+        # Reply case
+        # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
+        if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
+            LOG.debug(">>> Reply phase %s -> %s", envelope.mail_from, rcpt_to)
+            is_delivered, smtp_status = handle_reply(envelope, smtp, msg, rcpt_to)
+            res.append((is_delivered, smtp_status))
+        else:  # Forward case
+            LOG.debug(">>> Forward phase %s -> %s", envelope.mail_from, rcpt_to)
+            is_delivered, smtp_status = handle_forward(envelope, smtp, msg, rcpt_to)
+            res.append((is_delivered, smtp_status))
+
+    # special handling for self-forwarding
+    # just consider success delivery in this case
+    if len(res) == 1 and res[0][1] == _SELF_FORWARDING_STATUS:
+        LOG.d("Self-forwarding, ignore")
+        return "250 SL OK"
+
+    for (is_success, smtp_status) in res:
+        # Consider all deliveries successful if 1 delivery is successful
+        if is_success:
+            return smtp_status
+
+    # Failed delivery for all, return the first failure
+    return res[0][1]
+
+
 class MailHandler:
     async def handle_DATA(self, server, session, envelope: Envelope):
         LOG.debug(
@@ -799,55 +839,9 @@ class MailHandler:
         else:
             smtp = SMTP(POSTFIX_SERVER, 25)
 
-        # unsubscribe request
-        if UNSUBSCRIBER and envelope.rcpt_tos == [UNSUBSCRIBER]:
-            LOG.d("Handle unsubscribe request from %s", envelope.mail_from)
-            app = new_app()
-
-            with app.app_context():
-                return handle_unsubscribe(envelope)
-
-        # result of all deliveries
-        # each element is a couple of whether the delivery is successful and the smtp status
-        res: [(bool, str)] = []
-
-        for rcpt_to in envelope.rcpt_tos:
-            msg = email.message_from_bytes(envelope.original_content)
-
-            # Reply case
-            # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
-            if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
-                LOG.debug(">>> Reply phase %s -> %s", envelope.mail_from, rcpt_to)
-                app = new_app()
-
-                with app.app_context():
-                    is_delivered, smtp_status = handle_reply(
-                        envelope, smtp, msg, rcpt_to
-                    )
-                    res.append((is_delivered, smtp_status))
-            else:  # Forward case
-                LOG.debug(">>> Forward phase %s -> %s", envelope.mail_from, rcpt_to)
-                app = new_app()
-
-                with app.app_context():
-                    is_delivered, smtp_status = handle_forward(
-                        envelope, smtp, msg, rcpt_to
-                    )
-                    res.append((is_delivered, smtp_status))
-
-        # special handling for self-forwarding
-        # just consider success delivery in this case
-        if len(res) == 1 and res[0][1] == _SELF_FORWARDING_STATUS:
-            LOG.d("Self-forwarding, ignore")
-            return "250 SL OK"
-
-        for (is_success, smtp_status) in res:
-            # Consider all deliveries successful if 1 delivery is successful
-            if is_success:
-                return smtp_status
-
-        # Failed delivery for all, return the first failure
-        return res[0][1]
+        app = new_app()
+        with app.app_context():
+            return handle(envelope, smtp)
 
 
 if __name__ == "__main__":
