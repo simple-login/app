@@ -2,8 +2,8 @@ import arrow
 
 from app.alias_utils import try_auto_create
 from app.config import (
-    MIN_TIME_BETWEEN_ACTIVITY_PER_ALIAS,
-    MIN_TIME_BETWEEN_ACTIVITY_PER_MAILBOX,
+    MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS,
+    MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX,
 )
 from app.extensions import db
 from app.log import LOG
@@ -11,50 +11,53 @@ from app.models import Alias, EmailLog, Contact
 
 
 def greylisting_needed_for_alias(alias: Alias) -> bool:
-    # get the latest email activity on this alias
-    r = (
+    min_time = arrow.now().shift(minutes=-1)
+
+    # get the nb of activity on this alias
+    nb_activity = (
         db.session.query(EmailLog, Contact)
-        .filter(EmailLog.contact_id == Contact.id, Contact.alias_id == alias.id)
-        .order_by(EmailLog.id.desc())
-        .first()
+        .filter(
+            EmailLog.contact_id == Contact.id,
+            Contact.alias_id == alias.id,
+            EmailLog.created_at > min_time,
+        )
+        .group_by(EmailLog.id)
+        .count()
     )
 
-    if r:
-        email_log, _ = r
-        now = arrow.now()
-        if (now - email_log.created_at).seconds < MIN_TIME_BETWEEN_ACTIVITY_PER_ALIAS:
-            LOG.d(
-                "Too much forward on alias %s. Latest email log %s", alias, email_log,
-            )
-            return True
+    if nb_activity > MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS:
+        LOG.d(
+            "Too much forward on alias %s. Nb Activity %s", alias, nb_activity,
+        )
+        return True
 
     return False
 
 
 def greylisting_needed_for_mailbox(alias: Alias) -> bool:
-    # get the latest email activity on this mailbox
-    r = (
+    min_time = arrow.now().shift(minutes=-1)
+
+    # get nb of activity on this mailbox
+    nb_activity = (
         db.session.query(EmailLog, Contact, Alias)
         .filter(
             EmailLog.contact_id == Contact.id,
             Contact.alias_id == Alias.id,
             Alias.mailbox_id == alias.mailbox_id,
+            EmailLog.created_at > min_time,
         )
-        .order_by(EmailLog.id.desc())
-        .first()
+        .group_by(EmailLog.id)
+        .count()
     )
 
-    if r:
-        email_log, _, _ = r
-        now = arrow.now()
-        if (now - email_log.created_at).seconds < MIN_TIME_BETWEEN_ACTIVITY_PER_MAILBOX:
-            LOG.d(
-                "Too much forward on mailbox %s. Latest email log %s. Alias %s",
-                alias.mailbox,
-                email_log,
-                alias,
-            )
-            return True
+    if nb_activity > MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX:
+        LOG.d(
+            "Too much forward on mailbox %s, alias %s. Nb Activity %s",
+            alias.mailbox,
+            alias,
+            nb_activity,
+        )
+        return True
 
     return False
 

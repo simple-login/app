@@ -209,12 +209,11 @@ LOCAL_FILE_UPLOAD = "LOCAL_FILE_UPLOAD" in os.environ
 UPLOAD_DIR = None
 
 # Greylisting features
-# minimal time in seconds an alias can receive/send emails
-MIN_TIME_BETWEEN_ACTIVITY_PER_ALIAS = 8
+# nb max of activity (forward/reply) an alias can have during 1 min
+MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS = 5
 
-# minimal time in seconds a mailbox can receive/send emails
-MIN_TIME_BETWEEN_ACTIVITY_PER_MAILBOX = 3
-
+# nb max of activity (forward/reply) a mailbox can have during 1 min
+MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX = 10
 
 if LOCAL_FILE_UPLOAD:
     print("Upload files to local dir")
