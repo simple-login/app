@@ -236,19 +236,19 @@ def get_alias(alias_id):
     return jsonify(**serialize_alias_info(get_alias_info(alias))), 200
 
 
-def serialize_contact(fe: Contact) -> dict:
+def serialize_contact(contact: Contact) -> dict:
 
     res = {
-        "id": fe.id,
-        "creation_date": fe.created_at.format(),
-        "creation_timestamp": fe.created_at.timestamp,
+        "id": contact.id,
+        "creation_date": contact.created_at.format(),
+        "creation_timestamp": contact.created_at.timestamp,
         "last_email_sent_date": None,
         "last_email_sent_timestamp": None,
-        "contact": fe.website_from or fe.website_email,
-        "reverse_alias": fe.website_send_to(),
+        "contact": contact.website_from or contact.website_email,
+        "reverse_alias": contact.website_send_to(),
     }
 
-    email_log: EmailLog = fe.last_reply()
+    email_log: EmailLog = contact.last_reply()
     if email_log:
         res["last_email_sent_date"] = email_log.created_at.format()
         res["last_email_sent_timestamp"] = email_log.created_at.timestamp
