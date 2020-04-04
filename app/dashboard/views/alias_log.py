@@ -74,15 +74,15 @@ def get_alias_log(alias: Alias, page_id=0):
         .offset(page_id * PAGE_LIMIT)
     )
 
-    for fe, fel in q:
+    for contact, email_log in q:
         al = AliasLog(
-            website_email=fe.website_email,
-            website_from=fe.website_from,
+            website_email=contact.website_email,
+            website_from=contact.website_from,
             alias=alias.email,
-            when=fel.created_at,
-            is_reply=fel.is_reply,
-            blocked=fel.blocked,
-            bounced=fel.bounced,
+            when=email_log.created_at,
+            is_reply=email_log.is_reply,
+            blocked=email_log.blocked,
+            bounced=email_log.bounced,
             mailbox=mailbox,
         )
         logs.append(al)
