@@ -749,6 +749,7 @@ class Contact(db.Model, ModelMixin):
     is_cc = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
     alias = db.relationship(Alias, backref="contacts")
+    user = db.relationship(User)
 
     def website_send_to(self):
         """return the email address with name.
@@ -784,6 +785,27 @@ class Contact(db.Model, ModelMixin):
 
         # cannot use formataddr here as this field is for email client, not for MTA
         return f'"{name}" <{self.reply_email}>'
+
+    def new_addr(self):
+        """
+        Replace original email by reply_email. 2 possible formats:
+        - first@example.com by SimpleLogin <reply_email> OR
+        - First Last - first at example.com <reply_email>
+        And return new address with RFC 2047 format
+
+        `new_email` is a special reply address
+        """
+        user = self.user
+        if user.use_via_format_for_sender:
+            new_name = f"{self.website_email} via SimpleLogin"
+        else:
+            name = self.name or ""
+            new_name = (
+                name + (" - " if name else "") + self.website_email.replace("@", " at ")
+            ).strip()
+
+        new_addr = formataddr((new_name, self.reply_email)).strip()
+        return new_addr.strip()
 
     def last_reply(self) -> "EmailLog":
         """return the most recent reply"""
