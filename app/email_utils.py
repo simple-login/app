@@ -1,4 +1,5 @@
 import os
+from email.header import decode_header
 from email.message import Message
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -432,3 +433,18 @@ def get_spam_info(msg: Message) -> (bool, str):
     spamassassin_answer = spamassassin_status[: spamassassin_status.find(",")]
 
     return spamassassin_answer.lower() == "yes", spamassassin_status
+
+
+def parseaddr_unicode(addr) -> (str, str):
+    """Like parseaddr but return name in unicode instead of in RFC 2047 format
+    '=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>' -> ('Nhơn Nguyễn', "abcd@gmail.com")
+    """
+    name, email = parseaddr(addr)
+    email = email.lower()
+    if name:
+        decoded_string, charset = decode_header(name)[0]
+        if charset is not None:
+            return decoded_string.decode(charset), email
+        else:
+            return decoded_string, email
+
