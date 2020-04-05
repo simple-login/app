@@ -1,9 +1,9 @@
-from email.utils import parseaddr
-
 from flask import g
 from flask import jsonify
 from flask import request
 from flask_cors import cross_origin
+from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
 from app.api.base import api_bp, verify_api_key
 from app.config import EMAIL_DOMAIN
@@ -11,8 +11,6 @@ from app.config import PAGE_LIMIT
 from app.dashboard.views.alias_log import get_alias_log
 from app.dashboard.views.index import (
     AliasInfo,
-    get_alias_infos_with_pagination,
-    get_alias_info,
 )
 from app.email_utils import parseaddr_unicode
 from app.extensions import db
@@ -384,3 +382,53 @@ def delete_contact(contact_id):
     db.session.commit()
 
     return jsonify(deleted=True), 200
+
+
+def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
+    ret = []
+    q = (
+        db.session.query(Alias)
+        .options(joinedload(Alias.mailbox))
+        .filter(Alias.user_id == user.id)
+        .order_by(Alias.created_at.desc())
+    )
+
+    if query:
+        q = q.filter(
+            or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
+        )
+
+    q = q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT)
+
+    for alias in q:
+        ret.append(get_alias_info(alias))
+
+    return ret
+
+
+def get_alias_info(alias: Alias) -> AliasInfo:
+    q = (
+        db.session.query(Contact, EmailLog)
+        .filter(Contact.alias_id == alias.id)
+        .filter(EmailLog.contact_id == Contact.id)
+    )
+
+    alias_info = AliasInfo(
+        id=alias.id,
+        alias=alias,
+        mailbox=alias.mailbox,
+        note=alias.note,
+        nb_blocked=0,
+        nb_forward=0,
+        nb_reply=0,
+    )
+
+    for _, el in q:
+        if el.is_reply:
+            alias_info.nb_reply += 1
+        elif el.blocked:
+            alias_info.nb_blocked += 1
+        else:
+            alias_info.nb_forward += 1
+
+    return alias_info
