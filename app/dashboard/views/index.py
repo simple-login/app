@@ -24,7 +24,6 @@ from app.models import (
 
 @dataclass
 class AliasInfo:
-    id: int
     alias: Alias
     mailbox: Mailbox
     nb_forward: int
@@ -205,7 +204,6 @@ def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
     for alias, contact, email_log, mailbox in q:
         if alias.email not in aliases:
             aliases[alias.email] = AliasInfo(
-                id=alias.id,
                 alias=alias,
                 mailbox=mailbox,
                 nb_blocked=0,
