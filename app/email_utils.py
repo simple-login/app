@@ -440,10 +440,13 @@ def parseaddr_unicode(addr) -> (str, str):
     '=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>' -> ('Nhơn Nguyễn', "abcd@gmail.com")
     """
     name, email = parseaddr(addr)
-    email = email.lower()
+    email = email.strip().lower()
     if name:
+        name = name.strip()
         decoded_string, charset = decode_header(name)[0]
         if charset is not None:
-            return decoded_string.decode(charset), email
+            name = decoded_string.decode(charset)
         else:
-            return decoded_string, email
+            name = decoded_string
+
+    return name, email

@@ -65,6 +65,9 @@ def test_add_or_replace_header():
 
 
 def test_parseaddr_unicode():
+    # only email
+    assert parseaddr_unicode("abcd@gmail.com") == ("", "abcd@gmail.com",)
+
     # ascii address
     assert parseaddr_unicode("First Last <abcd@gmail.com>") == (
         "First Last",
