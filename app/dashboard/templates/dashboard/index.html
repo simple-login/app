@@ -98,6 +98,10 @@
                   Copy
                 </span>
               {% endif %}
+              {% if alias_info.highlight %}
+                <span class="font-weight-bold text-success small-text">New</span>
+              {% endif %}
+
             </span>
             </div>
             <div class="col text-right">
@@ -134,11 +138,6 @@
 
           <hr class="my-2">
 
-          <p class="small-text">
-            {% if alias_info.highlight %}
-              - <span class="font-weight-bold text-success small-text">New</span>
-            {% endif %}
-          </p>
 
           <div class="" style="font-size: 12px">
             {% if alias_info.latest_email_log != None %}
@@ -146,19 +145,27 @@
               {% set contact = alias_info.latest_contact %}
 
               {% if email_log.is_reply %}
-                Email sent/reply to {{ contact.website_email }}
+                {{ contact.website_email }}
+                <i class="fa fa-reply mr-2" data-toggle="tooltip" title="Email reply/sent from alias"></i>
                 {{ email_log.created_at | dt }}
               {% elif email_log.bounced %}
-                <span class="text-danger">Email from {{ contact.website_email }} bounced
+                <span class="text-danger">
+                  {{ contact.website_email }}
+                  <i class="fa fa-warning mr-2" data-toggle="tooltip"
+                     title="Email bounced and cannot be forwarded to your mailbox"></i>
                   {{ email_log.created_at | dt }}
                 </span>
               {% elif email_log.blocked %}
-                Email from {{ contact.website_email }} blocked
+                {{ contact.website_email }}
+                <i class="fa fa-ban mr-2" data-toggle="tooltip" title="Email blocked"></i>
                 {{ email_log.created_at | dt }}
               {% else %}
-                Email from {{ contact.website_email }}
+                {{ contact.website_email }}
+                <i class="fa fa-paper-plane  mr-2" data-toggle="tooltip" title="Email forwarded to alias"></i>
                 {{ email_log.created_at | dt }}
               {% endif %}
+            {% else %}
+              No Activity
             {% endif %}
             <br>
 
