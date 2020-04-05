@@ -67,6 +67,7 @@ from app.email_utils import (
     get_addrs_from_header,
     get_spam_info,
     get_orig_message_from_spamassassin_report,
+    parseaddr_unicode,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -149,7 +150,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
     need_replace = False
 
     for addr in addrs:
-        name, contact_email = parseaddr(addr)
+        contact_name, contact_email = parseaddr_unicode(addr)
 
         # no transformation when alias is already in the header
         if contact_email == alias.email:
@@ -159,9 +160,14 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
         contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
         if contact:
             # update the website_from if needed
-            if contact.website_from != addr:
-                LOG.d("Update website_from for %s to %s", contact, addr)
-                contact.website_from = addr
+            if contact.name != contact_name:
+                LOG.d(
+                    "Update contact %s name %s to %s",
+                    contact,
+                    contact.name,
+                    contact_name,
+                )
+                contact.name = contact_name
                 db.session.commit()
         else:
             LOG.debug(
