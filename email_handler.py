@@ -157,7 +157,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
 
         contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
         if contact:
-            # update the website_from if needed
+            # update the contact name if needed
             if contact.name != contact_name:
                 LOG.d(
                     "Update contact %s name %s to %s",

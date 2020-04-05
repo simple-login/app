@@ -134,11 +134,13 @@ def alias_contact_manager(alias_id):
                     url_for("dashboard.alias_contact_manager", alias_id=alias_id)
                 )
 
-            contact_name = contact.website_from
+            delete_contact_email = contact.website_email
             Contact.delete(contact_id)
             db.session.commit()
 
-            flash(f"Reverse-alias for {contact_name} has been deleted", "success")
+            flash(
+                f"Reverse-alias for {delete_contact_email} has been deleted", "success"
+            )
 
             return redirect(
                 url_for("dashboard.alias_contact_manager", alias_id=alias_id)
