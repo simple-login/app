@@ -63,7 +63,6 @@ from app.email_utils import (
     render,
     get_orig_message_from_bounce,
     delete_all_headers_except,
-    new_addr,
     get_addrs_from_header,
     get_spam_info,
     get_orig_message_from_spamassassin_report,
@@ -105,21 +104,20 @@ def new_app():
 
 def get_or_create_contact(contact_from_header: str, alias: Alias) -> Contact:
     """
-    website_from_header can be the full-form email, i.e. "First Last <email@example.com>"
+    contact_from_header is the RFC 2047 format FROM header
     """
-    _, contact_email = parseaddr(contact_from_header)
+    contact_name, contact_email = parseaddr_unicode(contact_from_header)
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
-        # update the website_from if needed
-        if contact.website_from != contact_from_header:
-            LOG.d("Update From header for %s", contact)
-            contact.website_from = contact_from_header
+        if contact.name != contact_name:
+            LOG.d(
+                "Update contact %s name %s to %s", contact, contact.name, contact_name,
+            )
+            contact.name = contact_name
             db.session.commit()
     else:
         LOG.debug(
-            "create forward email for alias %s and website email %s",
-            alias,
-            contact_from_header,
+            "create contact for alias %s and contact %s", alias, contact_from_header,
         )
 
         reply_email = generate_reply_email()
@@ -128,7 +126,7 @@ def get_or_create_contact(contact_from_header: str, alias: Alias) -> Contact:
             user_id=alias.user_id,
             alias_id=alias.id,
             website_email=contact_email,
-            website_from=contact_from_header,
+            name=contact_name,
             reply_email=reply_email,
         )
         db.session.commit()
@@ -183,15 +181,13 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                 user_id=alias.user_id,
                 alias_id=alias.id,
                 website_email=contact_email,
-                website_from=addr,
+                name=contact_name,
                 reply_email=reply_email,
                 is_cc=header.lower() == "cc",
             )
             db.session.commit()
 
-        new_addrs.append(
-            new_addr(contact.website_from, contact.reply_email, alias.user)
-        )
+        new_addrs.append(contact.new_addr())
         need_replace = True
 
     if need_replace:
@@ -357,8 +353,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         # so it can pass DMARC check
         # replace the email part in from: header
         contact_from_header = msg["From"]
-        contact_name, contact_email = parseaddr(contact_from_header)
-        new_from_header = new_addr(contact_from_header, contact.reply_email, user)
+        new_from_header = contact.new_addr()
         add_or_replace_header(msg, "From", new_from_header)
         LOG.d("new_from_header:%s, old header %s", new_from_header, contact_from_header)
 
@@ -391,7 +386,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
 
         LOG.d(
             "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
-            contact_email,
+            contact.website_email,
             mailbox_email,
             envelope.mail_options,
             envelope.rcpt_options,
