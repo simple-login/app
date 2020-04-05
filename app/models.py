@@ -728,6 +728,8 @@ class Contact(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
 
+    name = db.Column(db.String(512), nullable=True, default=None, server_default=text("NULL"))
+
     # used to be envelope header, should be mail header from instead
     website_email = db.Column(db.String(512), nullable=False)
 
