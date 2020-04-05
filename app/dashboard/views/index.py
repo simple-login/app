@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+
+from arrow import Arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy import or_
@@ -5,7 +8,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
-from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -20,6 +22,7 @@ from app.models import (
 )
 
 
+@dataclass
 class AliasInfo:
     id: int
     alias: Alias
@@ -30,11 +33,6 @@ class AliasInfo:
 
     show_intro_test_send_email: bool = False
     highlight: bool = False
-    note: str
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
@@ -209,12 +207,11 @@ def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
             aliases[alias.email] = AliasInfo(
                 id=alias.id,
                 alias=alias,
+                mailbox=mailbox,
                 nb_blocked=0,
                 nb_forward=0,
                 nb_reply=0,
                 highlight=alias.id == highlight_alias_id,
-                mailbox=mailbox,
-                note=alias.note,
             )
 
         alias_info = aliases[alias.email]
