@@ -106,6 +106,8 @@ def get_or_create_contact(contact_from_header: str, alias: Alias) -> Contact:
     """
     contact_from_header is the RFC 2047 format FROM header
     """
+    # force convert header to string, sometimes contact_from_header is Header object
+    contact_from_header = str(contact_from_header)
     contact_name, contact_email = parseaddr_unicode(contact_from_header)
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
