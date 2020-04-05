@@ -135,19 +135,39 @@
           <hr class="my-2">
 
           <p class="small-text">
-            Created {{ alias.created_at | dt }}
             {% if alias_info.highlight %}
               - <span class="font-weight-bold text-success small-text">New</span>
             {% endif %}
           </p>
 
           <div class="" style="font-size: 12px">
+            {% if alias_info.latest_email_log != None %}
+              {% set email_log = alias_info.latest_email_log %}
+              {% set contact = alias_info.latest_contact %}
+
+              {% if email_log.is_reply %}
+                Email sent/reply to {{ contact.website_email }}
+                {{ email_log.created_at | dt }}
+              {% elif email_log.bounced %}
+                <span class="text-danger">Email from {{ contact.website_email }} bounced
+                  {{ email_log.created_at | dt }}
+                </span>
+              {% elif email_log.blocked %}
+                Email from {{ contact.website_email }} blocked
+                {{ email_log.created_at | dt }}
+              {% else %}
+                Email from {{ contact.website_email }}
+                {{ email_log.created_at | dt }}
+              {% endif %}
+            {% endif %}
+            <br>
+
             <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwards,
             <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
             <span class="alias-activity">{{ alias_info.nb_reply }}</span> replies
             <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
                class="btn btn-sm btn-link">
-              See All Activity &nbsp;→
+              See All &nbsp;→
             </a>
           </div>
 

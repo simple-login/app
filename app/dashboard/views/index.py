@@ -26,9 +26,14 @@ from app.models import (
 class AliasInfo:
     alias: Alias
     mailbox: Mailbox
+
     nb_forward: int
     nb_blocked: int
     nb_reply: int
+
+    latest_activity: Arrow
+    latest_email_log: EmailLog = None
+    latest_contact: Contact = None
 
     show_intro_test_send_email: bool = False
     highlight: bool = False
@@ -210,11 +215,17 @@ def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
                 nb_forward=0,
                 nb_reply=0,
                 highlight=alias.id == highlight_alias_id,
+                latest_activity=alias.created_at,
             )
 
         alias_info = aliases[alias.email]
         if not email_log:
             continue
+
+        if email_log.created_at > alias_info.latest_activity:
+            alias_info.latest_activity = email_log.created_at
+            alias_info.latest_email_log = email_log
+            alias_info.latest_contact = contact
 
         if email_log.is_reply:
             alias_info.nb_reply += 1
@@ -224,6 +235,7 @@ def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
             alias_info.nb_forward += 1
 
     ret = list(aliases.values())
+    ret = sorted(ret, key=lambda a: a.latest_activity, reverse=True)
 
     # make sure the highlighted alias is the first element
     highlight_index = None

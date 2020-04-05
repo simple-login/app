@@ -732,7 +732,6 @@ class Contact(db.Model, ModelMixin):
         db.String(512), nullable=True, default=None, server_default=text("NULL")
     )
 
-    # used to be envelope header, should be mail header from instead
     website_email = db.Column(db.String(512), nullable=False)
 
     # the email from header, e.g. AB CD <ab@cd.com>
