@@ -445,7 +445,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         LOG.warning(
             "Bounce when sending to alias %s from %s, user %s",
             alias,
-            contact.website_from,
+            contact.website_email,
             alias.user,
         )
 
@@ -597,18 +597,17 @@ def handle_bounce(
         LOG.d(
             "Inform user %s about bounced email sent by %s to alias %s",
             user,
-            contact.website_from,
+            contact.website_email,
             address,
         )
         send_email(
             # use user mail here as only user is authenticated to see the refused email
             user.email,
-            f"Email from {contact.website_from} to {address} cannot be delivered to your inbox",
+            f"Email from {contact.website_email} to {address} cannot be delivered to your inbox",
             render(
                 "transactional/bounced-email.txt",
                 name=user.name,
                 alias=alias,
-                website_from=contact.website_from,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
                 refused_email_url=refused_email_url,
@@ -618,7 +617,6 @@ def handle_bounce(
                 "transactional/bounced-email.html",
                 name=user.name,
                 alias=alias,
-                website_from=contact.website_from,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
                 refused_email_url=refused_email_url,
@@ -632,7 +630,7 @@ def handle_bounce(
         LOG.d(
             "Bounce happens again with alias %s from %s. Disable alias now ",
             address,
-            contact.website_from,
+            contact.website_email,
         )
         alias.enabled = False
         db.session.commit()
