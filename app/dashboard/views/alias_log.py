@@ -61,7 +61,7 @@ def alias_log(alias_id, page_id):
     return render_template("dashboard/alias_log.html", **locals())
 
 
-def get_alias_log(alias: Alias, page_id=0):
+def get_alias_log(alias: Alias, page_id=0) -> [AliasLog]:
     logs: [AliasLog] = []
     mailbox = alias.mailbox_email()
 
