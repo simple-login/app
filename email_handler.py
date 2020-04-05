@@ -710,17 +710,16 @@ def handle_spam(
     LOG.d(
         "Inform user %s about spam email sent by %s to alias %s",
         user,
-        contact.website_from,
+        contact.website_email,
         alias.email,
     )
     send_email(
         mailbox_email,
-        f"Email from {contact.website_from} to {alias.email} is detected as spam",
+        f"Email from {contact.website_email} to {alias.email} is detected as spam",
         render(
             "transactional/spam-email.txt",
             name=user.name,
             alias=alias,
-            website_from=contact.website_from,
             website_email=contact.website_email,
             disable_alias_link=disable_alias_link,
             refused_email_url=refused_email_url,
@@ -729,7 +728,6 @@ def handle_spam(
             "transactional/spam-email.html",
             name=user.name,
             alias=alias,
-            website_from=contact.website_from,
             website_email=contact.website_email,
             disable_alias_link=disable_alias_link,
             refused_email_url=refused_email_url,
