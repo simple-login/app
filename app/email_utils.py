@@ -447,4 +447,3 @@ def parseaddr_unicode(addr) -> (str, str):
             return decoded_string.decode(charset), email
         else:
             return decoded_string, email
-

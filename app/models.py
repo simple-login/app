@@ -728,7 +728,9 @@ class Contact(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
 
-    name = db.Column(db.String(512), nullable=True, default=None, server_default=text("NULL"))
+    name = db.Column(
+        db.String(512), nullable=True, default=None, server_default=text("NULL")
+    )
 
     # used to be envelope header, should be mail header from instead
     website_email = db.Column(db.String(512), nullable=False)
@@ -750,21 +752,38 @@ class Contact(db.Model, ModelMixin):
 
     def website_send_to(self):
         """return the email address with name.
-        to use when user wants to send an email from the alias"""
+        to use when user wants to send an email from the alias
+        Return
+        "First Last | email at example.com" <ra+random_string@SL>
+        """
 
-        name = self.website_email.replace("@", " at ")
+        # Prefer using contact name if possible
+        name = self.name
 
-        if self.website_from:
-            website_name, _ = parseaddr(self.website_from)
+        # if no name, try to parse it from website_from
+        if not name and self.website_from:
+            try:
+                from app.email_utils import parseaddr_unicode
 
-            if website_name:
-                # remove all double quote
-                website_name = website_name.replace('"', "")
-                name = website_name + " | " + name
+                name, _ = parseaddr_unicode(self.website_from)
+            except Exception:
+                # Skip if website_from is wrongly formatted
+                LOG.warning(
+                    "Cannot parse contact %s website_from %s", self, self.website_from
+                )
+                name = ""
 
-        return f'"{name}" <{self.reply_email}>'
+        # remove all double quote
+        if name:
+            name = name.replace('"', "")
+
+        if name:
+            name = name + " | " + self.website_email.replace("@", " at ")
+        else:
+            name = self.website_email.replace("@", " at ")
+
         # cannot use formataddr here as this field is for email client, not for MTA
-        # return formataddr((self.website_email.replace("@", " at "), self.reply_email))
+        return f'"{name}" <{self.reply_email}>'
 
     def last_reply(self) -> "EmailLog":
         """return the most recent reply"""

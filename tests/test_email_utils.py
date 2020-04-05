@@ -6,7 +6,8 @@ from app.email_utils import (
     can_be_used_as_personal_email,
     delete_header,
     add_or_replace_header,
-    parseaddr_unicode)
+    parseaddr_unicode,
+)
 from app.extensions import db
 from app.models import User, CustomDomain
 
@@ -65,13 +66,25 @@ def test_add_or_replace_header():
 
 def test_parseaddr_unicode():
     # ascii address
-    assert parseaddr_unicode("First Last <abcd@gmail.com>") == ("First Last", "abcd@gmail.com")
+    assert parseaddr_unicode("First Last <abcd@gmail.com>") == (
+        "First Last",
+        "abcd@gmail.com",
+    )
 
     # Handle quote
-    assert parseaddr_unicode('"First Last" <abcd@gmail.com>') == ("First Last", "abcd@gmail.com")
+    assert parseaddr_unicode('"First Last" <abcd@gmail.com>') == (
+        "First Last",
+        "abcd@gmail.com",
+    )
 
     # UTF-8 charset
-    assert parseaddr_unicode("=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>") == ('Nhơn Nguyễn', "abcd@gmail.com")
+    assert parseaddr_unicode("=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>") == (
+        "Nhơn Nguyễn",
+        "abcd@gmail.com",
+    )
 
     # iso-8859-1 charset
-    assert parseaddr_unicode("=?iso-8859-1?q?p=F6stal?= <abcd@gmail.com>") == ('pöstal', "abcd@gmail.com")
+    assert parseaddr_unicode("=?iso-8859-1?q?p=F6stal?= <abcd@gmail.com>") == (
+        "pöstal",
+        "abcd@gmail.com",
+    )

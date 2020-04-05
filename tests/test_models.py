@@ -5,7 +5,7 @@ import pytest
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.extensions import db
-from app.models import generate_email, User, Alias
+from app.models import generate_email, User, Alias, Contact
 
 
 def test_generate_email(flask_client):
@@ -63,3 +63,33 @@ def test_alias_create_random(flask_client):
 
     alias = Alias.create_new_random(user)
     assert alias.email.endswith(EMAIL_DOMAIN)
+
+
+def test_website_send_to(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    # non-empty name
+    c1 = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="abcd@example.com",
+        reply_email="rep@SL",
+        name="First Last",
+    )
+    assert c1.website_send_to() == '"First Last | abcd at example.com" <rep@SL>'
+
+    # empty name, ascii website_from, easy case
+    c1.name = None
+    c1.website_from = "First Last <abcd@example.com>"
+    assert c1.website_send_to() == '"First Last | abcd at example.com" <rep@SL>'
+
+    # empty name, RFC 2047 website_from
+    c1.name = None
+    c1.website_from = "=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@example.com>"
+    assert c1.website_send_to() == '"Nhơn Nguyễn | abcd at example.com" <rep@SL>'
