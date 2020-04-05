@@ -37,7 +37,7 @@ from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from email.utils import parseaddr
+from email.utils import parseaddr, formataddr
 from io import BytesIO
 from smtplib import SMTP
 
@@ -211,22 +211,21 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     new_addrs: [str] = []
 
     for addr in addrs:
-        name, email = parseaddr(addr)
+        name, reply_email = parseaddr(addr)
 
         # no transformation when alias is already in the header
-        if email == alias.email:
+        if reply_email == alias.email:
             continue
 
-        contact = Contact.get_by(reply_email=email)
+        contact = Contact.get_by(reply_email=reply_email)
         if not contact:
             LOG.warning(
-                "%s email in reply phase %s must be reply emails", header, email
+                "%s email in reply phase %s must be reply emails", header, reply_email
             )
             # still keep this email in header
             new_addrs.append(addr)
-            continue
-
-        new_addrs.append(contact.website_from or contact.website_email)
+        else:
+            new_addrs.append(formataddr((contact.name, contact.website_email)))
 
     new_header = ",".join(new_addrs)
     LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
