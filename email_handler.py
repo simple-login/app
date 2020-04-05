@@ -640,12 +640,11 @@ def handle_bounce(
         send_email(
             # use user mail here as only user is authenticated to see the refused email
             user.email,
-            f"Alias {address} has been disabled due to second undelivered email from {contact.website_from}",
+            f"Alias {address} has been disabled due to second undelivered email from {contact.website_email}",
             render(
                 "transactional/automatic-disable-alias.txt",
                 name=user.name,
                 alias=alias,
-                website_from=contact.website_from,
                 website_email=contact.website_email,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox_email,
@@ -654,7 +653,6 @@ def handle_bounce(
                 "transactional/automatic-disable-alias.html",
                 name=user.name,
                 alias=alias,
-                website_from=contact.website_from,
                 website_email=contact.website_email,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox_email,
