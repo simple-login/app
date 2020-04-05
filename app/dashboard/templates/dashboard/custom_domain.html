@@ -10,7 +10,7 @@
 
 {% block default_content %}
   <div class="row">
-    <div class="col-md-8 offset-md-2">
+    <div class="col">
       <h1 class="h3"> Custom Domains </h1>
 
       {% if not current_user.is_premium() %}
@@ -26,7 +26,7 @@
       </div>
 
       {% for custom_domain in custom_domains %}
-        <div class="card" style="max-width: 50rem">
+        <div class="card" style="">
           <div class="card-body">
             <h5 class="card-title">
               <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}">{{ custom_domain.domain }}</a>

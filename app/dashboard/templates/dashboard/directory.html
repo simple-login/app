@@ -7,7 +7,7 @@
 
 {% block default_content %}
   <div class="row">
-    <div class="col-md-8 offset-md-2">
+    <div class="col">
       <h1 class="h3"> Directories </h1>
 
       {% if not current_user.is_premium() %}
@@ -39,7 +39,7 @@
       </div>
 
       {% for dir in dirs %}
-        <div class="card" style="max-width: 50rem">
+        <div class="card" style="">
           <div class="card-body">
             <h5 class="card-title">
               {{ dir.name }}

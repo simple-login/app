@@ -6,9 +6,19 @@
   Settings
 {% endblock %}
 
+{% block head %}
+  <style>
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+  </style>
+{% endblock %}
+
 {% block default_content %}
 
-  <div class="col-md-8 offset-md-2 pb-3">
+  <div class="col pb-3">
     <!-- Change email -->
     <div class="card">
       <form method="post" enctype="multipart/form-data">
@@ -75,11 +85,10 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Multi-Factor Authentication (MFA)
-          <div class="small-text mt-1 mb-3">
-            Secure your account with Multi-Factor Authentication. <br>
-            This requires having applications like Google Authenticator, Authy, FreeOTP, etc.
-          </div>
+        <div class="card-title">Multi-Factor Authentication (MFA)</div>
+        <div class="mb-3">
+          Secure your account with Multi-Factor Authentication. <br>
+          This requires having applications like Google Authenticator, Authy, FreeOTP, etc.
         </div>
         {% if not current_user.enable_otp %}
           <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Enable</a>
@@ -93,9 +102,9 @@
       <div class="card-body">
         <div class="card-title">
           Change password
-          <div class="small-text mt-1 mb-3">
-            You will receive an email containing instructions on how to change password.
-          </div>
+        </div>
+        <div class="mb-3">
+          You will receive an email containing instructions on how to change password.
         </div>
         <form method="post">
           <input type="hidden" name="form-name" value="change-password">
@@ -106,9 +115,8 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Random Alias
-          <div class="small-text mt-1 mb-3">Choose how to create your email alias by default</div>
-        </div>
+        <div class="card-title">Random Alias</div>
+        <div class="mb-3">Choose how to create your email alias by default</div>
         <form method="post" class="form-inline">
           <input type="hidden" name="form-name" value="change-alias-generator">
           <select class="custom-select mr-sm-2" name="alias-generator-scheme">
@@ -126,11 +134,10 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title" id="notification">Newsletters
-          <div class="small-text mt-1 mb-3">
-            Every now and then we can send you an email
-            to let you know about a new feature that might be useful to you.
-          </div>
+        <div class="card-title" id="notification">Newsletters</div>
+        <div class="mb-3">
+          Every now and then we can send you an email
+          to let you know about a new feature that might be useful to you.
         </div>
         <form method="post">
           <input type="hidden" name="form-name" value="notification-preference">
@@ -204,14 +211,14 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Deleted Aliases
-          <div class="small-text mt-1 mb-3" style="max-width: 40rem">
-            When an alias is deleted, all its activities are deleted and no emails can be sent to it. <br>
-            It is moved to another location and only used to check when new alias is created. <br>
-            This check is necessary to avoid someone else accidentally taking this alias. <br>
-            Because in this case, the other person might receive inadvertently information that belong to you. <br>
-          </div>
+        <div class="card-title">Deleted Aliases</div>
+        <div class="mb-3" style="">
+          When an alias is deleted, all its activities are deleted and no emails can be sent to it.
+          The deleted alias is moved to another location and only used to check when new alias is created. <br>
+          This check is necessary to avoid someone else accidentally taking this alias.
+          Otherwise the other person might receive inadvertently information that belong to you. <br>
         </div>
+
         <a href="{{ url_for('dashboard.deleted_alias_route') }}" class="btn btn-outline-primary">
           See deleted aliases
         </a>
@@ -220,16 +227,15 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Quarantine
-          <div class="small-text mt-1 mb-3" style="max-width: 40rem">
-            When an email sent to your alias is classified as spam or refused by your email provider,
-            it usually means your alias has been leaked to a spammer. <br>
-            In this case SimpleLogin will keep a copy of this email (so it isn't lost)
-            and notify you so you can take a look at its content and take appropriate actions. <br>
+        <div class="card-title">Quarantine</div>
+        <div class="mb-3">
+          When an email sent to your alias is classified as spam or refused by your email provider,
+          it usually means your alias has been leaked to a spammer. <br>
+          In this case SimpleLogin will <b>keep</b> a copy of this email (so it isn't lost)
+          and notify you so you can take a look at its content and take appropriate actions. <br>
 
-            The emails are deleted in 7 days.
-            This is an exceptional case where SimpleLogin stores the email.
-          </div>
+          The emails are deleted in 7 days.
+          This is an exceptional case where SimpleLogin stores the email.
         </div>
         <a href="{{ url_for('dashboard.refused_email_route') }}" class="btn btn-outline-primary">
           See refused emails
@@ -239,10 +245,9 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Export Data
-          <div class="small-text mt-1 mb-3">
-            You can download all aliases you have created on SimpleLogin along with other data.
-          </div>
+        <div class="card-title">Export Data</div>
+        <div class="mb-3">
+          You can download all aliases you have created on SimpleLogin along with other data.
         </div>
         <form method="post">
           <input type="hidden" name="form-name" value="export-data">
@@ -254,11 +259,10 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Delete Account
-          <div class="small-text mt-1 mb-3">Please note that this operation is irreversible.
-          </div>
-
+        <div class="card-title">Delete Account</div>
+        <div class="mb-3">Please note that this operation is irreversible.
         </div>
+
         <form method="post">
           <input type="hidden" name="form-name" value="delete-account">
           <span class="delete-account btn btn-outline-danger">Delete account</span>

@@ -7,7 +7,7 @@
 
 {% block default_content %}
   <div class="row">
-    <div class="col-md-8 offset-md-2">
+    <div class="col">
       <h1 class="h3"> Mailboxes </h1>
 
       {% if not current_user.is_premium() %}
@@ -30,7 +30,7 @@
       </div>
 
       {% for mailbox in mailboxes %}
-        <div class="card" style="max-width: 50rem">
+        <div class="card">
           <div class="card-body">
             <h5 class="card-title">
               {{ mailbox.email }}
