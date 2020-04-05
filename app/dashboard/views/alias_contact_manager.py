@@ -68,7 +68,7 @@ def alias_contact_manager(alias_id):
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             if new_contact_form.validate():
-                contact_email = new_contact_form.email.data.strip()
+                contact_addr = new_contact_form.email.data.strip()
 
                 # generate a reply_email, make sure it is unique
                 # not use while to avoid infinite loop
@@ -78,13 +78,13 @@ def alias_contact_manager(alias_id):
                     if not Contact.get_by(reply_email=reply_email):
                         break
 
-                _, website_email = parseaddr(contact_email)
-                website_email = website_email.lower()
+                _, contact_email = parseaddr(contact_addr)
+                contact_email = contact_email.lower()
 
-                contact = Contact.get_by(alias_id=alias.id, website_email=website_email)
+                contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
                 # already been added
                 if contact:
-                    flash(f"{website_email} is already added", "error")
+                    flash(f"{contact_email} is already added", "error")
                     return redirect(
                         url_for(
                             "dashboard.alias_contact_manager",
@@ -96,14 +96,14 @@ def alias_contact_manager(alias_id):
                 contact = Contact.create(
                     user_id=alias.user_id,
                     alias_id=alias.id,
-                    website_email=website_email,
-                    website_from=contact_email,
+                    website_email=contact_email,
+                    website_from=contact_addr,
                     reply_email=reply_email,
                 )
 
-                LOG.d("create reverse-alias for %s", contact_email)
+                LOG.d("create reverse-alias for %s", contact_addr)
                 db.session.commit()
-                flash(f"Reverse alias for {contact_email} is created", "success")
+                flash(f"Reverse alias for {contact_addr} is created", "success")
 
                 return redirect(
                     url_for(
