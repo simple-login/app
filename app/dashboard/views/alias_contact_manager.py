@@ -8,6 +8,7 @@ from wtforms import StringField, validators, ValidationError
 
 from app.config import EMAIL_DOMAIN
 from app.dashboard.base import dashboard_bp
+from app.email_utils import parseaddr_unicode
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact
@@ -78,7 +79,13 @@ def alias_contact_manager(alias_id):
                     if not Contact.get_by(reply_email=reply_email):
                         break
 
-                _, contact_email = parseaddr(contact_addr)
+                try:
+                    contact_name, contact_email = parseaddr_unicode(contact_addr)
+                except Exception:
+                    flash(f"{contact_addr} is invalid", "error")
+                    return redirect(
+                        url_for("dashboard.alias_contact_manager", alias_id=alias_id,)
+                    )
                 contact_email = contact_email.lower()
 
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
@@ -97,7 +104,7 @@ def alias_contact_manager(alias_id):
                     user_id=alias.user_id,
                     alias_id=alias.id,
                     website_email=contact_email,
-                    website_from=contact_addr,
+                    name=contact_name,
                     reply_email=reply_email,
                 )
 
