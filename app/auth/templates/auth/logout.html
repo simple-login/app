@@ -1,14 +1,28 @@
-{% extends "single.html" %}
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-single">
+    <div class="container">
+      <div class="row">
+        <div class="col mx-auto card p-7" style="max-width: 50rem">
+          <div class="text-center mb-6">
+            <a href="https://simplelogin.io">
+              <img src="/static/logo.svg" style="background-color: transparent; height: 32px">
+            </a>
+          </div>
+
+          <div class="text-center text-muted">
+            You are logged out.
+
+            <a href="{{ url_for('auth.login') }}">Login</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
 
 {% block title %}
   Logout
-{% endblock %}
-
-{% block single_content %}
-  <div class="text-center text-muted">
-    You are logged out.
-
-    <a href="{{ url_for('auth.login') }}">Login</a>
-  </div>
-
 {% endblock %}
