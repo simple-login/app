@@ -14,6 +14,7 @@ from app.dashboard.views.index import (
     get_alias_infos_with_pagination,
     get_alias_info,
 )
+from app.email_utils import parseaddr_unicode
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact
@@ -166,11 +167,11 @@ def get_alias_activities(alias_id):
         }
         if alias_log.is_reply:
             activity["from"] = alias_log.alias
-            activity["to"] = alias_log.website_from or alias_log.website_email
+            activity["to"] = alias_log.website_email
             activity["action"] = "reply"
         else:
             activity["to"] = alias_log.alias
-            activity["from"] = alias_log.website_from or alias_log.website_email
+            activity["from"] = alias_log.website_email
 
             if alias_log.bounced:
                 activity["action"] = "bounced"
@@ -244,7 +245,7 @@ def serialize_contact(contact: Contact) -> dict:
         "creation_timestamp": contact.created_at.timestamp,
         "last_email_sent_date": None,
         "last_email_sent_timestamp": None,
-        "contact": contact.website_from or contact.website_email,
+        "contact": contact.website_email,
         "reverse_alias": contact.website_send_to(),
     }
 
@@ -340,8 +341,7 @@ def create_contact_route(alias_id):
         if not Contact.get_by(reply_email=reply_email):
             break
 
-    _, contact_email = parseaddr(contact_addr)
-    contact_email = contact_email.lower()
+    contact_name, contact_email = parseaddr_unicode(contact_addr)
 
     # already been added
     if Contact.get_by(alias_id=alias.id, website_email=contact_email):
@@ -351,7 +351,7 @@ def create_contact_route(alias_id):
         user_id=alias.user_id,
         alias_id=alias.id,
         website_email=contact_email,
-        website_from=contact_addr,
+        name=contact_name,
         reply_email=reply_email,
     )
 

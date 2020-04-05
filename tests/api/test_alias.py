@@ -287,7 +287,7 @@ def test_create_contact_route(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["contact"] == "First Last <first@example.com>"
+    assert r.json["contact"] == "first@example.com"
     assert "creation_date" in r.json
     assert "creation_timestamp" in r.json
     assert r.json["last_email_sent_date"] is None
