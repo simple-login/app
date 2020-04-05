@@ -176,7 +176,7 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        aliases=get_alias_infos(current_user, query, highlight_alias_id),
+        alias_infos=get_alias_infos(current_user, query, highlight_alias_id),
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
