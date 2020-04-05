@@ -149,14 +149,14 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
     need_replace = False
 
     for addr in addrs:
-        name, email = parseaddr(addr)
+        name, contact_email = parseaddr(addr)
 
         # no transformation when alias is already in the header
-        if email == alias.email:
+        if contact_email == alias.email:
             new_addrs.append(addr)
             continue
 
-        contact = Contact.get_by(alias_id=alias.id, website_email=email)
+        contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
         if contact:
             # update the website_from if needed
             if contact.website_from != addr:
@@ -167,7 +167,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             LOG.debug(
                 "create contact for alias %s and email %s, header %s",
                 alias,
-                email,
+                contact_email,
                 header,
             )
 
@@ -176,7 +176,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             contact = Contact.create(
                 user_id=alias.user_id,
                 alias_id=alias.id,
-                website_email=email,
+                website_email=contact_email,
                 website_from=addr,
                 reply_email=reply_email,
                 is_cc=header.lower() == "cc",
