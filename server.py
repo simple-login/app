@@ -237,7 +237,6 @@ def set_index_page(app):
                 res.status_code,
             )
 
-        res.headers["X-Frame-Options"] = "deny"
         return res
 
 
