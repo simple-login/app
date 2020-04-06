@@ -848,6 +848,17 @@ class EmailLog(db.Model, ModelMixin):
 
     contact = db.relationship(Contact)
 
+    def get_action(self) -> str:
+        """return the action name: forward|reply|block|bounced"""
+        if self.is_reply:
+            return "reply"
+        elif self.bounced:
+            return "bounced"
+        elif self.blocked:
+            return "blocked"
+        else:
+            return "forward"
+
 
 class Subscription(db.Model, ModelMixin):
     # Come from Paddle

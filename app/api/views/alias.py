@@ -11,6 +11,8 @@ from app.api.serializer import (
     get_alias_infos_with_pagination,
     get_alias_info,
     get_alias_contacts,
+    get_alias_infos_with_pagination_v2,
+    serialize_alias_info_v2,
 )
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.alias_log import get_alias_log
@@ -59,6 +61,57 @@ def get_aliases():
     return (
         jsonify(
             aliases=[serialize_alias_info(alias_info) for alias_info in alias_infos]
+        ),
+        200,
+    )
+
+
+@api_bp.route("/v2/aliases", methods=["GET", "POST"])
+@cross_origin()
+@verify_api_key
+def get_aliases_v2():
+    """
+    Get aliases
+    Input:
+        page_id: in query
+    Output:
+        - aliases: list of alias:
+            - id
+            - email
+            - creation_date
+            - creation_timestamp
+            - nb_forward
+            - nb_block
+            - nb_reply
+            - note
+            - (optional) latest_activity:
+                - timestamp
+                - action: forward|reply|block|bounced
+                - contact:
+                    - email
+                    - name
+                    - reverse_alias
+
+
+    """
+    user = g.user
+    try:
+        page_id = int(request.args.get("page_id"))
+    except (ValueError, TypeError):
+        return jsonify(error="page_id must be provided in request query"), 400
+
+    query = None
+    data = request.get_json(silent=True)
+    if data:
+        query = data.get("query")
+
+    alias_infos: [AliasInfo] = get_alias_infos_with_pagination_v2(
+        user, page_id=page_id, query=query
+    )
+
+    return (
+        jsonify(
+            aliases=[serialize_alias_info_v2(alias_info) for alias_info in alias_infos]
         ),
         200,
     )
@@ -127,7 +180,7 @@ def get_alias_activities(alias_id):
             - from
             - to
             - timestamp
-            - action: forward|reply|block
+            - action: forward|reply|block|bounced
             - reverse_alias
 
     """

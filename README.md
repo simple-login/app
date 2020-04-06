@@ -831,7 +831,8 @@ Input:
 
 Output: always return 200, even if email doesn't exist. User need to enter correctly their email.
 
-#### GET /api/aliases
+
+#### GET /api/v2/aliases
 
 Get user aliases.
 
@@ -841,34 +842,70 @@ Input:
 - (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this case this endpoint also supports POST. 
 
 Output:
-If success, 200 with the list of aliases, for example:
+If success, 200 with the list of aliases. Each alias has the following fields:
+
+- id
+- email
+- enabled
+- creation_timestamp
+- note
+- nb_block
+- nb_forward
+- nb_reply
+- (optional) latest_activity:
+    - action: forward|reply|block|bounced
+    - timestamp
+    - contact:
+        - email
+        - name
+        - reverse_alias
+
+Here's an example:
 
 ```json
 {
-    "aliases": [
-        {
-            "creation_date": "2020-02-04 16:23:02+00:00",
-            "creation_timestamp": 1580833382,
-            "email": "e3@.alo@sl.local",
-            "id": 4,
-            "nb_block": 0,
-            "nb_forward": 0,
-            "nb_reply": 0,
-            "enabled": true,
-            "note": "This is a note"
+  "aliases": [
+    {
+      "creation_date": "2020-04-06 17:57:14+00:00",
+      "creation_timestamp": 1586195834,
+      "email": "prefix1.cat@sl.local",
+      "enabled": true,
+      "id": 3,
+      "latest_activity": {
+        "action": "forward",
+        "contact": {
+          "email": "c1@example.com",
+          "name": null,
+          "reverse_alias": "\"c1 at example.com\" <re1@SL>"
         },
-        {
-            "creation_date": "2020-02-04 16:23:02+00:00",
-            "creation_timestamp": 1580833382,
-            "email": "e2@.meo@sl.local",
-            "id": 3,
-            "nb_block": 0,
-            "nb_forward": 0,
-            "nb_reply": 0,
-            "enabled": false,
-            "note": null
-        }
-    ]
+        "timestamp": 1586195834
+      },
+      "nb_block": 0,
+      "nb_forward": 1,
+      "nb_reply": 0,
+      "note": null
+    },
+    {
+      "creation_date": "2020-04-06 17:57:14+00:00",
+      "creation_timestamp": 1586195834,
+      "email": "prefix0.hey@sl.local",
+      "enabled": true,
+      "id": 2,
+      "latest_activity": {
+        "action": "forward",
+        "contact": {
+          "email": "c0@example.com",
+          "name": null,
+          "reverse_alias": "\"c0 at example.com\" <re0@SL>"
+        },
+        "timestamp": 1586195834
+      },
+      "nb_block": 0,
+      "nb_forward": 1,
+      "nb_reply": 0,
+      "note": null
+    }
+  ]
 }
 ```
 

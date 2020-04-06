@@ -1,3 +1,5 @@
+import json
+
 from flask import url_for
 
 from flask import url_for
@@ -99,6 +101,81 @@ def test_get_aliases_with_pagination(flask_client):
     )
     assert r.status_code == 200
     assert len(r.json["aliases"]) == 1
+
+
+def test_get_aliases_v2(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    a0 = Alias.create_new(user, "prefix0")
+    a1 = Alias.create_new(user, "prefix1")
+    db.session.commit()
+
+    # add activity for a0
+    c0 = Contact.create(
+        user_id=user.id,
+        alias_id=a0.id,
+        website_email="c0@example.com",
+        reply_email="re0@SL",
+    )
+    db.session.commit()
+    EmailLog.create(contact_id=c0.id, user_id=user.id)
+    db.session.commit()
+
+    # a1 has more recent activity
+    c1 = Contact.create(
+        user_id=user.id,
+        alias_id=a1.id,
+        website_email="c1@example.com",
+        reply_email="re1@SL",
+    )
+    db.session.commit()
+    EmailLog.create(contact_id=c1.id, user_id=user.id)
+    db.session.commit()
+
+    # get aliases v2
+    r = flask_client.get(
+        url_for("api.get_aliases_v2", page_id=0),
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 200
+
+    # make sure a1 is returned before a0
+    r0 = r.json["aliases"][0]
+    # r0 will have the following format
+    # {
+    #   "creation_date": "2020-04-06 17:52:47+00:00",
+    #   "creation_timestamp": 1586195567,
+    #   "email": "prefix1.hey@sl.local",
+    #   "enabled": true,
+    #   "id": 3,
+    #   "latest_activity": {
+    #     "action": "forward",
+    #     "contact": {
+    #       "email": "c1@example.com",
+    #       "name": null,
+    #       "reverse_alias": "\"c1 at example.com\" <re1@SL>"
+    #     },
+    #     "timestamp": 1586195567
+    #   },
+    #   "nb_block": 0,
+    #   "nb_forward": 1,
+    #   "nb_reply": 0,
+    #   "note": null
+    # }
+    assert r0["email"].startswith("prefix1")
+    assert r0["latest_activity"]["action"] == "forward"
+    assert "timestamp" in r0["latest_activity"]
+
+    assert r0["latest_activity"]["contact"]["email"] == "c1@example.com"
+    assert "name" in r0["latest_activity"]["contact"]
+    assert "reverse_alias" in r0["latest_activity"]["contact"]
 
 
 def test_delete_alias(flask_client):
