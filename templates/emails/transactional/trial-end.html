@@ -12,9 +12,16 @@
   {{ render_text("When the trial ends:") }}
 
   {{ render_text("- All aliases/domains/directories you have created are <b>kept</b> and continue working normally.") }}
-  {{ render_text("- You cannot create new aliases if you exceed the free plan limit, i.e. have more than 15 aliases.") }}
-  {{ render_text("- As features like <b>catch-all</b> or <b>directory</b> allow you to create aliases on-the-fly,
-    those aliases cannot be automatically created if you have more than 15 aliases.") }}
+
+  {% call text() %}
+    - You cannot create new aliases if you exceed the free plan limit, i.e. have more than {{MAX_NB_EMAIL_FREE_PLAN}} aliases.
+  {% endcall %}
+
+  {% call text() %}
+    - As features like <b>catch-all</b> or <b>directory</b> allow you to create aliases on-the-fly,
+    those aliases cannot be automatically created if you have more than {{MAX_NB_EMAIL_FREE_PLAN}} aliases.
+  {% endcall %}
+
   {{ render_text("- You cannot add new domain or directory.") }}
   {{ render_text("- You cannot add new mailbox.") }}
   {{ render_text("- If you enable PGP Encryption, forwarded emails are not encrypted anymore.") }}
@@ -26,7 +33,7 @@
   {{ render_text("If you're not ready to upgrade to a paying account, you have a few other options available to you:") }}
 
   {{ grey_section([
-  "<b>Continue with the Free Plan</b> - In the free plan you are limited to 15 aliases but there's no cap on bandwidth or
+  "<b>Continue with the Free Plan</b> - In the free plan you are limited to " ~ MAX_NB_EMAIL_FREE_PLAN ~ " aliases but there's no cap on bandwidth or
      number of emails forwarded/sent.",
   "<b>Restart your trial</b> - If you didn't get a chance to fully try out the product or need a little more time to evaluate, just let us know. Simply reply to this email and we'll extend your trial period.",
   "<b>Share feedback</b> - If SimpleLogin isn't right for you, let us know what you were looking for and we might be able to suggest some alternatives that might be a better fit.",
