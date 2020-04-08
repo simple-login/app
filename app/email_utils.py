@@ -22,6 +22,7 @@ from app.config import (
     ALIAS_DOMAINS,
     SUPPORT_NAME,
     POSTFIX_SUBMISSION_TLS,
+    MAX_NB_EMAIL_FREE_PLAN,
 )
 from app.log import LOG
 from app.models import Mailbox, User
@@ -33,7 +34,7 @@ def render(template_name, **kwargs) -> str:
 
     template = env.get_template(template_name)
 
-    return template.render(**kwargs)
+    return template.render(MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN, **kwargs)
 
 
 def send_welcome_email(user):
