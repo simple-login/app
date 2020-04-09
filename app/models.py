@@ -20,6 +20,7 @@ from app.config import (
     JOB_ONBOARDING_2,
     JOB_ONBOARDING_3,
     JOB_ONBOARDING_4,
+    LANDING_PAGE_URL,
 )
 from app.extensions import db
 from app.log import LOG
@@ -154,6 +155,10 @@ class User(db.Model, ModelMixin, UserMixin):
     use_via_format_for_sender = db.Column(
         db.Boolean, default=True, nullable=False, server_default="1"
     )
+
+    referral_id = db.Column(db.ForeignKey("referral.id"), nullable=True, default=None)
+
+    referral = db.relationship("Referral", foreign_keys=[referral_id])
 
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
@@ -1087,3 +1092,17 @@ class RefusedEmail(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<Refused Email {self.id} {self.path} {self.delete_at}>"
+
+
+class Referral(db.Model, ModelMixin):
+    """Referral code so user can invite others"""
+
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+
+    code = db.Column(db.String(128), unique=True, nullable=False)
+
+    def nb_user(self):
+        return User.filter_by(referral_id=self.id, activated=True).count()
+
+    def link(self):
+        return f"{LANDING_PAGE_URL}?slref={self.code}"
