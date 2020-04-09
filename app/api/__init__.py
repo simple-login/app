@@ -3,7 +3,7 @@ from .views import (
     new_custom_alias,
     new_random_alias,
     user_info,
-    auth_login,
+    auth,
     auth_mfa,
     alias,
 )
