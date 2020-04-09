@@ -1,0 +1,65 @@
+{% extends 'default.html' %}
+
+{% block title %}
+  Referral
+{% endblock %}
+
+{% set active_page = "setting" %}
+
+{% block default_content %}
+  <div class="col">
+    <h1 class="h3 mb-5"> Referrals </h1>
+
+    {% if referrals|length == 0 %}
+      <div class="alert alert-info">
+        You don't have any referral code yet. Let's create the first one and start inviting your friends! <br>
+      </div>
+    {% endif %}
+
+
+    {% for referral in referrals %}
+      <div class="card p-4 shadow-sm {% if referral.id == highlight_id %} highlight-row {% endif %}">
+        <div class="mb-3">Referral Code: <b>{{ referral.code }}</b>
+        </div>
+
+        {% if referral.nb_user() > 0 %}
+          <div class="mb-3">
+            <b class="h1">{{ referral.nb_user() }}</b>
+            {% if referral.nb_user() == 1 %} person {% else %} people {% endif %}
+            has protected their emails thanks to you!
+          </div>
+        {% endif %}
+
+        <div>
+          Please use this referral link to invite your friends trying out SimpleLogin: <br>
+
+          <div class="d-flex mb-5">
+            <div class="flex-grow-1">
+              <input class="form-control" id="referral-{{ referral.id }}" readonly
+                     value="{{ referral.link() }}">
+            </div>
+
+            <div>
+              <button class="clipboard btn btn-primary" data-clipboard-action="copy"
+                      data-clipboard-text="{{ referral.link() }}"
+                      data-clipboard-target="#referral-{{ referral.id }}">
+                Copy &nbsp; &nbsp; <i class="fe fe-clipboard"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    {% endfor %}
+
+    {% if referrals|length > 0 %}
+      <hr>
+    {% endif %}
+
+    <form method="post" class="mt-6">
+      <button class="btn btn-lg btn-success mt-2">Create a new referral code</button>
+    </form>
+
+
+  </div>
+{% endblock %}

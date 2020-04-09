@@ -18,4 +18,5 @@ from .views import (
     deleted_alias,
     mailbox_detail,
     refused_email,
+    referral,
 )
