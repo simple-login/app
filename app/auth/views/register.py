@@ -5,11 +5,12 @@ from wtforms import StringField, validators
 
 from app import email_utils, config
 from app.auth.base import auth_bp
+from app.auth.views.login_utils import get_referral
 from app.config import URL, DISABLE_REGISTRATION
 from app.email_utils import can_be_used_as_personal_email, email_already_used
 from app.extensions import db
 from app.log import LOG
-from app.models import User, ActivationCode
+from app.models import User, ActivationCode, Referral
 from app.utils import random_string, encode_url
 
 
@@ -43,7 +44,12 @@ def register():
                 flash(f"Email {email} already used", "error")
             else:
                 LOG.debug("create user %s", form.email.data)
-                user = User.create(email=email, name="", password=form.password.data)
+                user = User.create(
+                    email=email,
+                    name="",
+                    password=form.password.data,
+                    referral=get_referral(),
+                )
                 db.session.commit()
 
                 try:

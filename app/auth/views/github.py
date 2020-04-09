@@ -4,7 +4,7 @@ from requests_oauthlib import OAuth2Session
 
 from app import email_utils
 from app.auth.base import auth_bp
-from app.auth.views.login_utils import after_login
+from app.auth.views.login_utils import after_login, get_referral
 from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL, DISABLE_REGISTRATION
 from app.email_utils import can_be_used_as_personal_email, email_already_used
 from app.extensions import db
@@ -100,7 +100,10 @@ def github_callback():
 
         LOG.d("create github user")
         user = User.create(
-            email=email.lower(), name=github_user_data.get("name") or "", activated=True
+            email=email.lower(),
+            name=github_user_data.get("name") or "",
+            activated=True,
+            referral=get_referral(),
         )
         db.session.commit()
         login_user(user)

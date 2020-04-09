@@ -15,7 +15,7 @@ from app.config import (
 from app.extensions import db
 from app.log import LOG
 from app.models import User, SocialAuth
-from .login_utils import after_login
+from .login_utils import after_login, get_referral
 from ...email_utils import can_be_used_as_personal_email, email_already_used
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
@@ -118,7 +118,10 @@ def facebook_callback():
 
         LOG.d("create facebook user with %s", facebook_user_data)
         user = User.create(
-            email=email.lower(), name=facebook_user_data["name"], activated=True
+            email=email.lower(),
+            name=facebook_user_data["name"],
+            activated=True,
+            referral=get_referral(),
         )
         db.session.flush()
 

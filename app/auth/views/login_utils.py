@@ -1,8 +1,11 @@
-from flask import session, redirect, url_for
+from typing import Optional
+
+from flask import session, redirect, url_for, request
 from flask_login import login_user
 
 from app.config import MFA_USER_ID
 from app.log import LOG
+from app.models import Referral
 
 
 def after_login(user, next_url):
@@ -28,3 +31,18 @@ def after_login(user, next_url):
         else:
             LOG.debug("redirect user to dashboard")
             return redirect(url_for("dashboard.index"))
+
+
+# name of the cookie that stores the referral code
+_REFERRAL_COOKIE = "slref"
+
+
+def get_referral() -> Optional[Referral]:
+    """Get the eventual referral stored in cookie"""
+    # whether user arrives via a referral
+    referral = None
+    if request.cookies:
+        ref_code = request.cookies.get(_REFERRAL_COOKIE)
+        referral = Referral.get_by(code=ref_code)
+
+    return referral

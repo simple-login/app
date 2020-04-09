@@ -9,7 +9,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import User, File, SocialAuth
 from app.utils import random_string
-from .login_utils import after_login
+from .login_utils import after_login, get_referral
 from ...email_utils import can_be_used_as_personal_email, email_already_used
 
 _authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -103,7 +103,10 @@ def google_callback():
 
         LOG.d("create google user with %s", google_user_data)
         user = User.create(
-            email=email.lower(), name=google_user_data["name"], activated=True
+            email=email.lower(),
+            name=google_user_data["name"],
+            activated=True,
+            referral=get_referral(),
         )
         db.session.flush()
 
