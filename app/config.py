@@ -221,3 +221,5 @@ if LOCAL_FILE_UPLOAD:
     if not os.path.exists(UPLOAD_DIR):
         print("Create upload dir")
         os.makedirs(UPLOAD_DIR)
+
+LANDING_PAGE_URL = os.environ.get("LANDING_PAGE_URL") or "https://simplelogin.io"
