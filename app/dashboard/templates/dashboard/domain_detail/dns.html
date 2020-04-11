@@ -36,7 +36,11 @@
         <div class="mb-3 p-3" style="background-color: #eee">
           Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
           Priority: {{ priority }} <br>
-          Target: <em>{{ email_server }}</em> <br>
+          Target: <em>{{ email_server }}</em>
+          <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
+                  data-clipboard-text="{{ email_server }}">
+            Copy <i class="fe fe-clipboard"></i>
+          </button>
         </div>
       {% endfor %}
 
@@ -97,6 +101,10 @@
         <em>
           {{ spf_record }}
         </em>
+        <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
+                data-clipboard-text="{{ spf_record }}">
+          Copy <i class="fe fe-clipboard"></i>
+        </button>
       </div>
 
       <form method="post" action="#spf-form">
@@ -158,6 +166,10 @@
         <em style="overflow-wrap: break-word">
           {{ dkim_record }}
         </em>
+        <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
+                data-clipboard-text="{{ dkim_record }}">
+          Copy <i class="fe fe-clipboard"></i>
+        </button>
       </div>
 
       <form method="post" action="#dkim-form">
