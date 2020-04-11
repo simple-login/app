@@ -322,7 +322,7 @@ class User(db.Model, ModelMixin, UserMixin):
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
 
-    def get_subscription(self):
+    def get_subscription(self) -> "Subscription":
         """return *active* subscription
         TODO: support user unsubscribe and re-subscribe
         """

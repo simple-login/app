@@ -23,9 +23,15 @@ class CouponForm(FlaskForm):
 @dashboard_bp.route("/lifetime_licence", methods=["GET", "POST"])
 @login_required
 def lifetime_licence():
-    # sanity check: make sure this page is only for free user
-    if current_user.lifetime_or_active_subscription():
-        flash("You are already a premium user", "warning")
+    if current_user.lifetime:
+        flash("You already have a lifetime licence", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    # user needs to cancel active subscription first
+    # to avoid being charged
+    sub = current_user.get_subscription()
+    if sub and not sub.cancelled:
+        flash("Please cancel your current subscription first", "warning")
         return redirect(url_for("dashboard.index"))
 
     coupon_form = CouponForm()
