@@ -27,7 +27,7 @@
 
         <div class="card-body">
           <div class="card-title">
-            Change Email Address
+            Email Address
           </div>
           <div class="form-group">
             <label class="form-label">Email</label>
@@ -60,9 +60,12 @@
 
         <div class="card-body">
           <div class="card-title">
-            Change Profile
+            Profile
           </div>
-          <div class="form-group">
+          <div>
+            These informations will be filled up automatically when you use "Sign in with SimpleLogin" button
+          </div>
+          <div class="form-group mt-3">
             <label class="form-label">Name</label>
             {{ form.name(class="form-control", value=current_user.name) }}
             {{ render_field_errors(form.name) }}

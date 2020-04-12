@@ -27,7 +27,7 @@
 
               {% if current_user.in_trial() %}
                 <small class="text-success d-block mt-1">Trial ends {{ current_user.trial_end|dt }}</small>
-              {% elif current_user.lifetime_or_active_subscription() %}
+              {% elif current_user.is_premium() %}
                 <small class="text-success d-block mt-1">Premium
                   {% if current_user.is_cancel() %}
                     until {{ current_user.next_bill_date() }}

@@ -133,6 +133,7 @@ def fake_data():
         otp_secret="base32secret3232",
     )
     db.session.commit()
+    user.trial_end = None
 
     LifetimeCoupon.create(code="coupon", nb_used=10)
     db.session.commit()
@@ -385,12 +386,15 @@ def setup_paddle_callback(app: Flask):
             LOG.debug("Update subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
-            sub.event_time = arrow.now()
-            sub.next_bill_date = arrow.get(
-                request.form.get("next_bill_date"), "YYYY-MM-DD"
-            ).date()
+            # when user subscribes, the "subscription_payment_succeeded" can arrive BEFORE "subscription_created"
+            # at that time, subscription object does not exist yet
+            if sub:
+                sub.event_time = arrow.now()
+                sub.next_bill_date = arrow.get(
+                    request.form.get("next_bill_date"), "YYYY-MM-DD"
+                ).date()
 
-            db.session.commit()
+                db.session.commit()
 
         elif request.form.get("alert_name") == "subscription_cancelled":
             subscription_id = request.form.get("subscription_id")
@@ -411,7 +415,40 @@ def setup_paddle_callback(app: Flask):
                 db.session.commit()
             else:
                 return "No such subscription", 400
+        elif request.form.get("alert_name") == "subscription_updated":
+            subscription_id = request.form.get("subscription_id")
 
+            sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
+            if sub:
+                LOG.debug(
+                    "Update subscription %s %s on %s, next bill date %s",
+                    subscription_id,
+                    sub.user,
+                    request.form.get("cancellation_effective_date"),
+                    sub.next_bill_date,
+                )
+                if (
+                    int(request.form.get("subscription_plan_id"))
+                    == PADDLE_MONTHLY_PRODUCT_ID
+                ):
+                    plan = PlanEnum.monthly
+                else:
+                    plan = PlanEnum.yearly
+
+                sub.cancel_url = request.form.get("cancel_url")
+                sub.update_url = request.form.get("update_url")
+                sub.event_time = arrow.now()
+                sub.next_bill_date = arrow.get(
+                    request.form.get("next_bill_date"), "YYYY-MM-DD"
+                ).date()
+                sub.plan = plan
+
+                # make sure to set the new plan as not-cancelled
+                sub.cancelled = False
+
+                db.session.commit()
+            else:
+                return "No such subscription", 400
         return "OK"
 
 
