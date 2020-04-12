@@ -202,7 +202,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return user
 
-    def lifetime_or_active_subscription(self) -> bool:
+    def _lifetime_or_active_subscription(self) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
@@ -219,7 +219,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
-        if self.lifetime_or_active_subscription():
+        if self._lifetime_or_active_subscription():
             return False
 
         if self.trial_end and arrow.now() < self.trial_end:
@@ -228,7 +228,7 @@ class User(db.Model, ModelMixin, UserMixin):
         return False
 
     def should_upgrade(self):
-        if self.lifetime_or_active_subscription():
+        if self._lifetime_or_active_subscription():
             # user who has canceled can also re-subscribe
             sub: Subscription = self.get_subscription()
             if sub and sub.cancelled:
@@ -264,7 +264,7 @@ class User(db.Model, ModelMixin, UserMixin):
         - in trial period or
         - active subscription
         """
-        if self.lifetime_or_active_subscription():
+        if self._lifetime_or_active_subscription():
             return True
 
         if self.trial_end and arrow.now() < self.trial_end:
