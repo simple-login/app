@@ -133,6 +133,7 @@ def fake_data():
         otp_secret="base32secret3232",
     )
     db.session.commit()
+    user.trial_end = None
 
     LifetimeCoupon.create(code="coupon", nb_used=10)
     db.session.commit()
