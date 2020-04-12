@@ -76,3 +76,22 @@ def cancel_subscription(subscription_id: int) -> bool:
         )
 
     return res["success"]
+
+
+def change_plan(subscription_id: int, plan_id) -> bool:
+    r = requests.post(
+        "https://vendors.paddle.com/api/2.0/subscription/users/update",
+        data={
+            "vendor_id": PADDLE_VENDOR_ID,
+            "vendor_auth_code": PADDLE_AUTH_CODE,
+            "subscription_id": subscription_id,
+            "plan_id": plan_id,
+        },
+    )
+    res = r.json()
+    if not res["success"]:
+        LOG.error(
+            f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
+        )
+
+    return res["success"]

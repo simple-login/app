@@ -411,7 +411,40 @@ def setup_paddle_callback(app: Flask):
                 db.session.commit()
             else:
                 return "No such subscription", 400
+        elif request.form.get("alert_name") == "subscription_updated":
+            subscription_id = request.form.get("subscription_id")
 
+            sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
+            if sub:
+                LOG.debug(
+                    "Update subscription %s %s on %s, next bill date %s",
+                    subscription_id,
+                    sub.user,
+                    request.form.get("cancellation_effective_date"),
+                    sub.next_bill_date,
+                )
+                if (
+                    int(request.form.get("subscription_plan_id"))
+                    == PADDLE_MONTHLY_PRODUCT_ID
+                ):
+                    plan = PlanEnum.monthly
+                else:
+                    plan = PlanEnum.yearly
+
+                sub.cancel_url = request.form.get("cancel_url")
+                sub.update_url = request.form.get("update_url")
+                sub.event_time = arrow.now()
+                sub.next_bill_date = arrow.get(
+                    request.form.get("next_bill_date"), "YYYY-MM-DD"
+                ).date()
+                sub.plan = plan
+
+                # make sure to set the new plan as not-cancelled
+                sub.cancelled = False
+
+                db.session.commit()
+            else:
+                return "No such subscription", 400
         return "OK"
 
 
