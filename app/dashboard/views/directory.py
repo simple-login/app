@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS
+from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, MAX_NB_DIRECTORY
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.models import Directory
@@ -44,6 +44,13 @@ def directory():
         elif request.form.get("form-name") == "create":
             if not current_user.is_premium():
                 flash("Only premium plan can add directory", "warning")
+                return redirect(url_for("dashboard.directory"))
+
+            if current_user.nb_directory() >= MAX_NB_DIRECTORY:
+                flash(
+                    f"You cannot have more than {MAX_NB_DIRECTORY} directories",
+                    "warning",
+                )
                 return redirect(url_for("dashboard.directory"))
 
             if new_dir_form.validate():

@@ -57,6 +57,9 @@ except Exception:
     print("MAX_NB_EMAIL_FREE_PLAN is not set, use 5 as default value")
     MAX_NB_EMAIL_FREE_PLAN = 5
 
+# maximum number of directory a premium user can create
+MAX_NB_DIRECTORY = 50
+
 # allow to override postfix server locally
 POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 

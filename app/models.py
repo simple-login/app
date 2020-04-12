@@ -328,7 +328,7 @@ class User(db.Model, ModelMixin, UserMixin):
         """
         sub = Subscription.get_by(user_id=self.id)
         # TODO: sub is active only if sub.next_bill_date > now
-        # due to a bug on next_bill_date, wait until next month (April 8)
+        # due to a bug on next_bill_date, wait until next month (May 8)
         # when all next_bill_date are correctly updated to add this check
 
         if sub and sub.cancelled:
@@ -352,6 +352,9 @@ class User(db.Model, ModelMixin, UserMixin):
             mailboxes.append(mailbox.email)
 
         return mailboxes
+
+    def nb_directory(self):
+        return Directory.query.filter_by(user_id=self.id).count()
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
