@@ -70,3 +70,16 @@ em {
 .cursor {
     cursor: pointer;
 }
+
+/*Left border for alert zone*/
+.alert-primary{
+    border-left: 5px #467fcf solid;
+}
+
+.alert-danger{
+    border-left: 5px #6b1110 solid;
+}
+
+.alert-danger::before {
+  content: "⚠️";
+}
