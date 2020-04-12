@@ -385,12 +385,15 @@ def setup_paddle_callback(app: Flask):
             LOG.debug("Update subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
-            sub.event_time = arrow.now()
-            sub.next_bill_date = arrow.get(
-                request.form.get("next_bill_date"), "YYYY-MM-DD"
-            ).date()
+            # when user subscribes, the "subscription_payment_succeeded" can arrive BEFORE "subscription_created"
+            # at that time, subscription object does not exist yet
+            if sub:
+                sub.event_time = arrow.now()
+                sub.next_bill_date = arrow.get(
+                    request.form.get("next_bill_date"), "YYYY-MM-DD"
+                ).date()
 
-            db.session.commit()
+                db.session.commit()
 
         elif request.form.get("alert_name") == "subscription_cancelled":
             subscription_id = request.form.get("subscription_id")
