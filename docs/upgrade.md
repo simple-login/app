@@ -4,6 +4,13 @@ No emails or any data is lost in the upgrade process. The same process is by the
 
 Sometimes upgrading to a major version might require running a manual migration. This is for example the case when upgrading to 2.0.0. In this case please follow the corresponding migration first before running these scripts.
 
+The latest version 3.0.0 has unfortunately some breaking changes with regard to 2x versions. 
+Upgrading from 2x to 3.0.0 might require some manual database verifications. 
+If you are currently running a version prior to 2.1.0 and want to upgrade to 3.0.0, please: 
+
+- first upgrade to 2.1.0
+- then try to upgrade to 3.0.0. If any error happens, please get in touch with us.
+
 <details>
 <summary>Upgrade to 2.1.0 from 2.0.0</summary>
 <p>

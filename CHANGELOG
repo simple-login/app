@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2020-04-13
+New endpoints to create/update aliases:
+    PUT /api/aliases/:alias_id
+    GET /api/aliases/:alias_id/contacts
+    POST /api/aliases/:alias_id/contacts
+    GET /api/v2/aliases
+(Optional) Spam detection by Spamassassin
+Handling for bounced emails
+Support Multiple recipients (in To and Cc headers)
+
 ## [2.1.0] - 2020-03-23
 Support PGP
 
