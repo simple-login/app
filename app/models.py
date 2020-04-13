@@ -232,7 +232,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return False
 
-    def should_upgrade(self):
+    def should_show_upgrade_button(self):
         if self._lifetime_or_active_subscription():
             # user who has canceled can also re-subscribe
             sub: Subscription = self.get_subscription()
