@@ -913,6 +913,11 @@ class ManualSubscription(db.Model, ModelMixin):
     # for storing note about this subscription
     comment = db.Column(db.Text, nullable=True)
 
+    # manual subscription are also used for Premium giveaways
+    is_giveaway = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     user = db.relationship(User)
 
 
