@@ -346,15 +346,12 @@
   <script>
     var clipboard = new ClipboardJS('.clipboard');
 
-    var introShown = store.get("introShown");
-    if ("yes" !== introShown) {
+    {% if show_intro %}
       // only show intro when screen is big enough to show "developer" tab
       if (window.innerWidth >= 1024) {
         introJs().start();
-        store.set("introShown", "yes")
       }
-    }
-
+    {% endif %}
 
     $(".delete-email").on("click", function (e) {
       let alias = $(this).parent().find(".alias").val();
