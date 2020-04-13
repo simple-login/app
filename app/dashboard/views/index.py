@@ -175,6 +175,15 @@ def index():
 
     mailboxes = current_user.mailboxes()
 
+    show_intro = False
+    if not current_user.intro_shown:
+        LOG.d("Show intro to %s", current_user)
+        show_intro = True
+
+        # to make sure not showing intro to user again
+        current_user.intro_shown = True
+        db.session.commit()
+
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
@@ -183,6 +192,7 @@ def index():
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
         mailboxes=mailboxes,
+        show_intro=show_intro,
     )
 
 
