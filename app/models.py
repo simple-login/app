@@ -243,6 +243,23 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return True
 
+    def can_upgrade(self):
+        """User who has lifetime licence or giveaway manual subscriptions can decide to upgrade to a paid plan"""
+        sub: Subscription = self.get_subscription()
+        # user who has canceled can also re-subscribe
+        if sub and not sub.cancelled:
+            return False
+
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
+        # user who has giveaway premium can decide to upgrade
+        if manual_sub and manual_sub.end_at > arrow.now() and not manual_sub.is_giveaway:
+            return False
+
+        return True
+
+
+
+
     def next_bill_date(self) -> str:
         sub: Subscription = self.get_subscription()
         if sub:

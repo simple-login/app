@@ -165,9 +165,18 @@
             Manage Subscription
           </a>
         {% elif manual_sub %}
-          You are on the Premium plan. The plan ends {{ manual_sub.end_at | dt }}.
+          You are on the Premium plan. The plan ends {{ manual_sub.end_at | dt }}
+          ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
+          {% if manual_sub.is_giveaway %}
+            <br>
+            To support SimpleLogin it's possible to change to a paid plan. <br>
+            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+          {% endif %}
         {% elif current_user.lifetime %}
           You have the lifetime licence.
+          <br>
+          To support SimpleLogin it's possible to change to a paid plan. <br>
+          <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
         {% elif current_user.in_trial() %}
           You are in the trial period. The trial ends {{ current_user.trial_end | dt }}.
         {% else %}
