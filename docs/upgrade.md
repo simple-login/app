@@ -107,7 +107,6 @@ sudo docker run --rm \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 7777:7777 \
-    --restart always \
     --network="sl-network" \
     simplelogin/app:2.1.0 python init_app.py
 
