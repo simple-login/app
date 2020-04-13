@@ -252,13 +252,14 @@ class User(db.Model, ModelMixin, UserMixin):
 
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         # user who has giveaway premium can decide to upgrade
-        if manual_sub and manual_sub.end_at > arrow.now() and not manual_sub.is_giveaway:
+        if (
+            manual_sub
+            and manual_sub.end_at > arrow.now()
+            and not manual_sub.is_giveaway
+        ):
             return False
 
         return True
-
-
-
 
     def next_bill_date(self) -> str:
         sub: Subscription = self.get_subscription()

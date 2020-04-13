@@ -86,6 +86,7 @@ from server import create_app
 # can happen when user "Reply All" on some email clients
 _SELF_FORWARDING_STATUS = "550 SL self-forward"
 
+
 # fix the database connection leak issue
 # use this method instead of create_app
 def new_app():
