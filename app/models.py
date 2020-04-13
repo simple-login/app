@@ -160,6 +160,11 @@ class User(db.Model, ModelMixin, UserMixin):
 
     referral = db.relationship("Referral", foreign_keys=[referral_id])
 
+    # whether intro has been shown to user
+    intro_shown = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
