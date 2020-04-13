@@ -6,6 +6,7 @@ from app.config import DB_URI
 from app.email_utils import send_email, render
 from app.models import *
 from server import create_app
+from time import sleep
 
 
 def create_db():
@@ -51,6 +52,7 @@ def send_mailbox_newsletter():
                     render("com/newsletter/mailbox.txt", user=user),
                     render("com/newsletter/mailbox.html", user=user),
                 )
+                sleep(1)
             except Exception:
                 LOG.warning("Cannot send to user %s", user)
 
@@ -66,6 +68,7 @@ def send_pgp_newsletter():
                     render("com/newsletter/pgp.txt", user=user),
                     render("com/newsletter/pgp.html", user=user),
                 )
+                sleep(1)
             except Exception:
                 LOG.warning("Cannot send to user %s", user)
 
