@@ -6,6 +6,10 @@
       </a>
 
       <div class="d-flex order-lg-2 ml-auto">
+        <div class="nav-item" data-toggle="dark-mode" title='Toggle bright/dark mode'>
+          <i class="fe fe-moon"></i>
+        </div>
+
         {% if current_user.should_upgrade() %}
           <div class="nav-item">
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>

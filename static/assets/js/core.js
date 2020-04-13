@@ -104,4 +104,18 @@ $(document).ready(function() {
       });
     });
   }
+
+  /**Dark mode controller */
+  var darkmode = localStorage.getItem('dark-mode');
+  if (darkmode === 'true'){
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  $('[data-toggle="dark-mode"]').on('click', function(e) {
+    if (localStorage.getItem('dark-mode') === 'true'){
+      localStorage.setItem('dark-mode', false);
+      return document.documentElement.setAttribute('data-theme', 'light');
+    }
+    localStorage.setItem('dark-mode', true);
+    document.documentElement.setAttribute('data-theme', 'dark');
+  })
 });

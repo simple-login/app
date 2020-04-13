@@ -8,7 +8,7 @@
 
 
 {% block domain_detail_content %}
-  <div class="bg-white p-4" style="max-width: 60rem; margin: auto">
+  <div class="p-4" style="max-width: 60rem; margin: auto">
     <h1 class="h3"> {{ custom_domain.domain }} </h1>
     <div class="">Please follow the steps below to set up your domain.</div>
 
@@ -28,15 +28,15 @@
       </div>
 
       <div class="mb-2">Add the following MX DNS record to your domain. <br>
-        Please note that there's a point (<em>.</em>) at the end target addresses. <br>
-        Also some domain registrars (Namecheap, CloudFlare, etc) might use <em>@</em> for the root domain.
+        Please note that there's a point (<em class="text-default">.</em>) at the end target addresses. <br>
+        Also some domain registrars (Namecheap, CloudFlare, etc) might use <em class="text-default">@</em> for the root domain.
       </div>
 
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
-        <div class="mb-3 p-3" style="background-color: #eee">
-          Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
+        <div class="mb-3 p-3 bg-secondary">
+          Domain: <em class="text-default">{{ custom_domain.domain }}</em> or <em class="text-default">@</em> <br>
           Priority: {{ priority }} <br>
-          Target: <em>{{ email_server }}</em>
+          Target: <em class="text-default">{{ email_server }}</em>
           <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
                   data-clipboard-text="{{ email_server }}">
             Copy <i class="fe fe-clipboard"></i>
@@ -60,7 +60,7 @@
       {% if not mx_ok %}
         <div class="text-danger mt-4">
           Your DNS is not correctly set. The MX record we obtain is:
-          <div class="mb-3 p-3" style="background-color: #eee">
+          <div class="mb-3 p-3 bg-secondary">
             {% if not mx_errors %}
               (Empty)
             {% endif %}
@@ -95,10 +95,10 @@
 
       <div class="mb-2">Add the following TXT DNS record to your domain</div>
 
-      <div class="mb-2 p-3" style="background-color: #eee">
-        Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
+      <div class="mb-2 p-3 bg-secondary">
+        Domain: <em class="text-default">{{ custom_domain.domain }}</em> or <em class="text-default">@</em> <br>
         Value:
-        <em>
+        <em class='text-default'>
           {{ spf_record }}
         </em>
         <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
@@ -123,7 +123,7 @@
       {% if not spf_ok %}
         <div class="text-danger mt-4">
           Your DNS is not correctly set. The TXT record we obtain is:
-          <div class="mb-3 p-3" style="background-color: #eee">
+          <div class="mb-3 p-3 bg-secondary">
             {% if not spf_errors %}
               (Empty)
             {% endif %}
@@ -160,10 +160,10 @@
 
       <div class="mb-2">Add the following TXT DNS record to your domain</div>
 
-      <div class="mb-2 p-3" style="background-color: #eee">
-        Domain: <em>dkim._domainkey.{{ custom_domain.domain }}</em> <br>
+      <div class="mb-2 p-3 bg-secondary">
+        Domain: <em class="text-default">dkim._domainkey.{{ custom_domain.domain }}</em> <br>
         Value:
-        <em style="overflow-wrap: break-word">
+        <em style="overflow-wrap: break-word" class="text-default">
           {{ dkim_record }}
         </em>
         <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
@@ -190,7 +190,7 @@
           Your DNS is not correctly set.
           {% if dkim_errors %}
             The TXT record we obtain for
-            <em>dkim._domainkey.{{ custom_domain.domain }}</em> is:
+            <em class="text-default">dkim._domainkey.{{ custom_domain.domain }}</em> is:
 
             <div class="mb-3 p-3" style="background-color: #eee">
               {% for r in dkim_errors %}

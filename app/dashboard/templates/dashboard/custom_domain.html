@@ -57,7 +57,7 @@
         <input type="hidden" name="form-name" value="create">
 
         <label class="form-label">Domain</label>
-        <small>Please use full path domain, for ex <em>my-subdomain.my-domain.com</em></small>
+        <small>Please use full path domain, for ex <em class="text-default">my-subdomain.my-domain.com</em></small>
 
         {{ new_custom_domain_form.domain(class="form-control", placeholder="my-domain.com") }}
         {{ render_field_errors(new_custom_domain_form.domain) }}
