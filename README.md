@@ -61,7 +61,7 @@ docker run --name sl -it --rm \
     -e RESET_DB=true \
     -e CONFIG=/code/example.env \
     -p 7777:7777 \
-    simplelogin/app:2.0.0 python server.py
+    simplelogin/app:2.1.0 python server.py
 ```
 
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
@@ -477,7 +477,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:2.0.0 flask db upgrade
+    simplelogin/app:2.1.0 flask db upgrade
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
@@ -494,7 +494,7 @@ sudo docker run -d \
     -p 7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:2.0.0
+    simplelogin/app:2.1.0
 ```
 
 Next run the `email handler`
@@ -509,7 +509,7 @@ sudo docker run -d \
     -p 20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:2.0.0 python email_handler.py
+    simplelogin/app:2.1.0 python email_handler.py
 ```
 
 ### Nginx
