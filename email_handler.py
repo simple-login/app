@@ -308,7 +308,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         alias = try_auto_create(address)
         if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
-            return False, "550 SL Email not exist"
+            return False, "550 SL E3"
 
     mailbox = alias.mailbox
     mailbox_email = mailbox.email
@@ -338,7 +338,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         if is_spam:
             LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
             handle_spam(contact, alias, msg, user, mailbox_email, spam_status)
-            return False, "550 SL ignored"
+            return False, "550 SL E1"
 
     forward_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
 
@@ -420,12 +420,12 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     # reply_email must end with EMAIL_DOMAIN
     if not reply_email.endswith(EMAIL_DOMAIN):
         LOG.warning(f"Reply email {reply_email} has wrong domain")
-        return False, "550 SL wrong reply email"
+        return False, "550 SL E2"
 
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
         LOG.warning(f"No such forward-email with {reply_email} as reply-email")
-        return False, "550 SL wrong reply email"
+        return False, "550 SL E4"
 
     alias = contact.alias
     address: str = contact.alias.email
@@ -434,7 +434,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     # alias must end with one of the ALIAS_DOMAINS or custom-domain
     if not email_belongs_to_alias_domains(alias.email):
         if not CustomDomain.get_by(domain=alias_domain):
-            return False, "550 SL alias unknown by SimpleLogin"
+            return False, "550 SL E5"
 
     user = alias.user
     mailbox_email = alias.mailbox_email()
@@ -452,7 +452,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         )
 
         handle_bounce(contact, alias, msg, user, mailbox_email)
-        return False, "550 SL ignored"
+        return False, "550 SL E6"
 
     # only mailbox can send email to the reply-email
     if envelope.mail_from.lower() != mailbox_email.lower():
@@ -500,7 +500,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
             ),
         )
 
-        return False, "550 SL ignored"
+        return False, "550 SL E7"
 
     delete_header(msg, "DKIM-Signature")
 
@@ -747,16 +747,16 @@ def handle_unsubscribe(envelope: Envelope):
         alias = Alias.get(alias_id)
     except Exception:
         LOG.warning("Cannot parse alias from subject %s", msg["Subject"])
-        return "550 SL ignored"
+        return "550 SL E8"
 
     if not alias:
         LOG.warning("No such alias %s", alias_id)
-        return "550 SL ignored"
+        return "550 SL E9"
 
     # This sender cannot unsubscribe
     if alias.mailbox_email() != envelope.mail_from:
         LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
-        return "550 SL ignored"
+        return "550 SL E10"
 
     # Sender is owner of this alias
     alias.enabled = False
