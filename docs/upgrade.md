@@ -88,7 +88,7 @@ for user in User.query.all():
 
 ```bash
 # Pull the latest version
-sudo docker pull simplelogin/app:2.1.0
+sudo docker pull simplelogin/app:3.0.0
 
 # Stop SimpleLogin containers
 sudo docker stop sl-email sl-migration sl-app
@@ -104,7 +104,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:2.1.0 flask db upgrade
+    simplelogin/app:3.0.0 flask db upgrade
 
 # Run init data
 sudo docker run --rm \
@@ -115,7 +115,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -p 7777:7777 \
     --network="sl-network" \
-    simplelogin/app:2.1.0 python init_app.py
+    simplelogin/app:3.0.0 python init_app.py
 
 # Run the webapp container
 sudo docker run -d \
@@ -127,7 +127,7 @@ sudo docker run -d \
     -p 7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:2.1.0
+    simplelogin/app:3.0.0
 
 # Run the email handler container
 sudo docker run -d \
@@ -139,6 +139,6 @@ sudo docker run -d \
     -p 20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:2.1.0 python email_handler.py
+    simplelogin/app:3.0.0 python email_handler.py
 ```
 
