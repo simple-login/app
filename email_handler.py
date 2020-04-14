@@ -261,24 +261,27 @@ def should_append_alias(msg: Message, address: str):
     return True
 
 
+_MIME_HEADERS = [
+    "MIME-Version",
+    "Content-Type",
+    "Content-Disposition",
+    "Content-Transfer-Encoding",
+]
+_MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
+
+
 def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
     msg = MIMEMultipart("encrypted", protocol="application/pgp-encrypted")
 
-    # copy all headers from original message except the "Content-Type"
+    # copy all headers from original message except all standard MIME headers
     for i in reversed(range(len(orig_msg._headers))):
         header_name = orig_msg._headers[i][0].lower()
-        if header_name != "Content-Type".lower():
+        if header_name.lower() not in _MIME_HEADERS:
             msg[header_name] = orig_msg._headers[i][1]
 
     # Delete unnecessary headers in orig_msg except to save space
     delete_all_headers_except(
-        orig_msg,
-        [
-            "MIME-Version",
-            "Content-Type",
-            "Content-Disposition",
-            "Content-Transfer-Encoding",
-        ],
+        orig_msg, _MIME_HEADERS,
     )
 
     first = MIMEApplication(
