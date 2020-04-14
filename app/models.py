@@ -826,7 +826,7 @@ class Contact(db.Model, ModelMixin):
         `new_email` is a special reply address
         """
         user = self.user
-        if user.use_via_format_for_sender:
+        if user and user.use_via_format_for_sender:
             new_name = f"{self.website_email} via SimpleLogin"
         else:
             name = self.name or ""
