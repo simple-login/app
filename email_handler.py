@@ -53,6 +53,7 @@ from app.config import (
     ALIAS_DOMAINS,
     POSTFIX_SUBMISSION_TLS,
     UNSUBSCRIBER,
+    LOAD_PGP_EMAIL_HANDLER,
 )
 from app.email_utils import (
     send_email,
@@ -80,6 +81,7 @@ from app.models import (
     RefusedEmail,
 )
 from app.utils import random_string
+from init_app import load_pgp_public_keys
 from server import create_app
 
 # used when an alias receives email from its own mailbox
@@ -856,6 +858,12 @@ if __name__ == "__main__":
 
     controller.start()
     LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
+
+    if LOAD_PGP_EMAIL_HANDLER:
+        LOG.warning("LOAD PGP keys")
+        app = create_app()
+        with app.app_context():
+            load_pgp_public_keys(app)
 
     while True:
         time.sleep(2)

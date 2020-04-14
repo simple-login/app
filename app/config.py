@@ -226,3 +226,6 @@ if LOCAL_FILE_UPLOAD:
         os.makedirs(UPLOAD_DIR)
 
 LANDING_PAGE_URL = os.environ.get("LANDING_PAGE_URL") or "https://simplelogin.io"
+
+# Loading PGP keys when mail_handler runs. To be used locally when init_app is not called.
+LOAD_PGP_EMAIL_HANDLER = "LOAD_PGP_EMAIL_HANDLER" in os.environ
