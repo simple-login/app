@@ -61,7 +61,7 @@ docker run --name sl -it --rm \
     -e RESET_DB=true \
     -e CONFIG=/code/example.env \
     -p 7777:7777 \
-    simplelogin/app:3.0.0 python server.py
+    simplelogin/app:3.0.1 python server.py
 ```
 
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
@@ -477,7 +477,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:3.0.0 flask db upgrade
+    simplelogin/app:3.0.1 flask db upgrade
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
@@ -494,7 +494,7 @@ sudo docker run -d \
     -p 7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.0.0
+    simplelogin/app:3.0.1
 ```
 
 Next run the `email handler`
@@ -509,7 +509,7 @@ sudo docker run -d \
     -p 20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.0.0 python email_handler.py
+    simplelogin/app:3.0.1 python email_handler.py
 ```
 
 ### Nginx
@@ -989,14 +989,14 @@ If success, 200 with the list of activities, for example:
       "from": "yes_meo_chat@sl.local",
       "timestamp": 1580903760,
       "to": "marketing@example.com",
-      "reverse_alias": "\"marketing at example.com\" <reply@a.b>",
+      "reverse_alias": "\"marketing at example.com\" <reply@a.b>"
     },
     {
       "action": "reply",
       "from": "yes_meo_chat@sl.local",
       "timestamp": 1580903760,
       "to": "marketing@example.com",
-      "reverse_alias": "\"marketing at example.com\" <reply@a.b>",
+      "reverse_alias": "\"marketing at example.com\" <reply@a.b>"
     }
   ]
 }
@@ -1043,7 +1043,7 @@ If success, 200 with the list of contacts, for example:
       "contact": "newsletter@example.com",
       "creation_date": "2020-02-21 11:35:00+00:00",
       "creation_timestamp": 1582284900,
-      "last_email_sent_date": "2020-02-21 11:35:00+00:00",,
+      "last_email_sent_date": "2020-02-21 11:35:00+00:00",
       "last_email_sent_timestamp": 1582284900,
       "reverse_alias": "newsletter at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>"
     }
