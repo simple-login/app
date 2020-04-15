@@ -84,7 +84,7 @@ class ModelMixin(object):
 
 class File(db.Model, ModelMixin):
     path = db.Column(db.String(128), unique=True, nullable=False)
-    user_id = db.Column(db.ForeignKey("users.id", ondelete="cascade"), nullable=False)
+    user_id = db.Column(db.ForeignKey("users.id", ondelete="cascade"), nullable=True)
 
     def get_url(self, expires_in=3600):
         return s3.get_url(self.path, expires_in)
