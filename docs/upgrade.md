@@ -119,6 +119,7 @@ for user in User.query.all():
 </p>
 </details>
 
+## Upgrade to the latest version 3.0.1
 
 ```bash
 # Pull the latest version
