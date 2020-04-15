@@ -79,6 +79,9 @@ else:
 # List of domains user can use to create alias
 ALIAS_DOMAINS = OTHER_ALIAS_DOMAINS + [EMAIL_DOMAIN]
 
+# the alias domain used when creating the first alias for user
+FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN
+
 # list of (priority, email server)
 EMAIL_SERVERS_WITH_PRIORITY = eval(
     os.environ["EMAIL_SERVERS_WITH_PRIORITY"]
