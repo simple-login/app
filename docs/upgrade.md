@@ -6,8 +6,44 @@ Sometimes upgrading to a major version might require running a manual migration.
 
 If you are running versions prior to 3x, please:
 
-1. first upgrade to 2.1.2 then 
+1. first upgrade to 2.1.2 then
 2. upgrade to the latest version which is 3.0.1
+
+<details>
+<summary>After upgrade to 3x from 2x</summary>
+<p>
+
+3x has some data structure changes that cannot be automatically upgraded from 2x.
+Once you have upgraded your installation to 3x, please run the following scripts to make your data fully compatible with 3x
+
+First connect to your SimpleLogin container shell:
+
+```bash
+docker exec -it sl-app python shell.py
+```
+
+Then copy and run this below script:
+
+```python
+from app.extensions import db
+from app.models import AliasUsedOn, Contact, EmailLog
+
+for auo in AliasUsedOn.query.all():
+    auo.user_id = auo.alias.user_id
+db.session.commit()
+
+for contact in Contact.query.all():
+    contact.user_id = contact.alias.user_id
+db.session.commit()
+
+for email_log in EmailLog.query.all():
+    email_log.user_id = email_log.contact.user_id
+
+db.session.commit()
+```
+
+</p>
+</details>
 
 <details>
 <summary>Upgrade to 2.1.0 from 2.0.0</summary>
@@ -20,7 +56,7 @@ If you are running versions prior to 3x, please:
 ```bash
 mkdir sl
 mkdir sl/pgp # to store PGP key
-mkdir sl/db # to store database 
+mkdir sl/db # to store database
 ```
 
 2) Then add this line to your config simplelogin.env file
