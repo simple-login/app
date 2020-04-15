@@ -29,6 +29,7 @@ from app.config import (
     FLASK_PROFILER_PATH,
     FLASK_PROFILER_PASSWORD,
     SENTRY_FRONT_END_DSN,
+    FIRST_ALIAS_DOMAIN,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -318,6 +319,7 @@ def jinja2_filter(app):
             URL=URL,
             SENTRY_DSN=SENTRY_FRONT_END_DSN,
             VERSION=SHA1,
+            FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         )
 
 

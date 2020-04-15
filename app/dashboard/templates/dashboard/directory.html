@@ -17,19 +17,27 @@
       {% endif %}
 
       <div class="alert alert-primary" role="alert">
-        Directory allows you to create aliases <b>on the fly</b>. Simply use <br>
-        <div class="pl-3 py-2 bg-white">
-          <em>your_directory/<b>anything</b>@{{ EMAIL_DOMAIN }}</em> or <br>
-          <em>your_directory+<b>anything</b>@{{ EMAIL_DOMAIN }}</em> or <br>
-          <em>your_directory#<b>anything</b>@{{ EMAIL_DOMAIN }}</em> <br>
+        <div>
+          Directory allows you to create aliases <b>on the fly</b>.
         </div>
-        next time you need an email address. <br>
-        <em><b>anything</b></em> could really be anything, it's up to you to invent the most creative alias 😉. <br>
-        <em>your_directory</em> is the name of one of your directories. <br><br>
-        You can use the directory feature on the following domains:
-        {% for alias_domain in ALIAS_DOMAINS %}
-          <div class="font-weight-bold">{{ alias_domain }} </div>
-        {% endfor %}
+        <div class="mt-2 pb-2">
+          1️⃣ Pick a name for your directory, says <em>my_dir</em> <br>
+
+          2️⃣ Quickly use one of the following formats to create an alias on-the-fly <b>without creating this alias beforehand</b>
+        </div>
+        <div class="pl-3 py-2 bg-white">
+          <em>my_dir/<b>anything</b>@{{ FIRST_ALIAS_DOMAIN }}</em> or <br>
+          <em>my_dir+<b>anything</b>@{{ FIRST_ALIAS_DOMAIN }}</em> or <br>
+          <em>my_dir#<b>anything</b>@{{ FIRST_ALIAS_DOMAIN }}</em> <br>
+        </div>
+        <em><b>anything</b></em> is any string composed of lowercase character.
+
+        <div class="mt-2">
+          You can use this feature on the following domains:
+          {% for alias_domain in ALIAS_DOMAINS %}
+            <div class="font-weight-bold">{{ alias_domain }} </div>
+          {% endfor %}
+        </div>
 
         <div class="h4 text-primary mt-3">
           ℹ️
