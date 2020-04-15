@@ -21,6 +21,7 @@ from app.config import (
     JOB_ONBOARDING_3,
     JOB_ONBOARDING_4,
     LANDING_PAGE_URL,
+    FIRST_ALIAS_DOMAIN,
 )
 from app.extensions import db
 from app.log import LOG
@@ -622,7 +623,7 @@ class Alias(db.Model, ModelMixin):
         # find the right suffix - avoid infinite loop by running this at max 1000 times
         for i in range(1000):
             suffix = random_word()
-            email = f"{prefix}.{suffix}@{EMAIL_DOMAIN}"
+            email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
 
             if not cls.get_by(email=email):
                 break
