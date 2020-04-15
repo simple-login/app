@@ -142,6 +142,7 @@ def setting():
             return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "delete-account":
+            LOG.warning("Delete account %s", current_user)
             User.delete(current_user.id)
             db.session.commit()
             flash("Your account has been deleted", "success")
