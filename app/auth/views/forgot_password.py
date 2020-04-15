@@ -16,7 +16,7 @@ def forgot_password():
     form = ForgotPasswordForm(request.form)
 
     if form.validate_on_submit():
-        email = form.email.data
+        email = form.email.data.strip().lower()
 
         user = User.get_by(email=email)
 

@@ -25,7 +25,7 @@ def login():
     show_resend_activation = False
 
     if form.validate_on_submit():
-        user = User.filter_by(email=form.email.data).first()
+        user = User.filter_by(email=form.email.data.strip().lower()).first()
 
         if not user:
             flash("Email or password incorrect", "error")

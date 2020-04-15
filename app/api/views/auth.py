@@ -45,7 +45,7 @@ def auth_login():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email")
+    email = data.get("email").strip().lower()
     password = data.get("password")
     device = data.get("device")
 
@@ -75,7 +75,7 @@ def auth_register():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email")
+    email = data.get("email").strip().lower()
     password = data.get("password")
 
     if DISABLE_REGISTRATION:
@@ -123,7 +123,7 @@ def auth_activate():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email")
+    email = data.get("email").strip().lower()
     code = data.get("code")
 
     user = User.get_by(email=email)
@@ -171,7 +171,7 @@ def auth_reactivate():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email")
+    email = data.get("email").strip().lower()
     user = User.get_by(email=email)
 
     # do not use a different message to avoid exposing existing email
@@ -225,7 +225,7 @@ def auth_facebook():
 
     graph = facebook.GraphAPI(access_token=facebook_token)
     user_info = graph.get_object("me", fields="email,name")
-    email = user_info.get("email")
+    email = user_info.get("email").strip().lower()
 
     user = User.get_by(email=email)
 
@@ -277,7 +277,7 @@ def auth_google():
     build = googleapiclient.discovery.build("oauth2", "v2", credentials=cred)
 
     user_info = build.userinfo().get().execute()
-    email = user_info.get("email")
+    email = user_info.get("email").strip().lower()
 
     user = User.get_by(email=email)
 
@@ -335,7 +335,7 @@ def forgot_password():
     if not data or not data.get("email"):
         return jsonify(error="request body must contain email"), 400
 
-    email = data.get("email").lower()
+    email = data.get("email").strip().lower()
 
     user = User.get_by(email=email)
 

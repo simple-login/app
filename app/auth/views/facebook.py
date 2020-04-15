@@ -86,7 +86,7 @@ def facebook_callback():
         "https://graph.facebook.com/me?fields=id,name,email,picture{url}"
     ).json()
 
-    email = facebook_user_data.get("email")
+    email = facebook_user_data.get("email").strip().lower()
 
     # user choose to not share email, cannot continue
     if not email:
@@ -118,7 +118,7 @@ def facebook_callback():
 
         LOG.d("create facebook user with %s", facebook_user_data)
         user = User.create(
-            email=email.lower(),
+            email=email,
             name=facebook_user_data["name"],
             activated=True,
             referral=get_referral(),
