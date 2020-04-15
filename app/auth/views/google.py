@@ -80,7 +80,7 @@ def google_callback():
         "https://www.googleapis.com/oauth2/v1/userinfo"
     ).json()
 
-    email = google_user_data["email"]
+    email = google_user_data["email"].strip().lower()
     user = User.get_by(email=email)
 
     picture_url = google_user_data.get("picture")
@@ -103,7 +103,7 @@ def google_callback():
 
         LOG.d("create google user with %s", google_user_data)
         user = User.create(
-            email=email.lower(),
+            email=email,
             name=google_user_data["name"],
             activated=True,
             referral=get_referral(),

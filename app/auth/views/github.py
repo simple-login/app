@@ -85,7 +85,7 @@ def github_callback():
         )
         return redirect(url_for("auth.login"))
 
-    email = email.lower()
+    email = email.strip().lower()
     user = User.get_by(email=email)
 
     # create user
@@ -100,7 +100,7 @@ def github_callback():
 
         LOG.d("create github user")
         user = User.create(
-            email=email.lower(),
+            email=email,
             name=github_user_data.get("name") or "",
             activated=True,
             referral=get_referral(),

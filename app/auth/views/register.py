@@ -36,7 +36,7 @@ def register():
     next_url = request.args.get("next")
 
     if form.validate_on_submit():
-        email = form.email.data.lower()
+        email = form.email.data.strip().lower()
         if not can_be_used_as_personal_email(email):
             flash("You cannot use this email address as your personal inbox.", "error")
         else:
