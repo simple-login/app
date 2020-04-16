@@ -232,3 +232,14 @@ LANDING_PAGE_URL = os.environ.get("LANDING_PAGE_URL") or "https://simplelogin.io
 
 # Loading PGP keys when mail_handler runs. To be used locally when init_app is not called.
 LOAD_PGP_EMAIL_HANDLER = "LOAD_PGP_EMAIL_HANDLER" in os.environ
+
+DISPOSABLE_FILE_PATH = get_abs_path(
+    os.environ.get("DISPOSABLE_FILE_PATH", "local_data/local_disposable_domains.txt")
+)
+
+with open(get_abs_path(DISPOSABLE_FILE_PATH), "r") as f:
+    DISPOSABLE_EMAIL_DOMAINS = f.readlines()
+    DISPOSABLE_EMAIL_DOMAINS = [d.strip().lower() for d in DISPOSABLE_EMAIL_DOMAINS]
+    DISPOSABLE_EMAIL_DOMAINS = [
+        d for d in DISPOSABLE_EMAIL_DOMAINS if not d.startswith("#")
+    ]
