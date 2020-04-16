@@ -4,7 +4,7 @@ from email.message import Message
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import make_msgid, formatdate, parseaddr, formataddr
+from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP
 from typing import Optional
 
@@ -23,6 +23,7 @@ from app.config import (
     SUPPORT_NAME,
     POSTFIX_SUBMISSION_TLS,
     MAX_NB_EMAIL_FREE_PLAN,
+    DISPOSABLE_EMAIL_DOMAINS,
 )
 from app.log import LOG
 from app.models import Mailbox, User
@@ -246,7 +247,7 @@ def get_email_domain_part(address):
     Get the domain part from email
     ab@cd.com -> cd.com
     """
-    return address[address.find("@") + 1 :]
+    return address[address.find("@") + 1 :].strip().lower()
 
 
 def add_dkim_signature(msg: Message, email_domain: str):
@@ -319,6 +320,13 @@ def can_be_used_as_personal_email(email: str) -> bool:
 
     if CustomDomain.get_by(domain=domain, verified=True):
         return False
+
+    for d in DISPOSABLE_EMAIL_DOMAINS:
+        if domain == d:
+            return False
+        # subdomain
+        if domain.endswith("." + d):
+            return False
 
     return True
 

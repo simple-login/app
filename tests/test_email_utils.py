@@ -40,6 +40,16 @@ def test_can_be_used_as_personal_email(flask_client):
     db.session.commit()
     assert not can_be_used_as_personal_email("hey@ab.cd")
 
+    # disposable domain
+    assert not can_be_used_as_personal_email("abcd@10minutesmail.fr")
+    assert not can_be_used_as_personal_email("abcd@temp-mail.com")
+    # subdomain will not work
+    assert not can_be_used_as_personal_email("abcd@sub.temp-mail.com")
+    # valid domains should not be affected
+    assert can_be_used_as_personal_email("abcd@protonmail.com")
+    assert can_be_used_as_personal_email("abcd@gmail.com")
+    assert can_be_used_as_personal_email("abcd@example.com")
+
 
 def test_delete_header():
     msg = EmailMessage()
