@@ -243,3 +243,6 @@ with open(get_abs_path(DISPOSABLE_FILE_PATH), "r") as f:
     DISPOSABLE_EMAIL_DOMAINS = [
         d for d in DISPOSABLE_EMAIL_DOMAINS if not d.startswith("#")
     ]
+
+# Used when querying info on Apple API
+APPLE_API_SECRET = os.environ.get("APPLE_API_SECRET")
