@@ -940,6 +940,25 @@ class ManualSubscription(db.Model, ModelMixin):
     user = db.relationship(User)
 
 
+class AppleSubscription(db.Model, ModelMixin):
+    """
+    For users who have subscribed via Apple in-app payment
+    """
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    expires_date = db.Column(ArrowType, nullable=False)
+
+    original_transaction_id = db.Column(db.String(256), nullable=False)
+    receipt_data = db.Column(db.Text(), nullable=False)
+
+    plan = db.Column(db.Enum(PlanEnum), nullable=False)
+
+    user = db.relationship(User)
+
+
 class DeletedAlias(db.Model, ModelMixin):
     """Store all deleted alias to make sure they are NOT reused"""
 
