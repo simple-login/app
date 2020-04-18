@@ -148,7 +148,6 @@ sudo docker run --rm \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 7777:7777 \
     --network="sl-network" \
     simplelogin/app:3.0.1 python init_app.py
 
