@@ -1097,7 +1097,7 @@ If success, 200.
 }
 ```
 
-#### POST /apple/process_payment
+#### POST /api/apple/process_payment
 
 Process payment receipt 
 

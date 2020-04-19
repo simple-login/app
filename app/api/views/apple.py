@@ -9,6 +9,7 @@ from flask_cors import cross_origin
 
 from app.api.base import api_bp, verify_api_key
 from app.config import APPLE_API_SECRET
+from app.extensions import db
 from app.log import LOG
 from app.models import PlanEnum, AppleSubscription
 
@@ -291,5 +292,7 @@ def verify_receipt(receipt_data, user) -> Optional[AppleSubscription]:
             original_transaction_id=original_transaction_id,
             plan=plan,
         )
+
+    db.session.commit()
 
     return apple_sub
