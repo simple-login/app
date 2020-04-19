@@ -217,6 +217,10 @@ class User(db.Model, ModelMixin, UserMixin):
         if sub:
             return True
 
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and apple_sub.is_valid():
+            return True
+
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         if manual_sub and manual_sub.end_at > arrow.now():
             return True
@@ -249,6 +253,10 @@ class User(db.Model, ModelMixin, UserMixin):
         sub: Subscription = self.get_subscription()
         # user who has canceled can also re-subscribe
         if sub and not sub.cancelled:
+            return False
+
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and apple_sub.is_valid():
             return False
 
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
@@ -938,6 +946,10 @@ class AppleSubscription(db.Model, ModelMixin):
     plan = db.Column(db.Enum(PlanEnum), nullable=False)
 
     user = db.relationship(User)
+
+    def is_valid(self):
+        # Todo: take into account grace period?
+        return self.expires_date > arrow.now()
 
 
 class DeletedAlias(db.Model, ModelMixin):
