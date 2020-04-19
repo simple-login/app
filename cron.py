@@ -218,7 +218,7 @@ if __name__ == "__main__":
             "notify_manual_subscription_end",
             "notify_premium_end",
             "delete_refused_emails",
-            "poll_apple_subscription"
+            "poll_apple_subscription",
         ],
     )
     args = parser.parse_args()

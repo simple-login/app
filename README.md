@@ -1102,8 +1102,8 @@ If success, 200.
 Process payment receipt 
 
 Input:
-- `Authentication` header that contains the api key
-- `receipt_data` the receipt_data base64Encoded returned by StoreKit, i.e. `rawReceiptData.base64EncodedString`
+- `Authentication` in header: the api key
+- `receipt_data` in body: the receipt_data base64Encoded returned by StoreKit, i.e. `rawReceiptData.base64EncodedString`
 
 ### Database migration
 
