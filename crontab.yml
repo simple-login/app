@@ -28,3 +28,9 @@ jobs:
     shell: /bin/bash
     schedule: "0 11 * * *"
     captureStderr: true
+
+  - name: SimpleLogin Poll Apple Subscriptions
+    command: python /code/cron.py -j poll_apple_subscription
+    shell: /bin/bash
+    schedule: "0 12 * * *"
+    captureStderr: true

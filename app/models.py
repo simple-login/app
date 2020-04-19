@@ -217,6 +217,10 @@ class User(db.Model, ModelMixin, UserMixin):
         if sub:
             return True
 
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and apple_sub.is_valid():
+            return True
+
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         if manual_sub and manual_sub.end_at > arrow.now():
             return True
@@ -251,6 +255,10 @@ class User(db.Model, ModelMixin, UserMixin):
         if sub and not sub.cancelled:
             return False
 
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and apple_sub.is_valid():
+            return False
+
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         # user who has giveaway premium can decide to upgrade
         if (
@@ -261,25 +269,6 @@ class User(db.Model, ModelMixin, UserMixin):
             return False
 
         return True
-
-    def next_bill_date(self) -> str:
-        sub: Subscription = self.get_subscription()
-        if sub:
-            return sub.next_bill_date.strftime("%Y-%m-%d")
-
-        LOG.error(
-            f"next_bill_date() should be called only on user with active subscription. User {self}"
-        )
-        return ""
-
-    def is_cancel(self) -> bool:
-        """User has canceled their subscription but the subscription is still active,
-        i.e. next_bill_date > now"""
-        sub: Subscription = self.get_subscription()
-        if sub and sub.cancelled:
-            return True
-
-        return False
 
     def is_premium(self) -> bool:
         """
@@ -938,6 +927,29 @@ class ManualSubscription(db.Model, ModelMixin):
     )
 
     user = db.relationship(User)
+
+
+class AppleSubscription(db.Model, ModelMixin):
+    """
+    For users who have subscribed via Apple in-app payment
+    """
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    expires_date = db.Column(ArrowType, nullable=False)
+
+    original_transaction_id = db.Column(db.String(256), nullable=False)
+    receipt_data = db.Column(db.Text(), nullable=False)
+
+    plan = db.Column(db.Enum(PlanEnum), nullable=False)
+
+    user = db.relationship(User)
+
+    def is_valid(self):
+        # Todo: take into account grace period?
+        return self.expires_date > arrow.now()
 
 
 class DeletedAlias(db.Model, ModelMixin):

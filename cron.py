@@ -3,6 +3,7 @@ import argparse
 import arrow
 
 from app import s3
+from app.api.views.apple import verify_receipt
 from app.config import IGNORED_EMAILS, ADMIN_EMAIL
 from app.email_utils import send_email, send_trial_end_soon_email, render
 from app.extensions import db
@@ -17,6 +18,7 @@ from app.models import (
     Client,
     ManualSubscription,
     RefusedEmail,
+    AppleSubscription,
 )
 from server import create_app
 
@@ -63,8 +65,16 @@ def notify_premium_end():
             send_email(
                 user.email,
                 f"Your subscription will end soon {user.name}",
-                render("transactional/subscription-end.txt", user=user),
-                render("transactional/subscription-end.html", user=user),
+                render(
+                    "transactional/subscription-end.txt",
+                    user=user,
+                    next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
+                ),
+                render(
+                    "transactional/subscription-end.html",
+                    user=user,
+                    next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
+                ),
             )
 
 
@@ -95,6 +105,16 @@ def notify_manual_sub_end():
                     manual_sub=manual_sub,
                 ),
             )
+
+
+def poll_apple_subscription():
+    """Poll Apple API to update AppleSubscription"""
+    # todo: only near the end of the subscription
+    for apple_sub in AppleSubscription.query.all():
+        user = apple_sub.user
+        verify_receipt(apple_sub.receipt_data, user)
+
+    LOG.d("Finish poll_apple_subscription")
 
 
 def stats():
@@ -198,6 +218,7 @@ if __name__ == "__main__":
             "notify_manual_subscription_end",
             "notify_premium_end",
             "delete_refused_emails",
+            "poll_apple_subscription",
         ],
     )
     args = parser.parse_args()
@@ -220,3 +241,6 @@ if __name__ == "__main__":
         elif args.job == "delete_refused_emails":
             LOG.d("Deleted refused emails")
             delete_refused_emails()
+        elif args.job == "poll_apple_subscription":
+            LOG.d("Poll Apple Subscriptions")
+            poll_apple_subscription()
