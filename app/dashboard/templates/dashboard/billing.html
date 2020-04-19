@@ -14,7 +14,7 @@
     {% if sub.cancelled %}
       <p>
         You are on the <b>{{ sub.plan_name() }}</b> plan. <br>
-        You have canceled your subscription and it will end on {{ current_user.next_bill_date() }}
+        You have canceled your subscription and it will end on {{ sub.next_bill_date.strftime("%Y-%m-%d") }}
       </p>
 
       <hr>

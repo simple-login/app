@@ -57,13 +57,14 @@
         </a>
       </div>
 
-      {% if current_user.is_cancel() %}
-      <div class="alert alert-primary" role="alert">
-        You have an active subscription until {{current_user.next_bill_date()}}. <br>
-        Please note that if you re-subscribe now, this will be a completely
-        new subscription and
-        your payment method will be charged <b>immediately</b>.
-      </div>
+      {% set sub = current_user.get_subscription() %}
+      {% if sub and sub.cancelled %}
+        <div class="alert alert-primary" role="alert">
+          You have an active subscription until {{ sub.next_bill_date.strftime("%Y-%m-%d") }}. <br>
+          Please note that if you re-subscribe now, this will be a completely
+          new subscription and
+          your payment method will be charged <b>immediately</b>.
+        </div>
       {% endif %}
 
       <div class="mb-3">

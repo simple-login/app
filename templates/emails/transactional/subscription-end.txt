@@ -1,6 +1,6 @@
 Hi {{user.name}}
 
-Your subscription will end on {{ user.next_bill_date() }}.
+Your subscription will end on {{ next_bill_date }}.
 
 When the subscription ends:
 

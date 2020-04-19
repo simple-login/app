@@ -63,8 +63,16 @@ def notify_premium_end():
             send_email(
                 user.email,
                 f"Your subscription will end soon {user.name}",
-                render("transactional/subscription-end.txt", user=user),
-                render("transactional/subscription-end.html", user=user),
+                render(
+                    "transactional/subscription-end.txt",
+                    user=user,
+                    next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
+                ),
+                render(
+                    "transactional/subscription-end.html",
+                    user=user,
+                    next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
+                ),
             )
 
 

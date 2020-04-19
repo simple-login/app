@@ -7,7 +7,7 @@
     {{ render_text("Hi,") }}
   {% endif %}
 
-  {{ render_text("Your subscription will end on " + user.next_bill_date() + ".") }}
+  {{ render_text("Your subscription will end on " + next_bill_date + ".") }}
 
   {{ render_text("When the subscription ends:") }}
 

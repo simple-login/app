@@ -262,16 +262,6 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return True
 
-    def next_bill_date(self) -> str:
-        sub: Subscription = self.get_subscription()
-        if sub:
-            return sub.next_bill_date.strftime("%Y-%m-%d")
-
-        LOG.error(
-            f"next_bill_date() should be called only on user with active subscription. User {self}"
-        )
-        return ""
-
     def is_cancel(self) -> bool:
         """User has canceled their subscription but the subscription is still active,
         i.e. next_bill_date > now"""
