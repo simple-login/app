@@ -1105,6 +1105,10 @@ Input:
 - `Authentication` in header: the api key
 - `receipt_data` in body: the receipt_data base64Encoded returned by StoreKit, i.e. `rawReceiptData.base64EncodedString`
 
+Output:
+200 if user is upgraded successfully
+4** if any error.
+
 ### Database migration
 
 The database migration is handled by `alembic`
