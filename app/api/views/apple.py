@@ -1,18 +1,13 @@
 from typing import Optional
 
 import arrow
+import requests
 from flask import g
 from flask import jsonify
 from flask import request
 from flask_cors import cross_origin
-import requests
 
 from app.api.base import api_bp, verify_api_key
-from app.api.serializer import (
-    AliasInfo,
-    serialize_alias_info,
-    get_alias_infos_with_pagination,
-)
 from app.config import APPLE_API_SECRET
 from app.log import LOG
 from app.models import PlanEnum, AppleSubscription
@@ -45,6 +40,19 @@ def apple_process_payment():
         return jsonify(ok=True), 200
 
     return jsonify(ok=False), 400
+
+
+@api_bp.route("/apple/update_notification", methods=["GET", "POST"])
+def apple_update_notification():
+    """
+    The "Subscription Status URL" to receive update notifications from Apple
+    TODO: to implement
+    """
+    LOG.d("request data %s", request.data)
+    LOG.d("request json %s", request.get_json(silent=True))
+    LOG.d("request %s", request)
+
+    return jsonify(ignored=True), 400
 
 
 def verify_receipt(receipt_data, user) -> Optional[AppleSubscription]:
