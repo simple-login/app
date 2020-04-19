@@ -48,6 +48,7 @@ def apple_update_notification():
     The "Subscription Status URL" to receive update notifications from Apple
     TODO: to implement
     """
+    LOG.error("request for /api/apple/update_notification")
     LOG.d("request data %s", request.data)
     LOG.d("request json %s", request.get_json(silent=True))
     LOG.d("request %s", request)
