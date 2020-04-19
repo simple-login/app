@@ -1097,6 +1097,14 @@ If success, 200.
 }
 ```
 
+#### POST /apple/process_payment
+
+Process payment receipt 
+
+Input:
+- `Authentication` header that contains the api key
+- `receipt_data` the receipt_data base64Encoded returned by StoreKit, i.e. `rawReceiptData.base64EncodedString`
+
 ### Database migration
 
 The database migration is handled by `alembic`

@@ -6,4 +6,5 @@ from .views import (
     auth,
     auth_mfa,
     alias,
+    apple,
 )
