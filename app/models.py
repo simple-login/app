@@ -262,15 +262,6 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return True
 
-    def is_cancel(self) -> bool:
-        """User has canceled their subscription but the subscription is still active,
-        i.e. next_bill_date > now"""
-        sub: Subscription = self.get_subscription()
-        if sub and sub.cancelled:
-            return True
-
-        return False
-
     def is_premium(self) -> bool:
         """
         user is premium if they:
