@@ -940,7 +940,8 @@ class AppleSubscription(db.Model, ModelMixin):
 
     expires_date = db.Column(ArrowType, nullable=False)
 
-    original_transaction_id = db.Column(db.String(256), nullable=False)
+    # to avoid using "Restore Purchase" on another account
+    original_transaction_id = db.Column(db.String(256), nullable=False, unique=True)
     receipt_data = db.Column(db.Text(), nullable=False)
 
     plan = db.Column(db.Enum(PlanEnum), nullable=False)
