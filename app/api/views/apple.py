@@ -269,7 +269,7 @@ def verify_receipt(receipt_data, user) -> Optional[AppleSubscription]:
 
     if apple_sub:
         LOG.d(
-            "Create new AppleSubscription for user %s, expired at %s, plan %s",
+            "Update AppleSubscription for user %s, expired at %s, plan %s",
             user,
             expires_date,
             plan,
@@ -279,6 +279,11 @@ def verify_receipt(receipt_data, user) -> Optional[AppleSubscription]:
         apple_sub.original_transaction_id = original_transaction_id
         apple_sub.plan = plan
     else:
+        # the same original_transaction_id has been used on another account
+        if AppleSubscription.get_by(original_transaction_id=original_transaction_id):
+            LOG.error("Same Apple Sub has been used before, current user %s", user)
+            return None
+
         LOG.d(
             "Create new AppleSubscription for user %s, expired at %s, plan %s",
             user,
