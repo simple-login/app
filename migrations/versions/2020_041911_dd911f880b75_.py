@@ -27,7 +27,7 @@ def upgrade():
     sa.Column('expires_date', sqlalchemy_utils.types.arrow.ArrowType(), nullable=False),
     sa.Column('original_transaction_id', sa.String(length=256), nullable=False),
     sa.Column('receipt_data', sa.Text(), nullable=False),
-    sa.Column('plan', sa.Enum('monthly', 'yearly', name='planenum'), nullable=False),
+    sa.Column('plan', sa.Enum('monthly', 'yearly', name='planenum_apple'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='cascade'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
