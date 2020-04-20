@@ -929,6 +929,10 @@ class ManualSubscription(db.Model, ModelMixin):
     user = db.relationship(User)
 
 
+# https://help.apple.com/app-store-connect/#/dev58bda3212
+_APPLE_GRACE_PERIOD_DAYS = 16
+
+
 class AppleSubscription(db.Model, ModelMixin):
     """
     For users who have subscribed via Apple in-app payment
@@ -950,7 +954,7 @@ class AppleSubscription(db.Model, ModelMixin):
 
     def is_valid(self):
         # Todo: take into account grace period?
-        return self.expires_date > arrow.now()
+        return self.expires_date > arrow.now().shift(days=-_APPLE_GRACE_PERIOD_DAYS)
 
 
 class DeletedAlias(db.Model, ModelMixin):
