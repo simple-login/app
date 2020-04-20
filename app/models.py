@@ -876,7 +876,7 @@ class EmailLog(db.Model, ModelMixin):
         elif self.bounced:
             return "bounced"
         elif self.blocked:
-            return "blocked"
+            return "block"
         else:
             return "forward"
 
