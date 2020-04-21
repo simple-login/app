@@ -220,6 +220,14 @@ def apple_update_notification():
     # }
     LOG.debug("request for /api/apple/update_notification")
     data = request.get_json()
+    if not (
+        data
+        and data.get("unified_receipt")
+        and data["unified_receipt"].get("latest_receipt_info")
+    ):
+        LOG.d("Invalid data %s", data)
+        return jsonify(error="Empty Response"), 400
+
     transactions = data["unified_receipt"]["latest_receipt_info"]
 
     # dict of original_transaction_id and transaction
