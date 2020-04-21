@@ -33,6 +33,7 @@ def apple_process_payment():
         200 of the payment is successful, i.e. user is upgraded to premium
 
     """
+    LOG.debug("request for /apple/process_payment")
     user = g.user
     receipt_data = request.get_json().get("receipt_data")
 
@@ -287,6 +288,7 @@ def verify_receipt(receipt_data, user) -> Optional[AppleSubscription]:
 
     https://developer.apple.com/documentation/appstorereceipts/verifyreceipt
     """
+    LOG.d("start verify_receipt")
     r = requests.post(
         _PROD_URL, json={"receipt-data": receipt_data, "password": APPLE_API_SECRET}
     )
