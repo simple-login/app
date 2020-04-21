@@ -47,14 +47,227 @@ def apple_process_payment():
 def apple_update_notification():
     """
     The "Subscription Status URL" to receive update notifications from Apple
-    TODO: to implement
     """
-    LOG.error("request for /api/apple/update_notification")
-    LOG.d("request data %s", request.data)
-    LOG.d("request json %s", request.get_json(silent=True))
-    LOG.d("request %s", request)
+    # request.json looks like this
+    # will use unified_receipt.latest_receipt_info and NOT latest_expired_receipt_info
+    # more info on https://developer.apple.com/documentation/appstoreservernotifications/responsebody
+    # {
+    #     "unified_receipt": {
+    #         "latest_receipt": "long string",
+    #         "pending_renewal_info": [
+    #             {
+    #                 "is_in_billing_retry_period": "0",
+    #                 "auto_renew_status": "0",
+    #                 "original_transaction_id": "1000000654277043",
+    #                 "product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #                 "expiration_intent": "1",
+    #                 "auto_renew_product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #             }
+    #         ],
+    #         "environment": "Sandbox",
+    #         "status": 0,
+    #         "latest_receipt_info": [
+    #             {
+    #                 "expires_date_pst": "2020-04-20 21:11:57 America/Los_Angeles",
+    #                 "purchase_date": "2020-04-21 03:11:57 Etc/GMT",
+    #                 "purchase_date_ms": "1587438717000",
+    #                 "original_purchase_date_ms": "1587420715000",
+    #                 "transaction_id": "1000000654329911",
+    #                 "original_transaction_id": "1000000654277043",
+    #                 "quantity": "1",
+    #                 "expires_date_ms": "1587442317000",
+    #                 "original_purchase_date_pst": "2020-04-20 15:11:55 America/Los_Angeles",
+    #                 "product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #                 "subscription_group_identifier": "20624274",
+    #                 "web_order_line_item_id": "1000000051891577",
+    #                 "expires_date": "2020-04-21 04:11:57 Etc/GMT",
+    #                 "is_in_intro_offer_period": "false",
+    #                 "original_purchase_date": "2020-04-20 22:11:55 Etc/GMT",
+    #                 "purchase_date_pst": "2020-04-20 20:11:57 America/Los_Angeles",
+    #                 "is_trial_period": "false",
+    #             },
+    #             {
+    #                 "expires_date_pst": "2020-04-20 20:11:57 America/Los_Angeles",
+    #                 "purchase_date": "2020-04-21 02:11:57 Etc/GMT",
+    #                 "purchase_date_ms": "1587435117000",
+    #                 "original_purchase_date_ms": "1587420715000",
+    #                 "transaction_id": "1000000654313889",
+    #                 "original_transaction_id": "1000000654277043",
+    #                 "quantity": "1",
+    #                 "expires_date_ms": "1587438717000",
+    #                 "original_purchase_date_pst": "2020-04-20 15:11:55 America/Los_Angeles",
+    #                 "product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #                 "subscription_group_identifier": "20624274",
+    #                 "web_order_line_item_id": "1000000051890729",
+    #                 "expires_date": "2020-04-21 03:11:57 Etc/GMT",
+    #                 "is_in_intro_offer_period": "false",
+    #                 "original_purchase_date": "2020-04-20 22:11:55 Etc/GMT",
+    #                 "purchase_date_pst": "2020-04-20 19:11:57 America/Los_Angeles",
+    #                 "is_trial_period": "false",
+    #             },
+    #             {
+    #                 "expires_date_pst": "2020-04-20 19:11:54 America/Los_Angeles",
+    #                 "purchase_date": "2020-04-21 01:11:54 Etc/GMT",
+    #                 "purchase_date_ms": "1587431514000",
+    #                 "original_purchase_date_ms": "1587420715000",
+    #                 "transaction_id": "1000000654300800",
+    #                 "original_transaction_id": "1000000654277043",
+    #                 "quantity": "1",
+    #                 "expires_date_ms": "1587435114000",
+    #                 "original_purchase_date_pst": "2020-04-20 15:11:55 America/Los_Angeles",
+    #                 "product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #                 "subscription_group_identifier": "20624274",
+    #                 "web_order_line_item_id": "1000000051890161",
+    #                 "expires_date": "2020-04-21 02:11:54 Etc/GMT",
+    #                 "is_in_intro_offer_period": "false",
+    #                 "original_purchase_date": "2020-04-20 22:11:55 Etc/GMT",
+    #                 "purchase_date_pst": "2020-04-20 18:11:54 America/Los_Angeles",
+    #                 "is_trial_period": "false",
+    #             },
+    #             {
+    #                 "expires_date_pst": "2020-04-20 18:11:54 America/Los_Angeles",
+    #                 "purchase_date": "2020-04-21 00:11:54 Etc/GMT",
+    #                 "purchase_date_ms": "1587427914000",
+    #                 "original_purchase_date_ms": "1587420715000",
+    #                 "transaction_id": "1000000654293615",
+    #                 "original_transaction_id": "1000000654277043",
+    #                 "quantity": "1",
+    #                 "expires_date_ms": "1587431514000",
+    #                 "original_purchase_date_pst": "2020-04-20 15:11:55 America/Los_Angeles",
+    #                 "product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #                 "subscription_group_identifier": "20624274",
+    #                 "web_order_line_item_id": "1000000051889539",
+    #                 "expires_date": "2020-04-21 01:11:54 Etc/GMT",
+    #                 "is_in_intro_offer_period": "false",
+    #                 "original_purchase_date": "2020-04-20 22:11:55 Etc/GMT",
+    #                 "purchase_date_pst": "2020-04-20 17:11:54 America/Los_Angeles",
+    #                 "is_trial_period": "false",
+    #             },
+    #             {
+    #                 "expires_date_pst": "2020-04-20 17:11:54 America/Los_Angeles",
+    #                 "purchase_date": "2020-04-20 23:11:54 Etc/GMT",
+    #                 "purchase_date_ms": "1587424314000",
+    #                 "original_purchase_date_ms": "1587420715000",
+    #                 "transaction_id": "1000000654285464",
+    #                 "original_transaction_id": "1000000654277043",
+    #                 "quantity": "1",
+    #                 "expires_date_ms": "1587427914000",
+    #                 "original_purchase_date_pst": "2020-04-20 15:11:55 America/Los_Angeles",
+    #                 "product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #                 "subscription_group_identifier": "20624274",
+    #                 "web_order_line_item_id": "1000000051888827",
+    #                 "expires_date": "2020-04-21 00:11:54 Etc/GMT",
+    #                 "is_in_intro_offer_period": "false",
+    #                 "original_purchase_date": "2020-04-20 22:11:55 Etc/GMT",
+    #                 "purchase_date_pst": "2020-04-20 16:11:54 America/Los_Angeles",
+    #                 "is_trial_period": "false",
+    #             },
+    #             {
+    #                 "expires_date_pst": "2020-04-20 16:11:54 America/Los_Angeles",
+    #                 "purchase_date": "2020-04-20 22:11:54 Etc/GMT",
+    #                 "purchase_date_ms": "1587420714000",
+    #                 "original_purchase_date_ms": "1587420715000",
+    #                 "transaction_id": "1000000654277043",
+    #                 "original_transaction_id": "1000000654277043",
+    #                 "quantity": "1",
+    #                 "expires_date_ms": "1587424314000",
+    #                 "original_purchase_date_pst": "2020-04-20 15:11:55 America/Los_Angeles",
+    #                 "product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #                 "subscription_group_identifier": "20624274",
+    #                 "web_order_line_item_id": "1000000051888825",
+    #                 "expires_date": "2020-04-20 23:11:54 Etc/GMT",
+    #                 "is_in_intro_offer_period": "false",
+    #                 "original_purchase_date": "2020-04-20 22:11:55 Etc/GMT",
+    #                 "purchase_date_pst": "2020-04-20 15:11:54 America/Los_Angeles",
+    #                 "is_trial_period": "false",
+    #             },
+    #         ],
+    #     },
+    #     "auto_renew_status_change_date": "2020-04-21 04:11:33 Etc/GMT",
+    #     "environment": "Sandbox",
+    #     "auto_renew_status": "false",
+    #     "auto_renew_status_change_date_pst": "2020-04-20 21:11:33 America/Los_Angeles",
+    #     "latest_expired_receipt": "long string",
+    #     "latest_expired_receipt_info": {
+    #         "original_purchase_date_pst": "2020-04-20 15:11:55 America/Los_Angeles",
+    #         "quantity": "1",
+    #         "subscription_group_identifier": "20624274",
+    #         "unique_vendor_identifier": "4C4DF6BA-DE2A-4737-9A68-5992338886DC",
+    #         "original_purchase_date_ms": "1587420715000",
+    #         "expires_date_formatted": "2020-04-21 04:11:57 Etc/GMT",
+    #         "is_in_intro_offer_period": "false",
+    #         "purchase_date_ms": "1587438717000",
+    #         "expires_date_formatted_pst": "2020-04-20 21:11:57 America/Los_Angeles",
+    #         "is_trial_period": "false",
+    #         "item_id": "1508744966",
+    #         "unique_identifier": "b55fc3dcc688e979115af0697a0195be78be7cbd",
+    #         "original_transaction_id": "1000000654277043",
+    #         "expires_date": "1587442317000",
+    #         "transaction_id": "1000000654329911",
+    #         "bvrs": "3",
+    #         "web_order_line_item_id": "1000000051891577",
+    #         "version_external_identifier": "834289833",
+    #         "bid": "io.simplelogin.ios-app",
+    #         "product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #         "purchase_date": "2020-04-21 03:11:57 Etc/GMT",
+    #         "purchase_date_pst": "2020-04-20 20:11:57 America/Los_Angeles",
+    #         "original_purchase_date": "2020-04-20 22:11:55 Etc/GMT",
+    #     },
+    #     "password": "22b9d5a110dd4344a1681631f1f95f55",
+    #     "auto_renew_status_change_date_ms": "1587442293000",
+    #     "auto_renew_product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
+    #     "notification_type": "DID_CHANGE_RENEWAL_STATUS",
+    # }
+    LOG.debug("request for /api/apple/update_notification")
+    data = request.get_json()
+    transactions = data["unified_receipt"]["latest_receipt_info"]
 
-    return jsonify(ignored=True), 400
+    # dict of original_transaction_id and transaction
+    latest_transactions = {}
+
+    for transaction in transactions:
+        original_transaction_id = transaction["original_transaction_id"]
+        if not latest_transactions.get(original_transaction_id):
+            latest_transactions[original_transaction_id] = transaction
+
+        if (
+            transaction["expires_date_ms"]
+            > latest_transactions[original_transaction_id]["expires_date_ms"]
+        ):
+            latest_transactions[original_transaction_id] = transaction
+
+    for original_transaction_id, transaction in latest_transactions.items():
+        expires_date = arrow.get(int(transaction["expires_date_ms"]) / 1000)
+        plan = (
+            PlanEnum.monthly
+            if transaction["product_id"] == _MONTHLY_PRODUCT_ID
+            else PlanEnum.yearly
+        )
+
+        apple_sub: AppleSubscription = AppleSubscription.get_by(
+            original_transaction_id=original_transaction_id
+        )
+
+        if apple_sub:
+            user = apple_sub.user
+            LOG.d(
+                "Update AppleSubscription for user %s, expired at %s, plan %s",
+                user,
+                expires_date,
+                plan,
+            )
+            apple_sub.receipt_data = data["unified_receipt"]["latest_receipt"]
+            apple_sub.expires_date = expires_date
+            apple_sub.plan = plan
+            db.session.commit()
+            return jsonify(ok=True), 200
+        else:
+            LOG.error(
+                "No existing AppleSub for original_transaction_id %s",
+                original_transaction_id,
+            )
+            LOG.d("request data %s", data)
+            return jsonify(ok=False), 400
 
 
 def verify_receipt(receipt_data, user) -> Optional[AppleSubscription]:
