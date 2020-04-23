@@ -1,6 +1,8 @@
 import argparse
+from dataclasses import dataclass
 
 import arrow
+from arrow import Arrow
 
 from app import s3
 from app.api.views.apple import verify_receipt
@@ -117,89 +119,140 @@ def poll_apple_subscription():
     LOG.d("Finish poll_apple_subscription")
 
 
-def stats():
-    """send admin stats everyday"""
-    if not ADMIN_EMAIL:
-        # nothing to do
-        return
+@dataclass
+class Stats:
+    nb_user: int
+    nb_alias: int
 
+    nb_forward: int
+    nb_block: int
+    nb_reply: int
+    nb_bounced: int
+    nb_spam: int
+
+    nb_custom_domain: int
+    nb_app: int
+    nb_premium: int
+
+
+def stats_before(moment: Arrow) -> Stats:
+    """return the stats before a specific moment, ignoring all stats come from users in IGNORED_EMAILS
+    """
     # nb user
     q = User.query
     for ie in IGNORED_EMAILS:
-        q = q.filter(~User.email.contains(ie))
+        q = q.filter(~User.email.contains(ie), User.created_at < moment)
 
     nb_user = q.count()
-
     LOG.d("total number user %s", nb_user)
 
-    # nb gen emails
-    q = db.session.query(Alias, User).filter(Alias.user_id == User.id)
+    # nb alias
+    q = db.session.query(Alias, User).filter(
+        Alias.user_id == User.id, Alias.created_at < moment
+    )
     for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))
 
     nb_alias = q.count()
     LOG.d("total number alias %s", nb_alias)
 
-    # nb mails forwarded
+    # email log stats
     q = db.session.query(EmailLog, Contact, Alias, User).filter(
         EmailLog.contact_id == Contact.id,
         Contact.alias_id == Alias.id,
         Alias.user_id == User.id,
+        EmailLog.created_at < moment,
     )
     for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))
 
-    nb_forward = nb_block = nb_reply = 0
+    nb_spam = nb_bounced = nb_forward = nb_block = nb_reply = 0
     for email_log, _, _, _ in q:
-        if email_log.is_reply:
+        if email_log.bounced:
+            nb_bounced += 1
+        elif email_log.is_spam:
+            nb_spam += 1
+        elif email_log.is_reply:
             nb_reply += 1
         elif email_log.blocked:
             nb_block += 1
         else:
             nb_forward += 1
 
-    LOG.d("nb forward %s, nb block %s, nb reply %s", nb_forward, nb_block, nb_reply)
+    LOG.d(
+        "nb_forward %s, nb_block %s, nb_reply %s, nb_bounced %s, nb_spam %s",
+        nb_forward,
+        nb_block,
+        nb_reply,
+        nb_bounced,
+        nb_spam,
+    )
 
-    nb_premium = Subscription.query.count()
-    nb_custom_domain = CustomDomain.query.count()
-
-    nb_custom_domain_alias = Alias.query.filter(
-        Alias.custom_domain_id.isnot(None)
+    nb_premium = Subscription.query.filter(Subscription.created_at < moment).count()
+    nb_premium += AppleSubscription.query.filter(
+        AppleSubscription.created_at < moment
     ).count()
 
-    nb_disabled_alias = Alias.query.filter(Alias.enabled == False).count()
+    nb_custom_domain = CustomDomain.query.filter(
+        CustomDomain.created_at < moment
+    ).count()
 
-    nb_app = Client.query.count()
+    nb_app = Client.query.filter(Client.created_at < moment).count()
 
-    nb_bounced_email = EmailLog.query.filter(EmailLog.bounced).count()
-    nb_spam = EmailLog.query.filter(EmailLog.is_spam).count()
+    data = locals()
+    # to keep only Stats field
+    data = {
+        k: v
+        for (k, v) in data.items()
+        if k in vars(Stats)["__dataclass_fields__"].keys()
+    }
+    return Stats(**data)
+
+
+def increase_percent(old, new) -> str:
+    if old == 0:
+        return "N/A"
+
+    increase = (new - old) / old * 100
+    return f"{increase:.1f}%"
+
+
+def stats():
+    """send admin stats everyday"""
+    if not ADMIN_EMAIL:
+        # nothing to do
+        return
+
+    stats_today = stats_before(arrow.now())
+    stats_yesterday = stats_before(arrow.now().shift(days=-1))
+
+    nb_user_increase = increase_percent(stats_yesterday.nb_user, stats_today.nb_user)
+    nb_alias_increase = increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)
+    nb_forward_increase = increase_percent(
+        stats_yesterday.nb_forward, stats_today.nb_forward
+    )
 
     today = arrow.now().format()
 
     send_email(
         ADMIN_EMAIL,
-        subject=f"SimpleLogin Stats for {today}, {nb_user} users, {nb_alias} aliases, {nb_forward} forwards",
+        subject=f"SimpleLogin Stats for {today}, {nb_user_increase} users, {nb_alias_increase} aliases, {nb_forward_increase} forwards",
         plaintext="",
         html=f"""
 Stats for {today} <br>
 
-nb_user: {nb_user} <br>
-nb_premium: {nb_premium} <br>
+nb_user: {stats_today.nb_user} - {increase_percent(stats_yesterday.nb_user, stats_today.nb_user)}  <br>
+nb_premium: {stats_today.nb_premium} - {increase_percent(stats_yesterday.nb_premium, stats_today.nb_premium)}  <br>
+nb_alias: {stats_today.nb_alias} - {increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)}  <br>
 
-nb_alias: {nb_alias} <br>
-nb_disabled_alias: {nb_disabled_alias} <br>
+nb_forward: {stats_today.nb_forward} - {increase_percent(stats_yesterday.nb_forward, stats_today.nb_forward)}  <br>
+nb_reply: {stats_today.nb_reply} - {increase_percent(stats_yesterday.nb_reply, stats_today.nb_reply)}  <br>
+nb_block: {stats_today.nb_block} - {increase_percent(stats_yesterday.nb_block, stats_today.nb_block)}  <br>
+nb_bounced: {stats_today.nb_bounced} - {increase_percent(stats_yesterday.nb_bounced, stats_today.nb_bounced)}  <br>
+nb_spam: {stats_today.nb_spam} - {increase_percent(stats_yesterday.nb_spam, stats_today.nb_spam)}  <br>
 
-nb_custom_domain: {nb_custom_domain} <br>
-nb_custom_domain_alias: {nb_custom_domain_alias} <br>
-
-nb_forward: {nb_forward} <br>
-nb_reply: {nb_reply} <br>
-nb_block: {nb_block} <br>
-
-nb_app: {nb_app} <br>
-
-nb_bounced_email: {nb_bounced_email} <br>
-nb_spam: {nb_spam} <br>
+nb_custom_domain: {stats_today.nb_custom_domain} - {increase_percent(stats_yesterday.nb_custom_domain, stats_today.nb_custom_domain)}  <br>
+nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_today.nb_app)}  <br>
     """,
     )
 
