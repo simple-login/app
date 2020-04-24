@@ -124,7 +124,7 @@
                        style="padding-left: 0px"
                 >
                   <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
-                  <input type="checkbox" class="custom-switch-input"
+                  <input type="checkbox" class="custom-switch-input" data-alias="{{ alias.id }}"
                       {{ "checked" if alias.enabled else "" }}>
 
                   <span class="custom-switch-indicator"></span>
@@ -378,8 +378,40 @@
       });
     });
 
-    $(".custom-switch-input").change(function (e) {
-      $(this).closest("form").submit();
+    $(".custom-switch-input").change(async function (e) {
+      let aliasId = $(this).data("alias");
+      let alias = $(this).parent().find(".alias").val();
+
+
+      try {
+        let res = await fetch(`/api/aliases/${aliasId}/toggle`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        });
+
+        if (res.ok) {
+          let json = await res.json();
+
+          if (json.enabled) {
+            toastr.success(`${alias} is enabled`);
+          } else {
+            toastr.success(`${alias} is disabled`);
+          }
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          var oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        var oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+
     })
   </script>
 {% endblock %}
