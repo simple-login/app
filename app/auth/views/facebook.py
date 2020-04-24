@@ -86,7 +86,7 @@ def facebook_callback():
         "https://graph.facebook.com/me?fields=id,name,email,picture{url}"
     ).json()
 
-    email = facebook_user_data.get("email").strip().lower()
+    email = facebook_user_data.get("email")
 
     # user choose to not share email, cannot continue
     if not email:
@@ -95,6 +95,7 @@ def facebook_callback():
         )
         return redirect(url_for("auth.register"))
 
+    email = email.strip().lower()
     user = User.get_by(email=email)
 
     picture_url = facebook_user_data.get("picture", {}).get("data", {}).get("url")
