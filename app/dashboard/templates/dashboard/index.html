@@ -379,26 +379,7 @@
     });
 
     $(".custom-switch-input").change(function (e) {
-      var message = "";
-      let alias = $(this).parent().find(".alias").val();
-
-      if (e.target.checked) {
-        message = `After this, you will start receiving email sent to <b>${alias}</b>, please confirm.`;
-      } else {
-        message = `After this, you will stop receiving email sent to <b>${alias}</b>, please confirm.`;
-      }
-
-      notie.confirm({
-        text: message,
-        cancelCallback: () => {
-          // reset to the original value
-          var oldValue = !$(this).prop("checked");
-          $(this).prop("checked", oldValue);
-        },
-        submitCallback: () => {
-          $(this).closest("form").submit();
-        }
-      });
+      $(this).closest("form").submit();
     })
   </script>
 {% endblock %}
