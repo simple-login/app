@@ -9,7 +9,7 @@ from app.models import ApiKey
 api_bp = Blueprint(name="api", import_name=__name__, url_prefix="/api")
 
 
-def verify_api_key(f):
+def require_api_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if current_user.is_authenticated:
