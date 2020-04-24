@@ -163,6 +163,8 @@ def fake_data():
     user.default_mailbox_id = m1.id
 
     Alias.create_new(user, "e1@", mailbox_id=m1.id)
+    for i in range(10):
+        Alias.create_new(user, f"e{i}@", mailbox_id=m1.id)
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(
