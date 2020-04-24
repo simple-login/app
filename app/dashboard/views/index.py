@@ -31,7 +31,6 @@ class AliasInfo:
     nb_blocked: int
     nb_reply: int
 
-    latest_activity: Arrow
     latest_email_log: EmailLog = None
     latest_contact: Contact = None
 
@@ -225,7 +224,6 @@ def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
                 nb_forward=0,
                 nb_reply=0,
                 highlight=alias.id == highlight_alias_id,
-                latest_activity=alias.created_at,
             )
 
         alias_info = aliases[alias.email]
