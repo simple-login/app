@@ -749,7 +749,13 @@ def handle_unsubscribe(envelope: Envelope):
     # format: alias_id:
     subject = msg["Subject"]
     try:
-        alias_id = int(subject[:-1])
+        # subject has the format {alias.id}=
+        if subject.endswith("="):
+            alias_id = int(subject[:-1])
+        # some email providers might strip off the = suffix
+        else:
+            alias_id = int(subject)
+
         alias = Alias.get(alias_id)
     except Exception:
         LOG.warning("Cannot parse alias from subject %s", msg["Subject"])
