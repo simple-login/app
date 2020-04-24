@@ -20,16 +20,9 @@
 {% endblock %}
 
 {% block default_content %}
-  <div class="page-header row" style="margin-top: 0rem">
-    <div class="col-lg-3 col-sm-12 p-0 mt-1">
-      <form method="get">
-        <input type="search" name="query" autofocus placeholder="Enter to search for alias" class="form-control shadow"
-               value="{{ query }}">
-      </form>
-    </div>
-
-    <div class="col-lg-5 offset-lg-4 pr-0 mt-1">
-      <div class="btn-group float-right" role="group">
+  <div class="row mb-3">
+    <div class="col-lg-6 pt-1">
+      <div class="btn-group" role="group">
         <form method="post">
           <input type="hidden" name="form-name" value="create-custom-email">
           <button data-toggle="tooltip"
@@ -67,7 +60,16 @@
         </div>
       </div>
     </div>
-
+    <div class="col-lg-6 pt-1">
+      <div class="float-right">
+        <form method="get" class="form-inline">
+          <input type="search" name="query" placeholder="Enter to search for alias"
+                 class="form-control shadow text-right"
+                 style="max-width: 15em"
+                 value="{{ query }}">
+        </form>
+      </div>
+    </div>
   </div>
 
   <div class="row">
