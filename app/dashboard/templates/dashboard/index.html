@@ -98,9 +98,6 @@
                   Copy
                 </span>
               {% endif %}
-              {% if alias_info.highlight %}
-                <span class="font-weight-bold text-success small-text">New</span>
-              {% endif %}
 
             </span>
             </div>
@@ -111,9 +108,9 @@
                 <label class="custom-switch cursor"
                        data-toggle="tooltip"
                     {% if alias.enabled %}
-                       title="Block Alias"
+                       title="Disable alias - you will stop receiving emails sent to this alias"
                     {% else %}
-                       title="Unblock Alias"
+                       title="Enable alias - you will start receiving emails sent to this alias"
                     {% endif %}
 
                     {% if loop.index ==1 %}
