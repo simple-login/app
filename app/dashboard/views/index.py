@@ -3,11 +3,12 @@ from dataclasses import dataclass
 from arrow import Arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from sqlalchemy import or_
+from sqlalchemy import or_, func, case
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
+from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -42,6 +43,10 @@ class AliasInfo:
 @login_required
 def index():
     query = request.args.get("query") or ""
+    page = 0
+    if request.args.get("page"):
+        page = int(request.args.get("page"))
+
     highlight_alias_id = None
     if request.args.get("highlight_alias_id"):
         highlight_alias_id = int(request.args.get("highlight_alias_id"))
@@ -186,28 +191,36 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        alias_infos=get_alias_infos(current_user, query, highlight_alias_id),
+        alias_infos=get_alias_infos_with_pagination(current_user, page, query),
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
         mailboxes=mailboxes,
         show_intro=show_intro,
+        page=page,
     )
 
 
-def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
-    if query:
-        query = query.strip().lower()
-
-    aliases = {}  # dict of alias email and AliasInfo
+def get_alias_infos_with_pagination(user, page: int, query=None) -> [AliasInfo]:
+    ret: [AliasInfo] = []
+    latest_activity = func.max(
+        case(
+            [
+                (Alias.created_at > EmailLog.created_at, Alias.created_at),
+                (Alias.created_at < EmailLog.created_at, EmailLog.created_at),
+            ],
+            else_=Alias.created_at,
+        )
+    ).label("latest")
 
     q = (
-        db.session.query(Alias, Contact, EmailLog, Mailbox)
+        db.session.query(Alias, latest_activity)
+        .options(joinedload(Alias.mailbox))
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
-        .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
         .filter(Alias.user_id == user.id)
-        .order_by(Alias.created_at.desc())
+        .group_by(Alias.id)
+        .order_by(latest_activity.desc())
     )
 
     if query:
@@ -215,26 +228,36 @@ def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
             or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
         )
 
-    for alias, contact, email_log, mailbox in q:
-        if alias.email not in aliases:
-            aliases[alias.email] = AliasInfo(
-                alias=alias,
-                mailbox=mailbox,
-                nb_blocked=0,
-                nb_forward=0,
-                nb_reply=0,
-                highlight=alias.id == highlight_alias_id,
-            )
+    q = q.limit(PAGE_LIMIT).offset(page * PAGE_LIMIT)
 
-        alias_info = aliases[alias.email]
-        if not email_log:
-            continue
+    for alias, latest_activity in q:
+        ret.append(get_alias_info(alias))
 
-        if email_log.created_at > alias_info.latest_activity:
-            alias_info.latest_activity = email_log.created_at
-            alias_info.latest_email_log = email_log
-            alias_info.latest_contact = contact
+    # only show intro on the first enabled alias
+    for alias_info in ret:
+        if alias_info.alias.enabled:
+            alias_info.show_intro_test_send_email = True
+            break
 
+    return ret
+
+
+def get_alias_info(alias: Alias) -> AliasInfo:
+    q = (
+        db.session.query(Contact, EmailLog)
+        .filter(Contact.alias_id == alias.id)
+        .filter(EmailLog.contact_id == Contact.id)
+    )
+
+    latest_activity: Arrow = alias.created_at
+    latest_email_log = None
+    latest_contact = None
+
+    alias_info = AliasInfo(
+        alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0, mailbox=alias.mailbox
+    )
+
+    for contact, email_log in q:
         if email_log.is_reply:
             alias_info.nb_reply += 1
         elif email_log.blocked:
@@ -242,23 +265,12 @@ def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
         else:
             alias_info.nb_forward += 1
 
-    ret = list(aliases.values())
-    ret = sorted(ret, key=lambda a: a.latest_activity, reverse=True)
+        if email_log.created_at > latest_activity:
+            latest_activity = email_log.created_at
+            latest_email_log = email_log
+            latest_contact = contact
 
-    # make sure the highlighted alias is the first element
-    highlight_index = None
-    for ix, alias in enumerate(ret):
-        if alias.highlight:
-            highlight_index = ix
-            break
+    alias_info.latest_contact = latest_contact
+    alias_info.latest_email_log = latest_email_log
 
-    if highlight_index:
-        ret.insert(0, ret.pop(highlight_index))
-
-    # only show intro on the first enabled alias
-    for alias in ret:
-        if alias.alias.enabled:
-            alias.show_intro_test_send_email = True
-            break
-
-    return ret
+    return alias_info

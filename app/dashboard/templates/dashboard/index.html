@@ -279,6 +279,23 @@
     {% endfor %}
   </div>
 
+  <div class="row">
+    <div class="col">
+      <nav aria-label="Alias navigation">
+        <ul class="pagination">
+          <li class="page-item {% if page == 0 %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('dashboard.index', page=page-1, query=query) }}">Previous</a>
+          </li>
+          <li class="page-item {% if last_page %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('dashboard.index', page=page+1, query=query) }}">Next</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
 
   {% if  client_users %}
     <div class="page-header row">
