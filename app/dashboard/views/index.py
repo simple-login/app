@@ -87,18 +87,6 @@ def index():
                 LOG.error("alias %s has been added before to DeletedAlias", email)
                 db.session.rollback()
 
-        elif request.form.get("form-name") == "set-note":
-            alias_id = request.form.get("alias-id")
-            alias: Alias = Alias.get(alias_id)
-            note = request.form.get("note")
-
-            alias.note = note
-            db.session.commit()
-
-            flash(f"Update note for alias {alias.email}", "success")
-            return redirect(
-                url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
-            )
 
         elif request.form.get("form-name") == "set-mailbox":
             alias_id = request.form.get("alias-id")
