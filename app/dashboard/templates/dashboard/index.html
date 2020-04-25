@@ -110,34 +110,31 @@
               </span>
             </div>
             <div class="col text-right">
-              <form method="post">
-                <input type="hidden" name="form-name" value="switch-email-forwarding">
-                <input type="hidden" name="alias-id" value="{{ alias.id }}">
-                <label class="custom-switch cursor"
-                       data-toggle="tooltip"
-                    {% if alias.enabled %}
-                       title="Disable alias - you will stop receiving emails sent to this alias"
-                    {% else %}
-                       title="Enable alias - you will start receiving emails sent to this alias"
-                    {% endif %}
+              <label class="custom-switch cursor"
+                     data-toggle="tooltip"
+                  {% if alias.enabled %}
+                     title="Disable alias - you will stop receiving emails sent to this alias"
+                  {% else %}
+                     title="Enable alias - you will start receiving emails sent to this alias"
+                  {% endif %}
 
-                    {% if loop.index ==1 %}
-                       data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
-                           be forwarded to your inbox. <br><br>
-                           This should be used with care as others might
-                           not be able to reach you after ...
-                            "
-                       data-step="3"
-                    {% endif %}
-                       style="padding-left: 0px"
-                >
-                  <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
-                  <input type="checkbox" class="custom-switch-input" data-alias="{{ alias.id }}"
-                      {{ "checked" if alias.enabled else "" }}>
+                  {% if loop.index ==1 %}
+                     data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
+                         be forwarded to your inbox. <br><br>
+                         This should be used with care as others might
+                         not be able to reach you after ...
+                          "
+                     data-step="3"
+                  {% endif %}
+                     style="padding-left: 0px"
+              >
+                <input type="checkbox" class="custom-switch-input"
+                       data-alias="{{ alias.id }}"
+                       data-alias-email="{{ alias.email }}"
+                    {{ "checked" if alias.enabled else "" }}>
 
-                  <span class="custom-switch-indicator"></span>
-                </label>
-              </form>
+                <span class="custom-switch-indicator"></span>
+              </label>
             </div>
           </div>
 
@@ -412,7 +409,7 @@
 
     $(".custom-switch-input").change(async function (e) {
       let aliasId = $(this).data("alias");
-      let alias = $(this).parent().find(".alias").val();
+      let alias = $(this).data("alias-email");
 
       try {
         let res = await fetch(`/api/aliases/${aliasId}/toggle`, {

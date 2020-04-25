@@ -63,23 +63,6 @@ def index():
             else:
                 flash(f"You need to upgrade your plan to create new alias.", "warning")
 
-        elif request.form.get("form-name") == "switch-email-forwarding":
-            alias_id = request.form.get("alias-id")
-            alias: Alias = Alias.get(alias_id)
-
-            LOG.d("switch email forwarding for %s", alias)
-
-            alias.enabled = not alias.enabled
-            if alias.enabled:
-                flash(f"Alias {alias.email} is enabled", "success")
-            else:
-                flash(f"Alias {alias.email} is disabled", "warning")
-
-            db.session.commit()
-            return redirect(
-                url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
-            )
-
         elif request.form.get("form-name") == "delete-email":
             alias_id = request.form.get("alias-id")
             alias: Alias = Alias.get(alias_id)
