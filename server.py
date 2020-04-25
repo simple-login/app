@@ -51,6 +51,8 @@ from app.models import (
     Directory,
     Mailbox,
     DeletedAlias,
+    Contact,
+    EmailLog,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -160,12 +162,25 @@ def fake_data():
     m1 = Mailbox.create(user_id=user.id, email="m1@cd.ef", verified=True)
     db.session.commit()
 
-    Alias.create_new(user, "e1@", mailbox_id=m1.id)
     for i in range(30):
         if i % 2 == 0:
-            Alias.create_new(user, f"e{i}@", mailbox_id=m1.id)
+            a = Alias.create_new(user, f"e{i}@", mailbox_id=m1.id)
         else:
-            Alias.create_new(user, f"e{i}@")
+            a = Alias.create_new(user, f"e{i}@")
+        db.session.commit()
+
+        # some aliases don't have any activity
+        if i % 3 != 0:
+            contact = Contact.create(
+                user_id=user.id,
+                alias_id=a.id,
+                website_email=f"contact{i}@example.com",
+                reply_email=f"rep{i}@sl.local",
+            )
+            db.session.commit()
+            for _ in range(3):
+                EmailLog.create(user_id=user.id, contact_id=contact.id)
+                db.session.commit()
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(
