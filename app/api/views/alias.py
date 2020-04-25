@@ -117,6 +117,27 @@ def get_aliases_v2():
     )
 
 
+@api_bp.route("/mailboxes", methods=["GET"])
+@cross_origin()
+@require_api_auth
+def get_mailboxes():
+    """
+    Get mailboxes
+    Output:
+        - mailboxes: list of alias:
+            - id
+            - email
+    """
+    user = g.user
+
+    return (
+        jsonify(
+            mailboxes=[{"id": mb.id, "email": mb.email} for mb in user.mailboxes()]
+        ),
+        200,
+    )
+
+
 @api_bp.route("/aliases/<int:alias_id>", methods=["DELETE"])
 @cross_origin()
 @require_api_auth

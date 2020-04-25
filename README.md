@@ -831,6 +831,30 @@ Input:
 
 Output: always return 200, even if email doesn't exist. User need to enter correctly their email.
 
+#### GET /api/mailboxes
+
+Get user verified mailboxes.
+
+Input:
+- `Authentication` header that contains the api key
+
+Output:
+List of mailboxes. Each mailbox has id, email field.
+
+```json
+{
+  "mailboxes": [
+    {
+      "email": "a@b.c",
+      "id": 1
+    },
+    {
+      "email": "m1@example.com",
+      "id": 2
+    }
+  ]
+}
+```
 
 #### GET /api/v2/aliases
 
@@ -852,6 +876,9 @@ If success, 200 with the list of aliases. Each alias has the following fields:
 - nb_block
 - nb_forward
 - nb_reply
+- mailbox
+    - id
+    - email
 - (optional) latest_activity:
     - action: forward|reply|block|bounced
     - timestamp
@@ -871,6 +898,10 @@ Here's an example:
       "email": "prefix1.cat@sl.local",
       "enabled": true,
       "id": 3,
+      "mailbox": {
+        "email": "a@b.c",
+        "id": 1
+      },
       "latest_activity": {
         "action": "forward",
         "contact": {
@@ -891,6 +922,10 @@ Here's an example:
       "email": "prefix0.hey@sl.local",
       "enabled": true,
       "id": 2,
+      "mailbox": {
+        "email": "a@b.c",
+        "id": 1
+      },
       "latest_activity": {
         "action": "forward",
         "contact": {
