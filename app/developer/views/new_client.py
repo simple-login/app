@@ -3,10 +3,8 @@ from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app import email_utils
 from app.developer.base import developer_bp
 from app.extensions import db
-from app.log import LOG
 from app.models import Client
 
 

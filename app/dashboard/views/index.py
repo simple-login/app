@@ -1,40 +1,20 @@
-from dataclasses import dataclass
-
-from arrow import Arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from sqlalchemy import or_, func, case
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
 from app.api.serializer import get_alias_infos_with_pagination_v2
-from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
 from app.models import (
     Alias,
     ClientUser,
-    Contact,
-    EmailLog,
     DeletedAlias,
     AliasGeneratorEnum,
     Mailbox,
 )
-
-
-@dataclass
-class AliasInfo:
-    alias: Alias
-    mailbox: Mailbox
-
-    nb_forward: int
-    nb_blocked: int
-    nb_reply: int
-
-    latest_email_log: EmailLog = None
-    latest_contact: Contact = None
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])

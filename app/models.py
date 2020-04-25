@@ -1,7 +1,7 @@
 import enum
 import random
 import uuid
-from email.utils import parseaddr, formataddr
+from email.utils import formataddr
 
 import arrow
 import bcrypt

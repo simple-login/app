@@ -3,9 +3,9 @@ from flask_login import login_required, current_user
 
 from app.config import PADDLE_MONTHLY_PRODUCT_ID, PADDLE_YEARLY_PRODUCT_ID
 from app.dashboard.base import dashboard_bp
+from app.extensions import db
 from app.log import LOG
 from app.models import Subscription, PlanEnum
-from app.extensions import db
 from app.paddle_utils import cancel_subscription, change_plan
 
 

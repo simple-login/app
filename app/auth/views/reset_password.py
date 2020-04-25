@@ -1,4 +1,3 @@
-import arrow
 from flask import request, flash, render_template, redirect, url_for
 from flask_login import login_user
 from flask_wtf import FlaskForm

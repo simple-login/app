@@ -2,8 +2,6 @@ import os
 import random
 import string
 import subprocess
-import tempfile
-from uuid import uuid4
 
 from dotenv import load_dotenv
 

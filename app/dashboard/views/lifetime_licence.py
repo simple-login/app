@@ -3,13 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import (
-    PADDLE_VENDOR_ID,
-    PADDLE_MONTHLY_PRODUCT_ID,
-    PADDLE_YEARLY_PRODUCT_ID,
-    URL,
-    ADMIN_EMAIL,
-)
+from app.config import ADMIN_EMAIL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import send_email
 from app.extensions import db
