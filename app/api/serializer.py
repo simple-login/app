@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from arrow import Arrow
 from sqlalchemy import or_, func, case
+from sqlalchemy.orm import joinedload
 
 from app.config import PAGE_LIMIT
 from app.extensions import db
@@ -11,6 +12,7 @@ from app.models import Alias, Contact, EmailLog, Mailbox
 @dataclass
 class AliasInfo:
     alias: Alias
+    mailbox: Mailbox
 
     nb_forward: int
     nb_blocked: int
@@ -89,6 +91,7 @@ def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
     ret = []
     q = (
         db.session.query(Alias)
+        .options(joinedload(Alias.mailbox))
         .filter(Alias.user_id == user.id)
         .order_by(Alias.created_at.desc())
     )
@@ -120,6 +123,7 @@ def get_alias_infos_with_pagination_v2(user, page_id=0, query=None) -> [AliasInf
 
     q = (
         db.session.query(Alias, latest_activity)
+        .options(joinedload(Alias.mailbox))
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
         .filter(Alias.user_id == user.id)
@@ -147,7 +151,9 @@ def get_alias_info(alias: Alias) -> AliasInfo:
         .filter(EmailLog.contact_id == Contact.id)
     )
 
-    alias_info = AliasInfo(alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0,)
+    alias_info = AliasInfo(
+        alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0, mailbox=alias.mailbox
+    )
 
     for _, el in q:
         if el.is_reply:
@@ -171,7 +177,9 @@ def get_alias_info_v2(alias: Alias) -> AliasInfo:
     latest_email_log = None
     latest_contact = None
 
-    alias_info = AliasInfo(alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0,)
+    alias_info = AliasInfo(
+        alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0, mailbox=alias.mailbox
+    )
 
     for contact, email_log in q:
         if email_log.is_reply:
