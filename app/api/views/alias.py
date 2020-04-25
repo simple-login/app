@@ -245,7 +245,6 @@ def update_alias(alias_id):
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-
     changed = False
     if "note" in data:
         new_note = data.get("note")

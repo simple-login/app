@@ -2,6 +2,7 @@ import enum
 import random
 import uuid
 from email.utils import formataddr
+from typing import List
 
 import arrow
 import bcrypt
@@ -357,12 +358,12 @@ class User(db.Model, ModelMixin, UserMixin):
     def verified_custom_domains(self):
         return CustomDomain.query.filter_by(user_id=self.id, verified=True).all()
 
-    def mailboxes(self) -> [str]:
-        """list of mailbox emails that user own"""
+    def mailboxes(self) -> List["Mailbox"]:
+        """list of mailbox that user own"""
         mailboxes = []
 
         for mailbox in Mailbox.query.filter_by(user_id=self.id, verified=True):
-            mailboxes.append(mailbox.email)
+            mailboxes.append(mailbox)
 
         return mailboxes
 

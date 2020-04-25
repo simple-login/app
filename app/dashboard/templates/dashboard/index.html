@@ -222,10 +222,11 @@
                 <div class="small-text mt-2">Current mailbox</div>
                 <div class="d-flex">
                   <div class="flex-grow-1 mr-2">
-                    <select class="form-control form-control-sm custom-select" name="mailbox">
+                    <select id="mailbox-{{ alias.id }}"
+                        class="form-control form-control-sm custom-select" name="mailbox">
                       {% for mailbox in mailboxes %}
-                        <option value="{{ mailbox }}" {% if mailbox == alias_info.mailbox.email %} selected {% endif %}>
-                          {{ mailbox }}
+                        <option value="{{ mailbox.id }}" {% if mailbox.id == alias_info.mailbox.id %} selected {% endif %}>
+                          {{ mailbox.email }}
                         </option>
                       {% endfor %}
                     </select>
@@ -235,9 +236,10 @@
                     <input type="hidden" name="form-name" value="set-mailbox">
                     <input type="hidden" name="alias-id" value="{{ alias.id }}">
 
-                    <button class="btn btn-sm btn-outline-info w-100">
+                    <a data-alias="{{ alias.id }}"
+                        class="save-mailbox btn btn-sm btn-outline-info w-100">
                       Update
-                    </button>
+                    </a>
                   </div>
 
                 </div>
@@ -473,6 +475,38 @@
 
         if (res.ok) {
           toastr.success(`Saved`);
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          var oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        var oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+
+    })
+
+    $(".save-mailbox").on("click", async function () {
+      let aliasId = $(this).data("alias");
+      let mailbox_id = $(`#mailbox-${aliasId}`).val();
+
+      try {
+        let res = await fetch(`/api/aliases/${aliasId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mailbox_id: mailbox_id,
+          }),
+        });
+
+        if (res.ok) {
+          toastr.success(`Mailbox Updated`);
         } else {
           toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
           // reset to the original value
