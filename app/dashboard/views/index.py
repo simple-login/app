@@ -95,6 +95,11 @@ def index():
         elif request.form.get("form-name") == "delete-email":
             alias_id = request.form.get("alias-id")
             alias: Alias = Alias.get(alias_id)
+            if not alias:
+                flash("Unknown error, sorry for the inconvenience", "error")
+                return redirect(
+                    url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
+                )
 
             LOG.d("delete gen email %s", alias)
             email = alias.email
