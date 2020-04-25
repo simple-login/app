@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from itsdangerous import Signer, BadSignature
+from itsdangerous import Signer
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
@@ -9,7 +9,6 @@ from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, MAILBOX_SECRET, URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
     can_be_used_as_personal_email,
-    email_already_used,
     mailbox_already_used,
     render,
     send_email,

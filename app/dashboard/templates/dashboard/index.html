@@ -63,8 +63,19 @@
     <div class="col-lg-6 pt-1">
       <div class="float-right">
         <form method="get" class="form-inline">
+          <select name="sort"
+                  onchange="this.form.submit()"
+                  class="form-control custom-select mr-3">
+            <option value="" {% if sort == "" %} selected {% endif %}>
+              Sort by most recent activity
+            </option>
+            <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
+              Oldest Alias to Newest
+            </option>
+          </select>
+
           <input type="search" name="query" placeholder="Enter to search for alias"
-                 class="form-control shadow text-right"
+                 class="form-control shadow"
                  style="max-width: 15em"
                  value="{{ query }}">
         </form>
@@ -77,7 +88,7 @@
       {% set alias = alias_info.alias %}
 
       <div class="col-12 col-lg-6">
-        <div class="card p-4 shadow-sm {% if alias_info.highlight %} highlight-row {% endif %} ">
+        <div class="card p-4 shadow-sm {% if alias_info.alias.id == highlight_alias_id %} highlight-row {% endif %} ">
 
           <div class="row">
             <div class="col-8">
@@ -179,7 +190,8 @@
           <div class="row">
             <div class="col">
               <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}"
-                  {% if alias_info.show_intro_test_send_email %}
+                 id="send-email-{{ alias.id }}"
+                  {% if loop.index ==1 %}
                  data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
                  You can add a new <em>contact</em> to for your alias here. <br><br>
                  To send an email to your contact, SimpleLogin will create a <em>special</em> email address. <br><br>
@@ -210,10 +222,11 @@
                 <div class="small-text mt-2">Current mailbox</div>
                 <div class="d-flex">
                   <div class="flex-grow-1 mr-2">
-                    <select class="form-control form-control-sm custom-select" name="mailbox">
+                    <select id="mailbox-{{ alias.id }}"
+                        class="form-control form-control-sm custom-select" name="mailbox">
                       {% for mailbox in mailboxes %}
-                        <option value="{{ mailbox }}" {% if mailbox == alias_info.mailbox.email %} selected {% endif %}>
-                          {{ mailbox }}
+                        <option value="{{ mailbox.id }}" {% if mailbox.id == alias_info.mailbox.id %} selected {% endif %}>
+                          {{ mailbox.email }}
                         </option>
                       {% endfor %}
                     </select>
@@ -223,9 +236,10 @@
                     <input type="hidden" name="form-name" value="set-mailbox">
                     <input type="hidden" name="alias-id" value="{{ alias.id }}">
 
-                    <button class="btn btn-sm btn-outline-info w-100">
+                    <a data-alias="{{ alias.id }}"
+                        class="save-mailbox btn btn-sm btn-outline-info w-100">
                       Update
-                    </button>
+                    </a>
                   </div>
 
                 </div>
@@ -241,6 +255,7 @@
 
                 <div class="flex-grow-1 mr-2">
                   <textarea
+                      id="note-{{ alias.id }}"
                       name="note"
                       class="form-control"
                       rows="2"
@@ -251,9 +266,10 @@
                   <input type="hidden" name="form-name" value="set-note">
                   <input type="hidden" name="alias-id" value="{{ alias.id }}">
 
-                  <button class="btn btn-sm btn-outline-success w-100">
+                  <a data-alias="{{ alias.id }}"
+                     class="save-note btn btn-sm btn-outline-success w-100">
                     Save
-                  </button>
+                  </a>
                 </div>
               </div>
             </form>
@@ -277,6 +293,23 @@
         </div>
       </div>
     {% endfor %}
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <nav aria-label="Alias navigation">
+        <ul class="pagination">
+          <li class="page-item {% if page == 0 %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort) }}">Previous</a>
+          </li>
+          <li class="page-item {% if last_page %}disabled{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort) }}">Next</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </div>
 
 
@@ -393,7 +426,6 @@
       let aliasId = $(this).data("alias");
       let alias = $(this).parent().find(".alias").val();
 
-
       try {
         let res = await fetch(`/api/aliases/${aliasId}/toggle`, {
           method: "POST",
@@ -412,6 +444,69 @@
             toastr.success(`${alias} is disabled`);
             $(`#send-email-${aliasId}`).addClass("disabled");
           }
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          var oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        var oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+    })
+
+    $(".save-note").on("click", async function () {
+      let aliasId = $(this).data("alias");
+      let note = $(`#note-${aliasId}`).val();
+
+      try {
+        let res = await fetch(`/api/aliases/${aliasId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            note: note,
+          }),
+        });
+
+        if (res.ok) {
+          toastr.success(`Saved`);
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          var oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        var oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+
+    })
+
+    $(".save-mailbox").on("click", async function () {
+      let aliasId = $(this).data("alias");
+      let mailbox_id = $(`#mailbox-${aliasId}`).val();
+
+      try {
+        let res = await fetch(`/api/aliases/${aliasId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mailbox_id: mailbox_id,
+          }),
+        });
+
+        if (res.ok) {
+          toastr.success(`Mailbox Updated`);
         } else {
           toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
           // reset to the original value

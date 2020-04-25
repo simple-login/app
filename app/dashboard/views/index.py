@@ -1,48 +1,32 @@
-from dataclasses import dataclass
-
-from arrow import Arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import email_utils
+from app.api.serializer import get_alias_infos_with_pagination_v2
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
 from app.models import (
     Alias,
     ClientUser,
-    Contact,
-    EmailLog,
     DeletedAlias,
     AliasGeneratorEnum,
     Mailbox,
 )
 
 
-@dataclass
-class AliasInfo:
-    alias: Alias
-    mailbox: Mailbox
-
-    nb_forward: int
-    nb_blocked: int
-    nb_reply: int
-
-    latest_activity: Arrow
-    latest_email_log: EmailLog = None
-    latest_contact: Contact = None
-
-    show_intro_test_send_email: bool = False
-    highlight: bool = False
-
-
 @dashboard_bp.route("/", methods=["GET", "POST"])
 @login_required
 def index():
     query = request.args.get("query") or ""
+    sort = request.args.get("sort") or ""
+
+    page = 0
+    if request.args.get("page"):
+        page = int(request.args.get("page"))
+
     highlight_alias_id = None
     if request.args.get("highlight_alias_id"):
         highlight_alias_id = int(request.args.get("highlight_alias_id"))
@@ -187,80 +171,12 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        alias_infos=get_alias_infos(current_user, query, highlight_alias_id),
+        alias_infos=get_alias_infos_with_pagination_v2(current_user, page, query, sort),
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
         mailboxes=mailboxes,
         show_intro=show_intro,
+        page=page,
+        sort=sort,
     )
-
-
-def get_alias_infos(user, query=None, highlight_alias_id=None) -> [AliasInfo]:
-    if query:
-        query = query.strip().lower()
-
-    aliases = {}  # dict of alias email and AliasInfo
-
-    q = (
-        db.session.query(Alias, Contact, EmailLog, Mailbox)
-        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
-        .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
-        .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
-        .filter(Alias.user_id == user.id)
-        .order_by(Alias.created_at.desc())
-    )
-
-    if query:
-        q = q.filter(
-            or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
-        )
-
-    for alias, contact, email_log, mailbox in q:
-        if alias.email not in aliases:
-            aliases[alias.email] = AliasInfo(
-                alias=alias,
-                mailbox=mailbox,
-                nb_blocked=0,
-                nb_forward=0,
-                nb_reply=0,
-                highlight=alias.id == highlight_alias_id,
-                latest_activity=alias.created_at,
-            )
-
-        alias_info = aliases[alias.email]
-        if not email_log:
-            continue
-
-        if email_log.created_at > alias_info.latest_activity:
-            alias_info.latest_activity = email_log.created_at
-            alias_info.latest_email_log = email_log
-            alias_info.latest_contact = contact
-
-        if email_log.is_reply:
-            alias_info.nb_reply += 1
-        elif email_log.blocked:
-            alias_info.nb_blocked += 1
-        else:
-            alias_info.nb_forward += 1
-
-    ret = list(aliases.values())
-    ret = sorted(ret, key=lambda a: a.latest_activity, reverse=True)
-
-    # make sure the highlighted alias is the first element
-    highlight_index = None
-    for ix, alias in enumerate(ret):
-        if alias.highlight:
-            highlight_index = ix
-            break
-
-    if highlight_index:
-        ret.insert(0, ret.pop(highlight_index))
-
-    # only show intro on the first enabled alias
-    for alias in ret:
-        if alias.alias.enabled:
-            alias.show_intro_test_send_email = True
-            break
-
-    return ret

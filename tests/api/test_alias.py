@@ -6,7 +6,7 @@ from flask import url_for
 
 from app.config import PAGE_LIMIT
 from app.extensions import db
-from app.models import User, ApiKey, Alias, Contact, EmailLog
+from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
 
 
 def test_get_aliases_error_without_pagination(flask_client):
@@ -292,7 +292,38 @@ def test_update_alias(flask_client):
     )
 
     assert r.status_code == 200
-    assert r.json == {"note": "test note"}
+
+
+def test_update_alias_mailbox(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    mb = Mailbox.create(user_id=user.id, email="ab@cd.com", verified=True)
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    r = flask_client.put(
+        url_for("api.update_alias", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"mailbox_id": mb.id},
+    )
+
+    assert r.status_code == 200
+
+    # fail when update with non-existing mailbox
+    r = flask_client.put(
+        url_for("api.update_alias", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"mailbox_id": -1},
+    )
+    assert r.status_code == 400
 
 
 def test_alias_contacts(flask_client):

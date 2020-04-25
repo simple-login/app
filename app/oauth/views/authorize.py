@@ -28,7 +28,7 @@ from app.oauth_models import (
     SUPPORTED_OPENID_FLOWS_STR,
     response_types_to_str,
 )
-from app.utils import random_string, encode_url, convert_to_id, random_word
+from app.utils import random_string, encode_url, random_word
 
 
 @oauth_bp.route("/authorize", methods=["GET", "POST"])
