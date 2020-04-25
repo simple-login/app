@@ -87,30 +87,7 @@ def index():
                 LOG.error("alias %s has been added before to DeletedAlias", email)
                 db.session.rollback()
 
-
-        elif request.form.get("form-name") == "set-mailbox":
-            alias_id = request.form.get("alias-id")
-            alias: Alias = Alias.get(alias_id)
-            mailbox_email = request.form.get("mailbox")
-
-            mailbox = Mailbox.get_by(email=mailbox_email)
-            if not mailbox or mailbox.user_id != current_user.id:
-                flash("Something went wrong, please retry", "warning")
-            else:
-                alias.mailbox_id = mailbox.id
-                db.session.commit()
-                LOG.d("Set alias %s mailbox to %s", alias, mailbox)
-
-                flash(
-                    f"Update mailbox for {alias.email} to {mailbox_email}", "success",
-                )
-                return redirect(
-                    url_for(
-                        "dashboard.index", highlight_alias_id=alias.id, query=query,
-                    )
-                )
-
-        return redirect(url_for("dashboard.index", query=query))
+        return redirect(url_for("dashboard.index", query=query, sort=sort))
 
     client_users = (
         ClientUser.filter_by(user_id=current_user.id)
