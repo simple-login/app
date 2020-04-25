@@ -831,6 +831,30 @@ Input:
 
 Output: always return 200, even if email doesn't exist. User need to enter correctly their email.
 
+#### GET /api/mailboxes
+
+Get user verified mailboxes.
+
+Input:
+- `Authentication` header that contains the api key
+
+Output:
+List of mailboxes. Each mailbox has id, email field.
+
+```json
+{
+  "mailboxes": [
+    {
+      "email": "a@b.c",
+      "id": 1
+    },
+    {
+      "email": "m1@example.com",
+      "id": 2
+    }
+  ]
+}
+```
 
 #### GET /api/v2/aliases
 

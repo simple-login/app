@@ -480,3 +480,28 @@ def test_get_alias(flask_client):
     assert "nb_reply" in res
     assert "enabled" in res
     assert "note" in res
+
+
+def test_get_mailboxes(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
+    Mailbox.create(user_id=user.id, email="m2@example.com", verified=False)
+    db.session.commit()
+
+    r = flask_client.get(
+        url_for("api.get_mailboxes"), headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 200
+    # m2@example.com is not returned as it's not verified
+    assert r.json == {
+        "mailboxes": [{"email": "a@b.c", "id": 1}, {"email": "m1@example.com", "id": 2}]
+    }
+    print(json.dumps(r.json, indent=2))
