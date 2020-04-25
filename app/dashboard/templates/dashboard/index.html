@@ -63,8 +63,19 @@
     <div class="col-lg-6 pt-1">
       <div class="float-right">
         <form method="get" class="form-inline">
+          <select name="sort"
+                  onchange="this.form.submit()"
+                  class="form-control custom-select mr-3">
+            <option value="" {% if sort == "" %} selected {% endif %}>
+              Sort by most recent activity
+            </option>
+            <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
+              Oldest Alias to Newest
+            </option>
+          </select>
+
           <input type="search" name="query" placeholder="Enter to search for alias"
-                 class="form-control shadow text-right"
+                 class="form-control shadow"
                  style="max-width: 15em"
                  value="{{ query }}">
         </form>
@@ -286,11 +297,11 @@
         <ul class="pagination">
           <li class="page-item {% if page == 0 %}disabled{% endif %}">
             <a class="page-link"
-               href="{{ url_for('dashboard.index', page=page-1, query=query) }}">Previous</a>
+               href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort) }}">Previous</a>
           </li>
           <li class="page-item {% if last_page %}disabled{% endif %}">
             <a class="page-link"
-               href="{{ url_for('dashboard.index', page=page+1, query=query) }}">Next</a>
+               href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort) }}">Next</a>
           </li>
         </ul>
       </nav>

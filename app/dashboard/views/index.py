@@ -21,6 +21,8 @@ from app.models import (
 @login_required
 def index():
     query = request.args.get("query") or ""
+    sort = request.args.get("sort") or ""
+
     page = 0
     if request.args.get("page"):
         page = int(request.args.get("page"))
@@ -169,11 +171,12 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        alias_infos=get_alias_infos_with_pagination_v2(current_user, page, query),
+        alias_infos=get_alias_infos_with_pagination_v2(current_user, page, query, sort),
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
         mailboxes=mailboxes,
         show_intro=show_intro,
         page=page,
+        sort=sort,
     )

@@ -109,7 +109,9 @@ def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
     return ret
 
 
-def get_alias_infos_with_pagination_v2(user, page_id=0, query=None) -> [AliasInfo]:
+def get_alias_infos_with_pagination_v2(
+    user, page_id=0, query=None, sort=None
+) -> [AliasInfo]:
     ret = []
     latest_activity = func.max(
         case(
@@ -122,13 +124,11 @@ def get_alias_infos_with_pagination_v2(user, page_id=0, query=None) -> [AliasInf
     ).label("latest")
 
     q = (
-        db.session.query(Alias, latest_activity)
-        .options(joinedload(Alias.mailbox))
+        db.session.query(Alias, Mailbox, latest_activity)
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
         .filter(Alias.user_id == user.id)
-        .group_by(Alias.id)
-        .order_by(latest_activity.desc())
+        .filter(Alias.mailbox_id == Mailbox.id)
     )
 
     if query:
@@ -136,10 +136,18 @@ def get_alias_infos_with_pagination_v2(user, page_id=0, query=None) -> [AliasInf
             or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
         )
 
+    if sort == "old2new":
+        q = q.order_by(Alias.created_at)
+    else:
+        # default sorting
+        q = q.order_by(latest_activity.desc())
+
+    q = q.group_by(Alias.id, Mailbox.id)
+
     q = q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT)
 
-    for alias, latest_activity in q:
-        ret.append(get_alias_info_v2(alias))
+    for alias, mailbox, latest_activity in q:
+        ret.append(get_alias_info_v2(alias, mailbox))
 
     return ret
 
@@ -166,7 +174,7 @@ def get_alias_info(alias: Alias) -> AliasInfo:
     return alias_info
 
 
-def get_alias_info_v2(alias: Alias) -> AliasInfo:
+def get_alias_info_v2(alias: Alias, mailbox) -> AliasInfo:
     q = (
         db.session.query(Contact, EmailLog)
         .filter(Contact.alias_id == alias.id)
@@ -178,7 +186,7 @@ def get_alias_info_v2(alias: Alias) -> AliasInfo:
     latest_contact = None
 
     alias_info = AliasInfo(
-        alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0, mailbox=alias.mailbox
+        alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0, mailbox=mailbox
     )
 
     for contact, email_log in q:
