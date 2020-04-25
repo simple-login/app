@@ -179,7 +179,8 @@
           <div class="row">
             <div class="col">
               <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}"
-                  {% if alias_info.show_intro_test_send_email %}
+                 id="send-email-{{ alias.id }}"
+                  {% if loop.index ==1 %}
                  data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
                  You can add a new <em>contact</em> to for your alias here. <br><br>
                  To send an email to your contact, SimpleLogin will create a <em>special</em> email address. <br><br>

@@ -35,9 +35,6 @@ class AliasInfo:
     latest_email_log: EmailLog = None
     latest_contact: Contact = None
 
-    show_intro_test_send_email: bool = False
-    highlight: bool = False
-
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
 @login_required
@@ -232,12 +229,6 @@ def get_alias_infos_with_pagination(user, page: int, query=None) -> [AliasInfo]:
 
     for alias, latest_activity in q:
         ret.append(get_alias_info(alias))
-
-    # only show intro on the first enabled alias
-    for alias_info in ret:
-        if alias_info.alias.enabled:
-            alias_info.show_intro_test_send_email = True
-            break
 
     return ret
 
