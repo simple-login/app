@@ -33,19 +33,7 @@ def index():
 
     # User generates a new email
     if request.method == "POST":
-        if request.form.get("form-name") == "trigger-email":
-            alias_id = request.form.get("alias-id")
-            alias = Alias.get(alias_id)
-
-            LOG.d("trigger an email to %s", alias)
-            email_utils.send_test_email_alias(alias.email, alias.user.name)
-
-            flash(
-                f"An email sent to {alias.email} is on its way, please check your inbox/spam folder",
-                "success",
-            )
-
-        elif request.form.get("form-name") == "create-custom-email":
+        if request.form.get("form-name") == "create-custom-email":
             if current_user.can_create_new_alias():
                 return redirect(url_for("dashboard.custom_alias"))
             else:

@@ -223,9 +223,10 @@
                 <div class="d-flex">
                   <div class="flex-grow-1 mr-2">
                     <select id="mailbox-{{ alias.id }}"
-                        class="form-control form-control-sm custom-select" name="mailbox">
+                            class="form-control form-control-sm custom-select" name="mailbox">
                       {% for mailbox in mailboxes %}
-                        <option value="{{ mailbox.id }}" {% if mailbox.id == alias_info.mailbox.id %} selected {% endif %}>
+                        <option value="{{ mailbox.id }}" {% if mailbox.id == alias_info.mailbox.id %}
+                                selected {% endif %}>
                           {{ mailbox.email }}
                         </option>
                       {% endfor %}
@@ -237,7 +238,7 @@
                     <input type="hidden" name="alias-id" value="{{ alias.id }}">
 
                     <a data-alias="{{ alias.id }}"
-                        class="save-mailbox btn btn-sm btn-outline-info w-100">
+                       class="save-mailbox btn btn-sm btn-outline-info w-100">
                       Update
                     </a>
                   </div>
@@ -400,19 +401,6 @@
         text: `Once <b>${alias}</b> is deleted, people/apps ` +
           "who used to contact you via this alias cannot reach you any more," +
           " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
-        },
-        submitCallback: () => {
-          $(this).closest("form").submit();
-        }
-      });
-    });
-
-    $(".trigger-email").on("click", function (e) {
-      notie.confirm({
-        text: "SimpleLogin server will send an email to this alias " +
-          "and it will arrive to your inbox, please confirm.",
         cancelCallback: () => {
           // nothing to do
         },
