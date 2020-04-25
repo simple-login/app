@@ -33,19 +33,7 @@ def index():
 
     # User generates a new email
     if request.method == "POST":
-        if request.form.get("form-name") == "trigger-email":
-            alias_id = request.form.get("alias-id")
-            alias = Alias.get(alias_id)
-
-            LOG.d("trigger an email to %s", alias)
-            email_utils.send_test_email_alias(alias.email, alias.user.name)
-
-            flash(
-                f"An email sent to {alias.email} is on its way, please check your inbox/spam folder",
-                "success",
-            )
-
-        elif request.form.get("form-name") == "create-custom-email":
+        if request.form.get("form-name") == "create-custom-email":
             if current_user.can_create_new_alias():
                 return redirect(url_for("dashboard.custom_alias"))
             else:
@@ -69,28 +57,14 @@ def index():
 
                 return redirect(
                     url_for(
-                        "dashboard.index", highlight_alias_id=alias.id, query=query,
+                        "dashboard.index",
+                        highlight_alias_id=alias.id,
+                        query=query,
+                        sort=sort,
                     )
                 )
             else:
                 flash(f"You need to upgrade your plan to create new alias.", "warning")
-
-        elif request.form.get("form-name") == "switch-email-forwarding":
-            alias_id = request.form.get("alias-id")
-            alias: Alias = Alias.get(alias_id)
-
-            LOG.d("switch email forwarding for %s", alias)
-
-            alias.enabled = not alias.enabled
-            if alias.enabled:
-                flash(f"Alias {alias.email} is enabled", "success")
-            else:
-                flash(f"Alias {alias.email} is disabled", "warning")
-
-            db.session.commit()
-            return redirect(
-                url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
-            )
 
         elif request.form.get("form-name") == "delete-email":
             alias_id = request.form.get("alias-id")
@@ -98,7 +72,12 @@ def index():
             if not alias:
                 flash("Unknown error, sorry for the inconvenience", "error")
                 return redirect(
-                    url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
+                    url_for(
+                        "dashboard.index",
+                        highlight_alias_id=alias.id,
+                        query=query,
+                        sort=sort,
+                    )
                 )
 
             LOG.d("delete gen email %s", alias)
@@ -116,42 +95,7 @@ def index():
                 LOG.error("alias %s has been added before to DeletedAlias", email)
                 db.session.rollback()
 
-        elif request.form.get("form-name") == "set-note":
-            alias_id = request.form.get("alias-id")
-            alias: Alias = Alias.get(alias_id)
-            note = request.form.get("note")
-
-            alias.note = note
-            db.session.commit()
-
-            flash(f"Update note for alias {alias.email}", "success")
-            return redirect(
-                url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
-            )
-
-        elif request.form.get("form-name") == "set-mailbox":
-            alias_id = request.form.get("alias-id")
-            alias: Alias = Alias.get(alias_id)
-            mailbox_email = request.form.get("mailbox")
-
-            mailbox = Mailbox.get_by(email=mailbox_email)
-            if not mailbox or mailbox.user_id != current_user.id:
-                flash("Something went wrong, please retry", "warning")
-            else:
-                alias.mailbox_id = mailbox.id
-                db.session.commit()
-                LOG.d("Set alias %s mailbox to %s", alias, mailbox)
-
-                flash(
-                    f"Update mailbox for {alias.email} to {mailbox_email}", "success",
-                )
-                return redirect(
-                    url_for(
-                        "dashboard.index", highlight_alias_id=alias.id, query=query,
-                    )
-                )
-
-        return redirect(url_for("dashboard.index", query=query))
+        return redirect(url_for("dashboard.index", query=query, sort=sort))
 
     client_users = (
         ClientUser.filter_by(user_id=current_user.id)

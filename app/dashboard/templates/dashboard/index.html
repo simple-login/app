@@ -110,34 +110,31 @@
               </span>
             </div>
             <div class="col text-right">
-              <form method="post">
-                <input type="hidden" name="form-name" value="switch-email-forwarding">
-                <input type="hidden" name="alias-id" value="{{ alias.id }}">
-                <label class="custom-switch cursor"
-                       data-toggle="tooltip"
-                    {% if alias.enabled %}
-                       title="Disable alias - you will stop receiving emails sent to this alias"
-                    {% else %}
-                       title="Enable alias - you will start receiving emails sent to this alias"
-                    {% endif %}
+              <label class="custom-switch cursor"
+                     data-toggle="tooltip"
+                  {% if alias.enabled %}
+                     title="Disable alias - you will stop receiving emails sent to this alias"
+                  {% else %}
+                     title="Enable alias - you will start receiving emails sent to this alias"
+                  {% endif %}
 
-                    {% if loop.index ==1 %}
-                       data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
-                           be forwarded to your inbox. <br><br>
-                           This should be used with care as others might
-                           not be able to reach you after ...
-                            "
-                       data-step="3"
-                    {% endif %}
-                       style="padding-left: 0px"
-                >
-                  <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
-                  <input type="checkbox" class="custom-switch-input" data-alias="{{ alias.id }}"
-                      {{ "checked" if alias.enabled else "" }}>
+                  {% if loop.index ==1 %}
+                     data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
+                         be forwarded to your inbox. <br><br>
+                         This should be used with care as others might
+                         not be able to reach you after ...
+                          "
+                     data-step="3"
+                  {% endif %}
+                     style="padding-left: 0px"
+              >
+                <input type="checkbox" class="custom-switch-input"
+                       data-alias="{{ alias.id }}"
+                       data-alias-email="{{ alias.email }}"
+                    {{ "checked" if alias.enabled else "" }}>
 
-                  <span class="custom-switch-indicator"></span>
-                </label>
-              </form>
+                <span class="custom-switch-indicator"></span>
+              </label>
             </div>
           </div>
 
@@ -218,61 +215,51 @@
           <div class="collapse" id="alias-{{ alias.id }}">
 
             {% if mailboxes|length > 1 %}
-              <form method="post">
-                <div class="small-text mt-2">Current mailbox</div>
-                <div class="d-flex">
-                  <div class="flex-grow-1 mr-2">
-                    <select id="mailbox-{{ alias.id }}"
-                        class="form-control form-control-sm custom-select" name="mailbox">
-                      {% for mailbox in mailboxes %}
-                        <option value="{{ mailbox.id }}" {% if mailbox.id == alias_info.mailbox.id %} selected {% endif %}>
-                          {{ mailbox.email }}
-                        </option>
-                      {% endfor %}
-                    </select>
-                  </div>
-
-                  <div class="">
-                    <input type="hidden" name="form-name" value="set-mailbox">
-                    <input type="hidden" name="alias-id" value="{{ alias.id }}">
-
-                    <a data-alias="{{ alias.id }}"
-                        class="save-mailbox btn btn-sm btn-outline-info w-100">
-                      Update
-                    </a>
-                  </div>
-
+              <div class="small-text mt-2">Current mailbox</div>
+              <div class="d-flex">
+                <div class="flex-grow-1 mr-2">
+                  <select id="mailbox-{{ alias.id }}"
+                          class="form-control form-control-sm custom-select" name="mailbox">
+                    {% for mailbox in mailboxes %}
+                      <option value="{{ mailbox.id }}" {% if mailbox.id == alias_info.mailbox.id %}
+                              selected {% endif %}>
+                        {{ mailbox.email }}
+                      </option>
+                    {% endfor %}
+                  </select>
                 </div>
-              </form>
+
+                <div class="">
+                  <a data-alias="{{ alias.id }}"
+                     class="save-mailbox btn btn-sm btn-outline-info w-100">
+                    Update
+                  </a>
+                </div>
+
+              </div>
             {% elif alias_info.mailbox != None and alias_info.mailbox.email != current_user.email %}
               <div class="small-text">
                 Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
               </div>
             {% endif %}
 
-            <form method="post">
-              <div class="d-flex mt-2">
-
-                <div class="flex-grow-1 mr-2">
-                  <textarea
-                      id="note-{{ alias.id }}"
-                      name="note"
-                      class="form-control"
-                      rows="2"
-                      placeholder="Alias Note.">{{ alias.note or "" }}</textarea>
-                </div>
-
-                <div class="">
-                  <input type="hidden" name="form-name" value="set-note">
-                  <input type="hidden" name="alias-id" value="{{ alias.id }}">
-
-                  <a data-alias="{{ alias.id }}"
-                     class="save-note btn btn-sm btn-outline-success w-100">
-                    Save
-                  </a>
-                </div>
+            <div class="d-flex mt-2">
+              <div class="flex-grow-1 mr-2">
+                <textarea
+                    id="note-{{ alias.id }}"
+                    name="note"
+                    class="form-control"
+                    rows="2"
+                    placeholder="Alias Note.">{{ alias.note or "" }}</textarea>
               </div>
-            </form>
+
+              <div class="">
+                <a data-alias="{{ alias.id }}"
+                   class="save-note btn btn-sm btn-outline-success w-100">
+                  Save
+                </a>
+              </div>
+            </div>
 
             <div class="row mt-3">
               <div class="col">
@@ -409,22 +396,9 @@
       });
     });
 
-    $(".trigger-email").on("click", function (e) {
-      notie.confirm({
-        text: "SimpleLogin server will send an email to this alias " +
-          "and it will arrive to your inbox, please confirm.",
-        cancelCallback: () => {
-          // nothing to do
-        },
-        submitCallback: () => {
-          $(this).closest("form").submit();
-        }
-      });
-    });
-
     $(".custom-switch-input").change(async function (e) {
       let aliasId = $(this).data("alias");
-      let alias = $(this).parent().find(".alias").val();
+      let alias = $(this).data("alias-email");
 
       try {
         let res = await fetch(`/api/aliases/${aliasId}/toggle`, {
@@ -474,7 +448,7 @@
         });
 
         if (res.ok) {
-          toastr.success(`Saved`);
+          toastr.success(`Note Saved`);
         } else {
           toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
           // reset to the original value
