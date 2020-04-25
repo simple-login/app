@@ -253,6 +253,7 @@
 
                 <div class="flex-grow-1 mr-2">
                   <textarea
+                      id="note-{{ alias.id }}"
                       name="note"
                       class="form-control"
                       rows="2"
@@ -263,9 +264,10 @@
                   <input type="hidden" name="form-name" value="set-note">
                   <input type="hidden" name="alias-id" value="{{ alias.id }}">
 
-                  <button class="btn btn-sm btn-outline-success w-100">
+                  <a data-alias="{{ alias.id }}"
+                     class="save-note btn btn-sm btn-outline-success w-100">
                     Save
-                  </button>
+                  </a>
                 </div>
               </div>
             </form>
@@ -422,7 +424,6 @@
       let aliasId = $(this).data("alias");
       let alias = $(this).parent().find(".alias").val();
 
-
       try {
         let res = await fetch(`/api/aliases/${aliasId}/toggle`, {
           method: "POST",
@@ -441,6 +442,37 @@
             toastr.success(`${alias} is disabled`);
             $(`#send-email-${aliasId}`).addClass("disabled");
           }
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          var oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        var oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+    })
+
+    $(".save-note").on("click", async function () {
+      let aliasId = $(this).data("alias");
+      let note = $(`#note-${aliasId}`).val();
+
+      try {
+        let res = await fetch(`/api/aliases/${aliasId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            note: note,
+          }),
+        });
+
+        if (res.ok) {
+          toastr.success(`Saved`);
         } else {
           toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
           // reset to the original value
