@@ -407,8 +407,10 @@
 
           if (json.enabled) {
             toastr.success(`${alias} is enabled`);
+            $(`#send-email-${aliasId}`).removeClass("disabled");
           } else {
             toastr.success(`${alias} is disabled`);
+            $(`#send-email-${aliasId}`).addClass("disabled");
           }
         } else {
           toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
