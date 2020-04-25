@@ -150,24 +150,28 @@ def test_get_aliases_v2(flask_client):
     r0 = r.json["aliases"][0]
     # r0 will have the following format
     # {
-    #   "creation_date": "2020-04-06 17:52:47+00:00",
-    #   "creation_timestamp": 1586195567,
-    #   "email": "prefix1.hey@sl.local",
-    #   "enabled": true,
-    #   "id": 3,
-    #   "latest_activity": {
-    #     "action": "forward",
-    #     "contact": {
-    #       "email": "c1@example.com",
-    #       "name": null,
-    #       "reverse_alias": "\"c1 at example.com\" <re1@SL>"
+    #     "creation_date": "2020-04-25 21:10:01+00:00",
+    #     "creation_timestamp": 1587849001,
+    #     "email": "prefix1.yeah@sl.local",
+    #     "enabled": true,
+    #     "id": 3,
+    #     "latest_activity": {
+    #         "action": "forward",
+    #         "contact": {
+    #             "email": "c1@example.com",
+    #             "name": null,
+    #             "reverse_alias": "\"c1 at example.com\" <re1@SL>"
+    #         },
+    #         "timestamp": 1587849001
     #     },
-    #     "timestamp": 1586195567
-    #   },
-    #   "nb_block": 0,
-    #   "nb_forward": 1,
-    #   "nb_reply": 0,
-    #   "note": null
+    #     "mailbox": {
+    #         "email": "a@b.c",
+    #         "id": 1
+    #     },
+    #     "nb_block": 0,
+    #     "nb_forward": 1,
+    #     "nb_reply": 0,
+    #     "note": null
     # }
     assert r0["email"].startswith("prefix1")
     assert r0["latest_activity"]["action"] == "forward"
@@ -176,6 +180,9 @@ def test_get_aliases_v2(flask_client):
     assert r0["latest_activity"]["contact"]["email"] == "c1@example.com"
     assert "name" in r0["latest_activity"]["contact"]
     assert "reverse_alias" in r0["latest_activity"]["contact"]
+
+    assert "id" in r0["mailbox"]
+    assert "email" in r0["mailbox"]
 
 
 def test_delete_alias(flask_client):

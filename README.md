@@ -852,6 +852,9 @@ If success, 200 with the list of aliases. Each alias has the following fields:
 - nb_block
 - nb_forward
 - nb_reply
+- mailbox
+    - id
+    - email
 - (optional) latest_activity:
     - action: forward|reply|block|bounced
     - timestamp
@@ -871,6 +874,10 @@ Here's an example:
       "email": "prefix1.cat@sl.local",
       "enabled": true,
       "id": 3,
+      "mailbox": {
+        "email": "a@b.c",
+        "id": 1
+      },
       "latest_activity": {
         "action": "forward",
         "contact": {
@@ -891,6 +898,10 @@ Here's an example:
       "email": "prefix0.hey@sl.local",
       "enabled": true,
       "id": 2,
+      "mailbox": {
+        "email": "a@b.c",
+        "id": 1
+      },
       "latest_activity": {
         "action": "forward",
         "contact": {

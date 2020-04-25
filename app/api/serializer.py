@@ -51,6 +51,11 @@ def serialize_alias_info_v2(alias_info: AliasInfo) -> dict:
         "nb_forward": alias_info.nb_forward,
         "nb_block": alias_info.nb_blocked,
         "nb_reply": alias_info.nb_reply,
+        # mailbox
+        "mailbox": {
+            "id": alias_info.mailbox.id,
+            "email": alias_info.mailbox.email
+        }
     }
     if alias_info.latest_email_log:
         email_log = alias_info.latest_email_log
