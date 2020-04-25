@@ -2,7 +2,7 @@ from flask import g
 from flask import jsonify, request
 from flask_cors import cross_origin
 
-from app.api.base import api_bp, verify_api_key
+from app.api.base import api_bp, require_api_auth
 from app.api.serializer import serialize_alias_info, get_alias_info
 from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_DOMAINS
 from app.dashboard.views.custom_alias import verify_prefix_suffix
@@ -14,7 +14,7 @@ from app.utils import convert_to_id
 
 @api_bp.route("/alias/custom/new", methods=["POST"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def new_custom_alias():
     """
     Create a new custom alias

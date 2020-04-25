@@ -7,7 +7,7 @@ from flask import jsonify
 from flask import request
 from flask_cors import cross_origin
 
-from app.api.base import api_bp, verify_api_key
+from app.api.base import api_bp, require_api_auth
 from app.config import APPLE_API_SECRET
 from app.extensions import db
 from app.log import LOG
@@ -23,7 +23,7 @@ _PROD_URL = "https://buy.itunes.apple.com/verifyReceipt"
 
 @api_bp.route("/apple/process_payment", methods=["POST"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def apple_process_payment():
     """
     Process payment

@@ -3,7 +3,7 @@ from flask import jsonify
 from flask import request
 from flask_cors import cross_origin
 
-from app.api.base import api_bp, verify_api_key
+from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
     AliasInfo,
     serialize_alias_info,
@@ -25,7 +25,7 @@ from app.utils import random_string
 
 @api_bp.route("/aliases", methods=["GET", "POST"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def get_aliases():
     """
     Get aliases
@@ -68,7 +68,7 @@ def get_aliases():
 
 @api_bp.route("/v2/aliases", methods=["GET", "POST"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def get_aliases_v2():
     """
     Get aliases
@@ -119,7 +119,7 @@ def get_aliases_v2():
 
 @api_bp.route("/aliases/<int:alias_id>", methods=["DELETE"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def delete_alias(alias_id):
     """
     Delete alias
@@ -143,7 +143,7 @@ def delete_alias(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>/toggle", methods=["POST"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def toggle_alias(alias_id):
     """
     Enable/disable alias
@@ -169,7 +169,7 @@ def toggle_alias(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>/activities")
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def get_alias_activities(alias_id):
     """
     Get aliases
@@ -225,7 +225,7 @@ def get_alias_activities(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>", methods=["PUT"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def update_alias(alias_id):
     """
     Update alias note
@@ -256,7 +256,7 @@ def update_alias(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>", methods=["GET"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def get_alias(alias_id):
     """
     Get alias
@@ -277,7 +277,7 @@ def get_alias(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>/contacts")
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def get_alias_contacts_route(alias_id):
     """
     Get alias contacts
@@ -311,7 +311,7 @@ def get_alias_contacts_route(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>/contacts", methods=["POST"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def create_contact_route(alias_id):
     """
     Create contact for an alias
@@ -366,7 +366,7 @@ def create_contact_route(alias_id):
 
 @api_bp.route("/contacts/<int:contact_id>", methods=["DELETE"])
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def delete_contact(contact_id):
     """
     Delete contact

@@ -20,16 +20,9 @@
 {% endblock %}
 
 {% block default_content %}
-  <div class="page-header row" style="margin-top: 0rem">
-    <div class="col-lg-3 col-sm-12 p-0 mt-1">
-      <form method="get">
-        <input type="search" name="query" autofocus placeholder="Enter to search for alias" class="form-control shadow"
-               value="{{ query }}">
-      </form>
-    </div>
-
-    <div class="col-lg-5 offset-lg-4 pr-0 mt-1">
-      <div class="btn-group float-right" role="group">
+  <div class="row mb-3">
+    <div class="col-lg-6 pt-1">
+      <div class="btn-group" role="group">
         <form method="post">
           <input type="hidden" name="form-name" value="create-custom-email">
           <button data-toggle="tooltip"
@@ -67,7 +60,16 @@
         </div>
       </div>
     </div>
-
+    <div class="col-lg-6 pt-1">
+      <div class="float-right">
+        <form method="get" class="form-inline">
+          <input type="search" name="query" placeholder="Enter to search for alias"
+                 class="form-control shadow text-right"
+                 style="max-width: 15em"
+                 value="{{ query }}">
+        </form>
+      </div>
+    </div>
   </div>
 
   <div class="row">
@@ -76,30 +78,25 @@
 
       <div class="col-12 col-lg-6">
         <div class="card p-4 shadow-sm {% if alias_info.highlight %} highlight-row {% endif %} ">
+
           <div class="row">
             <div class="col-8">
-            <span class="clipboard cursor mb-0"
-                {% if loop.index ==1 %}
-                  data-intro="This is an <em>alias</em>. <br><br>
-        <b>All</b> emails sent to an alias will be <em>forwarded</em> to your inbox. <br><br>
-        Alias is a great way to hide your personal email address so feel free to
-        use it whenever possible, for example when signing up for a newsletter or creating a new account on a suspicious website 😎"
-                  data-step="2"
-                {% endif %}
-                {% if alias.enabled %}
-                  data-toggle="tooltip"
-                  title="Copy to clipboard"
-                  data-clipboard-text="{{ alias.email }}"
-                {% endif %}
-            >
-              <span class="font-weight-bold">{{ alias.email }}</span>
-              {% if alias.enabled %}
-                <span class="btn btn-sm btn-success copy-btn">
-                  Copy
-                </span>
-              {% endif %}
-
-            </span>
+              <span class="clipboard cursor mb-0"
+                  {% if loop.index ==1 %}
+                    data-intro="This is an <em>alias</em>. <br><br>
+          <b>All</b> emails sent to an alias will be <em>forwarded</em> to your inbox. <br><br>
+          Alias is a great way to hide your personal email address so feel free to
+          use it whenever possible, for example when signing up for a newsletter or creating a new account on a suspicious website 😎"
+                    data-step="2"
+                  {% endif %}
+                  {% if alias.enabled %}
+                    data-toggle="tooltip"
+                    title="Click to copy"
+                    data-clipboard-text="{{ alias.email }}"
+                  {% endif %}
+              >
+                <span class="font-weight-bold">{{ alias.email }}</span>
+              </span>
             </div>
             <div class="col text-right">
               <form method="post">
@@ -124,7 +121,7 @@
                        style="padding-left: 0px"
                 >
                   <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
-                  <input type="checkbox" class="custom-switch-input"
+                  <input type="checkbox" class="custom-switch-input" data-alias="{{ alias.id }}"
                       {{ "checked" if alias.enabled else "" }}>
 
                   <span class="custom-switch-indicator"></span>
@@ -133,134 +130,148 @@
             </div>
           </div>
 
-          <hr class="my-2">
+          <!-- Email Activity -->
+          <div class="row">
+            <div class="col">
+              <div style="font-size: 12px">
+                {% if alias_info.latest_email_log != None %}
+                  {% set email_log = alias_info.latest_email_log %}
+                  {% set contact = alias_info.latest_contact %}
 
-
-          <div class="" style="font-size: 12px">
-            {% if alias_info.latest_email_log != None %}
-              {% set email_log = alias_info.latest_email_log %}
-              {% set contact = alias_info.latest_contact %}
-
-              {% if email_log.is_reply %}
-                {{ contact.website_email }}
-                <i class="fa fa-reply mr-2" data-toggle="tooltip" title="Email reply/sent from alias"></i>
-                {{ email_log.created_at | dt }}
-              {% elif email_log.bounced %}
-                <span class="text-danger">
+                  {% if email_log.is_reply %}
+                    {{ contact.website_email }}
+                    <i class="fa fa-reply mr-2" data-toggle="tooltip" title="Email reply/sent from alias"></i>
+                    {{ email_log.created_at | dt }}
+                  {% elif email_log.bounced %}
+                    <span class="text-danger">
                   {{ contact.website_email }}
                   <i class="fa fa-warning mr-2" data-toggle="tooltip"
                      title="Email bounced and cannot be forwarded to your mailbox"></i>
                   {{ email_log.created_at | dt }}
                 </span>
-              {% elif email_log.blocked %}
-                {{ contact.website_email }}
-                <i class="fa fa-ban mr-2 text-danger" data-toggle="tooltip" title="Email blocked"></i>
-                {{ email_log.created_at | dt }}
-              {% else %}
-                {{ contact.website_email }}
-                <i class="fa fa-paper-plane  mr-2" data-toggle="tooltip" title="Email forwarded to alias"></i>
-                {{ email_log.created_at | dt }}
-              {% endif %}
-            {% else %}
-              No Activity. Alias created {{ alias.created_at | dt }}
-            {% endif %}
-            <br>
+                  {% elif email_log.blocked %}
+                    {{ contact.website_email }}
+                    <i class="fa fa-ban mr-2 text-danger" data-toggle="tooltip" title="Email blocked"></i>
+                    {{ email_log.created_at | dt }}
+                  {% else %}
+                    {{ contact.website_email }}
+                    <i class="fa fa-paper-plane  mr-2" data-toggle="tooltip" title="Email forwarded to alias"></i>
+                    {{ email_log.created_at | dt }}
+                  {% endif %}
+                {% else %}
+                  No Activity. Alias created {{ alias.created_at | dt }}
+                {% endif %}
+                <br>
 
-            <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwards,
-            <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
-            <span class="alias-activity">{{ alias_info.nb_reply }}</span> replies
-            <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
-               class="btn btn-sm btn-link">
-              See All &nbsp;→
-            </a>
+                <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwards,
+                <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
+                <span class="alias-activity">{{ alias_info.nb_reply }}</span> replies
+                <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
+                   class="btn btn-sm btn-link">
+                  See All &nbsp;→
+                </a>
+              </div>
+            </div>
           </div>
+          <!-- END Email Activity -->
 
-          {% if mailboxes|length > 1 %}
+          <!-- Send Email && More button -->
+          <div class="row">
+            <div class="col">
+              <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}"
+                  {% if alias_info.show_intro_test_send_email %}
+                 data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
+                 You can add a new <em>contact</em> to for your alias here. <br><br>
+                 To send an email to your contact, SimpleLogin will create a <em>special</em> email address. <br><br>
+                 Sending an email to this email address will <em>forward</em> the email to your contact"
+                 data-step="4"
+                  {% endif %}
+                 class="btn btn-sm btn-outline-primary {% if not alias.enabled %} disabled {% endif %}"
+                 data-toggle="tooltip"
+                 title="Not only an alias can receive emails, it can send emails too"
+              >
+                Send Email&nbsp; &nbsp;<i class="fe fe-send"></i>
+              </a>
+            </div>
+            <div class="col text-right">
+              <a class="btn btn-sm" data-toggle="collapse" href="#alias-{{ alias.id }}" role="button"
+                 aria-expanded="false">
+                More <i class="fe fe-chevron-down"></i>
+              </a>
+            </div>
+          </div>
+          <!-- END Send Email && More button -->
+
+          <!-- Collapse section -->
+          <div class="collapse" id="alias-{{ alias.id }}">
+
+            {% if mailboxes|length > 1 %}
+              <form method="post">
+                <div class="small-text mt-2">Current mailbox</div>
+                <div class="d-flex">
+                  <div class="flex-grow-1 mr-2">
+                    <select class="form-control form-control-sm custom-select" name="mailbox">
+                      {% for mailbox in mailboxes %}
+                        <option value="{{ mailbox }}" {% if mailbox == alias_info.mailbox.email %} selected {% endif %}>
+                          {{ mailbox }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="">
+                    <input type="hidden" name="form-name" value="set-mailbox">
+                    <input type="hidden" name="alias-id" value="{{ alias.id }}">
+
+                    <button class="btn btn-sm btn-outline-info w-100">
+                      Update
+                    </button>
+                  </div>
+
+                </div>
+              </form>
+            {% elif alias_info.mailbox != None and alias_info.mailbox.email != current_user.email %}
+              <div class="small-text">
+                Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
+              </div>
+            {% endif %}
+
             <form method="post">
-              <div class="small-text mt-2">Current mailbox</div>
-              <div class="d-flex">
+              <div class="d-flex mt-2">
+
                 <div class="flex-grow-1 mr-2">
-                  <select class="form-control form-control-sm custom-select" name="mailbox">
-                    {% for mailbox in mailboxes %}
-                      <option value="{{ mailbox }}" {% if mailbox == alias_info.mailbox.email %} selected {% endif %}>
-                        {{ mailbox }}
-                      </option>
-                    {% endfor %}
-                  </select>
+                  <textarea
+                      name="note"
+                      class="form-control"
+                      rows="2"
+                      placeholder="Alias Note.">{{ alias.note or "" }}</textarea>
                 </div>
 
                 <div class="">
-                  <input type="hidden" name="form-name" value="set-mailbox">
+                  <input type="hidden" name="form-name" value="set-note">
                   <input type="hidden" name="alias-id" value="{{ alias.id }}">
 
-                  <button class="btn btn-sm btn-outline-info w-100">
-                    Update
+                  <button class="btn btn-sm btn-outline-success w-100">
+                    Save
                   </button>
                 </div>
-
               </div>
             </form>
-          {% elif alias_info.mailbox != None and alias_info.mailbox.email != current_user.email %}
-            <div class="small-text">
-              Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
-            </div>
-          {% endif %}
 
+            <div class="row mt-3">
+              <div class="col">
+                <form method="post">
+                  <input type="hidden" name="form-name" value="delete-email">
+                  <input type="hidden" name="alias-id" value="{{ alias.id }}">
+                  <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
 
-          <form method="post">
-            <div class="d-flex mt-2">
-
-              <div class="flex-grow-1 mr-2">
-                <textarea
-                    name="note"
-                    class="form-control"
-                    rows="2"
-                    placeholder="Alias Note.">{{ alias.note or "" }}</textarea>
-              </div>
-
-              <div class="">
-                <input type="hidden" name="form-name" value="set-note">
-                <input type="hidden" name="alias-id" value="{{ alias.id }}">
-
-                <button class="btn btn-sm btn-outline-success w-100">
-                  Save
-                </button>
-              </div>
-            </div>
-          </form>
-
-          <div class="row mt-3">
-            <div class="col">
-              {% if alias.enabled %}
-                <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}"
-                    {% if alias_info.show_intro_test_send_email %}
-                   data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
-                   You can add a new <em>contact</em> to for your alias here. <br><br>
-                   To send an email to your contact, SimpleLogin will create a <em>special</em> email address. <br><br>
-                   Sending an email to this email address will <em>forward</em> the email to your contact"
-                   data-step="4"
-                    {% endif %}
-                   class="btn btn-sm btn-outline-primary"
-                   data-toggle="tooltip"
-                   title="Not only an alias can receive emails, it can send emails too"
-                >
-                  Send Email&nbsp; &nbsp;<i class="fe fe-send"></i>
-                </a>
-              {% endif %}
-            </div>
-
-            <div class="col">
-              <form method="post">
-                <input type="hidden" name="form-name" value="delete-email">
-                <input type="hidden" name="alias-id" value="{{ alias.id }}">
-                <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
-
-                <span class="delete-email btn btn-link btn-sm float-right text-danger">
+                  <span class="delete-email btn btn-link btn-sm float-right text-danger">
                   Delete&nbsp; &nbsp;<i class="dropdown-icon fe fe-trash-2 text-danger"></i>
                 </span>
-              </form>
-            </div>
+                </form>
+              </div>
 
+            </div>
           </div>
 
         </div>
@@ -378,8 +389,42 @@
       });
     });
 
-    $(".custom-switch-input").change(function (e) {
-      $(this).closest("form").submit();
+    $(".custom-switch-input").change(async function (e) {
+      let aliasId = $(this).data("alias");
+      let alias = $(this).parent().find(".alias").val();
+
+
+      try {
+        let res = await fetch(`/api/aliases/${aliasId}/toggle`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        });
+
+        if (res.ok) {
+          let json = await res.json();
+
+          if (json.enabled) {
+            toastr.success(`${alias} is enabled`);
+            $(`#send-email-${aliasId}`).removeClass("disabled");
+          } else {
+            toastr.success(`${alias} is disabled`);
+            $(`#send-email-${aliasId}`).addClass("disabled");
+          }
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          var oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        var oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+
     })
   </script>
 {% endblock %}

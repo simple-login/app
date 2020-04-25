@@ -1,12 +1,12 @@
 from flask import jsonify, g
 from flask_cors import cross_origin
 
-from app.api.base import api_bp, verify_api_key
+from app.api.base import api_bp, require_api_auth
 
 
 @api_bp.route("/user_info")
 @cross_origin()
-@verify_api_key
+@require_api_auth
 def user_info():
     """
     Return user info given the api-key
