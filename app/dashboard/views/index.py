@@ -57,7 +57,10 @@ def index():
 
                 return redirect(
                     url_for(
-                        "dashboard.index", highlight_alias_id=alias.id, query=query,
+                        "dashboard.index",
+                        highlight_alias_id=alias.id,
+                        query=query,
+                        sort=sort,
                     )
                 )
             else:
@@ -69,7 +72,12 @@ def index():
             if not alias:
                 flash("Unknown error, sorry for the inconvenience", "error")
                 return redirect(
-                    url_for("dashboard.index", highlight_alias_id=alias.id, query=query)
+                    url_for(
+                        "dashboard.index",
+                        highlight_alias_id=alias.id,
+                        query=query,
+                        sort=sort,
+                    )
                 )
 
             LOG.d("delete gen email %s", alias)
