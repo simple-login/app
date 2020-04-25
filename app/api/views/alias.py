@@ -19,7 +19,7 @@ from app.dashboard.views.alias_log import get_alias_log
 from app.email_utils import parseaddr_unicode
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, Contact
+from app.models import Alias, Contact, Mailbox
 from app.utils import random_string
 
 
@@ -234,8 +234,6 @@ def update_alias(alias_id):
         note: in body
     Output:
         200
-
-
     """
     data = request.get_json()
     if not data:
@@ -247,11 +245,26 @@ def update_alias(alias_id):
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    new_note = data.get("note")
-    alias.note = new_note
-    db.session.commit()
 
-    return jsonify(note=new_note), 200
+    changed = False
+    if "note" in data:
+        new_note = data.get("note")
+        alias.note = new_note
+        changed = True
+
+    if "mailbox_id" in data:
+        mailbox_id = int(data.get("mailbox_id"))
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox or mailbox.user_id != user.id or not mailbox.verified:
+            return jsonify(error="Forbidden"), 400
+
+        alias.mailbox_id = mailbox_id
+        changed = True
+
+    if changed:
+        db.session.commit()
+
+    return jsonify(ok=True), 200
 
 
 @api_bp.route("/aliases/<int:alias_id>", methods=["GET"])
@@ -374,8 +387,6 @@ def delete_contact(contact_id):
         contact_id: in url
     Output:
         200
-
-
     """
     user = g.user
     contact = Contact.get(contact_id)
