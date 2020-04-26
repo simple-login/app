@@ -62,53 +62,65 @@
       </div>
     </div>
 
-    <div class="col-lg-auto pt-1 flex-grow-1">
-      <div class="float-right">
-        <form method="get" class="form-inline">
-          <select name="sort"
-                  onchange="this.form.submit()"
-                  class="form-control custom-select mr-3 shadow">
-            <option value="" {% if sort == "" %} selected {% endif %}>
-              Sort by most recent activity
-            </option>
-            <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
-              Alias Old-Recent
-            </option>
-            <option value="old2new" {% if sort == "new2old" %} selected {% endif %}>
-              Alias Recent-Old
-            </option>
-            <option value="a2z" {% if sort == "a2z" %} selected {% endif %}>
-              Alias A-Z
-            </option>
-            <option value="z2a" {% if sort == "z2a" %} selected {% endif %}>
-              Alias Z-A
-            </option>
-          </select>
+    <div id="filter-app" class="col-lg-auto pt-1 flex-grow-1">
+      <div class="float-right d-flex">
 
-          <select name="filter"
-                  onchange="this.form.submit()"
-                  class="form-control custom-select mr-3 shadow">
-            <option value="" {% if filter == "" %} selected {% endif %}>
-              All Aliases
-            </option>
-            <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
-              Only Enabled Aliases
-            </option>
-            <option value="disabled" {% if filter == "disabled" %} selected {% endif %}>
-              Only Disabled Aliases
-            </option>
-          </select>
+        <!-- Filter Control -->
+        <div v-if="showFilter" id="filter-control">
+          <form method="get" class="form-inline">
+            <select name="sort"
+                    onchange="this.form.submit()"
+                    class="form-control custom-select mr-3 shadow">
+              <option value="" {% if sort == "" %} selected {% endif %}>
+                Sort by most recent activity
+              </option>
+              <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
+                Alias Old-Recent
+              </option>
+              <option value="old2new" {% if sort == "new2old" %} selected {% endif %}>
+                Alias Recent-Old
+              </option>
+              <option value="a2z" {% if sort == "a2z" %} selected {% endif %}>
+                Alias A-Z
+              </option>
+              <option value="z2a" {% if sort == "z2a" %} selected {% endif %}>
+                Alias Z-A
+              </option>
+            </select>
 
-          <input type="search" name="query" placeholder="Enter to search for alias"
-                 class="form-control shadow mr-2"
-                 style="max-width: 15em"
-                 value="{{ query }}">
+            <select name="filter"
+                    onchange="this.form.submit()"
+                    class="form-control custom-select mr-3 shadow">
+              <option value="" {% if filter == "" %} selected {% endif %}>
+                All Aliases
+              </option>
+              <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
+                Only Enabled Aliases
+              </option>
+              <option value="disabled" {% if filter == "disabled" %} selected {% endif %}>
+                Only Disabled Aliases
+              </option>
+            </select>
 
-          {% if query or sort or filter %}
-            <a href="{{ url_for('dashboard.index') }}"
-               class="btn btn-light">Reset</a>
-          {% endif %}
-        </form>
+            <input type="search" name="query" placeholder="Enter to search for alias"
+                   class="form-control shadow mr-2"
+                   style="max-width: 15em"
+                   value="{{ query }}">
+
+            {% if query or sort or filter %}
+              <a href="{{ url_for('dashboard.index') }}"
+                 class="btn btn-light">Reset</a>
+            {% endif %}
+          </form>
+        </div>
+
+        <a v-if="!showFilter" @click="toggleFilter()" class="btn btn-secondary">
+          <i class="fe fe-chevrons-left"></i> Filters
+        </a>
+
+        <a v-if="showFilter" @click="toggleFilter()" class="btn btn-outline-secondary">
+          <i class="fe fe-chevrons-right"></i>
+        </a>
       </div>
     </div>
   </div>
@@ -580,6 +592,28 @@
         toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
       }
 
+    })
+  </script>
+
+  <script src="{{ url_for('static', filename='node_modules/vue/dist/vue.min.js') }}"></script>
+  <script>
+    var app = new Vue({
+      el: '#filter-app',
+      delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
+      data: {
+        showFilter: false
+      },
+      methods: {
+        async toggleFilter() {
+          let that = this;
+          that.showFilter = !that.showFilter;
+          store.set('showFilter', that.showFilter);
+        }
+      },
+      async mounted() {
+        if (store.get("showFilter"))
+          this.showFilter = true;
+      }
     })
   </script>
 {% endblock %}
