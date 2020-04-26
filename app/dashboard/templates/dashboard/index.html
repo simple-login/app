@@ -212,10 +212,16 @@
           <!-- END Send Email && More button -->
 
           <!-- Collapse section -->
-          <div class="collapse" id="alias-{{ alias.id }}">
+          <div class="collapse mt-2" id="alias-{{ alias.id }}">
+
+            {% if alias_info.latest_email_log != None %}
+              <div style="font-size: 12px">
+                Alias created {{ alias.created_at | dt }}
+              </div>
+            {% endif %}
 
             {% if mailboxes|length > 1 %}
-              <div class="small-text mt-2">Current mailbox</div>
+              <div class="small-text">Current mailbox</div>
               <div class="d-flex">
                 <div class="flex-grow-1 mr-2">
                   <select id="mailbox-{{ alias.id }}"
