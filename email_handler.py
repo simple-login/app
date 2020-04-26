@@ -513,7 +513,12 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     delete_header(msg, "Received")
 
     # make the email comes from alias
-    add_or_replace_header(msg, "From", alias.email)
+    if alias.name:
+        LOG.d("Put alias name in from header")
+        from_header = formataddr((alias.name, alias.email))
+    else:
+        from_header = alias.email
+    add_or_replace_header(msg, "From", from_header)
 
     # some email providers like ProtonMail adds automatically the Reply-To field
     # make sure to delete it
