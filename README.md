@@ -1046,6 +1046,7 @@ Input:
 - `alias_id` in url.
 - (optional) `note` in request body
 - (optional) `mailbox_id` in request body
+- (optional) `name` in request body
 
 Output:
 If success, return 200
