@@ -20,6 +20,7 @@ from app.models import (
 def index():
     query = request.args.get("query") or ""
     sort = request.args.get("sort") or ""
+    alias_filter = request.args.get("filter") or ""
 
     page = 0
     if request.args.get("page"):
@@ -59,6 +60,7 @@ def index():
                         highlight_alias_id=alias.id,
                         query=query,
                         sort=sort,
+                        filter=alias_filter,
                     )
                 )
             else:
@@ -75,6 +77,7 @@ def index():
                         highlight_alias_id=alias.id,
                         query=query,
                         sort=sort,
+                        filter=alias_filter,
                     )
                 )
 
@@ -93,7 +96,9 @@ def index():
                 LOG.error("alias %s has been added before to DeletedAlias", email)
                 db.session.rollback()
 
-        return redirect(url_for("dashboard.index", query=query, sort=sort))
+        return redirect(
+            url_for("dashboard.index", query=query, sort=sort, filter=alias_filter)
+        )
 
     client_users = (
         ClientUser.filter_by(user_id=current_user.id)
@@ -118,7 +123,9 @@ def index():
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        alias_infos=get_alias_infos_with_pagination_v2(current_user, page, query, sort),
+        alias_infos=get_alias_infos_with_pagination_v2(
+            current_user, page, query, sort, alias_filter
+        ),
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
@@ -126,4 +133,5 @@ def index():
         show_intro=show_intro,
         page=page,
         sort=sort,
+        filter=alias_filter,
     )
