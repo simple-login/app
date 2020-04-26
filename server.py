@@ -8,17 +8,15 @@ from flask import Flask, redirect, url_for, render_template, request, jsonify, f
 from flask_admin import Admin
 from flask_cors import cross_origin
 from flask_login import current_user
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-from sentry_sdk.integrations.aiohttp import AioHttpIntegration
-
 
 from app import paddle_utils
 from app.admin_model import SLModelView, SLAdminIndexView
 from app.api.base import api_bp
 from app.auth.base import auth_bp
 from app.config import (
-    DEBUG,
     DB_URI,
     FLASK_SECRET,
     SENTRY_DSN,
@@ -181,6 +179,11 @@ def fake_data():
             for _ in range(3):
                 EmailLog.create(user_id=user.id, contact_id=contact.id)
                 db.session.commit()
+
+        # have some disabled alias
+        if i % 5 == 0:
+            a.enabled = False
+            db.session.commit()
 
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     CustomDomain.create(

@@ -139,6 +139,9 @@ def get_alias_infos_with_pagination_v2(
             or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
         )
 
+    if sort == "enabled":
+        q = q.filter(Alias.enabled)
+
     if sort == "old2new":
         q = q.order_by(Alias.created_at)
     elif sort == "new2old":
