@@ -4,7 +4,8 @@ Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#noti
 
 Hi {{user.name}}
 
-If you want to quickly create aliases without going to SimpleLogin website, you can do that with SimpleLogin Chrome (or other Chromium-based browsers like Brave or Vivaldi), Firefox and Safari extension.
+If you want to quickly create aliases without going to SimpleLogin website, you can do that with
+SimpleLogin Chrome (or other Chromium-based browsers like Brave or Vivaldi), Firefox and Safari extension.
 
 Chrome: https://chrome.google.com/webstore/detail/simplelogin-your-anti-spa/dphilobhebphkdjbpfohgikllaljmgbn
 
@@ -12,9 +13,8 @@ Firefox: https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/
 
 Safari: https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io
 
-The Android and iOS apps are also coming.
-
-To try out our iOS beta version, please reply to this email so we can invite you our TestFlight program.
+You can also manage your aliases using our iOS app, available at https://apps.apple.com/us/app/simplelogin-anti-spam/id1494359858
+The Android app is coming.
 
 As usual, let us know if you have any question by replying to this email.
 
