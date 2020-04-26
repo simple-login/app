@@ -20,6 +20,61 @@
 {% endblock %}
 
 {% block default_content %}
+  <!-- Global Stats -->
+  <div class="row">
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_alias }}</div>
+          <div class="text-muted mb-4">Aliases</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_active_alias }}</div>
+          <div class="text-muted mb-4">Active Aliases</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_forward }}</div>
+          <div class="text-muted mb-4">Forwards</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_reply }}</div>
+          <div class="text-muted mb-4">Replies</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_directory }}</div>
+          <div class="text-muted mb-4">Directories</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_domain }}</div>
+          <div class="text-muted mb-4">Domains</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- END Global Stats -->
+
+
   <div class="row mb-3">
 
     <div class="col-lg-6 pt-1" style="max-width: 25em">
@@ -62,53 +117,65 @@
       </div>
     </div>
 
-    <div class="col-lg-auto pt-1 flex-grow-1">
-      <div class="float-right">
-        <form method="get" class="form-inline">
-          <select name="sort"
-                  onchange="this.form.submit()"
-                  class="form-control custom-select mr-3 shadow">
-            <option value="" {% if sort == "" %} selected {% endif %}>
-              Sort by most recent activity
-            </option>
-            <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
-              Alias Old-Recent
-            </option>
-            <option value="old2new" {% if sort == "new2old" %} selected {% endif %}>
-              Alias Recent-Old
-            </option>
-            <option value="a2z" {% if sort == "a2z" %} selected {% endif %}>
-              Alias A-Z
-            </option>
-            <option value="z2a" {% if sort == "z2a" %} selected {% endif %}>
-              Alias Z-A
-            </option>
-          </select>
+    <div id="filter-app" class="col-lg-auto pt-1 flex-grow-1">
+      <div class="float-right d-flex">
 
-          <select name="filter"
-                  onchange="this.form.submit()"
-                  class="form-control custom-select mr-3 shadow">
-            <option value="" {% if filter == "" %} selected {% endif %}>
-              All Aliases
-            </option>
-            <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
-              Only Enabled Aliases
-            </option>
-            <option value="disabled" {% if filter == "disabled" %} selected {% endif %}>
-              Only Disabled Aliases
-            </option>
-          </select>
+        <!-- Filter Control -->
+        <div v-if="showFilter" id="filter-control">
+          <form method="get" class="form-inline">
+            <select name="sort"
+                    onchange="this.form.submit()"
+                    class="form-control custom-select mr-3 shadow">
+              <option value="" {% if sort == "" %} selected {% endif %}>
+                Sort by most recent activity
+              </option>
+              <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
+                Alias Old-Recent
+              </option>
+              <option value="old2new" {% if sort == "new2old" %} selected {% endif %}>
+                Alias Recent-Old
+              </option>
+              <option value="a2z" {% if sort == "a2z" %} selected {% endif %}>
+                Alias A-Z
+              </option>
+              <option value="z2a" {% if sort == "z2a" %} selected {% endif %}>
+                Alias Z-A
+              </option>
+            </select>
 
-          <input type="search" name="query" placeholder="Enter to search for alias"
-                 class="form-control shadow mr-2"
-                 style="max-width: 15em"
-                 value="{{ query }}">
+            <select name="filter"
+                    onchange="this.form.submit()"
+                    class="form-control custom-select mr-3 shadow">
+              <option value="" {% if filter == "" %} selected {% endif %}>
+                All Aliases
+              </option>
+              <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
+                Only Enabled Aliases
+              </option>
+              <option value="disabled" {% if filter == "disabled" %} selected {% endif %}>
+                Only Disabled Aliases
+              </option>
+            </select>
 
-          {% if query or sort or filter %}
-            <a href="{{ url_for('dashboard.index') }}"
-               class="btn btn-light">Reset</a>
-          {% endif %}
-        </form>
+            <input type="search" name="query" placeholder="Enter to search for alias"
+                   class="form-control shadow mr-2"
+                   style="max-width: 15em"
+                   value="{{ query }}">
+
+            {% if query or sort or filter %}
+              <a href="{{ url_for('dashboard.index') }}"
+                 class="btn btn-light">Reset</a>
+            {% endif %}
+          </form>
+        </div>
+
+        <a v-if="!showFilter" @click="toggleFilter()" class="btn btn-secondary">
+          <i class="fe fe-chevrons-left"></i> Filters
+        </a>
+
+        <a v-if="showFilter" @click="toggleFilter()" class="btn btn-outline-secondary">
+          <i class="fe fe-chevrons-right"></i>
+        </a>
       </div>
     </div>
   </div>
@@ -169,7 +236,7 @@
           </div>
 
           <!-- Email Activity -->
-          <div class="row">
+          <div class="row mb-2">
             <div class="col">
               <div style="font-size: 12px">
                 {% if alias_info.latest_email_log != None %}
@@ -199,15 +266,7 @@
                 {% else %}
                   No Activity. Alias created {{ alias.created_at | dt }}
                 {% endif %}
-                <br>
 
-                <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwards,
-                <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
-                <span class="alias-activity">{{ alias_info.nb_reply }}</span> replies
-                <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
-                   class="btn btn-sm btn-link">
-                  See All &nbsp;→
-                </a>
               </div>
             </div>
           </div>
@@ -249,6 +308,14 @@
                 Alias created {{ alias.created_at | dt }}
               </div>
             {% endif %}
+
+            <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwards,
+            <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
+            <span class="alias-activity">{{ alias_info.nb_reply }}</span> replies
+            <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
+               class="btn btn-sm btn-link">
+              See All &nbsp;→
+            </a>
 
             {% if mailboxes|length > 1 %}
               <div class="small-text">Current mailbox</div>
@@ -336,7 +403,7 @@
 
             </div>
           </div>
-
+          <!-- END Collapse section -->
         </div>
       </div>
     {% endfor %}
@@ -580,6 +647,28 @@
         toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
       }
 
+    })
+  </script>
+
+  <script src="{{ url_for('static', filename='node_modules/vue/dist/vue.min.js') }}"></script>
+  <script>
+    var app = new Vue({
+      el: '#filter-app',
+      delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
+      data: {
+        showFilter: false
+      },
+      methods: {
+        async toggleFilter() {
+          let that = this;
+          that.showFilter = !that.showFilter;
+          store.set('showFilter', that.showFilter);
+        }
+      },
+      async mounted() {
+        if (store.get("showFilter"))
+          this.showFilter = true;
+      }
     })
   </script>
 {% endblock %}
