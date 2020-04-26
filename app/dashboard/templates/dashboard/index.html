@@ -20,6 +20,61 @@
 {% endblock %}
 
 {% block default_content %}
+  <!-- Global Stats -->
+  <div class="row">
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_alias }}</div>
+          <div class="text-muted mb-4">Aliases</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_active_alias }}</div>
+          <div class="text-muted mb-4">Active Aliases</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_forward }}</div>
+          <div class="text-muted mb-4">Forwards</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_reply }}</div>
+          <div class="text-muted mb-4">Replies</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_directory }}</div>
+          <div class="text-muted mb-4">Directories</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-sm-4 col-lg-2">
+      <div class="card">
+        <div class="card-body p-3 text-center">
+          <div class="h1 m-0 mt-3">{{ stats.nb_domain }}</div>
+          <div class="text-muted mb-4">Domains</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- END Global Stats -->
+
+
   <div class="row mb-3">
 
     <div class="col-lg-6 pt-1" style="max-width: 25em">

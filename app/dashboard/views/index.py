@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
@@ -12,7 +14,43 @@ from app.models import (
     ClientUser,
     DeletedAlias,
     AliasGeneratorEnum,
+    User,
+    EmailLog,
+    CustomDomain,
+    Directory,
 )
+
+
+@dataclass
+class Stats:
+    nb_alias: int
+    nb_active_alias: int
+    nb_forward: int
+    nb_reply: int
+    nb_domain: int
+    nb_directory: int
+
+
+def get_stats(user: User) -> Stats:
+    nb_alias = Alias.query.filter_by(user_id=user.id).count()
+    nb_active_alias = Alias.query.filter_by(user_id=user.id, enabled=True).count()
+    nb_forward = EmailLog.query.filter_by(
+        user_id=user.id, is_reply=False, blocked=False, bounced=False
+    ).count()
+    nb_reply = EmailLog.query.filter_by(
+        user_id=user.id, is_reply=True, blocked=False, bounced=False
+    ).count()
+    nb_domain = CustomDomain.query.filter_by(user_id=user.id).count()
+    nb_directory = Directory.query.filter_by(user_id=user.id).count()
+
+    data = locals()
+    # to keep only Stats field
+    data = {
+        k: v
+        for (k, v) in data.items()
+        if k in vars(Stats)["__dataclass_fields__"].keys()
+    }
+    return Stats(**data)
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
@@ -120,6 +158,8 @@ def index():
         current_user.intro_shown = True
         db.session.commit()
 
+    stats = get_stats(current_user)
+
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
@@ -134,4 +174,5 @@ def index():
         page=page,
         sort=sort,
         filter=alias_filter,
+        stats=stats,
     )
