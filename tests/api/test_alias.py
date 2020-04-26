@@ -155,6 +155,7 @@ def test_get_aliases_v2(flask_client):
     #     "email": "prefix1.yeah@sl.local",
     #     "enabled": true,
     #     "id": 3,
+    #     "name": "Hey hey",
     #     "latest_activity": {
     #         "action": "forward",
     #         "contact": {
@@ -173,6 +174,7 @@ def test_get_aliases_v2(flask_client):
     #     "nb_reply": 0,
     #     "note": null
     # }
+    assert "name" in r0
     assert r0["email"].startswith("prefix1")
     assert r0["latest_activity"]["action"] == "forward"
     assert "timestamp" in r0["latest_activity"]
