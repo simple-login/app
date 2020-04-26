@@ -21,7 +21,8 @@
 
 {% block default_content %}
   <div class="row mb-3">
-    <div class="col-lg-6 pt-1">
+
+    <div class="col-lg-6 pt-1" style="max-width: 25em">
       <div class="btn-group" role="group">
         <form method="post">
           <input type="hidden" name="form-name" value="create-custom-email">
@@ -60,24 +61,53 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-6 pt-1">
+
+    <div class="col-lg-auto pt-1 flex-grow-1">
       <div class="float-right">
         <form method="get" class="form-inline">
           <select name="sort"
                   onchange="this.form.submit()"
-                  class="form-control custom-select mr-3">
+                  class="form-control custom-select mr-3 shadow">
             <option value="" {% if sort == "" %} selected {% endif %}>
               Sort by most recent activity
             </option>
             <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
-              Oldest Alias to Newest
+              Alias Old-Recent
+            </option>
+            <option value="old2new" {% if sort == "new2old" %} selected {% endif %}>
+              Alias Recent-Old
+            </option>
+            <option value="a2z" {% if sort == "a2z" %} selected {% endif %}>
+              Alias A-Z
+            </option>
+            <option value="z2a" {% if sort == "z2a" %} selected {% endif %}>
+              Alias Z-A
+            </option>
+          </select>
+
+          <select name="filter"
+                  onchange="this.form.submit()"
+                  class="form-control custom-select mr-3 shadow">
+            <option value="" {% if filter == "" %} selected {% endif %}>
+              All Aliases
+            </option>
+            <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
+              Only Enabled Aliases
+            </option>
+            <option value="disabled" {% if filter == "disabled" %} selected {% endif %}>
+              Only Disabled Aliases
             </option>
           </select>
 
           <input type="search" name="query" placeholder="Enter to search for alias"
-                 class="form-control shadow"
+                 class="form-control shadow mr-2"
                  style="max-width: 15em"
                  value="{{ query }}">
+
+          {% if query or sort or filter %}
+            <a href="{{ url_for('dashboard.index') }}"
+               class="btn btn-light">Reset</a>
+          {% endif %}
         </form>
       </div>
     </div>

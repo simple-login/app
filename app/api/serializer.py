@@ -113,7 +113,7 @@ def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
 
 
 def get_alias_infos_with_pagination_v2(
-    user, page_id=0, query=None, sort=None
+    user, page_id=0, query=None, sort=None, alias_filter=None
 ) -> [AliasInfo]:
     ret = []
     latest_activity = func.max(
@@ -139,8 +139,19 @@ def get_alias_infos_with_pagination_v2(
             or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
         )
 
+    if alias_filter == "enabled":
+        q = q.filter(Alias.enabled)
+    elif alias_filter == "disabled":
+        q = q.filter(Alias.enabled == False)
+
     if sort == "old2new":
         q = q.order_by(Alias.created_at)
+    elif sort == "new2old":
+        q = q.order_by(Alias.created_at.desc())
+    elif sort == "a2z":
+        q = q.order_by(Alias.email)
+    elif sort == "z2a":
+        q = q.order_by(Alias.email.desc())
     else:
         # default sorting
         q = q.order_by(latest_activity.desc())
