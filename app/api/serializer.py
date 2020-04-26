@@ -47,6 +47,7 @@ def serialize_alias_info_v2(alias_info: AliasInfo) -> dict:
         "creation_timestamp": alias_info.alias.created_at.timestamp,
         "enabled": alias_info.alias.enabled,
         "note": alias_info.alias.note,
+        "name": alias_info.alias.name,
         # activity
         "nb_forward": alias_info.nb_forward,
         "nb_block": alias_info.nb_blocked,

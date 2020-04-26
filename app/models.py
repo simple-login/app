@@ -579,6 +579,9 @@ class Alias(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = db.Column(db.String(128), unique=True, nullable=False)
 
+    # the name to use when user replies/sends from alias
+    name = db.Column(db.String(128), nullable=True, default=None)
+
     enabled = db.Column(db.Boolean(), default=True, nullable=False)
 
     custom_domain_id = db.Column(

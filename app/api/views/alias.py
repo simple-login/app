@@ -253,6 +253,7 @@ def update_alias(alias_id):
     Input:
         alias_id: in url
         note: in body
+        name: in body
     Output:
         200
     """
@@ -279,6 +280,11 @@ def update_alias(alias_id):
             return jsonify(error="Forbidden"), 400
 
         alias.mailbox_id = mailbox_id
+        changed = True
+
+    if "name" in data:
+        new_name = data.get("name")
+        alias.name = new_name
         changed = True
 
     if changed:

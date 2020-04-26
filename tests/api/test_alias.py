@@ -155,6 +155,7 @@ def test_get_aliases_v2(flask_client):
     #     "email": "prefix1.yeah@sl.local",
     #     "enabled": true,
     #     "id": 3,
+    #     "name": "Hey hey",
     #     "latest_activity": {
     #         "action": "forward",
     #         "contact": {
@@ -173,6 +174,7 @@ def test_get_aliases_v2(flask_client):
     #     "nb_reply": 0,
     #     "note": null
     # }
+    assert "name" in r0
     assert r0["email"].startswith("prefix1")
     assert r0["latest_activity"]["action"] == "forward"
     assert "timestamp" in r0["latest_activity"]
@@ -331,6 +333,30 @@ def test_update_alias_mailbox(flask_client):
         json={"mailbox_id": -1},
     )
     assert r.status_code == 400
+
+
+def test_update_alias_name(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    r = flask_client.put(
+        url_for("api.update_alias", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"name": "Test Name"},
+    )
+
+    assert r.status_code == 200
+    alias = Alias.get(alias.id)
+    assert alias.name == "Test Name"
 
 
 def test_alias_contacts(flask_client):

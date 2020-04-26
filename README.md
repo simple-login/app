@@ -870,6 +870,7 @@ If success, 200 with the list of aliases. Each alias has the following fields:
 
 - id
 - email
+- name
 - enabled
 - creation_timestamp
 - note
@@ -896,6 +897,7 @@ Here's an example:
       "creation_date": "2020-04-06 17:57:14+00:00",
       "creation_timestamp": 1586195834,
       "email": "prefix1.cat@sl.local",
+      "name": "A Name",
       "enabled": true,
       "id": 3,
       "mailbox": {
@@ -920,6 +922,7 @@ Here's an example:
       "creation_date": "2020-04-06 17:57:14+00:00",
       "creation_timestamp": 1586195834,
       "email": "prefix0.hey@sl.local",
+      "name": null,
       "enabled": true,
       "id": 2,
       "mailbox": {
@@ -1046,6 +1049,7 @@ Input:
 - `alias_id` in url.
 - (optional) `note` in request body
 - (optional) `mailbox_id` in request body
+- (optional) `name` in request body
 
 Output:
 If success, return 200
