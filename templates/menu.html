@@ -3,7 +3,7 @@
     <a href="{{ url_for('dashboard.index') }}"
        class="nav-link {{ 'active' if active_page == 'dashboard' }}">
       <i class="fe fe-home"></i>
-      Alias
+      Aliases
     </a>
   </li>
 
@@ -11,21 +11,21 @@
     <a href="{{ url_for('dashboard.api_key') }}"
        class="nav-link {{ 'active' if active_page == 'api_key' }}">
       <i><img src="/static/key.svg"></i>
-      API Key
+      API Keys
     </a>
   </li>
 
   <li class="nav-item">
     <a href="{{ url_for('dashboard.custom_domain') }}"
        class="nav-link {{ 'active' if active_page == 'custom_domain' }}">
-      <i class="fe fe-server"></i> Custom Domains
+      <i class="fe fe-server"></i> Domains
     </a>
   </li>
 
   <li class="nav-item">
     <a href="{{ url_for('dashboard.directory') }}"
        class="nav-link {{ 'active' if active_page == 'directory' }}">
-      <i class="fe fe-folder"></i> Alias Directory
+      <i class="fe fe-folder"></i> Directories
     </a>
   </li>
 
