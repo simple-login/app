@@ -3,7 +3,6 @@ from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from app import email_utils
 from app.api.serializer import get_alias_infos_with_pagination_v2
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
@@ -13,7 +12,6 @@ from app.models import (
     ClientUser,
     DeletedAlias,
     AliasGeneratorEnum,
-    Mailbox,
 )
 
 

@@ -70,7 +70,16 @@
               Sort by most recent activity
             </option>
             <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
-              Oldest Alias to Newest
+              Alias Old-Recent
+            </option>
+            <option value="old2new" {% if sort == "new2old" %} selected {% endif %}>
+              Alias Recent-Old
+            </option>
+            <option value="a2z" {% if sort == "a2z" %} selected {% endif %}>
+              Alias A-Z
+            </option>
+            <option value="z2a" {% if sort == "z2a" %} selected {% endif %}>
+              Alias Z-A
             </option>
           </select>
 
