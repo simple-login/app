@@ -1,4 +1,4 @@
-from flask import request, render_template, redirect, url_for
+from flask import request, render_template, redirect, url_for, flash
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
@@ -17,14 +17,15 @@ def forgot_password():
 
     if form.validate_on_submit():
         email = form.email.data.strip().lower()
+        flash(
+            "If your email is correct, you are going to receive an email to reset your password",
+            "success",
+        )
 
         user = User.get_by(email=email)
 
-        if not user:
-            error = "No such user, are you sure the email is correct?"
-            return render_template("auth/forgot_password.html", form=form, error=error)
-
-        send_reset_password_email(user)
-        return redirect(url_for("auth.forgot_password"))
+        if user:
+            send_reset_password_email(user)
+            return redirect(url_for("auth.forgot_password"))
 
     return render_template("auth/forgot_password.html", form=form)

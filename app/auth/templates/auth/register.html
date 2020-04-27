@@ -4,98 +4,45 @@
   Register
 {% endblock %}
 
-{% block head %}
-  <style>
-    .col-login {
-      max-width: 48rem;
-    }
-  </style>
-{% endblock %}
-
-
 {% block single_content %}
-  <h1 class="h3 text-center">Create your SimpleLogin account now</h1>
+  <form class="card" method="post">
+    {{ form.csrf_token }}
+    <div class="card-body p-6">
+      <div class="card-title">Create new account</div>
 
-  <div class="row">
-    <div class="col-md-6">
-      <div class="card">
-        <form method="post">
-          {{ form.csrf_token }}
-          <div class="card-body p-6">
-            <div class="form-group">
-              <label class="form-label">Email address</label>
-              {{ form.email(class="form-control", type="email") }}
-              {{ render_field_errors(form.email) }}
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Password</label>
-              {{ form.password(class="form-control", type="password") }}
-              {{ render_field_errors(form.password) }}
-            </div>
-
-            <!-- TODO: add terms
-            <div class="form-group">
-              <label class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input"/>
-                <span class="custom-control-label">Agree the <a href="terms.html">terms and policy</a></span>
-              </label>
-            </div>
-            -->
-
-            <small class="text-center mt-3">
-              By clicking Create Account, you agree to abide by
-              <a href="https://simplelogin.io/terms">SimpleLogin's Terms and Conditions.</a>
-            </small>
-
-            <div class="mt-2">
-              <button type="submit" class="btn btn-primary btn-block">Create Account</button>
-            </div>
-          </div>
-        </form>
-
-        <div class="text-center text-muted mb-6">
-          Already have account? <a href="{{ url_for('auth.login') }}">Sign in</a>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        {{ form.email(class="form-control", type="email") }}
+        {{ render_field_errors(form.email) }}
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        {{ form.password(class="form-control", type="password") }}
+        {{ render_field_errors(form.password) }}
+      </div>
 
-    </div>
+      <!-- TODO: add terms
+      <div class="form-group">
+        <label class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input"/>
+          <span class="custom-control-label">Agree the <a href="terms.html">terms and policy</a></span>
+        </label>
+      </div>
+      -->
 
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-body p-6">
-          <div class="card-title text-center">Or with social login</div>
+      <small class="text-center mt-3">
+        By clicking Create Account, you agree to abide by
+        <a href="https://simplelogin.io/terms">SimpleLogin's Terms and Conditions.</a>
+      </small>
 
-          <a href="{{ url_for('auth.github_login', next=next_url) }}"
-             class="btn btn-block btn-social btn-github">
-            <i class="fa fa-github"></i> Sign up with Github
-          </a>
-
-          <a href="{{ url_for('auth.google_login', next=next_url) }}"
-             class="btn btn-block btn-social btn-google">
-            <i class="fa fa-google"></i> Sign up with Google
-          </a>
-
-          <a href="{{ url_for('auth.facebook_login', next=next_url) }}"
-             class="btn btn-block btn-social btn-facebook">
-            <i class="fa fa-facebook"></i> Sign up with Facebook
-          </a>
-
-        </div>
-        <div class="text-center p-3" style="font-size: 12px; font-weight: 300; margin: auto">
-
-          We do not use the Facebook/Google SDK to avoid their trackers. <br>
-
-          However when using a social login button, please keep in mind that this social network will <b>know</b> that
-          you are using SimpleLogin.
-
-          <span class="badge badge-warning">Warning</span>
-
-        </div>
-
+      <div class="mt-2">
+        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
       </div>
     </div>
+  </form>
+  <div class="text-center text-muted mb-6">
+    Already have account? <a href="{{ url_for('auth.login') }}">Sign in</a>
   </div>
 
 {% endblock %}
