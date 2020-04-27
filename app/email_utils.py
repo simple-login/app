@@ -25,6 +25,7 @@ from app.config import (
     MAX_NB_EMAIL_FREE_PLAN,
     DISPOSABLE_EMAIL_DOMAINS,
 )
+from app.dns_utils import get_mx_domains
 from app.log import LOG
 from app.models import Mailbox, User
 
@@ -321,14 +322,38 @@ def can_be_used_as_personal_email(email: str) -> bool:
     if CustomDomain.get_by(domain=domain, verified=True):
         return False
 
-    for d in DISPOSABLE_EMAIL_DOMAINS:
-        if domain == d:
-            return False
-        # subdomain
-        if domain.endswith("." + d):
+    if is_disposable_domain(domain):
+        LOG.d("Domain %s is disposable", domain)
+        return False
+
+    # check if email MX domain is disposable
+    mx_domains = get_mx_domain_list(domain)
+    for mx_domain in mx_domains:
+        if is_disposable_domain(mx_domain):
+            LOG.d("MX Domain %s %s is disposable", mx_domain, domain)
             return False
 
     return True
+
+
+def is_disposable_domain(domain):
+    for d in DISPOSABLE_EMAIL_DOMAINS:
+        if domain == d:
+            return True
+        # subdomain
+        if domain.endswith("." + d):
+            return True
+
+    return False
+
+
+def get_mx_domain_list(domain) -> [str]:
+    """return list of MX domains for a given email.
+    domain name ends *without* a dot (".") at the end.
+    """
+    priority_domains = get_mx_domains(domain)
+
+    return [d[:-1] for _, d in priority_domains]
 
 
 def email_already_used(email: str) -> bool:
