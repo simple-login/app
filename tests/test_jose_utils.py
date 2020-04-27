@@ -7,7 +7,7 @@ from server import fake_data
 def test_encode_decode(flask_app):
     with flask_app.app_context():
         fake_data()
-        ClientUser.create(client_id=1, user_id=1)
+        ClientUser.create(client_id=-1, user_id=-1)
         db.session.commit()
         jwt_token = make_id_token(ClientUser.get(1))
 
