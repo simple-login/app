@@ -22,51 +22,35 @@
 {% block default_content %}
   <!-- Global Stats -->
   <div class="row">
-    <div class="col-6 col-sm-4 col-lg-2">
+    <div class="col-6 col-sm-3">
       <div class="card">
         <div class="card-body p-3 text-center">
-          <div class="h1 m-0 mt-3">{{ stats.nb_alias }}</div>
-          <div class="text-muted mb-4">Aliases</div>
+          <div class="h1 m-0">{{ stats.nb_alias }}</div>
+          <div class="text-muted">Aliases</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-sm-4 col-lg-2">
+    <div class="col-6 col-sm-3">
       <div class="card">
         <div class="card-body p-3 text-center">
-          <div class="h1 m-0 mt-3">{{ stats.nb_active_alias }}</div>
-          <div class="text-muted mb-4">Active Aliases</div>
+          <div class="h1 m-0">{{ stats.nb_forward }}</div>
+          <div class="text-muted">Forwards</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-sm-4 col-lg-2">
+    <div class="col-6 col-sm-3">
       <div class="card">
         <div class="card-body p-3 text-center">
-          <div class="h1 m-0 mt-3">{{ stats.nb_forward }}</div>
-          <div class="text-muted mb-4">Forwards</div>
+          <div class="h1 m-0">{{ stats.nb_reply }}</div>
+          <div class="text-muted">Replies</div>
         </div>
       </div>
     </div>
-    <div class="col-6 col-sm-4 col-lg-2">
+    <div class="col-6 col-sm-3">
       <div class="card">
         <div class="card-body p-3 text-center">
-          <div class="h1 m-0 mt-3">{{ stats.nb_reply }}</div>
-          <div class="text-muted mb-4">Replies</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-sm-4 col-lg-2">
-      <div class="card">
-        <div class="card-body p-3 text-center">
-          <div class="h1 m-0 mt-3">{{ stats.nb_directory }}</div>
-          <div class="text-muted mb-4">Directories</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-sm-4 col-lg-2">
-      <div class="card">
-        <div class="card-body p-3 text-center">
-          <div class="h1 m-0 mt-3">{{ stats.nb_domain }}</div>
-          <div class="text-muted mb-4">Domains</div>
+          <div class="h1 m-0">{{ stats.nb_block }}</div>
+          <div class="text-muted">Blocks</div>
         </div>
       </div>
     </div>
@@ -415,11 +399,11 @@
         <ul class="pagination">
           <li class="page-item {% if page == 0 %}disabled{% endif %}">
             <a class="page-link"
-               href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort) }}">Previous</a>
+               href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort, filter=filter) }}">Previous</a>
           </li>
           <li class="page-item {% if last_page %}disabled{% endif %}">
             <a class="page-link"
-               href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort) }}">Next</a>
+               href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort, filter=filter) }}">Next</a>
           </li>
         </ul>
       </nav>

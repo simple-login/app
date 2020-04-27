@@ -24,33 +24,26 @@ from app.models import (
 @dataclass
 class Stats:
     nb_alias: int
-    nb_active_alias: int
     nb_forward: int
     nb_reply: int
-    nb_domain: int
-    nb_directory: int
+    nb_block: int
 
 
 def get_stats(user: User) -> Stats:
     nb_alias = Alias.query.filter_by(user_id=user.id).count()
-    nb_active_alias = Alias.query.filter_by(user_id=user.id, enabled=True).count()
     nb_forward = EmailLog.query.filter_by(
         user_id=user.id, is_reply=False, blocked=False, bounced=False
     ).count()
     nb_reply = EmailLog.query.filter_by(
         user_id=user.id, is_reply=True, blocked=False, bounced=False
     ).count()
-    nb_domain = CustomDomain.query.filter_by(user_id=user.id).count()
-    nb_directory = Directory.query.filter_by(user_id=user.id).count()
+    nb_block = EmailLog.query.filter_by(
+        user_id=user.id, is_reply=False, blocked=True, bounced=False
+    ).count()
 
-    data = locals()
-    # to keep only Stats field
-    data = {
-        k: v
-        for (k, v) in data.items()
-        if k in vars(Stats)["__dataclass_fields__"].keys()
-    }
-    return Stats(**data)
+    return Stats(
+        nb_alias=nb_alias, nb_forward=nb_forward, nb_reply=nb_reply, nb_block=nb_block
+    )
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
