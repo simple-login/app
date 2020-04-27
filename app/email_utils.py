@@ -328,6 +328,11 @@ def can_be_used_as_personal_email(email: str) -> bool:
 
     # check if email MX domain is disposable
     mx_domains = get_mx_domain_list(domain)
+
+    # if no MX record, email is not valid
+    if not mx_domains:
+        return False
+
     for mx_domain in mx_domains:
         if is_disposable_domain(mx_domain):
             LOG.d("MX Domain %s %s is disposable", mx_domain, domain)
