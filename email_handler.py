@@ -328,6 +328,14 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         return False, _SELF_FORWARDING_STATUS
 
     contact = get_or_create_contact(msg["From"], alias)
+    email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
+
+    if not alias.enabled:
+        LOG.d("%s is disabled, do not forward", alias)
+        email_log.blocked = True
+
+        db.session.commit()
+        return True, "250 Message accepted for delivery"
 
     spam_check = True
 
@@ -343,74 +351,71 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         is_spam, spam_status = get_spam_info(msg)
         if is_spam:
             LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
-            handle_spam(contact, alias, msg, user, mailbox_email, spam_status)
+            email_log.is_spam = True
+            email_log.spam_status = spam_status
+
+            handle_spam(contact, alias, msg, user, mailbox_email, email_log)
             return False, "550 SL E1"
 
-    forward_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
+    # add custom header
+    add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
 
-    if alias.enabled:
-        # add custom header
-        add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
+    # remove reply-to & sender header if present
+    delete_header(msg, "Reply-To")
+    delete_header(msg, "Sender")
 
-        # remove reply-to & sender header if present
-        delete_header(msg, "Reply-To")
-        delete_header(msg, "Sender")
+    # change the from header so the sender comes from @SL
+    # so it can pass DMARC check
+    # replace the email part in from: header
+    contact_from_header = msg["From"]
+    new_from_header = contact.new_addr()
+    add_or_replace_header(msg, "From", new_from_header)
+    LOG.d("new_from_header:%s, old header %s", new_from_header, contact_from_header)
 
-        # change the from header so the sender comes from @SL
-        # so it can pass DMARC check
-        # replace the email part in from: header
-        contact_from_header = msg["From"]
-        new_from_header = contact.new_addr()
-        add_or_replace_header(msg, "From", new_from_header)
-        LOG.d("new_from_header:%s, old header %s", new_from_header, contact_from_header)
+    # replace CC & To emails by reply-email for all emails that are not alias
+    replace_header_when_forward(msg, alias, "Cc")
+    replace_header_when_forward(msg, alias, "To")
 
-        # replace CC & To emails by reply-email for all emails that are not alias
-        replace_header_when_forward(msg, alias, "Cc")
-        replace_header_when_forward(msg, alias, "To")
-
-        # append alias into the TO header if it's not present in To or CC
-        if should_append_alias(msg, alias.email):
-            LOG.d("append alias %s  to TO header %s", alias, msg["To"])
-            if msg["To"]:
-                to_header = msg["To"] + "," + alias.email
-            else:
-                to_header = alias.email
-
-            add_or_replace_header(msg, "To", to_header.strip())
-
-        # add List-Unsubscribe header
-        if UNSUBSCRIBER:
-            unsubscribe_link = f"mailto:{UNSUBSCRIBER}?subject={alias.id}="
-            add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+    # append alias into the TO header if it's not present in To or CC
+    if should_append_alias(msg, alias.email):
+        LOG.d("append alias %s  to TO header %s", alias, msg["To"])
+        if msg["To"]:
+            to_header = msg["To"] + "," + alias.email
         else:
-            unsubscribe_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
-            add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
-            add_or_replace_header(
-                msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
-            )
+            to_header = alias.email
 
-        add_dkim_signature(msg, EMAIL_DOMAIN)
+        add_or_replace_header(msg, "To", to_header.strip())
 
-        LOG.d(
-            "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
-            contact.website_email,
-            mailbox_email,
-            envelope.mail_options,
-            envelope.rcpt_options,
-        )
-
-        # smtp.send_message has UnicodeEncodeErroremail issue
-        # encode message raw directly instead
-        smtp.sendmail(
-            contact.reply_email,
-            mailbox_email,
-            msg.as_bytes(),
-            envelope.mail_options,
-            envelope.rcpt_options,
-        )
+    # add List-Unsubscribe header
+    if UNSUBSCRIBER:
+        unsubscribe_link = f"mailto:{UNSUBSCRIBER}?subject={alias.id}="
+        add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
     else:
-        LOG.d("%s is disabled, do not forward", alias)
-        forward_log.blocked = True
+        unsubscribe_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
+        add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+        add_or_replace_header(
+            msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
+        )
+
+    add_dkim_signature(msg, EMAIL_DOMAIN)
+
+    LOG.d(
+        "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
+        contact.website_email,
+        mailbox_email,
+        envelope.mail_options,
+        envelope.rcpt_options,
+    )
+
+    # smtp.send_message has UnicodeEncodeErroremail issue
+    # encode message raw directly instead
+    smtp.sendmail(
+        contact.reply_email,
+        mailbox_email,
+        msg.as_bytes(),
+        envelope.mail_options,
+        envelope.rcpt_options,
+    )
 
     db.session.commit()
     return True, "250 Message accepted for delivery"
@@ -679,16 +684,8 @@ def handle_spam(
     msg: Message,
     user: User,
     mailbox_email: str,
-    spam_status: str,
+    email_log: EmailLog,
 ):
-    email_log: EmailLog = EmailLog.create(
-        contact_id=contact.id,
-        user_id=contact.user_id,
-        is_spam=True,
-        spam_status=spam_status,
-    )
-    db.session.commit()
-
     # Store the report & original email
     orig_msg = get_orig_message_from_spamassassin_report(msg)
     # generate a name for the email
