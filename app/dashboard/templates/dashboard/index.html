@@ -415,11 +415,11 @@
         <ul class="pagination">
           <li class="page-item {% if page == 0 %}disabled{% endif %}">
             <a class="page-link"
-               href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort) }}">Previous</a>
+               href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort, filter=filter) }}">Previous</a>
           </li>
           <li class="page-item {% if last_page %}disabled{% endif %}">
             <a class="page-link"
-               href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort) }}">Next</a>
+               href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort, filter=filter) }}">Next</a>
           </li>
         </ul>
       </nav>
