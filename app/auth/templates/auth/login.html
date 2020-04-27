@@ -1,102 +1,56 @@
 {% extends "single.html" %}
 
-
 {% block title %}
   Login
 {% endblock %}
 
-
-{% block head %}
-  <style>
-    .col-login {
-      max-width: 48rem;
-    }
-  </style>
-{% endblock %}
-
 {% block single_content %}
-  <h1 class="h2 text-center">Welcome back!</h1>
 
-  <div class="row">
-    <div class="col-md-6">
-      {% if show_resend_activation %}
-        <div class="text-center text-muted small mb-4">
-          You haven't received the activation email?
-          <a href="{{ url_for('auth.resend_activation') }}">Resend</a>
-        </div>
-      {% endif %}
 
-      <div class="card">
-        <form method="post">
-          {{ form.csrf_token }}
-          <div class="card-body p-6">
-            <div class="form-group">
-              <label class="form-label">Email address</label>
-              {{ form.email(class="form-control", type="email") }}
-              {{ render_field_errors(form.email) }}
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">
-                Password
-              </label>
-              {{ form.password(class="form-control", type="password") }}
-              {{ render_field_errors(form.password) }}
-              <div class="text-muted">
-                <a href="{{ url_for('auth.forgot_password') }}" class="small">
-                  I forgot my password
-                </a>
-              </div>
-            </div>
-
-            <div class="form-footer">
-              <button type="submit" class="btn btn-primary btn-block">Log in</button>
-            </div>
-
-            <div class="text-center text-muted mt-2">
-              Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
-            </div>
-
-          </div>
-        </form>
-      </div>
+  {% if show_resend_activation %}
+    <div class="text-center text-muted small mb-4">
+      You haven't received the activation email?
+      <a href="{{ url_for('auth.resend_activation') }}">Resend</a>
     </div>
+  {% endif %}
 
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-body p-6">
-          <div class="card-title text-center">Or with social login
-          </div>
+  <form class="card" method="post">
+    {{ form.csrf_token }}
+    <div class="card-body p-6">
+      <div class="card-title">Welcome back!</div>
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        {{ form.email(class="form-control", type="email") }}
+        {{ render_field_errors(form.email) }}
+      </div>
 
-          <a href="{{ url_for('auth.github_login', next=next_url) }}"
-             class="btn btn-block btn-social btn-github">
-            <i class="fa fa-github"></i> Sign in with Github
-          </a>
-
-          <a href="{{ url_for('auth.google_login', next=next_url) }}"
-             class="btn btn-block btn-social btn-google">
-            <i class="fa fa-google"></i> Sign in with Google
-          </a>
-
-          <a href="{{ url_for('auth.facebook_login', next=next_url) }}"
-             class="btn btn-block btn-social btn-facebook">
-            <i class="fa fa-facebook"></i> Sign in with Facebook
+      <div class="form-group">
+        <label class="form-label">
+          Password
+        </label>
+        {{ form.password(class="form-control", type="password") }}
+        {{ render_field_errors(form.password) }}
+        <div class="text-muted">
+          <a href="{{ url_for('auth.forgot_password') }}" class="small">
+            I forgot my password
           </a>
         </div>
-        <div class="text-center p-3" style="font-size: 12px; font-weight: 300; margin: auto">
+      </div>
 
-          We do not use the Facebook/Google SDK to avoid their trackers. <br>
-
-          However when using a social login button, please keep in mind that this social network will <b>know</b> that
-          you are using SimpleLogin.
-
-          <span class="badge badge-warning">Warning</span>
-
-        </div>
+      <div class="form-footer">
+        <button type="submit" class="btn btn-primary btn-block">Log in</button>
       </div>
 
 
     </div>
+  </form>
+
+  <div class="text-center text-muted mt-2">
+    Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
+  </div>
+
+  <div class="text-center text-muted mt-5">
+    <a href="{{ url_for('auth.social') }}">Social Login</a> is now deprecated
   </div>
 
 {% endblock %}
