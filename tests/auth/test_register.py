@@ -5,7 +5,7 @@ def test_register_success(flask_client):
     """User arrives at the waiting activation page."""
     r = flask_client.post(
         url_for("auth.register"),
-        data={"email": "a@b.c", "password": "password"},
+        data={"email": "abcd@gmail.com", "password": "password"},
         follow_redirects=True,
     )
 
@@ -21,7 +21,7 @@ def test_register_disabled(flask_client):
 
     r = flask_client.post(
         url_for("auth.register"),
-        data={"email": "a@b.c", "password": "password"},
+        data={"email": "abcd@gmail.com", "password": "password"},
         follow_redirects=True,
     )
 
