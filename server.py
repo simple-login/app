@@ -210,6 +210,8 @@ def fake_data():
     client2.published = True
     db.session.commit()
 
+    ClientUser.create(user_id=user.id, client_id=client1.id, name="Fake Name")
+
     DeletedAlias.create(user_id=user.id, email="d1@ab.cd")
     DeletedAlias.create(user_id=user.id, email="d2@ab.cd")
     db.session.commit()
