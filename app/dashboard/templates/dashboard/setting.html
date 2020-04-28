@@ -91,7 +91,7 @@
         <div class="card-title">Multi-Factor Authentication (MFA)</div>
         <div class="mb-3">
           Secure your account with Multi-Factor Authentication. <br>
-          This requires having applications like Google Authenticator, Authy, FreeOTP, etc.
+          This requires having applications like Google Authenticator, Authy, MyDigiPassword, etc.
         </div>
         {% if not current_user.enable_otp %}
           <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Enable</a>
