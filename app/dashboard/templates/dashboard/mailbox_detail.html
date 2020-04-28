@@ -8,103 +8,104 @@
 
 {% block default_content %}
 
-  <div class="col-md-8 offset-md-2 pb-3">
-    <h1 class="h3">{{ mailbox.email }}
-      {% if mailbox.verified %}
-        <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Verified">✅</span>
-      {% else %}
-        <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Not Verified">
+  <div class="row">
+    <div class="col">
+      <h1 class="h3">{{ mailbox.email }}
+        {% if mailbox.verified %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Verified">✅</span>
+        {% else %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Not Verified">
           🚫
         </span>
+        {% endif %}
+        {% if mailbox.pgp_finger_print %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+        {% endif %}
+      </h1>
+
+      {% if not mailbox.verified %}
+        <div class="alert alert-info">
+          Mailbox not verified, please check your inbox/spam folder for the verification email.
+          <br>
+          To receive the verification email again, you can delete and re-add the mailbox.
+        </div>
       {% endif %}
-      {% if mailbox.pgp_finger_print %}
-        <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
-      {% endif %}
-    </h1>
 
-    {% if not mailbox.verified %}
-      <div class="alert alert-info">
-        Mailbox not verified, please check your inbox/spam folder for the verification email.
-        <br>
-        To receive the verification email again, you can delete and re-add the mailbox.
-      </div>
-    {% endif %}
+      <!-- Change email -->
+      <div class="card">
+        <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="form-name" value="update-email">
+          {{ change_email_form.csrf_token }}
 
-    <!-- Change email -->
-    <div class="card">
-      <form method="post" enctype="multipart/form-data">
-        <input type="hidden" name="form-name" value="update-email">
-        {{ change_email_form.csrf_token }}
+          <div class="card-body">
+            <div class="card-title">
+              Change Mailbox Address
+            </div>
+            <div class="form-group">
+              <label class="form-label">Address</label>
 
-        <div class="card-body">
-          <div class="card-title">
-            Change Mailbox Address
+              <!-- Not allow user to change mailbox if there's a pending change -->
+              {{ change_email_form.email(class="form-control", value=mailbox.email, readonly=pending_email != None) }}
+              {{ render_field_errors(change_email_form.email) }}
+
+              {% if pending_email %}
+                <div class="mt-2">
+                  <span class="text-danger">Pending change: {{ pending_email }}</span>
+                  <a href="{{ url_for('dashboard.cancel_mailbox_change_route', mailbox_id=mailbox.id) }}"
+                     class="btn btn-secondary btn-sm">
+                    Cancel mailbox change
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+            <button class="btn btn-primary">Change</button>
           </div>
-          <div class="form-group">
-            <label class="form-label">Address</label>
+        </form>
+      </div>
+      <!-- END Change email -->
 
-            <!-- Not allow user to change mailbox if there's a pending change -->
-            {{ change_email_form.email(class="form-control", value=mailbox.email, readonly=pending_email != None) }}
-            {{ render_field_errors(change_email_form.email) }}
 
-            {% if pending_email %}
-              <div class="mt-2">
-                <span class="text-danger">Pending change: {{ pending_email }}</span>
-                <a href="{{ url_for('dashboard.cancel_mailbox_change_route', mailbox_id=mailbox.id) }}"
-                   class="btn btn-secondary btn-sm">
-                  Cancel mailbox change
-                </a>
+      <div class="card">
+        <form method="post">
+          <input type="hidden" name="form-name" value="pgp">
+
+          <div class="card-body">
+            <div class="card-title">
+              Pretty Good Privacy (PGP)
+              <div class="small-text">
+                By importing your PGP Public Key into SimpleLogin, all emails sent to {{ mailbox.email }} are
+                <b>encrypted</b> with your key.
+              </div>
+            </div>
+
+            {% if not current_user.is_premium() %}
+              <div class="alert alert-danger" role="alert">
+                This feature is only available in premium plan.
               </div>
             {% endif %}
-          </div>
-          <button class="btn btn-primary">Change</button>
-        </div>
-      </form>
-    </div>
-    <!-- END Change email -->
 
+            <div class="form-group">
+              <label class="form-label">PGP Public Key</label>
 
-    <div class="card">
-      <form method="post">
-        <input type="hidden" name="form-name" value="pgp">
-
-        <div class="card-body">
-          <div class="card-title">
-            Pretty Good Privacy (PGP)
-            <div class="small-text">
-              By importing your PGP Public Key into SimpleLogin, all emails sent to {{ mailbox.email }} are
-              <b>encrypted</b> with your key.
+              <textarea name="pgp"
+                  {% if not current_user.is_premium() %} disabled {% endif %}
+                        class="form-control" rows=10
+                        placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
             </div>
-          </div>
 
-          {% if not current_user.is_premium() %}
-            <div class="alert alert-danger" role="alert">
-              This feature is only available in premium plan.
-            </div>
-          {% endif %}
-
-          <div class="form-group">
-            <label class="form-label">PGP Public Key</label>
-
-            <textarea name="pgp"
+            <button class="btn btn-primary" name="action"
                 {% if not current_user.is_premium() %} disabled {% endif %}
-                      class="form-control" rows=10
-                      placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
+                    value="save">Save
+            </button>
+            {% if mailbox.pgp_finger_print %}
+              <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+            {% endif %}
+
           </div>
+        </form>
 
-          <button class="btn btn-primary" name="action"
-              {% if not current_user.is_premium() %} disabled {% endif %}
-                  value="save">Save
-          </button>
-          {% if mailbox.pgp_finger_print %}
-            <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
-          {% endif %}
-
-        </div>
-      </form>
-
+      </div>
     </div>
-
   </div>
 {% endblock %}
 
