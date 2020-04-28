@@ -40,7 +40,7 @@
 
 
         <div class="col-sm-6 p-1">
-          <select class="form-control custom-select" name="suffix">
+          <select class="form-control" name="suffix">
             {% for suffix in suffixes %}
               <option value="{{ suffix[1] }}">
                 {% if suffix[0] %}
@@ -56,7 +56,7 @@
 
       <div class="row mb-2">
         <div class="col p-1">
-          <select class="form-control custom-select" name="mailbox">
+          <select class="form-control" name="mailbox">
             {% for mailbox in mailboxes %}
               <option value="{{ mailbox }}">
                 {{ mailbox }}

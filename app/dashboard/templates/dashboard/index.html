@@ -109,7 +109,7 @@
           <form method="get" class="form-inline">
             <select name="sort"
                     onchange="this.form.submit()"
-                    class="form-control custom-select mr-3 shadow">
+                    class="form-control mr-3 shadow">
               <option value="" {% if sort == "" %} selected {% endif %}>
                 Sort by most recent activity
               </option>
@@ -129,7 +129,7 @@
 
             <select name="filter"
                     onchange="this.form.submit()"
-                    class="form-control custom-select mr-3 shadow">
+                    class="form-control mr-3 shadow">
               <option value="" {% if filter == "" %} selected {% endif %}>
                 All Aliases
               </option>
@@ -306,7 +306,7 @@
               <div class="d-flex">
                 <div class="flex-grow-1 mr-2">
                   <select id="mailbox-{{ alias.id }}"
-                          class="form-control form-control-sm custom-select" name="mailbox">
+                          class="form-control form-control-sm" name="mailbox">
                     {% for mailbox in mailboxes %}
                       <option value="{{ mailbox.id }}" {% if mailbox.id == alias_info.mailbox.id %}
                               selected {% endif %}>
@@ -365,7 +365,7 @@
               <div class="">
                 <a data-alias="{{ alias.id }}"
                    class="save-alias-name btn btn-sm btn-outline-primary w-100">
-                  save
+                  Save
                 </a>
               </div>
 
