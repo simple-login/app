@@ -18,7 +18,11 @@ class NewDirForm(FlaskForm):
 @dashboard_bp.route("/directory", methods=["GET", "POST"])
 @login_required
 def directory():
-    dirs = Directory.query.filter_by(user_id=current_user.id).all()
+    dirs = (
+        Directory.query.filter_by(user_id=current_user.id)
+        .order_by(Directory.created_at.desc())
+        .all()
+    )
 
     new_dir_form = NewDirForm()
 
