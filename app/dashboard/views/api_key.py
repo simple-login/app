@@ -15,7 +15,11 @@ class NewApiKeyForm(FlaskForm):
 @dashboard_bp.route("/api_key", methods=["GET", "POST"])
 @login_required
 def api_key():
-    api_keys = ApiKey.query.filter(ApiKey.user_id == current_user.id).all()
+    api_keys = (
+        ApiKey.query.filter(ApiKey.user_id == current_user.id)
+        .order_by(ApiKey.created_at.desc())
+        .all()
+    )
 
     new_api_key_form = NewApiKeyForm()
 
