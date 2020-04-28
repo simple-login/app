@@ -27,7 +27,11 @@ class NewMailboxForm(FlaskForm):
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
 def mailbox_route():
-    mailboxes = Mailbox.query.filter_by(user_id=current_user.id).all()
+    mailboxes = (
+        Mailbox.query.filter_by(user_id=current_user.id)
+        .order_by(Mailbox.created_at.desc())
+        .all()
+    )
 
     new_mailbox_form = NewMailboxForm()
 
