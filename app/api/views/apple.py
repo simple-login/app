@@ -8,13 +8,16 @@ from flask import request
 from flask_cors import cross_origin
 
 from app.api.base import api_bp, require_api_auth
-from app.config import APPLE_API_SECRET
+from app.config import APPLE_API_SECRET, MACAPP_APPLE_API_SECRET
 from app.extensions import db
 from app.log import LOG
 from app.models import PlanEnum, AppleSubscription
 
 _MONTHLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.monthly"
 _YEARLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.yearly"
+
+_MACAPP_MONTHLY_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.monthly"
+_MACAPP_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.yearly"
 
 # Apple API URL
 _SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt"
@@ -29,15 +32,23 @@ def apple_process_payment():
     Process payment
     Input:
         receipt_data: in body
+        (optional) is_macapp: in body
     Output:
         200 of the payment is successful, i.e. user is upgraded to premium
 
     """
     LOG.debug("request for /apple/process_payment")
     user = g.user
-    receipt_data = request.get_json().get("receipt_data")
+    data = request.get_json()
+    receipt_data = data.get("receipt_data")
+    is_macapp = "is_macapp" in data
 
-    apple_sub = verify_receipt(receipt_data, user)
+    if is_macapp:
+        password = MACAPP_APPLE_API_SECRET
+    else:
+        password = APPLE_API_SECRET
+
+    apple_sub = verify_receipt(receipt_data, user, password)
     if apple_sub:
         return jsonify(ok=True), 200
 
@@ -249,7 +260,8 @@ def apple_update_notification():
         expires_date = arrow.get(int(transaction["expires_date_ms"]) / 1000)
         plan = (
             PlanEnum.monthly
-            if transaction["product_id"] == _MONTHLY_PRODUCT_ID
+            if transaction["product_id"]
+            in (_MONTHLY_PRODUCT_ID, _MACAPP_MONTHLY_PRODUCT_ID)
             else PlanEnum.yearly
         )
 
@@ -279,7 +291,7 @@ def apple_update_notification():
             return jsonify(ok=False), 400
 
 
-def verify_receipt(receipt_data, user) -> Optional[AppleSubscription]:
+def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     """Call verifyReceipt endpoint and create/update AppleSubscription table
     Call the production URL for verifyReceipt first,
     and proceed to verify with the sandbox URL if receive a 21007 status code.
@@ -290,15 +302,14 @@ def verify_receipt(receipt_data, user) -> Optional[AppleSubscription]:
     """
     LOG.d("start verify_receipt")
     r = requests.post(
-        _PROD_URL, json={"receipt-data": receipt_data, "password": APPLE_API_SECRET}
+        _PROD_URL, json={"receipt-data": receipt_data, "password": password}
     )
 
     if r.json() == {"status": 21007}:
         # try sandbox_url
         LOG.warning("Use the sandbox url instead")
         r = requests.post(
-            _SANDBOX_URL,
-            json={"receipt-data": receipt_data, "password": APPLE_API_SECRET},
+            _SANDBOX_URL, json={"receipt-data": receipt_data, "password": password},
         )
 
     data = r.json()
