@@ -17,7 +17,7 @@ _MONTHLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.monthly"
 _YEARLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.yearly"
 
 _MACAPP_MONTHLY_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.monthly"
-_MACAPP_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.yearly"
+_MACAPP_YEARLY_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.yearly"
 
 # Apple API URL
 _SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt"
