@@ -243,4 +243,7 @@ with open(get_abs_path(DISPOSABLE_FILE_PATH), "r") as f:
     ]
 
 # Used when querying info on Apple API
+# for iOS App
 APPLE_API_SECRET = os.environ.get("APPLE_API_SECRET")
+# for Mac App
+MACAPP_APPLE_API_SECRET = os.environ.get("MACAPP_APPLE_API_SECRET")

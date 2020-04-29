@@ -6,7 +6,12 @@ from arrow import Arrow
 
 from app import s3
 from app.api.views.apple import verify_receipt
-from app.config import IGNORED_EMAILS, ADMIN_EMAIL
+from app.config import (
+    IGNORED_EMAILS,
+    ADMIN_EMAIL,
+    MACAPP_APPLE_API_SECRET,
+    APPLE_API_SECRET,
+)
 from app.email_utils import send_email, send_trial_end_soon_email, render
 from app.extensions import db
 from app.log import LOG
@@ -114,7 +119,8 @@ def poll_apple_subscription():
     # todo: only near the end of the subscription
     for apple_sub in AppleSubscription.query.all():
         user = apple_sub.user
-        verify_receipt(apple_sub.receipt_data, user)
+        verify_receipt(apple_sub.receipt_data, user, APPLE_API_SECRET)
+        verify_receipt(apple_sub.receipt_data, user, MACAPP_APPLE_API_SECRET)
 
     LOG.d("Finish poll_apple_subscription")
 

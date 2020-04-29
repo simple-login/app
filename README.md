@@ -1144,6 +1144,7 @@ Process payment receipt
 Input:
 - `Authentication` in header: the api key
 - `receipt_data` in body: the receipt_data base64Encoded returned by StoreKit, i.e. `rawReceiptData.base64EncodedString`
+- (optional) `is_macapp` in body: if this field is present, the request is sent from the MacApp (Safari Extension) and not iOS app.
 
 Output:
 200 if user is upgraded successfully
