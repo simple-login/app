@@ -65,28 +65,5 @@
 
 {% endblock %}
 
-{% block script %}
-  <script>
-    $(".custom-switch-input").change(function (e) {
-      // Only ask for confirmation when publishing, not when un-publishing
-      if (e.target.checked) {
-        var message = `After this, your app/website will made available in "Discover", please confirm.`;
 
-        notie.confirm({
-          text: message,
-          cancelCallback: () => {
-            // reset to the original value
-            var oldValue = !$(this).prop("checked");
-            $(this).prop("checked", oldValue);
-          },
-          submitCallback: () => {
-            $(this).closest("form").submit();
-          }
-        });
-      } else {
-        $(this).closest("form").submit();
-      }
-    })
-  </script>
-{% endblock %}
 

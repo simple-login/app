@@ -20,7 +20,8 @@
       {% endif %}
 
       <div class="alert alert-primary" role="alert">
-        If you own a domain, let's say <b>example.com</b>, you will be able to create aliases with this domain, for example
+        If you own a domain, let's say <b>example.com</b>, you will be able to create aliases with this domain, for
+        example
         contact@example.com, help@example.com, etc with SimpleLogin. <br>
         You could also enable <b>catch-all</b> feature that allows you to create aliases on-the-fly.
       </div>
@@ -68,21 +69,4 @@
     </div>
 
   </div>
-{% endblock %}
-
-{% block script %}
-  <script>
-    $(".delete-custom-domain").on("click", function (e) {
-      notie.confirm({
-        text: "All aliases associated with this domain will be also deleted, " +
-          " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
-        },
-        submitCallback: () => {
-          $(this).closest("form").submit();
-        }
-      });
-    });
-  </script>
 {% endblock %}

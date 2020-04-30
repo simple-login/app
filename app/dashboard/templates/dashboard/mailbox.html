@@ -123,16 +123,29 @@
   <script>
     $(".delete-mailbox").on("click", function (e) {
       let mailbox = $(this).parent().find(".mailbox").val();
-      notie.confirm({
-        text: `All aliases owned by this mailbox <b>${mailbox}</b> will be also deleted, ` +
-          " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
+
+      let that = $(this);
+      let message = `All aliases owned by this mailbox <b>${mailbox}</b> will be also deleted, ` +
+          " please confirm.";
+
+      bootbox.confirm({
+        message: message,
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
         },
-        submitCallback: () => {
-          $(this).closest("form").submit();
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
         }
-      });
+      })
     });
   </script>
 {% endblock %}

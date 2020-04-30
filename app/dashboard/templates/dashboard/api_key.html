@@ -104,16 +104,28 @@
 {% block script %}
   <script>
     $(".delete-api-key").on("click", function (e) {
-      notie.confirm({
-        text: "If this api key is currently in use, you need to replace it with another api key, " +
-          " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "If this api key is currently in use, you need to replace it with another api key, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
         },
-        submitCallback: () => {
-          $(this).closest("form").submit();
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
         }
-      });
+      })
+
+
     });
 
     $(".toggle-api-key").on('click', function (event) {

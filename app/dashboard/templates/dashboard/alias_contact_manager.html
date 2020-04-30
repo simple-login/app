@@ -84,7 +84,7 @@
             <form method="post">
               <input type="hidden" name="form-name" value="delete">
               <input type="hidden" name="contact-id" value="{{ contact.id }}">
-              <span class="card-link btn btn-link float-right delete-forward-email">
+              <span class="card-link btn btn-link float-right delete-forward-email text-danger">
                 Delete
               </span>
             </form>
@@ -101,16 +101,28 @@
 {% block script %}
   <script>
     $(".delete-forward-email").on("click", function (e) {
-      notie.confirm({
-        text: "Activity history associated with this reverse-alias will be deleted, " +
-          " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "All activities associated with this reverse-alias will also be deleted, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
         },
-        submitCallback: () => {
-          $(this).closest("form").submit();
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
         }
-      });
+      })
+
+
     });
   </script>
 {% endblock %}

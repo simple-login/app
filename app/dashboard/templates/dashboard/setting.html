@@ -306,17 +306,29 @@
 {% block script %}
   <script>
     $(".delete-account").on("click", function (e) {
-      notie.confirm({
-        text: "All your data including your aliases will be deleted, " +
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "All your data including your aliases will be deleted, " +
           "other people might not be able to reach you after, " +
           " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
+        buttons: {
+          confirm: {
+            label: 'Yes, delete my account',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
         },
-        submitCallback: () => {
-          $(this).closest("form").submit();
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
         }
-      });
+      })
+
     });
   </script>
 {% endblock %}
