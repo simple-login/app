@@ -107,16 +107,30 @@
   <script>
     $(".delete-dir").on("click", function (e) {
       let directory = $(this).parent().find(".dir-name").val();
-      notie.confirm({
-        text: `All aliases associated with <b>${directory}</b> directory will be also deleted, ` +
-          " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
+
+      let that = $(this);
+      let message = `All aliases associated with <b>${directory}</b> directory will also be deleted, ` +
+          " please confirm.";
+
+      bootbox.confirm({
+        message: message,
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
         },
-        submitCallback: () => {
-          $(this).closest("form").submit();
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
         }
-      });
+      })
+
     });
   </script>
 {% endblock %}

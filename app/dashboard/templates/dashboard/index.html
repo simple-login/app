@@ -483,7 +483,6 @@
 
 {% block script %}
   <script>
-    var clipboard = new ClipboardJS('.clipboard');
 
     {% if show_intro %}
       // only show intro when screen is big enough to show "developer" tab
@@ -494,17 +493,31 @@
 
     $(".delete-email").on("click", function (e) {
       let alias = $(this).parent().find(".alias").val();
-      notie.confirm({
-        text: `Once <b>${alias}</b> is deleted, people/apps ` +
-          "who used to contact you via this alias cannot reach you any more," +
-          " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
+      let message = `Once <b>${alias}</b> is deleted, people/apps ` +
+        "who used to contact you via this alias cannot reach you any more," +
+        " please confirm.";
+      let that = $(this);
+
+      bootbox.confirm({
+        message: message,
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
         },
-        submitCallback: () => {
-          $(this).closest("form").submit();
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
         }
-      });
+      })
+
+
     });
 
     $(".custom-switch-input").change(async function (e) {

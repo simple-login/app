@@ -87,15 +87,26 @@
   <script>
 
     $(".cancel").on("click", function (e) {
-      notie.confirm({
-        text: `This operation is irreversible, please confirm`,
-        cancelCallback: () => {
-          // nothing to do
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "This operation is irreversible, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Cancel subscription',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Close',
+            className: 'btn-outline-primary'
+          }
         },
-        submitCallback: () => {
-          $(this).closest("form").submit();
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
         }
-      });
+      })
     });
 
   </script>

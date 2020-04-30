@@ -62,6 +62,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.css') }}">
   <script src="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.js') }}"></script>
 
+  <script src="{{ url_for('static', filename='node_modules/bootbox/dist/bootbox.min.js') }}"></script>
+
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
 
   <script>
@@ -150,6 +152,12 @@
   notie.setOptions({
     overlayClickDismiss: false,
   });
+
+  // default options for bootbox
+  bootbox.setDefaults({
+    closeButton: false,
+    backdrop: true
+  })
 
   var clipboard = new ClipboardJS('.clipboard');
 
