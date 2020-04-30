@@ -42,11 +42,6 @@
   <!-- ClipboardJS -->
   <script src="/static/vendor/clipboard.min.js"></script>
 
-  <!-- Notie -->
-  <link rel="stylesheet" type="text/css"
-        href="{{ url_for('static', filename='node_modules/notie/dist/notie.min.css') }}">
-  <script src="{{ url_for('static', filename='node_modules/notie/dist/notie.min.js') }}"></script>
-
   <!-- IntroJS -->
   <link rel="stylesheet" type="text/css"
         href="{{ url_for('static', filename='node_modules/intro.js/minified/introjs.min.css') }}">
@@ -146,12 +141,6 @@
       console.log("Sentry error, probably due to AdBlocker ...")
     }
   {% endif %}
-
-  // the modal does not get close when user clicks outside of modal
-  // necessary for obligatory modal such as the one displayed when user enable/display email forwarding
-  notie.setOptions({
-    overlayClickDismiss: false,
-  });
 
   // default options for bootbox
   bootbox.setDefaults({
