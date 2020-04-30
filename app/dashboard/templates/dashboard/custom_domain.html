@@ -70,20 +70,3 @@
 
   </div>
 {% endblock %}
-
-{% block script %}
-  <script>
-    $(".delete-custom-domain").on("click", function (e) {
-      notie.confirm({
-        text: "All aliases associated with this domain will be also deleted, " +
-          " please confirm.",
-        cancelCallback: () => {
-          // nothing to do
-        },
-        submitCallback: () => {
-          $(this).closest("form").submit();
-        }
-      });
-    });
-  </script>
-{% endblock %}
