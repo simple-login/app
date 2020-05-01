@@ -465,7 +465,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     # }
 
     if data["status"] != 0:
-        LOG.error(
+        LOG.warning(
             "verifyReceipt status !=0, probably invalid receipt. User %s", user,
         )
         return None
