@@ -158,7 +158,9 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, default=True, nullable=False, server_default="1"
     )
 
-    referral_id = db.Column(db.ForeignKey("referral.id"), nullable=True, default=None)
+    referral_id = db.Column(
+        db.ForeignKey("referral.id", ondelete="SET NULL"), nullable=True, default=None
+    )
 
     referral = db.relationship("Referral", foreign_keys=[referral_id])
 
@@ -1153,6 +1155,7 @@ class Referral(db.Model, ModelMixin):
     """Referral code so user can invite others"""
 
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    name = db.Column(db.String(512), nullable=True, default=None)
 
     code = db.Column(db.String(128), unique=True, nullable=False)
 
