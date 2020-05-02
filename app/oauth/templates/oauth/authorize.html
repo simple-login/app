@@ -82,7 +82,7 @@
             <label style="padding-top: .5rem">Email</label>
           </div>
           <div class="col-md-9">
-            <select class="" name="suggested-email">
+            <select class="form-control" name="suggested-email">
               <option selected value="{{ suggested_email }}">{{ suggested_email }}</option>
               <option value="{{ current_user.email }}">{{ current_user.email }} (Personal Email)</option>
               {% for email in other_emails %}
@@ -132,7 +132,7 @@
             <label style="padding-top: .5rem">Name</label>
           </div>
           <div class="col-md-9">
-            <select class="" name="suggested-name">
+            <select class="form-control" name="suggested-name">
               <option selected value="{{ suggested_name }}">{{ suggested_name }}</option>
               {% for name in other_names %}
                 <option value="{{ name }}">{{ name }}</option>
