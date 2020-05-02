@@ -1169,7 +1169,9 @@ Generate the migration script and make sure to review it before committing it. S
 flask db migrate
 ```
 
-In local the database creation in Sqlite doesn't use migration and uses directly `db.create_all()` (cf `fake_data()` method). This is because Sqlite doesn't handle well the migration. As sqlite is only used during development, the database is deleted and re-populated at each run.
+In local the database creation in Sqlite doesn't use migration and uses directly `db.create_all()` (cf `fake_data()` method). 
+This is because Sqlite doesn't handle well the migration. As sqlite is only used during development, the database is deleted 
+and re-populated at each run.
 
 ### Code structure
 

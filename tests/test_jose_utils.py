@@ -1,15 +1,25 @@
 from app.extensions import db
 from app.jose_utils import make_id_token, verify_id_token
-from app.models import ClientUser
-from server import fake_data
+from app.models import ClientUser, User, Client
 
 
 def test_encode_decode(flask_app):
     with flask_app.app_context():
-        fake_data()
-        ClientUser.create(client_id=-1, user_id=-1)
+        user = User.create(
+            email="a@b.c", password="password", name="Test User", activated=True
+        )
         db.session.commit()
-        jwt_token = make_id_token(ClientUser.get(1))
+
+        client1 = Client.create_new(name="Demo", user_id=user.id)
+        client1.oauth_client_id = "client-id"
+        client1.oauth_client_secret = "client-secret"
+        client1.published = True
+        db.session.commit()
+
+        client_user = ClientUser.create(client_id=client1.id, user_id=user.id)
+        db.session.commit()
+
+        jwt_token = make_id_token(client_user)
 
         assert type(jwt_token) is str
         assert verify_id_token(jwt_token)
