@@ -19,8 +19,23 @@
 
     {% for referral in referrals %}
       <div class="card p-4 shadow-sm {% if referral.id == highlight_id %} highlight-row {% endif %}">
-        <div class="mb-3">Referral Code: <b>{{ referral.code }}</b>
-        </div>
+
+        <form method="post">
+          <input type="hidden" name="form-name" value="update">
+          <input type="hidden" name="referral-id" value="{{ referral.id }}">
+
+          <b>Name</b>
+          <div class="d-flex mb-3">
+            <div class="mr-2" style="min-width: 20em">
+              <input name="name" class="form-control" value="{{ referral.name or '' }}">
+            </div>
+            <div>
+              <button class="btn btn-outline-success">Update</button>
+            </div>
+          </div>
+        </form>
+
+
 
         {% if referral.nb_user() > 0 %}
           <div class="mb-3">
@@ -33,8 +48,8 @@
         <div>
           Please use this referral link to invite your friends trying out SimpleLogin: <br>
 
-          <div class="d-flex mb-5">
-            <div class="flex-grow-1">
+          <div class="d-flex mb-5" style="max-width: 40em">
+            <div class="flex-grow-1 mr-1">
               <input class="form-control" id="referral-{{ referral.id }}" readonly
                      value="{{ referral.link() }}">
             </div>
@@ -49,6 +64,11 @@
           </div>
         </div>
 
+        <div class="mb-3">
+          You can also use the referral code <b>{{ referral.code }}</b> when sharing any link on SimpleLogin. <br>
+          Just append <em>?slref={{ referral.code }}</em> to any link on SimpleLogin website.
+        </div>
+
       </div>
     {% endfor %}
 
@@ -57,9 +77,10 @@
     {% endif %}
 
     <form method="post" class="mt-6">
-      <button class="btn btn-lg btn-success mt-2">Create a new referral code</button>
+      <input type="hidden" name="form-name" value="create">
+      <input name="name" class="form-control"
+             placeholder="Referral name, something to help you remember why you create it :)">
+      <button class="btn btn-success mt-2">Create a new referral code</button>
     </form>
-
-
   </div>
 {% endblock %}
