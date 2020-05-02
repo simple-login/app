@@ -1,7 +1,11 @@
 from flask import url_for
 
 from app.config import EMAIL_DOMAIN
-from app.dashboard.views.custom_alias import signer, verify_prefix_suffix
+from app.dashboard.views.custom_alias import (
+    signer,
+    verify_prefix_suffix,
+    available_suffixes,
+)
 from app.extensions import db
 from app.models import Mailbox, CustomDomain
 from app.utils import random_word
@@ -53,3 +57,18 @@ def test_verify_prefix_suffix(flask_client):
     word = random_word()
     suffix = f".{word}@{EMAIL_DOMAIN}"
     assert verify_prefix_suffix(user, "prefix", suffix)
+
+
+def test_available_suffixes(flask_client):
+    user = login(flask_client)
+    db.session.commit()
+
+    CustomDomain.create(user_id=user.id, domain="test.com", verified=True)
+
+    assert len(available_suffixes(user)) > 0
+
+    # first suffix is custom domain
+    first_suffix = available_suffixes(user)[0]
+    assert first_suffix[0]
+    assert first_suffix[1] == "@test.com"
+    assert first_suffix[2].startswith("@test.com")

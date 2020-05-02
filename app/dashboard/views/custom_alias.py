@@ -11,10 +11,30 @@ from app.dashboard.base import dashboard_bp
 from app.email_utils import email_belongs_to_alias_domains, get_email_domain_part
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, CustomDomain, DeletedAlias, Mailbox
+from app.models import Alias, CustomDomain, DeletedAlias, Mailbox, User
 from app.utils import convert_to_id, random_word, word_exist
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
+
+
+def available_suffixes(user: User) -> [bool, str, str]:
+    """Return (is_custom_domain, alias-suffix, time-signed alias-suffix)"""
+    user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
+
+    # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
+    suffixes = []
+
+    # put custom domain first
+    for alias_domain in user_custom_domains:
+        suffix = "@" + alias_domain
+        suffixes.append((True, suffix, signer.sign(suffix).decode()))
+
+    # then default domain
+    for domain in ALIAS_DOMAINS:
+        suffix = ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain
+        suffixes.append((False, suffix, signer.sign(suffix).decode()))
+
+    return suffixes
 
 
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
@@ -32,17 +52,7 @@ def custom_alias():
 
     user_custom_domains = [cd.domain for cd in current_user.verified_custom_domains()]
     # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
-    suffixes = []
-
-    # put custom domain first
-    for alias_domain in user_custom_domains:
-        suffix = "@" + alias_domain
-        suffixes.append((True, suffix, signer.sign(suffix).decode()))
-
-    # then default domain
-    for domain in ALIAS_DOMAINS:
-        suffix = ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain
-        suffixes.append((False, suffix, signer.sign(suffix).decode()))
+    suffixes = available_suffixes(current_user)
 
     mailboxes = [mb.email for mb in current_user.mailboxes()]
 
@@ -105,7 +115,12 @@ def custom_alias():
         else:
             flash("something went wrong", "warning")
 
-    return render_template("dashboard/custom_alias.html", **locals())
+    return render_template(
+        "dashboard/custom_alias.html",
+        user_custom_domains=user_custom_domains,
+        suffixes=suffixes,
+        mailboxes=mailboxes,
+    )
 
 
 def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
