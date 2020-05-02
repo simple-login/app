@@ -123,6 +123,7 @@ DB_URI = os.environ["DB_URI"]
 # Flask secret
 FLASK_SECRET = os.environ["FLASK_SECRET"]
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
+CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
 
 # AWS
 AWS_REGION = "eu-west-3"

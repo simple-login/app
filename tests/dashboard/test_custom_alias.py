@@ -1,6 +1,7 @@
 from flask import url_for
 
 from app.config import EMAIL_DOMAIN
+from app.dashboard.views.custom_alias import signer
 from app.extensions import db
 from app.models import Mailbox
 from app.utils import random_word
@@ -12,14 +13,12 @@ def test_add_alias_success(flask_client):
     db.session.commit()
 
     word = random_word()
+    suffix = f".{word}@{EMAIL_DOMAIN}"
+    suffix = signer.sign(suffix).decode()
 
     r = flask_client.post(
         url_for("dashboard.custom_alias"),
-        data={
-            "prefix": "prefix",
-            "suffix": f".{word}@{EMAIL_DOMAIN}",
-            "mailbox": user.email,
-        },
+        data={"prefix": "prefix", "suffix": suffix, "mailbox": user.email,},
         follow_redirects=True,
     )
 
