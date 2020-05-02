@@ -659,7 +659,7 @@ Output: if api key is correct, return a json with user name and whether user is 
 If api key is incorrect, return 401.
 
 
-#### GET /api/v3/alias/options
+#### GET /api/v4/alias/options
 
 User alias info and suggestion. Used by the first extension screen when user opens the extension.
 
@@ -669,7 +669,7 @@ Input:
 
 Output: a json with the following field:
 - can_create: boolean. Whether user can create new alias
-- suffixes: list of string. List of alias `suffix` that user can use. If user doesn't have custom domain, this list has a single element which is the alias default domain (simplelogin.co).
+- suffixes: list of `[suffix, signed-suffix]`. List of alias `suffix` that user can use. The `signed-suffix` is necessary to avoid request tampering.
 - prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted from `hostname`. If no `hostname`, then the `prefix_suggestion` is empty.
 - recommendation: optional field, dictionary. If an alias is already used for this website, the recommendation will be returned. There are 2 subfields in `recommendation`: `alias` which is the recommended alias and `hostname` is the website on which this alias is used before.
 
@@ -677,20 +677,21 @@ For ex:
 ```json
 {
     "can_create": true,
-    "prefix_suggestion": "test",
-    "recommendation": {
-        "alias": "e1.cat@sl.local",
-        "hostname": "www.test.com"
-    },
+    "prefix_suggestion": "",
     "suffixes": [
-        "@very-long-domain.com.net.org",
-        "@ab.cd",
-        ".cat@sl.local"
+        [
+            "@ab.cd",
+            "@ab.cd.Xq2BOA.zBebBB-QYikFkbPZ9CPKGpJ2-PU"
+        ],
+        [
+            ".yeah@local1.localhost",
+            ".yeah@local1.localhost.Xq2BOA.dM9gyHyHcSXuJ8ps4i3wpJZ_Frw"
+        ]
     ]
 }
 ```
 
-#### POST /api/alias/custom/new
+#### POST /api/v2/alias/custom/new
 
 Create a new custom alias.
 
@@ -699,7 +700,7 @@ Input:
 - (Optional but recommended) `hostname` passed in query string
 - Request Message Body in json (`Content-Type` is `application/json`)
     - alias_prefix: string. The first part of the alias that user can choose.
-    - alias_suffix: should be one of the suffixes returned in the `GET /api/v2/alias/options` endpoint.
+    - signed_suffix: should be one of the suffixes returned in the `GET /api/v4/alias/options` endpoint.
     - (Optional) note: alias note
 
 Output:
@@ -1168,7 +1169,9 @@ Generate the migration script and make sure to review it before committing it. S
 flask db migrate
 ```
 
-In local the database creation in Sqlite doesn't use migration and uses directly `db.create_all()` (cf `fake_data()` method). This is because Sqlite doesn't handle well the migration. As sqlite is only used during development, the database is deleted and re-populated at each run.
+In local the database creation in Sqlite doesn't use migration and uses directly `db.create_all()` (cf `fake_data()` method). 
+This is because Sqlite doesn't handle well the migration. As sqlite is only used during development, the database is deleted 
+and re-populated at each run.
 
 ### Code structure
 

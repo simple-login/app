@@ -122,7 +122,7 @@
         <div class="mb-3">Choose how to create your email alias by default</div>
         <form method="post" class="form-inline">
           <input type="hidden" name="form-name" value="change-alias-generator">
-          <select class="mr-sm-2" name="alias-generator-scheme">
+          <select class="form-control mr-sm-2" name="alias-generator-scheme">
             <option value="{{ AliasGeneratorEnum.word.value }}"
                 {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected {% endif %} >Based on
               Random {{ AliasGeneratorEnum.word.name.capitalize() }}</option>

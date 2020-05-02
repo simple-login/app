@@ -1,13 +1,40 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from itsdangerous import TimestampSigner, SignatureExpired
 
-from app.config import DISABLE_ALIAS_SUFFIX, ALIAS_DOMAINS
+from app.config import (
+    DISABLE_ALIAS_SUFFIX,
+    ALIAS_DOMAINS,
+    CUSTOM_ALIAS_SECRET,
+)
 from app.dashboard.base import dashboard_bp
 from app.email_utils import email_belongs_to_alias_domains, get_email_domain_part
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, CustomDomain, DeletedAlias, Mailbox
+from app.models import Alias, CustomDomain, DeletedAlias, Mailbox, User
 from app.utils import convert_to_id, random_word, word_exist
+
+signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
+
+
+def available_suffixes(user: User) -> [bool, str, str]:
+    """Return (is_custom_domain, alias-suffix, time-signed alias-suffix)"""
+    user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
+
+    # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
+    suffixes = []
+
+    # put custom domain first
+    for alias_domain in user_custom_domains:
+        suffix = "@" + alias_domain
+        suffixes.append((True, suffix, signer.sign(suffix).decode()))
+
+    # then default domain
+    for domain in ALIAS_DOMAINS:
+        suffix = ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain
+        suffixes.append((False, suffix, signer.sign(suffix).decode()))
+
+    return suffixes
 
 
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
@@ -24,27 +51,14 @@ def custom_alias():
         return redirect(url_for("dashboard.index"))
 
     user_custom_domains = [cd.domain for cd in current_user.verified_custom_domains()]
-    # List of (is_custom_domain, alias-suffix)
-    suffixes = []
-
-    # put custom domain first
-    for alias_domain in user_custom_domains:
-        suffixes.append((True, "@" + alias_domain))
-
-    # then default domain
-    for domain in ALIAS_DOMAINS:
-        suffixes.append(
-            (
-                False,
-                ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain,
-            )
-        )
+    # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
+    suffixes = available_suffixes(current_user)
 
     mailboxes = [mb.email for mb in current_user.mailboxes()]
 
     if request.method == "POST":
         alias_prefix = request.form.get("prefix")
-        alias_suffix = request.form.get("suffix")
+        signed_suffix = request.form.get("suffix")
         mailbox_email = request.form.get("mailbox")
         alias_note = request.form.get("note")
 
@@ -55,9 +69,19 @@ def custom_alias():
                 flash("Something went wrong, please retry", "warning")
                 return redirect(url_for("dashboard.custom_alias"))
 
-        if verify_prefix_suffix(
-            current_user, alias_prefix, alias_suffix, user_custom_domains
-        ):
+        # hypothesis: user will click on the button in the 300 secs
+        try:
+            alias_suffix = signer.unsign(signed_suffix, max_age=300).decode()
+        except SignatureExpired:
+            LOG.error("Alias creation time expired")
+            flash("Alias creation time is expired, please retry", "warning")
+            return redirect(url_for("dashboard.custom_alias"))
+        except Exception:
+            LOG.error("Alias suffix is tampered, user %s", current_user)
+            flash("Unknown error, refresh the page", "error")
+            return redirect(url_for("dashboard.custom_alias"))
+
+        if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
             full_alias = alias_prefix + alias_suffix
 
             if Alias.get_by(email=full_alias) or DeletedAlias.get_by(email=full_alias):
@@ -91,14 +115,20 @@ def custom_alias():
         else:
             flash("something went wrong", "warning")
 
-    return render_template("dashboard/custom_alias.html", **locals())
+    return render_template(
+        "dashboard/custom_alias.html",
+        user_custom_domains=user_custom_domains,
+        suffixes=suffixes,
+        mailboxes=mailboxes,
+    )
 
 
-def verify_prefix_suffix(user, alias_prefix, alias_suffix, user_custom_domains) -> bool:
+def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
     """verify if user could create an alias with the given prefix and suffix"""
     if not alias_prefix or not alias_suffix:  # should be caught on frontend
         return False
 
+    user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
     alias_prefix = alias_prefix.strip()
     alias_prefix = convert_to_id(alias_prefix)
 

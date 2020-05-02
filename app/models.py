@@ -314,7 +314,9 @@ class User(db.Model, ModelMixin, UserMixin):
         """return suggested email and other email choices """
         website_name = convert_to_id(website_name)
 
-        all_aliases = [ge.email for ge in Alias.filter_by(user_id=self.id)]
+        all_aliases = [
+            ge.email for ge in Alias.filter_by(user_id=self.id, enabled=True)
+        ]
         if self.can_create_new_alias():
             suggested_alias = Alias.create_new(self, prefix=website_name).email
         else:

@@ -42,7 +42,7 @@
         <div class="col-sm-6 p-1">
           <select class="form-control" name="suffix">
             {% for suffix in suffixes %}
-              <option value="{{ suffix[1] }}">
+              <option value="{{ suffix[2] }}">
                 {% if suffix[0] %}
                   {{ suffix[1] }} (your domain)
                 {% else %}

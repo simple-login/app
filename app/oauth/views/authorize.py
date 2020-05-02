@@ -3,10 +3,12 @@ from urllib.parse import urlparse
 
 from flask import request, render_template, redirect, flash
 from flask_login import current_user
+from itsdangerous import SignatureExpired
 
 from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, DISABLE_ALIAS_SUFFIX
 from app.email_utils import get_email_domain_part
 from app.extensions import db
+from app.dashboard.views.custom_alias import available_suffixes, signer
 from app.jose_utils import make_id_token
 from app.log import LOG
 from app.models import (
@@ -109,23 +111,8 @@ def authorize():
                 user_custom_domains = [
                     cd.domain for cd in current_user.verified_custom_domains()
                 ]
-                # List of (is_custom_domain, alias-suffix)
-                suffixes = []
-
-                # put custom domain first
-                for alias_domain in user_custom_domains:
-                    suffixes.append((True, "@" + alias_domain))
-
-                # then default domain
-                for domain in ALIAS_DOMAINS:
-                    suffixes.append(
-                        (
-                            False,
-                            ("" if DISABLE_ALIAS_SUFFIX else "." + random_word())
-                            + "@"
-                            + domain,
-                        )
-                    )
+                # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
+                suffixes = available_suffixes(current_user)
 
             return render_template(
                 "oauth/authorize.html",
@@ -155,7 +142,7 @@ def authorize():
             LOG.d("user %s has already allowed client %s", current_user, client)
         else:
             alias_prefix = request.form.get("prefix")
-            alias_suffix = request.form.get("suffix")
+            signed_suffix = request.form.get("suffix")
 
             alias = None
 
@@ -165,15 +152,25 @@ def authorize():
                 if not current_user.can_create_new_alias():
                     raise Exception(f"User {current_user} cannot create custom email")
 
+                # hypothesis: user will click on the button in the 300 secs
+                try:
+                    alias_suffix = signer.unsign(signed_suffix, max_age=300).decode()
+                except SignatureExpired:
+                    LOG.error("Alias creation time expired")
+                    flash("Alias creation time is expired, please retry", "warning")
+                    return redirect(request.url)
+                except Exception:
+                    LOG.error("Alias suffix is tampered, user %s", current_user)
+                    flash("Unknown error, refresh the page", "error")
+                    return redirect(request.url)
+
                 user_custom_domains = [
                     cd.domain for cd in current_user.verified_custom_domains()
                 ]
 
                 from app.dashboard.views.custom_alias import verify_prefix_suffix
 
-                if verify_prefix_suffix(
-                    current_user, alias_prefix, alias_suffix, user_custom_domains
-                ):
+                if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
                     full_alias = alias_prefix + alias_suffix
 
                     if Alias.get_by(email=full_alias) or DeletedAlias.get_by(
