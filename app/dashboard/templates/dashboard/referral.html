@@ -69,6 +69,14 @@
           Just append <em>?slref={{ referral.code }}</em> to any link on SimpleLogin website.
         </div>
 
+        <div>
+          <form method="post">
+            <input type="hidden" name="form-name" value="delete">
+            <input type="hidden" name="referral-id" value="{{ referral.id }}">
+            <span class="delete-referral  float-right btn btn-outline-danger">Delete</span>
+          </form>
+        </div>
+
       </div>
     {% endfor %}
 
@@ -83,4 +91,33 @@
       <button class="btn btn-success mt-2">Create a new referral code</button>
     </form>
   </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-referral").on("click", function (e) {
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "This operation is irreversible, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+
+
+    });
+  </script>
 {% endblock %}

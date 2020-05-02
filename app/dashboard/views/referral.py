@@ -39,6 +39,15 @@ def referral_route():
                 flash("Referral name updated", "success")
                 return redirect(
                     url_for("dashboard.referral_route", highlight_id=referral.id)
+                )
+        elif request.form.get("form-name") == "delete":
+            referral_id = request.form.get("referral-id")
+            referral = Referral.get(referral_id)
+            if referral and referral.user_id == current_user.id:
+                Referral.delete(referral.id)
+                db.session.commit()
+                flash("Referral deleted", "success")
+                return redirect(url_for("dashboard.referral_route"))
 
     # Highlight a referral
     highlight_id = request.args.get("highlight_id")
