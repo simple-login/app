@@ -71,9 +71,7 @@ def custom_alias():
             flash("Unknown error, refresh the page", "error")
             return redirect(url_for("dashboard.custom_alias"))
 
-        if verify_prefix_suffix(
-            current_user, alias_prefix, alias_suffix, user_custom_domains
-        ):
+        if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
             full_alias = alias_prefix + alias_suffix
 
             if Alias.get_by(email=full_alias) or DeletedAlias.get_by(email=full_alias):
@@ -110,11 +108,12 @@ def custom_alias():
     return render_template("dashboard/custom_alias.html", **locals())
 
 
-def verify_prefix_suffix(user, alias_prefix, alias_suffix, user_custom_domains) -> bool:
+def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
     """verify if user could create an alias with the given prefix and suffix"""
     if not alias_prefix or not alias_suffix:  # should be caught on frontend
         return False
 
+    user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
     alias_prefix = alias_prefix.strip()
     alias_prefix = convert_to_id(alias_prefix)
 

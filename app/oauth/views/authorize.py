@@ -171,9 +171,7 @@ def authorize():
 
                 from app.dashboard.views.custom_alias import verify_prefix_suffix
 
-                if verify_prefix_suffix(
-                    current_user, alias_prefix, alias_suffix, user_custom_domains
-                ):
+                if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
                     full_alias = alias_prefix + alias_suffix
 
                     if Alias.get_by(email=full_alias) or DeletedAlias.get_by(

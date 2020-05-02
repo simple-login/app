@@ -51,7 +51,7 @@ def new_custom_alias():
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
-    if not verify_prefix_suffix(user, alias_prefix, alias_suffix, user_custom_domains):
+    if not verify_prefix_suffix(user, alias_prefix, alias_suffix):
         return jsonify(error="wrong alias prefix or suffix"), 400
 
     full_alias = alias_prefix + alias_suffix
