@@ -13,8 +13,9 @@ Firefox: https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/
 
 Safari: https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io
 
-You can also manage your aliases using our iOS app, available at https://apps.apple.com/us/app/simplelogin-anti-spam/id1494359858
-The Android app is coming.
+You can also manage your aliases using SimpleLogin mobile apps, available at
+- Play Store https://play.google.com/store/apps/details?id=io.simplelogin.android
+- App Store https://apps.apple.com/us/app/simplelogin-anti-spam/id1494359858
 
 As usual, let us know if you have any question by replying to this email.
 
