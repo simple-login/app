@@ -592,6 +592,8 @@ class Alias(db.Model, ModelMixin):
         db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
     )
 
+    custom_domain = db.relationship("CustomDomain", foreign_keys=[custom_domain_id])
+
     # To know whether an alias is created "on the fly", i.e. via the custom domain catch-all feature
     automatic_creation = db.Column(
         db.Boolean, nullable=False, default=False, server_default="0"
@@ -1035,6 +1037,9 @@ class ApiKey(db.Model, ModelMixin):
 class CustomDomain(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     domain = db.Column(db.String(128), unique=True, nullable=False)
+
+    # default name to use when user replies/sends from alias
+    name = db.Column(db.String(128), nullable=True, default=None)
 
     verified = db.Column(db.Boolean, nullable=False, default=False)
     dkim_verified = db.Column(
