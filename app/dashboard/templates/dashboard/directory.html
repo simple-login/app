@@ -53,55 +53,56 @@
 
       </div>
 
-      {% for dir in dirs %}
-        <div class="card" style="">
-          <div class="card-body">
-            <h5 class="card-title">
-              {{ dir.name }}
-            </h5>
-            <h6 class="card-subtitle mb-2 text-muted">
-              Created {{ dir.created_at | dt }} <br>
-              <span class="font-weight-bold">{{ dir.nb_alias() }}</span> aliases.
-            </h6>
-          </div>
+      <div class="row">
+        {% for dir in dirs %}
+          <div class="col-12 col-lg-6">
+            <div class="card" style="">
+              <div class="card-body">
+                <h5 class="card-title">
+                  {{ dir.name }}
+                </h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                  Created {{ dir.created_at | dt }} <br>
+                  <span class="font-weight-bold">{{ dir.nb_alias() }}</span> aliases.
+                </h6>
+              </div>
 
-          <div class="card-footer p-0">
-            <div class="row">
-              <div class="col">
-                <form method="post">
-                  <input type="hidden" name="form-name" value="delete">
-                  <input type="hidden" class="dir-name" value="{{ dir.name }}">
-                  <input type="hidden" name="dir-id" value="{{ dir.id }}">
-                  <span class="card-link btn btn-link float-right text-danger delete-dir">
+              <div class="card-footer p-0">
+                <div class="row">
+                  <div class="col">
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="delete">
+                      <input type="hidden" class="dir-name" value="{{ dir.name }}">
+                      <input type="hidden" name="dir-id" value="{{ dir.id }}">
+                      <span class="card-link btn btn-link float-right text-danger delete-dir">
                     Delete
                   </span>
-                </form>
+                    </form>
+                  </div>
+                </div>
+
               </div>
+
             </div>
-
           </div>
+        {% endfor %}
+      </div>
 
-        </div>
-      {% endfor %}
-
-      {% if dirs|length > 0 %}
-        <hr>
-      {% endif %}
-
-      <form method="post" class="mt-6">
+      <form method="post" class="mt-2">
         {{ new_dir_form.csrf_token }}
         <input type="hidden" name="form-name" value="create">
 
-        <div class="font-weight-bold">Directory Name</div>
-        <div class="small-text">
-          Directory name must be at least 3 characters.
-          Only lowercase letter, number, dash (-), underscore (_) can be used.
-        </div>
+        <h2 class="h4">New Directory</h2>
 
         {{ new_dir_form.name(class="form-control", placeholder="my-directory",
             pattern="[0-9a-z-_]{3,}",
             title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.") }}
         {{ render_field_errors(new_dir_form.name) }}
+        <div class="small-text">
+          Directory name must be at least 3 characters.
+          Only lowercase letter, number, dash (-), underscore (_) can be used.
+        </div>
+
         <button class="btn btn-lg btn-success mt-2">Create</button>
       </form>
 
@@ -117,7 +118,7 @@
 
       let that = $(this);
       let message = `All aliases associated with <b>${directory}</b> directory will also be deleted, ` +
-          " please confirm.";
+        " please confirm.";
 
       bootbox.confirm({
         message: message,

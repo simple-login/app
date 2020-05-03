@@ -31,42 +31,45 @@
         You could also enable <b>catch-all</b> feature that allows you to create aliases on-the-fly.
       </div>
 
-      {% for custom_domain in custom_domains %}
-        <div class="card" style="">
-          <div class="card-body">
-            <h5 class="card-title">
-              <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}">{{ custom_domain.domain }}</a>
-              {% if custom_domain.verified %}
-                <span class="cursor" data-toggle="tooltip" data-original-title="Domain Verified">✅</span>
-              {% else %}
-                <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup Needed">
+      <div class="row">
+        {% for custom_domain in custom_domains %}
+          <div class="col-12 col-lg-6">
+            <div class="card" style="">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}">{{ custom_domain.domain }}</a>
+                  {% if custom_domain.verified %}
+                    <span class="cursor" data-toggle="tooltip" data-original-title="Domain Verified">✅</span>
+                  {% else %}
+                    <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup Needed">
                   <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
                      class="text-decoration-none">🚫
                   </a>
                 </span>
-              {% endif %}
-            </h5>
-            <h6 class="card-subtitle mb-2 text-muted">
-              Created {{ custom_domain.created_at | dt }} <br>
-              <span class="font-weight-bold">{{ custom_domain.nb_alias() }}</span> aliases.
-            </h6>
+                  {% endif %}
+                </h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                  Created {{ custom_domain.created_at | dt }} <br>
+                  <span class="font-weight-bold">{{ custom_domain.nb_alias() }}</span> aliases.
+                </h6>
 
-            <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}">Details ➡</a>
+                <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}">Details ➡</a>
+              </div>
+            </div>
           </div>
-        </div>
-      {% endfor %}
-
-      <hr>
+        {% endfor %}
+      </div>
 
       <form method="post">
         {{ new_custom_domain_form.csrf_token }}
         <input type="hidden" name="form-name" value="create">
 
-        <label class="form-label">Domain</label>
-        <small>Please use full path domain, for ex <em>my-subdomain.my-domain.com</em></small>
+        <h2 class="h4">New Domain</h2>
 
         {{ new_custom_domain_form.domain(class="form-control", placeholder="my-domain.com") }}
         {{ render_field_errors(new_custom_domain_form.domain) }}
+        <div class="small-text">Please use full path domain, for ex <em>my-subdomain.my-domain.com</em></div>
+
         <button class="btn btn-lg btn-success mt-2">Create</button>
       </form>
 

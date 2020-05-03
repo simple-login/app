@@ -37,66 +37,68 @@
         </span>
       </div>
 
-      {% for api_key in api_keys %}
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">{{ api_key.name }}</h5>
-            <h6 class="card-subtitle mb-2 text-muted">
-              {% if api_key.last_used %}
-                Last used: {{ api_key.last_used | dt }} <br>
-                Used: {{ api_key.times }} times.
-              {% else %}
-                Never used
-              {% endif %}
-            </h6>
+      <div class="row">
+        {% for api_key in api_keys %}
+          <div class="col-12 col-lg-6">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">{{ api_key.name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                  {% if api_key.last_used %}
+                    Last used: {{ api_key.last_used | dt }} <br>
+                    Used: {{ api_key.times }} times.
+                  {% else %}
+                    Never used
+                  {% endif %}
+                </h6>
 
-            <div class="input-group">
-              <input class="form-control" id="apikey-{{ api_key.id }}" readonly value="**********">
-              <div class="input-group-append">
+                <div class="input-group">
+                  <input class="form-control" id="apikey-{{ api_key.id }}" readonly value="**********">
+                  <div class="input-group-append">
                 <span class="input-group-text">
                   <i class="fe fe-eye toggle-api-key" data-show="off" data-secret="{{ api_key.code }}"
                   ></i>
                 </span>
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            <br>
+                <br>
 
-            <div class="row">
-              <div class="col">
-                <button class="clipboard btn btn-primary" data-clipboard-action="copy"
-                        data-clipboard-text="{{ api_key.code }}"
-                        data-clipboard-target="#apikey-{{ api_key.id }}">
-                  Copy &nbsp; &nbsp; <i class="fe fe-clipboard"></i>
-                </button>
-              </div>
+                <div class="row">
+                  <div class="col">
+                    <button class="clipboard btn btn-primary" data-clipboard-action="copy"
+                            data-clipboard-text="{{ api_key.code }}"
+                            data-clipboard-target="#apikey-{{ api_key.id }}">
+                      Copy &nbsp; &nbsp; <i class="fe fe-clipboard"></i>
+                    </button>
+                  </div>
 
-              <div class="col">
-                <form method="post">
-                  <input type="hidden" name="form-name" value="delete">
-                  <input type="hidden" name="api-key-id" value="{{ api_key.id }}">
-                  <span class="card-link btn btn-link float-right text-danger delete-api-key">
+                  <div class="col">
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="delete">
+                      <input type="hidden" name="api-key-id" value="{{ api_key.id }}">
+                      <span class="card-link btn btn-link float-right text-danger delete-api-key">
                     Delete
                   </span>
-                </form>
+                    </form>
+                  </div>
+                </div>
+
               </div>
             </div>
-
           </div>
-        </div>
-      {% endfor %}
-
-      <hr>
+        {% endfor %}
+      </div>
 
       <form method="post">
         {{ new_api_key_form.csrf_token }}
         <input type="hidden" name="form-name" value="create">
-
-        <label class="form-label">Api Key Name</label>
-        <small>Name of the api key, e.g. where it will be used.</small>
+        <h2 class="h4">New Api Key</h2>
 
         {{ new_api_key_form.name(class="form-control", placeholder="Chrome, Firefox") }}
         {{ render_field_errors(new_api_key_form.name) }}
+        <div class="small-text">Name of the api key, e.g. where it will be used.</div>
+
         <button class="btn btn-lg btn-success mt-2">Create</button>
       </form>
 
