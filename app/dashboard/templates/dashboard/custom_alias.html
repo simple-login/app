@@ -56,15 +56,16 @@
 
       <div class="row mb-2">
         <div class="col p-1">
-          <select class="form-control" name="mailbox">
+          <select class="form-control custom-select selectpicker" id="mailboxes" multiple name="mailboxes">
             {% for mailbox in mailboxes %}
-              <option value="{{ mailbox }}">
-                {{ mailbox }}
+              <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
+                      selected {% endif %}>
+                {{ mailbox.email }}
               </option>
             {% endfor %}
           </select>
           <div class="small-text">
-            The mailbox that owns this alias.
+            The mailbox(es) that owns this alias.
           </div>
         </div>
       </div>
@@ -81,11 +82,28 @@
 
       <div class="row">
         <div class="col p-1">
-          <button class="btn btn-primary mt-1">Create</button>
+          <span id="submit" class="btn btn-primary mt-1">Create</span>
         </div>
       </div>
     </form>
   </div>
 
+{% endblock %}
+
+{% block script %}
+  <script>
+    $("#submit").on("click", async function () {
+      let that = $(this);
+      let mailbox_ids = $(`#mailboxes`).val();
+
+      if (mailbox_ids.length == 0) {
+        toastr.error("You must select at least a mailbox", "Error");
+        return;
+      }
+
+      that.closest("form").submit();
+
+    })
+  </script>
 {% endblock %}
 

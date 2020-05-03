@@ -7,7 +7,7 @@ from app.dashboard.views.custom_alias import (
     available_suffixes,
 )
 from app.extensions import db
-from app.models import Mailbox, CustomDomain
+from app.models import Mailbox, CustomDomain, Alias
 from app.utils import random_word
 from tests.utils import login
 
@@ -20,14 +20,49 @@ def test_add_alias_success(flask_client):
     suffix = f".{word}@{EMAIL_DOMAIN}"
     suffix = signer.sign(suffix).decode()
 
+    # create with a single mailbox
     r = flask_client.post(
         url_for("dashboard.custom_alias"),
-        data={"prefix": "prefix", "suffix": suffix, "mailbox": user.email,},
+        data={
+            "prefix": "prefix",
+            "suffix": suffix,
+            "mailboxes": [user.default_mailbox_id],
+        },
         follow_redirects=True,
     )
-
     assert r.status_code == 200
     assert f"Alias prefix.{word}@{EMAIL_DOMAIN} has been created" in str(r.data)
+
+    alias = Alias.query.order_by(Alias.created_at.desc()).first()
+    assert not alias._mailboxes
+
+
+def test_add_alias_multiple_mailboxes(flask_client):
+    user = login(flask_client)
+    db.session.commit()
+
+    word = random_word()
+    suffix = f".{word}@{EMAIL_DOMAIN}"
+    suffix = signer.sign(suffix).decode()
+
+    # create with a multiple mailboxes
+    mb1 = Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
+    db.session.commit()
+
+    r = flask_client.post(
+        url_for("dashboard.custom_alias"),
+        data={
+            "prefix": "prefix",
+            "suffix": suffix,
+            "mailboxes": [user.default_mailbox_id, mb1.id],
+        },
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    assert f"Alias prefix.{word}@{EMAIL_DOMAIN} has been created" in str(r.data)
+
+    alias = Alias.query.order_by(Alias.created_at.desc()).first()
+    assert alias._mailboxes
 
 
 def test_not_show_unverified_mailbox(flask_client):
