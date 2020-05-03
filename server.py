@@ -52,6 +52,7 @@ from app.models import (
     Contact,
     EmailLog,
     Referral,
+    AliasMailbox,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -164,11 +165,21 @@ def fake_data():
     m1 = Mailbox.create(user_id=user.id, email="m1@cd.ef", verified=True)
     db.session.commit()
 
-    for i in range(30):
+    for i in range(31):
         if i % 2 == 0:
             a = Alias.create_new(user, f"e{i}@", mailbox_id=m1.id)
+
         else:
             a = Alias.create_new(user, f"e{i}@")
+        db.session.commit()
+
+        if i % 5 == 0:
+            if i % 2 == 0:
+                AliasMailbox.create(
+                    user_id=user.id, alias_id=a.id, mailbox_id=user.default_mailbox_id
+                )
+            else:
+                AliasMailbox.create(user_id=user.id, alias_id=a.id, mailbox_id=m1.id)
         db.session.commit()
 
         # some aliases don't have any activity
