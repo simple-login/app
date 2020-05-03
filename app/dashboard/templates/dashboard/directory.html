@@ -8,7 +8,13 @@
 {% block default_content %}
   <div class="row">
     <div class="col">
-      <h1 class="h3"> Directories </h1>
+      <h1 class="h3"> Directories
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
+
 
       {% if not current_user.is_premium() %}
         <div class="alert alert-danger" role="alert">
@@ -16,14 +22,15 @@
         </div>
       {% endif %}
 
-      <div class="alert alert-primary" role="alert">
+      <div class="alert alert-primary collapse" id="howtouse" role="alert">
         <div>
           Directory allows you to create aliases <b>on the fly</b>.
         </div>
         <div class="mt-2 pb-2">
           1️⃣ Pick a name for your directory, says <em>my_dir</em> <br>
 
-          2️⃣ Quickly use one of the following formats to create an alias on-the-fly <b>without creating this alias beforehand</b>
+          2️⃣ Quickly use one of the following formats to create an alias on-the-fly <b>without creating this alias
+          beforehand</b>
         </div>
         <div class="pl-3 py-2 bg-white">
           <em>my_dir/<b>anything</b>@{{ FIRST_ALIAS_DOMAIN }}</em> or <br>

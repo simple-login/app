@@ -11,7 +11,12 @@
 {% block default_content %}
   <div class="row">
     <div class="col">
-      <h1 class="h3"> Custom Domains </h1>
+      <h1 class="h3"> Custom Domains
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
 
       {% if not current_user.is_premium() %}
         <div class="alert alert-danger" role="alert">
@@ -19,7 +24,7 @@
         </div>
       {% endif %}
 
-      <div class="alert alert-primary" role="alert">
+      <div class="alert alert-primary collapse" id="howtouse" role="alert">
         If you own a domain, let's say <b>example.com</b>, you will be able to create aliases with this domain, for
         example
         contact@example.com, help@example.com, etc with SimpleLogin. <br>
