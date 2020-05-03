@@ -28,19 +28,21 @@
       </div>
 
       <div class="mb-2">Add the following MX DNS record to your domain. <br>
-        Please note that there's a point (<em>.</em>) at the end target addresses. <br>
+        Please note that there's a point (<em>.</em>) at the end target addresses.
+        This is to make sure the <i>absolute</i> address is used.
+        <br>
         Also some domain registrars (Namecheap, CloudFlare, etc) might use <em>@</em> for the root domain.
       </div>
 
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
         <div class="mb-3 p-3" style="background-color: #eee">
-          Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
+          Record: MX <br>
+          Domain: {{ custom_domain.domain }} or @ <br>
           Priority: {{ priority }} <br>
-          Target: <em>{{ email_server }}</em>
-          <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
-                  data-clipboard-text="{{ email_server }}">
-            Copy <i class="fe fe-clipboard"></i>
-          </button>
+          Target: <em data-toggle="tooltip"
+                      title="Click to copy"
+                      class="clipboard"
+                      data-clipboard-text="{{ email_server }}">{{ email_server }}</em>
         </div>
       {% endfor %}
 
@@ -93,18 +95,18 @@
         Setting up SPF is highly recommended to reduce the chance your emails ending up in the recipient's Spam folder.
       </div>
 
-      <div class="mb-2">Add the following TXT DNS record to your domain</div>
+      <div class="mb-2">Add the following TXT DNS record to your domain.</div>
 
       <div class="mb-2 p-3" style="background-color: #eee">
-        Domain: <em>{{ custom_domain.domain }}</em> or <em>@</em> <br>
+        Record: TXT <br>
+        Domain: {{ custom_domain.domain }} or @ <br>
         Value:
-        <em>
+        <em data-toggle="tooltip"
+            title="Click to copy"
+            class="clipboard"
+            data-clipboard-text="{{ spf_record }}">
           {{ spf_record }}
         </em>
-        <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
-                data-clipboard-text="{{ spf_record }}">
-          Copy <i class="fe fe-clipboard"></i>
-        </button>
       </div>
 
       <form method="post" action="#spf-form">
@@ -158,18 +160,21 @@
         Setting up DKIM is highly recommended to reduce the chance your emails ending up in the recipient's Spam folder.
       </div>
 
-      <div class="mb-2">Add the following TXT DNS record to your domain</div>
+      <div class="mb-2">Add the following CNAME DNS record to your domain.</div>
 
       <div class="mb-2 p-3" style="background-color: #eee">
-        Domain: <em>dkim._domainkey.{{ custom_domain.domain }}</em> <br>
+        Record: CNAME <br>
+        Domain: <em data-toggle="tooltip"
+                    title="Click to copy"
+                    class="clipboard"
+                    data-clipboard-text="dkim._domainkey.">dkim._domainkey.</em>{{ custom_domain.domain }} <br>
         Value:
-        <em style="overflow-wrap: break-word">
-          {{ dkim_record }}
+        <em data-toggle="tooltip"
+            title="Click to copy"
+            class="clipboard"
+            data-clipboard-text="{{ dkim_cname }}" style="overflow-wrap: break-word">
+          {{ dkim_cname }}
         </em>
-        <button class="ml-4 clipboard btn btn-sm btn-outline-success" data-clipboard-action="copy"
-                data-clipboard-text="{{ dkim_record }}">
-          Copy <i class="fe fe-clipboard"></i>
-        </button>
       </div>
 
       <form method="post" action="#dkim-form">
@@ -189,7 +194,7 @@
         <div class="text-danger mt-4">
           Your DNS is not correctly set.
           {% if dkim_errors %}
-            The TXT record we obtain for
+            The CNAME record we obtain for
             <em>dkim._domainkey.{{ custom_domain.domain }}</em> is:
 
             <div class="mb-3 p-3" style="background-color: #eee">

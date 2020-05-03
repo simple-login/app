@@ -8,6 +8,7 @@ from app.dns_utils import (
     get_spf_domain,
     get_dkim_record,
     get_txt_record,
+    get_cname_record,
 )
 from app.extensions import db
 from app.models import CustomDomain, Alias
@@ -20,6 +21,11 @@ def domain_detail_dns(custom_domain_id):
     if not custom_domain or custom_domain.user_id != current_user.id:
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
+
+    spf_record = f"v=spf1 include:{EMAIL_DOMAIN} -all"
+
+    # hardcode the DKIM selector here
+    dkim_cname = f"dkim._domainkey.{EMAIL_DOMAIN}"
 
     mx_ok = spf_ok = dkim_ok = True
     mx_errors = spf_errors = dkim_errors = []
@@ -67,9 +73,8 @@ def domain_detail_dns(custom_domain_id):
                 spf_errors = get_txt_record(custom_domain.domain)
 
         elif request.form.get("form-name") == "check-dkim":
-            dkim_record = get_dkim_record(custom_domain.domain)
-            correct_dkim_record = f"v=DKIM1; k=rsa; p={DKIM_DNS_VALUE}"
-            if dkim_record == correct_dkim_record:
+            dkim_record = get_cname_record(custom_domain.domain)
+            if dkim_record == dkim_cname:
                 flash("The DKIM is setup correctly.", "success")
                 custom_domain.dkim_verified = True
                 db.session.commit()
@@ -80,13 +85,9 @@ def domain_detail_dns(custom_domain_id):
                     )
                 )
             else:
-                flash("DKIM: the TXT record is not correctly set", "warning")
+                flash("DKIM: the CNAME record is not correctly set", "warning")
                 dkim_ok = False
-                dkim_errors = get_txt_record(f"dkim._domainkey.{custom_domain.domain}")
-
-    spf_record = f"v=spf1 include:{EMAIL_DOMAIN} -all"
-
-    dkim_record = f"v=DKIM1; k=rsa; p={DKIM_DNS_VALUE}"
+                dkim_errors = [dkim_record or "[Empty]"]
 
     return render_template(
         "dashboard/domain_detail/dns.html",

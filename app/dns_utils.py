@@ -1,3 +1,5 @@
+from typing import Optional
+
 import dns.resolver
 
 
@@ -8,6 +10,19 @@ def _get_dns_resolver():
     my_resolver.nameservers = ["1.1.1.1"]
 
     return my_resolver
+
+
+def get_cname_record(hostname) -> Optional[str]:
+    """Return the CNAME record if exists for a domain"""
+    try:
+        answers = _get_dns_resolver().query(hostname, "CNAME")
+    except Exception:
+        return None
+
+    for a in answers:
+        return a
+
+    return None
 
 
 def get_mx_domains(hostname) -> [(int, str)]:
