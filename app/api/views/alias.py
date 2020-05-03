@@ -252,8 +252,9 @@ def update_alias(alias_id):
     Update alias note
     Input:
         alias_id: in url
-        note: in body
-        name: in body
+        note (optional): in body
+        name (optional): in body
+        mailbox_id (optional): in body
     Output:
         200
     """
