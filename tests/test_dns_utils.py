@@ -23,8 +23,3 @@ def test_get_txt_record():
 
     r = get_txt_record(_DOMAIN)
     assert len(r) > 0
-
-
-def test_get_dkim_record():
-    r = get_dkim_record(_DOMAIN)
-    assert r.startswith("v=DKIM1; k=rsa;")

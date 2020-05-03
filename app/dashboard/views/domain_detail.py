@@ -1,12 +1,11 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
-from app.config import EMAIL_SERVERS_WITH_PRIORITY, DKIM_DNS_VALUE, EMAIL_DOMAIN
+from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.dns_utils import (
     get_mx_domains,
     get_spf_domain,
-    get_dkim_record,
     get_txt_record,
     get_cname_record,
 )
@@ -27,8 +26,10 @@ def domain_detail_dns(custom_domain_id):
     # hardcode the DKIM selector here
     dkim_cname = f"dkim._domainkey.{EMAIL_DOMAIN}"
 
-    mx_ok = spf_ok = dkim_ok = True
-    mx_errors = spf_errors = dkim_errors = []
+    dmarc_record = "v=DMARC1; p=quarantine; pct=100; adkim=s; aspf=s"
+
+    mx_ok = spf_ok = dkim_ok = dmarc_ok = True
+    mx_errors = spf_errors = dkim_errors = dmarc_errors = []
 
     if request.method == "POST":
         if request.form.get("form-name") == "check-mx":
@@ -43,7 +44,7 @@ def domain_detail_dns(custom_domain_id):
                 ]
             else:
                 flash(
-                    "Your domain is verified. Now it can be used to create custom alias",
+                    "Your domain can start receiving emails. You can now use it to create alias",
                     "success",
                 )
                 custom_domain.verified = True
@@ -58,7 +59,7 @@ def domain_detail_dns(custom_domain_id):
             if EMAIL_DOMAIN in spf_domains:
                 custom_domain.spf_verified = True
                 db.session.commit()
-                flash("The SPF is setup correctly", "success")
+                flash("SPF is setup correctly", "success")
                 return redirect(
                     url_for(
                         "dashboard.domain_detail_dns", custom_domain_id=custom_domain.id
@@ -75,7 +76,7 @@ def domain_detail_dns(custom_domain_id):
         elif request.form.get("form-name") == "check-dkim":
             dkim_record = get_cname_record(custom_domain.domain)
             if dkim_record == dkim_cname:
-                flash("The DKIM is setup correctly.", "success")
+                flash("DKIM is setup correctly.", "success")
                 custom_domain.dkim_verified = True
                 db.session.commit()
 
@@ -88,6 +89,24 @@ def domain_detail_dns(custom_domain_id):
                 flash("DKIM: the CNAME record is not correctly set", "warning")
                 dkim_ok = False
                 dkim_errors = [dkim_record or "[Empty]"]
+
+        elif request.form.get("form-name") == "check-dmarc":
+            txt_records = get_txt_record("_dmarc." + custom_domain.domain)
+            if dmarc_record in txt_records:
+                custom_domain.dmarc_verified = True
+                db.session.commit()
+                flash("DMARC is setup correctly", "success")
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail_dns", custom_domain_id=custom_domain.id
+                    )
+                )
+            else:
+                flash(
+                    f"DMARC: The TXT record is not correctly set", "warning",
+                )
+                dmarc_ok = False
+                dmarc_errors = txt_records
 
     return render_template(
         "dashboard/domain_detail/dns.html",

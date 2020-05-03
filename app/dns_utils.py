@@ -71,6 +71,7 @@ def get_spf_domain(hostname) -> [str]:
 
 
 def get_txt_record(hostname) -> [str]:
+    """return all domains listed in *include:*"""
     try:
         answers = _get_dns_resolver().query(hostname, "TXT")
     except Exception:
@@ -79,23 +80,9 @@ def get_txt_record(hostname) -> [str]:
     ret = []
 
     for a in answers:  # type: dns.rdtypes.ANY.TXT.TXT
-        ret.append(a)
-
-    return ret
-
-
-def get_dkim_record(hostname) -> str:
-    """query the dkim._domainkey.{hostname} record and returns its value"""
-    try:
-        answers = _get_dns_resolver().query(f"dkim._domainkey.{hostname}", "TXT")
-    except Exception:
-        return ""
-
-    ret = []
-    for a in answers:  # type: dns.rdtypes.ANY.TXT.TXT
         for record in a.strings:
             record = record.decode()  # record is bytes
 
             ret.append(record)
 
-    return "".join(ret)
+    return ret

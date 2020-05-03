@@ -9,7 +9,7 @@
 
 {% block domain_detail_content %}
   <div class="bg-white p-4" style="max-width: 60rem; margin: auto">
-    <h1 class="h3"> {{ custom_domain.domain }} </h1>
+    <h1 class="h2"> {{ custom_domain.domain }} </h1>
     <div class="">Please follow the steps below to set up your domain.</div>
 
     <div class="small-text mb-5">
@@ -167,7 +167,7 @@
         Domain: <em data-toggle="tooltip"
                     title="Click to copy"
                     class="clipboard"
-                    data-clipboard-text="dkim._domainkey.">dkim._domainkey.</em>{{ custom_domain.domain }} <br>
+                    data-clipboard-text="dkim._domainkey">dkim._domainkey</em>.{{ custom_domain.domain }} <br>
         Value:
         <em data-toggle="tooltip"
             title="Click to copy"
@@ -206,6 +206,74 @@
 
           {% if custom_domain.dkim_verified %}
             Without DKIM setup, emails you sent from your alias might end up in Spam/Junk folder.
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <hr>
+
+    <div id="dmarc-form">
+      <div class="font-weight-bold">4. DMARC (Optional)
+        {% if custom_domain.dmarc_verified %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="DMARC Verified">✅</span>
+        {% else %}
+          <span class="cursor" data-toggle="tooltip" data-original-title="DMARC Not Verified">🚫 </span>
+        {% endif %}
+      </div>
+
+      <div>
+        DMARC <a href="https://en.wikipedia.org/wiki/DMARC" target="_blank">(Wikipedia↗)</a>
+        is designed to protect the domain from unauthorized use, commonly known as email spoofing. <br>
+        Built around SPF and DKIM, a DMARC policy tells the receiving mail server what to do if
+        neither of those authentication methods passes.
+      </div>
+
+      <div class="mb-2">Add the following TXT DNS record to your domain.</div>
+
+      <div class="mb-2 p-3" style="background-color: #eee">
+        Record: TXT <br>
+        Domain: <em data-toggle="tooltip"
+                    title="Click to copy"
+                    class="clipboard"
+                    data-clipboard-text="_dmarc">_dmarc</em>.{{ custom_domain.domain }} <br>
+        Value:
+        <em data-toggle="tooltip"
+            title="Click to copy"
+            class="clipboard"
+            data-clipboard-text="{{ dmarc_record }}">
+          {{ dmarc_record }}
+        </em>
+      </div>
+
+      <form method="post" action="#dmarc-form">
+        <input type="hidden" name="form-name" value="check-dmarc">
+        {% if custom_domain.dmarc_verified %}
+          <button type="submit" class="btn btn-outline-primary">
+            Re-verify
+          </button>
+        {% else %}
+          <button type="submit" class="btn btn-primary">
+            Verify
+          </button>
+        {% endif %}
+      </form>
+
+      {% if not dmarc_ok %}
+        <div class="text-danger mt-4">
+          Your DNS is not correctly set.
+          The TXT record we obtain is:
+          <div class="mb-3 p-3" style="background-color: #eee">
+            {% if not dmarc_errors %}
+              (Empty)
+            {% endif %}
+
+            {% for r in dmarc_errors %}
+              {{ r }} <br>
+            {% endfor %}
+          </div>
+          {% if custom_domain.dmarc_verified %}
+            Without DMARC setup, emails sent from your alias might end up in the Spam/Junk folder.
           {% endif %}
         </div>
       {% endif %}
