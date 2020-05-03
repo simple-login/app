@@ -26,7 +26,7 @@
 
           <b>Name</b>
           <div class="d-flex mb-3">
-            <div class="mr-2" style="min-width: 20em">
+            <div class="mr-2">
               <input name="name" class="form-control" value="{{ referral.name or '' }}">
             </div>
             <div>
@@ -45,20 +45,20 @@
           </div>
         {% endif %}
 
-        <div>
+        <div class="mt-2">
           Please use this referral link to invite your friends trying out SimpleLogin: <br>
 
-          <div class="d-flex mb-5" style="max-width: 40em">
-            <div class="flex-grow-1 mr-1">
+          <div class="d-flex mb-5 mt-2" style="max-width: 40em">
+            <div class="flex-grow-1 mr-2">
               <input class="form-control" id="referral-{{ referral.id }}" readonly
                      value="{{ referral.link() }}">
             </div>
 
             <div>
-              <button class="clipboard btn btn-primary" data-clipboard-action="copy"
+              <button class="clipboard btn btn-outline-primary" data-clipboard-action="copy"
                       data-clipboard-text="{{ referral.link() }}"
                       data-clipboard-target="#referral-{{ referral.id }}">
-                Copy &nbsp; &nbsp; <i class="fe fe-clipboard"></i>
+                Copy <i class="fe fe-clipboard"></i>
               </button>
             </div>
           </div>

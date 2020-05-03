@@ -8,7 +8,12 @@
 {% block default_content %}
   <div class="row">
     <div class="col">
-      <h1 class="h3"> Mailboxes </h1>
+      <h1 class="h3"> Mailboxes
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
 
       {% if not current_user.is_premium() %}
         <div class="alert alert-danger" role="alert">
@@ -16,7 +21,7 @@
         </div>
       {% endif %}
 
-      <div class="alert alert-primary" role="alert">
+      <div class="alert alert-primary collapse" id="howtouse" role="alert">
         A <em>mailbox</em> is just another personal email address. When creating a new alias, you could choose the
         mailbox that <em>owns</em> this alias, i.e: <br>
         - all emails sent to this alias will be forwarded to this mailbox <br>
@@ -29,88 +34,89 @@
         if you want to create aliases for your buddy.
       </div>
 
-      {% for mailbox in mailboxes %}
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">
-              {{ mailbox.email }}
-              {% if mailbox.verified %}
-                <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Verified">✅</span>
-              {% else %}
-                <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Not Verified">
+      <div class="row">
+        {% for mailbox in mailboxes %}
+          <div class="col-12 col-lg-6">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">
+                  {{ mailbox.email }}
+                  {% if mailbox.verified %}
+                    <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Verified">✅</span>
+                  {% else %}
+                    <span class="cursor" data-toggle="tooltip" data-original-title="Mailbox Not Verified">
                   🚫
                 </span>
-              {% endif %}
-              {% if mailbox.pgp_finger_print %}
-                <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
-              {% endif %}
+                  {% endif %}
+                  {% if mailbox.pgp_finger_print %}
+                    <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+                  {% endif %}
 
-              {% if mailbox.id == current_user.default_mailbox_id %}
-                <div class="badge badge-primary float-right" data-toggle="tooltip"
-                     title="When a new random alias is created, it belongs to the default mailbox">Default Mailbox
-                </div>
-              {% endif %}
-            </h5>
+                  {% if mailbox.id == current_user.default_mailbox_id %}
+                    <div class="badge badge-primary float-right" data-toggle="tooltip"
+                         title="When a new random alias is created, it belongs to the default mailbox">Default Mailbox
+                    </div>
+                  {% endif %}
+                </h5>
 
-            <h6 class="card-subtitle mb-2 text-muted">
-              Created {{ mailbox.created_at | dt }} <br>
-              <span class="font-weight-bold">{{ mailbox.nb_alias() }}</span> aliases. <br>
+                <h6 class="card-subtitle mb-2 text-muted">
+                  Created {{ mailbox.created_at | dt }} <br>
+                  <span class="font-weight-bold">{{ mailbox.nb_alias() }}</span> aliases. <br>
 
-            </h6>
+                </h6>
 
-            <a href="{{ url_for('dashboard.mailbox_detail_route', mailbox_id=mailbox.id) }}">Edit ➡</a>
-          </div>
+                <a href="{{ url_for('dashboard.mailbox_detail_route', mailbox_id=mailbox.id) }}">Edit ➡</a>
+              </div>
 
-          <div class="card-footer p-0">
-            <div class="row">
-              {% if mailbox.verified %}
-                <div class="col">
-                  <form method="post">
-                    <input type="hidden" name="form-name" value="set-default">
-                    <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
-                    <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
-                    <button class="card-link btn btn-link
+              <div class="card-footer p-0">
+                <div class="row">
+                  {% if mailbox.verified %}
+                    <div class="col">
+                      <form method="post">
+                        <input type="hidden" name="form-name" value="set-default">
+                        <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
+                        <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
+                        <button class="card-link btn btn-link
                     {% if mailbox.id == current_user.default_mailbox_id %} disabled {% endif %}"
-                    >
-                      Set As Default Mailbox
-                    </button>
-                  </form>
-                </div>
-              {% endif %}
+                        >
+                          Set As Default Mailbox
+                        </button>
+                      </form>
+                    </div>
+                  {% endif %}
 
-              <div class="col">
-                <form method="post">
-                  <input type="hidden" name="form-name" value="delete">
-                  <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
-                  <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
-                  <span class="card-link btn btn-link text-danger float-right delete-mailbox
+                  <div class="col">
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="delete">
+                      <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
+                      <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
+                      <span class="card-link btn btn-link text-danger float-right delete-mailbox
                     {% if mailbox.id == current_user.default_mailbox_id %} disabled {% endif %}">
                     Delete
                   </span>
-                </form>
+                    </form>
+                  </div>
+                </div>
+
               </div>
+
             </div>
-
           </div>
+        {% endfor %}
+      </div>
 
-        </div>
-      {% endfor %}
-
-      {% if mailboxs|length > 0 %}
-        <hr>
-      {% endif %}
-
-      <form method="post" class="mt-6">
+      <form method="post" class="mt-2">
         {{ new_mailbox_form.csrf_token }}
         <input type="hidden" name="form-name" value="create">
 
-        <div class="font-weight-bold">Email</div>
-        <div class="small-text">
-          A verification email will be sent to this email to make sure you have access to this email.
-        </div>
+        <h2 class="h4">New Mailbox</h2>
 
         {{ new_mailbox_form.email(class="form-control", placeholder="email@example.com") }}
         {{ render_field_errors(new_mailbox_form.email) }}
+        <div class="small-text">
+          A verification email will be sent to this email address.
+        </div>
+
         <button class="btn btn-lg btn-success mt-2">Create</button>
       </form>
 
@@ -126,7 +132,7 @@
 
       let that = $(this);
       let message = `All aliases owned by this mailbox <b>${mailbox}</b> will be also deleted, ` +
-          " please confirm.";
+        " please confirm.";
 
       bootbox.confirm({
         message: message,
