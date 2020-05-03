@@ -1043,6 +1043,9 @@ class CustomDomain(db.Model, ModelMixin):
     spf_verified = db.Column(
         db.Boolean, nullable=False, default=False, server_default="0"
     )
+    dmarc_verified = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     # an alias is created automatically the first time it receives an email
     catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
