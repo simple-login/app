@@ -13,14 +13,15 @@ def _get_dns_resolver():
 
 
 def get_cname_record(hostname) -> Optional[str]:
-    """Return the CNAME record if exists for a domain"""
+    """Return the CNAME record if exists for a domain, WITHOUT the trailing period at the end"""
     try:
         answers = _get_dns_resolver().query(hostname, "CNAME")
     except Exception:
         return None
 
     for a in answers:
-        return a
+        ret = a.to_text()
+        return ret[:-1]
 
     return None
 

@@ -74,7 +74,7 @@ def domain_detail_dns(custom_domain_id):
                 spf_errors = get_txt_record(custom_domain.domain)
 
         elif request.form.get("form-name") == "check-dkim":
-            dkim_record = get_cname_record(custom_domain.domain)
+            dkim_record = get_cname_record("dkim._domainkey." + custom_domain.domain)
             if dkim_record == dkim_cname:
                 flash("DKIM is setup correctly.", "success")
                 custom_domain.dkim_verified = True
