@@ -285,6 +285,37 @@ def update_alias(alias_id):
         alias.mailbox_id = mailbox_id
         changed = True
 
+    if "mailbox_ids" in data:
+        mailbox_ids = [int(m_id) for m_id in data.get("mailbox_ids")]
+        mailboxes: [Mailbox] = []
+
+        # check if all mailboxes belong to user
+        for mailbox_id in mailbox_ids:
+            mailbox = Mailbox.get(mailbox_id)
+            if not mailbox or mailbox.user_id != user.id or not mailbox.verified:
+                return jsonify(error="Forbidden"), 400
+            mailboxes.append(mailbox)
+
+        if not mailboxes:
+            return jsonify(error="Must choose at least one mailbox"), 400
+
+        # <<< update alias mailboxes >>>
+        # first remove all existing alias-mailboxes links
+        AliasMailbox.query.filter_by(alias_id=alias.id).delete()
+        db.session.flush()
+
+        # then add all new mailboxes
+        for i, mailbox in enumerate(mailboxes):
+            if i == 0:
+                alias.mailbox_id = mailboxes[0].id
+            else:
+                AliasMailbox.create(
+                    user_id=alias.user_id, alias_id=alias.id, mailbox_id=mailbox.id
+                )
+        # <<< END update alias mailboxes >>>
+
+        changed = True
+
     if "name" in data:
         new_name = data.get("name")
         alias.name = new_name

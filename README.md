@@ -1042,6 +1042,7 @@ Input:
 - (optional) `note` in request body
 - (optional) `mailbox_id` in request body
 - (optional) `name` in request body
+- (optional) `mailbox_ids` in request body: array of mailbox_id
 
 Output:
 If success, return 200
