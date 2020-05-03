@@ -188,6 +188,8 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    default_mailbox = db.relationship("Mailbox", foreign_keys=[default_mailbox_id])
+
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
@@ -633,6 +635,10 @@ class Alias(db.Model, ModelMixin):
     mailbox_id = db.Column(
         db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=False
     )
+
+    # prefix _ to avoid this object being used accidentally.
+    # To have the list of all mailboxes, should use AliasInfo instead
+    _mailboxes = db.relationship("Mailbox", secondary="alias_mailbox")
 
     user = db.relationship(User)
     mailbox = db.relationship("Mailbox")
@@ -1271,3 +1277,16 @@ class SentAlert(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     to_email = db.Column(db.String(256), nullable=False)
     alert_type = db.Column(db.String(256), nullable=False)
+
+
+class AliasMailbox(db.Model, ModelMixin):
+    __table_args__ = (
+        db.UniqueConstraint("alias_id", "mailbox_id", name="uq_alias_mailbox"),
+    )
+
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+
+    alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
+    mailbox_id = db.Column(
+        db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
+    )
