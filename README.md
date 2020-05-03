@@ -881,7 +881,10 @@ If success, 200 with the list of aliases. Each alias has the following fields:
 - nb_block
 - nb_forward
 - nb_reply
-- mailbox
+- mailbox: obsolete, should use `mailboxes` instead.
+    - id
+    - email
+- mailboxes: list of mailbox, contains at least 1 mailbox.
     - id
     - email
 - (optional) latest_activity:
@@ -908,37 +911,22 @@ Here's an example:
         "email": "a@b.c",
         "id": 1
       },
+      "mailboxes": [
+        {
+          "email": "m1@cd.ef",
+          "id": 2
+        },
+        {
+          "email": "john@wick.com",
+          "id": 1
+        }
+      ],
       "latest_activity": {
         "action": "forward",
         "contact": {
           "email": "c1@example.com",
           "name": null,
           "reverse_alias": "\"c1 at example.com\" <re1@SL>"
-        },
-        "timestamp": 1586195834
-      },
-      "nb_block": 0,
-      "nb_forward": 1,
-      "nb_reply": 0,
-      "note": null
-    },
-    {
-      "creation_date": "2020-04-06 17:57:14+00:00",
-      "creation_timestamp": 1586195834,
-      "email": "prefix0.hey@sl.local",
-      "name": null,
-      "enabled": true,
-      "id": 2,
-      "mailbox": {
-        "email": "a@b.c",
-        "id": 1
-      },
-      "latest_activity": {
-        "action": "forward",
-        "contact": {
-          "email": "c0@example.com",
-          "name": null,
-          "reverse_alias": "\"c0 at example.com\" <re0@SL>"
         },
         "timestamp": 1586195834
       },

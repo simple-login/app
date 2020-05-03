@@ -20,7 +20,7 @@ from app.dashboard.views.alias_log import get_alias_log
 from app.email_utils import parseaddr_unicode
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, Contact, Mailbox
+from app.models import Alias, Contact, Mailbox, AliasMailbox
 from app.utils import random_string
 
 
@@ -85,6 +85,8 @@ def get_aliases_v2():
             - nb_block
             - nb_reply
             - note
+            - mailbox
+            - mailboxes
             - (optional) latest_activity:
                 - timestamp
                 - action: forward|reply|block|bounced

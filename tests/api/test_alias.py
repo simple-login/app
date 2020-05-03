@@ -184,6 +184,11 @@ def test_get_aliases_v2(flask_client):
     assert "id" in r0["mailbox"]
     assert "email" in r0["mailbox"]
 
+    assert r0["mailboxes"]
+    for mailbox in r0["mailboxes"]:
+        assert "id" in mailbox
+        assert "email" in mailbox
+
 
 def test_delete_alias(flask_client):
     user = User.create(
