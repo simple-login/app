@@ -307,10 +307,10 @@
               <div class="small-text">Current mailbox</div>
               <div class="d-flex">
                 <div class="flex-grow-1 mr-2">
-                  <select id="mailbox-{{ alias.id }}"
-                          class="form-control form-control-sm" name="mailbox">
+                  <select required id="mailbox-{{ alias.id }}"
+                          class="form-control form-control-sm custom-select selectpicker" multiple name="mailbox">
                     {% for mailbox in mailboxes %}
-                      <option value="{{ mailbox.id }}" {% if mailbox.id == alias_info.mailbox.id %}
+                      <option value="{{ mailbox.id }}" {% if alias_info.contain_mailbox(mailbox.id) %}
                               selected {% endif %}>
                         {{ mailbox.email }}
                       </option>
@@ -593,7 +593,12 @@
 
     $(".save-mailbox").on("click", async function () {
       let aliasId = $(this).data("alias");
-      let mailbox_id = $(`#mailbox-${aliasId}`).val();
+      let mailbox_ids = $(`#mailbox-${aliasId}`).val();
+
+      if (mailbox_ids.length == 0) {
+        toastr.error("You must select at least a mailbox", "Error");
+        return;
+      }
 
       try {
         let res = await fetch(`/api/aliases/${aliasId}`, {
@@ -602,7 +607,7 @@
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            mailbox_id: mailbox_id,
+            mailbox_ids: mailbox_ids,
           }),
         });
 
