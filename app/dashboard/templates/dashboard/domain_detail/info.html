@@ -52,6 +52,26 @@
   </div>
 
   <hr>
+  <div>Default Alias name</div>
+  <div class="small-text">
+    This name will be used as the default alias name when you send
+    or reply from an alias, unless overwritten by the alias specific name.
+  </div>
+
+  <div>
+    <form method="post">
+      <input type="hidden" name="form-name" value="set-name">
+      <div class="form-group">
+        <input class="form-control"
+               value="{{ custom_domain.name or "" }}"
+               name="alias-name"
+               placeholder="Alias name">
+      </div>
+      <button class="btn btn-primary">Save</a>
+    </form>
+  </div>
+
+  <hr>
   <h3 class="mb-0">Delete Domain</h3>
   <div class="small-text mb-3">Please note that this operation is irreversible.
     All aliases associated with this domain will be also deleted.

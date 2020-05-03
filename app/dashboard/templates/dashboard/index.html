@@ -358,7 +358,8 @@
             <div class="d-flex">
               <div class="flex-grow-1 mr-2">
                 <input id="alias-name-{{ alias.id }}"
-                       value="{{ alias.name or '' }}" class="form-control" placeholder="Alias name">
+                       value="{{ alias.name or '' }}" class="form-control"
+                       placeholder="{{ alias.custom_domain.name or "Alias name" }}">
               </div>
 
 
