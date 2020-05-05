@@ -85,18 +85,32 @@
     </div>
     <!-- END change name & profile picture -->
 
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Security Key (WebAuthn)</div>
+        <div class="mb-3">
+          You can secure your account by linking either your FIDO-supported physical key such as Yubikey, Google Titan,
+          or a device with appropriate hardware to your account.
+        </div>
+        {% if current_user.fido_uuid is none %}
+          <a href="{{ url_for('dashboard.fido_setup') }}" class="btn btn-outline-primary">Setup WebAuthn</a>
+        {% else %}
+          <a href="{{ url_for('dashboard.fido_cancel') }}" class="btn btn-outline-danger">Disable WebAuthn</a>
+        {% endif %}
+      </div>
+    </div>
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Multi-Factor Authentication (MFA)</div>
+        <div class="card-title">One-Time Password (TOTP)</div>
         <div class="mb-3">
-          Secure your account with Multi-Factor Authentication. <br>
+          Secure your account with One-Time Password. <br>
           This requires having applications like Google Authenticator, Authy, MyDigiPassword, etc.
         </div>
         {% if not current_user.enable_otp %}
-          <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Enable</a>
+          <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Setup TOTP</a>
         {% else %}
-          <a href="{{ url_for('dashboard.mfa_cancel') }}" class="btn btn-outline-danger">Cancel MFA</a>
+          <a href="{{ url_for('dashboard.mfa_cancel') }}" class="btn btn-outline-danger">Disable TOTP</a>
         {% endif %}
       </div>
     </div>
