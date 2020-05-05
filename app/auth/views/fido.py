@@ -65,14 +65,14 @@ def fido():
             uv_required=False
         )
 
-        new_sign_count = False
-        new_sign_count = webauthn_assertion_response.verify()
+        is_webauthn_verified = False
         try:
-            pass
+            new_sign_count = webauthn_assertion_response.verify()
+            is_webauthn_verified = True
         except Exception as e:
             flash('Key verification failed. Error: {}'.format(e), "warning")
 
-        if new_sign_count != False:
+        if is_webauthn_verified:
             user.fido_sign_count = new_sign_count
             db.session.commit()
             del session[MFA_USER_ID]
