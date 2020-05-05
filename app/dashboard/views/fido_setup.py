@@ -57,6 +57,7 @@ def fido_setup():
 
         current_user.fido_pk = fido_uuid
         current_user.fido_uuid = str(fido_credential.public_key, "utf-8")
+        current_user.fido_sign_count = fido_credential.sign_count
         current_user.fido_credential_id = str(fido_credential.credential_id, "utf-8")
         db.session.commit()
 

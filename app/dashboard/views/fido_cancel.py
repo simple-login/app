@@ -26,6 +26,7 @@ def fido_cancel():
         if current_user.check_password(password):
             current_user.fido_pk = None
             current_user.fido_uuid = None
+            current_user.fido_sign_count = None
             current_user.fido_credential_id = None
             db.session.commit()
             flash("We've unlinked your security key.", "success")

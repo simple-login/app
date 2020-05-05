@@ -138,6 +138,7 @@ class User(db.Model, ModelMixin, UserMixin):
     fido_uuid = db.Column(db.String(), nullable=True, unique=True)
     fido_credential_id = db.Column(db.String(), nullable=True, unique=True)
     fido_pk = db.Column(db.String(), nullable=True, unique=True)
+    fido_sign_count = db.Column(db.Integer(), nullable=True)
 
     # some users could have lifetime premium
     lifetime = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
