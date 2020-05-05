@@ -1,3 +1,7 @@
+// Copyright (c) 2017 Duo Security, Inc. All rights reserved.
+// Under BSD 3-Clause "New" or "Revised" License
+// https://github.com/duo-labs/py_webauthn/
+
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
 ;(function (exports) {
