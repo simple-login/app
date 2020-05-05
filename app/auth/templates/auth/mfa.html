@@ -28,6 +28,12 @@
       <button class="btn btn-success mt-2">Validate</button>
     </form>
 
+    {% if enable_fido %}
+      <div class="text-center text-muted mb-6" style="margin-top: 1em;">
+        Having trouble with your authenticator? <br> <a href="{{ url_for('auth.fido') }}">Verify by your security key</a>
+      </div>
+    {% endif %}
+
   </div>
 
 {% endblock %}

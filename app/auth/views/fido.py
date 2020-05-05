@@ -102,4 +102,5 @@ def fido():
     webauthn_assertion_options = webauthn_assertion_options.assertion_dict
 
     return render_template("auth/fido.html", fido_token_form=fido_token_form, 
-                        webauthn_assertion_options=webauthn_assertion_options)
+                        webauthn_assertion_options=webauthn_assertion_options,
+                        enable_otp=user.enable_otp)
