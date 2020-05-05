@@ -1155,23 +1155,31 @@ Output:
 
 The database migration is handled by `alembic`
 
-Whenever the model changes, a new migration has to be created
+Whenever the model changes, a new migration has to be created.
 
-Set the database connection to use a current database (i.e. the one without the model changes you just made), for example, if you have a staging config at `~/config/simplelogin/staging.env`, you can do:
-
-```bash
-ln -sf ~/config/simplelogin/staging.env .env
-```
-
-Generate the migration script and make sure to review it before committing it. Sometimes (very rarely though), the migration generation can go wrong.
+If you have Docker installed, you can create the migration by the following script: 
 
 ```bash
-flask db migrate
+# create a postgres database for SimpleLogin
+docker rm -f sl-db
+docker run -p 5432:5432 --name sl-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sl -d postgres
+
+# run run `flask db upgrade` to upgrade the DB to the latest stage and
+env DB_URI=postgresql://postgres:postgres@127.0.0.1:5432/sl flask db upgrade
+
+# finally `flask db migrate` to generate the migration script.
+env DB_URI=postgresql://postgres:postgres@127.0.0.1:5432/sl flask db migrate
+
+# remove the db
+docker rm -f sl-db
 ```
 
-In local the database creation in Sqlite doesn't use migration and uses directly `db.create_all()` (cf `fake_data()` method). 
-This is because Sqlite doesn't handle well the migration. As sqlite is only used during development, the database is deleted 
-and re-populated at each run.
+Make sure to review the migration script before committing it. 
+Sometimes (very rarely though), the automatically generated script can be incorrect.
+
+We cannot use the local database to generate migration script as the local database doesn't use migration. 
+It is created via `db.create_all()` (cf `fake_data()` method). This is convenient for development and 
+unit tests as we don't have to wait for the migration.
 
 ### Code structure
 
