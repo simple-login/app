@@ -33,6 +33,13 @@ def custom_domain():
 
             if new_custom_domain_form.validate():
                 new_domain = new_custom_domain_form.domain.data.lower().strip()
+
+                if new_domain.startswith("http://"):
+                    new_domain = new_domain[len("http://") :]
+
+                if new_domain.startswith("https://"):
+                    new_domain = new_domain[len("https://") :]
+
                 if CustomDomain.get_by(domain=new_domain):
                     flash(f"{new_domain} already added", "warning")
                 elif get_email_domain_part(current_user.email) == new_domain:
