@@ -51,8 +51,8 @@ def fido():
         try:
             sk_assertion = json.loads(fido_token_form.sk_assertion.data)
         except Exception as e:
-            flash('Key registration failed. Error: Invalid Payload', "warning")
-            return redirect(url_for("dashboard.index"))
+            flash('Key verification failed. Error: Invalid Payload', "warning")
+            return redirect(url_for("auth.login"))
                     
         challenge = session['fido_challenge']
         credential_id = sk_assertion['id']
