@@ -10,9 +10,10 @@ from app.extensions import db
 from app.models import CustomDomain
 
 
-# todo: add more validation
 class NewCustomDomainForm(FlaskForm):
-    domain = StringField("domain", validators=[validators.DataRequired()])
+    domain = StringField(
+        "domain", validators=[validators.DataRequired(), validators.Length(max=128)]
+    )
 
 
 @dashboard_bp.route("/custom_domain", methods=["GET", "POST"])

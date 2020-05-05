@@ -66,7 +66,7 @@
 
         <h2 class="h4">New Domain</h2>
 
-        {{ new_custom_domain_form.domain(class="form-control", placeholder="my-domain.com") }}
+        {{ new_custom_domain_form.domain(class="form-control", placeholder="my-domain.com", maxlength=128) }}
         {{ render_field_errors(new_custom_domain_form.domain) }}
         <div class="small-text">Please use full path domain, for ex <em>my-subdomain.my-domain.com</em></div>
 
