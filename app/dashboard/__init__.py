@@ -11,6 +11,7 @@ from .views import (
     alias_contact_manager,
     mfa_setup,
     mfa_cancel,
+    fido_setup,
     domain_detail,
     lifetime_licence,
     directory,
