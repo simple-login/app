@@ -11,5 +11,6 @@ from .views import (
     facebook,
     change_email,
     mfa,
+    fido,
     social,
 )

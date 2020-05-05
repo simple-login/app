@@ -55,8 +55,8 @@ def fido_setup():
             flash('Key registration failed. Error: {}'.format(e), "warning")
             return redirect(url_for("dashboard.index"))
 
-        current_user.fido_pk = fido_uuid
-        current_user.fido_uuid = str(fido_credential.public_key, "utf-8")
+        current_user.fido_pk = str(fido_credential.public_key, "utf-8")
+        current_user.fido_uuid = fido_uuid
         current_user.fido_sign_count = fido_credential.sign_count
         current_user.fido_credential_id = str(fido_credential.credential_id, "utf-8")
         db.session.commit()
