@@ -27,9 +27,44 @@ def fido_setup():
         return redirect(url_for("dashboard.index"))
 
     fido_token_form = FidoTokenForm()
+
+    rp_id = urlparse(SITE_URL).hostname
+
+    # Handling POST requests
+    if fido_token_form.validate_on_submit():
+        try:
+            sk_assertion = json.loads(fido_token_form.sk_assertion.data)
+        except Exception as e:
+            flash('Key registration failed. Error: Invalid Payload', "warning")
+            return redirect(url_for("dashboard.index"))
+                    
+        fido_uuid = session['fido_uuid']
+        challenge = session['fido_challenge']
+
+        fido_reg_response = webauthn.WebAuthnRegistrationResponse(
+            rp_id,
+            SITE_URL,
+            sk_assertion,
+            challenge,
+            trusted_attestation_cert_required = False,
+            none_attestation_permitted = True)
+
+        try:
+            fido_credential = fido_reg_response.verify()
+        except Exception as e:
+            flash('Key registration failed. Error: {}'.format(e), "warning")
+            return redirect(url_for("dashboard.index"))
+
+        current_user.fido_pk = fido_uuid
+        current_user.fido_uuid = str(fido_credential.public_key, "utf-8")
+        current_user.fido_credential_id = str(fido_credential.credential_id, "utf-8")
+        db.session.commit()
+
+        flash("Security key has been activated", "success")
+
+        return redirect(url_for("dashboard.index"))
     
     # Prepare infomation for key registration process
-    rp_id = urlparse(SITE_URL).hostname
     fido_uuid = str(uuid.uuid4())
     challenge = secrets.token_urlsafe(32)
 
@@ -44,17 +79,6 @@ def fido_setup():
 
     session['fido_uuid'] = fido_uuid
     session['fido_challenge'] = challenge.rstrip('=')
-
-    if fido_token_form.validate_on_submit():
-        sk_assertion = fido_token_form.sk_assertion.data
-        LOG.d(sk_assertion)
-        # if totp.verify(token):
-        #     current_user.enable_otp = True
-        #     db.session.commit()
-        #     flash("Security key has been activated", "success")
-        #     return redirect(url_for("dashboard.index"))
-        # else:
-        #     flash("Incorrect challenge", "warning")
 
     return render_template(
         "dashboard/fido_setup.html", fido_token_form=fido_token_form, 
