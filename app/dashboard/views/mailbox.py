@@ -150,6 +150,10 @@ def mailbox_verify():
         return redirect(url_for("dashboard.mailbox_route"))
     else:
         mailbox = Mailbox.get(r_id)
+        if not mailbox:
+            flash("Invalid link", "error")
+            return redirect(url_for("dashboard.mailbox_route"))
+
         mailbox.verified = True
         db.session.commit()
 
