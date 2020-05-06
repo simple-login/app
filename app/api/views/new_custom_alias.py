@@ -120,9 +120,9 @@ def new_custom_alias_v2():
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
-    # hypothesis: user will click on the button in the 300 secs
+    # hypothesis: user will click on the button in the 600 secs
     try:
-        alias_suffix = signer.unsign(signed_suffix, max_age=300).decode()
+        alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
     except SignatureExpired:
         LOG.error("Alias creation time expired for %s", user)
         return jsonify(error="alias creation is expired, please try again"), 400

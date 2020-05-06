@@ -69,9 +69,9 @@ def custom_alias():
                 flash("Something went wrong, please retry", "warning")
                 return redirect(url_for("dashboard.custom_alias"))
 
-        # hypothesis: user will click on the button in the 300 secs
+        # hypothesis: user will click on the button in the 600 secs
         try:
-            alias_suffix = signer.unsign(signed_suffix, max_age=300).decode()
+            alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
         except SignatureExpired:
             LOG.error("Alias creation time expired for %s", current_user)
             flash("Alias creation time is expired, please retry", "warning")

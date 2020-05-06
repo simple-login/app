@@ -152,9 +152,9 @@ def authorize():
                 if not current_user.can_create_new_alias():
                     raise Exception(f"User {current_user} cannot create custom email")
 
-                # hypothesis: user will click on the button in the 300 secs
+                # hypothesis: user will click on the button in the 600 secs
                 try:
-                    alias_suffix = signer.unsign(signed_suffix, max_age=300).decode()
+                    alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
                 except SignatureExpired:
                     LOG.error("Alias creation time expired for %s", current_user)
                     flash("Alias creation time is expired, please retry", "warning")
