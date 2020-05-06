@@ -73,7 +73,7 @@ def custom_alias():
         try:
             alias_suffix = signer.unsign(signed_suffix, max_age=300).decode()
         except SignatureExpired:
-            LOG.error("Alias creation time expired")
+            LOG.error("Alias creation time expired for %s", current_user)
             flash("Alias creation time is expired, please retry", "warning")
             return redirect(url_for("dashboard.custom_alias"))
         except Exception:
