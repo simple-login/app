@@ -384,9 +384,6 @@ def mailbox_already_used(email: str, user) -> bool:
     if email == user.email:
         return False
 
-    if User.get_by(email=email):
-        return True
-
     return False
 
 
