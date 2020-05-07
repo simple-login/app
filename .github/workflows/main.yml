@@ -1,6 +1,6 @@
 name: Run tests & Public to Docker Registry
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -48,6 +48,7 @@ jobs:
         id: extract_branch
       
       - name: Publish to Docker Registry
+        if: github.event_name == 'push'
         uses: elgohr/Publish-Docker-Github-Action@master
         with:
           name: simplelogin/app-ci
@@ -56,6 +57,7 @@ jobs:
           tags: ${{ steps.extract_branch.outputs.tag }}
 
       - name: Send Telegram message
+        if: github.event_name == 'push'
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
