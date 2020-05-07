@@ -631,6 +631,18 @@ class Alias(db.Model, ModelMixin):
     mailbox = db.relationship("Mailbox")
 
     @classmethod
+    def create(cls, **kw):
+        r = cls(**kw)
+
+        # make sure alias is not in global trash, i.e. DeletedAlias table
+        email = kw["email"]
+        if DeletedAlias.get_by(email=email):
+            raise AliasInTrashError
+
+        db.session.add(r)
+        return r
+
+    @classmethod
     def create_new(cls, user, prefix, note=None, mailbox_id=None):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
