@@ -67,7 +67,8 @@ def fido():
             new_sign_count = webauthn_assertion_response.verify()
             is_webauthn_verified = True
         except Exception as e:
-            flash('Key verification failed. Error: {}'.format(e), "warning")
+            LOG.error(f'An error occurred in WebAuthn verification process: {e}')
+            flash('Key verification failed.', "warning")
 
         if is_webauthn_verified:
             user.fido_sign_count = new_sign_count
