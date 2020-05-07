@@ -766,6 +766,8 @@ Output:
 The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
 If user hasn't enabled MFA, `mfa_key` is empty.
 
+Return 403 if user has enabled FIDO. The client can display a message to suggest user to use the `API Key` instead.
+
 #### POST /api/auth/mfa
 
 Input:
