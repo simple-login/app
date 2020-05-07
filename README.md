@@ -1160,18 +1160,7 @@ Whenever the model changes, a new migration has to be created.
 If you have Docker installed, you can create the migration by the following script: 
 
 ```bash
-# create a postgres database for SimpleLogin
-docker rm -f sl-db
-docker run -p 5432:5432 --name sl-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sl -d postgres
-
-# run run `flask db upgrade` to upgrade the DB to the latest stage and
-env DB_URI=postgresql://postgres:postgres@127.0.0.1:5432/sl flask db upgrade
-
-# finally `flask db migrate` to generate the migration script.
-env DB_URI=postgresql://postgres:postgres@127.0.0.1:5432/sl flask db migrate
-
-# remove the db
-docker rm -f sl-db
+sh new_migration.sh 
 ```
 
 Make sure to review the migration script before committing it. 

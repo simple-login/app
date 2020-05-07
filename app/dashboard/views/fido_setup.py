@@ -25,6 +25,13 @@ def fido_setup():
         flash("You have already registered your security key", "warning")
         return redirect(url_for("dashboard.index"))
 
+    if not current_user.can_use_fido:
+        flash(
+            "This feature is currently in invitation-only beta. Please send us an email if you want to try",
+            "warning",
+        )
+        return redirect(url_for("dashboard.index"))
+
     fido_token_form = FidoTokenForm()
 
     # Handling POST requests
