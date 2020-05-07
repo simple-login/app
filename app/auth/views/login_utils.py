@@ -14,7 +14,15 @@ def after_login(user, next_url):
     If user enables MFA: redirect user to MFA page
     Otherwise redirect to dashboard page if no next_url
     """
-    if user.enable_otp:
+    if user.fido_enabled():
+        # Use the same session for FIDO so that we can easily
+        # switch between these two 2FA option
+        session[MFA_USER_ID] = user.id
+        if next_url:
+            return redirect(url_for("auth.fido", next_url=next_url))
+        else:
+            return redirect(url_for("auth.fido"))
+    elif user.enable_otp:
         session[MFA_USER_ID] = user.id
         if next_url:
             return redirect(url_for("auth.mfa", next_url=next_url))

@@ -4,6 +4,7 @@ import string
 import subprocess
 
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 SHA1 = subprocess.getoutput("git rev-parse HEAD")
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -37,6 +38,9 @@ DEBUG = os.environ["DEBUG"] if "DEBUG" in os.environ else False
 # Server url
 URL = os.environ["URL"]
 print(">>> URL:", URL)
+
+# Calculate RP_ID for WebAuthn
+RP_ID = urlparse(URL).hostname
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 

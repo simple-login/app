@@ -1,0 +1,58 @@
+{% extends 'default.html' %}
+{% set active_page = "setting" %}
+{% block title %}
+  Security Key Setup
+{% endblock %}
+
+{% block head %}
+  <script src="{{ url_for('static', filename='node_modules/qrious/dist/qrious.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/vendors/base64.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/vendors/webauthn.js') }}"></script>
+{% endblock %}
+
+{% block default_content %}
+  <div class="bg-white p-6" style="max-width: 60em; margin: auto">
+    <h1 class="h2 text-center">Register Your Security Key</h1>
+    <p class="text-center">Follow your browser's steps to register your security key with SimpleLogin</p>
+
+    <form id="formRegisterKey" method="post">
+      {{ fido_token_form.csrf_token }}
+      {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}
+    </form>
+    <div class="text-center">
+      <button id="btnRegisterKey" class="btn btn-lg btn-primary mt-2">Register Key</button>
+    </div>
+
+    <script>
+      async function registerKey () {
+        $("#btnRegisterKey").prop('disabled', true);
+        $("#btnRegisterKey").text('Waiting for Security Key...');
+
+        const pkCredentialCreateOptions = transformCredentialCreateOptions(
+          JSON.parse('{{credential_create_options|tojson|safe}}')
+        )
+
+        let credential
+        try {
+          credential = await navigator.credentials.create({
+            publicKey: pkCredentialCreateOptions
+          });
+        } catch (err) {
+          toastr.error("An error occurred when we trying to register your key.");
+          $("#btnRegisterKey").prop('disabled', false);
+          $("#btnRegisterKey").text('Register Key');
+          return console.error("Error when trying to create credential:", err);
+        }
+
+        const skAssertion = transformNewAssertionForServer(credential);
+
+        $('#sk_assertion').val(JSON.stringify(skAssertion));
+        $('#formRegisterKey').submit();
+      }
+
+      $("#btnRegisterKey").click(registerKey);
+      $('document').ready(registerKey());
+    </script>
+
+  </div>
+{% endblock %}

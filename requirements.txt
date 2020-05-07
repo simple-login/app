@@ -80,6 +80,7 @@ pycparser==2.19           # via cffi
 pycryptodome==3.9.4       # via -r requirements.in
 pygments==2.4.2           # via ipython
 pyopenssl==19.0.0         # via -r requirements.in
+webauthn==0.4.7           # via manually
 pyotp==2.3.0              # via -r requirements.in
 pyparsing==2.4.0          # via packaging
 pytest==4.6.3             # via -r requirements.in

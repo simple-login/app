@@ -38,3 +38,4 @@ facebook-sdk
 google-api-python-client
 google-auth-httplib2
 python-gnupg
+webauthn
