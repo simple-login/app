@@ -64,7 +64,7 @@ def custom_alias():
 
         # check if mailbox is not tempered with
         if mailbox_email != current_user.email:
-            mailbox = Mailbox.get_by(email=mailbox_email)
+            mailbox = Mailbox.get_by(email=mailbox_email, user_id=current_user.id)
             if not mailbox or mailbox.user_id != current_user.id:
                 flash("Something went wrong, please retry", "warning")
                 return redirect(url_for("dashboard.custom_alias"))
@@ -91,7 +91,7 @@ def custom_alias():
                     "warning",
                 )
             else:
-                mailbox = Mailbox.get_by(email=mailbox_email)
+                mailbox = Mailbox.get_by(email=mailbox_email, user_id=current_user.id)
 
                 alias = Alias.create(
                     user_id=current_user.id,
