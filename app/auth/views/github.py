@@ -88,28 +88,12 @@ def github_callback():
     email = email.strip().lower()
     user = User.get_by(email=email)
 
-    # create user
     if not user:
-        if DISABLE_REGISTRATION:
-            flash("Registration is closed", "error")
-            return redirect(url_for("auth.login"))
-
-        if not can_be_used_as_personal_email(email) or email_already_used(email):
-            flash(f"You cannot use {email} as your personal inbox.", "error")
-            return redirect(url_for("auth.login"))
-
-        LOG.d("create github user")
-        user = User.create(
-            email=email,
-            name=github_user_data.get("name") or "",
-            activated=True,
-            referral=get_referral(),
+        flash(
+            "Sorry you cannot sign up via Github, please use email/password sign-up instead",
+            "error",
         )
-        db.session.commit()
-        login_user(user)
-        email_utils.send_welcome_email(user)
-
-        flash(f"Welcome to SimpleLogin {user.name}!", "success")
+        return redirect(url_for("auth.register"))
 
     if not SocialAuth.get_by(user_id=user.id, social="github"):
         SocialAuth.create(user_id=user.id, social="github")
