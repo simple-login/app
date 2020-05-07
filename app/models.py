@@ -140,6 +140,11 @@ class User(db.Model, ModelMixin, UserMixin):
     fido_pk = db.Column(db.String(), nullable=True, unique=True)
     fido_sign_count = db.Column(db.Integer(), nullable=True)
 
+    def fido_enabled(self) -> bool:
+        if self.fido_uuid is not None:
+            return True
+        return False
+
     # some users could have lifetime premium
     lifetime = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
 

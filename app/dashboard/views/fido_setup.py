@@ -22,7 +22,7 @@ class FidoTokenForm(FlaskForm):
 @dashboard_bp.route("/fido_setup", methods=["GET", "POST"])
 @login_required
 def fido_setup():
-    if current_user.fido_uuid is not None:
+    if current_user.fido_enabled():
         flash("You have already registered your security key", "warning")
         return redirect(url_for("dashboard.index"))
 

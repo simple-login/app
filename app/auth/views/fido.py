@@ -31,7 +31,7 @@ def fido():
 
     user = User.get(user_id)
 
-    if not (user and (user.fido_uuid is not None)):
+    if not (user and (user.fido_enabled())):
         flash("Only user with security key linked should go to this page", "warning")
         return redirect(url_for("auth.login"))
 

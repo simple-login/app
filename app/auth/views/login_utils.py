@@ -14,7 +14,7 @@ def after_login(user, next_url):
     If user enables MFA: redirect user to MFA page
     Otherwise redirect to dashboard page if no next_url
     """
-    if user.fido_uuid is not None:
+    if user.fido_enabled():
         # Use the same session for FIDO so that we can easily
         # switch between these two 2FA option
         session[MFA_USER_ID] = user.id

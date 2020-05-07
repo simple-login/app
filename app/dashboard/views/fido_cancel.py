@@ -14,7 +14,7 @@ class LoginForm(FlaskForm):
 @dashboard_bp.route("/fido_cancel", methods=["GET", "POST"])
 @login_required
 def fido_cancel():
-    if current_user.fido_uuid is None:
+    if not current_user.fido_enabled():
         flash("You haven't registed a security key", "warning")
         return redirect(url_for("dashboard.index"))
 
