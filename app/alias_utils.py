@@ -136,7 +136,7 @@ def delete_alias(alias: Alias, user: User):
 
     # try to save deleted alias
     try:
-        DeletedAlias.create(user_id=user.id, email=email)
+        DeletedAlias.create(email=email)
         db.session.commit()
     # this can happen when a previously deleted alias is re-created via catch-all or directory feature
     except IntegrityError:

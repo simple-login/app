@@ -999,7 +999,6 @@ class AppleSubscription(db.Model, ModelMixin):
 class DeletedAlias(db.Model, ModelMixin):
     """Store all deleted alias to make sure they are NOT reused"""
 
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
 
 
