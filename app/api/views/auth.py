@@ -55,6 +55,8 @@ def auth_login():
         return jsonify(error="Email or password incorrect"), 400
     elif not user.activated:
         return jsonify(error="Account not activated"), 400
+    elif user.fido_enabled():
+        return jsonify(error="Currently we don't support FIDO on mobile yet"), 403
 
     return jsonify(**auth_payload(user, device)), 200
 
