@@ -84,7 +84,7 @@ def fido():
             else:
                 LOG.debug("redirect user to dashboard")
                 return redirect(url_for("dashboard.index"))
-                
+
     # Prepare information for key registration process
     session.pop("challenge", None)
     challenge = secrets.token_urlsafe(32)
