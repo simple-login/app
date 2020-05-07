@@ -59,7 +59,6 @@ def fido():
             return redirect(url_for("auth.login"))
 
         challenge = session["fido_challenge"]
-        credential_id = sk_assertion["id"]
 
         webauthn_assertion_response = webauthn.WebAuthnAssertionResponse(
             webauthn_user, sk_assertion, challenge, URL, uv_required=False
