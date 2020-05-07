@@ -16,8 +16,6 @@ from app.models import (
     AliasGeneratorEnum,
     User,
     EmailLog,
-    CustomDomain,
-    Directory,
 )
 
 

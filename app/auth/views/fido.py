@@ -1,8 +1,7 @@
 import json
 import secrets
-import webauthn
-from app.config import RP_ID, URL
 
+import webauthn
 from flask import request, render_template, redirect, url_for, flash, session
 from flask_login import login_user
 from flask_wtf import FlaskForm
@@ -10,9 +9,10 @@ from wtforms import HiddenField, validators
 
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID
+from app.config import RP_ID, URL
+from app.extensions import db
 from app.log import LOG
 from app.models import User
-from app.extensions import db
 
 
 class FidoTokenForm(FlaskForm):

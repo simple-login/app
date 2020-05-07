@@ -10,13 +10,11 @@ import collections
 import phpserialize
 import requests
 from Crypto.Hash import SHA1
-
 # Crypto can be found at https://pypi.org/project/pycryptodome/
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 
 from app.config import PADDLE_PUBLIC_KEY_PATH, PADDLE_VENDOR_ID, PADDLE_AUTH_CODE
-
 # Your Paddle public key.
 from app.log import LOG
 

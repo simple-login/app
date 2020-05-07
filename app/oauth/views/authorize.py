@@ -5,10 +5,10 @@ from flask import request, render_template, redirect, flash
 from flask_login import current_user
 from itsdangerous import SignatureExpired
 
-from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, DISABLE_ALIAS_SUFFIX
+from app.config import EMAIL_DOMAIN
+from app.dashboard.views.custom_alias import available_suffixes, signer
 from app.email_utils import get_email_domain_part
 from app.extensions import db
-from app.dashboard.views.custom_alias import available_suffixes, signer
 from app.jose_utils import make_id_token
 from app.log import LOG
 from app.models import (
@@ -30,7 +30,7 @@ from app.oauth_models import (
     SUPPORTED_OPENID_FLOWS_STR,
     response_types_to_str,
 )
-from app.utils import random_string, encode_url, random_word
+from app.utils import random_string, encode_url
 
 
 @oauth_bp.route("/authorize", methods=["GET", "POST"])

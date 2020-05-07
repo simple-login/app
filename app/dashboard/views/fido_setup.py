@@ -1,15 +1,14 @@
-import uuid
 import json
 import secrets
-import webauthn
-from app.config import RP_ID, URL
-from urllib.parse import urlparse
+import uuid
 
+import webauthn
 from flask import render_template, flash, redirect, url_for, session
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import HiddenField, validators
 
+from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
