@@ -55,4 +55,8 @@ def mfa():
         else:
             flash("Incorrect token", "warning")
 
-    return render_template("auth/mfa.html", otp_token_form=otp_token_form, enable_fido=(user.fido_uuid is not None))
+    return render_template(
+        "auth/mfa.html",
+        otp_token_form=otp_token_form,
+        enable_fido=(user.fido_uuid is not None),
+    )

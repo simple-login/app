@@ -21,7 +21,7 @@ def after_login(user, next_url):
         if next_url:
             return redirect(url_for("auth.fido", next_url=next_url))
         else:
-            return redirect(url_for("auth.fido"))        
+            return redirect(url_for("auth.fido"))
     elif user.enable_otp:
         session[MFA_USER_ID] = user.id
         if next_url:

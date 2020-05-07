@@ -40,26 +40,29 @@ def fido():
     next_url = request.args.get("next")
 
     webauthn_user = webauthn.WebAuthnUser(
-            user.fido_uuid, user.email, user.name, False,
-            user.fido_credential_id, user.fido_pk, user.fido_sign_count, RP_ID)
+        user.fido_uuid,
+        user.email,
+        user.name,
+        False,
+        user.fido_credential_id,
+        user.fido_pk,
+        user.fido_sign_count,
+        RP_ID,
+    )
 
     # Handling POST requests
     if fido_token_form.validate_on_submit():
         try:
             sk_assertion = json.loads(fido_token_form.sk_assertion.data)
         except Exception as e:
-            flash('Key verification failed. Error: Invalid Payload', "warning")
+            flash("Key verification failed. Error: Invalid Payload", "warning")
             return redirect(url_for("auth.login"))
-                    
-        challenge = session['fido_challenge']
-        credential_id = sk_assertion['id']
+
+        challenge = session["fido_challenge"]
+        credential_id = sk_assertion["id"]
 
         webauthn_assertion_response = webauthn.WebAuthnAssertionResponse(
-            webauthn_user,
-            sk_assertion,
-            challenge,
-            SITE_URL,
-            uv_required=False
+            webauthn_user, sk_assertion, challenge, SITE_URL, uv_required=False
         )
 
         is_webauthn_verified = False
@@ -67,8 +70,8 @@ def fido():
             new_sign_count = webauthn_assertion_response.verify()
             is_webauthn_verified = True
         except Exception as e:
-            LOG.error(f'An error occurred in WebAuthn verification process: {e}')
-            flash('Key verification failed.', "warning")
+            LOG.error(f"An error occurred in WebAuthn verification process: {e}")
+            flash("Key verification failed.", "warning")
 
         if is_webauthn_verified:
             user.fido_sign_count = new_sign_count
@@ -88,17 +91,21 @@ def fido():
         else:
             # Verification failed, put else here to make structure clear
             pass
-    
+
     # Prepare information for key registration process
-    session.pop('challenge', None)
+    session.pop("challenge", None)
     challenge = secrets.token_urlsafe(32)
-    
-    session['fido_challenge'] = challenge.rstrip('=')
+
+    session["fido_challenge"] = challenge.rstrip("=")
 
     webauthn_assertion_options = webauthn.WebAuthnAssertionOptions(
-        webauthn_user, challenge)
+        webauthn_user, challenge
+    )
     webauthn_assertion_options = webauthn_assertion_options.assertion_dict
 
-    return render_template("auth/fido.html", fido_token_form=fido_token_form, 
-                        webauthn_assertion_options=webauthn_assertion_options,
-                        enable_otp=user.enable_otp)
+    return render_template(
+        "auth/fido.html",
+        fido_token_form=fido_token_form,
+        webauthn_assertion_options=webauthn_assertion_options,
+        enable_otp=user.enable_otp,
+    )

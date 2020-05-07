@@ -34,4 +34,6 @@ def fido_cancel():
         else:
             flash("Incorrect password", "warning")
 
-    return render_template("dashboard/fido_cancel.html", password_check_form=password_check_form)
+    return render_template(
+        "dashboard/fido_cancel.html", password_check_form=password_check_form
+    )
