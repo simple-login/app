@@ -31,8 +31,12 @@ It should contain the following info:
 
 """
 import email
+import re
+import spf
 import time
 import uuid
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import Envelope
 from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
@@ -40,9 +44,6 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr, formataddr
 from io import BytesIO
 from smtplib import SMTP
-
-from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import Envelope
 
 from app import pgp_utils, s3
 from app.alias_utils import try_auto_create
@@ -54,6 +55,7 @@ from app.config import (
     POSTFIX_SUBMISSION_TLS,
     UNSUBSCRIBER,
     LOAD_PGP_EMAIL_HANDLER,
+    ENFORCE_SPF,
 )
 from app.email_utils import (
     send_email,
@@ -79,6 +81,7 @@ from app.models import (
     CustomDomain,
     User,
     RefusedEmail,
+    Mailbox,
 )
 from app.utils import random_string
 from init_app import load_pgp_public_keys
@@ -464,6 +467,28 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
 
         handle_bounce(contact, alias, msg, user, mailbox_email)
         return False, "550 SL E6"
+
+    mailb: Mailbox = Mailbox.get_by(email=mailbox_email)
+    if ENFORCE_SPF and mailb.force_spf:
+        if msg["X-SimpleLogin-Client-IP"]:
+            r = spf.check2(
+                i=msg["X-SimpleLogin-Client-IP"], s=envelope.mail_from.lower(), h=None
+            )
+            # TODO: Handle temperr case (e.g. dns timeout)
+            # only an absolute pass, or no SPF policy at all is 'valid'
+            if r[0] not in ["pass", "none"]:
+                LOG.d(
+                    "SPF validation failed for %s (reason %s)", mailbox_email, r[0],
+                )
+                return False, "550 SL E11"
+        else:
+            LOG.d(
+                "Could not find X-SimpleLogin-Client-IP header %s -> %s",
+                mailbox_email,
+                address,
+            )
+
+    delete_header(msg, "X-SimpleLogin-Client-IP")
 
     # only mailbox can send email to the reply-email
     if envelope.mail_from.lower() != mailbox_email.lower():
