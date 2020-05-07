@@ -1,5 +1,7 @@
 from typing import Optional
 
+from sqlalchemy.exc import IntegrityError
+
 from app.email_utils import (
     get_email_domain_part,
     send_cannot_create_directory_alias,
@@ -76,6 +78,7 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             directory_id=directory.id,
             mailbox_id=dir_user.default_mailbox_id,
         )
+
         db.session.commit()
         return alias
 
@@ -103,7 +106,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         return None
 
     # if alias has been deleted before, do not auto-create it
-    if DeletedAlias.get_by(email=address, user_id=custom_domain.user_id):
+    if DeletedAlias.get_by(email=address):
         LOG.warning(
             "Alias %s was deleted before, cannot auto-create using domain catch-all %s, user %s",
             address,
@@ -124,3 +127,18 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
 
     db.session.commit()
     return alias
+
+
+def delete_alias(alias: Alias, user: User):
+    email = alias.email
+    Alias.delete(alias.id)
+    db.session.commit()
+
+    # try to save deleted alias
+    try:
+        DeletedAlias.create(user_id=user.id, email=email)
+        db.session.commit()
+    # this can happen when a previously deleted alias is re-created via catch-all or directory feature
+    except IntegrityError:
+        LOG.error("alias %s has been added before to DeletedAlias", email)
+        db.session.rollback()

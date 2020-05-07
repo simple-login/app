@@ -9,7 +9,7 @@ from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_DOMAINS
 from app.dashboard.views.custom_alias import verify_prefix_suffix, signer
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, AliasUsedOn, User, CustomDomain
+from app.models import Alias, AliasUsedOn, User, CustomDomain, DeletedAlias
 from app.utils import convert_to_id
 
 
@@ -56,7 +56,7 @@ def new_custom_alias():
         return jsonify(error="wrong alias prefix or suffix"), 400
 
     full_alias = alias_prefix + alias_suffix
-    if Alias.get_by(email=full_alias):
+    if Alias.get_by(email=full_alias) or DeletedAlias.get_by(email=full_alias):
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
@@ -133,7 +133,7 @@ def new_custom_alias_v2():
         return jsonify(error="wrong alias prefix or suffix"), 400
 
     full_alias = alias_prefix + alias_suffix
-    if Alias.get_by(email=full_alias):
+    if Alias.get_by(email=full_alias) or DeletedAlias.get_by(email=full_alias):
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 

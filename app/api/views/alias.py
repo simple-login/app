@@ -3,6 +3,7 @@ from flask import jsonify
 from flask import request
 from flask_cors import cross_origin
 
+from app import alias_utils
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
     AliasInfo,
@@ -156,8 +157,7 @@ def delete_alias(alias_id):
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    Alias.delete(alias_id)
-    db.session.commit()
+    alias_utils.delete_alias(alias, user)
 
     return jsonify(deleted=True), 200
 

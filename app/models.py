@@ -24,6 +24,7 @@ from app.config import (
     LANDING_PAGE_URL,
     FIRST_ALIAS_DOMAIN,
 )
+from app.errors import AliasInTrashError
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
@@ -652,7 +653,7 @@ class Alias(db.Model, ModelMixin):
             suffix = random_word()
             email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
 
-            if not cls.get_by(email=email):
+            if not cls.get_by(email=email) and not DeletedAlias.get_by(email=email):
                 break
 
         return Alias.create(
