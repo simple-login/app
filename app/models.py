@@ -9,6 +9,7 @@ import bcrypt
 from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text, desc, CheckConstraint
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -1139,6 +1140,21 @@ class Mailbox(db.Model, ModelMixin):
 
     def nb_alias(self):
         return Alias.filter_by(mailbox_id=self.id).count()
+
+    @classmethod
+    def delete(cls, obj_id):
+        cls.query.filter(cls.id == obj_id).delete()
+        db.session.commit()
+
+        # Put all aliases belonging to this mailbox to global trash
+        try:
+            for alias in Alias.query.filter_by(mailbox_id=obj_id):
+                DeletedAlias.create(email=alias.email)
+            db.session.commit()
+        # this can happen when a previously deleted alias is re-created via catch-all or directory feature
+        except IntegrityError:
+            LOG.error("Some aliases have been added before to DeletedAlias")
+            db.session.rollback()
 
     def __repr__(self):
         return f"<Mailbox {self.email}>"
