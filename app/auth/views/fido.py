@@ -64,15 +64,12 @@ def fido():
             webauthn_user, sk_assertion, challenge, URL, uv_required=False
         )
 
-        is_webauthn_verified = False
         try:
             new_sign_count = webauthn_assertion_response.verify()
-            is_webauthn_verified = True
         except Exception as e:
             LOG.error(f"An error occurred in WebAuthn verification process: {e}")
             flash("Key verification failed.", "warning")
-
-        if is_webauthn_verified:
+        else:
             user.fido_sign_count = new_sign_count
             db.session.commit()
             del session[MFA_USER_ID]
@@ -87,10 +84,7 @@ def fido():
             else:
                 LOG.debug("redirect user to dashboard")
                 return redirect(url_for("dashboard.index"))
-        else:
-            # Verification failed, put else here to make structure clear
-            pass
-
+                
     # Prepare information for key registration process
     session.pop("challenge", None)
     challenge = secrets.token_urlsafe(32)
