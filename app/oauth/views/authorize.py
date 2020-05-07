@@ -187,10 +187,10 @@ def authorize():
                         )
 
                         # get the custom_domain_id if alias is created with a custom domain
-                        alias_domain = get_email_domain_part(full_alias)
-                        custom_domain = CustomDomain.get_by(domain=alias_domain)
-                        if custom_domain:
-                            alias.custom_domain_id = custom_domain.id
+                        if alias_suffix.startswith("@"):
+                            alias_domain = alias_suffix[1:]
+                            domain = CustomDomain.get_by(domain=alias_domain)
+                            alias.custom_domain_id = domain.id
 
                         db.session.flush()
                         flash(f"Alias {full_alias} has been created", "success")
