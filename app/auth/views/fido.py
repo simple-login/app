@@ -1,7 +1,7 @@
 import json
 import secrets
 import webauthn
-from app.config import RP_ID
+from app.config import RP_ID, URL
 
 from flask import request, render_template, redirect, url_for, flash, session
 from flask_login import login_user
@@ -62,7 +62,7 @@ def fido():
         credential_id = sk_assertion["id"]
 
         webauthn_assertion_response = webauthn.WebAuthnAssertionResponse(
-            webauthn_user, sk_assertion, challenge, SITE_URL, uv_required=False
+            webauthn_user, sk_assertion, challenge, URL, uv_required=False
         )
 
         is_webauthn_verified = False

@@ -2,7 +2,7 @@ import uuid
 import json
 import secrets
 import webauthn
-from app.config import RP_ID
+from app.config import RP_ID, URL
 from urllib.parse import urlparse
 
 from flask import render_template, flash, redirect, url_for, session
@@ -41,7 +41,7 @@ def fido_setup():
 
         fido_reg_response = webauthn.WebAuthnRegistrationResponse(
             RP_ID,
-            SITE_URL,
+            URL,
             sk_assertion,
             challenge,
             trusted_attestation_cert_required=False,
