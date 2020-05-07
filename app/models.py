@@ -1107,6 +1107,21 @@ class Directory(db.Model, ModelMixin):
     def nb_alias(self):
         return Alias.filter_by(directory_id=self.id).count()
 
+    @classmethod
+    def delete(cls, obj_id):
+        cls.query.filter(cls.id == obj_id).delete()
+        db.session.commit()
+
+        # Put all aliases belonging to this mailbox to global trash
+        try:
+            for alias in Alias.query.filter_by(directory_id=obj_id):
+                DeletedAlias.create(email=alias.email)
+            db.session.commit()
+        # this can happen when a previously deleted alias is re-created via catch-all or directory feature
+        except IntegrityError:
+            LOG.error("Some aliases have been added before to DeletedAlias")
+            db.session.rollback()
+
     def __repr__(self):
         return f"<Directory {self.name}>"
 
