@@ -40,11 +40,11 @@ def fido():
 
     next_url = request.args.get("next")
 
-    rp_id = urlparse(SITE_URL).hostname
+    RP_ID = urlparse(SITE_URL).hostname
 
     webauthn_user = webauthn.WebAuthnUser(
             user.fido_uuid, user.email, user.name, False,
-            user.fido_credential_id, user.fido_pk, user.fido_sign_count, rp_id)
+            user.fido_credential_id, user.fido_pk, user.fido_sign_count, RP_ID)
 
     # Handling POST requests
     if fido_token_form.validate_on_submit():

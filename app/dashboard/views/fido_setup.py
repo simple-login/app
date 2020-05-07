@@ -28,7 +28,7 @@ def fido_setup():
 
     fido_token_form = FidoTokenForm()
 
-    rp_id = urlparse(SITE_URL).hostname
+    RP_ID = urlparse(SITE_URL).hostname
 
     # Handling POST requests
     if fido_token_form.validate_on_submit():
@@ -42,7 +42,7 @@ def fido_setup():
         challenge = session['fido_challenge']
 
         fido_reg_response = webauthn.WebAuthnRegistrationResponse(
-            rp_id,
+            RP_ID,
             SITE_URL,
             sk_assertion,
             challenge,
@@ -70,7 +70,7 @@ def fido_setup():
     challenge = secrets.token_urlsafe(32)
 
     credential_create_options = webauthn.WebAuthnMakeCredentialOptions(
-        challenge, 'Simple Login', rp_id, fido_uuid,
+        challenge, 'Simple Login', RP_ID, fido_uuid,
         current_user.email, current_user.name, False, attestation='none')
 
     # Don't think this one should be used, but it's not configurable by arguments
