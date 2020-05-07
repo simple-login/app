@@ -66,10 +66,9 @@ def new_custom_alias():
 
     if alias_suffix.startswith("@"):
         alias_domain = alias_suffix[1:]
-        if alias_domain not in ALIAS_DOMAINS:
-            domain = CustomDomain.get_by(domain=alias_domain)
-            LOG.d("set alias %s to domain %s", full_alias, domain)
-            alias.custom_domain_id = domain.id
+        domain = CustomDomain.get_by(domain=alias_domain)
+        LOG.d("set alias %s to domain %s", full_alias, domain)
+        alias.custom_domain_id = domain.id
 
     db.session.commit()
 
@@ -144,10 +143,9 @@ def new_custom_alias_v2():
 
     if alias_suffix.startswith("@"):
         alias_domain = alias_suffix[1:]
-        if alias_domain not in ALIAS_DOMAINS:
-            domain = CustomDomain.get_by(domain=alias_domain)
-            LOG.d("set alias %s to domain %s", full_alias, domain)
-            alias.custom_domain_id = domain.id
+        domain = CustomDomain.get_by(domain=alias_domain)
+        LOG.d("set alias %s to domain %s", full_alias, domain)
+        alias.custom_domain_id = domain.id
 
     db.session.commit()
 

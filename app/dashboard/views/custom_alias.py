@@ -8,7 +8,7 @@ from app.config import (
     CUSTOM_ALIAS_SECRET,
 )
 from app.dashboard.base import dashboard_bp
-from app.email_utils import email_belongs_to_alias_domains, get_email_domain_part
+from app.email_utils import email_belongs_to_alias_domains
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, CustomDomain, DeletedAlias, Mailbox, User
@@ -101,11 +101,11 @@ def custom_alias():
                 )
 
                 # get the custom_domain_id if alias is created with a custom domain
-                alias_domain = get_email_domain_part(full_alias)
-                custom_domain = CustomDomain.get_by(domain=alias_domain)
-                if custom_domain:
-                    LOG.d("Set alias %s domain to %s", full_alias, custom_domain)
-                    alias.custom_domain_id = custom_domain.id
+                if alias_suffix.startswith("@"):
+                    alias_domain = alias_suffix[1:]
+                    domain = CustomDomain.get_by(domain=alias_domain)
+                    LOG.d("Set alias %s domain to %s", full_alias, domain)
+                    alias.custom_domain_id = domain.id
 
                 db.session.commit()
                 flash(f"Alias {full_alias} has been created", "success")
