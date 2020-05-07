@@ -65,7 +65,7 @@ def fido_setup():
 
         return redirect(url_for("dashboard.index"))
     
-    # Prepare infomation for key registration process
+    # Prepare information for key registration process
     fido_uuid = str(uuid.uuid4())
     challenge = secrets.token_urlsafe(32)
 

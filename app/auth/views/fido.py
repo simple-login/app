@@ -91,7 +91,7 @@ def fido():
             # Verification failed, put else here to make structure clear
             pass
     
-    # Prepare infomation for key registration process
+    # Prepare information for key registration process
     session.pop('challenge', None)
     challenge = secrets.token_urlsafe(32)
     
