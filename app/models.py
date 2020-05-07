@@ -1114,7 +1114,7 @@ class Job(db.Model, ModelMixin):
 
 class Mailbox(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-    email = db.Column(db.String(256), unique=True, nullable=False)
+    email = db.Column(db.String(256), nullable=False)
     verified = db.Column(db.Boolean, default=False, nullable=False)
 
     # used when user wants to update mailbox email
@@ -1122,6 +1122,8 @@ class Mailbox(db.Model, ModelMixin):
 
     pgp_public_key = db.Column(db.Text, nullable=True)
     pgp_finger_print = db.Column(db.String(512), nullable=True)
+
+    __table_args__ = (db.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
 
     def nb_alias(self):
         return Alias.filter_by(mailbox_id=self.id).count()
