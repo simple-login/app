@@ -376,7 +376,7 @@ def email_already_used(email: str) -> bool:
 
 
 def mailbox_already_used(email: str, user) -> bool:
-    if Mailbox.get_by(email=email):
+    if Mailbox.get_by(email=email, user_id=user.id):
         return True
 
     # support the case user wants to re-add their real email as mailbox
