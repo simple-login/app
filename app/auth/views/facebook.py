@@ -65,7 +65,7 @@ def facebook_callback():
         redirect_uri=_redirect_uri,
     )
     facebook = facebook_compliance_fix(facebook)
-    token = facebook.fetch_token(
+    facebook.fetch_token(
         _token_url,
         client_secret=FACEBOOK_CLIENT_SECRET,
         authorization_response=request.url,
@@ -107,35 +107,12 @@ def facebook_callback():
             user.profile_picture_id = file.id
             db.session.commit()
 
-    # create user
     else:
-        if DISABLE_REGISTRATION:
-            flash("Registration is closed", "error")
-            return redirect(url_for("auth.login"))
-
-        if not can_be_used_as_personal_email(email) or email_already_used(email):
-            flash(f"You cannot use {email} as your personal inbox.", "error")
-            return redirect(url_for("auth.login"))
-
-        LOG.d("create facebook user with %s", facebook_user_data)
-        user = User.create(
-            email=email,
-            name=facebook_user_data["name"],
-            activated=True,
-            referral=get_referral(),
+        flash(
+            "Sorry you cannot sign up via Facebook, please use email/password sign-up instead",
+            "error",
         )
-        db.session.flush()
-
-        if picture_url:
-            LOG.d("set user profile picture to %s", picture_url)
-            file = create_file_from_url(user, picture_url)
-            user.profile_picture_id = file.id
-
-        db.session.commit()
-        login_user(user)
-        email_utils.send_welcome_email(user)
-
-        flash(f"Welcome to SimpleLogin {user.name}!", "success")
+        return redirect(url_for("auth.register"))
 
     next_url = None
     # The activation link contains the original page, for ex authorize page
