@@ -2,7 +2,7 @@ import uuid
 import json
 import secrets
 import webauthn
-from app.config import URL as SITE_URL
+from app.config import RP_ID
 from urllib.parse import urlparse
 
 from flask import render_template, flash, redirect, url_for, session
@@ -27,8 +27,6 @@ def fido_setup():
         return redirect(url_for("dashboard.index"))
 
     fido_token_form = FidoTokenForm()
-
-    RP_ID = urlparse(SITE_URL).hostname
 
     # Handling POST requests
     if fido_token_form.validate_on_submit():

@@ -1,8 +1,7 @@
 import json
 import secrets
 import webauthn
-from app.config import URL as SITE_URL
-from urllib.parse import urlparse
+from app.config import RP_ID
 
 from flask import request, render_template, redirect, url_for, flash, session
 from flask_login import login_user
@@ -39,8 +38,6 @@ def fido():
     fido_token_form = FidoTokenForm()
 
     next_url = request.args.get("next")
-
-    RP_ID = urlparse(SITE_URL).hostname
 
     webauthn_user = webauthn.WebAuthnUser(
             user.fido_uuid, user.email, user.name, False,
