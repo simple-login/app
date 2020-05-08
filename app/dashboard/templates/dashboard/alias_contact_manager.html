@@ -41,7 +41,7 @@
     <input type="hidden" name="form-name" value="create">
     {{ new_contact_form.csrf_token }}
 
-    <label class="form-label">Where do you want to send email to?</label>
+    <label class="form-label">Where do you want to send the email?</label>
 
     {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>") }}
     {{ render_field_errors(new_contact_form.email) }}
