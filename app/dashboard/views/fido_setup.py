@@ -81,9 +81,10 @@ def fido_setup():
         RP_ID,
         fido_uuid,
         current_user.email,
-        current_user.name,
+        current_user.name if current_user.name else current_user.email,
         False,
         attestation="none",
+        user_verification="discouraged",
     )
 
     # Don't think this one should be used, but it's not configurable by arguments

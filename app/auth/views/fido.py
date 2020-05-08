@@ -42,7 +42,7 @@ def fido():
     webauthn_user = webauthn.WebAuthnUser(
         user.fido_uuid,
         user.email,
-        user.name,
+        user.name if user.name else user.email,
         False,
         user.fido_credential_id,
         user.fido_pk,
