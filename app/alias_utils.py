@@ -61,7 +61,7 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             return None
 
         # if alias has been deleted before, do not auto-create it
-        if DeletedAlias.get_by(email=address, user_id=directory.user_id):
+        if DeletedAlias.get_by(email=address):
             LOG.warning(
                 "Alias %s was deleted before, cannot auto-create using directory %s, user %s",
                 address,
