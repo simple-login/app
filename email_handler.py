@@ -478,14 +478,13 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
 
     mailb: Mailbox = Mailbox.get_by(email=mailbox_email)
     if ENFORCE_SPF and mailb.force_spf:
-        if msg[_IP_HEADER]:
+        ip = msg[_IP_HEADER]
+        if ip:
             LOG.d("Enforce SPF")
             try:
-                r = spf.check2(i=msg[_IP_HEADER], s=envelope.mail_from.lower(), h=None)
+                r = spf.check2(i=ip, s=envelope.mail_from.lower(), h=None)
             except Exception:
-                LOG.error(
-                    "SPF error, mailbox %s, ip %s", mailbox_email, msg[_IP_HEADER]
-                )
+                LOG.error("SPF error, mailbox %s, ip %s", mailbox_email, ip)
             else:
                 # TODO: Handle temperr case (e.g. dns timeout)
                 # only an absolute pass, or no SPF policy at all is 'valid'
