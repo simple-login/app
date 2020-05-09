@@ -475,6 +475,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     mailb: Mailbox = Mailbox.get_by(email=mailbox_email)
     if ENFORCE_SPF and mailb.force_spf:
         if msg[_IP_HEADER]:
+            LOG.d("Enforce SPF")
             try:
                 r = spf.check2(i=msg[_IP_HEADER], s=envelope.mail_from.lower(), h=None)
             except Exception:
