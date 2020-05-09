@@ -65,38 +65,6 @@
       <!-- END Change email -->
 
 
-      {% if spf_available %}
-        <!--
-      <div class="card">
-        <form method="post">
-          <input type="hidden" name="form-name" value="force-spf">
-
-          <div class="card-body">
-            <div class="card-title">
-              Enforce SPF
-              <div class="small-text">
-                Block emails to reverse alias if sender is not validated by SPF,
-                even when SPF is configured as soft-fail.
-              </div>
-            </div>
-            <label class="custom-switch cursor mt-2 pl-0"
-                   data-toggle="tooltip"
-                   {% if mailbox.force_spf %}
-                   title="Disable SPF enforcement"
-                   {% else %}
-                   title="Enable SPF enforcement"
-                   {% endif %}
-            >
-              <input type="checkbox" name="spf-status" class="custom-switch-input"
-                     {{ "checked" if mailbox.force_spf else "" }}>
-              <span class="custom-switch-indicator"></span>
-            </label>
-          </div>
-        </form>
-      </div>
-      -->
-      {% endif %}
-
       <div class="card">
         <form method="post">
           <input type="hidden" name="form-name" value="pgp">
@@ -137,6 +105,46 @@
         </form>
 
       </div>
+
+      <hr>
+      <h2 class="h4">Advanced Options</h2>
+    
+      {% if spf_available %}
+        <div class="card">
+          <form method="post">
+            <input type="hidden" name="form-name" value="force-spf">
+
+            <div class="card-body">
+              <div class="card-title">
+                Enforce SPF
+                <div class="small-text">
+                  To avoid email-spoofing, SimpleLogin blocks email that
+                  <em data-toggle="tooltip"
+                      title="Email that has your mailbox as envelope-sender address">seems</em> to come from your
+                  mailbox
+                  but sent from <em data-toggle="tooltip"
+                                    title="IP Address that is not known by your mailbox email service">unknown</em>
+                  IP address.
+                  <br>
+                  Only turn off this option if you know what you're doing :).
+                </div>
+              </div>
+              <label class="custom-switch cursor mt-2 pl-0"
+                     data-toggle="tooltip"
+                  {% if mailbox.force_spf %}
+                     title="Disable SPF enforcement"
+                  {% else %}
+                     title="Enable SPF enforcement"
+                  {% endif %}
+              >
+                <input type="checkbox" name="spf-status" class="custom-switch-input"
+                    {{ "checked" if mailbox.force_spf else "" }}>
+                <span class="custom-switch-indicator"></span>
+              </label>
+            </div>
+          </form>
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}
