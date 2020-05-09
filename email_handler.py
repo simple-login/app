@@ -477,10 +477,13 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
             # TODO: Handle temperr case (e.g. dns timeout)
             # only an absolute pass, or no SPF policy at all is 'valid'
             if r[0] not in ["pass", "none"]:
-                LOG.d(
-                    "SPF validation failed for %s (reason %s)", mailbox_email, r[0],
+                LOG.error(
+                    "SPF fail for mailbox %s, reason %s, failed IP %s",
+                    mailbox_email,
+                    r[0],
+                    msg["X-SimpleLogin-Client-IP"],
                 )
-                return False, "550 SL E11"
+                return False, "451 SL E11"
         else:
             LOG.d(
                 "Could not find X-SimpleLogin-Client-IP header %s -> %s",
