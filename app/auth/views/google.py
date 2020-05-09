@@ -1,16 +1,14 @@
 from flask import request, session, redirect, flash, url_for
-from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 
-from app import s3, email_utils
+from app import s3
 from app.auth.base import auth_bp
-from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, DISABLE_REGISTRATION
+from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from app.extensions import db
 from app.log import LOG
 from app.models import User, File, SocialAuth
 from app.utils import random_string
-from .login_utils import after_login, get_referral
-from ...email_utils import can_be_used_as_personal_email, email_already_used
+from .login_utils import after_login
 
 _authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
 _token_url = "https://www.googleapis.com/oauth2/v4/token"

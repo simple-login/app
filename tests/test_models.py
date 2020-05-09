@@ -1,6 +1,5 @@
 from uuid import UUID
 
-import arrow
 import pytest
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN

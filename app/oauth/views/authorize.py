@@ -7,7 +7,6 @@ from itsdangerous import SignatureExpired
 
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.custom_alias import available_suffixes, signer
-from app.email_utils import get_email_domain_part
 from app.extensions import db
 from app.jose_utils import make_id_token
 from app.log import LOG

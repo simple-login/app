@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from app import alias_utils
@@ -13,7 +12,6 @@ from app.log import LOG
 from app.models import (
     Alias,
     ClientUser,
-    DeletedAlias,
     AliasGeneratorEnum,
     User,
     EmailLog,

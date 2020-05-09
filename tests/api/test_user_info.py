@@ -1,7 +1,7 @@
 from flask import url_for
 
 from app.extensions import db
-from app.models import User, ApiKey, AliasUsedOn, Alias
+from app.models import User, ApiKey
 
 
 def test_user_in_trial(flask_client):

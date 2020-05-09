@@ -1,22 +1,18 @@
 from flask import request, session, redirect, url_for, flash
-from flask_login import login_user
 from requests_oauthlib import OAuth2Session
 from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 
-from app import email_utils
 from app.auth.base import auth_bp
 from app.auth.views.google import create_file_from_url
 from app.config import (
     URL,
     FACEBOOK_CLIENT_ID,
     FACEBOOK_CLIENT_SECRET,
-    DISABLE_REGISTRATION,
 )
 from app.extensions import db
 from app.log import LOG
 from app.models import User, SocialAuth
-from .login_utils import after_login, get_referral
-from ...email_utils import can_be_used_as_personal_email, email_already_used
+from .login_utils import after_login
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"

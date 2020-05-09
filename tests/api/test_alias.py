@@ -2,8 +2,6 @@ import json
 
 from flask import url_for
 
-from flask import url_for
-
 from app.config import PAGE_LIMIT
 from app.extensions import db
 from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
