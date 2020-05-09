@@ -91,6 +91,8 @@ from server import create_app
 # can happen when user "Reply All" on some email clients
 _SELF_FORWARDING_STATUS = "550 SL self-forward"
 
+_IP_HEADER = "X-SimpleLogin-Client-IP"
+
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -367,6 +369,8 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
     delete_header(msg, "Reply-To")
     delete_header(msg, "Sender")
 
+    delete_header(msg, _IP_HEADER)
+
     # change the from header so the sender comes from @SL
     # so it can pass DMARC check
     # replace the email part in from: header
@@ -470,25 +474,31 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
 
     mailb: Mailbox = Mailbox.get_by(email=mailbox_email)
     if ENFORCE_SPF and mailb.force_spf:
-        if msg["X-SimpleLogin-Client-IP"]:
-            r = spf.check2(
-                i=msg["X-SimpleLogin-Client-IP"], s=envelope.mail_from.lower(), h=None
-            )
-            # TODO: Handle temperr case (e.g. dns timeout)
-            # only an absolute pass, or no SPF policy at all is 'valid'
-            if r[0] not in ["pass", "none"]:
-                LOG.d(
-                    "SPF validation failed for %s (reason %s)", mailbox_email, r[0],
+        if msg[_IP_HEADER]:
+            LOG.d("Enforce SPF")
+            try:
+                r = spf.check2(i=msg[_IP_HEADER], s=envelope.mail_from.lower(), h=None)
+            except Exception:
+                LOG.error(
+                    "SPF error, mailbox %s, ip %s", mailbox_email, msg[_IP_HEADER]
                 )
-                return False, "550 SL E11"
+            else:
+                # TODO: Handle temperr case (e.g. dns timeout)
+                # only an absolute pass, or no SPF policy at all is 'valid'
+                if r[0] not in ["pass", "none"]:
+                    LOG.error(
+                        "SPF fail for mailbox %s, reason %s, failed IP %s",
+                        mailbox_email,
+                        r[0],
+                        msg[_IP_HEADER],
+                    )
+                    return False, "451 SL E11"
         else:
-            LOG.d(
-                "Could not find X-SimpleLogin-Client-IP header %s -> %s",
-                mailbox_email,
-                address,
+            LOG.warning(
+                "Could not find %s header %s -> %s", _IP_HEADER, mailbox_email, address,
             )
 
-    delete_header(msg, "X-SimpleLogin-Client-IP")
+    delete_header(msg, _IP_HEADER)
 
     # only mailbox can send email to the reply-email
     if envelope.mail_from.lower() != mailbox_email.lower():

@@ -559,6 +559,7 @@ Below are pointers to different topics:
 - [UFW - uncomplicated firewall](docs/ufw.md)
 - [SES - Amazon Simple Email Service](docs/ses.md)
 - [Upgrade existing SimpleLogin installation](docs/upgrade.md)
+- [Enforce SPF](docs/enforce-spf.md)
 
 ## Contributing
 
