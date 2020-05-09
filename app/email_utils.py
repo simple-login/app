@@ -8,6 +8,7 @@ from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP
 from typing import Optional
 
+import arrow
 import dkim
 from jinja2 import Environment, FileSystemLoader
 
@@ -24,10 +25,12 @@ from app.config import (
     POSTFIX_SUBMISSION_TLS,
     MAX_NB_EMAIL_FREE_PLAN,
     DISPOSABLE_EMAIL_DOMAINS,
+    MAX_ALERT_24H,
 )
 from app.dns_utils import get_mx_domains
+from app.extensions import db
 from app.log import LOG
-from app.models import Mailbox, User
+from app.models import Mailbox, User, SentAlert
 
 
 def render(template_name, **kwargs) -> str:
@@ -233,6 +236,43 @@ def send_email(
 
     msg_raw = msg.as_bytes()
     smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
+
+
+def send_email_with_rate_control(
+    user: User,
+    alert_type: str,
+    to_email: str,
+    subject,
+    plaintext,
+    html=None,
+    bounced_email: Optional[Message] = None,
+) -> bool:
+    """Same as send_email with rate control over alert_type.
+    For now no more than _MAX_ALERT_24h alert can be sent in the last 24h
+
+    Return true if the email is sent, otherwise False
+    """
+    to_email = to_email.lower().strip()
+    one_day_ago = arrow.now().shift(days=-1)
+    nb_alert = (
+        SentAlert.query.filter_by(alert_type=alert_type, to_email=to_email)
+        .filter(SentAlert.created_at > one_day_ago)
+        .count()
+    )
+
+    if nb_alert > MAX_ALERT_24H:
+        LOG.error(
+            "%s emails were sent to %s in the last 24h, alert type %s",
+            nb_alert,
+            to_email,
+            alert_type,
+        )
+        return False
+
+    SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
+    db.session.commit()
+    send_email(to_email, subject, plaintext, html, bounced_email)
+    return True
 
 
 def get_email_local_part(address):
