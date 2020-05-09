@@ -56,6 +56,9 @@ from app.config import (
     UNSUBSCRIBER,
     LOAD_PGP_EMAIL_HANDLER,
     ENFORCE_SPF,
+    ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
+    ALERT_BOUNCE_EMAIL,
+    ALERT_SPAM_EMAIL,
 )
 from app.email_utils import (
     send_email,
@@ -70,6 +73,7 @@ from app.email_utils import (
     get_spam_info,
     get_orig_message_from_spamassassin_report,
     parseaddr_unicode,
+    send_email_with_rate_control,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -511,7 +515,9 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
             reply_email,
         )
 
-        send_email(
+        send_email_with_rate_control(
+            user,
+            ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
             mailbox_email,
             f"Reply from your alias {alias.email} only works from your mailbox",
             render(
@@ -531,7 +537,9 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         )
 
         # Notify sender that they cannot send emails to this address
-        send_email(
+        send_email_with_rate_control(
+            user,
+            ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
             envelope.mail_from,
             f"Your email ({envelope.mail_from}) is not allowed to send emails to {reply_email}",
             render(
@@ -660,7 +668,9 @@ def handle_bounce(
             contact.website_email,
             address,
         )
-        send_email(
+        send_email_with_rate_control(
+            user,
+            ALERT_BOUNCE_EMAIL,
             # use user mail here as only user is authenticated to see the refused email
             user.email,
             f"Email from {contact.website_email} to {address} cannot be delivered to your inbox",
@@ -695,7 +705,9 @@ def handle_bounce(
         alias.enabled = False
         db.session.commit()
 
-        send_email(
+        send_email_with_rate_control(
+            user,
+            ALERT_BOUNCE_EMAIL,
             # use user mail here as only user is authenticated to see the refused email
             user.email,
             f"Alias {address} has been disabled due to second undelivered email from {contact.website_email}",
@@ -765,7 +777,9 @@ def handle_spam(
         contact.website_email,
         alias.email,
     )
-    send_email(
+    send_email_with_rate_control(
+        user,
+        ALERT_SPAM_EMAIL,
         mailbox_email,
         f"Email from {contact.website_email} to {alias.email} is detected as spam",
         render(
