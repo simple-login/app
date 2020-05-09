@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
+from app import alias_utils
 from app.api.serializer import get_alias_infos_with_pagination_v2
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
@@ -112,18 +113,8 @@ def index():
 
             LOG.d("delete gen email %s", alias)
             email = alias.email
-            Alias.delete(alias.id)
-            db.session.commit()
+            alias_utils.delete_alias(alias, current_user)
             flash(f"Alias {email} has been deleted", "success")
-
-            # try to save deleted alias
-            try:
-                DeletedAlias.create(user_id=current_user.id, email=email)
-                db.session.commit()
-            # this can happen when a previously deleted alias is re-created via catch-all or directory feature
-            except IntegrityError:
-                LOG.error("alias %s has been added before to DeletedAlias", email)
-                db.session.rollback()
 
         return redirect(
             url_for("dashboard.index", query=query, sort=sort, filter=alias_filter)

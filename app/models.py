@@ -9,6 +9,7 @@ import bcrypt
 from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text, desc, CheckConstraint
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -24,6 +25,7 @@ from app.config import (
     LANDING_PAGE_URL,
     FIRST_ALIAS_DOMAIN,
 )
+from app.errors import AliasInTrashError
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
@@ -631,6 +633,18 @@ class Alias(db.Model, ModelMixin):
     mailbox = db.relationship("Mailbox")
 
     @classmethod
+    def create(cls, **kw):
+        r = cls(**kw)
+
+        # make sure alias is not in global trash, i.e. DeletedAlias table
+        email = kw["email"]
+        if DeletedAlias.get_by(email=email):
+            raise AliasInTrashError
+
+        db.session.add(r)
+        return r
+
+    @classmethod
     def create_new(cls, user, prefix, note=None, mailbox_id=None):
         if not prefix:
             raise Exception("alias prefix cannot be empty")
@@ -640,7 +654,7 @@ class Alias(db.Model, ModelMixin):
             suffix = random_word()
             email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
 
-            if not cls.get_by(email=email):
+            if not cls.get_by(email=email) and not DeletedAlias.get_by(email=email):
                 break
 
         return Alias.create(
@@ -986,7 +1000,6 @@ class AppleSubscription(db.Model, ModelMixin):
 class DeletedAlias(db.Model, ModelMixin):
     """Store all deleted alias to make sure they are NOT reused"""
 
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
 
 
@@ -1073,6 +1086,20 @@ class CustomDomain(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
+    @classmethod
+    def delete(cls, obj_id):
+        # Put all aliases belonging to this domain to global trash
+        try:
+            for alias in Alias.query.filter_by(custom_domain_id=obj_id):
+                DeletedAlias.create(email=alias.email)
+            db.session.commit()
+        except IntegrityError:
+            LOG.error("Some aliases have been added before to DeletedAlias")
+            db.session.rollback()
+
+        cls.query.filter(cls.id == obj_id).delete()
+        db.session.commit()
+
     def nb_alias(self):
         return Alias.filter_by(custom_domain_id=self.id).count()
 
@@ -1093,6 +1120,21 @@ class Directory(db.Model, ModelMixin):
 
     def nb_alias(self):
         return Alias.filter_by(directory_id=self.id).count()
+
+    @classmethod
+    def delete(cls, obj_id):
+        # Put all aliases belonging to this directory to global trash
+        try:
+            for alias in Alias.query.filter_by(directory_id=obj_id):
+                DeletedAlias.create(email=alias.email)
+            db.session.commit()
+        # this can happen when a previously deleted alias is re-created via catch-all or directory feature
+        except IntegrityError:
+            LOG.error("Some aliases have been added before to DeletedAlias")
+            db.session.rollback()
+
+        cls.query.filter(cls.id == obj_id).delete()
+        db.session.commit()
 
     def __repr__(self):
         return f"<Directory {self.name}>"
@@ -1128,6 +1170,21 @@ class Mailbox(db.Model, ModelMixin):
 
     def nb_alias(self):
         return Alias.filter_by(mailbox_id=self.id).count()
+
+    @classmethod
+    def delete(cls, obj_id):
+        # Put all aliases belonging to this mailbox to global trash
+        try:
+            for alias in Alias.query.filter_by(mailbox_id=obj_id):
+                DeletedAlias.create(email=alias.email)
+            db.session.commit()
+        # this can happen when a previously deleted alias is re-created via catch-all or directory feature
+        except IntegrityError:
+            LOG.error("Some aliases have been added before to DeletedAlias")
+            db.session.rollback()
+
+        cls.query.filter(cls.id == obj_id).delete()
+        db.session.commit()
 
     def __repr__(self):
         return f"<Mailbox {self.email}>"
