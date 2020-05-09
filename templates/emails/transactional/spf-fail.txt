@@ -1,0 +1,13 @@
+Hi {{name}}
+
+We have recorded an attempt to send an email from your alias {{ alias }} from an unknown IP address {{ ip }}.
+
+To prevent email-spoofing, SimpleLogin enforces the SPF (Sender Policy Framework).
+Emails sent from an IP address that is unknown by your email service are refused by default.
+
+However you can turn off this option by going to {{mailbox_url}}.
+
+Please only turn this protection off this if you know what you're doing :).
+
+Best,
+SimpleLogin team.
