@@ -474,10 +474,8 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
 
     mailb: Mailbox = Mailbox.get_by(email=mailbox_email)
     if ENFORCE_SPF and mailb.force_spf:
-        if msg["X-SimpleLogin-Client-IP"]:
-            r = spf.check2(
-                i=msg["X-SimpleLogin-Client-IP"], s=envelope.mail_from.lower(), h=None
-            )
+        if msg[_IP_HEADER]:
+            r = spf.check2(i=msg[_IP_HEADER], s=envelope.mail_from.lower(), h=None)
             # TODO: Handle temperr case (e.g. dns timeout)
             # only an absolute pass, or no SPF policy at all is 'valid'
             if r[0] not in ["pass", "none"]:
@@ -485,17 +483,15 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
                     "SPF fail for mailbox %s, reason %s, failed IP %s",
                     mailbox_email,
                     r[0],
-                    msg["X-SimpleLogin-Client-IP"],
+                    msg[_IP_HEADER],
                 )
                 return False, "451 SL E11"
         else:
             LOG.d(
-                "Could not find X-SimpleLogin-Client-IP header %s -> %s",
-                mailbox_email,
-                address,
+                "Could not find %s header %s -> %s", _IP_HEADER, mailbox_email, address,
             )
 
-    delete_header(msg, "X-SimpleLogin-Client-IP")
+    delete_header(msg, _IP_HEADER)
 
     # only mailbox can send email to the reply-email
     if envelope.mail_from.lower() != mailbox_email.lower():
