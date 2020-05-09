@@ -1,6 +1,6 @@
 name: Run tests & Public to Docker Registry
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -12,11 +12,20 @@ jobs:
         python-version: [3.7]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+
+      - uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Test formatting
         run: |
@@ -34,13 +43,16 @@ jobs:
           pytest
 
       - name: Publish to Docker Registry
-        uses: elgohr/Publish-Docker-Github-Action@master
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v1
         with:
-          name: simplelogin/app-ci
+          repository: simplelogin/app-ci
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+          tag_with_ref: true
 
       - name: Send Telegram message
+        if: github.event_name == 'push'
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
