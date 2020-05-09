@@ -13,13 +13,13 @@ However if you want to prevent this kind of attack, you can enforce the SPF poli
 apt install -y postfix-pcre
 ``` 
  
-2) Add `pcre:/etc/postfix/body_checks` file with the following content
+2) Add `/etc/postfix/body_checks.pcre` file with the following content
 
 ```
 /^X-SimpleLogin-Client-IP:/    IGNORE
 ```
 
-3) Add `pcre:/etc/postfix/client_headers.pcre` with the following content
+3) Add `/etc/postfix/client_headers.pcre` with the following content
 
 ```
 /^([0-9a-f:.]+)$/ prepend X-SimpleLogin-Client-IP: $1
@@ -28,7 +28,7 @@ apt install -y postfix-pcre
 4) Add the following lines to your Postfix config file at `/etc/postfix/main.cf`
 
 ```
-body_checks = pcre:/etc/postfix/body_checks
+body_checks = pcre:/etc/postfix/body_checks.pcre
 smtpd_client_restrictions = pcre:/etc/postfix/client_headers.pcre
 ```
 
