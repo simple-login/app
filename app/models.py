@@ -1248,3 +1248,21 @@ class Referral(db.Model, ModelMixin):
 
     def link(self):
         return f"{LANDING_PAGE_URL}?slref={self.code}"
+
+
+class SentAlert(db.Model, ModelMixin):
+    """keep track of alerts sent to user.
+    User can receive an alert when there's abnormal activity on their aliases such as
+    - reverse-alias not used by the owning mailbox
+    - SPF fails when using the reverse-alias
+    - bounced email
+    - ...
+
+    Different rate controls can then be implemented based on SentAlert:
+    - only once alert: an alert type should be sent only once
+    - max number of sent per 24H: an alert type should not be sent more than X times in 24h
+    """
+
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    to_email = db.Column(db.String(256), nullable=False)
+    alert_type = db.Column(db.String(256), nullable=False)
