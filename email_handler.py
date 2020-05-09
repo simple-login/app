@@ -59,6 +59,7 @@ from app.config import (
     ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
     ALERT_BOUNCE_EMAIL,
     ALERT_SPAM_EMAIL,
+    ALERT_SPF,
 )
 from app.email_utils import (
     send_email,
@@ -493,7 +494,27 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
                         "SPF fail for mailbox %s, reason %s, failed IP %s",
                         mailbox_email,
                         r[0],
-                        msg[_IP_HEADER],
+                        ip,
+                    )
+                    send_email_with_rate_control(
+                        user,
+                        ALERT_SPF,
+                        mailbox_email,
+                        f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
+                        render(
+                            "transactional/spf-fail.txt",
+                            name=user.name,
+                            alias=alias.email,
+                            ip=ip,
+                            mailbox_url=URL + f"/dashboard/mailbox/{mailb.id}#spf",
+                        ),
+                        render(
+                            "transactional/spf-fail.html",
+                            name=user.name,
+                            alias=alias.email,
+                            ip=ip,
+                            mailbox_url=URL + f"/dashboard/mailbox/{mailb.id}#spf",
+                        ),
                     )
                     return False, "451 SL E11"
         else:

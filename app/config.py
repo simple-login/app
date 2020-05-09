@@ -255,6 +255,8 @@ APPLE_API_SECRET = os.environ.get("APPLE_API_SECRET")
 # for Mac App
 MACAPP_APPLE_API_SECRET = os.environ.get("MACAPP_APPLE_API_SECRET")
 
+# <<<<< ALERT EMAIL >>>>
+
 # maximal number of alerts that can be sent to the same email in 24h
 MAX_ALERT_24H = 4
 
@@ -266,3 +268,7 @@ ALERT_BOUNCE_EMAIL = "bounce"
 
 # When a forwarding email is detected as spam
 ALERT_SPAM_EMAIL = "spam"
+
+ALERT_SPF = "spf"
+
+# <<<<< END ALERT EMAIL >>>>
