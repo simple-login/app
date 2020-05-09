@@ -7,7 +7,7 @@ from itsdangerous import Signer
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
-from app.config import MAILBOX_SECRET
+from app.config import ENFORCE_SPF, MAILBOX_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import can_be_used_as_personal_email
@@ -100,6 +100,24 @@ def mailbox_detail_route(mailbox_id):
                     return redirect(
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                     )
+        elif request.form.get("form-name") == "force-spf":
+            if not ENFORCE_SPF:
+                flash("SPF enforcement globally not enabled", "error")
+                return redirect(url_for("dashboard.index"))
+
+            mailbox.force_spf = (
+                True if request.form.get("spf-status") == "on" else False
+            )
+            db.session.commit()
+            flash(
+                "SPF enforcement was " + "enabled"
+                if request.form.get("spf-status")
+                else "disabled" + " succesfully",
+                "success",
+            )
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+            )
         elif request.form.get("form-name") == "pgp":
             if request.form.get("action") == "save":
                 if not current_user.is_premium():
@@ -129,6 +147,7 @@ def mailbox_detail_route(mailbox_id):
                     url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                 )
 
+    spf_available = ENFORCE_SPF
     return render_template("dashboard/mailbox_detail.html", **locals())
 
 

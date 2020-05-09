@@ -64,6 +64,35 @@
       </div>
       <!-- END Change email -->
 
+      {% if spf_available %}
+      <div class="card">
+        <form method="post">
+          <input type="hidden" name="form-name" value="force-spf">
+
+          <div class="card-body">
+            <div class="card-title">
+              Enforce SPF
+              <div class="small-text">
+                Block emails to reverse alias if sender is not validated by SPF,
+                even when SPF is configured as soft-fail.
+              </div>
+            </div>
+            <label class="custom-switch cursor mt-2 pl-0"
+                   data-toggle="tooltip"
+                   {% if mailbox.force_spf %}
+                   title="Disable SPF enforcement"
+                   {% else %}
+                   title="Enable SPF enforcement"
+                   {% endif %}
+            >
+              <input type="checkbox" name="spf-status" class="custom-switch-input"
+                     {{ "checked" if mailbox.force_spf else "" }}>
+              <span class="custom-switch-indicator"></span>
+            </label>
+          </div>
+        </form>
+      </div>
+      {% endif %}
 
       <div class="card">
         <form method="post">
@@ -109,4 +138,11 @@
   </div>
 {% endblock %}
 
+{% block script %}
+  <script>
+    $(".custom-switch-input").change(function (e) {
+      $(this).closest("form").submit();
+    });
+  </script>
+{% endblock %}
 

@@ -1116,6 +1116,7 @@ class Mailbox(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = db.Column(db.String(256), nullable=False)
     verified = db.Column(db.Boolean, default=False, nullable=False)
+    force_spf = db.Column(db.Boolean, default=True, server_default="1", nullable=False)
 
     # used when user wants to update mailbox email
     new_email = db.Column(db.String(256), unique=True)
