@@ -477,50 +477,11 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         handle_bounce(contact, alias, msg, user, mailbox_email)
         return False, "550 SL E6"
 
-    mailb: Mailbox = Mailbox.get_by(email=mailbox_email)
-    if ENFORCE_SPF and mailb.force_spf:
+    mailbox: Mailbox = Mailbox.get_by(email=mailbox_email)
+    if ENFORCE_SPF and mailbox.force_spf:
         ip = msg[_IP_HEADER]
-        if ip:
-            LOG.d("Enforce SPF")
-            try:
-                r = spf.check2(i=ip, s=envelope.mail_from.lower(), h=None)
-            except Exception:
-                LOG.error("SPF error, mailbox %s, ip %s", mailbox_email, ip)
-            else:
-                # TODO: Handle temperr case (e.g. dns timeout)
-                # only an absolute pass, or no SPF policy at all is 'valid'
-                if r[0] not in ["pass", "none"]:
-                    LOG.error(
-                        "SPF fail for mailbox %s, reason %s, failed IP %s",
-                        mailbox_email,
-                        r[0],
-                        ip,
-                    )
-                    send_email_with_rate_control(
-                        user,
-                        ALERT_SPF,
-                        mailbox_email,
-                        f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
-                        render(
-                            "transactional/spf-fail.txt",
-                            name=user.name,
-                            alias=alias.email,
-                            ip=ip,
-                            mailbox_url=URL + f"/dashboard/mailbox/{mailb.id}#spf",
-                        ),
-                        render(
-                            "transactional/spf-fail.html",
-                            name=user.name,
-                            alias=alias.email,
-                            ip=ip,
-                            mailbox_url=URL + f"/dashboard/mailbox/{mailb.id}#spf",
-                        ),
-                    )
-                    return False, "451 SL E11"
-        else:
-            LOG.warning(
-                "Could not find %s header %s -> %s", _IP_HEADER, mailbox_email, address,
-            )
+        if not spf_pass(ip, envelope, mailbox, user, alias, address):
+            return False, "451 SL E11"
 
     delete_header(msg, _IP_HEADER)
 
@@ -637,6 +598,58 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     db.session.commit()
 
     return True, "250 Message accepted for delivery"
+
+
+def spf_pass(
+    ip: str, envelope, mailbox: Mailbox, user: User, alias: Alias, contact_email: str
+) -> bool:
+    if ip:
+        LOG.d("Enforce SPF")
+        try:
+            r = spf.check2(i=ip, s=envelope.mail_from.lower(), h=None)
+        except Exception:
+            LOG.error("SPF error, mailbox %s, ip %s", mailbox.email, ip)
+        else:
+            # TODO: Handle temperr case (e.g. dns timeout)
+            # only an absolute pass, or no SPF policy at all is 'valid'
+            if r[0] not in ["pass", "none"]:
+                LOG.error(
+                    "SPF fail for mailbox %s, reason %s, failed IP %s",
+                    mailbox.email,
+                    r[0],
+                    ip,
+                )
+                send_email_with_rate_control(
+                    user,
+                    ALERT_SPF,
+                    mailbox.email,
+                    f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
+                    render(
+                        "transactional/spf-fail.txt",
+                        name=user.name,
+                        alias=alias.email,
+                        ip=ip,
+                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                    ),
+                    render(
+                        "transactional/spf-fail.html",
+                        name=user.name,
+                        alias=alias.email,
+                        ip=ip,
+                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                    ),
+                )
+                return False
+
+    else:
+        LOG.warning(
+            "Could not find %s header %s -> %s",
+            _IP_HEADER,
+            mailbox.email,
+            contact_email,
+        )
+
+    return True
 
 
 def handle_bounce(
