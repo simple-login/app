@@ -59,6 +59,7 @@ from app.config import (
     ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
     ALERT_BOUNCE_EMAIL,
     ALERT_SPAM_EMAIL,
+    ALERT_SPF,
 )
 from app.email_utils import (
     send_email,
@@ -476,84 +477,17 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         handle_bounce(contact, alias, msg, user, mailbox_email)
         return False, "550 SL E6"
 
-    mailb: Mailbox = Mailbox.get_by(email=mailbox_email)
-    if ENFORCE_SPF and mailb.force_spf:
-        if msg[_IP_HEADER]:
-            LOG.d("Enforce SPF")
-            try:
-                r = spf.check2(i=msg[_IP_HEADER], s=envelope.mail_from.lower(), h=None)
-            except Exception:
-                LOG.error(
-                    "SPF error, mailbox %s, ip %s", mailbox_email, msg[_IP_HEADER]
-                )
-            else:
-                # TODO: Handle temperr case (e.g. dns timeout)
-                # only an absolute pass, or no SPF policy at all is 'valid'
-                if r[0] not in ["pass", "none"]:
-                    LOG.error(
-                        "SPF fail for mailbox %s, reason %s, failed IP %s",
-                        mailbox_email,
-                        r[0],
-                        msg[_IP_HEADER],
-                    )
-                    return False, "451 SL E11"
-        else:
-            LOG.warning(
-                "Could not find %s header %s -> %s", _IP_HEADER, mailbox_email, address,
-            )
+    mailbox: Mailbox = Mailbox.get_by(email=mailbox_email)
+    if ENFORCE_SPF and mailbox.force_spf:
+        ip = msg[_IP_HEADER]
+        if not spf_pass(ip, envelope, mailbox, user, alias, address):
+            return False, "451 SL E11"
 
     delete_header(msg, _IP_HEADER)
 
     # only mailbox can send email to the reply-email
     if envelope.mail_from.lower() != mailbox_email.lower():
-        LOG.warning(
-            f"Reply email can only be used by mailbox. "
-            f"Actual mail_from: %s. msg from header: %s, Mailbox %s. reply_email %s",
-            envelope.mail_from,
-            msg["From"],
-            mailbox_email,
-            reply_email,
-        )
-
-        send_email_with_rate_control(
-            user,
-            ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
-            mailbox_email,
-            f"Reply from your alias {alias.email} only works from your mailbox",
-            render(
-                "transactional/reply-must-use-personal-email.txt",
-                name=user.name,
-                alias=alias.email,
-                sender=envelope.mail_from,
-                mailbox_email=mailbox_email,
-            ),
-            render(
-                "transactional/reply-must-use-personal-email.html",
-                name=user.name,
-                alias=alias.email,
-                sender=envelope.mail_from,
-                mailbox_email=mailbox_email,
-            ),
-        )
-
-        # Notify sender that they cannot send emails to this address
-        send_email_with_rate_control(
-            user,
-            ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
-            envelope.mail_from,
-            f"Your email ({envelope.mail_from}) is not allowed to send emails to {reply_email}",
-            render(
-                "transactional/send-from-alias-from-unknown-sender.txt",
-                sender=envelope.mail_from,
-                reply_email=reply_email,
-            ),
-            render(
-                "transactional/send-from-alias-from-unknown-sender.html",
-                sender=envelope.mail_from,
-                reply_email=reply_email,
-            ),
-        )
-
+        handle_unknown_mailbox(envelope, msg, mailbox, reply_email, user, alias)
         return False, "550 SL E7"
 
     delete_header(msg, "DKIM-Signature")
@@ -617,6 +551,110 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     db.session.commit()
 
     return True, "250 Message accepted for delivery"
+
+
+def spf_pass(
+    ip: str, envelope, mailbox: Mailbox, user: User, alias: Alias, contact_email: str
+) -> bool:
+    if ip:
+        LOG.d("Enforce SPF")
+        try:
+            r = spf.check2(i=ip, s=envelope.mail_from.lower(), h=None)
+        except Exception:
+            LOG.error("SPF error, mailbox %s, ip %s", mailbox.email, ip)
+        else:
+            # TODO: Handle temperr case (e.g. dns timeout)
+            # only an absolute pass, or no SPF policy at all is 'valid'
+            if r[0] not in ["pass", "none"]:
+                LOG.error(
+                    "SPF fail for mailbox %s, reason %s, failed IP %s",
+                    mailbox.email,
+                    r[0],
+                    ip,
+                )
+                send_email_with_rate_control(
+                    user,
+                    ALERT_SPF,
+                    mailbox.email,
+                    f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
+                    render(
+                        "transactional/spf-fail.txt",
+                        name=user.name,
+                        alias=alias.email,
+                        ip=ip,
+                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                    ),
+                    render(
+                        "transactional/spf-fail.html",
+                        name=user.name,
+                        alias=alias.email,
+                        ip=ip,
+                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                    ),
+                )
+                return False
+
+    else:
+        LOG.warning(
+            "Could not find %s header %s -> %s",
+            _IP_HEADER,
+            mailbox.email,
+            contact_email,
+        )
+
+    return True
+
+
+def handle_unknown_mailbox(
+    envelope, msg, mailbox: Mailbox, reply_email: str, user: User, alias: Alias
+):
+    LOG.warning(
+        f"Reply email can only be used by mailbox. "
+        f"Actual mail_from: %s. msg from header: %s, Mailbox %s. reply_email %s",
+        envelope.mail_from,
+        msg["From"],
+        mailbox.email,
+        reply_email,
+    )
+
+    send_email_with_rate_control(
+        user,
+        ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
+        mailbox.email,
+        f"Reply from your alias {alias.email} only works from your mailbox",
+        render(
+            "transactional/reply-must-use-personal-email.txt",
+            name=user.name,
+            alias=alias.email,
+            sender=envelope.mail_from,
+            mailbox_email=mailbox.email,
+        ),
+        render(
+            "transactional/reply-must-use-personal-email.html",
+            name=user.name,
+            alias=alias.email,
+            sender=envelope.mail_from,
+            mailbox_email=mailbox.email,
+        ),
+    )
+
+    # Notify sender that they cannot send emails to this address
+    send_email_with_rate_control(
+        user,
+        ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
+        envelope.mail_from,
+        f"Your email ({envelope.mail_from}) is not allowed to send emails to {reply_email}",
+        render(
+            "transactional/send-from-alias-from-unknown-sender.txt",
+            sender=envelope.mail_from,
+            reply_email=reply_email,
+        ),
+        render(
+            "transactional/send-from-alias-from-unknown-sender.html",
+            sender=envelope.mail_from,
+            reply_email=reply_email,
+        ),
+    )
 
 
 def handle_bounce(
