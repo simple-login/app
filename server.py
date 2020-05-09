@@ -83,6 +83,9 @@ def create_app() -> Flask:
 
     # to avoid conflict with other cookie
     app.config["SESSION_COOKIE_NAME"] = "slapp"
+    if URL.startswith("https"):
+        app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "strict"
 
     init_extensions(app)
     register_blueprints(app)
