@@ -91,6 +91,8 @@ from server import create_app
 # can happen when user "Reply All" on some email clients
 _SELF_FORWARDING_STATUS = "550 SL self-forward"
 
+_IP_HEADER = "X-SimpleLogin-Client-IP"
+
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -366,6 +368,8 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
     # remove reply-to & sender header if present
     delete_header(msg, "Reply-To")
     delete_header(msg, "Sender")
+
+    delete_header(msg, _IP_HEADER)
 
     # change the from header so the sender comes from @SL
     # so it can pass DMARC check
