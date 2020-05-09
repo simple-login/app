@@ -1,5 +1,6 @@
 from email.message import EmailMessage
 
+from app.config import MAX_ALERT_24H
 from app.email_utils import (
     get_email_domain_part,
     email_belongs_to_alias_domains,
@@ -7,6 +8,7 @@ from app.email_utils import (
     delete_header,
     add_or_replace_header,
     parseaddr_unicode,
+    send_email_with_rate_control,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -100,4 +102,19 @@ def test_parseaddr_unicode():
     assert parseaddr_unicode("=?iso-8859-1?q?p=F6stal?= <abcd@gmail.com>") == (
         "pöstal",
         "abcd@gmail.com",
+    )
+
+
+def test_send_email_with_rate_control(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    for _ in range(MAX_ALERT_24H + 1):
+        assert send_email_with_rate_control(
+            user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
+        )
+    assert not send_email_with_rate_control(
+        user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
     )

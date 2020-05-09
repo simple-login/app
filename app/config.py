@@ -254,3 +254,15 @@ with open(get_abs_path(DISPOSABLE_FILE_PATH), "r") as f:
 APPLE_API_SECRET = os.environ.get("APPLE_API_SECRET")
 # for Mac App
 MACAPP_APPLE_API_SECRET = os.environ.get("MACAPP_APPLE_API_SECRET")
+
+# maximal number of alerts that can be sent to the same email in 24h
+MAX_ALERT_24H = 4
+
+# When a reverse-alias receives emails from un unknown mailbox
+ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX = "reverse_alias_unknown_mailbox"
+
+# When a forwarding email is bounced
+ALERT_BOUNCE_EMAIL = "bounce"
+
+# When a forwarding email is detected as spam
+ALERT_SPAM_EMAIL = "spam"
