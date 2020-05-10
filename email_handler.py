@@ -324,10 +324,6 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
             return False, "550 SL E3"
 
-    mailbox = alias.mailbox
-    mailbox_email = mailbox.email
-    user = alias.user
-
     contact = get_or_create_contact(msg["From"], alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
 
@@ -336,7 +332,12 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         email_log.blocked = True
 
         db.session.commit()
+        # do not return 5** to allow user to receive emails later when alias is enabled
         return True, "250 Message accepted for delivery"
+
+    mailbox = alias.mailbox
+    mailbox_email = mailbox.email
+    user = alias.user
 
     spam_check = True
 
