@@ -32,6 +32,8 @@ It should contain the following info:
 """
 import email
 import re
+
+import arrow
 import spf
 import time
 import uuid
@@ -480,7 +482,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     mailbox: Mailbox = Mailbox.get_by(email=mailbox_email)
     if ENFORCE_SPF and mailbox.force_spf:
         ip = msg[_IP_HEADER]
-        if not spf_pass(ip, envelope, mailbox, user, alias, address):
+        if not spf_pass(ip, envelope, mailbox, user, alias, contact.website_email, msg):
             return False, "451 SL E11"
 
     delete_header(msg, _IP_HEADER)
@@ -554,7 +556,13 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
 
 
 def spf_pass(
-    ip: str, envelope, mailbox: Mailbox, user: User, alias: Alias, contact_email: str
+    ip: str,
+    envelope,
+    mailbox: Mailbox,
+    user: User,
+    alias: Alias,
+    contact_email: str,
+    msg: Message,
 ) -> bool:
     if ip:
         LOG.d("Enforce SPF")
@@ -583,6 +591,9 @@ def spf_pass(
                         alias=alias.email,
                         ip=ip,
                         mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                        to_email=contact_email,
+                        subject=msg["Subject"],
+                        time=arrow.now(),
                     ),
                     render(
                         "transactional/spf-fail.html",
@@ -590,7 +601,13 @@ def spf_pass(
                         alias=alias.email,
                         ip=ip,
                         mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                        to_email=contact_email,
+                        subject=msg["Subject"],
+                        time=arrow.now(),
                     ),
+                    # as the returned error status is 4**,
+                    # the sender will try to resend the email. Send the error message only once
+                    max_alert_24h=1,
                 )
                 return False
 

@@ -261,7 +261,7 @@ def send_email_with_rate_control(
         .count()
     )
 
-    if nb_alert > max_alert_24h:
+    if nb_alert >= max_alert_24h:
         LOG.error(
             "%s emails were sent to %s in the last 24h, alert type %s",
             nb_alert,
