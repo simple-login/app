@@ -111,7 +111,7 @@ def test_send_email_with_rate_control(flask_client):
     )
     db.session.commit()
 
-    for _ in range(MAX_ALERT_24H + 1):
+    for _ in range(MAX_ALERT_24H):
         assert send_email_with_rate_control(
             user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
         )
