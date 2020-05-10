@@ -153,13 +153,15 @@
           </form>
         </div>
 
-        <a v-if="!showFilter" @click="toggleFilter()" class="btn btn-secondary">
-          <i class="fe fe-chevrons-left"></i> Filters
-        </a>
+        <div class="btn-group">
+          <a v-if="!showFilter" @click="toggleFilter()" class="btn btn-outline-secondary">
+            <i class="fe fe-chevrons-left"></i> Filters
+          </a>
 
-        <a v-if="showFilter" @click="toggleFilter()" class="btn btn-outline-secondary">
-          <i class="fe fe-chevrons-right"></i>
-        </a>
+          <a v-if="showFilter" @click="toggleFilter()" class="btn btn-outline-secondary">
+            <i class="fe fe-chevrons-right"></i>
+          </a>
+        </div>
       </div>
     </div>
   </div>

@@ -1,0 +1,90 @@
+/**
+ * SimpleLogin dark mode implementation
+ */
+:root {
+    --primary-color: var(--blue);
+    --secondary-color: var(--green);
+    --font-color: var(--dark);
+    --bg-color: var(--light);
+    --heading-color: #818cab;
+    --heading-background: #FFF;
+    --border: 1px solid rgba(0, 40, 100, 0.12);
+    --input-bg-color: var(--light);
+}
+
+[data-theme="dark"] {
+    --primary-color: var(--blue);
+    --secondary-color: var(--green);
+    --font-color: var(--white);
+    --bg-color: #000;
+    --heading-color: #818cab;
+    --heading-background: #1a1a1a;
+    --input-bg-color: #4c4c4c;
+    --border: 1px solid rgba(228, 236, 238, 0.35);
+}
+
+/** Override the bootstrap color configurations */
+body {
+    color: var(--font-color);
+    background-color: var(--bg-color);
+}
+
+a {
+    color: var(--primary-color);
+}
+
+a:hover {
+    color: var(--primary-color)
+}
+
+hr {
+    border-top: var(--border);
+}
+
+.form-control, .dataTables_wrapper .dataTables_length select, .dataTables_wrapper.dataTables_filter input {
+    color: var(--font-color);
+    background-color: var(--input-bg-color);
+}
+
+.form-control:focus, .dataTables_wrapper .dataTables_length select:focus, .dataTables_wrapper .dataTables_filter input:focus {
+    border-color: #1991eb;
+    outline: 0;
+    box-shadow: 0 0 0 2px rgba(70, 127, 207, 0.25);
+    background-color: var(--input-bg-color);
+    color: var(--font-color);
+}
+
+.form-control:disabled, .dataTables_wrapper .dataTables_length select:disabled, .dataTables_wrapper .dataTables_filter input:disabled, .form-control[readonly], .dataTables_wrapper .dataTables_length select[readonly], .dataTables_wrapper .dataTables_filter input[readonly] {
+    background-color: var(--input-bg-color);
+}
+
+.custom-select, .dataTables_wrapper .dataTables_length select {
+    color: var(--font-color);
+    background-color: var(--input-bg-color);
+    border-color: var(--border);
+}
+
+.card {
+    background-color: var(--heading-background);
+}
+
+.header {
+    background: var(--heading-background);
+    border-bottom: var(--border);
+}
+
+.footer {
+    border-top: var(--border);
+    color: var(--font-color);
+    background: transparent;
+}
+
+.custom-switch-indicator {
+    background: var(--input-bg-color);
+}
+
+em {
+    color: var(--dark);
+    border-radius: 2px;
+    padding: 0 8px;
+}
