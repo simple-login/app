@@ -934,6 +934,12 @@ class EmailLog(db.Model, ModelMixin):
 
     contact = db.relationship(Contact)
 
+    def bounced_mailbox(self) -> str:
+        if self.bounced_mailbox_id:
+            return Mailbox.get(self.bounced_mailbox_id).email
+        # retro-compatibility
+        return self.contact.alias.mailboxes[0].email
+
     def get_action(self) -> str:
         """return the action name: forward|reply|block|bounced"""
         if self.is_reply:
