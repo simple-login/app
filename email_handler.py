@@ -900,7 +900,9 @@ def handle_unsubscribe(envelope: Envelope):
         return "550 SL E9"
 
     # This sender cannot unsubscribe
-    if alias.mailbox_email() != envelope.mail_from:
+    mail_from = envelope.mail_from.lower().strip()
+    mailbox = Mailbox.get_by(user_id=alias.user_id, email=mail_from)
+    if not mailbox or mailbox not in alias.mailboxes:
         LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
         return "550 SL E10"
 
@@ -910,22 +912,23 @@ def handle_unsubscribe(envelope: Envelope):
     user = alias.user
 
     enable_alias_url = URL + f"/dashboard/?highlight_alias_id={alias.id}"
-    send_email(
-        envelope.mail_from,
-        f"Alias {alias.email} has been disabled successfully",
-        render(
-            "transactional/unsubscribe-disable-alias.txt",
-            user=user,
-            alias=alias.email,
-            enable_alias_url=enable_alias_url,
-        ),
-        render(
-            "transactional/unsubscribe-disable-alias.html",
-            user=user,
-            alias=alias.email,
-            enable_alias_url=enable_alias_url,
-        ),
-    )
+    for mailbox in alias.mailboxes:
+        send_email(
+            mailbox.email,
+            f"Alias {alias.email} has been disabled successfully",
+            render(
+                "transactional/unsubscribe-disable-alias.txt",
+                user=user,
+                alias=alias.email,
+                enable_alias_url=enable_alias_url,
+            ),
+            render(
+                "transactional/unsubscribe-disable-alias.html",
+                user=user,
+                alias=alias.email,
+                enable_alias_url=enable_alias_url,
+            ),
+        )
 
     return "250 Unsubscribe request accepted"
 
