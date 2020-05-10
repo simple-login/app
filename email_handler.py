@@ -93,9 +93,6 @@ from app.utils import random_string
 from init_app import load_pgp_public_keys
 from server import create_app
 
-# used when an alias receives email from its own mailbox
-# can happen when user "Reply All" on some email clients
-_SELF_FORWARDING_STATUS = "550 SL self-forward"
 
 _IP_HEADER = "X-SimpleLogin-Client-IP"
 
@@ -330,13 +327,6 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
     mailbox = alias.mailbox
     mailbox_email = mailbox.email
     user = alias.user
-
-    # Sometimes when user clicks on "reply all"
-    # an email is sent to the same alias that the previous message is destined to
-    if envelope.mail_from == mailbox_email:
-        # nothing to do
-        LOG.d("Forward from %s to %s, nothing to do", envelope.mail_from, mailbox_email)
-        return False, _SELF_FORWARDING_STATUS
 
     contact = get_or_create_contact(msg["From"], alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
@@ -939,12 +929,6 @@ def handle(envelope: Envelope, smtp: SMTP) -> str:
             LOG.debug(">>> Forward phase %s -> %s", envelope.mail_from, rcpt_to)
             is_delivered, smtp_status = handle_forward(envelope, smtp, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
-
-    # special handling for self-forwarding
-    # just consider success delivery in this case
-    if len(res) == 1 and res[0][1] == _SELF_FORWARDING_STATUS:
-        LOG.d("Self-forwarding, ignore")
-        return "250 SL OK"
 
     for (is_success, smtp_status) in res:
         # Consider all deliveries successful if 1 delivery is successful
