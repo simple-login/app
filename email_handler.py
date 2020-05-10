@@ -728,6 +728,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     db.session.flush()
 
     email_log.refused_email_id = refused_email.id
+    email_log.bounced_mailbox_id = mailbox.id
     db.session.commit()
 
     LOG.d("Create refused email %s", refused_email)
