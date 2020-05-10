@@ -336,7 +336,6 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         return True, "250 Message accepted for delivery"
 
     mailbox = alias.mailbox
-    mailbox_email = mailbox.email
     user = alias.user
 
     spam_check = True
@@ -356,7 +355,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
             email_log.is_spam = True
             email_log.spam_status = spam_status
 
-            handle_spam(contact, alias, msg, user, mailbox_email, email_log)
+            handle_spam(contact, alias, msg, user, mailbox.email, email_log)
             return False, "550 SL E1"
 
     # add custom header
@@ -406,7 +405,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
     LOG.d(
         "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
         contact.website_email,
-        mailbox_email,
+        mailbox.email,
         envelope.mail_options,
         envelope.rcpt_options,
     )
@@ -415,7 +414,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
     # encode message raw directly instead
     smtp.sendmail(
         contact.reply_email,
-        mailbox_email,
+        mailbox.email,
         msg.as_bytes(),
         envelope.mail_options,
         envelope.rcpt_options,
