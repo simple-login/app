@@ -17,7 +17,6 @@ from .views import (
     lifetime_licence,
     directory,
     mailbox,
-    deleted_alias,
     mailbox_detail,
     refused_email,
     referral,

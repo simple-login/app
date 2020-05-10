@@ -239,22 +239,6 @@
 
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Deleted Aliases</div>
-        <div class="mb-3" style="">
-          When an alias is deleted, all its activities are deleted and no emails can be sent to it.
-          The deleted alias is moved to another location and only used to check when new alias is created. <br>
-          This check is necessary to avoid someone else accidentally taking this alias.
-          Otherwise the other person might receive inadvertently information that belong to you. <br>
-        </div>
-
-        <a href="{{ url_for('dashboard.deleted_alias_route') }}" class="btn btn-outline-primary">
-          See deleted aliases
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-body">
         <div class="card-title">Quarantine</div>
         <div class="mb-3">
           When an email sent to your alias is classified as spam or refused by your email provider,
