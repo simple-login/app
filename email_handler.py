@@ -314,7 +314,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
     """return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
     """
-    address = rcpt_to.lower()  # alias@SL
+    address = rcpt_to.lower().strip()  # alias@SL
 
     alias = Alias.get_by(email=address)
     if not alias:
