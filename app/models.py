@@ -923,6 +923,12 @@ class EmailLog(db.Model, ModelMixin):
         db.ForeignKey("refused_email.id", ondelete="SET NULL"), nullable=True
     )
 
+    # in case of bounce, record on what mailbox the email has been bounced
+    # useful when an alias has several mailboxes
+    bounced_mailbox_id = db.Column(
+        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=True
+    )
+
     refused_email = db.relationship("RefusedEmail")
     forward = db.relationship(Contact)
 
