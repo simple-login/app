@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2020-05-09
+Remove social login signup
+More simple UI with advanced options hidden by default
+Use pagination for alias page
+Use Ajax for alias note and mailbox update
+Alias can have a name
+Global stats
+DMARC support for custom domain
+Enforce SPF
+FIDO support (beta)
+Able to disable onboarding emails
+
+
 ## [3.0.1] - 2020-04-13
 Fix compatibility with 2x version
 Fix "Content-Transfer-Encoding" issue https://github.com/simple-login/app/issues/125
