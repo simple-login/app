@@ -53,7 +53,8 @@ def google_callback():
 
     google = OAuth2Session(
         GOOGLE_CLIENT_ID,
-        state=session["oauth_state"],
+        # some how Google Login fails with oauth_state KeyError
+        # state=session["oauth_state"],
         scope=_scope,
         redirect_uri=_redirect_uri,
     )
