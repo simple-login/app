@@ -643,6 +643,14 @@ class Alias(db.Model, ModelMixin):
     user = db.relationship(User)
     mailbox = db.relationship("Mailbox")
 
+    @property
+    def mailboxes(self):
+        ret = [self.mailbox]
+        for m in self._mailboxes:
+            ret.append(m)
+
+        return ret
+
     @classmethod
     def create(cls, **kw):
         r = cls(**kw)

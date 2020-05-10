@@ -40,6 +40,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr, formataddr
 from io import BytesIO
 from smtplib import SMTP
+from typing import List, Tuple
 
 import arrow
 import spf
@@ -310,7 +311,9 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
     return msg
 
 
-def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str):
+def handle_forward(
+    envelope, smtp: SMTP, msg: Message, rcpt_to: str
+) -> List[Tuple[bool, str]]:
     """return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
     """
@@ -322,7 +325,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         alias = try_auto_create(address)
         if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
-            return False, "550 SL E3"
+            return [(False, "550 SL E3")]
 
     contact = get_or_create_contact(msg["From"], alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
@@ -333,11 +336,32 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
 
         db.session.commit()
         # do not return 5** to allow user to receive emails later when alias is enabled
-        return True, "250 Message accepted for delivery"
+        return [(True, "250 Message accepted for delivery")]
 
-    mailbox = alias.mailbox
     user = alias.user
 
+    ret = []
+    for mailbox in alias.mailboxes:
+        ret.append(
+            forward_email_to_mailbox(
+                alias, msg, email_log, contact, envelope, smtp, mailbox, user
+            )
+        )
+
+    return ret
+
+
+def forward_email_to_mailbox(
+    alias,
+    msg: Message,
+    email_log: EmailLog,
+    contact: Contact,
+    envelope,
+    smtp: SMTP,
+    mailbox,
+    user,
+) -> (bool, str):
+    LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
     spam_check = True
 
     # create PGP email if needed
@@ -927,8 +951,10 @@ def handle(envelope: Envelope, smtp: SMTP) -> str:
             res.append((is_delivered, smtp_status))
         else:  # Forward case
             LOG.debug(">>> Forward phase %s -> %s", envelope.mail_from, rcpt_to)
-            is_delivered, smtp_status = handle_forward(envelope, smtp, msg, rcpt_to)
-            res.append((is_delivered, smtp_status))
+            for is_delivered, smtp_status in handle_forward(
+                envelope, smtp, msg, rcpt_to
+            ):
+                res.append((is_delivered, smtp_status))
 
     for (is_success, smtp_status) in res:
         # Consider all deliveries successful if 1 delivery is successful
