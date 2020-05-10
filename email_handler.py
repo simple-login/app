@@ -96,7 +96,7 @@ from server import create_app
 
 
 _IP_HEADER = "X-SimpleLogin-Client-IP"
-
+_MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -390,6 +390,7 @@ def forward_email_to_mailbox(
     delete_header(msg, "Sender")
 
     delete_header(msg, _IP_HEADER)
+    add_or_replace_header(msg, _MAILBOX_ID_HEADER, str(mailbox.id))
 
     # change the from header so the sender comes from @SL
     # so it can pass DMARC check
