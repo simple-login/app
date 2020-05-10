@@ -246,6 +246,7 @@ def send_email_with_rate_control(
     plaintext,
     html=None,
     bounced_email: Optional[Message] = None,
+    max_alert_24h=MAX_ALERT_24H,
 ) -> bool:
     """Same as send_email with rate control over alert_type.
     For now no more than _MAX_ALERT_24h alert can be sent in the last 24h
@@ -260,7 +261,7 @@ def send_email_with_rate_control(
         .count()
     )
 
-    if nb_alert > MAX_ALERT_24H:
+    if nb_alert > max_alert_24h:
         LOG.error(
             "%s emails were sent to %s in the last 24h, alert type %s",
             nb_alert,
