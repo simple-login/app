@@ -85,7 +85,7 @@ def create_app() -> Flask:
     app.config["SESSION_COOKIE_NAME"] = "slapp"
     if URL.startswith("https"):
         app.config["SESSION_COOKIE_SECURE"] = True
-    app.config["SESSION_COOKIE_SAMESITE"] = "strict"
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
     init_extensions(app)
     register_blueprints(app)
