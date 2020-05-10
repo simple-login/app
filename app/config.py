@@ -272,3 +272,6 @@ ALERT_SPAM_EMAIL = "spam"
 ALERT_SPF = "spf"
 
 # <<<<< END ALERT EMAIL >>>>
+
+# Disable onboarding emails
+DISABLE_ONBOARDING = "DISABLE_ONBOARDING" in os.environ

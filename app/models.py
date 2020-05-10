@@ -24,6 +24,7 @@ from app.config import (
     JOB_ONBOARDING_4,
     LANDING_PAGE_URL,
     FIRST_ALIAS_DOMAIN,
+    DISABLE_ONBOARDING,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -203,6 +204,10 @@ class User(db.Model, ModelMixin, UserMixin):
         # create a first alias mail to show user how to use when they login
         Alias.create_new(user, prefix="my-first-alias", mailbox_id=mb.id)
         db.session.flush()
+
+        if DISABLE_ONBOARDING:
+            LOG.d("Disable onboarding emails")
+            return user
 
         # Schedule onboarding emails
         Job.create(
