@@ -31,14 +31,8 @@ It should contain the following info:
 
 """
 import email
-import re
-
-import arrow
-import spf
 import time
 import uuid
-from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import Envelope
 from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
@@ -46,6 +40,11 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr, formataddr
 from io import BytesIO
 from smtplib import SMTP
+
+import arrow
+import spf
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import Envelope
 
 from app import pgp_utils, s3
 from app.alias_utils import try_auto_create
