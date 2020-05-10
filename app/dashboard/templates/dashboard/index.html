@@ -306,7 +306,7 @@
             {% if mailboxes|length > 1 %}
               <div class="small-text">Current mailbox</div>
               <div class="d-flex">
-                <div class="flex-grow-1 mr-2">
+                <div class="flex-grow-1 mr-2" style="overflow-y: auto">
                   <select required id="mailbox-{{ alias.id }}"
                           class="form-control form-control-sm custom-select selectpicker" multiple name="mailbox">
                     {% for mailbox in mailboxes %}
