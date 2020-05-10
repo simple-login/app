@@ -476,24 +476,26 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
             return False, "550 SL E5"
 
     user = alias.user
-    mailbox_email = alias.mailbox_email()
+    mail_from = envelope.mail_from.lower().strip()
 
     # bounce email initiated by Postfix
     # can happen in case emails cannot be delivered to user-email
     # in this case Postfix will try to send a bounce report to original sender, which is
     # the "reply email"
-    if envelope.mail_from == "<>":
+    if mail_from == "<>":
         LOG.warning(
-            "Bounce when sending to alias %s from %s, user %s",
-            alias,
-            contact.website_email,
-            alias.user,
+            "Bounce when sending to alias %s from %s, user %s", alias, contact, user,
         )
 
         handle_bounce(contact, alias, msg, user)
         return False, "550 SL E6"
 
-    mailbox: Mailbox = Mailbox.get_by(email=mailbox_email)
+    mailbox = Mailbox.get_by(email=mail_from, user_id=user.id)
+    if not mailbox or mailbox not in alias.mailboxes:
+        # only mailbox can send email to the reply-email
+        handle_unknown_mailbox(envelope, msg, reply_email, user, alias)
+        return False, "550 SL E7"
+
     if ENFORCE_SPF and mailbox.force_spf:
         ip = msg[_IP_HEADER]
         if not spf_pass(ip, envelope, mailbox, user, alias, contact.website_email, msg):
@@ -501,13 +503,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
 
     delete_header(msg, _IP_HEADER)
 
-    # only mailbox can send email to the reply-email
-    if envelope.mail_from.lower() != mailbox_email.lower():
-        handle_unknown_mailbox(envelope, msg, mailbox, reply_email, user, alias)
-        return False, "550 SL E7"
-
     delete_header(msg, "DKIM-Signature")
-
     delete_header(msg, "Received")
 
     # make the email comes from alias
@@ -636,36 +632,33 @@ def spf_pass(
     return True
 
 
-def handle_unknown_mailbox(
-    envelope, msg, mailbox: Mailbox, reply_email: str, user: User, alias: Alias
-):
+def handle_unknown_mailbox(envelope, msg, reply_email: str, user: User, alias: Alias):
     LOG.warning(
         f"Reply email can only be used by mailbox. "
-        f"Actual mail_from: %s. msg from header: %s, Mailbox %s. reply_email %s",
+        f"Actual mail_from: %s. msg from header: %s, reverse-alias %s, %s %s",
         envelope.mail_from,
         msg["From"],
-        mailbox.email,
         reply_email,
+        alias,
+        user,
     )
 
     send_email_with_rate_control(
         user,
         ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
-        mailbox.email,
+        user.email,
         f"Reply from your alias {alias.email} only works from your mailbox",
         render(
             "transactional/reply-must-use-personal-email.txt",
             name=user.name,
-            alias=alias.email,
+            alias=alias,
             sender=envelope.mail_from,
-            mailbox_email=mailbox.email,
         ),
         render(
             "transactional/reply-must-use-personal-email.html",
             name=user.name,
-            alias=alias.email,
+            alias=alias,
             sender=envelope.mail_from,
-            mailbox_email=mailbox.email,
         ),
     )
 
