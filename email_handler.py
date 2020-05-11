@@ -483,7 +483,8 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     if ENFORCE_SPF and mailbox.force_spf:
         ip = msg[_IP_HEADER]
         if not spf_pass(ip, envelope, mailbox, user, alias, contact.website_email, msg):
-            return False, "451 SL E11"
+            # cannot use 4** here as sender will retry. 5** because that generates bounce report
+            return True, "250 SL E11"
 
     delete_header(msg, _IP_HEADER)
 
