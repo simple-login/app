@@ -1,0 +1,3 @@
+# https://github.com/github/linguist#overrides
+static/* linguist-vendored
+docs/* linguist-documentation
