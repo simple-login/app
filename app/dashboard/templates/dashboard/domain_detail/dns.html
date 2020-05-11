@@ -35,7 +35,7 @@
       </div>
 
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
-        <div class="mb-3 p-3 bg-secondary">
+        <div class="mb-3 p-3 dns-record">
           Record: MX <br>
           Domain: {{ custom_domain.domain }} or @ <br>
           Priority: {{ priority }} <br>
@@ -62,7 +62,7 @@
       {% if not mx_ok %}
         <div class="text-danger mt-4">
           Your DNS is not correctly set. The MX record we obtain is:
-          <div class="mb-3 p-3 bg-secondary">
+          <div class="mb-3 p-3 dns-record">
             {% if not mx_errors %}
               (Empty)
             {% endif %}
@@ -97,7 +97,7 @@
 
       <div class="mb-2">Add the following TXT DNS record to your domain.</div>
 
-      <div class="mb-2 p-3 bg-secondary">
+      <div class="mb-2 p-3 dns-record">
         Record: TXT <br>
         Domain: {{ custom_domain.domain }} or @ <br>
         Value:
@@ -125,7 +125,7 @@
       {% if not spf_ok %}
         <div class="text-danger mt-4">
           Your DNS is not correctly set. The TXT record we obtain is:
-          <div class="mb-3 p-3 bg-secondary">
+          <div class="mb-3 p-3 dns-record">
             {% if not spf_errors %}
               (Empty)
             {% endif %}
@@ -162,7 +162,7 @@
 
       <div class="mb-2">Add the following CNAME DNS record to your domain.</div>
 
-      <div class="mb-2 p-3 bg-secondary">
+      <div class="mb-2 p-3 dns-record">
         Record: CNAME <br>
         Domain: <em data-toggle="tooltip"
                     title="Click to copy"
@@ -197,7 +197,7 @@
             The CNAME record we obtain for
             <em>dkim._domainkey.{{ custom_domain.domain }}</em> is:
 
-            <div class="mb-3 p-3 bg-secondary">
+            <div class="mb-3 p-3 dns-record">
               {% for r in dkim_errors %}
                 {{ r }} <br>
               {% endfor %}
@@ -231,7 +231,7 @@
 
       <div class="mb-2">Add the following TXT DNS record to your domain.</div>
 
-      <div class="mb-2 p-3 bg-secondary">
+      <div class="mb-2 p-3 dns-record">
         Record: TXT <br>
         Domain: <em data-toggle="tooltip"
                     title="Click to copy"
