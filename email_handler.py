@@ -606,9 +606,6 @@ def spf_pass(
                         subject=msg["Subject"],
                         time=arrow.now(),
                     ),
-                    # as the returned error status is 4**,
-                    # the sender will try to resend the email. Send the error message only once
-                    max_alert_24h=1,
                 )
                 return False
 
