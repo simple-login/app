@@ -62,6 +62,10 @@
         $("#btnVerifyKey").click(verifyKey);
       </script>
 
+      {% if auto_activate %}
+        <script>$('document').ready(verifyKey());</script>
+      {% endif %}
+        
     </div>
   </div>
 

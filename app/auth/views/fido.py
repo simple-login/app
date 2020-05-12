@@ -35,6 +35,7 @@ def fido():
         flash("Only user with security key linked should go to this page", "warning")
         return redirect(url_for("auth.login"))
 
+    auto_activate = True
     fido_token_form = FidoTokenForm()
 
     next_url = request.args.get("next")
@@ -69,6 +70,7 @@ def fido():
         except Exception as e:
             LOG.error(f"An error occurred in WebAuthn verification process: {e}")
             flash("Key verification failed.", "warning")
+            auto_activate = False
         else:
             user.fido_sign_count = new_sign_count
             db.session.commit()
@@ -101,4 +103,5 @@ def fido():
         fido_token_form=fido_token_form,
         webauthn_assertion_options=webauthn_assertion_options,
         enable_otp=user.enable_otp,
+        auto_activate=auto_activate,
     )

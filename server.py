@@ -136,6 +136,7 @@ def fake_data():
         activated=True,
         is_admin=True,
         otp_secret="base32secret3232",
+        can_use_fido=True,
     )
     db.session.commit()
     user.trial_end = None
