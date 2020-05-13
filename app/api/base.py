@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify, g
 from flask_login import current_user
 
 from app.extensions import db
+from app.log import LOG
 from app.models import ApiKey
 
 api_bp = Blueprint(name="api", import_name=__name__, url_prefix="/api")
@@ -32,3 +33,14 @@ def require_api_auth(f):
         return f(*args, **kwargs)
 
     return decorated
+
+
+@api_bp.app_errorhandler(404)
+def not_found(e):
+    return jsonify(error="No such endpoint"), 404
+
+
+@api_bp.app_errorhandler(Exception)
+def internal_error(e):
+    LOG.exception(e)
+    return jsonify(error="Internal error"), 500
