@@ -283,7 +283,7 @@ def apple_update_notification():
             db.session.commit()
             return jsonify(ok=True), 200
         else:
-            LOG.error(
+            LOG.warning(
                 "No existing AppleSub for original_transaction_id %s",
                 original_transaction_id,
             )
