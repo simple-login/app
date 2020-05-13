@@ -73,6 +73,28 @@ def send_pgp_newsletter():
                 LOG.warning("Cannot send to user %s", user)
 
 
+def send_mobile_newsletter():
+    count = 0
+    for user in User.query.order_by(User.id).all():
+        if user.notification and user.activated:
+            count += 1
+            try:
+                LOG.d("#%s: send to %s", count, user)
+                send_email(
+                    user.email,
+                    "Mobile and Dark Mode",
+                    render("com/newsletter/mobile-darkmode.txt", user=user),
+                    render("com/newsletter/mobile-darkmode.html", user=user),
+                )
+            except Exception:
+                LOG.warning("Cannot send to user %s", user)
+
+            if count % 5 == 0:
+                # sleep every 5 sends to avoid hitting email limits
+                LOG.d("Sleep 1s")
+                sleep(1)
+
+
 app = create_app()
 
 with app.app_context():
