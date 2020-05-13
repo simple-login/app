@@ -44,3 +44,8 @@ def not_found(e):
 def internal_error(e):
     LOG.exception(e)
     return jsonify(error="Internal error"), 500
+
+
+@api_bp.app_errorhandler(405)
+def wrong_method(e):
+    return jsonify(error="Method not allowed"), 405
