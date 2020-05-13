@@ -1,0 +1,71 @@
+This email is sent to {{ user.email }}.
+Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+----------------
+
+Hi {{user.name}}
+
+Son from SimpleLogin here. I hope you are doing well and are staying at home in this difficult time.
+By the way I'm writing this newsletter from my couch with my cats proofreading the text :).
+
+Here are some of our latest news:
+
+1) Mobile apps
+
+Now you can quickly create aliases on-the-go with SimpleLogin Android and iOS app, thanks to our mobile guy Thanh-Nhon!
+Download:
+- the Android app on Play Store https://play.google.com/store/apps/details?id=io.simplelogin.android
+- the iOS app on App Store https://apps.apple.com/us/app/simplelogin-anti-spam/id1494359858
+
+With the release of the mobile apps, SimpleLogin now covers most major platforms:
+
+- Desktop with SimpleLogin web app or Chrome, Firefox and Safari extension
+- Mobile with Android and iOS app
+
+The apps code is of course open-source and available on our Github http://github.com/simple-login/
+
+2) Dark mode
+
+No worries, we are not going to the dark side :).
+You have asked for it and now the dark mode is finally available, thanks to Dung - our full-stack guy.
+You can finally enjoy using SimpleLogin in the dark.
+
+3) Alias name, new UI, security page, new policy privacy
+
+You might have noticed that the web UI is now more compact: the web app has undergone a remake
+to make it more responsive for usual actions like enabling/disabling an alias, updating alias note, etc.
+
+You can set a name for your alias: this name is used when you send emails or reply from your alias.
+
+We have also created a new security page that goes into the technical details of SimpleLogin.
+Our privacy page is also rewritten from scratch: nothing changes about your data protection
+but the page is now much more clear and detailed now.
+
+4) Facebook, Google, Github login deprecation
+
+We have decided to deprecate those social login options because of several reasons:
+
+- Privacy: every time you sign in using one of these methods, the respective company knows and
+    we have no information on what they do with this data.
+- Not fully open-standard compatible: these platforms enjoy their monopolies and
+    don't play well with open standards like OAuth2/OpenID: in fact, implementations on mobile of these social login
+    require their SDK that we refuse to add because of privacy concern.
+- Uniform experiences for all users: to have these social login in our iOS app, we need to support "Sign in with Apple"
+    that isn't broadly available for Android users. Again, another big tech enjoying its monopoly.
+
+If you happen to use one of these social login options, please create a password for your account on the Setting page
+https://app.simplelogin.io/dashboard/setting
+
+You can still sign in using these social login until 2020-05-31. After this date, they will be removed.
+
+5) WebAuthn (Beta)
+
+Thanks to one of SimpleLogin users, the WebAuthn is now available in Beta.
+Please reply to this email if you want to try this out.
+
+We want to say thank you to all users who have helped to improve SimpleLogin code and even contribute important features.
+That means a lot to us as SimpleLogin is after all an open-source project.
+
+We always welcome your feedback. Get in touch on social media, where you can also follow all our latest updates.
+
+Best regards,
+Son.
