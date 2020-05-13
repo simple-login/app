@@ -490,6 +490,10 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     #     "is_in_intro_offer_period": "false",
     # }
     transactions = data["receipt"]["in_app"]
+    if not transactions:
+        LOG.warning("Empty transactions in data %s", data)
+        return None
+
     latest_transaction = max(transactions, key=lambda t: int(t["expires_date_ms"]))
     original_transaction_id = latest_transaction["original_transaction_id"]
     expires_date = arrow.get(int(latest_transaction["expires_date_ms"]) / 1000)
