@@ -117,13 +117,20 @@ def new_app():
     return app
 
 
-def get_or_create_contact(contact_from_header: str, alias: Alias) -> Contact:
+def get_or_create_contact(
+    contact_from_header: str, mail_from: str, alias: Alias
+) -> Contact:
     """
     contact_from_header is the RFC 2047 format FROM header
     """
     # force convert header to string, sometimes contact_from_header is Header object
     contact_from_header = str(contact_from_header)
     contact_name, contact_email = parseaddr_unicode(contact_from_header)
+    if not contact_email:
+        # From header is empty, try with mail_from
+        LOG.warning("From header is empty, parse mail_from %s %s", mail_from, alias)
+        contact_name, contact_email = parseaddr_unicode(mail_from)
+
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
         if contact.name != contact_name:
@@ -339,7 +346,7 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         LOG.d("Forward from %s to %s, nothing to do", envelope.mail_from, mailbox_email)
         return False, _SELF_FORWARDING_STATUS
 
-    contact = get_or_create_contact(msg["From"], alias)
+    contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
 
     if not alias.enabled:
