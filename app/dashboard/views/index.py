@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -144,9 +143,7 @@ def index():
     alias_infos = get_alias_infos_with_pagination_v2(
         current_user, page, query, sort, alias_filter
     )
-    last_page = (
-            len(alias_infos) < PAGE_LIMIT
-    )
+    last_page = len(alias_infos) < PAGE_LIMIT
 
     return render_template(
         "dashboard/index.html",
