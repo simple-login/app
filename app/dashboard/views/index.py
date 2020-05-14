@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from app import alias_utils
 from app.api.serializer import get_alias_infos_with_pagination_v2
+from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
@@ -140,18 +141,24 @@ def index():
 
     stats = get_stats(current_user)
 
+    alias_infos = get_alias_infos_with_pagination_v2(
+        current_user, page, query, sort, alias_filter
+    )
+    last_page = (
+            len(alias_infos) < PAGE_LIMIT
+    )
+
     return render_template(
         "dashboard/index.html",
         client_users=client_users,
-        alias_infos=get_alias_infos_with_pagination_v2(
-            current_user, page, query, sort, alias_filter
-        ),
+        alias_infos=alias_infos,
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
         mailboxes=mailboxes,
         show_intro=show_intro,
         page=page,
+        last_page=last_page,
         sort=sort,
         filter=alias_filter,
         stats=stats,
