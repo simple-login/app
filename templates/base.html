@@ -1,7 +1,7 @@
 {% from "_formhelpers.html" import render_field, render_field_errors %}
 
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="{% if request.cookies.get('dark-mode') == 'true' %}dark{% endif %}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
@@ -39,6 +39,8 @@
   <script src="/static/assets/js/vendors/jquery-jvectormap-world-mill.js"></script>
   <script src="/static/assets/js/vendors/circle-progress.min.js"></script>
   <script src="/static/assets/js/core.js"></script>
+
+  <script src="/static/assets/js/theme.js"></script>
 
   <!-- ClipboardJS -->
   <script src="/static/vendor/clipboard.min.js"></script>
