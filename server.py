@@ -87,12 +87,12 @@ def create_app() -> Flask:
         app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
+    setup_error_page(app)
+
     init_extensions(app)
     register_blueprints(app)
     set_index_page(app)
     jinja2_filter(app)
-
-    setup_error_page(app)
 
     setup_favicon_route(app)
     setup_openid_metadata(app)
@@ -136,6 +136,7 @@ def fake_data():
         activated=True,
         is_admin=True,
         otp_secret="base32secret3232",
+        can_use_fido=True,
     )
     db.session.commit()
     user.trial_end = None
