@@ -503,7 +503,11 @@ def parseaddr_unicode(addr) -> (str, str):
         name = name.strip()
         decoded_string, charset = decode_header(name)[0]
         if charset is not None:
-            name = decoded_string.decode(charset)
+            try:
+                name = decoded_string.decode(charset)
+            except UnicodeDecodeError:
+                LOG.warning("Cannot decode addr name %s", name)
+                name = ""
         else:
             name = decoded_string
 
