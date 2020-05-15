@@ -7,7 +7,7 @@ from app import email_utils, config
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import get_referral
 from app.config import URL
-from app.email_utils import can_be_used_as_personal_email, email_already_used
+from app.email_utils import email_domain_can_be_used_as_mailbox, personal_email_already_used
 from app.extensions import db
 from app.log import LOG
 from app.models import User, ActivationCode
@@ -37,10 +37,10 @@ def register():
 
     if form.validate_on_submit():
         email = form.email.data.strip().lower()
-        if not can_be_used_as_personal_email(email):
+        if not email_domain_can_be_used_as_mailbox(email):
             flash("You cannot use this email address as your personal inbox.", "error")
         else:
-            if email_already_used(email):
+            if personal_email_already_used(email):
                 flash(f"Email {email} already used", "error")
             else:
                 LOG.debug("create user %s", form.email.data)

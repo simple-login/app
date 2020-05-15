@@ -12,7 +12,7 @@ from wtforms.fields.html5 import EmailField
 from app import s3, email_utils
 from app.config import URL
 from app.dashboard.base import dashboard_bp
-from app.email_utils import can_be_used_as_personal_email, email_already_used
+from app.email_utils import email_domain_can_be_used_as_mailbox, personal_email_already_used
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -70,12 +70,12 @@ def setting():
 
                     # check if this email is not already used
                     if (
-                        email_already_used(new_email)
+                        personal_email_already_used(new_email)
                         or Alias.get_by(email=new_email)
                         or DeletedAlias.get_by(email=new_email)
                     ):
                         flash(f"Email {new_email} already used", "error")
-                    elif not can_be_used_as_personal_email(new_email):
+                    elif not email_domain_can_be_used_as_mailbox(new_email):
                         flash(
                             "You cannot use this email address as your personal inbox.",
                             "error",

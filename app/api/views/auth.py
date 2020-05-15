@@ -12,8 +12,8 @@ from app.api.base import api_bp
 from app.config import FLASK_SECRET, DISABLE_REGISTRATION
 from app.dashboard.views.setting import send_reset_password_email
 from app.email_utils import (
-    can_be_used_as_personal_email,
-    email_already_used,
+    email_domain_can_be_used_as_mailbox,
+    personal_email_already_used,
     send_email,
     render,
 )
@@ -84,7 +84,7 @@ def auth_register():
 
     if DISABLE_REGISTRATION:
         return jsonify(error="registration is closed"), 400
-    if not can_be_used_as_personal_email(email) or email_already_used(email):
+    if not email_domain_can_be_used_as_mailbox(email) or personal_email_already_used(email):
         return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
     if not password or len(password) < 8:
@@ -236,7 +236,7 @@ def auth_facebook():
     if not user:
         if DISABLE_REGISTRATION:
             return jsonify(error="registration is closed"), 400
-        if not can_be_used_as_personal_email(email) or email_already_used(email):
+        if not email_domain_can_be_used_as_mailbox(email) or personal_email_already_used(email):
             return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
         LOG.d("create facebook user with %s", user_info)
@@ -288,7 +288,7 @@ def auth_google():
     if not user:
         if DISABLE_REGISTRATION:
             return jsonify(error="registration is closed"), 400
-        if not can_be_used_as_personal_email(email) or email_already_used(email):
+        if not email_domain_can_be_used_as_mailbox(email) or personal_email_already_used(email):
             return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
         LOG.d("create Google user with %s", user_info)
