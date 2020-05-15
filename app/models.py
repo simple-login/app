@@ -1304,8 +1304,6 @@ class AliasMailbox(db.Model, ModelMixin):
         db.UniqueConstraint("alias_id", "mailbox_id", name="uq_alias_mailbox"),
     )
 
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-
     alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
     mailbox_id = db.Column(
         db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False

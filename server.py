@@ -175,11 +175,9 @@ def fake_data():
 
         if i % 5 == 0:
             if i % 2 == 0:
-                AliasMailbox.create(
-                    user_id=user.id, alias_id=a.id, mailbox_id=user.default_mailbox_id
-                )
+                AliasMailbox.create(alias_id=a.id, mailbox_id=user.default_mailbox_id)
             else:
-                AliasMailbox.create(user_id=user.id, alias_id=a.id, mailbox_id=m1.id)
+                AliasMailbox.create(alias_id=a.id, mailbox_id=m1.id)
         db.session.commit()
 
         # some aliases don't have any activity

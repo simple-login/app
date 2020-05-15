@@ -111,9 +111,7 @@ def custom_alias():
 
                 for i in range(1, len(mailboxes)):
                     AliasMailbox.create(
-                        user_id=alias.user_id,
-                        alias_id=alias.id,
-                        mailbox_id=mailboxes[i].id,
+                        alias_id=alias.id, mailbox_id=mailboxes[i].id,
                     )
 
                 # get the custom_domain_id if alias is created with a custom domain
