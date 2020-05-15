@@ -123,13 +123,23 @@ def get_or_create_contact(
     """
     contact_from_header is the RFC 2047 format FROM header
     """
+    # contact_from_header can be None, use mail_from in this case instead
+    contact_from_header = contact_from_header or mail_from
+
     # force convert header to string, sometimes contact_from_header is Header object
     contact_from_header = str(contact_from_header)
+
     contact_name, contact_email = parseaddr_unicode(contact_from_header)
     if not contact_email:
-        # From header is empty, try with mail_from
+        # From header is wrongly formatted, try with mail_from
         LOG.warning("From header is empty, parse mail_from %s %s", mail_from, alias)
         contact_name, contact_email = parseaddr_unicode(mail_from)
+        if not contact_email:
+            LOG.error(
+                "Cannot parse contact from from_header:%s, mail_from:%s",
+                contact_from_header,
+                mail_from,
+            )
 
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
