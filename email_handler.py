@@ -356,25 +356,19 @@ def handle_forward(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, s
         db.session.commit()
         return True, "250 Message accepted for delivery"
 
-    spam_check = True
+    is_spam, spam_status = get_spam_info(msg)
+    if is_spam:
+        LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
+        email_log.is_spam = True
+        email_log.spam_status = spam_status
+
+        handle_spam(contact, alias, msg, user, mailbox_email, email_log)
+        return False, "550 SL E1"
 
     # create PGP email if needed
     if mailbox.pgp_finger_print and user.is_premium():
         LOG.d("Encrypt message using mailbox %s", mailbox)
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
-
-        # no need to spam check for encrypted message
-        spam_check = False
-
-    if spam_check:
-        is_spam, spam_status = get_spam_info(msg)
-        if is_spam:
-            LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
-            email_log.is_spam = True
-            email_log.spam_status = spam_status
-
-            handle_spam(contact, alias, msg, user, mailbox_email, email_log)
-            return False, "550 SL E1"
 
     # add custom header
     add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
