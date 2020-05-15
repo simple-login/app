@@ -5,7 +5,7 @@ import pytest
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.email_utils import parseaddr_unicode
 from app.extensions import db
-from app.models import generate_email, User, Alias, Contact
+from app.models import generate_email, User, Alias, Contact, Mailbox, AliasMailbox
 
 
 def test_generate_email(flask_client):
@@ -133,3 +133,30 @@ def test_new_addr(flask_client):
         "Nhơn Nguyễn - abcd at example.com",
         "rep@sl",
     )
+
+
+def test_mailbox_delete(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    m1 = Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
+    m2 = Mailbox.create(user_id=user.id, email="m2@example.com", verified=True)
+    m3 = Mailbox.create(user_id=user.id, email="m3@example.com", verified=True)
+    db.session.commit()
+
+    # alias has 2 mailboxes
+    alias = Alias.create_new(user, "prefix", mailbox_id=m1.id)
+    db.session.commit()
+
+    alias._mailboxes.append(m2)
+    alias._mailboxes.append(m3)
+    db.session.commit()
+
+    assert len(alias.mailboxes) == 3
+
+    # delete m1, should not delete alias
+    Mailbox.delete(m1.id)
+    alias = Alias.get(alias.id)
+    assert len(alias.mailboxes) == 2
