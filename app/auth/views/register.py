@@ -7,7 +7,10 @@ from app import email_utils, config
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import get_referral
 from app.config import URL
-from app.email_utils import email_domain_can_be_used_as_mailbox, personal_email_already_used
+from app.email_utils import (
+    email_domain_can_be_used_as_mailbox,
+    personal_email_already_used,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import User, ActivationCode

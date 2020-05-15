@@ -12,7 +12,10 @@ from wtforms.fields.html5 import EmailField
 from app import s3, email_utils
 from app.config import URL
 from app.dashboard.base import dashboard_bp
-from app.email_utils import email_domain_can_be_used_as_mailbox, personal_email_already_used
+from app.email_utils import (
+    email_domain_can_be_used_as_mailbox,
+    personal_email_already_used,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import (
