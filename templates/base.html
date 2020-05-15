@@ -170,7 +170,8 @@
 
 </script>
 
-<script src="/static/local-storage-polyfill.js"></script>
+<script src="{{ url_for('static', filename='local-storage-polyfill.js.js') }}"></script>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
 <!-- For additional script -->
 {% block script %}
