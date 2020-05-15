@@ -104,17 +104,4 @@ $(document).ready(function() {
       });
     });
   }
-
-  /** Dark mode controller */
-  if (store.get('dark-mode') === true) {
-    document.documentElement.setAttribute('data-theme', 'dark')
-  }
-  $('[data-toggle="dark-mode"]').on('click', function () {
-    if (store.get('dark-mode') === true) {
-      store.set('dark-mode', false);
-      return document.documentElement.setAttribute('data-theme', 'light')
-    }
-    store.set('dark-mode', true)
-    document.documentElement.setAttribute('data-theme', 'dark')
-  })
 });
