@@ -1,11 +1,18 @@
-from uuid import UUID
-
 import pytest
+from uuid import UUID
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.email_utils import parseaddr_unicode
 from app.extensions import db
-from app.models import generate_email, User, Alias, Contact, Mailbox, AliasMailbox
+from app.models import (
+    generate_email,
+    User,
+    Alias,
+    Contact,
+    Mailbox,
+    AliasMailbox,
+    SenderFormatEnum,
+)
 
 
 def test_generate_email(flask_client):
@@ -104,7 +111,7 @@ def test_new_addr(flask_client):
     alias = Alias.create_new_random(user)
     db.session.commit()
 
-    # use_via_format_for_sender is by default
+    # default sender_format is 'via'
     c1 = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
@@ -115,8 +122,8 @@ def test_new_addr(flask_client):
     db.session.commit()
     assert c1.new_addr() == '"abcd@example.com via SimpleLogin" <rep@SL>'
 
-    # use_via_format_for_sender = False
-    user.use_via_format_for_sender = False
+    # set sender_format = AT
+    user.sender_format = SenderFormatEnum.AT.value
     db.session.commit()
     assert c1.new_addr() == '"First Last - abcd at example.com" <rep@SL>'
 

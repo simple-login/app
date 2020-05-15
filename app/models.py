@@ -96,18 +96,28 @@ class File(db.Model, ModelMixin):
         return s3.get_url(self.path, expires_in)
 
 
-class PlanEnum(enum.Enum):
+class EnumE(enum.Enum):
+    @classmethod
+    def has_value(cls, value: int) -> bool:
+        return value in set(item.value for item in cls)
+
+
+class PlanEnum(EnumE):
     monthly = 2
     yearly = 3
 
 
-class AliasGeneratorEnum(enum.Enum):
+# Specify the format for sender address
+class SenderFormatEnum(EnumE):
+    AT = 0  # John Wick - john at wick.com
+    VIA = 1  # john@wick.com via SimpleLogin
+    A = 2  # John Wick - john(a)wick.com
+    FULL = 3  # John Wick - john@wick.com
+
+
+class AliasGeneratorEnum(EnumE):
     word = 1  # aliases are generated based on random words
     uuid = 2  # aliases are generated based on uuid
-
-    @classmethod
-    def has_value(cls, value: int) -> bool:
-        return value in set(item.value for item in cls)
 
 
 class User(db.Model, ModelMixin, UserMixin):
@@ -172,10 +182,13 @@ class User(db.Model, ModelMixin, UserMixin):
 
     profile_picture = db.relationship(File, foreign_keys=[profile_picture_id])
 
-    # Use the "via" format for sender address, i.e. "name@example.com via SimpleLogin"
-    # If False, use the format "Name - name at example.com"
-    use_via_format_for_sender = db.Column(
-        db.Boolean, default=True, nullable=False, server_default="1"
+    # Specify the format for sender address
+    # John Wick - john at wick.com  -> 0
+    # john@wick.com via SimpleLogin -> 1
+    # John Wick - john@wick.com     -> 2
+    # John Wick - john@wick.com     -> 3
+    sender_format = db.Column(
+        db.Integer, default="1", nullable=False, server_default="1"
     )
 
     referral_id = db.Column(
@@ -868,21 +881,35 @@ class Contact(db.Model, ModelMixin):
 
     def new_addr(self):
         """
-        Replace original email by reply_email. 2 possible formats:
-        - first@example.com by SimpleLogin <reply_email> OR
-        - First Last - first at example.com <reply_email>
+        Replace original email by reply_email. Possible formats:
+        - first@example.com via SimpleLogin <reply_email> OR
+        - First Last - first at example.com <reply_email> OR
+        - First Last - first(a)example.com <reply_email> OR
+        - First Last - first@example.com <reply_email> OR
         And return new address with RFC 2047 format
 
         `new_email` is a special reply address
         """
         user = self.user
-        if user and user.use_via_format_for_sender:
+        if (
+            not user
+            or not SenderFormatEnum.has_value(user.sender_format)
+            or user.sender_format == SenderFormatEnum.VIA.value
+        ):
             new_name = f"{self.website_email} via SimpleLogin"
-        else:
+        elif user.sender_format == SenderFormatEnum.AT.value:
             name = self.name or ""
             new_name = (
                 name + (" - " if name else "") + self.website_email.replace("@", " at ")
             ).strip()
+        elif user.sender_format == SenderFormatEnum.A.value:
+            name = self.name or ""
+            new_name = (
+                name + (" - " if name else "") + self.website_email.replace("@", "(a)")
+            ).strip()
+        elif user.sender_format == SenderFormatEnum.FULL.value:
+            name = self.name or ""
+            new_name = (name + (" - " if name else "") + self.website_email).strip()
 
         new_addr = formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
