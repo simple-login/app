@@ -8,7 +8,7 @@ from wtforms.fields.html5 import EmailField
 from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, MAILBOX_SECRET, URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
-    can_be_used_as_personal_email,
+    email_domain_can_be_used_as_mailbox,
     mailbox_already_used,
     render,
     send_email,
@@ -86,7 +86,7 @@ def mailbox_route():
 
                 if mailbox_already_used(mailbox_email, current_user):
                     flash(f"{mailbox_email} already used", "error")
-                elif not can_be_used_as_personal_email(mailbox_email):
+                elif not email_domain_can_be_used_as_mailbox(mailbox_email):
                     flash(f"You cannot use {mailbox_email}.", "error")
                 else:
                     new_mailbox = Mailbox.create(
