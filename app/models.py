@@ -10,6 +10,7 @@ from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text, desc, CheckConstraint
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -638,10 +639,10 @@ class Alias(db.Model, ModelMixin):
 
     # prefix _ to avoid this object being used accidentally.
     # To have the list of all mailboxes, should use AliasInfo instead
-    _mailboxes = db.relationship("Mailbox", secondary="alias_mailbox")
+    _mailboxes = db.relationship("Mailbox", secondary="alias_mailbox", lazy="joined")
 
     user = db.relationship(User)
-    mailbox = db.relationship("Mailbox")
+    mailbox = db.relationship("Mailbox", lazy="joined")
 
     @property
     def mailboxes(self):
