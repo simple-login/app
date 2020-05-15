@@ -548,8 +548,6 @@ if __name__ == "__main__":
     #
     # toolbar = DebugToolbarExtension(app)
 
-
-
     # warning: only used in local
     if RESET_DB:
         LOG.warning("reset db, add fake data")
