@@ -313,7 +313,6 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
         )
 
     data = r.json()
-    LOG.d("response from Apple %s", data)
     # data has the following format
     # {
     #     "status": 0,
