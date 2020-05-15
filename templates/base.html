@@ -40,8 +40,6 @@
   <script src="/static/assets/js/vendors/circle-progress.min.js"></script>
   <script src="/static/assets/js/core.js"></script>
 
-  <script src="/static/assets/js/theme.js"></script>
-
   <!-- ClipboardJS -->
   <script src="/static/vendor/clipboard.min.js"></script>
 
@@ -63,6 +61,8 @@
   <script src="{{ url_for('static', filename='node_modules/bootbox/dist/bootbox.min.js') }}"></script>
 
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
+
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
   <script>
     toastr.options.closeButton = true;
@@ -170,8 +170,8 @@
 
 </script>
 
-<script src="{{ url_for('static', filename='local-storage-polyfill.js.js') }}"></script>
-<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+<script src="{{ url_for('static', filename='local-storage-polyfill.js') }}"></script>
+
 
 <!-- For additional script -->
 {% block script %}
