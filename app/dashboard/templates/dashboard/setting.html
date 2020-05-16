@@ -206,31 +206,30 @@
       <div class="card-body">
         <div class="card-title">Sender address format</div>
         <div class="mt-1 mb-3">
-          When your alias receives an email, says from <b>John Wick &lt;john@wick.com&gt;</b>,
+          When your alias receives an email, it says from: <b>John Wick &lt;john@wick.com&gt;</b>,
           SimpleLogin forwards it to your mailbox. <br>
 
           Due to some email constraints, SimpleLogin cannot keep the sender email address
-          in the original form and needs to <b>transform</b> it to one of the 2 below formats.
+          in the original form and needs to <b>transform</b> it to one of the formats below.
         </div>
 
         <form method="post" action="#sender-format">
           <input type="hidden" name="form-name" value="change-sender-format">
 
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="sender-format" id="exampleRadios1" value="1"
-                {% if current_user.use_via_format_for_sender %} checked {% endif %}>
-            <label class="form-check-label" for="exampleRadios1">
-              <b>john@wick.com via SimpleLogin</b>
-            </label>
-          </div>
-
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="sender-format" id="exampleRadios2" value="0"
-                {% if not current_user.use_via_format_for_sender %} checked {% endif %}>
-            <label class="form-check-label" for="exampleRadios2">
-              <b>John Wick - john at wick.com</b>
-            </label>
-          </div>
+          <select class="form-control mr-sm-2" name="sender-format">
+            <option value="{{ SenderFormatEnum.VIA.value }}"
+                    {% if current_user.sender_format == SenderFormatEnum.VIA.value %} selected {% endif %}>
+              john@wick.com via SimpleLogin</option>
+            <option value="{{ SenderFormatEnum.AT.value }}"
+                    {% if current_user.sender_format == SenderFormatEnum.AT.value %} selected {% endif %}>
+              John Wick - john at wick.com</option>
+            <option value="{{ SenderFormatEnum.A.value }}"
+                    {% if current_user.sender_format == SenderFormatEnum.A.value %} selected {% endif %}>
+              John Wick - john(a)wick.com</option>
+            <option value="{{ SenderFormatEnum.FULL.value }}"
+                    {% if current_user.sender_format == SenderFormatEnum.FULL.value %} selected {% endif %}>
+              John Wick - john@wick.com</option>
+          </select>
 
           <button class="btn btn-outline-primary mt-3">Update</button>
         </form>

@@ -30,6 +30,7 @@ from app.models import (
     Client,
     AliasGeneratorEnum,
     ManualSubscription,
+    SenderFormatEnum,
 )
 from app.utils import random_string
 
@@ -161,12 +162,11 @@ def setting():
             return redirect(url_for("dashboard.setting"))
         elif request.form.get("form-name") == "change-sender-format":
             sender_format = int(request.form.get("sender-format"))
-            if sender_format == 0:
-                current_user.use_via_format_for_sender = False
-            else:
-                current_user.use_via_format_for_sender = True
+            if SenderFormatEnum.has_value(sender_format):
+                current_user.sender_format = sender_format
+                db.session.commit()
+                flash("Your sender format preference has been updated", "success")
             db.session.commit()
-            flash("Your sender format preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "export-data":
@@ -200,6 +200,7 @@ def setting():
         "dashboard/setting.html",
         form=form,
         PlanEnum=PlanEnum,
+        SenderFormatEnum=SenderFormatEnum,
         promo_form=promo_form,
         change_email_form=change_email_form,
         pending_email=pending_email,
