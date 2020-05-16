@@ -654,6 +654,12 @@ class Alias(db.Model, ModelMixin):
     # To have the list of all mailboxes, should use AliasInfo instead
     _mailboxes = db.relationship("Mailbox", secondary="alias_mailbox", lazy="joined")
 
+    # If the mailbox has PGP-enabled, user can choose disable the PGP on the alias
+    # this is useful when some senders already support PGP
+    disable_pgp = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     user = db.relationship(User)
     mailbox = db.relationship("Mailbox", lazy="joined")
 
@@ -664,6 +670,13 @@ class Alias(db.Model, ModelMixin):
             ret.append(m)
 
         return ret
+
+    def mailbox_support_pgp(self) -> bool:
+        """return True of one of the mailboxes support PGP"""
+        for mb in self.mailboxes:
+            if mb.pgp_finger_print:
+                return True
+        return False
 
     @classmethod
     def create(cls, **kw):
