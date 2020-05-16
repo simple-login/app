@@ -379,7 +379,6 @@ def forward_email_to_mailbox(
     user,
 ) -> (bool, str):
     LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
-    spam_check = True
     is_spam, spam_status = get_spam_info(msg)
     if is_spam:
         LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
