@@ -18,9 +18,9 @@
   "dependencies": {
     "@sentry/browser": "^5.12.0",
     "bootbox": "^5.4.0",
-    "bootstrap-select": "^1.13.16",
     "font-awesome": "^4.7.0",
     "intro.js": "^2.9.3",
+    "multiple-select": "^1.5.2",
     "qrious": "^4.0.2",
     "toastr": "^2.1.4",
     "vue": "^2.6.11"

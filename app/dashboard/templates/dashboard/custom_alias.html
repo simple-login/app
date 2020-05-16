@@ -58,7 +58,8 @@
 
         <div class="row mb-2">
           <div class="col p-1">
-            <select class="form-control custom-select selectpicker" id="mailboxes" multiple name="mailboxes">
+            <select data-width="100%"
+                    class="mailbox-select" id="mailboxes" multiple name="mailboxes">
               {% for mailbox in mailboxes %}
                 <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
                         selected {% endif %}>
@@ -94,6 +95,8 @@
 
 {% block script %}
   <script>
+    $('.mailbox-select').multipleSelect();
+
     $("#submit").on("click", async function () {
       let that = $(this);
       let mailbox_ids = $(`#mailboxes`).val();
