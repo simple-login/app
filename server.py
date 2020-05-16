@@ -167,7 +167,12 @@ def fake_data():
     api_key = ApiKey.create(user_id=user.id, name="Firefox")
     api_key.code = "codeFF"
 
-    m1 = Mailbox.create(user_id=user.id, email="m1@cd.ef", verified=True)
+    m1 = Mailbox.create(
+        user_id=user.id,
+        email="m1@cd.ef",
+        verified=True,
+        pgp_finger_print="fake fingerprint",
+    )
     db.session.commit()
 
     for i in range(31):

@@ -678,6 +678,11 @@ class Alias(db.Model, ModelMixin):
                 return True
         return False
 
+    def pgp_enabled(self) -> bool:
+        if self.mailbox_support_pgp() and not self.disable_pgp:
+            return True
+        return False
+
     @classmethod
     def create(cls, **kw):
         r = cls(**kw)
