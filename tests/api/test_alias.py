@@ -399,6 +399,31 @@ def test_update_alias_mailboxes(flask_client):
     assert r.status_code == 400
 
 
+def test_update_disable_pgp(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+    assert not alias.disable_pgp
+
+    r = flask_client.put(
+        url_for("api.update_alias", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"disable_pgp": True},
+    )
+
+    assert r.status_code == 200
+    alias = Alias.get(alias.id)
+    assert alias.disable_pgp
+
+
 def test_alias_contacts(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True

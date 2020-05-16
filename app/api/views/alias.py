@@ -257,6 +257,7 @@ def update_alias(alias_id):
         note (optional): in body
         name (optional): in body
         mailbox_id (optional): in body
+        disable_pgp (optional): in body
     Output:
         200
     """
@@ -317,6 +318,10 @@ def update_alias(alias_id):
     if "name" in data:
         new_name = data.get("name")
         alias.name = new_name
+        changed = True
+
+    if "disable_pgp" in data:
+        alias.disable_pgp = data.get("disable_pgp")
         changed = True
 
     if changed:
