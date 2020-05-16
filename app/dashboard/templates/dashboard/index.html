@@ -211,7 +211,7 @@
                   {% endif %}
                      style="padding-left: 0px"
               >
-                <input type="checkbox" class="custom-switch-input"
+                <input type="checkbox" class="enable-disable-alias custom-switch-input"
                        data-alias="{{ alias.id }}"
                        data-alias-email="{{ alias.email }}"
                     {{ "checked" if alias.enabled else "" }}>
@@ -527,7 +527,7 @@
 
     });
 
-    $(".custom-switch-input").change(async function (e) {
+    $(".enable-disable-alias").change(async function (e) {
       let aliasId = $(this).data("alias");
       let alias = $(this).data("alias-email");
 
