@@ -2,10 +2,27 @@
 
 {% block content %}
   {{ render_text("Hi " + name) }}
-  {{ render_text("We have recorded an attempt to send an email from your alias <b>"+ alias +"</b> using <b>" + sender + "</b>.") }}
-  {{ render_text("Please note that sending from this alias only works from <b>" + mailbox_email + "</b>.") }}
-  {{ render_text("Indeed, only you (or the mailbox that owns <b>" + alias + "</b>) can send emails on behalf of this alias.") }}
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+
+  {% call text() %}
+    We have recorded an attempt to send an email from your alias <b>{{ alias.email }}</b> using <b>{{ sender }}</b>>
+  {% endcall %}
+
+  {% call text() %}
+    Please note that sending from this alias only works from one of these mailboxes: <br>
+    {% for mailbox in alias.mailboxes %}
+      - {{ mailbox.email }} <br>
+    {% endfor %}
+  {% endcall %}
+
+  {% call text() %}
+    Indeed only you can send emails on behalf of your alias.
+  {% endcall %}
+
+  {% call text() %}
+    Thanks, <br/>
+    SimpleLogin Team.
+  {% endcall %}
+
 {% endblock %}
 
 

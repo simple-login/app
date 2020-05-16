@@ -26,7 +26,15 @@
         </p>
         <p>
           {% if alias.mailbox_id %}
-            Make sure you send the email from the mailbox <b>{{ alias.mailbox.email }}</b>.
+
+            {% if alias.mailboxes | length == 1 %}
+              Make sure you send the email from the mailbox <b>{{ alias.mailbox.email }}</b>.
+            {% else %}
+              Make sure you send the email from one of the following mailboxes: <br>
+              {% for mailbox in alias.mailboxes %}
+                - <b>{{ mailbox.email }}</b> <br>
+              {% endfor %}
+            {% endif %}
             This is because only the mailbox that owns the alias can send emails from it.
           {% else %}
             Make sure you send the email from your personal email address ({{ current_user.email }}).

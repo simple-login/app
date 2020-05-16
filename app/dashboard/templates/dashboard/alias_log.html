@@ -129,7 +129,7 @@
               <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
               <span class="ml-2">{{ log.alias }}</span>
               <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
-              <span class="ml-2">{{ log.mailbox }}</span>
+              <span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
             </div>
           {% else %}
             <div>

@@ -10,6 +10,7 @@ from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text, desc, CheckConstraint
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -187,6 +188,8 @@ class User(db.Model, ModelMixin, UserMixin):
     intro_shown = db.Column(
         db.Boolean, default=False, nullable=False, server_default="0"
     )
+
+    default_mailbox = db.relationship("Mailbox", foreign_keys=[default_mailbox_id])
 
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
@@ -634,8 +637,20 @@ class Alias(db.Model, ModelMixin):
         db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=False
     )
 
+    # prefix _ to avoid this object being used accidentally.
+    # To have the list of all mailboxes, should use AliasInfo instead
+    _mailboxes = db.relationship("Mailbox", secondary="alias_mailbox", lazy="joined")
+
     user = db.relationship(User)
-    mailbox = db.relationship("Mailbox")
+    mailbox = db.relationship("Mailbox", lazy="joined")
+
+    @property
+    def mailboxes(self):
+        ret = [self.mailbox]
+        for m in self._mailboxes:
+            ret.append(m)
+
+        return ret
 
     @classmethod
     def create(cls, **kw):
@@ -909,10 +924,22 @@ class EmailLog(db.Model, ModelMixin):
         db.ForeignKey("refused_email.id", ondelete="SET NULL"), nullable=True
     )
 
+    # in case of bounce, record on what mailbox the email has been bounced
+    # useful when an alias has several mailboxes
+    bounced_mailbox_id = db.Column(
+        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=True
+    )
+
     refused_email = db.relationship("RefusedEmail")
     forward = db.relationship(Contact)
 
     contact = db.relationship(Contact)
+
+    def bounced_mailbox(self) -> str:
+        if self.bounced_mailbox_id:
+            return Mailbox.get(self.bounced_mailbox_id).email
+        # retro-compatibility
+        return self.contact.alias.mailboxes[0].email
 
     def get_action(self) -> str:
         """return the action name: forward|reply|block|bounced"""
@@ -1181,8 +1208,16 @@ class Mailbox(db.Model, ModelMixin):
         # Put all aliases belonging to this mailbox to global trash
         try:
             for alias in Alias.query.filter_by(mailbox_id=obj_id):
-                DeletedAlias.create(email=alias.email)
-            db.session.commit()
+                # special handling for alias that has several mailboxes and has mailbox_id=obj_id
+                if len(alias.mailboxes) > 1:
+                    # use the first mailbox found in alias._mailboxes
+                    first_mb = alias._mailboxes[0]
+                    alias.mailbox_id = first_mb.id
+                    alias._mailboxes.remove(first_mb)
+                else:
+                    # only put aliases that have mailbox as a single mailbox into trash
+                    DeletedAlias.create(email=alias.email)
+                db.session.commit()
         # this can happen when a previously deleted alias is re-created via catch-all or directory feature
         except IntegrityError:
             LOG.error("Some aliases have been added before to DeletedAlias")
@@ -1271,3 +1306,14 @@ class SentAlert(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     to_email = db.Column(db.String(256), nullable=False)
     alert_type = db.Column(db.String(256), nullable=False)
+
+
+class AliasMailbox(db.Model, ModelMixin):
+    __table_args__ = (
+        db.UniqueConstraint("alias_id", "mailbox_id", name="uq_alias_mailbox"),
+    )
+
+    alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
+    mailbox_id = db.Column(
+        db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
+    )

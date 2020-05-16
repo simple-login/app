@@ -20,7 +20,7 @@ from app.dashboard.views.alias_log import get_alias_log
 from app.email_utils import parseaddr_unicode
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, Contact, Mailbox
+from app.models import Alias, Contact, Mailbox, AliasMailbox
 from app.utils import random_string
 
 
@@ -85,6 +85,8 @@ def get_aliases_v2():
             - nb_block
             - nb_reply
             - note
+            - mailbox
+            - mailboxes
             - (optional) latest_activity:
                 - timestamp
                 - action: forward|reply|block|bounced
@@ -252,8 +254,9 @@ def update_alias(alias_id):
     Update alias note
     Input:
         alias_id: in url
-        note: in body
-        name: in body
+        note (optional): in body
+        name (optional): in body
+        mailbox_id (optional): in body
     Output:
         200
     """
@@ -280,6 +283,35 @@ def update_alias(alias_id):
             return jsonify(error="Forbidden"), 400
 
         alias.mailbox_id = mailbox_id
+        changed = True
+
+    if "mailbox_ids" in data:
+        mailbox_ids = [int(m_id) for m_id in data.get("mailbox_ids")]
+        mailboxes: [Mailbox] = []
+
+        # check if all mailboxes belong to user
+        for mailbox_id in mailbox_ids:
+            mailbox = Mailbox.get(mailbox_id)
+            if not mailbox or mailbox.user_id != user.id or not mailbox.verified:
+                return jsonify(error="Forbidden"), 400
+            mailboxes.append(mailbox)
+
+        if not mailboxes:
+            return jsonify(error="Must choose at least one mailbox"), 400
+
+        # <<< update alias mailboxes >>>
+        # first remove all existing alias-mailboxes links
+        AliasMailbox.query.filter_by(alias_id=alias.id).delete()
+        db.session.flush()
+
+        # then add all new mailboxes
+        for i, mailbox in enumerate(mailboxes):
+            if i == 0:
+                alias.mailbox_id = mailboxes[0].id
+            else:
+                AliasMailbox.create(alias_id=alias.id, mailbox_id=mailbox.id)
+        # <<< END update alias mailboxes >>>
+
         changed = True
 
     if "name" in data:

@@ -13,6 +13,7 @@ from app.models import Alias, Contact, EmailLog, Mailbox
 class AliasInfo:
     alias: Alias
     mailbox: Mailbox
+    mailboxes: [Mailbox]
 
     nb_forward: int
     nb_blocked: int
@@ -20,6 +21,9 @@ class AliasInfo:
 
     latest_email_log: EmailLog = None
     latest_contact: Contact = None
+
+    def contain_mailbox(self, mailbox_id: int) -> bool:
+        return mailbox_id in [m.id for m in self.mailboxes]
 
 
 def serialize_alias_info(alias_info: AliasInfo) -> dict:
@@ -54,6 +58,10 @@ def serialize_alias_info_v2(alias_info: AliasInfo) -> dict:
         "nb_reply": alias_info.nb_reply,
         # mailbox
         "mailbox": {"id": alias_info.mailbox.id, "email": alias_info.mailbox.email},
+        "mailboxes": [
+            {"id": mailbox.id, "email": mailbox.email}
+            for mailbox in alias_info.mailboxes
+        ],
     }
     if alias_info.latest_email_log:
         email_log = alias_info.latest_email_log
@@ -158,7 +166,13 @@ def get_alias_infos_with_pagination_v2(
 
     q = q.group_by(Alias.id, Mailbox.id)
 
-    q = q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT)
+    q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
+
+    # preload alias.mailboxes to speed up
+    alias_ids = [alias.id for alias, _, _ in q]
+    Alias.query.options(joinedload(Alias._mailboxes)).filter(
+        Alias.id.in_(alias_ids)
+    ).all()
 
     for alias, mailbox, latest_activity in q:
         ret.append(get_alias_info_v2(alias, mailbox))
@@ -174,7 +188,12 @@ def get_alias_info(alias: Alias) -> AliasInfo:
     )
 
     alias_info = AliasInfo(
-        alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0, mailbox=alias.mailbox
+        alias=alias,
+        nb_blocked=0,
+        nb_forward=0,
+        nb_reply=0,
+        mailbox=alias.mailbox,
+        mailboxes=[alias.mailbox],
     )
 
     for _, el in q:
@@ -200,8 +219,20 @@ def get_alias_info_v2(alias: Alias, mailbox) -> AliasInfo:
     latest_contact = None
 
     alias_info = AliasInfo(
-        alias=alias, nb_blocked=0, nb_forward=0, nb_reply=0, mailbox=mailbox
+        alias=alias,
+        nb_blocked=0,
+        nb_forward=0,
+        nb_reply=0,
+        mailbox=mailbox,
+        mailboxes=[mailbox],
     )
+
+    for m in alias._mailboxes:
+        alias_info.mailboxes.append(m)
+
+    # remove duplicates
+    # can happen that alias.mailbox_id also appears in AliasMailbox table
+    alias_info.mailboxes = list(set(alias_info.mailboxes))
 
     for contact, email_log in q:
         if email_log.is_reply:

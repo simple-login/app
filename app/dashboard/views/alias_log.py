@@ -16,7 +16,7 @@ class AliasLog:
     is_reply: bool
     blocked: bool
     bounced: bool
-    mailbox: str
+    email_log: EmailLog
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -63,7 +63,6 @@ def alias_log(alias_id, page_id):
 
 def get_alias_log(alias: Alias, page_id=0) -> [AliasLog]:
     logs: [AliasLog] = []
-    mailbox = alias.mailbox_email()
 
     q = (
         db.session.query(Contact, EmailLog)
@@ -83,7 +82,7 @@ def get_alias_log(alias: Alias, page_id=0) -> [AliasLog]:
             is_reply=email_log.is_reply,
             blocked=email_log.blocked,
             bounced=email_log.bounced,
-            mailbox=mailbox,
+            email_log=email_log,
         )
         logs.append(al)
     logs = sorted(logs, key=lambda l: l.when, reverse=True)

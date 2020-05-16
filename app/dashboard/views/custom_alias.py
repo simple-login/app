@@ -11,7 +11,7 @@ from app.dashboard.base import dashboard_bp
 from app.email_utils import email_belongs_to_alias_domains
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, CustomDomain, DeletedAlias, Mailbox, User
+from app.models import Alias, CustomDomain, DeletedAlias, Mailbox, User, AliasMailbox
 from app.utils import convert_to_id, random_word, word_exist
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
@@ -54,20 +54,30 @@ def custom_alias():
     # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
     suffixes = available_suffixes(current_user)
 
-    mailboxes = [mb.email for mb in current_user.mailboxes()]
+    mailboxes = current_user.mailboxes()
 
     if request.method == "POST":
         alias_prefix = request.form.get("prefix")
         signed_suffix = request.form.get("suffix")
-        mailbox_email = request.form.get("mailbox")
+        mailbox_ids = request.form.getlist("mailboxes")
         alias_note = request.form.get("note")
 
         # check if mailbox is not tempered with
-        if mailbox_email != current_user.email:
-            mailbox = Mailbox.get_by(email=mailbox_email, user_id=current_user.id)
-            if not mailbox or mailbox.user_id != current_user.id:
+        mailboxes = []
+        for mailbox_id in mailbox_ids:
+            mailbox = Mailbox.get(mailbox_id)
+            if (
+                not mailbox
+                or mailbox.user_id != current_user.id
+                or not mailbox.verified
+            ):
                 flash("Something went wrong, please retry", "warning")
                 return redirect(url_for("dashboard.custom_alias"))
+            mailboxes.append(mailbox)
+
+        if not mailboxes:
+            flash("At least one mailbox must be selected", "error")
+            return redirect(url_for("dashboard.custom_alias"))
 
         # hypothesis: user will click on the button in the 600 secs
         try:
@@ -91,14 +101,18 @@ def custom_alias():
                     "warning",
                 )
             else:
-                mailbox = Mailbox.get_by(email=mailbox_email, user_id=current_user.id)
-
                 alias = Alias.create(
                     user_id=current_user.id,
                     email=full_alias,
                     note=alias_note,
-                    mailbox_id=mailbox.id,
+                    mailbox_id=mailboxes[0].id,
                 )
+                db.session.flush()
+
+                for i in range(1, len(mailboxes)):
+                    AliasMailbox.create(
+                        alias_id=alias.id, mailbox_id=mailboxes[i].id,
+                    )
 
                 # get the custom_domain_id if alias is created with a custom domain
                 if alias_suffix.startswith("@"):

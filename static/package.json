@@ -20,6 +20,7 @@
     "bootbox": "^5.4.0",
     "font-awesome": "^4.7.0",
     "intro.js": "^2.9.3",
+    "multiple-select": "^1.5.2",
     "qrious": "^4.0.2",
     "toastr": "^2.1.4",
     "vue": "^2.6.11"

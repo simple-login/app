@@ -184,6 +184,11 @@ def test_get_aliases_v2(flask_client):
     assert "id" in r0["mailbox"]
     assert "email" in r0["mailbox"]
 
+    assert r0["mailboxes"]
+    for mailbox in r0["mailboxes"]:
+        assert "id" in mailbox
+        assert "email" in mailbox
+
 
 def test_delete_alias(flask_client):
     user = User.create(
@@ -355,6 +360,43 @@ def test_update_alias_name(flask_client):
     assert r.status_code == 200
     alias = Alias.get(alias.id)
     assert alias.name == "Test Name"
+
+
+def test_update_alias_mailboxes(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    mb1 = Mailbox.create(user_id=user.id, email="ab1@cd.com", verified=True)
+    mb2 = Mailbox.create(user_id=user.id, email="ab2@cd.com", verified=True)
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    r = flask_client.put(
+        url_for("api.update_alias", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"mailbox_ids": [mb1.id, mb2.id]},
+    )
+
+    assert r.status_code == 200
+    alias = Alias.get(alias.id)
+
+    assert alias.mailbox
+    assert len(alias._mailboxes) == 1
+
+    # fail when update with empty mailboxes
+    r = flask_client.put(
+        url_for("api.update_alias", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"mailbox_ids": []},
+    )
+    assert r.status_code == 400
 
 
 def test_alias_contacts(flask_client):
