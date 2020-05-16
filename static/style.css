@@ -72,14 +72,18 @@ em {
 }
 
 /*Left border for alert zone*/
-.alert-primary{
+.alert-primary {
     border-left: 5px #467fcf solid;
 }
 
-.alert-danger{
+.alert-danger {
     border-left: 5px #6b1110 solid;
 }
 
 .alert-danger::before {
-  content: "⚠️";
+    content: "⚠️";
+}
+
+.dns-record {
+    border: 1px dotted #E3156A;
 }

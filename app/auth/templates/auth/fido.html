@@ -11,56 +11,62 @@
 {% endblock %}
 
 {% block single_content %}
-  <div class="bg-white p-6" style="margin: auto">
+  <div class="card">
+    <div class="card-body">
 
-    <div class="mb-2">
-      Your account is protected with your security key (WebAuthn). <br><br>
-      Follow your browser's steps to continue the sign-in process.
-    </div>
-
-    <form id="formRegisterKey" method="post">
-      {{ fido_token_form.csrf_token }}
-      {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}
-    </form>
-    <div class="text-center">
-      <button id="btnVerifyKey" class="btn btn-success mt-2">Use your security key</button>
-    </div>
-
-    {% if enable_otp %}
-      <div class="text-center text-muted mb-6" style="margin-top: 1em;">
-        Don't have your key with you? <br> <a href="{{ url_for('auth.mfa') }}">Verify by One-Time Password</a>
+      <div class="mb-2">
+        Your account is protected with your security key (WebAuthn). <br><br>
+        Follow your browser's steps to continue the sign-in process.
       </div>
-    {% endif %}
-    
-    <script>
-      async function verifyKey () {
-        $("#btnVerifyKey").prop('disabled', true);
-        $("#btnVerifyKey").text('Waiting for Security Key...');
 
-        const credentialRequestOptions = transformCredentialRequestOptions(
-          JSON.parse('{{webauthn_assertion_options|tojson|safe}}')
-        )
+      <form id="formRegisterKey" method="post">
+        {{ fido_token_form.csrf_token }}
+        {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}
+      </form>
+      <div class="text-center">
+        <button id="btnVerifyKey" class="btn btn-success mt-2">Use your security key</button>
+      </div>
 
-        let assertion;
-        try {
-          assertion = await navigator.credentials.get({
-            publicKey: credentialRequestOptions
-          });
-        } catch (err) {
-          toastr.error("An error occurred when we trying to verify your key.");
-          $("#btnVerifyKey").prop('disabled', false);
-          $("#btnVerifyKey").text('Use your security key');
-          return console.error("Error when trying to get credential:", err);
+      {% if enable_otp %}
+        <div class="text-center text-muted mb-6" style="margin-top: 1em;">
+          Don't have your key with you? <br> <a href="{{ url_for('auth.mfa') }}">Verify by One-Time Password</a>
+        </div>
+      {% endif %}
+
+      <script>
+        async function verifyKey() {
+          $("#btnVerifyKey").prop('disabled', true);
+          $("#btnVerifyKey").text('Waiting for Security Key...');
+
+          const credentialRequestOptions = transformCredentialRequestOptions(
+            JSON.parse('{{webauthn_assertion_options|tojson|safe}}')
+          )
+
+          let assertion;
+          try {
+            assertion = await navigator.credentials.get({
+              publicKey: credentialRequestOptions
+            });
+          } catch (err) {
+            toastr.error("An error occurred when we trying to verify your key.");
+            $("#btnVerifyKey").prop('disabled', false);
+            $("#btnVerifyKey").text('Use your security key');
+            return console.error("Error when trying to get credential:", err);
+          }
+
+          const skAssertion = transformAssertionForServer(assertion);
+          $('#sk_assertion').val(JSON.stringify(skAssertion));
+          $('#formRegisterKey').submit();
         }
 
-        const skAssertion = transformAssertionForServer(assertion);
-        $('#sk_assertion').val(JSON.stringify(skAssertion));
-        $('#formRegisterKey').submit();
-      }
+        $("#btnVerifyKey").click(verifyKey);
+      </script>
 
-      $("#btnVerifyKey").click(verifyKey);
-    </script>
-
+      {% if auto_activate %}
+        <script>$('document').ready(verifyKey());</script>
+      {% endif %}
+        
+    </div>
   </div>
 
 {% endblock %}

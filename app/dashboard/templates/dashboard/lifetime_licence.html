@@ -7,20 +7,22 @@
 {% endblock %}
 
 {% block default_content %}
-  <div class="bg-white p-6" style="max-width: 60em; margin: auto">
-    <h1 class="h2">Lifetime Licence</h1>
+  <div class="row">
+    <div class="col">
+      <h1 class="h3">Lifetime Licence</h1>
 
-    <div class="mb-4">
-      If you have a lifetime licence, please paste it here. <br>
+      <div class="mb-4">
+        If you have a lifetime licence, please paste it here. <br>
+      </div>
+
+      <form method="post">
+        {{ coupon_form.csrf_token }}
+
+        {{ coupon_form.code(class="form-control", placeholder="Licence Code") }}
+        {{ render_field_errors(coupon_form.code) }}
+        <button class="btn btn-success mt-2">Apply</button>
+      </form>
     </div>
-
-    <form method="post">
-      {{ coupon_form.csrf_token }}
-
-      {{ coupon_form.code(class="form-control", placeholder="Licence Code") }}
-      {{ render_field_errors(coupon_form.code) }}
-      <button class="btn btn-success mt-2">Apply</button>
-    </form>
   </div>
 
 {% endblock %}

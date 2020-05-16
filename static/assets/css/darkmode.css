@@ -9,7 +9,7 @@
     --heading-color: #818cab;
     --heading-background: #FFF;
     --border: 1px solid rgba(0, 40, 100, 0.12);
-    --input-bg-color: var(--light);
+    --input-bg-color: var(--white);
 }
 
 [data-theme="dark"] {
@@ -46,7 +46,7 @@ hr {
     background-color: var(--input-bg-color);
 }
 
-.form-control:focus, .dataTables_wrapper .dataTables_length select:focus, .dataTables_wrapper .dataTables_filter input:focus {
+.form-control:focus, .dataTables_wrapper .dataTables_length select:focus, .dataTables_wrapper .dataTables_filter input:focus, .modal-content {
     border-color: #1991eb;
     outline: 0;
     box-shadow: 0 0 0 2px rgba(70, 127, 207, 0.25);

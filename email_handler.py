@@ -114,13 +114,30 @@ def new_app():
     return app
 
 
-def get_or_create_contact(contact_from_header: str, alias: Alias) -> Contact:
+def get_or_create_contact(
+    contact_from_header: str, mail_from: str, alias: Alias
+) -> Contact:
     """
     contact_from_header is the RFC 2047 format FROM header
     """
+    # contact_from_header can be None, use mail_from in this case instead
+    contact_from_header = contact_from_header or mail_from
+
     # force convert header to string, sometimes contact_from_header is Header object
     contact_from_header = str(contact_from_header)
+
     contact_name, contact_email = parseaddr_unicode(contact_from_header)
+    if not contact_email:
+        # From header is wrongly formatted, try with mail_from
+        LOG.warning("From header is empty, parse mail_from %s %s", mail_from, alias)
+        contact_name, contact_email = parseaddr_unicode(mail_from)
+        if not contact_email:
+            LOG.error(
+                "Cannot parse contact from from_header:%s, mail_from:%s",
+                contact_from_header,
+                mail_from,
+            )
+
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
         if contact.name != contact_name:
@@ -327,7 +344,7 @@ def handle_forward(
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
             return [(False, "550 SL E3")]
 
-    contact = get_or_create_contact(msg["From"], alias)
+    contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
 
     if not alias.enabled:
@@ -363,24 +380,19 @@ def forward_email_to_mailbox(
 ) -> (bool, str):
     LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
     spam_check = True
+    is_spam, spam_status = get_spam_info(msg)
+    if is_spam:
+        LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
+        email_log.is_spam = True
+        email_log.spam_status = spam_status
+
+        handle_spam(contact, alias, msg, user, mailbox.email, email_log)
+        return False, "550 SL E1"
 
     # create PGP email if needed
     if mailbox.pgp_finger_print and user.is_premium():
         LOG.d("Encrypt message using mailbox %s", mailbox)
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
-
-        # no need to spam check for encrypted message
-        spam_check = False
-
-    if spam_check:
-        is_spam, spam_status = get_spam_info(msg)
-        if is_spam:
-            LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
-            email_log.is_spam = True
-            email_log.spam_status = spam_status
-
-            handle_spam(contact, alias, msg, user, mailbox.email, email_log)
-            return False, "550 SL E1"
 
     # add custom header
     add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
@@ -616,9 +628,6 @@ def spf_pass(
                         subject=msg["Subject"],
                         time=arrow.now(),
                     ),
-                    # as the returned error status is 4**,
-                    # the sender will try to resend the email. Send the error message only once
-                    max_alert_24h=1,
                 )
                 return False
 

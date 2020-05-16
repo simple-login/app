@@ -37,6 +37,8 @@ def domain_detail_dns(custom_domain_id):
 
             if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
                 flash("The MX record is not correctly set", "warning")
+                custom_domain.verified = False
+                db.session.commit()
                 mx_ok = False
                 # build mx_errors to show to user
                 mx_errors = [
@@ -66,6 +68,8 @@ def domain_detail_dns(custom_domain_id):
                     )
                 )
             else:
+                custom_domain.spf_verified = False
+                db.session.commit()
                 flash(
                     f"SPF: {EMAIL_DOMAIN} is not included in your SPF record.",
                     "warning",
@@ -86,6 +90,8 @@ def domain_detail_dns(custom_domain_id):
                     )
                 )
             else:
+                custom_domain.dkim_verified = False
+                db.session.commit()
                 flash("DKIM: the CNAME record is not correctly set", "warning")
                 dkim_ok = False
                 dkim_errors = [dkim_record or "[Empty]"]
@@ -102,6 +108,8 @@ def domain_detail_dns(custom_domain_id):
                     )
                 )
             else:
+                custom_domain.dmarc_verified = False
+                db.session.commit()
                 flash(
                     f"DMARC: The TXT record is not correctly set", "warning",
                 )

@@ -8,20 +8,22 @@
 
 {% block default_content %}
 
-  <div class="col-md-6 offset-md-3 text-center bg-white p-3 mt-5">
-    <h1 class="h3">
-      Block alias
-    </h1>
-    <p>
-      You are about to block the alias <a href="mailto:{{alias}}">{{alias}}</a>
-    </p>
-    <p>
-      After this, you will stop receiving all emails sent to this alias, please confirm.
-    </p>
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">
+        Block alias
+      </h1>
+      <p>
+        You are about to block the alias <a href="mailto:{{ alias }}">{{ alias }}</a>
+      </p>
+      <p>
+        After this, you will stop receiving all emails sent to this alias, please confirm.
+      </p>
 
-    <form method="post">
-      <button class="btn btn-warning">Confirm</button>
-    </form>
+      <form method="post">
+        <button class="btn btn-warning">Confirm</button>
+      </form>
+    </div>
   </div>
 
 {% endblock %}

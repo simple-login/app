@@ -346,10 +346,11 @@ def email_belongs_to_alias_domains(address: str) -> bool:
     return False
 
 
-def can_be_used_as_personal_email(email: str) -> bool:
-    """return True if an email can be used as a personal email. Currently the only condition is email domain is not
+def email_domain_can_be_used_as_mailbox(email: str) -> bool:
+    """return True if an email can be used as a personal email. An email domain can be used if it is not
     - one of ALIAS_DOMAINS
     - one of custom domains
+    - disposable domain
     """
     domain = get_email_domain_part(email)
     if not domain:
@@ -402,15 +403,10 @@ def get_mx_domain_list(domain) -> [str]:
     return [d[:-1] for _, d in priority_domains]
 
 
-def email_already_used(email: str) -> bool:
-    """test if an email can be used when:
-    - user signs up
-    - add a new mailbox
+def personal_email_already_used(email: str) -> bool:
+    """test if an email can be used as user email
     """
     if User.get_by(email=email):
-        return True
-
-    if Mailbox.get_by(email=email):
         return True
 
     return False
@@ -503,7 +499,11 @@ def parseaddr_unicode(addr) -> (str, str):
         name = name.strip()
         decoded_string, charset = decode_header(name)[0]
         if charset is not None:
-            name = decoded_string.decode(charset)
+            try:
+                name = decoded_string.decode(charset)
+            except UnicodeDecodeError:
+                LOG.warning("Cannot decode addr name %s", name)
+                name = ""
         else:
             name = decoded_string
 

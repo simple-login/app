@@ -163,17 +163,16 @@ def stats_before(moment: Arrow) -> Stats:
     LOG.d("total number alias %s", nb_alias)
 
     # email log stats
-    q = db.session.query(EmailLog, Contact, Alias, User).filter(
-        EmailLog.contact_id == Contact.id,
-        Contact.alias_id == Alias.id,
-        Alias.user_id == User.id,
-        EmailLog.created_at < moment,
+    q = (
+        db.session.query(EmailLog)
+        .join(User, EmailLog.user_id == User.id)
+        .filter(EmailLog.created_at < moment,)
     )
     for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))
 
     nb_spam = nb_bounced = nb_forward = nb_block = nb_reply = 0
-    for email_log, _, _, _ in q:
+    for email_log in q:
         if email_log.bounced:
             nb_bounced += 1
         elif email_log.is_spam:

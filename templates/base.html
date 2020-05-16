@@ -1,7 +1,7 @@
 {% from "_formhelpers.html" import render_field, render_field_errors %}
 
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="{% if request.cookies.get('dark-mode') == 'true' %}dark{% endif %}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
@@ -68,6 +68,8 @@
 
 
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
+
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
   <script>
     toastr.options.closeButton = true;
@@ -175,7 +177,8 @@
 
 </script>
 
-<script src="/static/local-storage-polyfill.js"></script>
+<script src="{{ url_for('static', filename='local-storage-polyfill.js') }}"></script>
+
 
 <!-- For additional script -->
 {% block script %}

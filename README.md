@@ -1262,5 +1262,7 @@ Thanks go to these wonderful people:
     <td align="center"><a href="https://github.com/NinhDinh"><img src="https://avatars2.githubusercontent.com/u/1419742?s=460&v=4" width="100px;" alt="Ninh Dinh"/><br /><sub><b>Ninh Dinh</b></sub></a><br /></td>
     <td align="center"><a href="https://github.com/ntung"><img src="https://avatars1.githubusercontent.com/u/663341?s=460&v=4" width="100px;" alt="Tung Nguyen V. N."/><br /><sub><b>Tung Nguyen V. N.</b></sub></a><br /></td>
     <td align="center"><a href="https://www.linkedin.com/in/nguyenkims/"><img src="https://simplelogin.io/about/me.jpeg" width="100px;" alt="Son Nguyen Kim"/><br /><sub><b>Son Nguyen Kim</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/developStorm"><img src="https://avatars1.githubusercontent.com/u/59678453?s=460&u=3813d29a125b3edeb44019234672b704f7b9b76a&v=4" width="100px;" alt="Raymond Nook"/><br /><sub><b>Raymond Nook</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/SibrenVasse"><img src="https://avatars1.githubusercontent.com/u/5833571?s=460&u=78aea62ffc215885a0319437fc629a7596ddea31&v=4" width="100px;" alt="Sibren Vasse"/><br /><sub><b>Sibren Vasse</b></sub></a><br /></td>
 </tr>
 </table>
