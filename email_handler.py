@@ -389,7 +389,7 @@ def forward_email_to_mailbox(
         return False, "550 SL E1"
 
     # create PGP email if needed
-    if mailbox.pgp_finger_print and user.is_premium():
+    if mailbox.pgp_finger_print and user.is_premium() and not alias.disable_pgp:
         LOG.d("Encrypt message using mailbox %s", mailbox)
         msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
 
