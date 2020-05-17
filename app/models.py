@@ -194,6 +194,10 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Integer, default="1", nullable=False, server_default="1"
     )
 
+    replace_reverse_alias = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     referral_id = db.Column(
         db.ForeignKey("referral.id", ondelete="SET NULL"), nullable=True, default=None
     )
