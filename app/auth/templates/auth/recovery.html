@@ -1,0 +1,27 @@
+{% extends "single.html" %}
+
+{% block title %}
+  Recovery Code
+{% endblock %}
+
+
+{% block single_content %}
+  <div class="card">
+    <div class="card-body p-6">
+
+      <form method="post">
+        {{ recovery_form.csrf_token }}
+
+        <div class="font-weight-bold mt-5">Code</div>
+        <div class="small-text">Please enter one of the recovery codes here
+        </div>
+
+        {{ recovery_form.code(class="form-control", autofocus="true") }}
+        {{ render_field_errors(recovery_form.code) }}
+        <button class="btn btn-success mt-2">Submit</button>
+      </form>
+
+    </div>
+  </div>
+
+{% endblock %}
