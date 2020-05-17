@@ -707,8 +707,12 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     full_report_path = f"refused-emails/full-{random_name}.eml"
     s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
 
+    file_path = None
+    mailbox = alias.mailbox
     orig_msg = get_orig_message_from_bounce(msg)
     if not orig_msg:
+        # Some MTA does not return the original message in bounce message
+        # nothing we can do here
         LOG.error(
             "Cannot parse original message from bounce message %s %s %s %s",
             alias,
@@ -716,24 +720,26 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
             contact,
             full_report_path,
         )
-        return
-
-    file_path = f"refused-emails/{random_name}.eml"
-    s3.upload_email_from_bytesio(file_path, BytesIO(orig_msg.as_bytes()), random_name)
-    # <<< END Store the bounced email >>>
-
-    mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
-    mailbox = Mailbox.get(mailbox_id)
-    if not mailbox or mailbox.user_id != user.id:
-        LOG.error(
-            "Tampered message mailbox_id %s, %s, %s, %s %s",
-            mailbox_id,
-            user,
-            alias,
-            contact,
-            full_report_path,
+    else:
+        file_path = f"refused-emails/{random_name}.eml"
+        s3.upload_email_from_bytesio(
+            file_path, BytesIO(orig_msg.as_bytes()), random_name
         )
-        return
+        # <<< END Store the bounced email >>>
+
+        mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox or mailbox.user_id != user.id:
+            LOG.error(
+                "Tampered message mailbox_id %s, %s, %s, %s %s",
+                mailbox_id,
+                user,
+                alias,
+                contact,
+                full_report_path,
+            )
+            # use the alias default mailbox
+            mailbox = alias.mailbox
 
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id
