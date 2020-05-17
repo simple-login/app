@@ -28,10 +28,19 @@
       </div>
 
       {% if enable_otp %}
-        <div class="text-center text-muted mb-6" style="margin-top: 1em;">
+        <hr>
+        <div class="text-muted mt-5" style="margin-top: 1em;">
           Don't have your key with you? <br> <a href="{{ url_for('auth.mfa') }}">Verify by One-Time Password</a>
         </div>
       {% endif %}
+
+      <hr>
+
+      <div class="mt-5">
+        If you have troubles with your authentication app, you can use the recovery code to login. <br>
+        <a href="{{ url_for('auth.recovery_route', next=next_url) }}">Use Recovery Codes</a>
+      </div>
+
 
       <script>
         async function verifyKey() {
@@ -65,7 +74,7 @@
       {% if auto_activate %}
         <script>$('document').ready(verifyKey());</script>
       {% endif %}
-        
+
     </div>
   </div>
 

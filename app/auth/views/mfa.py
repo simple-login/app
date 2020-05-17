@@ -59,4 +59,5 @@ def mfa():
         "auth/mfa.html",
         otp_token_form=otp_token_form,
         enable_fido=(user.fido_enabled()),
+        next_url=next_url
     )

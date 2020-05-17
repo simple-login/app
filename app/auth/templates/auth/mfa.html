@@ -20,7 +20,7 @@
         <input type="hidden" name="form-name" value="create">
 
         <div class="font-weight-bold mt-5">Token</div>
-        <div class="small-text">Please enter the 6-digit number displayed in your MFA application
+        <div class="small-text mb-3">Please enter the 6-digit number displayed in your MFA application
           (Google Authenticator, Authy, MyDigiPassword, etc) here
         </div>
 
@@ -30,11 +30,20 @@
       </form>
 
       {% if enable_fido %}
-        <div class="text-center text-muted mb-6" style="margin-top: 1em;">
+        <hr>
+        <div class="text-muted mt-5" style="margin-top: 1em;">
           Having trouble with your authenticator? <br> <a href="{{ url_for('auth.fido') }}">Verify by your security
           key</a>
         </div>
       {% endif %}
+
+      <hr>
+      <div class="mt-5">
+        If you have troubles with your authentication app, you can use the recovery code to login. <br>
+        <a href="{{ url_for('auth.recovery_route', next=next_url) }}">Use Recovery Codes</a>
+      </div>
+
+
     </div>
   </div>
 
