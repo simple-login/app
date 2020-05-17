@@ -1,0 +1,15 @@
+{% extends "error.html" %}
+
+{% block error_name %}
+  405
+{% endblock %}
+
+{% block error_description %}
+  Client used wrong method when accessing resource.
+{% endblock %}
+
+{% block suggestion %}
+  <a class="btn btn-primary" href="javascript:history.back()">
+    <i class="fe fe-arrow-left mr-2"></i>Go Back
+  </a>
+{% endblock %}

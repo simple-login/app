@@ -33,19 +33,3 @@ def require_api_auth(f):
         return f(*args, **kwargs)
 
     return decorated
-
-
-@api_bp.app_errorhandler(404)
-def not_found(e):
-    return jsonify(error="No such endpoint"), 404
-
-
-@api_bp.app_errorhandler(Exception)
-def internal_error(e):
-    LOG.exception(e)
-    return jsonify(error="Internal error"), 500
-
-
-@api_bp.app_errorhandler(405)
-def wrong_method(e):
-    return jsonify(error="Method not allowed"), 405
