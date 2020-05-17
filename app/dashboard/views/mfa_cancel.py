@@ -6,6 +6,7 @@ from wtforms import StringField, validators
 
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
+from app.models import RecoveryCode
 
 
 class OtpTokenForm(FlaskForm):
@@ -29,6 +30,11 @@ def mfa_cancel():
             current_user.enable_otp = False
             current_user.otp_secret = None
             db.session.commit()
+
+            # user does not have any 2FA enabled left, delete all recovery codes
+            if not current_user.two_factor_authentication_enabled():
+                RecoveryCode.empty(current_user)
+
             flash("MFA is now disabled", "warning")
             return redirect(url_for("dashboard.index"))
         else:

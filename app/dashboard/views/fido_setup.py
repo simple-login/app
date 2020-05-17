@@ -68,8 +68,7 @@ def fido_setup():
         db.session.commit()
 
         flash("Security key has been activated", "success")
-
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("dashboard.recovery_code_route"))
 
     # Prepare information for key registration process
     fido_uuid = str(uuid.uuid4())

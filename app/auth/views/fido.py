@@ -104,4 +104,5 @@ def fido():
         webauthn_assertion_options=webauthn_assertion_options,
         enable_otp=user.enable_otp,
         auto_activate=auto_activate,
+        next_url=next_url,
     )
