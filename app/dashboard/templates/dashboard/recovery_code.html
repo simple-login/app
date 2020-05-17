@@ -1,0 +1,40 @@
+{% extends 'default.html' %}
+{% set active_page = "setting" %}
+{% block title %}
+  Recovery Codes
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">Recovery codes</h1>
+      <p>
+        If you lose access to your authentication device, you can use one of these backup codes to login to your
+        account. Each code may be used only once. Make a copy of these codes, and store it somewhere safe.
+      </p>
+
+      <ul>
+        {% for recovery_code in recovery_codes %}
+          {% if recovery_code.used %}
+            <li>
+              <span style="text-decoration: line-through">{{ recovery_code.code }}</span>.
+              Used {{ recovery_code.used_at | dt }}.
+            </li>
+          {% else %}
+            <li>
+              {{ recovery_code.code }}
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+
+      <form method="post" class="mt-6">
+        <input type="submit" class="btn btn-outline-primary" value="Generate New Codes">
+      </form>
+      <div class="small-text">
+        Beware: Generating new codes invalidates all the previous ones, make sure to write down the new ones!
+      </div>
+
+    </div>
+  </div>
+{% endblock %}

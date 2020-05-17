@@ -1381,3 +1381,9 @@ class RecoveryCode(db.Model, ModelMixin):
 
         LOG.d("Create recovery codes for %s", user)
         db.session.commit()
+
+    @classmethod
+    def empty(cls, user):
+        """Delete all recovery codes for user"""
+        cls.query.filter_by(user_id=user.id).delete()
+        db.session.commit()
