@@ -36,7 +36,8 @@ def mfa_setup():
             current_user.enable_otp = True
             db.session.commit()
             flash("MFA has been activated", "success")
-            return redirect(url_for("dashboard.index"))
+
+            return redirect(url_for("dashboard.recovery_code_route"))
         else:
             flash("Incorrect token", "warning")
 

@@ -5,6 +5,7 @@ from wtforms import PasswordField, validators
 
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
+from app.models import RecoveryCode
 
 
 class LoginForm(FlaskForm):
@@ -29,6 +30,11 @@ def fido_cancel():
             current_user.fido_sign_count = None
             current_user.fido_credential_id = None
             db.session.commit()
+
+            # user does not have any 2FA enabled left, delete all recovery codes
+            if not current_user.two_factor_authentication_enabled():
+                RecoveryCode.empty(current_user)
+
             flash("We've unlinked your security key.", "success")
             return redirect(url_for("dashboard.index"))
         else:

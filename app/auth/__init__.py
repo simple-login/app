@@ -13,4 +13,5 @@ from .views import (
     mfa,
     fido,
     social,
+    recovery,
 )

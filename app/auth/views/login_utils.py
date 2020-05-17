@@ -19,13 +19,13 @@ def after_login(user, next_url):
         # switch between these two 2FA option
         session[MFA_USER_ID] = user.id
         if next_url:
-            return redirect(url_for("auth.fido", next_url=next_url))
+            return redirect(url_for("auth.fido", next=next_url))
         else:
             return redirect(url_for("auth.fido"))
     elif user.enable_otp:
         session[MFA_USER_ID] = user.id
         if next_url:
-            return redirect(url_for("auth.mfa", next_url=next_url))
+            return redirect(url_for("auth.mfa", next=next_url))
         else:
             return redirect(url_for("auth.mfa"))
     else:

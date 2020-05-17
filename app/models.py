@@ -164,6 +164,9 @@ class User(db.Model, ModelMixin, UserMixin):
             return True
         return False
 
+    def two_factor_authentication_enabled(self) -> bool:
+        return self.enable_otp or self.fido_enabled()
+
     # some users could have lifetime premium
     lifetime = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
 
@@ -1362,3 +1365,43 @@ class AliasMailbox(db.Model, ModelMixin):
     mailbox_id = db.Column(
         db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
     )
+
+
+_NB_RECOVERY_CODE = 8
+_RECOVERY_CODE_LENGTH = 8
+
+
+class RecoveryCode(db.Model, ModelMixin):
+    """allow user to login in case you lose any of your authenticators"""
+
+    __table_args__ = (db.UniqueConstraint("user_id", "code", name="uq_recovery_code"),)
+
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    code = db.Column(db.String(16), nullable=False)
+    used = db.Column(db.Boolean, nullable=False, default=False)
+    used_at = db.Column(ArrowType, nullable=True, default=None)
+
+    user = db.relationship(User)
+
+    @classmethod
+    def generate(cls, user):
+        """generate recovery codes for user"""
+        # delete all existing codes
+        cls.query.filter_by(user_id=user.id).delete()
+        db.session.flush()
+
+        nb_code = 0
+        while nb_code < _NB_RECOVERY_CODE:
+            code = random_string(_RECOVERY_CODE_LENGTH)
+            if not cls.get_by(user_id=user.id, code=code):
+                cls.create(user_id=user.id, code=code)
+                nb_code += 1
+
+        LOG.d("Create recovery codes for %s", user)
+        db.session.commit()
+
+    @classmethod
+    def empty(cls, user):
+        """Delete all recovery codes for user"""
+        cls.query.filter_by(user_id=user.id).delete()
+        db.session.commit()

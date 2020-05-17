@@ -98,6 +98,7 @@
             <a href="{{ url_for('dashboard.fido_setup') }}" class="btn btn-outline-primary">Setup WebAuthn</a>
           {% else %}
             <a href="{{ url_for('dashboard.fido_cancel') }}" class="btn btn-outline-danger">Disable WebAuthn</a>
+            <a href="{{ url_for('dashboard.recovery_code_route') }}" class="btn btn-outline-secondary">Recovery Codes</a>
           {% endif %}
         </div>
       </div>
@@ -114,6 +115,7 @@
           <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Setup TOTP</a>
         {% else %}
           <a href="{{ url_for('dashboard.mfa_cancel') }}" class="btn btn-outline-danger">Disable TOTP</a>
+          <a href="{{ url_for('dashboard.recovery_code_route') }}" class="btn btn-outline-secondary">Recovery Codes</a>
         {% endif %}
       </div>
     </div>
