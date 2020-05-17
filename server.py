@@ -334,26 +334,48 @@ def setup_openid_metadata(app):
 
 def setup_error_page(app):
     @app.errorhandler(400)
-    def page_not_found(e):
-        return render_template("error/400.html"), 400
+    def bad_request(e):
+        if request.path.startswith("/api/"):
+            return jsonify(error="Bad Request"), 400
+        else:
+            return render_template("error/400.html"), 400
 
     @app.errorhandler(401)
-    def page_not_found(e):
-        flash("You need to login to see this page", "error")
-        return redirect(url_for("auth.login", next=request.full_path))
+    def unauthorized(e):
+        if request.path.startswith("/api/"):
+            return jsonify(error="Unauthorized"), 401
+        else:
+            flash("You need to login to see this page", "error")
+            return redirect(url_for("auth.login", next=request.full_path))
 
     @app.errorhandler(403)
-    def page_not_found(e):
-        return render_template("error/403.html"), 403
+    def forbidden(e):
+        if request.path.startswith("/api/"):
+            return jsonify(error="Forbidden"), 403
+        else:
+            return render_template("error/403.html"), 403
 
     @app.errorhandler(404)
     def page_not_found(e):
-        return render_template("error/404.html"), 404
+        if request.path.startswith("/api/"):
+            return jsonify(error="No such endpoint"), 404
+        else:
+            return render_template("error/404.html"), 404
+
+    @app.errorhandler(405)
+    def wrong_method(e):
+        if request.path.startswith("/api/"):
+            return jsonify(error="Method not allowed"), 405
+        else:
+            return render_template("error/405.html"), 405
 
     @app.errorhandler(Exception)
     def error_handler(e):
         LOG.exception(e)
-        return render_template("error/500.html"), 500
+        if request.path.startswith("/api/"):
+            return jsonify(error="Internal error"), 500
+        else:
+            return render_template("error/500.html"), 500
 
 
 def setup_favicon_route(app):
