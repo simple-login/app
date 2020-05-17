@@ -211,7 +211,7 @@
                   {% endif %}
                      style="padding-left: 0px"
               >
-                <input type="checkbox" class="custom-switch-input"
+                <input type="checkbox" class="enable-disable-alias custom-switch-input"
                        data-alias="{{ alias.id }}"
                        data-alias-email="{{ alias.email }}"
                     {{ "checked" if alias.enabled else "" }}>
@@ -372,9 +372,25 @@
                   Save
                 </a>
               </div>
-
-
             </div>
+
+            {% if alias.mailbox_support_pgp() %}
+              <div class="small-text mt-2" data-toogle="tooltip"
+                   title="You can decide to turn off the PGP for an alias. This can be useful if the sender already encrypts the emails">
+                PGP
+                <i class="fe fe-help-circle"></i>
+              </div>
+              <div>
+                <label class="custom-switch cursor pl-0">
+                  <input type="checkbox" class="enable-disable-pgp custom-switch-input"
+                         data-alias="{{ alias.id }}"
+                         data-alias-email="{{ alias.email }}"
+                      {{ "checked" if alias.pgp_enabled() else "" }}>
+
+                  <span class="custom-switch-indicator"></span>
+                </label>
+              </div>
+            {% endif %}
 
             <div class="row mt-3">
               <div class="col">
@@ -527,7 +543,7 @@
 
     });
 
-    $(".custom-switch-input").change(async function (e) {
+    $(".enable-disable-alias").change(async function (e) {
       let aliasId = $(this).data("alias");
       let alias = $(this).data("alias-email");
 
@@ -559,6 +575,41 @@
         toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
         // reset to the original value
         var oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+    })
+
+    $(".enable-disable-pgp").change(async function (e) {
+      let aliasId = $(this).data("alias");
+      let alias = $(this).data("alias-email");
+      var oldValue = !$(this).prop("checked");
+      let newValue = !oldValue;
+
+      try {
+        let res = await fetch(`/api/aliases/${aliasId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            disable_pgp: oldValue,
+          }),
+        });
+
+        if (res.ok) {
+          if (newValue) {
+            toastr.success(`PGP is enabled for ${alias}`);
+          } else {
+            toastr.info(`PGP is disabled for ${alias}`);
+          }
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
         $(this).prop("checked", oldValue);
       }
     })
