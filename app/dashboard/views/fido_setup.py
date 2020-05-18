@@ -29,7 +29,10 @@ def fido_setup():
         )
         return redirect(url_for("dashboard.index"))
 
-    fido_model = FIDO.filter_by(uuid=current_user.fido_uuid).all()
+    if current_user.fido_uuid is not None:
+        fido_model = FIDO.filter_by(uuid=current_user.fido_uuid).all()
+    else:
+        fido_model = []
 
     fido_token_form = FidoTokenForm()
 
@@ -59,18 +62,25 @@ def fido_setup():
             LOG.error(f"An error occurred in WebAuthn registration process: {e}")
             flash("Key registration failed.", "warning")
             return redirect(url_for("dashboard.index"))
+        
+        if current_user.fido_uuid is None:
+            current_user.fido_uuid = fido_uuid
 
-        current_user.fido_pk = str(fido_credential.public_key, "utf-8")
-        current_user.fido_uuid = fido_uuid
-        current_user.fido_sign_count = fido_credential.sign_count
-        current_user.fido_credential_id = str(fido_credential.credential_id, "utf-8")
+        FIDO.create(
+            credential_id = str(fido_credential.credential_id, "utf-8"),
+            uuid = fido_uuid,
+            public_key = str(fido_credential.public_key, "utf-8"),
+            sign_count = fido_credential.sign_count,
+        )
         db.session.commit()
+
+        LOG.d(f"credential_id={str(fido_credential.credential_id, 'utf-8')} added for {fido_uuid}")
 
         flash("Security key has been activated", "success")
         return redirect(url_for("dashboard.recovery_code_route"))
 
     # Prepare information for key registration process
-    fido_uuid = str(uuid.uuid4())
+    fido_uuid = str(uuid.uuid4()) if current_user.fido_uuid is None else current_user.fido_uuid
     challenge = secrets.token_urlsafe(32)
 
     credential_create_options = webauthn.WebAuthnMakeCredentialOptions(
@@ -90,6 +100,7 @@ def fido_setup():
     registration_dict = credential_create_options.registration_dict
     del registration_dict["extensions"]["webauthn.loc"]
 
+    # Prevent user from adding duplicated keys
     for record in fido_model:
         registration_dict["excludeCredentials"].append({
             'type': 'public-key',

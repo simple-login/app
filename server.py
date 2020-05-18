@@ -147,13 +147,13 @@ def fake_data():
     )
     db.session.commit()
 
-    fido = FIDO.create(
+    FIDO.create(
         credential_id = "umR9q5vX61XG7vh7gi8wT0gJ9LkYwHKSzDL5vhtZs3o",
         uuid = "59576167-6c37-4d67-943b-4683b24ff821",
         public_key = "pQECAyYgASFYIEjQg3TOuUZJxylLE6gJDNHcNyYVW5hOAZ-vGOY9I_TDIlggfJqIh07bj3n6RVmrEsuozsYPYM6VeJKCeduz0DFp8AY",
         sign_count = 1,
     )
-    fido = FIDO.create(
+    FIDO.create(
         credential_id = "1mR9q5vX61XG7vh7gi8wT0gJ9LkYwHKSzDL5vhtZs3o",
         uuid = "59576167-6c37-4d67-943b-4683b24ff821",
         public_key = "1QECAyYgASFYIEjQg3TOuUZJxylLE6gJDNHcNyYVW5hOAZ-vGOY9I_TDIlggfJqIh07bj3n6RVmrEsuozsYPYM6VeJKCeduz0DFp8AY",
