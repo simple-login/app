@@ -33,7 +33,7 @@
           <tr>
             <th scope="row">{{ key.id }}</th>
             <td>{{ key.name }}</td>
-            <td><script>document.write(new Date('{{ key.created_at }}').toLocaleString());</script></td>
+            <td>{{key.created_at | dt}}</td>
             <td class="text-center"><button class="btn btn-outline-danger" onclick="$('#credential_id').val('{{ key.credential_id }}'); $('#formManageKey').submit();">Unlink</button></td>
           </tr>
           {%endfor%} 
