@@ -40,7 +40,6 @@ def fido():
 
     next_url = request.args.get("next")
 
-
     # Handling POST requests
     if fido_token_form.validate_on_submit():
         try:
@@ -110,7 +109,7 @@ def fido():
                 RP_ID,
             )
         )
-    
+
     webauthn_assertion_options = webauthn.WebAuthnAssertionOptions(
         webauthn_users, challenge
     )
