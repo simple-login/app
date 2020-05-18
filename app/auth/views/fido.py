@@ -94,18 +94,18 @@ def fido():
 
     session["fido_challenge"] = challenge.rstrip("=")
 
-    fido_model = Fido.filter_by(uuid=user.fido_uuid).all()
+    fidos = Fido.filter_by(uuid=user.fido_uuid).all()
     webauthn_users = []
-    for record in fido_model:
+    for fido in fidos:
         webauthn_users.append(
             webauthn.WebAuthnUser(
                 user.fido_uuid,
                 user.email,
                 user.name if user.name else user.email,
                 False,
-                record.credential_id,
-                record.public_key,
-                record.sign_count,
+                fido.credential_id,
+                fido.public_key,
+                fido.sign_count,
                 RP_ID,
             )
         )

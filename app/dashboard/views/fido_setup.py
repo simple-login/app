@@ -34,9 +34,9 @@ def fido_setup():
         return redirect(url_for("dashboard.index"))
 
     if current_user.fido_uuid is not None:
-        fido_model = Fido.filter_by(uuid=current_user.fido_uuid).all()
+        fidos = Fido.filter_by(uuid=current_user.fido_uuid).all()
     else:
-        fido_model = []
+        fidos = []
 
     fido_token_form = FidoTokenForm()
 
@@ -113,11 +113,11 @@ def fido_setup():
     del registration_dict["extensions"]["webauthn.loc"]
 
     # Prevent user from adding duplicated keys
-    for record in fido_model:
+    for fido in fidos:
         registration_dict["excludeCredentials"].append(
             {
                 "type": "public-key",
-                "id": record.credential_id,
+                "id": fido.credential_id,
                 "transports": ["usb", "nfc", "ble", "internal"],
             }
         )
