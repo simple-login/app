@@ -12,6 +12,7 @@ from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
+from app.models import FIDO
 
 
 class FidoTokenForm(FlaskForm):
@@ -21,16 +22,14 @@ class FidoTokenForm(FlaskForm):
 @dashboard_bp.route("/fido_setup", methods=["GET", "POST"])
 @login_required
 def fido_setup():
-    if current_user.fido_enabled():
-        flash("You have already registered your security key", "warning")
-        return redirect(url_for("dashboard.index"))
-
     if not current_user.can_use_fido:
         flash(
             "This feature is currently in invitation-only beta. Please send us an email if you want to try",
             "warning",
         )
         return redirect(url_for("dashboard.index"))
+
+    fido_model = FIDO.filter_by(uuid=current_user.fido_uuid).all()
 
     fido_token_form = FidoTokenForm()
 
@@ -90,6 +89,13 @@ def fido_setup():
     # https://www.w3.org/TR/webauthn/#sctn-location-extension
     registration_dict = credential_create_options.registration_dict
     del registration_dict["extensions"]["webauthn.loc"]
+
+    for record in fido_model:
+        registration_dict["excludeCredentials"].append({
+            'type': 'public-key',
+            'id': record.credential_id,
+            'transports': ['usb', 'nfc', 'ble', 'internal'],
+        })
 
     session["fido_uuid"] = fido_uuid
     session["fido_challenge"] = challenge.rstrip("=")

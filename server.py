@@ -38,6 +38,7 @@ from app.log import LOG
 from app.models import (
     Client,
     User,
+    FIDO,
     ClientUser,
     Alias,
     RedirectUri,
@@ -142,8 +143,24 @@ def fake_data():
         otp_secret="base32secret3232",
         can_use_fido=True,
         intro_shown=True,
+        fido_uuid="59576167-6c37-4d67-943b-4683b24ff821",
     )
     db.session.commit()
+
+    fido = FIDO.create(
+        credential_id = "umR9q5vX61XG7vh7gi8wT0gJ9LkYwHKSzDL5vhtZs3o",
+        uuid = "59576167-6c37-4d67-943b-4683b24ff821",
+        public_key = "pQECAyYgASFYIEjQg3TOuUZJxylLE6gJDNHcNyYVW5hOAZ-vGOY9I_TDIlggfJqIh07bj3n6RVmrEsuozsYPYM6VeJKCeduz0DFp8AY",
+        sign_count = 1,
+    )
+    fido = FIDO.create(
+        credential_id = "1mR9q5vX61XG7vh7gi8wT0gJ9LkYwHKSzDL5vhtZs3o",
+        uuid = "59576167-6c37-4d67-943b-4683b24ff821",
+        public_key = "1QECAyYgASFYIEjQg3TOuUZJxylLE6gJDNHcNyYVW5hOAZ-vGOY9I_TDIlggfJqIh07bj3n6RVmrEsuozsYPYM6VeJKCeduz0DFp8AY",
+        sign_count = 1,
+    )
+    db.session.commit()
+
     user.trial_end = None
 
     LifetimeCoupon.create(code="coupon", nb_used=10)

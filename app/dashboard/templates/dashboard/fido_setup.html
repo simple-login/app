@@ -33,6 +33,8 @@
             JSON.parse('{{credential_create_options|tojson|safe}}')
           )
 
+          console.log(pkCredentialCreateOptions)
+
           let credential
           try {
             credential = await navigator.credentials.create({

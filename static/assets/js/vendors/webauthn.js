@@ -56,7 +56,7 @@ const transformCredentialRequestOptions = (
 const transformCredentialCreateOptions = (
   credentialCreateOptionsFromServer
 ) => {
-  let { challenge, user } = credentialCreateOptionsFromServer;
+  let { challenge, user, excludeCredentials } = credentialCreateOptionsFromServer;
   user.id = Uint8Array.from(
     atob(
       credentialCreateOptionsFromServer.user.id
@@ -75,10 +75,17 @@ const transformCredentialCreateOptions = (
     (c) => c.charCodeAt(0)
   );
 
+  excludeCredentials = excludeCredentials.map((credentialDescriptor) => {
+    let { id } = credentialDescriptor;
+    id = id.replace(/\_/g, "/").replace(/\-/g, "+");
+    id = Uint8Array.from(atob(id), (c) => c.charCodeAt(0));
+    return Object.assign({}, credentialDescriptor, { id });
+  });
+
   const transformedCredentialCreateOptions = Object.assign(
     {},
     credentialCreateOptionsFromServer,
-    { challenge, user }
+    { challenge, user, excludeCredentials }
   );
 
   return transformedCredentialCreateOptions;
