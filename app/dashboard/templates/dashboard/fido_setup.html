@@ -56,6 +56,13 @@
         }
 
         $("#btnRegisterKey").click(registerKey);
+
+        document.getElementById("key_name").addEventListener("keydown", event => {
+          if (event.keyCode === 13) {
+            event.preventDefault();
+            document.getElementById("btnRegisterKey").click();
+          }
+        });
       </script>
 
     </div>
