@@ -160,6 +160,7 @@ def setting():
                 db.session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "change-sender-format":
             sender_format = int(request.form.get("sender-format"))
             if SenderFormatEnum.has_value(sender_format):
@@ -167,6 +168,16 @@ def setting():
                 db.session.commit()
                 flash("Your sender format preference has been updated", "success")
             db.session.commit()
+            return redirect(url_for("dashboard.setting"))
+
+        elif request.form.get("form-name") == "replace-ra":
+            choose = request.form.get("replace-ra")
+            if choose == "on":
+                current_user.replace_reverse_alias = True
+            else:
+                current_user.replace_reverse_alias = False
+            db.session.commit()
+            flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "export-data":

@@ -563,10 +563,17 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         if custom_domain.dkim_verified:
             add_dkim_signature(msg, alias_domain)
 
+    msg_raw = msg.as_string().encode()
+
+    # replace the "ra+string@simplelogin.co" by the alias in the email body
+    # as this is usually included in when replying
+    if user.replace_reverse_alias:
+        msg_raw = msg_raw.replace(reply_email.encode(), alias.email.encode())
+
     smtp.sendmail(
         alias.email,
         contact.website_email,
-        msg.as_bytes(),
+        msg_raw,
         envelope.mail_options,
         envelope.rcpt_options,
     )

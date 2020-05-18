@@ -173,7 +173,6 @@
       </div>
     </div>
 
-
     <div class="card">
       <div class="card-body">
         <div class="card-title mb-3">Current Plan</div>
@@ -234,6 +233,26 @@
           </select>
 
           <button class="btn btn-outline-primary mt-3">Update</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Replace reverse alias</div>
+        <div class="mb-3">
+          When replying to a reverse alias your email client will show the reverse alias ("ra+string@simplelogin.co")
+          as the original sender. This option will replace this string in the body of outgoing emails with the
+          original email address. This will break PGP signed emails, so only enable if you know what you're doing!
+        </div>
+        <form method="post">
+          <input type="hidden" name="form-name" value="replace-ra">
+          <div class="form-check">
+            <input type="checkbox" id="replace-ra" name="replace-ra"
+                   {% if current_user.replace_reverse_alias %} checked {% endif %} class="form-check-input">
+            <label for="replace-ra">Enable replacing reverse alias</label>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Submit</button>
         </form>
       </div>
     </div>
