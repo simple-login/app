@@ -12,7 +12,7 @@ from app.config import MFA_USER_ID
 from app.config import RP_ID, URL
 from app.extensions import db
 from app.log import LOG
-from app.models import User
+from app.models import User, FIDO
 
 
 class FidoTokenForm(FlaskForm):
@@ -40,16 +40,21 @@ def fido():
 
     next_url = request.args.get("next")
 
-    webauthn_user = webauthn.WebAuthnUser(
-        user.fido_uuid,
-        user.email,
-        user.name if user.name else user.email,
-        False,
-        user.fido_credential_id,
-        user.fido_pk,
-        user.fido_sign_count,
-        RP_ID,
-    )
+    fido_model = FIDO.filter_by(uuid=user.fido_uuid).all()
+    webauthn_users = []
+    for record in fido_model:
+        webauthn_users.append(
+            webauthn.WebAuthnUser(
+                user.fido_uuid,
+                user.email,
+                user.name if user.name else user.email,
+                False,
+                record.credential_id,
+                record.public_key,
+                record.sign_count,
+                RP_ID,
+            )
+        )
 
     # Handling POST requests
     if fido_token_form.validate_on_submit():
@@ -62,7 +67,7 @@ def fido():
         challenge = session["fido_challenge"]
 
         webauthn_assertion_response = webauthn.WebAuthnAssertionResponse(
-            webauthn_user, sk_assertion, challenge, URL, uv_required=False
+            webauthn_users, sk_assertion, challenge, URL, uv_required=False
         )
 
         try:
@@ -94,7 +99,7 @@ def fido():
     session["fido_challenge"] = challenge.rstrip("=")
 
     webauthn_assertion_options = webauthn.WebAuthnAssertionOptions(
-        webauthn_user, challenge
+        webauthn_users, challenge
     )
     webauthn_assertion_options = webauthn_assertion_options.assertion_dict
 
