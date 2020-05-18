@@ -1,6 +1,7 @@
 import json
 import secrets
 import uuid
+from time import time
 
 import webauthn
 from flask import render_template, flash, redirect, url_for, session
@@ -13,7 +14,7 @@ from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
 from app.models import FIDO
-
+from app.dashboard.views.enter_sudo import sudo_required
 
 class FidoTokenForm(FlaskForm):
     sk_assertion = HiddenField("sk_assertion", validators=[validators.DataRequired()])
@@ -21,6 +22,7 @@ class FidoTokenForm(FlaskForm):
 
 @dashboard_bp.route("/fido_setup", methods=["GET", "POST"])
 @login_required
+@sudo_required
 def fido_setup():
     if not current_user.can_use_fido:
         flash(

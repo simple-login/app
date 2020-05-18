@@ -7,6 +7,7 @@ from wtforms import StringField, validators
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
+from app.dashboard.views.enter_sudo import sudo_required
 
 
 class OtpTokenForm(FlaskForm):
@@ -15,6 +16,7 @@ class OtpTokenForm(FlaskForm):
 
 @dashboard_bp.route("/mfa_setup", methods=["GET", "POST"])
 @login_required
+@sudo_required
 def mfa_setup():
     if current_user.enable_otp:
         flash("you have already enabled MFA", "warning")

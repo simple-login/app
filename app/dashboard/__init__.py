@@ -9,6 +9,7 @@ from .views import (
     api_key,
     custom_domain,
     alias_contact_manager,
+    enter_sudo,
     mfa_setup,
     mfa_cancel,
     fido_setup,
