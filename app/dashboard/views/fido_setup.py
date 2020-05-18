@@ -7,7 +7,7 @@ import webauthn
 from flask import render_template, flash, redirect, url_for, session
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, validators
+from wtforms import StringField, HiddenField, validators
 
 from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
@@ -18,6 +18,7 @@ from app.dashboard.views.enter_sudo import sudo_required
 
 
 class FidoTokenForm(FlaskForm):
+    key_name = StringField("key_name", validators=[validators.DataRequired()])
     sk_assertion = HiddenField("sk_assertion", validators=[validators.DataRequired()])
 
 
@@ -74,6 +75,7 @@ def fido_setup():
             uuid=fido_uuid,
             public_key=str(fido_credential.public_key, "utf-8"),
             sign_count=fido_credential.sign_count,
+            name=fido_token_form.key_name.data,
         )
         db.session.commit()
 

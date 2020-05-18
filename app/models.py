@@ -130,6 +130,7 @@ class FIDO(db.Model, ModelMixin):
     )
     public_key = db.Column(db.String(), nullable=False, unique=True)
     sign_count = db.Column(db.Integer(), nullable=False)
+    name = db.Column(db.String(128), nullable=False, unique=False)
 
 
 class User(db.Model, ModelMixin, UserMixin):
