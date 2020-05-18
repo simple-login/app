@@ -143,25 +143,10 @@ def fake_data():
         otp_secret="base32secret3232",
         can_use_fido=True,
         intro_shown=True,
-        fido_uuid="59576167-6c37-4d67-943b-4683b24ff821",
+        fido_uuid=None,
     )
     db.session.commit()
 
-    FIDO.create(
-        credential_id="el29kSg3Ai0c9Tsn9F0vXDdqKrs3jHLeU0J1NLN1Sjs",
-        uuid="59576167-6c37-4d67-943b-4683b24ff821",
-        public_key="pQECAyYgASFYIP8Xb0pXtSlmn8oji445s_FkEZsld6NCxx19YXyEt5h1IlggTw30aVvtA2sn7qyn3BE0Ux5NPJFSmABYZmT_P35Q9EIs",
-        sign_count=1,
-        name="testA",
-    )
-    FIDO.create(
-        credential_id="4SaUPugJ2sAErSnZil6_5_wXIL-Sk6QdFmNm94IL-_g",
-        uuid="59576167-6c37-4d67-943b-4683b24ff821",
-        public_key="pQECAyYgASFYILfse0JIp0a7Gz7n1K8b75_OgV-iliKr52FB-BGzv2R2IlggsPcViY5Dma8XooLWUHtx7X2_px0MsFR_7VRMwT2OHKg",
-        sign_count=1,
-        name="testB",
-    )
-    db.session.commit()
 
     user.trial_end = None
 
