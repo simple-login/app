@@ -6,7 +6,7 @@ from wtforms import HiddenField, validators
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import RecoveryCode, FIDO
+from app.models import RecoveryCode, Fido
 from app.dashboard.views.enter_sudo import sudo_required
 
 
@@ -27,20 +27,20 @@ def fido_manage():
     if fido_manage_form.validate_on_submit():
         credential_id = fido_manage_form.credential_id.data
 
-        fido_key = FIDO.get_by(uuid=current_user.fido_uuid, credential_id=credential_id)
+        fido_key = Fido.get_by(uuid=current_user.fido_uuid, credential_id=credential_id)
 
         if not fido_key:
             flash("Unknown error, redirect back to manage page", "warning")
             return redirect(url_for("dashboard.fido_manage"))
 
-        FIDO.delete(fido_key.id)
+        Fido.delete(fido_key.id)
         db.session.commit()
 
         LOG.d(f"FIDO Key ID={fido_key.id} Removed")
         flash(f"Key {fido_key.name} successfully unlinked", "success")
 
         # Disable FIDO for the user if all keys have been deleted
-        if not FIDO.filter_by(uuid=current_user.fido_uuid).all():
+        if not Fido.filter_by(uuid=current_user.fido_uuid).all():
             current_user.fido_uuid = None
             db.session.commit()
 
@@ -55,5 +55,5 @@ def fido_manage():
     return render_template(
         "dashboard/fido_manage.html",
         fido_manage_form=fido_manage_form,
-        keys=FIDO.filter_by(uuid=current_user.fido_uuid),
+        keys=Fido.filter_by(uuid=current_user.fido_uuid),
     )

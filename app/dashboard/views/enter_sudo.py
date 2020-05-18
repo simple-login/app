@@ -11,6 +11,7 @@ from app.log import LOG
 
 _SUDO_GAP = 900
 
+
 class LoginForm(FlaskForm):
     password = PasswordField("Password", validators=[validators.DataRequired()])
 

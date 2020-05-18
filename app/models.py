@@ -120,7 +120,7 @@ class AliasGeneratorEnum(EnumE):
     uuid = 2  # aliases are generated based on uuid
 
 
-class FIDO(db.Model, ModelMixin):
+class Fido(db.Model, ModelMixin):
     __tablename__ = "fido"
     credential_id = db.Column(db.String(), nullable=False, unique=True, index=True)
     uuid = db.Column(

@@ -12,7 +12,7 @@ from app.config import MFA_USER_ID
 from app.config import RP_ID, URL
 from app.extensions import db
 from app.log import LOG
-from app.models import User, FIDO
+from app.models import User, Fido
 
 
 class FidoTokenForm(FlaskForm):
@@ -51,7 +51,7 @@ def fido():
         challenge = session["fido_challenge"]
 
         try:
-            fido_key = FIDO.get_by(
+            fido_key = Fido.get_by(
                 uuid=user.fido_uuid, credential_id=sk_assertion["id"]
             )
             webauthn_user = webauthn.WebAuthnUser(
@@ -94,7 +94,7 @@ def fido():
 
     session["fido_challenge"] = challenge.rstrip("=")
 
-    fido_model = FIDO.filter_by(uuid=user.fido_uuid).all()
+    fido_model = Fido.filter_by(uuid=user.fido_uuid).all()
     webauthn_users = []
     for record in fido_model:
         webauthn_users.append(

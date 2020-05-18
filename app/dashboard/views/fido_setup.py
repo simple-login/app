@@ -13,7 +13,7 @@ from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import FIDO, RecoveryCode
+from app.models import Fido, RecoveryCode
 from app.dashboard.views.enter_sudo import sudo_required
 
 
@@ -34,7 +34,7 @@ def fido_setup():
         return redirect(url_for("dashboard.index"))
 
     if current_user.fido_uuid is not None:
-        fido_model = FIDO.filter_by(uuid=current_user.fido_uuid).all()
+        fido_model = Fido.filter_by(uuid=current_user.fido_uuid).all()
     else:
         fido_model = []
 
@@ -70,7 +70,7 @@ def fido_setup():
         if current_user.fido_uuid is None:
             current_user.fido_uuid = fido_uuid
 
-        FIDO.create(
+        Fido.create(
             credential_id=str(fido_credential.credential_id, "utf-8"),
             uuid=fido_uuid,
             public_key=str(fido_credential.public_key, "utf-8"),

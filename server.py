@@ -38,7 +38,7 @@ from app.log import LOG
 from app.models import (
     Client,
     User,
-    FIDO,
+    Fido,
     ClientUser,
     Alias,
     RedirectUri,
