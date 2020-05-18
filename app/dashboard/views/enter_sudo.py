@@ -41,15 +41,17 @@ def enter_sudo():
         "dashboard/enter_sudo.html", password_check_form=password_check_form
     )
 
+
 def sudo_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
         # Reset sudo mode in every 20s under dev mode
         SUDO_GAP = 900 if not DEBUG else 20
-        if "sudo_time" not in session or (time() - int(session["sudo_time"])) > SUDO_GAP:
-            return redirect(
-                url_for("dashboard.enter_sudo", next=request.path)
-            )
+        if (
+            "sudo_time" not in session
+            or (time() - int(session["sudo_time"])) > SUDO_GAP
+        ):
+            return redirect(url_for("dashboard.enter_sudo", next=request.path))
         return f(*args, **kwargs)
-   
+
     return wrap

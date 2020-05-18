@@ -16,6 +16,7 @@ from app.log import LOG
 from app.models import FIDO
 from app.dashboard.views.enter_sudo import sudo_required
 
+
 class FidoTokenForm(FlaskForm):
     sk_assertion = HiddenField("sk_assertion", validators=[validators.DataRequired()])
 
