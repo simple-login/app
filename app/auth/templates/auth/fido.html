@@ -22,10 +22,12 @@
       <form id="formRegisterKey" method="post">
         {{ fido_token_form.csrf_token }}
         {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}
+
+        <div class="text-center">
+          <button id="btnVerifyKey" class="btn btn-success mt-2" onclick="verifyKey();">Use your security key</button>
+        </div>
       </form>
-      <div class="text-center">
-        <button id="btnVerifyKey" class="btn btn-success mt-2">Use your security key</button>
-      </div>
+
 
       {% if enable_otp %}
         <hr>
@@ -68,7 +70,6 @@
           $('#formRegisterKey').submit();
         }
 
-        $("#btnVerifyKey").click(verifyKey);
       </script>
 
       {% if auto_activate %}
