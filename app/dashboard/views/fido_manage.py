@@ -19,7 +19,7 @@ class FidoManageForm(FlaskForm):
 @sudo_required
 def fido_manage():
     if not current_user.fido_enabled():
-        flash("You haven't registed a security key", "warning")
+        flash("You haven't registered a security key", "warning")
         return redirect(url_for("dashboard.index"))
 
     fido_manage_form = FidoManageForm()
