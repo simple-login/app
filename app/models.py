@@ -119,12 +119,18 @@ class AliasGeneratorEnum(EnumE):
     word = 1  # aliases are generated based on random words
     uuid = 2  # aliases are generated based on uuid
 
+
 class FIDO(db.Model, ModelMixin):
     __tablename__ = "fido"
     credential_id = db.Column(db.String(), nullable=False, unique=True, index=True)
-    uuid = db.Column(db.ForeignKey("users.fido_uuid", ondelete="cascade"), unique=False, nullable=False)
+    uuid = db.Column(
+        db.ForeignKey("users.fido_uuid", ondelete="cascade"),
+        unique=False,
+        nullable=False,
+    )
     public_key = db.Column(db.String(), nullable=False, unique=True)
     sign_count = db.Column(db.Integer(), nullable=False)
+
 
 class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
