@@ -1,0 +1,59 @@
+from flask import render_template, flash, redirect, url_for
+from flask_login import login_required, current_user
+from flask_wtf import FlaskForm
+from wtforms import HiddenField, validators
+
+from app.dashboard.base import dashboard_bp
+from app.extensions import db
+from app.log import LOG
+from app.models import RecoveryCode, FIDO
+from app.dashboard.views.enter_sudo import sudo_required
+
+
+class FidoManageForm(FlaskForm):
+    credential_id = HiddenField("credential_id", validators=[validators.DataRequired()])
+
+
+@dashboard_bp.route("/fido_manage", methods=["GET", "POST"])
+@login_required
+@sudo_required
+def fido_manage():
+    if not current_user.fido_enabled():
+        flash("You haven't registed a security key", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    fido_manage_form = FidoManageForm()
+
+    if fido_manage_form.validate_on_submit():
+        credential_id = fido_manage_form.credential_id.data
+
+        fido_key = FIDO.get_by(uuid=current_user.fido_uuid, credential_id=credential_id)
+
+        if not fido_key:
+            flash("Unknown error, redirect back to manage page", "warning")
+            return redirect(url_for("dashboard.fido_manage"))
+
+        FIDO.delete(fido_key.id)
+        db.session.commit()
+
+        LOG.d(f"FIDO Key ID={fido_key.id} Removed")
+        flash(f"Key {fido_key.name} successfully unlinked", "success")
+
+        # Disable FIDO for the user if all keys have been deleted
+        if not FIDO.filter_by(uuid=current_user.fido_uuid).all():
+            current_user.fido_uuid = None
+            db.session.commit()
+
+            # user does not have any 2FA enabled left, delete all recovery codes
+            if not current_user.two_factor_authentication_enabled():
+                RecoveryCode.empty(current_user)
+
+            return redirect(url_for("dashboard.index"))
+
+        return redirect(url_for("dashboard.fido_manage"))
+
+    return render_template(
+        "dashboard/fido_manage.html",
+        fido_manage_form=fido_manage_form,
+        keys=FIDO.filter_by(uuid=current_user.fido_uuid),
+    )

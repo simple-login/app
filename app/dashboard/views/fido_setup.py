@@ -13,7 +13,7 @@ from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import FIDO
+from app.models import FIDO, RecoveryCode
 from app.dashboard.views.enter_sudo import sudo_required
 
 
@@ -84,7 +84,10 @@ def fido_setup():
         )
 
         flash("Security key has been activated", "success")
-        return redirect(url_for("dashboard.recovery_code_route"))
+        if not RecoveryCode.query.filter_by(user_id=current_user.id).all():
+            return redirect(url_for("dashboard.recovery_code_route"))
+        else:
+            return redirect(url_for("dashboard.fido_manage"))
 
     # Prepare information for key registration process
     fido_uuid = (
