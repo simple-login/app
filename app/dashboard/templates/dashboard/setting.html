@@ -219,17 +219,21 @@
 
           <select class="form-control mr-sm-2" name="sender-format">
             <option value="{{ SenderFormatEnum.VIA.value }}"
-                    {% if current_user.sender_format == SenderFormatEnum.VIA.value %} selected {% endif %}>
-              john@wick.com via SimpleLogin</option>
+                {% if current_user.sender_format == SenderFormatEnum.VIA.value %} selected {% endif %}>
+              john@wick.com via SimpleLogin
+            </option>
             <option value="{{ SenderFormatEnum.AT.value }}"
-                    {% if current_user.sender_format == SenderFormatEnum.AT.value %} selected {% endif %}>
-              John Wick - john at wick.com</option>
+                {% if current_user.sender_format == SenderFormatEnum.AT.value %} selected {% endif %}>
+              John Wick - john at wick.com
+            </option>
             <option value="{{ SenderFormatEnum.A.value }}"
-                    {% if current_user.sender_format == SenderFormatEnum.A.value %} selected {% endif %}>
-              John Wick - john(a)wick.com</option>
+                {% if current_user.sender_format == SenderFormatEnum.A.value %} selected {% endif %}>
+              John Wick - john(a)wick.com
+            </option>
             <option value="{{ SenderFormatEnum.FULL.value }}"
-                    {% if current_user.sender_format == SenderFormatEnum.FULL.value %} selected {% endif %}>
-              John Wick - john@wick.com</option>
+                {% if current_user.sender_format == SenderFormatEnum.FULL.value %} selected {% endif %}>
+              John Wick - john@wick.com
+            </option>
           </select>
 
           <button class="btn btn-outline-primary mt-3">Update</button>
