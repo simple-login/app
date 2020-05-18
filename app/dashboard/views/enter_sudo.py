@@ -7,9 +7,9 @@ from wtforms import PasswordField, validators
 from functools import wraps
 
 from app.dashboard.base import dashboard_bp
-from app.config import DEBUG
 from app.log import LOG
 
+_SUDO_GAP = 900
 
 class LoginForm(FlaskForm):
     password = PasswordField("Password", validators=[validators.DataRequired()])
@@ -45,12 +45,9 @@ def enter_sudo():
 def sudo_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        # Reset sudo mode in every 60s under dev mode
-        # SUDO_GAP = 900 if not DEBUG else 60
-        SUDO_GAP = 900
         if (
             "sudo_time" not in session
-            or (time() - int(session["sudo_time"])) > SUDO_GAP
+            or (time() - int(session["sudo_time"])) > _SUDO_GAP
         ):
             return redirect(url_for("dashboard.enter_sudo", next=request.path))
         return f(*args, **kwargs)
