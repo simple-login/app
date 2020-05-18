@@ -45,8 +45,9 @@ def enter_sudo():
 def sudo_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        # Reset sudo mode in every 20s under dev mode
-        SUDO_GAP = 900 if not DEBUG else 20
+        # Reset sudo mode in every 60s under dev mode
+        # SUDO_GAP = 900 if not DEBUG else 60
+        SUDO_GAP = 900
         if (
             "sudo_time" not in session
             or (time() - int(session["sudo_time"])) > SUDO_GAP
