@@ -166,7 +166,7 @@
           <div class="form-check">
             <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
                    checked {% endif %} class="form-check-input">
-            <label for="notification">I want to receive your newsletter</label>
+            <label for="notification">I want to be informed of new features</label>
           </div>
           <button type="submit" class="btn btn-outline-primary">Submit</button>
         </form>
@@ -241,18 +241,18 @@
       <div class="card-body">
         <div class="card-title">Replace reverse alias</div>
         <div class="mb-3">
-          When replying to a reverse alias your email client will show the reverse alias ("ra+string@simplelogin.co")
-          as the original sender. This option will replace this string in the body of outgoing emails with the
-          original email address. This will break PGP signed emails, so only enable if you know what you're doing!
+          When replying to a forwarded email, the <b>reverse-alias</b> is usually included in the attached message.
+          You can turn on this option to <b>replace</b> the reverse-alias by the alias. However this breaks PGP-signed emails
+          so please only enable it if you know what you're doing :).
         </div>
         <form method="post">
           <input type="hidden" name="form-name" value="replace-ra">
           <div class="form-check">
             <input type="checkbox" id="replace-ra" name="replace-ra"
-                   {% if current_user.replace_reverse_alias %} checked {% endif %} class="form-check-input">
+                {% if current_user.replace_reverse_alias %} checked {% endif %} class="form-check-input">
             <label for="replace-ra">Enable replacing reverse alias</label>
           </div>
-          <button type="submit" class="btn btn-outline-primary">Submit</button>
+          <button type="submit" class="btn btn-outline-primary">Update</button>
         </form>
       </div>
     </div>
