@@ -279,9 +279,9 @@ def generate_reply_email():
 def should_append_alias(msg: Message, address: str):
     """whether an alias should be appended to TO header in message"""
 
-    if msg["To"] and address in msg["To"]:
+    if msg["To"] and address.lower() in msg["To"].lower():
         return False
-    if msg["Cc"] and address in msg["Cc"]:
+    if msg["Cc"] and address.lower() in msg["Cc"].lower():
         return False
 
     return True
