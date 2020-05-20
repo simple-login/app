@@ -115,7 +115,7 @@ def new_custom_alias_v2():
         return jsonify(error="request body cannot be empty"), 400
 
     alias_prefix = data.get("alias_prefix", "").strip().lower()
-    signed_suffix = data.get("signed_suffix", "").strip().lower()
+    signed_suffix = data.get("signed_suffix", "").strip()
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
