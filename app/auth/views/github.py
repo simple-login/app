@@ -48,7 +48,7 @@ def github_callback():
         scope=["user:email"],
         redirect_uri=_redirect_uri,
     )
-    token = github.fetch_token(
+    github.fetch_token(
         _token_url,
         client_secret=GITHUB_CLIENT_SECRET,
         authorization_response=request.url,

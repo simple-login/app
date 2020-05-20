@@ -49,7 +49,7 @@ SENTRY_FRONT_END_DSN = os.environ.get("SENTRY_FRONT_END_DSN") or SENTRY_DSN
 
 # Email related settings
 NOT_SEND_EMAIL = "NOT_SEND_EMAIL" in os.environ
-EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"]
+EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"].lower()
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
 SUPPORT_NAME = os.environ.get("SUPPORT_NAME", "Son from SimpleLogin")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
@@ -82,6 +82,7 @@ else:
 
 # List of domains user can use to create alias
 ALIAS_DOMAINS = OTHER_ALIAS_DOMAINS + [EMAIL_DOMAIN]
+ALIAS_DOMAINS = [d.lower().strip() for d in ALIAS_DOMAINS]
 
 # the alias domain used when creating the first alias for user
 FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN
