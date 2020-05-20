@@ -1170,20 +1170,6 @@ class CustomDomain(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
-    @classmethod
-    def delete(cls, obj_id):
-        # Put all aliases belonging to this domain to global trash
-        try:
-            for alias in Alias.query.filter_by(custom_domain_id=obj_id):
-                DeletedAlias.create(email=alias.email)
-            db.session.commit()
-        except IntegrityError:
-            LOG.error("Some aliases have been added before to DeletedAlias")
-            db.session.rollback()
-
-        cls.query.filter(cls.id == obj_id).delete()
-        db.session.commit()
-
     def nb_alias(self):
         return Alias.filter_by(custom_domain_id=self.id).count()
 
