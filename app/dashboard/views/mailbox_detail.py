@@ -45,7 +45,7 @@ def mailbox_detail_route(mailbox_id):
             request.form.get("form-name") == "update-email"
             and change_email_form.validate_on_submit()
         ):
-            new_email = change_email_form.email.data
+            new_email = change_email_form.email.data.lower().strip()
             if new_email != mailbox.email and not pending_email:
                 # check if this email is not already used
                 if (
@@ -112,7 +112,7 @@ def mailbox_detail_route(mailbox_id):
             flash(
                 "SPF enforcement was " + "enabled"
                 if request.form.get("spf-status")
-                else "disabled" + " succesfully",
+                else "disabled" + " successfully",
                 "success",
             )
             return redirect(

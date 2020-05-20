@@ -10,3 +10,4 @@ static/node_modules
 db.sqlite-journal
 static/upload
 adhoc_*
+adhoc.py
