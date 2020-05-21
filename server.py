@@ -483,7 +483,7 @@ def setup_paddle_callback(app: Flask):
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
                 # cancellation_effective_date should be the same as next_bill_date
-                LOG.error(
+                LOG.warning(
                     "Cancel subscription %s %s on %s, next bill date %s",
                     subscription_id,
                     sub.user,
