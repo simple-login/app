@@ -62,6 +62,7 @@ from app.config import (
     ALERT_BOUNCE_EMAIL,
     ALERT_SPAM_EMAIL,
     ALERT_SPF,
+    POSTFIX_PORT,
 )
 from app.email_utils import (
     send_email,
@@ -1018,7 +1019,7 @@ class MailHandler:
             smtp = SMTP(POSTFIX_SERVER, 587)
             smtp.starttls()
         else:
-            smtp = SMTP(POSTFIX_SERVER, 25)
+            smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
         app = new_app()
         with app.app_context():

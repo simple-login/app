@@ -26,6 +26,7 @@ from app.config import (
     MAX_NB_EMAIL_FREE_PLAN,
     DISPOSABLE_EMAIL_DOMAINS,
     MAX_ALERT_24H,
+    POSTFIX_PORT,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -197,7 +198,7 @@ def send_email(
         smtp = SMTP(POSTFIX_SERVER, 587)
         smtp.starttls()
     else:
-        smtp = SMTP(POSTFIX_SERVER, 25)
+        smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
     if bounced_email:
         msg = MIMEMultipart("mixed")
