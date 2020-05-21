@@ -262,7 +262,7 @@ def send_email_with_rate_control(
     )
 
     if nb_alert >= max_alert_24h:
-        LOG.error(
+        LOG.warning(
             "%s emails were sent to %s in the last 24h, alert type %s",
             nb_alert,
             to_email,
