@@ -720,7 +720,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     if not orig_msg:
         # Some MTA does not return the original message in bounce message
         # nothing we can do here
-        LOG.error(
+        LOG.warning(
             "Cannot parse original message from bounce message %s %s %s %s",
             alias,
             user,
