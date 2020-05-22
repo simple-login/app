@@ -177,9 +177,15 @@ def fake_data():
 
     for i in range(31):
         if i % 2 == 0:
-            a = Alias.create_new(user, f"e{i}@", mailbox_id=m1.id)
+            a = Alias.create(
+                email=f"e{i}@{FIRST_ALIAS_DOMAIN}", user_id=user.id, mailbox_id=m1.id
+            )
         else:
-            a = Alias.create_new(user, f"e{i}@")
+            a = Alias.create(
+                email=f"e{i}@{FIRST_ALIAS_DOMAIN}",
+                user_id=user.id,
+                mailbox_id=user.default_mailbox_id,
+            )
         db.session.commit()
 
         if i % 5 == 0:
@@ -190,17 +196,17 @@ def fake_data():
         db.session.commit()
 
         # some aliases don't have any activity
-        if i % 3 != 0:
-            contact = Contact.create(
-                user_id=user.id,
-                alias_id=a.id,
-                website_email=f"contact{i}@example.com",
-                reply_email=f"rep{i}@sl.local",
-            )
-            db.session.commit()
-            for _ in range(3):
-                EmailLog.create(user_id=user.id, contact_id=contact.id)
-                db.session.commit()
+        # if i % 3 != 0:
+        #     contact = Contact.create(
+        #         user_id=user.id,
+        #         alias_id=a.id,
+        #         website_email=f"contact{i}@example.com",
+        #         reply_email=f"rep{i}@sl.local",
+        #     )
+        #     db.session.commit()
+        #     for _ in range(3):
+        #         EmailLog.create(user_id=user.id, contact_id=contact.id)
+        #         db.session.commit()
 
         # have some disabled alias
         if i % 5 == 0:
