@@ -1,17 +1,29 @@
 import pyotp
-from flask import request, render_template, redirect, url_for, flash, session
+from flask import (
+    render_template,
+    redirect,
+    url_for,
+    flash,
+    session,
+    make_response,
+    request,
+)
 from flask_login import login_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, validators
+from wtforms import BooleanField, StringField, validators
 
 from app.auth.base import auth_bp
-from app.config import MFA_USER_ID
+from app.config import MFA_USER_ID, URL
+from app.extensions import db
 from app.log import LOG
-from app.models import User
+from app.models import User, MfaBrowser
 
 
 class OtpTokenForm(FlaskForm):
     token = StringField("Token", validators=[validators.DataRequired()])
+    remember = BooleanField(
+        "attr", default=False, description="Remember this browser for 30 days"
+    )
 
 
 @auth_bp.route("/mfa", methods=["GET", "POST"])
@@ -33,6 +45,16 @@ def mfa():
     otp_token_form = OtpTokenForm()
     next_url = request.args.get("next")
 
+    if request.cookies.get("mfa"):
+        browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
+        if browser and not browser.is_expired():
+            login_user(user)
+            flash(f"Welcome back {user.name}!", "success")
+            # Redirect user to correct page
+            return redirect(next_url or url_for("dashboard.index"))
+
+        MfaBrowser.delete(browser.token)
+
     if otp_token_form.validate_on_submit():
         totp = pyotp.TOTP(user.otp_secret)
 
@@ -42,15 +64,24 @@ def mfa():
             del session[MFA_USER_ID]
 
             login_user(user)
-            flash(f"Welcome back {user.name}!")
+            flash(f"Welcome back {user.name}!", "success")
 
-            # User comes to login page from another page
-            if next_url:
-                LOG.debug("redirect user to %s", next_url)
-                return redirect(next_url)
-            else:
-                LOG.debug("redirect user to dashboard")
-                return redirect(url_for("dashboard.index"))
+            # Redirect user to correct page
+            response = make_response(redirect(next_url or url_for("dashboard.index")))
+
+            if otp_token_form.remember.data:
+                browser = MfaBrowser.create_new(user=user)
+                db.session.commit()
+                response.set_cookie(
+                    "mfa",
+                    value=browser.token,
+                    expires=browser.expires.datetime,
+                    secure=True if URL.startswith("https") else False,
+                    httponly=True,
+                    samesite="Lax",
+                )
+
+            return response
 
         else:
             flash("Incorrect token", "warning")

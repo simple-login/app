@@ -76,9 +76,9 @@ class ModelMixin(object):
     def save(self):
         db.session.add(self)
 
-    @classmethod
-    def delete(cls, obj_id):
-        cls.query.filter(cls.id == obj_id).delete()
+        @classmethod
+        def delete(cls, obj_id):
+            cls.query.filter(cls.id == obj_id).delete()
 
     def __repr__(self):
         values = ", ".join(
@@ -506,6 +506,38 @@ def generate_oauth_client_id(client_name) -> str:
         "client_id %s already exists, generate a new client_id", oauth_client_id
     )
     return generate_oauth_client_id(client_name)
+
+
+class MfaBrowser(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    token = db.Column(db.String(64), default=False, nullable=False)
+    expires = db.Column(ArrowType, default=False, nullable=False)
+
+    user = db.relationship(User)
+
+    @classmethod
+    def create_new(cls, user, token_length=64) -> "MfaBrowser":
+        return MfaBrowser.create(
+            user_id=user.id,
+            token=random_string(token_length),
+            expires=arrow.now().shift(days=30),
+        )
+
+    @classmethod
+    def delete(cls, token):
+        cls.query.filter(cls.token == token).delete()
+        db.session.commit()
+
+    @classmethod
+    def delete_expired(cls):
+        cls.query.filter(cls.expires < arrow.now()).delete()
+        db.session.commit()
+
+    def is_expired(self):
+        return self.expires < arrow.now()
+
+    def reset_expire(self):
+        self.expires = arrow.now().shift(days=30)
 
 
 class Client(db.Model, ModelMixin):
