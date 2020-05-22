@@ -54,6 +54,7 @@ def mfa():
 
         else:
             flash("Incorrect token", "warning")
+            otp_token_form.token.data = None
 
     return render_template(
         "auth/mfa.html",
