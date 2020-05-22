@@ -15,7 +15,6 @@ from wtforms import BooleanField, StringField, validators
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID, URL
 from app.extensions import db
-from app.log import LOG
 from app.models import User, MfaBrowser
 
 
@@ -47,21 +46,21 @@ def mfa():
 
     if request.cookies.get("mfa"):
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
-        if browser and not browser.is_expired():
+        if browser and not browser.is_expired() and browser.user_id == user.id:
             login_user(user)
             flash(f"Welcome back {user.name}!", "success")
             # Redirect user to correct page
             return redirect(next_url or url_for("dashboard.index"))
 
-        MfaBrowser.delete(browser.token)
-
     if otp_token_form.validate_on_submit():
         totp = pyotp.TOTP(user.otp_secret)
 
-        token = otp_token_form.token.data
+        token = otp_token_form.token.data.replace(" ", "")
 
-        if totp.verify(token):
+        if totp.verify(token) and user.last_otp != token:
             del session[MFA_USER_ID]
+            user.last_otp = token
+            db.session.commit()
 
             login_user(user)
             flash(f"Welcome back {user.name}!", "success")

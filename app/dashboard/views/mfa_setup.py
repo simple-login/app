@@ -32,10 +32,11 @@ def mfa_setup():
     totp = pyotp.TOTP(current_user.otp_secret)
 
     if otp_token_form.validate_on_submit():
-        token = otp_token_form.token.data
+        token = otp_token_form.token.data.replace(" ", "")
 
-        if totp.verify(token):
+        if totp.verify(token) and current_user.last_otp != token:
             current_user.enable_otp = True
+            current_user.last_otp = token
             db.session.commit()
             flash("MFA has been activated", "success")
 
