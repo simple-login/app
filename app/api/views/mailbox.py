@@ -1,6 +1,6 @@
 from smtplib import SMTPRecipientsRefused
 
-from flask import g
+from flask import g, jsonify
 from flask import jsonify
 from flask import request
 from flask_cors import cross_origin
@@ -149,3 +149,24 @@ def update_mailbox(mailbox_id):
         db.session.commit()
 
     return jsonify(updated=True), 200
+
+
+@api_bp.route("/mailboxes", methods=["GET"])
+@cross_origin()
+@require_api_auth
+def get_mailboxes():
+    """
+    Get mailboxes
+    Output:
+        - mailboxes: list of alias:
+            - id
+            - email
+    """
+    user = g.user
+
+    return (
+        jsonify(
+            mailboxes=[{"id": mb.id, "email": mb.email} for mb in user.mailboxes()]
+        ),
+        200,
+    )
