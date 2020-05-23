@@ -19,6 +19,7 @@ from app.models import (
     OauthToken,
     DeletedAlias,
     CustomDomain,
+    DomainDeletedAlias,
 )
 from app.oauth.base import oauth_bp
 from app.oauth_models import (
@@ -172,8 +173,10 @@ def authorize():
                 if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
                     full_alias = alias_prefix + alias_suffix
 
-                    if Alias.get_by(email=full_alias) or DeletedAlias.get_by(
-                        email=full_alias
+                    if (
+                        Alias.get_by(email=full_alias)
+                        or DeletedAlias.get_by(email=full_alias)
+                        or DomainDeletedAlias.get_by(email=full_alias)
                     ):
                         LOG.error("alias %s already used, very rare!", full_alias)
                         flash(f"Alias {full_alias} already used", "error")
