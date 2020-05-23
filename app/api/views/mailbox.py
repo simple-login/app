@@ -56,3 +56,30 @@ def create_mailbox():
             ),
             201,
         )
+
+
+@api_bp.route("/mailboxes/<mailbox_id>", methods=["DELETE"])
+@cross_origin()
+@require_api_auth
+def delete_mailbox(mailbox_id):
+    """
+    Delete mailbox
+    Input:
+        mailbox_id: in url
+    Output:
+        200 if deleted successfully
+
+    """
+    user = g.user
+    mailbox = Mailbox.get(mailbox_id)
+
+    if not mailbox or mailbox.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    if mailbox.id == user.default_mailbox_id:
+        return jsonify(error="You cannot delete the default mailbox"), 400
+
+    Mailbox.delete(mailbox_id)
+    db.session.commit()
+
+    return jsonify(deleted=True), 200

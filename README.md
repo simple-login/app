@@ -1177,6 +1177,18 @@ Output:
     - default: whether is the default mailbox. User cannot delete the default mailbox
 - 400 with error message otherwise. The error message can be displayed to user.
 
+#### DELETE /api/mailboxes/:mailbox_id
+
+Delete a mailbox. User cannot delete the default mailbox
+
+Input:
+- `Authentication` header that contains the api key
+- `mailbox_id`: in url
+
+Output:
+- 200 if deleted successfully
+- 400 if error
+
 
 ### Contact endpoints
 
