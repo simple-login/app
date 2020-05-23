@@ -41,7 +41,7 @@ hr {
     border-top: var(--border);
 }
 
-.form-control, .dataTables_wrapper .dataTables_length select, .dataTables_wrapper.dataTables_filter input, .dropdown-menu, .dropdown-item {
+.form-control, .dataTables_wrapper .dataTables_length select, .dataTables_wrapper.dataTables_filter input, .dropdown-menu, .dropdown-item, .introjs-tooltip {
     color: var(--font-color);
     background-color: var(--input-bg-color);
 }
