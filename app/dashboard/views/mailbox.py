@@ -94,29 +94,7 @@ def mailbox_route():
                     )
                     db.session.commit()
 
-                    s = Signer(MAILBOX_SECRET)
-                    mailbox_id_signed = s.sign(str(new_mailbox.id)).decode()
-                    verification_url = (
-                        URL
-                        + "/dashboard/mailbox_verify"
-                        + f"?mailbox_id={mailbox_id_signed}"
-                    )
-                    send_email(
-                        mailbox_email,
-                        f"Please confirm your email {mailbox_email}",
-                        render(
-                            "transactional/verify-mailbox.txt",
-                            user=current_user,
-                            link=verification_url,
-                            mailbox_email=mailbox_email,
-                        ),
-                        render(
-                            "transactional/verify-mailbox.html",
-                            user=current_user,
-                            link=verification_url,
-                            mailbox_email=mailbox_email,
-                        ),
-                    )
+                    send_verification_email(current_user, new_mailbox)
 
                     flash(
                         f"You are going to receive an email to confirm {mailbox_email}.",
@@ -135,6 +113,30 @@ def mailbox_route():
         new_mailbox_form=new_mailbox_form,
         EMAIL_DOMAIN=EMAIL_DOMAIN,
         ALIAS_DOMAINS=ALIAS_DOMAINS,
+    )
+
+
+def send_verification_email(user, mailbox):
+    s = Signer(MAILBOX_SECRET)
+    mailbox_id_signed = s.sign(str(mailbox.id)).decode()
+    verification_url = (
+        URL + "/dashboard/mailbox_verify" + f"?mailbox_id={mailbox_id_signed}"
+    )
+    send_email(
+        mailbox.email,
+        f"Please confirm your email {mailbox.email}",
+        render(
+            "transactional/verify-mailbox.txt",
+            user=user,
+            link=verification_url,
+            mailbox_email=mailbox.email,
+        ),
+        render(
+            "transactional/verify-mailbox.html",
+            user=user,
+            link=verification_url,
+            mailbox_email=mailbox.email,
+        ),
     )
 
 

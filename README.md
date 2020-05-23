@@ -1161,6 +1161,50 @@ List of mailboxes. Each mailbox has id, email field.
 }
 ```
 
+#### POST /api/mailboxes
+
+Create a new mailbox
+
+Input:
+- `Authentication` header that contains the api key
+- email: the new mailbox address
+
+Output:
+- 201 along with the following response if new mailbox is created successfully. User is going to receive a verification email.
+    - id: integer
+    - email: the mailbox email address
+    - verified: boolean. 
+    - default: whether is the default mailbox. User cannot delete the default mailbox
+- 400 with error message otherwise. The error message can be displayed to user.
+
+#### DELETE /api/mailboxes/:mailbox_id
+
+Delete a mailbox. User cannot delete the default mailbox
+
+Input:
+- `Authentication` header that contains the api key
+- `mailbox_id`: in url
+
+Output:
+- 200 if deleted successfully
+- 400 if error
+
+#### PUT /api/mailboxes/:mailbox_id
+
+Update a mailbox.
+
+Input:
+- `Authentication` header that contains the api key
+- `mailbox_id`: in url
+- (optional) `default`: boolean. Set a mailbox as default mailbox.
+- (optional) `email`: email address. Change a mailbox email address.
+- (optional) `cancel_email_change`: boolean. Cancel mailbox email change.
+
+Output:
+- 200 if updated successfully
+- 400 if error
+
+
 ### Contact endpoints
 
 #### DELETE /api/contacts/:contact_id
