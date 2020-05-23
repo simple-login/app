@@ -26,6 +26,7 @@ from app.config import (
     LANDING_PAGE_URL,
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
+    PAGE_LIMIT,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -750,6 +751,16 @@ class Alias(db.Model, ModelMixin):
         else:
             return self.user.email
 
+    def get_contacts(self, page=0):
+        contacts = (
+            Contact.filter_by(alias_id=self.id)
+            .order_by(Contact.created_at)
+            .limit(PAGE_LIMIT)
+            .offset(page * PAGE_LIMIT)
+            .all()
+        )
+        return contacts
+
     def __repr__(self):
         return f"<Alias {self.id} {self.email}>"
 
@@ -871,7 +882,7 @@ class Contact(db.Model, ModelMixin):
     # whether a contact is created via CC
     is_cc = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
-    alias = db.relationship(Alias, backref="contacts")
+    alias = db.relationship(Alias)
     user = db.relationship(User)
 
     def website_send_to(self):

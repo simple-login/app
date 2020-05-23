@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators, ValidationError
 
-from app.config import EMAIL_DOMAIN
+from app.config import EMAIL_DOMAIN, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.email_utils import parseaddr_unicode
 from app.extensions import db
@@ -53,6 +53,10 @@ def alias_contact_manager(alias_id):
         highlight_contact_id = int(request.args.get("highlight_contact_id"))
 
     alias = Alias.get(alias_id)
+
+    page = 0
+    if request.args.get("page"):
+        page = int(request.args.get("page"))
 
     # sanity check
     if not alias:
@@ -146,12 +150,15 @@ def alias_contact_manager(alias_id):
             )
 
     # make sure highlighted contact is at array start
-    contacts = alias.contacts
+    contacts = alias.get_contacts(page)
+    contact_ids = [contact.id for contact in contacts]
 
-    if highlight_contact_id:
-        contacts = sorted(
-            contacts, key=lambda fe: fe.id == highlight_contact_id, reverse=True
-        )
+    last_page = len(contacts) < PAGE_LIMIT
+
+    if highlight_contact_id not in contact_ids:
+        contact = Contact.get(highlight_contact_id)
+        if contact and contact.alias_id == alias.id:
+            contacts.insert(0, contact)
 
     return render_template(
         "dashboard/alias_contact_manager.html",
@@ -159,4 +166,6 @@ def alias_contact_manager(alias_id):
         alias=alias,
         new_contact_form=new_contact_form,
         highlight_contact_id=highlight_contact_id,
+        page=page,
+        last_page=last_page,
     )
