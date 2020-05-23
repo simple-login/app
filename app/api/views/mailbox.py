@@ -1,6 +1,6 @@
 from smtplib import SMTPRecipientsRefused
 
-from flask import g, jsonify
+from flask import g
 from flask import jsonify
 from flask import request
 from flask_cors import cross_origin

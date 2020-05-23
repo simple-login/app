@@ -207,7 +207,10 @@ def get_alias_info(alias: Alias) -> AliasInfo:
     return alias_info
 
 
-def get_alias_info_v2(alias: Alias, mailbox) -> AliasInfo:
+def get_alias_info_v2(alias: Alias, mailbox=None) -> AliasInfo:
+    if not mailbox:
+        mailbox = alias.mailbox
+
     q = (
         db.session.query(Contact, EmailLog)
         .filter(Contact.alias_id == alias.id)

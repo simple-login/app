@@ -4,7 +4,12 @@ from flask_cors import cross_origin
 from itsdangerous import SignatureExpired
 
 from app.api.base import api_bp, require_api_auth
-from app.api.serializer import serialize_alias_info, get_alias_info
+from app.api.serializer import (
+    serialize_alias_info,
+    get_alias_info,
+    serialize_alias_info_v2,
+    get_alias_info_v2,
+)
 from app.config import MAX_NB_EMAIL_FREE_PLAN
 from app.dashboard.views.custom_alias import verify_prefix_suffix, signer
 from app.extensions import db
@@ -170,4 +175,7 @@ def new_custom_alias_v2():
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
         db.session.commit()
 
-    return jsonify(alias=full_alias, **serialize_alias_info(get_alias_info(alias))), 201
+    return (
+        jsonify(alias=full_alias, **serialize_alias_info_v2(get_alias_info_v2(alias))),
+        201,
+    )

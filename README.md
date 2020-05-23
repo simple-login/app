@@ -836,22 +836,7 @@ Input:
     - (Optional) note: alias note
 
 Output:
-If success, 201 with the new alias, for example
-
-```json
-{
-    "alias": "www_groupon_com@my_domain.com",
-    "creation_date": "2020-02-04 16:23:02+00:00",
-    "creation_timestamp": 1580833382,
-    "email": "www_groupon_com@my_domain.com",
-    "id": 4,
-    "nb_block": 0,
-    "nb_forward": 0,
-    "nb_reply": 0,
-    "enabled": true,
-    "note": "This is a note"
-}
-```
+If success, 201 with the new alias info. Use the same format as in GET /api/aliases/:alias_id
 
 #### POST /api/alias/random/new
 
@@ -865,22 +850,7 @@ Input:
     - (Optional) note: alias note
 
 Output:
-If success, 201 with the new alias, for example
-
-```json
-{
-    "alias": "prefix.suffix@my_domain.com",
-    "creation_date": "2020-02-04 16:23:02+00:00",
-    "creation_timestamp": 1580833382,
-    "email": "www_groupon_com@my_domain.com",
-    "id": 4,
-    "nb_block": 0,
-    "nb_forward": 0,
-    "nb_reply": 0,
-    "enabled": true,
-    "note": "This is a note"
-}
-```
+If success, 201 with the new alias info. Use the same format as in GET /api/aliases/:alias_id
 
 #### GET /api/v2/aliases
 
@@ -970,19 +940,43 @@ Input:
 - `alias_id` in url
 
 Output:
-Alias info
+Alias info, use the same format as in /api/v2/aliases. For example:
 
 ```json
 {
-    "creation_date": "2020-02-04 16:23:02+00:00",
-    "creation_timestamp": 1580833382,
-    "email": "e3@.alo@sl.local",
-    "id": 4,
-    "nb_block": 0,
-    "nb_forward": 0,
-    "nb_reply": 0,
-    "enabled": true,
-    "note": "This is a note"
+  "creation_date": "2020-04-06 17:57:14+00:00",
+  "creation_timestamp": 1586195834,
+  "email": "prefix1.cat@sl.local",
+  "name": "A Name",
+  "enabled": true,
+  "id": 3,
+  "mailbox": {
+    "email": "a@b.c",
+    "id": 1
+  },
+  "mailboxes": [
+    {
+      "email": "m1@cd.ef",
+      "id": 2
+    },
+    {
+      "email": "john@wick.com",
+      "id": 1
+    }
+  ],
+  "latest_activity": {
+    "action": "forward",
+    "contact": {
+      "email": "c1@example.com",
+      "name": null,
+      "reverse_alias": "\"c1 at example.com\" <re1@SL>"
+    },
+    "timestamp": 1586195834
+  },
+  "nb_block": 0,
+  "nb_forward": 1,
+  "nb_reply": 0,
+  "note": null
 }
 ```
 
