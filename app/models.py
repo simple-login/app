@@ -701,6 +701,9 @@ class Alias(db.Model, ModelMixin):
         if DeletedAlias.get_by(email=email):
             raise AliasInTrashError
 
+        if DomainDeletedAlias.get_by(email=email, user_id=kw["user_id"]):
+            raise AliasInTrashError
+
         db.session.add(r)
         return r
 
