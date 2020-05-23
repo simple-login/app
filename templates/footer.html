@@ -57,7 +57,8 @@
       notifications: [],
       page: 0,
       loading: true,
-      canLoadMore: true
+      canLoadMore: false,
+      showNotification: false,
     },
     computed: {
       has_non_read_notification: function () {
@@ -94,8 +95,8 @@
         });
         if (res.ok) {
           let json = await res.json();
-          if (json.length == 0) that.canLoadMore = false;
-          that.notifications = that.notifications.concat(json);
+          that.canLoadMore = json.more;
+          that.notifications = that.notifications.concat(json.notifications);
         }
       }
 
@@ -110,8 +111,11 @@
       });
       if (res.ok) {
         let json = await res.json();
-        that.notifications = json;
+        that.notifications = json.notifications;
         that.loading = false;
+        that.canLoadMore = json.more
+        if (that.notifications.length > 0)
+          that.showNotification = true;
       }
     }
   })
