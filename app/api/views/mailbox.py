@@ -1,3 +1,5 @@
+from smtplib import SMTPRecipientsRefused
+
 from flask import g
 from flask import jsonify
 from flask import request
@@ -5,6 +7,7 @@ from flask_cors import cross_origin
 
 from app.api.base import api_bp, require_api_auth
 from app.dashboard.views.mailbox import send_verification_email
+from app.dashboard.views.mailbox_detail import verify_mailbox_change
 from app.email_utils import (
     mailbox_already_used,
     email_domain_can_be_used_as_mailbox,
@@ -93,7 +96,8 @@ def update_mailbox(mailbox_id):
     Update mailbox
     Input:
         mailbox_id: in url
-        default (optional): in body
+        (optional) default: in body. Set a mailbox as the default mailbox.
+        (optional) email: in body. Change a mailbox email.
     Output:
         200 if updated successfully
 
@@ -112,7 +116,29 @@ def update_mailbox(mailbox_id):
             user.default_mailbox_id = mailbox.id
             changed = True
 
+    if "email" in data:
+        new_email = data.get("email").lower().strip()
+
+        if mailbox_already_used(new_email, user):
+            return jsonify(error=f"{new_email} already used"), 400
+        elif not email_domain_can_be_used_as_mailbox(new_email):
+            return (
+                jsonify(
+                    error=f"{new_email} cannot be used. Please note a mailbox cannot "
+                    f"be a disposable email address"
+                ),
+                400,
+            )
+
+        try:
+            verify_mailbox_change(user, mailbox, new_email)
+        except SMTPRecipientsRefused:
+            return jsonify(error=f"Incorrect mailbox, please recheck {new_email}"), 400
+        else:
+            mailbox.new_email = new_email
+            changed = True
+
     if changed:
         db.session.commit()
 
-    return jsonify(deleted=True), 200
+    return jsonify(updated=True), 200

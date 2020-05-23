@@ -60,33 +60,8 @@ def mailbox_detail_route(mailbox_id):
                     mailbox.new_email = new_email
                     db.session.commit()
 
-                    s = Signer(MAILBOX_SECRET)
-                    mailbox_id_signed = s.sign(str(mailbox.id)).decode()
-                    verification_url = (
-                        URL
-                        + "/dashboard/mailbox/confirm_change"
-                        + f"?mailbox_id={mailbox_id_signed}"
-                    )
-
                     try:
-                        send_email(
-                            new_email,
-                            f"Confirm mailbox change on SimpleLogin",
-                            render(
-                                "transactional/verify-mailbox-change.txt",
-                                user=current_user,
-                                link=verification_url,
-                                mailbox_email=mailbox.email,
-                                mailbox_new_email=new_email,
-                            ),
-                            render(
-                                "transactional/verify-mailbox-change.html",
-                                user=current_user,
-                                link=verification_url,
-                                mailbox_email=mailbox.email,
-                                mailbox_new_email=new_email,
-                            ),
-                        )
+                        verify_mailbox_change(current_user, mailbox, new_email)
                     except SMTPRecipientsRefused:
                         flash(
                             f"Incorrect mailbox, please recheck {mailbox.email}",
@@ -149,6 +124,33 @@ def mailbox_detail_route(mailbox_id):
 
     spf_available = ENFORCE_SPF
     return render_template("dashboard/mailbox_detail.html", **locals())
+
+
+def verify_mailbox_change(user, mailbox, new_email):
+    s = Signer(MAILBOX_SECRET)
+    mailbox_id_signed = s.sign(str(mailbox.id)).decode()
+    verification_url = (
+        URL + "/dashboard/mailbox/confirm_change" + f"?mailbox_id={mailbox_id_signed}"
+    )
+
+    send_email(
+        new_email,
+        f"Confirm mailbox change on SimpleLogin",
+        render(
+            "transactional/verify-mailbox-change.txt",
+            user=user,
+            link=verification_url,
+            mailbox_email=mailbox.email,
+            mailbox_new_email=new_email,
+        ),
+        render(
+            "transactional/verify-mailbox-change.html",
+            user=user,
+            link=verification_url,
+            mailbox_email=mailbox.email,
+            mailbox_new_email=new_email,
+        ),
+    )
 
 
 @dashboard_bp.route(

@@ -1197,6 +1197,7 @@ Input:
 - `Authentication` header that contains the api key
 - `mailbox_id`: in url
 - (optional) `default`: boolean. Set a mailbox as default mailbox.
+- (optional) `email`: email address. Change a mailbox email address.
 
 Output:
 - 200 if updated successfully
