@@ -1229,11 +1229,28 @@ Input:
 - page in url: the page number, starts at 0
 
 Output:
-List of notification, each notification has:
-- id
-- message: the message in html
-- read: whether the user has read the notification
-- created_at: when the notification is created
+- more: whether there's more notifications
+- notifications: list of notification, each notification has:
+    - id
+    - message: the message in html
+    - read: whether the user has read the notification
+    - created_at: when the notification is created
+
+For example
+
+```json
+{
+    "more": false,
+    "notifications": [
+        {
+            "created_at": "2 minutes ago",
+            "id": 1,
+            "message": "Hey!",
+            "read": false
+        }
+    ]
+}
+```
 
 #### POST /api/notifications/:notification_id
 

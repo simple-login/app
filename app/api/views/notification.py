@@ -1,5 +1,3 @@
-from time import sleep
-
 from flask import g
 from flask import jsonify
 from flask import request
@@ -21,11 +19,13 @@ def get_notifications():
     Input:
     - page: in url. Starts at 0
 
-    Output: list of notifications. Each notification has the following field:
-    - id
-    - message
-    - read
-    - created_at
+    Output:
+    - more: boolean. Whether there's more notification to load
+    - notifications: list of notifications.
+        - id
+        - message
+        - read
+        - created_at
     """
     user = g.user
     try:
@@ -36,22 +36,25 @@ def get_notifications():
     notifications = (
         Notification.query.filter_by(user_id=user.id)
         .order_by(Notification.read, Notification.created_at.desc())
-        .limit(PAGE_LIMIT)
+        .limit(PAGE_LIMIT + 1)  # load a record more to know whether there's more
         .offset(page * PAGE_LIMIT)
         .all()
     )
 
+    have_more = len(notifications) > PAGE_LIMIT
+
     return (
         jsonify(
-            [
+            more=have_more,
+            notifications=[
                 {
                     "id": notification.id,
                     "message": notification.message,
                     "read": notification.read,
                     "created_at": notification.created_at.humanize(),
                 }
-                for notification in notifications
-            ]
+                for notification in notifications[:PAGE_LIMIT]
+            ],
         ),
         200,
     )

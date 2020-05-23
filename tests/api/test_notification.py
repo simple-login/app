@@ -25,8 +25,9 @@ def test_get_notifications(flask_client):
     )
 
     assert r.status_code == 200
-    assert len(r.json) == 2
-    for n in r.json:
+    assert r.json["more"] is False
+    assert len(r.json["notifications"]) == 2
+    for n in r.json["notifications"]:
         assert n["id"] > 0
         assert n["message"]
         assert n["read"] is False
@@ -37,7 +38,8 @@ def test_get_notifications(flask_client):
         url_for("api.get_notifications", page=1),
         headers={"Authentication": api_key.code},
     )
-    assert len(r.json) == 0
+    assert r.json["more"] is False
+    assert len(r.json["notifications"]) == 0
 
 
 def test_mark_notification_as_read(flask_client):
