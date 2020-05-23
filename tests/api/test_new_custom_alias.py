@@ -1,9 +1,10 @@
 from flask import url_for
 
+from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.dashboard.views.custom_alias import signer
 from app.extensions import db
-from app.models import User, ApiKey, Alias
+from app.models import User, ApiKey, Alias, CustomDomain
 from app.utils import random_word
 
 
@@ -139,3 +140,45 @@ def test_success_v2(flask_client):
 
     new_ge = Alias.get_by(email=r.json["alias"])
     assert new_ge.note == "test note"
+
+
+def test_cannot_create_alias_in_trash(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    # create a custom domain
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
+    db.session.commit()
+
+    # create new alias with note
+    suffix = f"@ab.cd"
+    suffix = signer.sign(suffix).decode()
+
+    r = flask_client.post(
+        url_for("api.new_custom_alias_v2", hostname="www.test.com"),
+        headers={"Authentication": api_key.code},
+        json={"alias_prefix": "prefix", "signed_suffix": suffix, "note": "test note",},
+    )
+
+    # assert alias creation is successful
+    assert r.status_code == 201
+    assert r.json["alias"] == f"prefix@ab.cd"
+
+    # delete alias: it's going to be moved to ab.cd trash
+    alias = Alias.get_by(email="prefix@ab.cd")
+    assert alias.custom_domain_id
+    delete_alias(alias, user)
+
+    # try to create the same alias, will fail as the alias is in trash
+    r = flask_client.post(
+        url_for("api.new_custom_alias_v2", hostname="www.test.com"),
+        headers={"Authentication": api_key.code},
+        json={"alias_prefix": "prefix", "signed_suffix": suffix, "note": "test note",},
+    )
+    assert r.status_code == 409

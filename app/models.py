@@ -1088,6 +1088,9 @@ class DeletedAlias(db.Model, ModelMixin):
 
     email = db.Column(db.String(256), unique=True, nullable=False)
 
+    def __repr__(self):
+        return f"<Deleted Alias {self.email}>"
+
 
 class EmailChange(db.Model, ModelMixin):
     """Used when user wants to update their email"""
@@ -1177,6 +1180,20 @@ class CustomDomain(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<Custom Domain {self.domain}>"
+
+
+class DomainDeletedAlias(db.Model, ModelMixin):
+    """Store all deleted alias for a domain"""
+
+    __table_args__ = (
+        db.UniqueConstraint("domain_id", "email", name="uq_domain_trash"),
+    )
+
+    email = db.Column(db.String(256), nullable=False)
+    domain_id = db.Column(
+        db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=False
+    )
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
 
 class LifetimeCoupon(db.Model, ModelMixin):

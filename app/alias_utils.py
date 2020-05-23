@@ -16,6 +16,7 @@ from app.models import (
     Directory,
     User,
     DeletedAlias,
+    DomainDeletedAlias,
 )
 
 
@@ -130,15 +131,27 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
 
 
 def delete_alias(alias: Alias, user: User):
-    email = alias.email
     Alias.delete(alias.id)
     db.session.commit()
 
-    # try to save deleted alias
-    try:
-        DeletedAlias.create(email=email)
-        db.session.commit()
-    # this can happen when a previously deleted alias is re-created via catch-all or directory feature
-    except IntegrityError:
-        LOG.error("alias %s has been added before to DeletedAlias", email)
-        db.session.rollback()
+    # save deleted alias to either global or domain trash
+    if alias.custom_domain_id:
+        try:
+            DomainDeletedAlias.create(
+                user_id=user.id, email=alias.email, domain_id=alias.custom_domain_id
+            )
+            db.session.commit()
+        except IntegrityError:
+            LOG.error(
+                "alias %s domain %s has been added before to DeletedAlias",
+                alias.email,
+                alias.custom_domain_id,
+            )
+            db.session.rollback()
+    else:
+        try:
+            DeletedAlias.create(email=alias.email)
+            db.session.commit()
+        except IntegrityError:
+            LOG.error("alias %s has been added before to DeletedAlias", alias.email)
+            db.session.rollback()

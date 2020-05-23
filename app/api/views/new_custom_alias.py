@@ -9,7 +9,14 @@ from app.config import MAX_NB_EMAIL_FREE_PLAN
 from app.dashboard.views.custom_alias import verify_prefix_suffix, signer
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, AliasUsedOn, User, CustomDomain, DeletedAlias
+from app.models import (
+    Alias,
+    AliasUsedOn,
+    User,
+    CustomDomain,
+    DeletedAlias,
+    DomainDeletedAlias,
+)
 from app.utils import convert_to_id
 
 
@@ -137,15 +144,25 @@ def new_custom_alias_v2():
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
-    alias = Alias.create(
-        user_id=user.id, email=full_alias, mailbox_id=user.default_mailbox_id, note=note
-    )
-
+    custom_domain_id = None
     if alias_suffix.startswith("@"):
         alias_domain = alias_suffix[1:]
         domain = CustomDomain.get_by(domain=alias_domain)
-        LOG.d("set alias %s to domain %s", full_alias, domain)
-        alias.custom_domain_id = domain.id
+
+        # check if the alias is currently in the domain trash
+        if domain and DomainDeletedAlias.get_by(domain_id=domain.id, email=full_alias):
+            LOG.d(f"Alias {full_alias} is currently in the {domain.domain} trash. ")
+            return jsonify(error=f"alias {full_alias} in domain trash"), 409
+
+        custom_domain_id = domain.id
+
+    alias = Alias.create(
+        user_id=user.id,
+        email=full_alias,
+        mailbox_id=user.default_mailbox_id,
+        note=note,
+        custom_domain_id=custom_domain_id,
+    )
 
     db.session.commit()
 
