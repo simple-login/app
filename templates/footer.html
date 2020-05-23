@@ -39,3 +39,80 @@
     </div>
   </div>
 </footer>
+
+<script>
+  function startIntro() {
+    introJs().setOption('showProgress', true).start();
+    introJs().start();
+  }
+</script>
+
+<script src="{{ url_for('static', filename='node_modules/vue/dist/vue.min.js') }}"></script>
+
+<script>
+  var app = new Vue({
+    el: '#notification-app',
+    delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
+    data: {
+      notifications: [],
+      page: 0,
+      loading: true,
+      canLoadMore: true
+    },
+    computed: {
+      has_non_read_notification: function () {
+        for (let i = 0; i < this.notifications.length; i++) {
+          if (!this.notifications[i].read) return true;
+        }
+        return false;
+      }
+    },
+    methods: {
+      markAsRead: async function (notification) {
+        notification.read = true;
+        let res = await fetch(`/api/notifications/${notification.id}/read`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        });
+
+        if (!res.ok) {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        }
+      },
+
+      loadMore: async function () {
+        let that = this;
+        that.page += 1;
+
+        let res = await fetch(`/api/notifications?page=${that.page}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        });
+        if (res.ok) {
+          let json = await res.json();
+          if (json.length == 0) that.canLoadMore = false;
+          that.notifications = that.notifications.concat(json);
+        }
+      }
+
+    },
+    async mounted() {
+      let that = this;
+      let res = await fetch(`/api/notifications?page=${that.page}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
+      if (res.ok) {
+        let json = await res.json();
+        that.notifications = json;
+        that.loading = false;
+      }
+    }
+  })
+</script>

@@ -1219,6 +1219,34 @@ If success, 200.
 }
 ```
 
+### Notification endpoints
+#### GET /api/notifications
+
+Get notifications
+
+Input:
+- `Authentication` in header: the api key
+- page in url: the page number, starts at 0
+
+Output:
+List of notification, each notification has:
+- id
+- message: the message in html
+- read: whether the user has read the notification
+- created_at: when the notification is created
+
+#### POST /api/notifications/:notification_id
+
+Mark a notification as read
+
+Input:
+- `Authentication` in header: the api key
+- notification_id in url: the page number, starts at 0
+
+Output: 
+200 if success
+
+
 ### Misc endpoints
 #### POST /api/apple/process_payment
 

@@ -15,6 +15,38 @@
           </div>
         {% endif %}
 
+        <div id="notification-app" class="dropdown d-none d-md-flex">
+          <a class="nav-link icon" data-toggle="collapse" href="#notifications" style="height: 100%">
+            <i class="fe fe-bell"></i>
+            <span v-if="has_non_read_notification" class="nav-unread"></span>
+            <span v-else class="nav-read"></span>
+          </a>
+
+          <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow collapse" id="notifications">
+            <div v-if="loading">Loading ...</div>
+            <div class="dropdown-item d-flex" v-for="notification in notifications">
+              <div class="flex-grow-1">
+                <div v-html="notification.message"
+                     style="width: 40em; word-wrap:break-word; white-space: normal"></div>
+                <div class="small text-muted">
+                  [[notification.created_at]]
+                </div>
+              </div>
+              <div v-if="!notification.read">
+                <i class="fe fe-check"
+                   @click="markAsRead(notification)"
+                   data-toggle="tooltip" title="mark as read"></i>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <button v-if="canLoadMore" @click="loadMore()" class="btn btn-link">Load more</button>
+            </div>
+
+          </div>
+
+        </div>
+
         <div class="dropdown">
           <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
             {% if current_user.profile_picture_id %}
@@ -74,9 +106,4 @@
   </div>
 </div>
 
-<script>
-  function startIntro() {
-    introJs().setOption('showProgress', true).start();
-    introJs().start();
-  }
-</script>
+

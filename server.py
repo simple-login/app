@@ -53,6 +53,7 @@ from app.models import (
     EmailLog,
     Referral,
     AliasMailbox,
+    Notification,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -245,6 +246,10 @@ def fake_data():
     db.session.commit()
 
     referral = Referral.create(user_id=user.id, code="REFCODE", name="First referral")
+    db.session.commit()
+
+    for i in range(6):
+        Notification.create(user_id=user.id, message=f"""Hey hey <b>{i}</b> """ * 10)
     db.session.commit()
 
     User.create(
