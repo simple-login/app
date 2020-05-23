@@ -1189,6 +1189,19 @@ Output:
 - 200 if deleted successfully
 - 400 if error
 
+#### PUT /api/mailboxes/:mailbox_id
+
+Update a mailbox.
+
+Input:
+- `Authentication` header that contains the api key
+- `mailbox_id`: in url
+- (optional) `default`: boolean. Set a mailbox as default mailbox.
+
+Output:
+- 200 if updated successfully
+- 400 if error
+
 
 ### Contact endpoints
 

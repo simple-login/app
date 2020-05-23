@@ -68,3 +68,30 @@ def test_delete_default_mailbox(flask_client):
     )
 
     assert r.status_code == 400
+
+
+def test_update_mailbox(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    # create a mailbox
+    mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
+    db.session.commit()
+    assert user.default_mailbox_id != mb.id
+
+    r = flask_client.put(
+        url_for("api.delete_mailbox", mailbox_id=mb.id),
+        headers={"Authentication": api_key.code},
+        json={"default": True},
+    )
+
+    assert r.status_code == 200
+
+    mb = Mailbox.get(mb.id)
+    assert user.default_mailbox_id == mb.id

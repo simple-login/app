@@ -83,3 +83,36 @@ def delete_mailbox(mailbox_id):
     db.session.commit()
 
     return jsonify(deleted=True), 200
+
+
+@api_bp.route("/mailboxes/<mailbox_id>", methods=["PUT"])
+@cross_origin()
+@require_api_auth
+def update_mailbox(mailbox_id):
+    """
+    Update mailbox
+    Input:
+        mailbox_id: in url
+        default (optional): in body
+    Output:
+        200 if updated successfully
+
+    """
+    user = g.user
+    mailbox = Mailbox.get(mailbox_id)
+
+    if not mailbox or mailbox.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    data = request.get_json() or {}
+    changed = False
+    if "default" in data:
+        is_default = data.get("default")
+        if is_default:
+            user.default_mailbox_id = mailbox.id
+            changed = True
+
+    if changed:
+        db.session.commit()
+
+    return jsonify(deleted=True), 200
