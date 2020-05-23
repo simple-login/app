@@ -48,9 +48,8 @@ def mailbox_detail_route(mailbox_id):
             new_email = change_email_form.email.data.lower().strip()
             if new_email != mailbox.email and not pending_email:
                 # check if this email is not already used
-                if (
-                    mailbox_already_used(new_email, current_user)
-                    or Alias.get_by(email=new_email)
+                if mailbox_already_used(new_email, current_user) or Alias.get_by(
+                    email=new_email
                 ):
                     flash(f"Email {new_email} already used", "error")
                 elif not email_domain_can_be_used_as_mailbox(new_email):
