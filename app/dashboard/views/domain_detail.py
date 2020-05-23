@@ -10,7 +10,7 @@ from app.dns_utils import (
     get_cname_record,
 )
 from app.extensions import db
-from app.models import CustomDomain, Alias
+from app.models import CustomDomain, Alias, DomainDeletedAlias
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
@@ -171,3 +171,57 @@ def domain_detail(custom_domain_id):
     nb_alias = Alias.filter_by(custom_domain_id=custom_domain.id).count()
 
     return render_template("dashboard/domain_detail/info.html", **locals())
+
+
+@dashboard_bp.route("/domains/<int:custom_domain_id>/trash", methods=["GET", "POST"])
+@login_required
+def domain_detail_trash(custom_domain_id):
+    custom_domain = CustomDomain.get(custom_domain_id)
+    if not custom_domain or custom_domain.user_id != current_user.id:
+        flash("You cannot see this page", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    if request.method == "POST":
+        if request.form.get("form-name") == "empty-all":
+            DomainDeletedAlias.filter_by(domain_id=custom_domain.id).delete()
+            db.session.commit()
+
+            flash("All deleted aliases can now be re-created", "success")
+            return redirect(
+                url_for(
+                    "dashboard.domain_detail_trash", custom_domain_id=custom_domain.id
+                )
+            )
+        elif request.form.get("form-name") == "remove-single":
+            deleted_alias_id = request.form.get("deleted-alias-id")
+            deleted_alias = DomainDeletedAlias.get(deleted_alias_id)
+            if not deleted_alias or deleted_alias.domain_id != custom_domain.id:
+                flash("Unknown error, refresh the page", "warning")
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail_trash",
+                        custom_domain_id=custom_domain.id,
+                    )
+                )
+
+            DomainDeletedAlias.delete(deleted_alias.id)
+            db.session.commit()
+            flash(
+                f"{deleted_alias.email} can now be re-created", "success",
+            )
+
+            return redirect(
+                url_for(
+                    "dashboard.domain_detail_trash", custom_domain_id=custom_domain.id
+                )
+            )
+
+    domain_deleted_aliases = DomainDeletedAlias.filter_by(
+        domain_id=custom_domain.id
+    ).all()
+
+    return render_template(
+        "dashboard/domain_detail/trash.html",
+        domain_deleted_aliases=domain_deleted_aliases,
+        custom_domain=custom_domain,
+    )
