@@ -1088,6 +1088,9 @@ class DeletedAlias(db.Model, ModelMixin):
 
     email = db.Column(db.String(256), unique=True, nullable=False)
 
+    def __repr__(self):
+        return f"<Deleted Alias {self.email}>"
+
 
 class EmailChange(db.Model, ModelMixin):
     """Used when user wants to update their email"""

@@ -2,8 +2,8 @@ import flask_migrate
 from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
-from app.config import DB_URI
-from app.email_utils import send_email, render
+from app.config import DB_URI, ALIAS_DOMAINS
+from app.email_utils import send_email, render, get_email_domain_part
 from app.models import *
 from server import create_app
 from time import sleep
@@ -93,6 +93,25 @@ def send_mobile_newsletter():
                 # sleep every 5 sends to avoid hitting email limits
                 LOG.d("Sleep 1s")
                 sleep(1)
+
+
+def migrate_domain_trash():
+    """Move aliases from global trash to domain trash if applicable"""
+    for deleted_alias in DeletedAlias.query.all():
+        alias_domain = get_email_domain_part(deleted_alias.email)
+        if alias_domain not in ALIAS_DOMAINS:
+            domain = CustomDomain.get_by(domain=alias_domain)
+            if domain:
+                LOG.d("move %s to domain %s trash", deleted_alias, domain)
+                DomainDeletedAlias.create(
+                    user_id=domain.user_id,
+                    email=deleted_alias.email,
+                    domain_id=domain.id,
+                    created_at=deleted_alias.created_at,
+                )
+                DeletedAlias.delete(deleted_alias.id)
+
+    db.session.commit()
 
 
 app = create_app()
