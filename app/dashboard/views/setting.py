@@ -73,10 +73,8 @@ def setting():
                     new_email = change_email_form.email.data
 
                     # check if this email is not already used
-                    if (
-                        personal_email_already_used(new_email)
-                        or Alias.get_by(email=new_email)
-                        or DeletedAlias.get_by(email=new_email)
+                    if personal_email_already_used(new_email) or Alias.get_by(
+                        email=new_email
                     ):
                         flash(f"Email {new_email} already used", "error")
                     elif not email_domain_can_be_used_as_mailbox(new_email):

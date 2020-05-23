@@ -51,7 +51,6 @@ def mailbox_detail_route(mailbox_id):
                 if (
                     mailbox_already_used(new_email, current_user)
                     or Alias.get_by(email=new_email)
-                    or DeletedAlias.get_by(email=new_email)
                 ):
                     flash(f"Email {new_email} already used", "error")
                 elif not email_domain_can_be_used_as_mailbox(new_email):
