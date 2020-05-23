@@ -8,6 +8,7 @@ from app.email_utils import (
     send_cannot_create_domain_alias,
     email_belongs_to_alias_domains,
 )
+from app.errors import AliasInTrashError
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -61,8 +62,19 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             send_cannot_create_directory_alias(dir_user, address, directory_name)
             return None
 
-        # if alias has been deleted before, do not auto-create it
-        if DeletedAlias.get_by(email=address):
+        try:
+            LOG.d("create alias %s for directory %s", address, directory)
+
+            alias = Alias.create(
+                email=address,
+                user_id=directory.user_id,
+                directory_id=directory.id,
+                mailbox_id=dir_user.default_mailbox_id,
+            )
+
+            db.session.commit()
+            return alias
+        except AliasInTrashError:
             LOG.warning(
                 "Alias %s was deleted before, cannot auto-create using directory %s, user %s",
                 address,
@@ -70,18 +82,6 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
                 dir_user,
             )
             return None
-
-        LOG.d("create alias %s for directory %s", address, directory)
-
-        alias = Alias.create(
-            email=address,
-            user_id=directory.user_id,
-            directory_id=directory.id,
-            mailbox_id=dir_user.default_mailbox_id,
-        )
-
-        db.session.commit()
-        return alias
 
 
 def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
@@ -106,8 +106,18 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         send_cannot_create_domain_alias(domain_user, address, alias_domain)
         return None
 
-    # if alias has been deleted before, do not auto-create it
-    if DeletedAlias.get_by(email=address):
+    try:
+        LOG.d("create alias %s for domain %s", address, custom_domain)
+        alias = Alias.create(
+            email=address,
+            user_id=custom_domain.user_id,
+            custom_domain_id=custom_domain.id,
+            automatic_creation=True,
+            mailbox_id=domain_user.default_mailbox_id,
+        )
+        db.session.commit()
+        return alias
+    except AliasInTrashError:
         LOG.warning(
             "Alias %s was deleted before, cannot auto-create using domain catch-all %s, user %s",
             address,
@@ -115,19 +125,6 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
             domain_user,
         )
         return None
-
-    LOG.d("create alias %s for domain %s", address, custom_domain)
-
-    alias = Alias.create(
-        email=address,
-        user_id=custom_domain.user_id,
-        custom_domain_id=custom_domain.id,
-        automatic_creation=True,
-        mailbox_id=domain_user.default_mailbox_id,
-    )
-
-    db.session.commit()
-    return alias
 
 
 def delete_alias(alias: Alias, user: User):
