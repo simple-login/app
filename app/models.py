@@ -1417,3 +1417,11 @@ class RecoveryCode(db.Model, ModelMixin):
         """Delete all recovery codes for user"""
         cls.query.filter_by(user_id=user.id).delete()
         db.session.commit()
+
+
+class Notification(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+
+    # whether user has marked the notification as read
+    read = db.Column(db.Boolean, nullable=False, default=False)
