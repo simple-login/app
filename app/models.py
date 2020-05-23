@@ -1179,6 +1179,20 @@ class CustomDomain(db.Model, ModelMixin):
         return f"<Custom Domain {self.domain}>"
 
 
+class DomainDeletedAlias(db.Model, ModelMixin):
+    """Store all deleted alias for a domain"""
+
+    __table_args__ = (
+        db.UniqueConstraint("domain_id", "email", name="uq_domain_trash"),
+    )
+
+    email = db.Column(db.String(256), nullable=False)
+    domain_id = db.Column(
+        db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=False
+    )
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+
+
 class LifetimeCoupon(db.Model, ModelMixin):
     code = db.Column(db.String(128), nullable=False, unique=True)
     nb_used = db.Column(db.Integer, nullable=False)
