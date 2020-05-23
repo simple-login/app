@@ -121,3 +121,40 @@ def test_update_mailbox_email(flask_client):
 
     mb = Mailbox.get(mb.id)
     assert mb.new_email == "new-email@gmail.com"
+
+
+def test_cancel_mailbox_email_change(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    # create a mailbox
+    mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
+    db.session.commit()
+
+    # update mailbox email
+    r = flask_client.put(
+        url_for("api.delete_mailbox", mailbox_id=mb.id),
+        headers={"Authentication": api_key.code},
+        json={"email": "new-email@gmail.com"},
+    )
+    assert r.status_code == 200
+
+    mb = Mailbox.get(mb.id)
+    assert mb.new_email == "new-email@gmail.com"
+
+    # cancel mailbox email change
+    r = flask_client.put(
+        url_for("api.delete_mailbox", mailbox_id=mb.id),
+        headers={"Authentication": api_key.code},
+        json={"cancel_email_change": True},
+    )
+    assert r.status_code == 200
+
+    mb = Mailbox.get(mb.id)
+    assert mb.new_email is None

@@ -98,6 +98,7 @@ def update_mailbox(mailbox_id):
         mailbox_id: in url
         (optional) default: in body. Set a mailbox as the default mailbox.
         (optional) email: in body. Change a mailbox email.
+        (optional) cancel_email_change: in body. Cancel mailbox email change.
     Output:
         200 if updated successfully
 
@@ -136,6 +137,12 @@ def update_mailbox(mailbox_id):
             return jsonify(error=f"Incorrect mailbox, please recheck {new_email}"), 400
         else:
             mailbox.new_email = new_email
+            changed = True
+
+    if "cancel_email_change" in data:
+        cancel_email_change = data.get("cancel_email_change")
+        if cancel_email_change:
+            mailbox.new_email = None
             changed = True
 
     if changed:

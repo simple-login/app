@@ -1198,6 +1198,7 @@ Input:
 - `mailbox_id`: in url
 - (optional) `default`: boolean. Set a mailbox as default mailbox.
 - (optional) `email`: email address. Change a mailbox email address.
+- (optional) `cancel_email_change`: boolean. Cancel mailbox email change.
 
 Output:
 - 200 if updated successfully
