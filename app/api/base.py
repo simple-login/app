@@ -5,7 +5,6 @@ from flask import Blueprint, request, jsonify, g
 from flask_login import current_user
 
 from app.extensions import db
-from app.log import LOG
 from app.models import ApiKey
 
 api_bp = Blueprint(name="api", import_name=__name__, url_prefix="/api")
