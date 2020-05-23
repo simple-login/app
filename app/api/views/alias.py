@@ -10,10 +10,10 @@ from app.api.serializer import (
     serialize_alias_info,
     serialize_contact,
     get_alias_infos_with_pagination,
-    get_alias_info,
     get_alias_contacts,
     get_alias_infos_with_pagination_v2,
     serialize_alias_info_v2,
+    get_alias_info_v2,
 )
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.alias_log import get_alias_log
@@ -327,7 +327,7 @@ def get_alias(alias_id):
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    return jsonify(**serialize_alias_info(get_alias_info(alias))), 200
+    return jsonify(**serialize_alias_info_v2(get_alias_info_v2(alias))), 200
 
 
 @api_bp.route("/aliases/<int:alias_id>/contacts")
