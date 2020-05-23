@@ -684,6 +684,90 @@ Some errors should be fixed during development however: for example error like `
 
 All following endpoint return `401` status code if the API Key is incorrect.
 
+### Authentication endpoints
+
+#### POST /api/auth/login
+
+Input:
+- email
+- password
+- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
+
+Output:
+- name: user name, could be an empty string
+- mfa_enabled: boolean
+- mfa_key: only useful when user enables MFA. In this case, user needs to enter their OTP token in order to login.
+- api_key: if MFA is not enabled, the `api key` is returned right away.
+
+The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
+If user hasn't enabled MFA, `mfa_key` is empty.
+
+Return 403 if user has enabled FIDO. The client can display a message to suggest user to use the `API Key` instead.
+
+#### POST /api/auth/mfa
+
+Input:
+- mfa_token: OTP token that user enters
+- mfa_key: MFA key obtained in previous auth request, e.g. /api/auth/login
+- device: the device name, used to create an ApiKey associated with this device
+
+Output:
+- name: user name, could be an empty string
+- api_key: if MFA is not enabled, the `api key` is returned right away.
+
+The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
+If user hasn't enabled MFA, `mfa_key` is empty.
+
+#### POST /api/auth/facebook
+
+Input:
+- facebook_token: Facebook access token
+- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
+
+Output: Same output as for `/api/auth/login` endpoint
+
+#### POST /api/auth/google
+
+Input:
+- google_token: Google access token
+- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
+
+Output: Same output as for `/api/auth/login` endpoint
+
+#### POST /api/auth/register
+
+Input:
+- email
+- password
+
+Output: 200 means user is going to receive an email that contains an *activation code*. User needs to enter this code to confirm their account -> next endpoint.
+
+#### POST /api/auth/activate
+
+Input:
+- email
+- code: the activation code
+
+Output:
+- 200: account is activated. User can login now
+- 400: wrong email, code
+- 410: wrong code too many times. User needs to ask for an reactivation -> next endpoint
+
+#### POST /api/auth/reactivate
+
+Input:
+- email
+
+Output:
+- 200: user is going to receive an email that contains the activation code.
+
+#### POST /api/auth/forgot_password
+
+Input:
+- email
+
+Output: always return 200, even if email doesn't exist. User need to enter correctly their email.
+
 #### GET /api/user_info
 
 Given the API Key, return user name and whether user is premium.
@@ -705,6 +789,7 @@ Output: if api key is correct, return a json with user name and whether user is 
 
 If api key is incorrect, return 401.
 
+### Alias endpoints
 
 #### GET /api/v4/alias/options
 
@@ -794,115 +879,6 @@ If success, 201 with the new alias, for example
     "nb_reply": 0,
     "enabled": true,
     "note": "This is a note"
-}
-```
-
-#### POST /api/auth/login
-
-Input:
-- email
-- password
-- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
-
-Output:
-- name: user name, could be an empty string
-- mfa_enabled: boolean
-- mfa_key: only useful when user enables MFA. In this case, user needs to enter their OTP token in order to login.
-- api_key: if MFA is not enabled, the `api key` is returned right away.
-
-The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
-If user hasn't enabled MFA, `mfa_key` is empty.
-
-Return 403 if user has enabled FIDO. The client can display a message to suggest user to use the `API Key` instead.
-
-#### POST /api/auth/mfa
-
-Input:
-- mfa_token: OTP token that user enters
-- mfa_key: MFA key obtained in previous auth request, e.g. /api/auth/login
-- device: the device name, used to create an ApiKey associated with this device
-
-Output:
-- name: user name, could be an empty string
-- api_key: if MFA is not enabled, the `api key` is returned right away.
-
-The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
-If user hasn't enabled MFA, `mfa_key` is empty.
-
-#### POST /api/auth/facebook
-
-Input:
-- facebook_token: Facebook access token
-- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
-
-Output: Same output as for `/api/auth/login` endpoint
-
-
-#### POST /api/auth/google
-
-Input:
-- google_token: Google access token
-- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
-
-Output: Same output as for `/api/auth/login` endpoint
-
-#### POST /api/auth/register
-
-Input:
-- email
-- password
-
-Output: 200 means user is going to receive an email that contains an *activation code*. User needs to enter this code to confirm their account -> next endpoint.
-
-
-#### POST /api/auth/activate
-
-Input:
-- email
-- code: the activation code
-
-Output:
-- 200: account is activated. User can login now
-- 400: wrong email, code
-- 410: wrong code too many times. User needs to ask for an reactivation -> next endpoint
-
-#### POST /api/auth/reactivate
-
-Input:
-- email
-
-Output:
-- 200: user is going to receive an email that contains the activation code.
-
-#### POST /api/auth/forgot_password
-
-Input:
-- email
-
-Output: always return 200, even if email doesn't exist. User need to enter correctly their email.
-
-#### GET /api/mailboxes
-
-Get user verified mailboxes.
-
-Input:
-- `Authentication` header that contains the api key
-
-Output:
-List of mailboxes. Each mailbox has id, email field.
-
-```json
-{
-  "mailboxes": [
-    {
-      "email": "a@b.c",
-      "id": 1
-    },
-    {
-      "email": "m1@example.com",
-      "id": 2
-    }
-  ]
 }
 ```
 
@@ -1133,7 +1109,6 @@ If success, 200 with the list of contacts, for example:
 
 Please note that last_email_sent_timestamp and last_email_sent_date can be null.
 
-
 #### POST /api/aliases/:alias_id/contacts
 
 Create a new contact for an alias.
@@ -1159,6 +1134,35 @@ Return 409 if contact is already added.
 }
 ```
 
+### Mailbox endpoints
+
+#### GET /api/mailboxes
+
+Get user verified mailboxes.
+
+Input:
+- `Authentication` header that contains the api key
+
+Output:
+List of mailboxes. Each mailbox has id, email field.
+
+```json
+{
+  "mailboxes": [
+    {
+      "email": "a@b.c",
+      "id": 1
+    },
+    {
+      "email": "m1@example.com",
+      "id": 2
+    }
+  ]
+}
+```
+
+### Contact endpoints
+
 #### DELETE /api/contacts/:contact_id
 
 Delete a contact
@@ -1177,6 +1181,7 @@ If success, 200.
 }
 ```
 
+### Misc endpoints
 #### POST /api/apple/process_payment
 
 Process payment receipt 
@@ -1189,7 +1194,6 @@ Input:
 Output:
 200 if user is upgraded successfully
 4** if any error.
-
 
 
 ## OAuth
