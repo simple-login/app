@@ -11,7 +11,15 @@ from app.dashboard.base import dashboard_bp
 from app.email_utils import email_belongs_to_alias_domains
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, CustomDomain, DeletedAlias, Mailbox, User, AliasMailbox
+from app.models import (
+    Alias,
+    CustomDomain,
+    DeletedAlias,
+    Mailbox,
+    User,
+    AliasMailbox,
+    DomainDeletedAlias,
+)
 from app.utils import convert_to_id, random_word, word_exist
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
@@ -101,11 +109,31 @@ def custom_alias():
                     "warning",
                 )
             else:
+                custom_domain_id = None
+                # get the custom_domain_id if alias is created with a custom domain
+                if alias_suffix.startswith("@"):
+                    alias_domain = alias_suffix[1:]
+                    domain = CustomDomain.get_by(domain=alias_domain)
+
+                    # check if the alias is currently in the domain trash
+                    if domain and DomainDeletedAlias.get_by(
+                        domain_id=domain.id, email=full_alias
+                    ):
+                        flash(
+                            f"Alias {full_alias} is currently in the {domain.domain} trash. "
+                            f"Please remove it from the trash in order to re-create it.",
+                            "warning",
+                        )
+                        return redirect(url_for("dashboard.custom_alias"))
+
+                    custom_domain_id = domain.id
+
                 alias = Alias.create(
                     user_id=current_user.id,
                     email=full_alias,
                     note=alias_note,
                     mailbox_id=mailboxes[0].id,
+                    custom_domain_id=custom_domain_id,
                 )
                 db.session.flush()
 
@@ -113,13 +141,6 @@ def custom_alias():
                     AliasMailbox.create(
                         alias_id=alias.id, mailbox_id=mailboxes[i].id,
                     )
-
-                # get the custom_domain_id if alias is created with a custom domain
-                if alias_suffix.startswith("@"):
-                    alias_domain = alias_suffix[1:]
-                    domain = CustomDomain.get_by(domain=alias_domain)
-                    LOG.d("Set alias %s domain to %s", full_alias, domain)
-                    alias.custom_domain_id = domain.id
 
                 db.session.commit()
                 flash(f"Alias {full_alias} has been created", "success")
