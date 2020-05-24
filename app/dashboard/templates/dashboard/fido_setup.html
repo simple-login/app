@@ -7,7 +7,7 @@
 {% block head %}
   <script src="{{ url_for('static', filename='node_modules/qrious/dist/qrious.min.js') }}"></script>
   <script src="{{ url_for('static', filename='assets/js/vendors/base64.js') }}"></script>
-  <script src="{{ url_for('static', filename='assets/js/vendors/webauthn.js') }}"></script>
+  <script src="/static/assets/js/vendors/webauthn.js?v={{ VERSION }}"></script>
 {% endblock %}
 
 {% block default_content %}
