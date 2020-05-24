@@ -121,6 +121,19 @@ class AliasGeneratorEnum(EnumE):
     uuid = 2  # aliases are generated based on uuid
 
 
+class Fido(db.Model, ModelMixin):
+    __tablename__ = "fido"
+    credential_id = db.Column(db.String(), nullable=False, unique=True, index=True)
+    uuid = db.Column(
+        db.ForeignKey("users.fido_uuid", ondelete="cascade"),
+        unique=False,
+        nullable=False,
+    )
+    public_key = db.Column(db.String(), nullable=False, unique=True)
+    sign_count = db.Column(db.Integer(), nullable=False)
+    name = db.Column(db.String(128), nullable=False, unique=False)
+
+
 class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
     email = db.Column(db.String(256), unique=True, nullable=False)
@@ -151,9 +164,6 @@ class User(db.Model, ModelMixin, UserMixin):
 
     # Fields for WebAuthn
     fido_uuid = db.Column(db.String(), nullable=True, unique=True)
-    fido_credential_id = db.Column(db.String(), nullable=True, unique=True)
-    fido_pk = db.Column(db.String(), nullable=True, unique=True)
-    fido_sign_count = db.Column(db.Integer(), nullable=True)
 
     # whether user can use Fido
     can_use_fido = db.Column(

@@ -1,0 +1,53 @@
+{% extends 'default.html' %}
+{% set active_page = "setting" %}
+{% block title %}
+  Manage Security Key
+{% endblock %}
+
+{% block head %}
+  <script src="{{ url_for('static', filename='node_modules/qrious/dist/qrious.min.js') }}"></script>
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h2">Manage Your Security Key</h1>
+      <p>Unlink all keys will also disable WebAuthn 2FA.</p>
+
+      <form id="formManageKey" method="post">
+        {{ fido_manage_form.csrf_token }}
+        {{ fido_manage_form.credential_id(class="form-control", placeholder="") }}
+      </form>
+
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">Linked At</th>
+            <th scope="col" class="text-center">Operation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {%for key in keys%} 
+          <tr>
+            <th scope="row">{{ key.id }}</th>
+            <td>{{ key.name }}</td>
+            <td>{{key.created_at | dt}}</td>
+            <td class="text-center"><button class="btn btn-outline-danger" onclick="$('#credential_id').val('{{ key.credential_id }}'); $('#formManageKey').submit();">Unlink</button></td>
+          </tr>
+          {%endfor%} 
+          <tr>
+            <th scope="row">#</th>
+            <td>Link a New Key</td>
+            <td></td>
+            <td class="text-center"><a href="{{ url_for('dashboard.fido_setup') }}"><button class="btn btn-outline-success">Link</button></a></td>
+          </tr>
+        </tbody>
+      </table>
+
+
+
+    </div>
+  </div>
+{% endblock %}

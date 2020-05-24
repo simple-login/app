@@ -1,14 +1,17 @@
 {% extends 'default.html' %}
 {% set active_page = "setting" %}
 {% block title %}
-  Unlink Security Key
+  SUDO MODE
 {% endblock %}
 
 
 {% block default_content %}
   <div class="card">
     <div class="card-body">
-      <h1 class="h2">Unlink Your Security Key</h1>
+      <h1 class="h2">Entering Sudo Mode</h1>
+      <p>
+        You are trying to change sensitive settings
+      </p>
       <p>
         Please enter the password of your account so that we can ensure it's you.
       </p>
@@ -20,7 +23,7 @@
 
         {{ password_check_form.password(class="form-control", autofocus="true") }}
         {{ render_field_errors(password_check_form.password) }}
-        <button class="btn btn-lg btn-danger mt-2">Unlink Key</button>
+        <button class="btn btn-lg btn-danger mt-2">Submit</button>
       </form>
 
     </div>

@@ -38,6 +38,7 @@ from app.log import LOG
 from app.models import (
     Client,
     User,
+    Fido,
     ClientUser,
     Alias,
     RedirectUri,
@@ -143,8 +144,10 @@ def fake_data():
         otp_secret="base32secret3232",
         can_use_fido=True,
         intro_shown=True,
+        fido_uuid=None,
     )
     db.session.commit()
+
     user.trial_end = None
 
     LifetimeCoupon.create(code="coupon", nb_used=10)

@@ -12,7 +12,7 @@ from app.config import MFA_USER_ID
 from app.config import RP_ID, URL
 from app.extensions import db
 from app.log import LOG
-from app.models import User
+from app.models import User, Fido
 
 
 class FidoTokenForm(FlaskForm):
@@ -40,17 +40,6 @@ def fido():
 
     next_url = request.args.get("next")
 
-    webauthn_user = webauthn.WebAuthnUser(
-        user.fido_uuid,
-        user.email,
-        user.name if user.name else user.email,
-        False,
-        user.fido_credential_id,
-        user.fido_pk,
-        user.fido_sign_count,
-        RP_ID,
-    )
-
     # Handling POST requests
     if fido_token_form.validate_on_submit():
         try:
@@ -61,11 +50,23 @@ def fido():
 
         challenge = session["fido_challenge"]
 
-        webauthn_assertion_response = webauthn.WebAuthnAssertionResponse(
-            webauthn_user, sk_assertion, challenge, URL, uv_required=False
-        )
-
         try:
+            fido_key = Fido.get_by(
+                uuid=user.fido_uuid, credential_id=sk_assertion["id"]
+            )
+            webauthn_user = webauthn.WebAuthnUser(
+                user.fido_uuid,
+                user.email,
+                user.name if user.name else user.email,
+                False,
+                fido_key.credential_id,
+                fido_key.public_key,
+                fido_key.sign_count,
+                RP_ID,
+            )
+            webauthn_assertion_response = webauthn.WebAuthnAssertionResponse(
+                webauthn_user, sk_assertion, challenge, URL, uv_required=False
+            )
             new_sign_count = webauthn_assertion_response.verify()
         except Exception as e:
             LOG.error(f"An error occurred in WebAuthn verification process: {e}")
@@ -93,8 +94,24 @@ def fido():
 
     session["fido_challenge"] = challenge.rstrip("=")
 
+    fidos = Fido.filter_by(uuid=user.fido_uuid).all()
+    webauthn_users = []
+    for fido in fidos:
+        webauthn_users.append(
+            webauthn.WebAuthnUser(
+                user.fido_uuid,
+                user.email,
+                user.name if user.name else user.email,
+                False,
+                fido.credential_id,
+                fido.public_key,
+                fido.sign_count,
+                RP_ID,
+            )
+        )
+
     webauthn_assertion_options = webauthn.WebAuthnAssertionOptions(
-        webauthn_user, challenge
+        webauthn_users, challenge
     )
     webauthn_assertion_options = webauthn_assertion_options.assertion_dict
 

@@ -1,36 +1,42 @@
 import json
 import secrets
 import uuid
+from time import time
 
 import webauthn
 from flask import render_template, flash, redirect, url_for, session
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, validators
+from wtforms import StringField, HiddenField, validators
 
 from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
+from app.models import Fido, RecoveryCode
+from app.dashboard.views.enter_sudo import sudo_required
 
 
 class FidoTokenForm(FlaskForm):
+    key_name = StringField("key_name", validators=[validators.DataRequired()])
     sk_assertion = HiddenField("sk_assertion", validators=[validators.DataRequired()])
 
 
 @dashboard_bp.route("/fido_setup", methods=["GET", "POST"])
 @login_required
+@sudo_required
 def fido_setup():
-    if current_user.fido_enabled():
-        flash("You have already registered your security key", "warning")
-        return redirect(url_for("dashboard.index"))
-
     if not current_user.can_use_fido:
         flash(
             "This feature is currently in invitation-only beta. Please send us an email if you want to try",
             "warning",
         )
         return redirect(url_for("dashboard.index"))
+
+    if current_user.fido_uuid is not None:
+        fidos = Fido.filter_by(uuid=current_user.fido_uuid).all()
+    else:
+        fidos = []
 
     fido_token_form = FidoTokenForm()
 
@@ -61,17 +67,32 @@ def fido_setup():
             flash("Key registration failed.", "warning")
             return redirect(url_for("dashboard.index"))
 
-        current_user.fido_pk = str(fido_credential.public_key, "utf-8")
-        current_user.fido_uuid = fido_uuid
-        current_user.fido_sign_count = fido_credential.sign_count
-        current_user.fido_credential_id = str(fido_credential.credential_id, "utf-8")
+        if current_user.fido_uuid is None:
+            current_user.fido_uuid = fido_uuid
+
+        Fido.create(
+            credential_id=str(fido_credential.credential_id, "utf-8"),
+            uuid=fido_uuid,
+            public_key=str(fido_credential.public_key, "utf-8"),
+            sign_count=fido_credential.sign_count,
+            name=fido_token_form.key_name.data,
+        )
         db.session.commit()
 
+        LOG.d(
+            f"credential_id={str(fido_credential.credential_id, 'utf-8')} added for {fido_uuid}"
+        )
+
         flash("Security key has been activated", "success")
-        return redirect(url_for("dashboard.recovery_code_route"))
+        if not RecoveryCode.query.filter_by(user_id=current_user.id).all():
+            return redirect(url_for("dashboard.recovery_code_route"))
+        else:
+            return redirect(url_for("dashboard.fido_manage"))
 
     # Prepare information for key registration process
-    fido_uuid = str(uuid.uuid4())
+    fido_uuid = (
+        str(uuid.uuid4()) if current_user.fido_uuid is None else current_user.fido_uuid
+    )
     challenge = secrets.token_urlsafe(32)
 
     credential_create_options = webauthn.WebAuthnMakeCredentialOptions(
@@ -90,6 +111,16 @@ def fido_setup():
     # https://www.w3.org/TR/webauthn/#sctn-location-extension
     registration_dict = credential_create_options.registration_dict
     del registration_dict["extensions"]["webauthn.loc"]
+
+    # Prevent user from adding duplicated keys
+    for fido in fidos:
+        registration_dict["excludeCredentials"].append(
+            {
+                "type": "public-key",
+                "id": fido.credential_id,
+                "transports": ["usb", "nfc", "ble", "internal"],
+            }
+        )
 
     session["fido_uuid"] = fido_uuid
     session["fido_challenge"] = challenge.rstrip("=")

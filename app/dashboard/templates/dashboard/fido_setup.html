@@ -19,10 +19,14 @@
       <form id="formRegisterKey" method="post">
         {{ fido_token_form.csrf_token }}
         {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}
+
+        {{ fido_token_form.key_name(class="form-control", placeholder="Name of your key (Required)") }}
+        {{ render_field_errors(fido_token_form.key_name) }}
+
+        <div class="text-center">
+          <button id="btnRegisterKey" class="btn btn-lg btn-primary mt-2" onclick="registerKey();">Register Key</button>
+        </div>
       </form>
-      <div class="text-center">
-        <button id="btnRegisterKey" class="btn btn-lg btn-primary mt-2">Register Key</button>
-      </div>
 
       <script>
         async function registerKey() {
@@ -32,6 +36,7 @@
           const pkCredentialCreateOptions = transformCredentialCreateOptions(
             JSON.parse('{{credential_create_options|tojson|safe}}')
           )
+
 
           let credential
           try {
@@ -51,8 +56,6 @@
           $('#formRegisterKey').submit();
         }
 
-        $("#btnRegisterKey").click(registerKey);
-        $('document').ready(registerKey());
       </script>
 
     </div>
