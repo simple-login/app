@@ -26,6 +26,13 @@
         <div class="text-center">
           <button id="btnVerifyKey" class="btn btn-success mt-2" onclick="verifyKey();">Use your security key</button>
         </div>
+
+        <div class="form-check">
+          {{ fido_token_form.remember(class="form-check-input", id="remember") }}
+          <label class="form-check-label" for="remember">
+            {{ fido_token_form.remember.description }}
+          </label>
+        </div>
       </form>
 
 

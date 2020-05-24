@@ -161,6 +161,7 @@ class User(db.Model, ModelMixin, UserMixin):
     enable_otp = db.Column(
         db.Boolean, nullable=False, default=False, server_default="0"
     )
+    last_otp = db.Column(db.String(12), nullable=True, default=False)
 
     # Fields for WebAuthn
     fido_uuid = db.Column(db.String(), nullable=True, unique=True)
@@ -506,6 +507,43 @@ def generate_oauth_client_id(client_name) -> str:
         "client_id %s already exists, generate a new client_id", oauth_client_id
     )
     return generate_oauth_client_id(client_name)
+
+
+class MfaBrowser(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    token = db.Column(db.String(64), default=False, unique=True, nullable=False)
+    expires = db.Column(ArrowType, default=False, nullable=False)
+
+    user = db.relationship(User)
+
+    @classmethod
+    def create_new(cls, user, token_length=64) -> "MfaBrowser":
+        found = False
+        while not found:
+            token = random_string(token_length)
+
+            if not cls.get_by(token=token):
+                found = True
+
+        return MfaBrowser.create(
+            user_id=user.id, token=token, expires=arrow.now().shift(days=30),
+        )
+
+    @classmethod
+    def delete(cls, token):
+        cls.query.filter(cls.token == token).delete()
+        db.session.commit()
+
+    @classmethod
+    def delete_expired(cls):
+        cls.query.filter(cls.expires < arrow.now()).delete()
+        db.session.commit()
+
+    def is_expired(self):
+        return self.expires < arrow.now()
+
+    def reset_expire(self):
+        self.expires = arrow.now().shift(days=30)
 
 
 class Client(db.Model, ModelMixin):

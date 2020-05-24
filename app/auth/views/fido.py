@@ -1,22 +1,32 @@
 import json
 import secrets
-
 import webauthn
-from flask import request, render_template, redirect, url_for, flash, session
+from flask import (
+    request,
+    render_template,
+    redirect,
+    url_for,
+    flash,
+    session,
+    make_response,
+)
 from flask_login import login_user
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, validators
+from wtforms import HiddenField, validators, BooleanField
 
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID
 from app.config import RP_ID, URL
 from app.extensions import db
 from app.log import LOG
-from app.models import User, Fido
+from app.models import User, Fido, MfaBrowser
 
 
 class FidoTokenForm(FlaskForm):
     sk_assertion = HiddenField("sk_assertion", validators=[validators.DataRequired()])
+    remember = BooleanField(
+        "attr", default=False, description="Remember this browser for 30 days"
+    )
 
 
 @auth_bp.route("/fido", methods=["GET", "POST"])
@@ -39,6 +49,14 @@ def fido():
     fido_token_form = FidoTokenForm()
 
     next_url = request.args.get("next")
+
+    if request.cookies.get("mfa"):
+        browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
+        if browser and not browser.is_expired() and browser.user_id == user.id:
+            login_user(user)
+            flash(f"Welcome back {user.name}!", "success")
+            # Redirect user to correct page
+            return redirect(next_url or url_for("dashboard.index"))
 
     # Handling POST requests
     if fido_token_form.validate_on_submit():
@@ -80,13 +98,22 @@ def fido():
             login_user(user)
             flash(f"Welcome back {user.name}!", "success")
 
-            # User comes to login page from another page
-            if next_url:
-                LOG.debug("redirect user to %s", next_url)
-                return redirect(next_url)
-            else:
-                LOG.debug("redirect user to dashboard")
-                return redirect(url_for("dashboard.index"))
+            # Redirect user to correct page
+            response = make_response(redirect(next_url or url_for("dashboard.index")))
+
+            if fido_token_form.remember.data:
+                browser = MfaBrowser.create_new(user=user)
+                db.session.commit()
+                response.set_cookie(
+                    "mfa",
+                    value=browser.token,
+                    expires=browser.expires.datetime,
+                    secure=True if URL.startswith("https") else False,
+                    httponly=True,
+                    samesite="Lax",
+                )
+
+            return response
 
     # Prepare information for key registration process
     session.pop("challenge", None)

@@ -1,4 +1,4 @@
-from flask import redirect, url_for, flash
+from flask import redirect, url_for, flash, make_response
 from flask_login import logout_user
 
 from app.auth.base import auth_bp
@@ -8,4 +8,9 @@ from app.auth.base import auth_bp
 def logout():
     logout_user()
     flash("You are logged out", "success")
-    return redirect(url_for("auth.login"))
+    response = make_response(redirect(url_for("auth.login")))
+    response.delete_cookie("slapp")
+    response.delete_cookie("mfa")
+    response.delete_cookie("dark-mode")
+
+    return response
