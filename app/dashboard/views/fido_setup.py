@@ -69,6 +69,7 @@ def fido_setup():
 
         if current_user.fido_uuid is None:
             current_user.fido_uuid = fido_uuid
+            db.session.flush()
 
         Fido.create(
             credential_id=str(fido_credential.credential_id, "utf-8"),
