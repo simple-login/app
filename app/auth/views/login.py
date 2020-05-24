@@ -1,10 +1,11 @@
-from flask import request, render_template, redirect, url_for, flash
+from flask import request, render_template, redirect, url_for, flash, g
 from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User
 
@@ -15,6 +16,9 @@ class LoginForm(FlaskForm):
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def login():
     if current_user.is_authenticated:
         LOG.d("user is already authenticated, redirect to dashboard")
@@ -27,9 +31,10 @@ def login():
     if form.validate_on_submit():
         user = User.filter_by(email=form.email.data.strip().lower()).first()
 
-        if not user:
-            flash("Email or password incorrect", "error")
-        elif not user.check_password(form.password.data):
+        if not user or not user.check_password(form.password.data):
+            # Trigger rate limiter
+            g.deduct_limit = True
+            form.password.data = None
             flash("Email or password incorrect", "error")
         elif not user.activated:
             show_resend_activation = True

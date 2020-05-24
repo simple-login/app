@@ -1,0 +1,15 @@
+{% extends "error.html" %}
+
+{% block error_name %}
+  429
+{% endblock %}
+
+{% block error_description %}
+  Whoa, slow down there, pardner!
+{% endblock %}
+
+{% block suggestion %}
+  <a class="btn btn-primary" href="/">
+    <i class="fe fe-home mr-2"></i>Home Page
+  </a>
+{% endblock %}

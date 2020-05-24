@@ -1,13 +1,12 @@
 import arrow
-import pyotp
-from flask import request, render_template, redirect, url_for, flash, session
+from flask import request, render_template, redirect, url_for, flash, session, g
 from flask_login import login_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID
-from app.extensions import db
+from app.extensions import db, limiter
 from app.log import LOG
 from app.models import User, RecoveryCode
 
@@ -17,6 +16,9 @@ class RecoveryForm(FlaskForm):
 
 
 @auth_bp.route("/recovery", methods=["GET", "POST"])
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def recovery_route():
     # passed from login page
     user_id = session.get(MFA_USER_ID)
@@ -41,6 +43,8 @@ def recovery_route():
 
         if recovery_code:
             if recovery_code.used:
+                # Trigger rate limiter
+                g.deduct_limit = True
                 flash("Code already used", "error")
             else:
                 del session[MFA_USER_ID]
@@ -60,6 +64,8 @@ def recovery_route():
                     LOG.debug("redirect user to dashboard")
                     return redirect(url_for("dashboard.index"))
         else:
+            # Trigger rate limiter
+            g.deduct_limit = True
             flash("Incorrect code", "error")
 
     return render_template("auth/recovery.html", recovery_form=recovery_form)

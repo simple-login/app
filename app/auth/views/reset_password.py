@@ -1,10 +1,10 @@
-from flask import request, flash, render_template, redirect, url_for
+from flask import request, flash, render_template, redirect, url_for, g
 from flask_login import login_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models import ResetPasswordCode
 
 
@@ -15,6 +15,9 @@ class ResetPasswordForm(FlaskForm):
 
 
 @auth_bp.route("/reset_password", methods=["GET", "POST"])
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def reset_password():
     form = ResetPasswordForm(request.form)
 
@@ -25,6 +28,8 @@ def reset_password():
     )
 
     if not reset_password_code:
+        # Trigger rate limiter
+        g.deduct_limit = True
         error = (
             "The reset password link can be used only once. "
             "Please request a new link to reset password."

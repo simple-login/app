@@ -40,3 +40,4 @@ google-auth-httplib2
 python-gnupg
 webauthn
 pyspf
+Flask-Limiter

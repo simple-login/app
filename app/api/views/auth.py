@@ -1,9 +1,8 @@
-import random
-
 import facebook
 import google.oauth2.credentials
 import googleapiclient.discovery
-from flask import jsonify, request
+import random
+from flask import jsonify, request, g
 from flask_cors import cross_origin
 from itsdangerous import Signer
 
@@ -17,13 +16,16 @@ from app.email_utils import (
     send_email,
     render,
 )
-from app.extensions import db
+from app.extensions import db, limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
 
 
 @api_bp.route("/auth/login", methods=["POST"])
 @cross_origin()
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def auth_login():
     """
     Authenticate user
@@ -52,6 +54,8 @@ def auth_login():
     user = User.filter_by(email=email).first()
 
     if not user or not user.check_password(password):
+        # Trigger rate limiter
+        g.deduct_limit = True
         return jsonify(error="Email or password incorrect"), 400
     elif not user.activated:
         return jsonify(error="Account not activated"), 400
@@ -113,6 +117,9 @@ def auth_register():
 
 @api_bp.route("/auth/activate", methods=["POST"])
 @cross_origin()
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def auth_activate():
     """
     User enters the activation code to confirm their account.
@@ -136,16 +143,22 @@ def auth_activate():
 
     # do not use a different message to avoid exposing existing email
     if not user or user.activated:
+        # Trigger rate limiter
+        g.deduct_limit = True
         return jsonify(error="Wrong email or code"), 400
 
     account_activation = AccountActivation.get_by(user_id=user.id)
     if not account_activation:
+        # Trigger rate limiter
+        g.deduct_limit = True
         return jsonify(error="Wrong email or code"), 400
 
     if account_activation.code != code:
         # decrement nb tries
         account_activation.tries -= 1
         db.session.commit()
+        # Trigger rate limiter
+        g.deduct_limit = True
 
         if account_activation.tries == 0:
             AccountActivation.delete(account_activation.id)
