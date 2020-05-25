@@ -86,7 +86,11 @@ else:
     OTHER_ALIAS_DOMAINS = []
 
 # List of domains user can use to create alias
-ALIAS_DOMAINS = OTHER_ALIAS_DOMAINS + [EMAIL_DOMAIN]
+if "ALIAS_DOMAINS" in os.environ:
+    ALIAS_DOMAINS = eval(os.environ["ALIAS_DOMAINS"])  # ["domain1.com", "domain2.com"]
+else:
+    ALIAS_DOMAINS = OTHER_ALIAS_DOMAINS + [EMAIL_DOMAIN]
+
 ALIAS_DOMAINS = [d.lower().strip() for d in ALIAS_DOMAINS]
 
 # the alias domain used when creating the first alias for user
