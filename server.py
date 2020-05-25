@@ -1,9 +1,8 @@
-import os
-import ssl
-
 import arrow
 import flask_profiler
+import os
 import sentry_sdk
+import ssl
 from flask import Flask, redirect, url_for, render_template, request, jsonify, flash
 from flask_admin import Admin
 from flask_cors import cross_origin
@@ -11,6 +10,7 @@ from flask_login import current_user
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app import paddle_utils
 from app.admin_model import SLModelView, SLAdminIndexView
@@ -32,13 +32,12 @@ from app.config import (
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
 from app.discover.base import discover_bp
-from app.extensions import db, login_manager, migrate
+from app.extensions import db, login_manager, migrate, limiter
 from app.jose_utils import get_jwk_key
 from app.log import LOG
 from app.models import (
     Client,
     User,
-    Fido,
     ClientUser,
     Alias,
     RedirectUri,
@@ -50,8 +49,6 @@ from app.models import (
     Directory,
     Mailbox,
     DeletedAlias,
-    Contact,
-    EmailLog,
     Referral,
     AliasMailbox,
     Notification,
@@ -76,6 +73,10 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 def create_app() -> Flask:
     app = Flask(__name__)
+    # SimpleLogin is deployed behind NGINX
+    app.wsgi_app = ProxyFix(app.wsgi_app, num_proxies=1)
+    limiter.init_app(app)
+
     app.url_map.strict_slashes = False
 
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
@@ -368,6 +369,14 @@ def setup_error_page(app):
             return jsonify(error="Forbidden"), 403
         else:
             return render_template("error/403.html"), 403
+
+    @app.errorhandler(429)
+    def forbidden(e):
+        LOG.error("Client hit rate limit on path %s", request.path)
+        if request.path.startswith("/api/"):
+            return jsonify(error="Rate limit exceeded"), 429
+        else:
+            return render_template("error/429.html"), 429
 
     @app.errorhandler(404)
     def page_not_found(e):
