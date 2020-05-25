@@ -30,9 +30,13 @@ It should contain the following info:
 
 
 """
+import arrow
 import email
+import spf
 import time
 import uuid
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import Envelope
 from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
@@ -41,11 +45,6 @@ from email.utils import parseaddr, formataddr
 from io import BytesIO
 from smtplib import SMTP
 from typing import List, Tuple
-
-import arrow
-import spf
-from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import Envelope
 
 from app import pgp_utils, s3
 from app.alias_utils import try_auto_create
@@ -94,7 +93,6 @@ from app.models import (
 from app.utils import random_string
 from init_app import load_pgp_public_keys
 from server import create_app
-
 
 _IP_HEADER = "X-SimpleLogin-Client-IP"
 _MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
@@ -262,6 +260,30 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     new_header = ",".join(new_addrs)
     LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
     add_or_replace_header(msg, header, new_header)
+
+
+def replace_str_in_msg(msg: Message, fr: str, to: str):
+    if msg.get_content_maintype() != "text":
+        return msg
+    new_body = msg.get_payload(decode=True).replace(fr.encode(), to.encode())
+
+    # If utf-8 decoding fails, do not touch message part
+    try:
+        new_body = new_body.decode("utf-8")
+    except:
+        return msg
+
+    cte = (
+        msg["Content-Transfer-Encoding"].lower()
+        if msg["Content-Transfer-Encoding"]
+        else None
+    )
+    subtype = msg.get_content_subtype()
+    delete_header(msg, "Content-Transfer-Encoding")
+    delete_header(msg, "Content-Type")
+
+    email.contentmanager.set_text_content(msg, new_body, subtype=subtype, cte=cte)
+    return msg
 
 
 def generate_reply_email():
@@ -556,15 +578,17 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         envelope.rcpt_options,
     )
 
-    # replace the "ra+string@simplelogin.co" by the alias in the email body
-    # as this is usually included in when replying
+    # replace "ra+string@simplelogin.co" by the contact email in the email body
+    # as this is usually included when replying
     if user.replace_reverse_alias:
-        payload = (
-            msg.get_payload()
-            .encode()
-            .replace(reply_email.encode(), contact.website_email.encode())
-        )
-        msg.set_payload(payload)
+        if msg.is_multipart():
+            for part in msg.walk():
+                if part.get_content_maintype() != "text":
+                    continue
+                part = replace_str_in_msg(part, reply_email, contact.website_email)
+
+        else:
+            msg = replace_str_in_msg(msg, reply_email, contact.website_email)
 
     if alias_domain in ALIAS_DOMAINS:
         add_dkim_signature(msg, alias_domain)
