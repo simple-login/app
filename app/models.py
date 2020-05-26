@@ -656,9 +656,9 @@ def generate_email(
     """
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
-        random_email = name + "@" + EMAIL_DOMAIN
+        random_email = name + "@" + FIRST_ALIAS_DOMAIN
     else:
-        random_email = random_words() + "@" + EMAIL_DOMAIN
+        random_email = random_words() + "@" + FIRST_ALIAS_DOMAIN
 
     random_email = random_email.lower().strip()
 
