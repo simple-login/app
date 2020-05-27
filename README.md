@@ -1138,18 +1138,20 @@ Input:
 - `Authentication` header that contains the api key
 
 Output:
-List of mailboxes. Each mailbox has id, email field.
+List of mailboxes. Each mailbox has id, email, default field
 
 ```json
 {
   "mailboxes": [
     {
       "email": "a@b.c",
-      "id": 1
+      "id": 1,
+      "default": true
     },
     {
       "email": "m1@example.com",
-      "id": 2
+      "id": 2,
+      "default": false
     }
   ]
 }

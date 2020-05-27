@@ -161,12 +161,20 @@ def get_mailboxes():
         - mailboxes: list of alias:
             - id
             - email
+            - default: boolean - whether the mailbox is the default one
     """
     user = g.user
 
     return (
         jsonify(
-            mailboxes=[{"id": mb.id, "email": mb.email} for mb in user.mailboxes()]
+            mailboxes=[
+                {
+                    "id": mb.id,
+                    "email": mb.email,
+                    "default": user.default_mailbox_id == mb.id,
+                }
+                for mb in user.mailboxes()
+            ]
         ),
         200,
     )
