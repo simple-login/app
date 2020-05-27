@@ -185,14 +185,14 @@
           ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
           {% if manual_sub.is_giveaway %}
             <br>
-            To support SimpleLogin it's possible to change to a paid plan. <br>
+            To gain additional features and support Simple Login you can upgrade to a Premium plan. <br>
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
         {% elif current_user.lifetime %}
           You have the lifetime licence.
           {% if not current_user.paid_lifetime %}
             <br>
-            To support SimpleLogin it's possible to change to a paid plan. <br>
+              To gain additional features and support Simple Login you can upgrade to a Premium plan. <br>
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
         {% elif current_user.in_trial() %}
