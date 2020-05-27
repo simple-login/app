@@ -809,7 +809,10 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
             address,
             contact.website_email,
         )
-        alias.enabled = False
+        if alias.cannot_be_disabled:
+            LOG.warning("%s cannot be disabled", alias)
+        else:
+            alias.enabled = False
         db.session.commit()
 
         send_email_with_rate_control(
