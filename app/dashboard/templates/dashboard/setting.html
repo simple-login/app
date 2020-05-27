@@ -181,7 +181,7 @@
             Manage Subscription
           </a>
         {% elif manual_sub %}
-          You are on the Premium plan. The plan ends {{ manual_sub.end_at | dt }}
+          You are on the Premium plan which expires {{ manual_sub.end_at | dt }}
           ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
           {% if manual_sub.is_giveaway %}
             <br>
@@ -189,14 +189,14 @@
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
         {% elif current_user.lifetime %}
-          You have the lifetime licence.
+          You have lifetime access to the Premium plan.
           {% if not current_user.paid_lifetime %}
             <br>
               To gain additional features and support Simple Login you can upgrade to a Premium plan. <br>
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
         {% elif current_user.in_trial() %}
-          Your Premium trial ends {{ current_user.trial_end | dt }}.
+          Your Premium trial expires {{ current_user.trial_end | dt }}.
         {% else %}
           You are on the Free plan.
         {% endif %}
