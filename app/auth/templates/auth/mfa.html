@@ -20,7 +20,7 @@
         <input type="hidden" name="form-name" value="create">
 
         <div class="font-weight-bold mt-5">Token</div>
-        <div class="small-text mb-3">Please enter the 2FA code from your 2FA application</div>
+        <div class="small-text mb-3">Please enter the 2FA code from your 2FA authenticator</div>
 
         {{ otp_token_form.token(class="form-control", autofocus="true") }}
         {{ render_field_errors(otp_token_form.token) }}
