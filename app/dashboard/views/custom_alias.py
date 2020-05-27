@@ -130,7 +130,8 @@ def custom_alias():
                         )
                         return redirect(url_for("dashboard.custom_alias"))
 
-                    custom_domain_id = domain.id
+                    if domain:
+                        custom_domain_id = domain.id
 
                 alias = Alias.create(
                     user_id=current_user.id,
