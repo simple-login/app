@@ -20,16 +20,30 @@
         {{ fido_token_form.csrf_token }}
         {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}
 
-        {{ fido_token_form.key_name(class="form-control", placeholder="Name of your key (Required)") }}
+        {{ fido_token_form.key_name(id="key-name", class="form-control", placeholder="Name of your key (Required)") }}
         {{ render_field_errors(fido_token_form.key_name) }}
 
         <div class="text-center">
-          <button id="btnRegisterKey" class="btn btn-lg btn-primary mt-2" onclick="registerKey();">Register Key</button>
+          <span id="btnRegisterKey" class="btn btn-lg btn-primary mt-2" onclick="registerKey();">Register Key</span>
         </div>
       </form>
 
       <script>
+        // disable submit when enter
+        $('form input').keydown(function (e) {
+          if (e.keyCode == 13) {
+            e.preventDefault();
+            return false;
+          }
+        });
+
         async function registerKey() {
+          // make sure key name is not empty
+          if (!$("#key-name").val()) {
+            toastr.error("Key name cannot be empty.");
+            return
+          }
+
           $("#btnRegisterKey").prop('disabled', true);
           $("#btnRegisterKey").text('Waiting for Security Key...');
 
