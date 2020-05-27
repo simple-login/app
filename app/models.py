@@ -721,6 +721,11 @@ class Alias(db.Model, ModelMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # a way to bypass the bounce automatic disable mechanism
+    cannot_be_disabled = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     user = db.relationship(User)
     mailbox = db.relationship("Mailbox", lazy="joined")
 
