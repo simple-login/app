@@ -104,8 +104,9 @@ def custom_alias():
                 if alias_suffix.startswith("@"):
                     alias_domain = alias_suffix[1:]
                     domain = CustomDomain.get_by(domain=alias_domain)
-                    LOG.d("Set alias %s domain to %s", full_alias, domain)
-                    alias.custom_domain_id = domain.id
+                    if domain:
+                        LOG.d("Set alias %s domain to %s", full_alias, domain)
+                        alias.custom_domain_id = domain.id
 
                 db.session.commit()
                 flash(f"Alias {full_alias} has been created", "success")

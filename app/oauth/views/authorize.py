@@ -189,7 +189,8 @@ def authorize():
                         if alias_suffix.startswith("@"):
                             alias_domain = alias_suffix[1:]
                             domain = CustomDomain.get_by(domain=alias_domain)
-                            alias.custom_domain_id = domain.id
+                            if domain:
+                                alias.custom_domain_id = domain.id
 
                         db.session.flush()
                         flash(f"Alias {full_alias} has been created", "success")
