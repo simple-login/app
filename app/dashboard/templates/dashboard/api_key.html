@@ -15,25 +15,22 @@
       <h1 class="h3"> API Key
         <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
            aria-expanded="false" aria-controls="collapseExample">
-          How to use <i class="fe fe-chevrons-down"></i>
+          What is this? <i class="fe fe-chevrons-down"></i>
         </a>
       </h1>
 
       <div class="alert alert-primary collapse" id="howtouse" role="alert">
-        The API Key is used on the SimpleLogin Chrome/Firefox/Safari extension. <br>
-        You can install the Chrome extension on
+        An API key is primarily used by the SimpleLogin browser extensions but can also be used by <a href="https://app.simplelogin.io/developer/" target="_blank">developer apps<i class="fe fe-external-link"></i></a>.
+        <br><br>You can install the official SimpleLogin browser extensions through the following links:
         <a href="https://chrome.google.com/webstore/detail/simplelogin-extension/dphilobhebphkdjbpfohgikllaljmgbn"
-           target="_blank">Chrome Store<i class="fe fe-external-link"></i></a>,
-        Firefox add-on on <a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/"
-                             target="_blank">Firefox<i
-          class="fe fe-external-link"></i></a>
-        and Safari extension on <a
-          href="https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io"
-          target="_blank">AppStore<i class="fe fe-external-link"></i></a>
+           target="_blank">Chrome<i class="fe fe-external-link"></i></a>,
+        <a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/"
+           target="_blank">Firefox<i class="fe fe-external-link"></i></a> &
+        <a href="https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io"
+            target="_blank">Safari<i class="fe fe-external-link"></i></a>
         <br>
-        Please copy and paste the API key below into the extension to get started. <br>
         <span class="text-danger">
-          ⚠️Your API Keys are secret and should be treated as passwords.
+          ⚠️API Keys should be kept secret and treated like passwords, they can be used to gain access to your account.
         </span>
       </div>
 
@@ -93,9 +90,9 @@
       <form method="post">
         {{ new_api_key_form.csrf_token }}
         <input type="hidden" name="form-name" value="create">
-        <h2 class="h4">New Api Key</h2>
+        <h2 class="h4">New API Key</h2>
 
-        {{ new_api_key_form.name(class="form-control", placeholder="Chrome, Firefox") }}
+        {{ new_api_key_form.name(class="form-control", placeholder="Chrome") }}
         {{ render_field_errors(new_api_key_form.name) }}
         <div class="small-text">Name of the api key, e.g. where it will be used.</div>
 

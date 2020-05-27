@@ -14,21 +14,19 @@
       <h1 class="h3"> Custom Domains
         <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
            aria-expanded="false" aria-controls="collapseExample">
-          How to use <i class="fe fe-chevrons-down"></i>
+          What is this? <i class="fe fe-chevrons-down"></i>
         </a>
       </h1>
 
       {% if not current_user.is_premium() %}
         <div class="alert alert-danger" role="alert">
-          This feature is only available in premium plan.
+            This feature is only available for Premium users. <a href="https://app.simplelogin.io/dashboard/pricing" target="_blank">Upgrade<i class="fe fe-external-link"></i></a>
         </div>
       {% endif %}
 
       <div class="alert alert-primary collapse" id="howtouse" role="alert">
-        If you own a domain, let's say <b>example.com</b>, you will be able to create aliases with this domain, for
-        example
-        contact@example.com, help@example.com, etc with SimpleLogin. <br>
-        You could also enable <b>catch-all</b> feature that allows you to create aliases on-the-fly.
+        Here you can add your own domain, you can then add custom aliases using it.
+        Catch-all mailboxes can also be setup to create new aliases on the fly.
       </div>
 
       <div class="row">

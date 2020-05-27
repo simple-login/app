@@ -106,10 +106,9 @@
 
     <div class="card" id="totp">
       <div class="card-body">
-        <div class="card-title">One-Time Password (TOTP)</div>
+        <div class="card-title">Two Factor Authentication</div>
         <div class="mb-3">
-          Secure your account with One-Time Password. <br>
-          This requires having applications like Google Authenticator, Authy, MyDigiPassword, etc.
+          Secure your account with 2FA, you'll be asked for a code generated through an app when you login. <br>
         </div>
         {% if not current_user.enable_otp %}
           <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Setup TOTP</a>
@@ -149,7 +148,7 @@
                 {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
               on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
           </select>
-          <button class="btn btn-outline-primary">Update Preference</button>
+          <button class="btn btn-outline-primary">Update</button>
         </form>
       </div>
     </div>
@@ -198,7 +197,7 @@
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
         {% elif current_user.in_trial() %}
-          You are in the trial period. The trial ends {{ current_user.trial_end | dt }}.
+          Your Premium trial ends {{ current_user.trial_end | dt }}.
         {% else %}
           You are on the Free plan.
         {% endif %}
