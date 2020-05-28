@@ -85,24 +85,22 @@
     </div>
     <!-- END change name & profile picture -->
 
-    {% if current_user.can_use_fido %}
-      <div class="card">
-        <div class="card-body">
-          <div class="card-title">Security Key (WebAuthn)</div>
-          <div class="mb-3">
-            You can secure your account by linking either your FIDO-supported physical key such as Yubikey, Google
-            Titan,
-            or a device with appropriate hardware to your account.
-          </div>
-          {% if current_user.fido_uuid is none %}
-            <a href="{{ url_for('dashboard.fido_setup') }}" class="btn btn-outline-primary">Setup WebAuthn</a>
-          {% else %}
-            <a href="{{ url_for('dashboard.fido_manage') }}" class="btn btn-outline-info">Manage WebAuthn</a>
-            <a href="{{ url_for('dashboard.recovery_code_route') }}" class="btn btn-outline-secondary">Recovery Codes</a>
-          {% endif %}
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Security Key (WebAuthn)</div>
+        <div class="mb-3">
+          You can secure your account by linking either your FIDO-supported physical key such as Yubikey, Google
+          Titan,
+          or a device with appropriate hardware to your account.
         </div>
+        {% if current_user.fido_uuid is none %}
+          <a href="{{ url_for('dashboard.fido_setup') }}" class="btn btn-outline-primary">Setup WebAuthn</a>
+        {% else %}
+          <a href="{{ url_for('dashboard.fido_manage') }}" class="btn btn-outline-info">Manage WebAuthn</a>
+          <a href="{{ url_for('dashboard.recovery_code_route') }}" class="btn btn-outline-secondary">Recovery Codes</a>
+        {% endif %}
       </div>
-    {% endif %}
+    </div>
 
     <div class="card" id="totp">
       <div class="card-body">

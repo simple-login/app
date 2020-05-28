@@ -26,13 +26,6 @@ class FidoTokenForm(FlaskForm):
 @login_required
 @sudo_required
 def fido_setup():
-    if not current_user.can_use_fido:
-        flash(
-            "This feature is currently in invitation-only beta. Please send us an email if you want to try",
-            "warning",
-        )
-        return redirect(url_for("dashboard.index"))
-
     if current_user.fido_uuid is not None:
         fidos = Fido.filter_by(uuid=current_user.fido_uuid).all()
     else:

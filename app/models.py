@@ -166,13 +166,8 @@ class User(db.Model, ModelMixin, UserMixin):
     # Fields for WebAuthn
     fido_uuid = db.Column(db.String(), nullable=True, unique=True)
 
-    # whether user can use Fido
-    can_use_fido = db.Column(
-        db.Boolean, default=False, nullable=False, server_default="0"
-    )
-
     def fido_enabled(self) -> bool:
-        if self.can_use_fido and self.fido_uuid is not None:
+        if self.fido_uuid is not None:
             return True
         return False
 
