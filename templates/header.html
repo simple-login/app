@@ -62,9 +62,9 @@
               </span>
 
               {% if current_user.in_trial() %}
-                <small class="text-success d-block mt-1">Premium ends {{ current_user.trial_end|dt }}
+                <small class="text-success d-block mt-1">Premium expires {{ current_user.trial_end|dt }}
                 <i class="fe fe-info" data-toggle="tooltip"
-                   title="When you signed up, your account is upgraded to the premium plan for 7 days (the trial period). After this period, your account will come back to the free plan"></i>
+                   title="After you signed up you were given a free 7 day Premium trial, after this period your account will automatically be downgraded to the Free plan."></i>
                 </small>
               {% elif current_user.is_premium() %}
 

@@ -8,21 +8,20 @@
 {% block default_content %}
   <div class="card">
     <div class="card-body">
-      <h1 class="h2">Multi Factor Authentication</h1>
+      <h1 class="h2">Two Factor Authentication</h1>
       <p>
-        To cancel MFA, please enter the 6-digit number in your TOTP application
-        (Google Authenticator, Authy, MyDigiPassword, etc) here.
+        To remove 2FA please enter your 2FA code from the authenticator app.
       </p>
 
       <form method="post">
         {{ otp_token_form.csrf_token }}
 
         <div class="font-weight-bold mt-5">Token</div>
-        <div class="small-text">The 6-digit number displayed on your phone.</div>
+        <div class="small-text">The 6-digit 2FA code.</div>
 
         {{ otp_token_form.token(class="form-control", autofocus="true") }}
         {{ render_field_errors(otp_token_form.token) }}
-        <button class="btn btn-lg btn-danger mt-2">Cancel MFA</button>
+        <button class="btn btn-lg btn-danger mt-2">Remove 2FA</button>
       </form>
     </div>
 
