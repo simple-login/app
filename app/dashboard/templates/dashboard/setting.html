@@ -192,7 +192,7 @@
           You have lifetime access to the Premium plan.
           {% if not current_user.paid_lifetime %}
             <br>
-              To gain additional features and support Simple Login you can upgrade to a Premium plan. <br>
+              To gain support Simple Login you can switch to a paid plan. <br>
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
         {% elif current_user.in_trial() %}
