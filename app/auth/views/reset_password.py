@@ -42,9 +42,14 @@ def reset_password():
 
     if form.validate_on_submit():
         user = reset_password_code.user
+        new_password = form.password.data
 
-        user.set_password(form.password.data)
+        # avoid user reusing the old password
+        if user.check_password(new_password):
+            error = "You cannot reuse the same password"
+            return render_template("auth/reset_password.html", form=form, error=error)
 
+        user.set_password(new_password)
         flash("Your new password has been set", "success")
 
         # this can be served to activate user too
