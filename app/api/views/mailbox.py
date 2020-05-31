@@ -163,6 +163,7 @@ def get_mailboxes():
             - email
             - default: boolean - whether the mailbox is the default one
             - creation_timestamp
+            - nb_alias
     """
     user = g.user
 
@@ -174,6 +175,7 @@ def get_mailboxes():
                     "email": mb.email,
                     "default": user.default_mailbox_id == mb.id,
                     "creation_timestamp": mb.created_at.timestamp,
+                    "nb_alias": mb.nb_alias(),
                 }
                 for mb in user.mailboxes()
             ]

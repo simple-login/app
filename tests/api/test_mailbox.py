@@ -187,5 +187,4 @@ def test_get_mailboxes(flask_client):
         assert "id" in mb
         assert "default" in mb
         assert "creation_timestamp" in mb
-
-    print(r.json)
+        assert "nb_alias" in mb
