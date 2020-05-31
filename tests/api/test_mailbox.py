@@ -181,10 +181,11 @@ def test_get_mailboxes(flask_client):
     )
     assert r.status_code == 200
     # m2@example.com is not returned as it's not verified
-    assert r.json == {
-        "mailboxes": [
-            {"email": "a@b.c", "id": 1, "default": True},
-            {"email": "m1@example.com", "id": 2, "default": False},
-        ]
-    }
-    print(json.dumps(r.json, indent=2))
+    assert len(r.json["mailboxes"]) == 2
+    for mb in r.json["mailboxes"]:
+        assert "email" in mb
+        assert "id" in mb
+        assert "default" in mb
+        assert "creation_timestamp" in mb
+
+    print(r.json)

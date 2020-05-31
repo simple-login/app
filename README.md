@@ -1138,7 +1138,7 @@ Input:
 - `Authentication` header that contains the api key
 
 Output:
-List of mailboxes. Each mailbox has id, email, default field
+List of mailboxes. Each mailbox has id, email, default, creation_timestamp field
 
 ```json
 {
@@ -1146,12 +1146,14 @@ List of mailboxes. Each mailbox has id, email, default field
     {
       "email": "a@b.c",
       "id": 1,
-      "default": true
+      "default": true,
+      "creation_timestamp": 1590918512
     },
     {
       "email": "m1@example.com",
       "id": 2,
-      "default": false
+      "default": false,
+      "creation_timestamp": 1590918512
     }
   ]
 }
