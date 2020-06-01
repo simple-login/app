@@ -465,6 +465,8 @@ def get_addrs_from_header(msg: Message, header) -> [str]:
         return ret
 
     for addrs in header_content:
+        # force convert header to string, sometimes addrs is Header object
+        addrs = str(addrs)
         for addr in addrs.split(","):
             ret.append(addr.strip())
 
