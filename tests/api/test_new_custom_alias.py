@@ -4,7 +4,7 @@ from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.dashboard.views.custom_alias import signer
 from app.extensions import db
-from app.models import User, ApiKey, Alias, CustomDomain
+from app.models import User, ApiKey, Alias, CustomDomain, Mailbox
 from app.utils import random_word
 
 
@@ -182,3 +182,53 @@ def test_cannot_create_alias_in_trash(flask_client):
         json={"alias_prefix": "prefix", "signed_suffix": suffix, "note": "test note",},
     )
     assert r.status_code == 409
+
+
+def test_success_v3(flask_client):
+    user = User.create(
+        email="a@b.c", password="password", name="Test User", activated=True,
+    )
+    db.session.commit()
+
+    # create api_key
+    api_key = ApiKey.create(user.id, "for test")
+    db.session.commit()
+
+    # create another mailbox
+    mb = Mailbox.create(user_id=user.id, email="abcd@gmail.com", verified=True)
+    db.session.commit()
+
+    # create new alias with note
+    word = random_word()
+    suffix = f".{word}@{EMAIL_DOMAIN}"
+    suffix = signer.sign(suffix).decode()
+
+    r = flask_client.post(
+        url_for("api.new_custom_alias_v3", hostname="www.test.com"),
+        headers={"Authentication": api_key.code},
+        json={
+            "alias_prefix": "prefix",
+            "signed_suffix": suffix,
+            "note": "test note",
+            "mailboxes": [user.default_mailbox_id, mb.id],
+        },
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"] == f"prefix.{word}@{EMAIL_DOMAIN}"
+
+    # assert returned field
+    res = r.json
+    assert "id" in res
+    assert "email" in res
+    assert "creation_date" in res
+    assert "creation_timestamp" in res
+    assert "nb_forward" in res
+    assert "nb_block" in res
+    assert "nb_reply" in res
+    assert "enabled" in res
+    assert "note" in res
+
+    new_alias: Alias = Alias.get_by(email=r.json["alias"])
+    assert new_alias.note == "test note"
+    assert len(new_alias.mailboxes) == 2
