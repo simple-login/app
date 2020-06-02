@@ -210,7 +210,7 @@ def test_success_v3(flask_client):
             "alias_prefix": "prefix",
             "signed_suffix": suffix,
             "note": "test note",
-            "mailboxes": [user.default_mailbox_id, mb.id],
+            "mailbox_ids": [user.default_mailbox_id, mb.id],
         },
     )
 

@@ -833,7 +833,7 @@ Input:
 - Request Message Body in json (`Content-Type` is `application/json`)
     - alias_prefix: string. The first part of the alias that user can choose.
     - signed_suffix: should be one of the suffixes returned in the `GET /api/v4/alias/options` endpoint.
-    - mailboxes: list of mailbox_id that "owns" this alias
+    - mailbox_ids: list of mailbox_id that "owns" this alias
     - (Optional) note: alias note
 
 Output:

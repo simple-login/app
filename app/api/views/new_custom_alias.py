@@ -201,7 +201,7 @@ def new_custom_alias_v3():
     Input:
         alias_prefix, for ex "www_groupon_com"
         signed_suffix, either .random_letters@simplelogin.co or @my-domain.com
-        mailboxes: list of int
+        mailbox_ids: list of int
         optional "hostname" in args
         optional "note"
 
@@ -229,7 +229,7 @@ def new_custom_alias_v3():
 
     alias_prefix = data.get("alias_prefix", "").strip().lower()
     signed_suffix = data.get("signed_suffix", "").strip()
-    mailbox_ids = data.get("mailboxes")
+    mailbox_ids = data.get("mailbox_ids")
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
