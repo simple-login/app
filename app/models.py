@@ -1323,7 +1323,10 @@ class Mailbox(db.Model, ModelMixin):
     __table_args__ = (db.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
 
     def nb_alias(self):
-        return Alias.filter_by(mailbox_id=self.id).count()
+        return (
+            AliasMailbox.filter_by(mailbox_id=self.id).count()
+            + Alias.filter_by(mailbox_id=self.id).count()
+        )
 
     @classmethod
     def delete(cls, obj_id):
@@ -1404,6 +1407,8 @@ class Referral(db.Model, ModelMixin):
     name = db.Column(db.String(512), nullable=True, default=None)
 
     code = db.Column(db.String(128), unique=True, nullable=False)
+
+    user = db.relationship(User, foreign_keys=[user_id])
 
     def nb_user(self):
         return User.filter_by(referral_id=self.id, activated=True).count()
