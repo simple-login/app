@@ -211,7 +211,7 @@ def test_success_v3(flask_client):
             "signed_suffix": suffix,
             "note": "test note",
             "mailbox_ids": [user.default_mailbox_id, mb.id],
-            "name": "your name"
+            "name": "your name",
         },
     )
 
