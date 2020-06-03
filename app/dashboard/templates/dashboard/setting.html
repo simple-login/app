@@ -178,6 +178,9 @@
           <a href="{{ url_for('dashboard.billing') }}" class="btn btn-outline-primary">
             Manage Subscription
           </a>
+          {% if current_user.lifetime %}
+            You have however lifetime access to the Premium plan now so make sure to cancel the previous plan :).
+          {% endif %}
         {% elif manual_sub %}
           You are on the Premium plan which expires {{ manual_sub.end_at | dt }}
           ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
@@ -190,7 +193,7 @@
           You have lifetime access to the Premium plan.
           {% if not current_user.paid_lifetime %}
             <br>
-              To support Simple Login you can switch to a paid plan. <br>
+            To support Simple Login you can switch to a paid plan. <br>
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
         {% elif current_user.in_trial() %}
@@ -244,7 +247,8 @@
         <div class="card-title">Replace reverse alias</div>
         <div class="mb-3">
           When replying to a forwarded email, the <b>reverse-alias</b> is usually included in the attached message.
-          You can turn on this option to <b>replace</b> the reverse-alias by the alias. However this breaks PGP-signed emails
+          You can turn on this option to <b>replace</b> the reverse-alias by the alias. However this breaks PGP-signed
+          emails
           so please only enable it if you know what you're doing :).
         </div>
         <form method="post">
