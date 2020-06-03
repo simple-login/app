@@ -102,7 +102,6 @@ def index():
                 return redirect(
                     url_for(
                         "dashboard.index",
-                        highlight_alias_id=alias.id,
                         query=query,
                         sort=sort,
                         filter=alias_filter,
