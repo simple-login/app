@@ -204,6 +204,7 @@ def new_custom_alias_v3():
         mailbox_ids: list of int
         optional "hostname" in args
         optional "note"
+        optional "name"
 
     Output:
         201 if success
@@ -231,6 +232,7 @@ def new_custom_alias_v3():
     signed_suffix = data.get("signed_suffix", "").strip()
     mailbox_ids = data.get("mailbox_ids")
     note = data.get("note")
+    name = data.get("name")
     alias_prefix = convert_to_id(alias_prefix)
 
     # check if mailbox is not tempered with
@@ -277,6 +279,7 @@ def new_custom_alias_v3():
         user_id=user.id,
         email=full_alias,
         note=note,
+        name=name or None,
         mailbox_id=mailboxes[0].id,
         custom_domain_id=custom_domain_id,
     )

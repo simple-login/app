@@ -211,6 +211,7 @@ def test_success_v3(flask_client):
             "signed_suffix": suffix,
             "note": "test note",
             "mailbox_ids": [user.default_mailbox_id, mb.id],
+            "name": "your name"
         },
     )
 
@@ -228,6 +229,7 @@ def test_success_v3(flask_client):
     assert "nb_reply" in res
     assert "enabled" in res
     assert "note" in res
+    assert res["name"] == "your name"
 
     new_alias: Alias = Alias.get_by(email=r.json["alias"])
     assert new_alias.note == "test note"

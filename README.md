@@ -835,6 +835,7 @@ Input:
     - signed_suffix: should be one of the suffixes returned in the `GET /api/v4/alias/options` endpoint.
     - mailbox_ids: list of mailbox_id that "owns" this alias
     - (Optional) note: alias note
+    - (Optional) name: alias name
 
 Output:
 If success, 201 with the new alias info. Use the same format as in GET /api/aliases/:alias_id
