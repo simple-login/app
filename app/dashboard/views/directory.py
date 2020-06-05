@@ -46,7 +46,46 @@ def directory():
             flash(f"Directory {name} has been deleted", "success")
 
             return redirect(url_for("dashboard.directory"))
+        elif request.form.get("form-name") == "update":
+            dir_id = request.form.get("dir-id")
+            dir = Directory.get(dir_id)
 
+            if not dir:
+                flash("Unknown error. Refresh the page", "warning")
+                return redirect(url_for("dashboard.directory"))
+            elif dir.user_id != current_user.id:
+                flash("You cannot delete this directory", "warning")
+                return redirect(url_for("dashboard.directory"))
+
+            mailbox_ids = request.form.getlist("mailbox_ids")
+            # check if mailbox is not tempered with
+            mailboxes = []
+            for mailbox_id in mailbox_ids:
+                mailbox = Mailbox.get(mailbox_id)
+                if (
+                    not mailbox
+                    or mailbox.user_id != current_user.id
+                    or not mailbox.verified
+                ):
+                    flash("Something went wrong, please retry", "warning")
+                    return redirect(url_for("dashboard.directory"))
+                mailboxes.append(mailbox)
+
+            if not mailboxes:
+                flash("You must select at least 1 mailbox", "warning")
+                return redirect(url_for("dashboard.directory"))
+
+            # first remove all existing alias-mailboxes links
+            DirectoryMailbox.query.filter_by(directory_id=dir.id).delete()
+            db.session.flush()
+
+            for mailbox in mailboxes:
+                DirectoryMailbox.create(directory_id=dir.id, mailbox_id=mailbox.id)
+
+            db.session.commit()
+            flash(f"Directory {dir.name} has been updated", "success")
+
+            return redirect(url_for("dashboard.directory"))
         elif request.form.get("form-name") == "create":
             if not current_user.is_premium():
                 flash("Only premium plan can add directory", "warning")

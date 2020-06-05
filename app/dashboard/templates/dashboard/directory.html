@@ -66,6 +66,29 @@
                 <h6 class="card-subtitle mb-2 text-muted">
                   Created {{ dir.created_at | dt }} <br>
                   <span class="font-weight-bold">{{ dir.nb_alias() }}</span> aliases.
+
+                  <br><br>
+
+                  <b>Mailboxes:</b> <i class="fe fe-info" data-toggle="tooltip"
+                                       title="Aliases created with this directory are automatically owned by these mailboxes"></i>
+                  <br>
+
+                  {% set dir_mailboxes=dir.mailboxes %}
+                  <form method="post" class="mt-2">
+                    <input type="hidden" name="form-name" value="update">
+                    <input type="hidden" name="dir-id" value="{{ dir.id }}">
+
+                    <select data-width="100%" required
+                            class="mailbox-select" multiple name="mailbox_ids">
+                      {% for mailbox in mailboxes %}
+                        <option value="{{ mailbox.id }}" {% if mailbox in dir_mailboxes %}
+                                selected {% endif %}>
+                          {{ mailbox.email }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <button class="mt-2 btn btn-outline-primary btn-sm">Update</button>
+                  </form>
                 </h6>
               </div>
 
