@@ -6,7 +6,7 @@ from wtforms import StringField, validators
 from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, MAX_NB_DIRECTORY
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
-from app.models import Directory
+from app.models import Directory, Mailbox, DirectoryMailbox
 
 
 class NewDirForm(FlaskForm):
@@ -23,6 +23,8 @@ def directory():
         .order_by(Directory.created_at.desc())
         .all()
     )
+
+    mailboxes = current_user.mailboxes()
 
     new_dir_form = NewDirForm()
 
@@ -72,6 +74,27 @@ def directory():
                         name=new_dir_name, user_id=current_user.id
                     )
                     db.session.commit()
+                    mailbox_ids = request.form.getlist("mailbox_ids")
+                    if mailbox_ids:
+                        # check if mailbox is not tempered with
+                        mailboxes = []
+                        for mailbox_id in mailbox_ids:
+                            mailbox = Mailbox.get(mailbox_id)
+                            if (
+                                not mailbox
+                                or mailbox.user_id != current_user.id
+                                or not mailbox.verified
+                            ):
+                                flash("Something went wrong, please retry", "warning")
+                                return redirect(url_for("dashboard.custom_alias"))
+                            mailboxes.append(mailbox)
+
+                        for mailbox in mailboxes:
+                            DirectoryMailbox.create(
+                                directory_id=new_dir.id, mailbox_id=mailbox.id
+                            )
+
+                        db.session.commit()
 
                     flash(f"Directory {new_dir.name} is created", "success")
 
@@ -81,6 +104,7 @@ def directory():
         "dashboard/directory.html",
         dirs=dirs,
         new_dir_form=new_dir_form,
+        mailboxes=mailboxes,
         EMAIL_DOMAIN=EMAIL_DOMAIN,
         ALIAS_DOMAINS=ALIAS_DOMAINS,
     )
