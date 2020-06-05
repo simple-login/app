@@ -3,6 +3,8 @@ from io import BytesIO
 import gnupg
 
 from app.config import GNUPGHOME
+from app.log import LOG
+from app.utils import random_string
 
 gpg = gnupg.GPG(gnupghome=GNUPGHOME)
 gpg.encoding = "utf-8"
@@ -24,6 +26,12 @@ def load_public_key(public_key: str) -> str:
 def encrypt_file(data: BytesIO, fingerprint: str) -> str:
     r = gpg.encrypt_file(data, fingerprint, always_trust=True)
     if not r.ok:
+        # save the content for debugging
+        random_file_name = random_string(20) + ".eml"
+        full_path = f"/tmp/{random_file_name}"
+        with open(full_path, "wb") as f:
+            f.write(data.getbuffer())
+        LOG.error("Log to %s", full_path)
         raise PGPException("Cannot encrypt")
 
     return str(r)
