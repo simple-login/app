@@ -1272,6 +1272,17 @@ class Directory(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
+    _mailboxes = db.relationship(
+        "Mailbox", secondary="directory_mailbox", lazy="joined"
+    )
+
+    @property
+    def mailboxes(self):
+        if self._mailboxes:
+            return self._mailboxes
+        else:
+            return [self.user.default_mailbox]
+
     def nb_alias(self):
         return Alias.filter_by(directory_id=self.id).count()
 
@@ -1441,6 +1452,19 @@ class AliasMailbox(db.Model, ModelMixin):
     )
 
     alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
+    mailbox_id = db.Column(
+        db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
+    )
+
+
+class DirectoryMailbox(db.Model, ModelMixin):
+    __table_args__ = (
+        db.UniqueConstraint("directory_id", "mailbox_id", name="uq_directory_mailbox"),
+    )
+
+    directory_id = db.Column(
+        db.ForeignKey(Directory.id, ondelete="cascade"), nullable=False
+    )
     mailbox_id = db.Column(
         db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
     )
