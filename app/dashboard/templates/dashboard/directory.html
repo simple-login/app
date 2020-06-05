@@ -113,41 +113,51 @@
         {% endfor %}
       </div>
 
-      <form method="post" class="mt-2">
-        {{ new_dir_form.csrf_token }}
-        <input type="hidden" name="form-name" value="create">
+      <div class="row">
+        <div class="col">
+          <div class="card">
+            <div class="card-body">
 
-        <h2 class="h4">New Directory</h2>
+              <form method="post" class="mt-2">
+                {{ new_dir_form.csrf_token }}
+                <input type="hidden" name="form-name" value="create">
 
-        {{ new_dir_form.name(class="form-control", placeholder="my-directory",
+                <h2 class="h4">New Directory</h2>
+
+                {{ new_dir_form.name(class="form-control", placeholder="my-directory",
             pattern="[0-9a-z-_]{3,}",
             title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.") }}
-        {{ render_field_errors(new_dir_form.name) }}
-        <div class="small-text">
-          Directory name must be at least 3 characters.
-          Only lowercase letters, numbers, dashes (-) and underscores (_) are currently supported.
+                {{ render_field_errors(new_dir_form.name) }}
+                <div class="small-text">
+                  Directory name must be at least 3 characters.
+                  Only lowercase letters, numbers, dashes (-) and underscores (_) are currently supported.
+                </div>
+
+                <div class="mt-3 small-text alert alert-info">
+                  By default, aliases created with directory are "owned" by your default
+                  mailbox <b>{{ current_user.default_mailbox.email }}</b>. <br>
+                  You can however choose the mailbox(es) that new alias automatically belongs to by setting this below
+                  option.
+
+                </div>
+
+                <select data-width="100%"
+                        class="mailbox-select" multiple name="mailbox_ids">
+                  {% for mailbox in mailboxes %}
+                    <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
+                            selected {% endif %}>
+                      {{ mailbox.email }}
+                    </option>
+                  {% endfor %}
+                </select>
+
+                <button id="btn-create-directory" class="btn btn-lg btn-success mt-2">Create</button>
+              </form>
+
+            </div>
+          </div>
         </div>
-
-        <div class="mt-3 small-text alert alert-info">
-          By default, aliases created with directory are "owned" by your default
-          mailbox <b>{{ current_user.default_mailbox.email }}</b>. <br>
-          You can however choose the mailbox(es) that new alias automatically belongs to by setting this below option.
-
-        </div>
-
-        <select data-width="100%"
-                class="mailbox-select" multiple name="mailbox_ids">
-          {% for mailbox in mailboxes %}
-            <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
-                    selected {% endif %}>
-              {{ mailbox.email }}
-            </option>
-          {% endfor %}
-        </select>
-
-        <button id="btn-create-directory" class="btn btn-lg btn-success mt-2">Create</button>
-      </form>
-
+      </div>
     </div>
 
   </div>
