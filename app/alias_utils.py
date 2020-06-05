@@ -18,6 +18,7 @@ from app.models import (
     User,
     DeletedAlias,
     DomainDeletedAlias,
+    AliasMailbox,
 )
 
 
@@ -65,12 +66,19 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
         try:
             LOG.d("create alias %s for directory %s", address, directory)
 
+            mailboxes = directory.mailboxes
+
             alias = Alias.create(
                 email=address,
                 user_id=directory.user_id,
                 directory_id=directory.id,
-                mailbox_id=dir_user.default_mailbox_id,
+                mailbox_id=mailboxes[0].id,
             )
+            db.session.flush()
+            for i in range(1, len(mailboxes)):
+                AliasMailbox.create(
+                    alias_id=alias.id, mailbox_id=mailboxes[i].id,
+                )
 
             db.session.commit()
             return alias
