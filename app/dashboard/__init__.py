@@ -22,4 +22,5 @@ from .views import (
     refused_email,
     referral,
     recovery_code,
+    contact_detail,
 )
