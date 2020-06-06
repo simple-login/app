@@ -933,8 +933,15 @@ class Contact(db.Model, ModelMixin):
     # whether a contact is created via CC
     is_cc = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
+    pgp_public_key = db.Column(db.Text, nullable=True)
+    pgp_finger_print = db.Column(db.String(512), nullable=True)
+
     alias = db.relationship(Alias)
     user = db.relationship(User)
+
+    @property
+    def email(self):
+        return self.website_email
 
     def website_send_to(self):
         """return the email address with name.
