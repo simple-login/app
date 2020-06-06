@@ -631,7 +631,7 @@ def spf_pass(
             # TODO: Handle temperr case (e.g. dns timeout)
             # only an absolute pass, or no SPF policy at all is 'valid'
             if r[0] not in ["pass", "none"]:
-                LOG.error(
+                LOG.warning(
                     "SPF fail for mailbox %s, reason %s, failed IP %s",
                     mailbox.email,
                     r[0],
