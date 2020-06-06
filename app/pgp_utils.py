@@ -26,12 +26,15 @@ def load_public_key(public_key: str) -> str:
 def encrypt_file(data: BytesIO, fingerprint: str) -> str:
     r = gpg.encrypt_file(data, fingerprint, always_trust=True)
     if not r.ok:
-        # save the content for debugging
-        random_file_name = random_string(20) + ".eml"
-        full_path = f"/tmp/{random_file_name}"
-        with open(full_path, "wb") as f:
-            f.write(data.getbuffer())
-        LOG.error("Log to %s", full_path)
-        raise PGPException("Cannot encrypt")
+        LOG.error("Try encrypt again %s", fingerprint)
+        r = gpg.encrypt_file(data, fingerprint, always_trust=True)
+        if not r.ok:
+            # save the content for debugging
+            random_file_name = random_string(20) + ".eml"
+            full_path = f"/tmp/{random_file_name}"
+            with open(full_path, "wb") as f:
+                f.write(data.getbuffer())
+            LOG.error("Log to %s", full_path)
+            raise PGPException("Cannot encrypt")
 
     return str(r)
