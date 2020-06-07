@@ -805,7 +805,7 @@ class Alias(db.Model, ModelMixin):
     def get_contacts(self, page=0):
         contacts = (
             Contact.filter_by(alias_id=self.id)
-            .order_by(Contact.created_at)
+            .order_by(Contact.created_at.desc())
             .limit(PAGE_LIMIT)
             .offset(page * PAGE_LIMIT)
             .all()
