@@ -10,10 +10,18 @@
 
   <div class="row">
     <div class="col">
-      <h1 class="h3">{{ alias.email }} / {{ contact.email }}
-        {% if contact.pgp_finger_print %}
-          <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
-        {% endif %}
+      <h1 class="h3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a
+                href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}">{{ alias.email }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ contact.email }}
+              {% if contact.pgp_finger_print %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+              {% endif %}
+            </li>
+          </ol>
+        </nav>
       </h1>
 
       <div class="card">
