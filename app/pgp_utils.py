@@ -39,7 +39,7 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
             full_path = f"/tmp/{random_file_name}"
             with open(full_path, "wb") as f:
                 f.write(data.getbuffer())
-            LOG.error("Log to %s", full_path)
+            LOG.error("PGP fail - log to %s", full_path)
             raise PGPException("Cannot encrypt")
 
     return str(r)
