@@ -8,6 +8,7 @@ aiohttp==3.5.4            # via raven-aiohttp, yacron
 aiosmtpd==1.2             # via -r requirements.in
 aiosmtplib==1.0.6         # via yacron
 alembic==1.0.10           # via flask-migrate
+appnope==0.1.0            # via ipython
 arrow==0.14.2             # via -r requirements.in
 asn1crypto==0.24.0        # via cryptography
 async-timeout==3.0.1      # via aiohttp
@@ -63,6 +64,7 @@ jwcrypto==0.6.0           # via -r requirements.in
 limits==1.5.1             # via flask-limiter
 mako==1.0.12              # via alembic
 markupsafe==1.1.1         # via jinja2, mako
+memory-profiler==0.57.0   # via -r requirements.in
 more-itertools==7.0.0     # via pytest
 multidict==4.5.2          # via aiohttp, yarl
 oauthlib==3.0.2           # via requests-oauthlib
@@ -74,6 +76,7 @@ pickleshare==0.7.5        # via ipython
 pip-tools==3.8.0          # via -r requirements.in
 pluggy==0.12.0            # via pytest
 prompt-toolkit==2.0.9     # via ipython
+psutil==5.7.0             # via memory-profiler
 psycopg2-binary==2.8.2    # via -r requirements.in
 ptyprocess==0.6.0         # via pexpect
 py==1.8.0                 # via pytest

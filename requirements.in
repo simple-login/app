@@ -41,3 +41,4 @@ python-gnupg
 webauthn
 pyspf
 Flask-Limiter
+memory_profiler
