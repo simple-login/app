@@ -10,6 +10,7 @@
     --heading-background: #FFF;
     --border: 1px solid rgba(0, 40, 100, 0.12);
     --input-bg-color: var(--white);
+    --light-bg-color: #e9ecef;
 }
 
 [data-theme="dark"] {
@@ -21,6 +22,7 @@
     --heading-background: #1a1a1a;
     --input-bg-color: #4c4c4c;
     --border: 1px solid rgba(228, 236, 238, 0.35);
+    --light-bg-color: #5c5c5c;
 }
 
 /** Override the bootstrap color configurations */
@@ -44,6 +46,11 @@ hr {
 .form-control, .dataTables_wrapper .dataTables_length select, .dataTables_wrapper.dataTables_filter input, .dropdown-menu, .dropdown-item, .introjs-tooltip {
     color: var(--font-color);
     background-color: var(--input-bg-color);
+}
+
+.breadcrumb {
+    color: var(--font-color);
+    background-color: var(--light-bg-color);
 }
 
 .form-control:focus, .dataTables_wrapper .dataTables_length select:focus, .dataTables_wrapper .dataTables_filter input:focus, .modal-content {

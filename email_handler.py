@@ -605,6 +605,11 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         if custom_domain.dkim_verified:
             add_dkim_signature(msg, alias_domain)
 
+    # create PGP email if needed
+    if contact.pgp_finger_print and user.is_premium():
+        LOG.d("Encrypt message for contact %s", contact)
+        msg = prepare_pgp_message(msg, contact.pgp_finger_print)
+
     smtp.sendmail(
         alias.email,
         contact.website_email,

@@ -1,0 +1,73 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Contact {{ contact.email }} - Alias {{ alias.email }}
+{% endblock %}
+
+{% block default_content %}
+
+  <div class="row">
+    <div class="col">
+      <h1 class="h3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a
+                href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}">{{ alias.email }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ contact.email }}
+              {% if contact.pgp_finger_print %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+              {% endif %}
+            </li>
+          </ol>
+        </nav>
+      </h1>
+
+      <div class="card">
+        <form method="post">
+          <input type="hidden" name="form-name" value="pgp">
+
+          <div class="card-body">
+            <div class="card-title">
+              Pretty Good Privacy (PGP)
+              <div class="small-text">
+                By importing your contact PGP Public Key into SimpleLogin, all emails sent to
+                <b>{{ contact.email }}</b> from your alias <b>{{ alias.email }}</b>
+                are <b>encrypted</b>.
+              </div>
+            </div>
+
+            {% if not current_user.is_premium() %}
+              <div class="alert alert-danger" role="alert">
+                This feature is only available in premium plan.
+              </div>
+            {% endif %}
+
+            <div class="form-group">
+              <label class="form-label">PGP Public Key</label>
+
+              <textarea name="pgp"
+                  {% if not current_user.is_premium() %} disabled {% endif %}
+                        class="form-control" rows=10
+                        placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ contact.pgp_public_key or "" }}</textarea>
+            </div>
+
+            <button class="btn btn-primary" name="action"
+                {% if not current_user.is_premium() %} disabled {% endif %}
+                    value="save">Save
+            </button>
+            {% if contact.pgp_finger_print %}
+              <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+            {% endif %}
+
+          </div>
+        </form>
+
+      </div>
+
+    </div>
+  </div>
+{% endblock %}
+
+

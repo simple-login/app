@@ -9,7 +9,7 @@
 {% block default_content %}
   <div class="row">
     <div class="col">
-      <h1 class="h3"> {{ alias.email }}
+      <h1 class="h3"> {{ alias.email }} contacts
         <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
            aria-expanded="false" aria-controls="collapseExample">
           How to use <i class="fe fe-chevrons-down"></i>
@@ -18,20 +18,19 @@
 
       <div class="alert alert-primary collapse" id="howtouse" role="alert">
         <p>
-          To send an email from your alias to someone, says <b>friend@example.com</b>, you need to: <br>
+          To send an email from your alias to a contact, says <b>friend@example.com</b>, you need to: <br>
 
           1. Create a special email address called <em>reverse-alias</em> for friend@example.com using the form below
           <br>
           2. Send the email to the reverse-alias <em>instead of</em> friend@example.com
           <br>
-          3. SimpleLogin will send this email from the alias to friend@example.com for you
+          3. SimpleLogin will send this email <em>from the alias</em> to friend@example.com for you
         </p>
         <p>
           This might sound complicated but trust us, only the first time is a bit awkward.
         </p>
         <p>
           {% if alias.mailbox_id %}
-
             {% if alias.mailboxes | length == 1 %}
               Make sure you send the email from the mailbox <b>{{ alias.mailbox.email }}</b>.
             {% else %}
@@ -81,7 +80,10 @@
           </div>
 
           <div>
-            <i class="fe fe-mail"></i> ➡ {{ contact.website_email }}
+            Contact <b>{{ contact.website_email }}</b>
+            {% if contact.pgp_finger_print %}
+              <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+            {% endif %}
           </div>
 
           <div class="mb-2 text-muted small-text">
@@ -93,15 +95,15 @@
             {% endif %}
           </div>
 
-          <div>
-            <form method="post">
-              <input type="hidden" name="form-name" value="delete">
-              <input type="hidden" name="contact-id" value="{{ contact.id }}">
-              <span class="card-link btn btn-link float-right delete-forward-email text-danger">
-                Delete
-              </span>
-            </form>
-          </div>
+          <a href="{{ url_for('dashboard.contact_detail_route', contact_id=contact.id) }}">Edit ➡</a>
+
+          <form method="post">
+            <input type="hidden" name="form-name" value="delete">
+            <input type="hidden" name="contact-id" value="{{ contact.id }}">
+            <span class="card-link btn btn-link float-right delete-forward-email text-danger">
+                  Delete
+                </span>
+          </form>
 
         </div>
       </div>
