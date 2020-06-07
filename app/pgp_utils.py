@@ -1,6 +1,7 @@
 from io import BytesIO
 
 import gnupg
+from memory_profiler import memory_usage
 
 from app.config import GNUPGHOME
 from app.log import LOG
@@ -24,6 +25,10 @@ def load_public_key(public_key: str) -> str:
 
 
 def encrypt_file(data: BytesIO, fingerprint: str) -> str:
+    LOG.d("encrypt for %s", fingerprint)
+    mem_usage = memory_usage(-1, interval=1, timeout=1)
+    LOG.d("mem_usage %s", mem_usage)
+
     r = gpg.encrypt_file(data, fingerprint, always_trust=True)
     if not r.ok:
         LOG.error("Try encrypt again %s", fingerprint)
@@ -34,7 +39,7 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
             full_path = f"/tmp/{random_file_name}"
             with open(full_path, "wb") as f:
                 f.write(data.getbuffer())
-            LOG.error("Log to %s", full_path)
+            LOG.error("PGP fail - log to %s", full_path)
             raise PGPException("Cannot encrypt")
 
     return str(r)

@@ -30,13 +30,10 @@ It should contain the following info:
 
 
 """
-import arrow
 import email
-import spf
+import os
 import time
 import uuid
-from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import Envelope
 from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
@@ -45,6 +42,11 @@ from email.utils import parseaddr, formataddr
 from io import BytesIO
 from smtplib import SMTP
 from typing import List, Tuple
+
+import arrow
+import spf
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import Envelope
 
 from app import pgp_utils, s3
 from app.alias_utils import try_auto_create
@@ -90,6 +92,7 @@ from app.models import (
     RefusedEmail,
     Mailbox,
 )
+from app.pgp_utils import PGPException
 from app.utils import random_string
 from init_app import load_pgp_public_keys
 from server import create_app
@@ -341,10 +344,14 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
 
     second = MIMEApplication("octet-stream", _encoder=encoders.encode_7or8bit)
     second.add_header("Content-Disposition", "inline")
-    # encrypt original message
-    encrypted_data = pgp_utils.encrypt_file(
-        BytesIO(orig_msg.as_bytes()), pgp_fingerprint
-    )
+    try:
+        # encrypt original message
+        encrypted_data = pgp_utils.encrypt_file(
+            BytesIO(orig_msg.as_bytes()), pgp_fingerprint
+        )
+    except PGPException:
+        LOG.error("Exit due to PGP fail")
+        exit()
     second.set_payload(encrypted_data)
     msg.attach(second)
 
@@ -1053,6 +1060,12 @@ class MailHandler:
             return handle(envelope, smtp)
 
 
+def exit():
+    pid = os.getpid()
+    LOG.warning("kill pid %s", pid)
+    os.kill(pid, 9)
+
+
 if __name__ == "__main__":
     controller = Controller(MailHandler(), hostname="0.0.0.0", port=20381)
 
@@ -1063,7 +1076,7 @@ if __name__ == "__main__":
         LOG.warning("LOAD PGP keys")
         app = create_app()
         with app.app_context():
-            load_pgp_public_keys(app)
+            load_pgp_public_keys()
 
     while True:
         time.sleep(2)
