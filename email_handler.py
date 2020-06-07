@@ -1076,7 +1076,7 @@ if __name__ == "__main__":
         LOG.warning("LOAD PGP keys")
         app = create_app()
         with app.app_context():
-            load_pgp_public_keys(app)
+            load_pgp_public_keys()
 
     while True:
         time.sleep(2)
