@@ -344,14 +344,10 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
 
     second = MIMEApplication("octet-stream", _encoder=encoders.encode_7or8bit)
     second.add_header("Content-Disposition", "inline")
-    try:
-        # encrypt original message
-        encrypted_data = pgp_utils.encrypt_file(
-            BytesIO(orig_msg.as_bytes()), pgp_fingerprint
-        )
-    except PGPException:
-        LOG.error("Exit due to PGP fail")
-        exit()
+    # encrypt original message
+    encrypted_data = pgp_utils.encrypt_file(
+        BytesIO(orig_msg.as_bytes()), pgp_fingerprint
+    )
     second.set_payload(encrypted_data)
     msg.attach(second)
 
@@ -421,7 +417,14 @@ def forward_email_to_mailbox(
     # create PGP email if needed
     if mailbox.pgp_finger_print and user.is_premium() and not alias.disable_pgp:
         LOG.d("Encrypt message using mailbox %s", mailbox)
-        msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
+        try:
+            msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
+        except PGPException:
+            LOG.error(
+                "Cannot encrypt message %s -> %s. %s %s", contact, alias, mailbox, user
+            )
+            # so the client can retry later
+            return False, "421 SL E12"
 
     # add custom header
     add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
@@ -608,7 +611,14 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():
         LOG.d("Encrypt message for contact %s", contact)
-        msg = prepare_pgp_message(msg, contact.pgp_finger_print)
+        try:
+            msg = prepare_pgp_message(msg, contact.pgp_finger_print)
+        except PGPException:
+            LOG.error(
+                "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
+            )
+            # so the client can retry later
+            return False, "421 SL E13"
 
     smtp.sendmail(
         alias.email,
@@ -1063,12 +1073,6 @@ class MailHandler:
         app = new_app()
         with app.app_context():
             return handle(envelope, smtp)
-
-
-def exit():
-    pid = os.getpid()
-    LOG.warning("kill pid %s", pid)
-    os.kill(pid, 9)
 
 
 if __name__ == "__main__":
