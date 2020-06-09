@@ -31,7 +31,6 @@ It should contain the following info:
 
 """
 import email
-import os
 import time
 import uuid
 from email import encoders
@@ -79,6 +78,7 @@ from app.email_utils import (
     get_orig_message_from_spamassassin_report,
     parseaddr_unicode,
     send_email_with_rate_control,
+    get_email_domain_part,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -405,6 +405,17 @@ def forward_email_to_mailbox(
     user,
 ) -> (bool, str):
     LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
+
+    # sanity check: make sure mailbox is not actually an alias
+    if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
+        LOG.error(
+            "Mailbox has the same domain as alias. %s -> %s -> %s",
+            contact,
+            alias,
+            mailbox,
+        )
+        return False, "550 SL E14"
+
     is_spam, spam_status = get_spam_info(msg)
     if is_spam:
         LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
