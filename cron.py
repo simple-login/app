@@ -292,8 +292,7 @@ def sanity_check():
             email_msg = f"""Hi,
 
 Your mailbox {mailbox.email} cannot receive emails. 
-To avoid forwarding emails to an invalid mailbox, we have disabled this mailbox 
-    along with all of its aliases.
+To avoid forwarding emails to an invalid mailbox, we have disabled this mailbox along with all of its aliases.
 
 If this is a mistake, please reply to this email.
 
@@ -303,7 +302,10 @@ SimpleLogin team.
 
             try:
                 send_email(
-                    mailbox.user.email, email_msg, email_msg.replace("\n", "<br>")
+                    mailbox.user.email,
+                    f"{mailbox.email} is disabled",
+                    email_msg,
+                    email_msg.replace("\n", "<br>"),
                 )
             except Exception:
                 LOG.error("Cannot send disable mailbox email to %s", mailbox.user)
