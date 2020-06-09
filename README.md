@@ -695,6 +695,7 @@ Input:
 
 Output:
 - name: user name, could be an empty string
+- email: user email
 - mfa_enabled: boolean
 - mfa_key: only useful when user enables MFA. In this case, user needs to enter their OTP token in order to login.
 - api_key: if MFA is not enabled, the `api key` is returned right away.
