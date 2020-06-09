@@ -12,7 +12,12 @@ from app.config import (
     MACAPP_APPLE_API_SECRET,
     APPLE_API_SECRET,
 )
-from app.email_utils import send_email, send_trial_end_soon_email, render
+from app.email_utils import (
+    send_email,
+    send_trial_end_soon_email,
+    render,
+    email_domain_can_be_used_as_mailbox,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -26,6 +31,7 @@ from app.models import (
     ManualSubscription,
     RefusedEmail,
     AppleSubscription,
+    Mailbox,
 )
 from server import create_app
 
@@ -262,6 +268,49 @@ nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_t
     )
 
 
+def sanity_check():
+    """Different sanity checks
+    - detect if there's mailbox that's using a invalid domain
+    """
+    for mailbox in Mailbox.filter_by(verified=True).all():
+        if not email_domain_can_be_used_as_mailbox(mailbox.email):
+            LOG.error(
+                "issue with mailbox %s domain. #alias %s, nb email log %s",
+                mailbox,
+                mailbox.nb_alias(),
+                mailbox.nb_email_log(),
+            )
+
+            LOG.d("Disable mailbox and all its aliases")
+
+            mailbox.verified = False
+            for alias in mailbox.aliases:
+                alias.enabled = False
+
+            db.session.commit()
+
+            email_msg = f"""Hi,
+
+Your mailbox {mailbox.email} cannot receive emails. 
+To avoid forwarding emails to an invalid mailbox, we have disabled this mailbox 
+    along with all of its aliases.
+
+If this is a mistake, please reply to this email.
+
+Thanks,
+SimpleLogin team.
+            """
+
+            try:
+                send_email(
+                    mailbox.user.email, email_msg, email_msg.replace("\n", "<br>")
+                )
+            except Exception:
+                LOG.error("Cannot send disable mailbox email to %s", mailbox.user)
+
+    LOG.d("Finish sanity check")
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -277,6 +326,7 @@ if __name__ == "__main__":
             "notify_premium_end",
             "delete_refused_emails",
             "poll_apple_subscription",
+            "sanity_check",
         ],
     )
     args = parser.parse_args()
@@ -302,3 +352,6 @@ if __name__ == "__main__":
         elif args.job == "poll_apple_subscription":
             LOG.d("Poll Apple Subscriptions")
             poll_apple_subscription()
+        elif args.job == "sanity_check":
+            LOG.d("Check data consistency")
+            sanity_check()
