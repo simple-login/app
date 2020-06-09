@@ -1340,6 +1340,8 @@ class Mailbox(db.Model, ModelMixin):
 
     __table_args__ = (db.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
 
+    user = db.relationship(User, foreign_keys=[user_id])
+
     def nb_alias(self):
         return (
             AliasMailbox.filter_by(mailbox_id=self.id).count()
@@ -1368,6 +1370,24 @@ class Mailbox(db.Model, ModelMixin):
 
         cls.query.filter(cls.id == obj_id).delete()
         db.session.commit()
+
+    def nb_email_log(self):
+        return (
+            db.session.query(EmailLog)
+            .join(Contact, EmailLog.contact_id == Contact.id)
+            .join(Alias, Alias.id == Contact.alias_id)
+            .filter(Alias.mailbox_id == self.id)
+            .count()
+        )
+
+    @property
+    def aliases(self) -> [Alias]:
+        ret = Alias.filter_by(mailbox_id=self.id).all()
+
+        for am in AliasMailbox.filter_by(mailbox_id=self.id):
+            ret.append(am.alias)
+
+        return ret
 
     def __repr__(self):
         return f"<Mailbox {self.email}>"
@@ -1462,6 +1482,8 @@ class AliasMailbox(db.Model, ModelMixin):
     mailbox_id = db.Column(
         db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
     )
+
+    alias = db.relationship(Alias)
 
 
 class DirectoryMailbox(db.Model, ModelMixin):
