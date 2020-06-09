@@ -715,6 +715,7 @@ Input:
 Output:
 - name: user name, could be an empty string
 - api_key: if MFA is not enabled, the `api key` is returned right away.
+- email: user email
 
 The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
 If user hasn't enabled MFA, `mfa_key` is empty.
