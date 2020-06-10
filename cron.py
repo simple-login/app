@@ -269,7 +269,9 @@ nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_t
 
 
 def sanity_check():
-    """Different sanity checks
+    """
+    #TODO: investigate why DNS sometimes not working
+    Different sanity checks
     - detect if there's mailbox that's using a invalid domain
     """
     for mailbox in Mailbox.filter_by(verified=True).all():
