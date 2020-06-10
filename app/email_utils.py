@@ -27,6 +27,7 @@ from app.config import (
     DISPOSABLE_EMAIL_DOMAINS,
     MAX_ALERT_24H,
     POSTFIX_PORT,
+    SENDER,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -220,7 +221,10 @@ def send_email(to_email, subject, plaintext, html=None):
     add_dkim_signature(msg, email_domain)
 
     msg_raw = msg.as_bytes()
-    smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
+    if SENDER:
+        smtp.sendmail(SENDER, to_email, msg_raw)
+    else:
+        smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
 
 
 def send_email_with_rate_control(
