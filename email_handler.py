@@ -31,6 +31,7 @@ It should contain the following info:
 
 """
 import email
+import os
 import time
 import uuid
 from email import encoders
@@ -63,6 +64,8 @@ from app.config import (
     ALERT_SPAM_EMAIL,
     ALERT_SPF,
     POSTFIX_PORT,
+    SENDER,
+    SENDER_DIR,
 )
 from app.email_utils import (
     send_email,
@@ -1019,12 +1022,38 @@ def handle_unsubscribe(envelope: Envelope):
     return "250 Unsubscribe request accepted"
 
 
+def handle_sender_email(envelope: Envelope):
+    filename = (
+        arrow.now().format("YYYY-MM-DD_HH-mm-ss") + "_" + random_string(10) + ".eml"
+    )
+    filepath = os.path.join(SENDER_DIR, filename)
+
+    with open(filepath, "wb") as f:
+        f.write(envelope.original_content)
+
+    LOG.d("Write email to sender at %s", filepath)
+
+    msg = email.message_from_bytes(envelope.original_content)
+    orig = get_orig_message_from_bounce(msg)
+    if orig:
+        LOG.warning(
+            "Original message %s -> %s saved at %s", orig["From"], orig["To"], filepath
+        )
+
+    return "250 email to sender accepted"
+
+
 def handle(envelope: Envelope, smtp: SMTP) -> str:
     """Return SMTP status"""
     # unsubscribe request
     if UNSUBSCRIBER and envelope.rcpt_tos == [UNSUBSCRIBER]:
         LOG.d("Handle unsubscribe request from %s", envelope.mail_from)
         return handle_unsubscribe(envelope)
+
+    # emails sent to sender. Probably bounce emails
+    if SENDER and envelope.rcpt_tos == [SENDER]:
+        LOG.d("Handle email sent to sender from %s", envelope.mail_from)
+        return handle_sender_email(envelope)
 
     # Whether it's necessary to apply greylisting
     if greylisting_needed(envelope.mail_from, envelope.rcpt_tos):
