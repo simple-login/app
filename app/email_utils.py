@@ -27,6 +27,7 @@ from app.config import (
     DISPOSABLE_EMAIL_DOMAINS,
     MAX_ALERT_24H,
     POSTFIX_PORT,
+    SENDER,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -180,9 +181,7 @@ def send_cannot_create_domain_alias(user, alias, domain):
     )
 
 
-def send_email(
-    to_email, subject, plaintext, html=None, bounced_email: Optional[Message] = None
-):
+def send_email(to_email, subject, plaintext, html=None):
     if NOT_SEND_EMAIL:
         LOG.d(
             "send email with subject %s to %s, plaintext: %s",
@@ -200,26 +199,12 @@ def send_email(
     else:
         smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
-    if bounced_email:
-        msg = MIMEMultipart("mixed")
+    msg = MIMEMultipart("alternative")
+    msg.attach(MIMEText(plaintext, "text"))
 
-        # add email main body
-        body = MIMEMultipart("alternative")
-        body.attach(MIMEText(plaintext, "text"))
-        if html:
-            body.attach(MIMEText(html, "html"))
-
-        msg.attach(body)
-
-        # add attachment
-        rfcmessage = MIMEBase("message", "rfc822")
-        rfcmessage.attach(bounced_email)
-        msg.attach(rfcmessage)
-    else:
-        msg = MIMEMultipart("alternative")
-        msg.attach(MIMEText(plaintext, "text"))
-        if html:
-            msg.attach(MIMEText(html, "html"))
+    if not html:
+        html = plaintext.replace("\n", "<br>")
+    msg.attach(MIMEText(html, "html"))
 
     msg["Subject"] = subject
     msg["From"] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
@@ -236,7 +221,10 @@ def send_email(
     add_dkim_signature(msg, email_domain)
 
     msg_raw = msg.as_bytes()
-    smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
+    if SENDER:
+        smtp.sendmail(SENDER, to_email, msg_raw)
+    else:
+        smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
 
 
 def send_email_with_rate_control(
@@ -246,7 +234,6 @@ def send_email_with_rate_control(
     subject,
     plaintext,
     html=None,
-    bounced_email: Optional[Message] = None,
     max_alert_24h=MAX_ALERT_24H,
 ) -> bool:
     """Same as send_email with rate control over alert_type.
@@ -273,7 +260,7 @@ def send_email_with_rate_control(
 
     SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
     db.session.commit()
-    send_email(to_email, subject, plaintext, html, bounced_email)
+    send_email(to_email, subject, plaintext, html)
     return True
 
 

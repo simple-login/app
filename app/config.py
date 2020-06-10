@@ -62,6 +62,12 @@ except Exception:
 # maximum number of directory a premium user can create
 MAX_NB_DIRECTORY = 50
 
+# transactional email sender
+SENDER = os.environ.get("SENDER")
+
+# the directory to store bounce emails
+SENDER_DIR = os.environ.get("SENDER_DIR")
+
 ENFORCE_SPF = "ENFORCE_SPF" in os.environ
 
 # allow to override postfix server locally
