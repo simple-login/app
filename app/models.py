@@ -730,6 +730,8 @@ class Alias(db.Model, ModelMixin):
         for m in self._mailboxes:
             ret.append(m)
 
+        ret = sorted(ret, key=lambda mb: mb.email)
+
         return ret
 
     def mailbox_support_pgp(self) -> bool:
