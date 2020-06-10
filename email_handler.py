@@ -836,7 +836,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         send_email_with_rate_control(
             user,
             ALERT_BOUNCE_EMAIL,
-            # use user mail here as only user is authenticated to see the refused email
             user.email,
             f"Email from {contact.website_email} to {address} cannot be delivered to your inbox",
             render(
@@ -857,8 +856,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox.email,
             ),
-            # cannot include bounce email as it can contain spammy text
-            # bounced_email=msg,
         )
     # disable the alias the second time email is bounced
     elif nb_bounced >= 2:
@@ -876,7 +873,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         send_email_with_rate_control(
             user,
             ALERT_BOUNCE_EMAIL,
-            # use user mail here as only user is authenticated to see the refused email
             user.email,
             f"Alias {address} has been disabled due to second undelivered email from {contact.website_email}",
             render(
@@ -895,8 +891,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox.email,
             ),
-            # cannot include bounce email as it can contain spammy text
-            # bounced_email=msg,
         )
 
 

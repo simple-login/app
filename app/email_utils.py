@@ -228,7 +228,6 @@ def send_email_with_rate_control(
     subject,
     plaintext,
     html=None,
-    bounced_email: Optional[Message] = None,
     max_alert_24h=MAX_ALERT_24H,
 ) -> bool:
     """Same as send_email with rate control over alert_type.
