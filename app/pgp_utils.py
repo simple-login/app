@@ -6,6 +6,7 @@ from memory_profiler import memory_usage
 
 from app.config import GNUPGHOME
 from app.log import LOG
+from app.models import Mailbox
 from app.utils import random_string
 
 gpg = gnupg.GPG(gnupghome=GNUPGHOME)
@@ -43,12 +44,16 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
 
     r = gpg.encrypt_file(data, fingerprint, always_trust=True)
     if not r.ok:
-        # save the content for debugging
-        random_file_name = random_string(20) + ".eml"
-        full_path = f"/tmp/{random_file_name}"
-        with open(full_path, "wb") as f:
-            f.write(data.getbuffer())
-        LOG.error("PGP fail - log to %s", full_path)
-        raise PGPException("Cannot encrypt")
+        # maybe the fingerprint is not loaded on this host, try to load it
+        mailbox = Mailbox.get_by(pgp_finger_print=fingerprint)
+        if mailbox:
+            LOG.d("(re-)load public key for %s", mailbox)
+            load_public_key(mailbox.pgp_public_key)
+
+            LOG.d("retry to encrypt")
+            r = gpg.encrypt_file(data, fingerprint, always_trust=True)
+
+        if not r.ok:
+            raise PGPException(f"Cannot encrypt, status: {r.status}")
 
     return str(r)
