@@ -180,9 +180,7 @@ def send_cannot_create_domain_alias(user, alias, domain):
     )
 
 
-def send_email(
-    to_email, subject, plaintext, html=None, bounced_email: Optional[Message] = None
-):
+def send_email(to_email, subject, plaintext, html=None):
     if NOT_SEND_EMAIL:
         LOG.d(
             "send email with subject %s to %s, plaintext: %s",
@@ -200,26 +198,10 @@ def send_email(
     else:
         smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
-    if bounced_email:
-        msg = MIMEMultipart("mixed")
-
-        # add email main body
-        body = MIMEMultipart("alternative")
-        body.attach(MIMEText(plaintext, "text"))
-        if html:
-            body.attach(MIMEText(html, "html"))
-
-        msg.attach(body)
-
-        # add attachment
-        rfcmessage = MIMEBase("message", "rfc822")
-        rfcmessage.attach(bounced_email)
-        msg.attach(rfcmessage)
-    else:
-        msg = MIMEMultipart("alternative")
-        msg.attach(MIMEText(plaintext, "text"))
-        if html:
-            msg.attach(MIMEText(html, "html"))
+    msg = MIMEMultipart("alternative")
+    msg.attach(MIMEText(plaintext, "text"))
+    if html:
+        msg.attach(MIMEText(html, "html"))
 
     msg["Subject"] = subject
     msg["From"] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
@@ -273,7 +255,7 @@ def send_email_with_rate_control(
 
     SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
     db.session.commit()
-    send_email(to_email, subject, plaintext, html, bounced_email)
+    send_email(to_email, subject, plaintext, html)
     return True
 
 
