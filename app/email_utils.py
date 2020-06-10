@@ -200,8 +200,10 @@ def send_email(to_email, subject, plaintext, html=None):
 
     msg = MIMEMultipart("alternative")
     msg.attach(MIMEText(plaintext, "text"))
-    if html:
-        msg.attach(MIMEText(html, "html"))
+
+    if not html:
+        html = plaintext.replace("\n", "<br>")
+    msg.attach(MIMEText(html, "html"))
 
     msg["Subject"] = subject
     msg["From"] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
