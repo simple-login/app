@@ -82,6 +82,7 @@ from app.email_utils import (
     parseaddr_unicode,
     send_email_with_rate_control,
     get_email_domain_part,
+    copy,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -391,7 +392,7 @@ def handle_forward(
     for mailbox in alias.mailboxes:
         ret.append(
             forward_email_to_mailbox(
-                alias, msg, email_log, contact, envelope, smtp, mailbox, user
+                alias, copy(msg), email_log, contact, envelope, smtp, mailbox, user
             )
         )
 
