@@ -46,7 +46,7 @@ def register():
             if personal_email_already_used(email):
                 flash(f"Email {email} already used", "error")
             else:
-                LOG.debug("create user %s", form.email.data)
+                LOG.debug("create user %s", email)
                 user = User.create(
                     email=email,
                     name="",

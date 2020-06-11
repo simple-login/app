@@ -17,7 +17,7 @@ def resend_activation():
     form = ResendActivationForm(request.form)
 
     if form.validate_on_submit():
-        user = User.filter_by(email=form.email.data).first()
+        user = User.filter_by(email=form.email.data.strip().lower()).first()
 
         if not user:
             flash("There is no such email", "warning")

@@ -72,7 +72,7 @@ def alias_contact_manager(alias_id):
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             if new_contact_form.validate():
-                contact_addr = new_contact_form.email.data.strip()
+                contact_addr = new_contact_form.email.data.strip().lower()
 
                 # generate a reply_email, make sure it is unique
                 # not use while to avoid infinite loop

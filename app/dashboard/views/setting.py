@@ -67,10 +67,10 @@ def setting():
         if request.form.get("form-name") == "update-email":
             if change_email_form.validate():
                 if (
-                    change_email_form.email.data != current_user.email
+                    change_email_form.email.data.lower().strip() != current_user.email
                     and not pending_email
                 ):
-                    new_email = change_email_form.email.data
+                    new_email = change_email_form.email.data.strip().lower()
 
                     # check if this email is not already used
                     if personal_email_already_used(new_email) or Alias.get_by(
