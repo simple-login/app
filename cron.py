@@ -283,8 +283,13 @@ def sanity_check():
                 mailbox.nb_email_log(),
             )
 
-            LOG.d("Disable mailbox and all its aliases")
+    for user in User.filter_by(activated=True).all():
+        if user.email.lower() != user.email:
+            LOG.error("%s does not have lowercase email", user)
 
+    for mailbox in Mailbox.filter_by(verified=True).all():
+        if mailbox.email.lower() != mailbox.email:
+            LOG.error("%s does not have lowercase email", mailbox)
 
     LOG.d("Finish sanity check")
 
