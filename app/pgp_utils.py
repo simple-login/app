@@ -51,6 +51,7 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
             load_public_key(mailbox.pgp_public_key)
 
             LOG.d("retry to encrypt")
+            data.seek(0)
             r = gpg.encrypt_file(data, fingerprint, always_trust=True)
 
         if not r.ok:
