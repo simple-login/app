@@ -1,3 +1,4 @@
+import email
 import os
 from email.header import decode_header
 from email.message import Message
@@ -498,3 +499,8 @@ def parseaddr_unicode(addr) -> (str, str):
             name = decoded_string
 
     return name, email
+
+
+def copy(msg: Message) -> Message:
+    """return a copy of message"""
+    return email.message_from_bytes(msg.as_bytes())

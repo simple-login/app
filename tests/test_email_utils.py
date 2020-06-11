@@ -1,3 +1,4 @@
+import email
 from email.message import EmailMessage
 
 from app.config import MAX_ALERT_24H
@@ -9,6 +10,7 @@ from app.email_utils import (
     add_or_replace_header,
     parseaddr_unicode,
     send_email_with_rate_control,
+    copy,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -118,3 +120,17 @@ def test_send_email_with_rate_control(flask_client):
     assert not send_email_with_rate_control(
         user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
     )
+
+
+def test_copy():
+    email_str = """
+    From: abcd@gmail.com
+    To: hey@example.org
+    Subject: subject
+    
+    Body    
+    """
+    msg = email.message_from_string(email_str)
+    msg2 = copy(msg)
+
+    assert msg.as_bytes() == msg2.as_bytes()
