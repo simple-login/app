@@ -1,5 +1,6 @@
 import argparse
 from dataclasses import dataclass
+from time import sleep
 
 import arrow
 from arrow import Arrow
@@ -275,6 +276,8 @@ def sanity_check():
     - detect if there's mailbox that's using a invalid domain
     """
     for mailbox in Mailbox.filter_by(verified=True).all():
+        # hack to not query DNS too often
+        sleep(1)
         if not email_domain_can_be_used_as_mailbox(mailbox.email):
             LOG.error(
                 "issue with mailbox %s domain. #alias %s, nb email log %s",
