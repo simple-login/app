@@ -179,7 +179,7 @@ def stats_before(moment: Arrow) -> Stats:
         q = q.filter(~User.email.contains(ie))
 
     nb_spam = nb_bounced = nb_forward = nb_block = nb_reply = 0
-    for email_log in q:
+    for email_log in q.yield_per(500):
         if email_log.bounced:
             nb_bounced += 1
         elif email_log.is_spam:
