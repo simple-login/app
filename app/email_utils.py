@@ -351,6 +351,7 @@ def email_domain_can_be_used_as_mailbox(email: str) -> bool:
     from app.models import CustomDomain
 
     if CustomDomain.get_by(domain=domain, verified=True):
+        LOG.d("domain %s is a SimpleLogin custom domain", domain)
         return False
 
     if is_disposable_domain(domain):
@@ -362,6 +363,7 @@ def email_domain_can_be_used_as_mailbox(email: str) -> bool:
 
     # if no MX record, email is not valid
     if not mx_domains:
+        LOG.d("No MX record for domain %s", domain)
         return False
 
     for mx_domain in mx_domains:
