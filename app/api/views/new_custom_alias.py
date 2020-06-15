@@ -170,7 +170,8 @@ def new_custom_alias_v2():
             LOG.d(f"Alias {full_alias} is currently in the {domain.domain} trash. ")
             return jsonify(error=f"alias {full_alias} in domain trash"), 409
 
-        custom_domain_id = domain.id
+        if domain:
+            custom_domain_id = domain.id
 
     alias = Alias.create(
         user_id=user.id,
