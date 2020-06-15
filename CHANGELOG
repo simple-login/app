@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2020-06-15
+Fix regressions introduced in 3.2.0 regarding DISABLE_ALIAS_SUFFIX option
+
 ## [3.2.0] - 2020-06-10
 Make FIDO available
 Fix "remove the reverse-alias" when replying
