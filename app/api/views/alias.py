@@ -324,6 +324,9 @@ def get_alias(alias_id):
     user = g.user
     alias: Alias = Alias.get(alias_id)
 
+    if not alias:
+        return jsonify(error="Unknown error"), 400
+
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
