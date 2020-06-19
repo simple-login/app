@@ -120,7 +120,8 @@ Create a directory to store SimpleLogin data:
 ```bash
 mkdir sl
 mkdir sl/pgp # to store PGP key
-mkdir sl/db # to store database 
+mkdir sl/db # to store database
+mkdir sl/upload # to store quarantine emails
 ```
 
 
@@ -477,6 +478,7 @@ Before running the webapp, you need to prepare the database by running the migra
 sudo docker run --rm \
     --name sl-migration \
     -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
@@ -492,6 +494,7 @@ Now, it's time to run the `webapp` container!
 sudo docker run -d \
     --name sl-app \
     -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
@@ -507,6 +510,7 @@ Next run the `email handler`
 sudo docker run -d \
     --name sl-email \
     -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
