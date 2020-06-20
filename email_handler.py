@@ -636,17 +636,38 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
             # so the client can retry later
             return False, "421 SL E13"
 
-    smtp.sendmail(
-        alias.email,
-        contact.website_email,
-        msg.as_bytes(),
-        envelope.mail_options,
-        envelope.rcpt_options,
-    )
+    try:
+        smtp.sendmail(
+            alias.email,
+            contact.website_email,
+            msg.as_bytes(),
+            envelope.mail_options,
+            envelope.rcpt_options,
+        )
+    except Exception:
+        LOG.error("Cannot send email from %s to %s", alias, contact)
+        send_email(
+            mailbox.email,
+            f"Email cannot be sent to {contact.email} from {alias.email}",
+            render(
+                "transactional/reply-error.txt",
+                user=user,
+                alias=alias,
+                contact=contact,
+                contact_domain=get_email_domain_part(contact.email),
+            ),
+            render(
+                "transactional/reply-error.html",
+                user=user,
+                alias=alias,
+                contact=contact,
+                contact_domain=get_email_domain_part(contact.email),
+            ),
+        )
+    else:
+        EmailLog.create(contact_id=contact.id, is_reply=True, user_id=contact.user_id)
 
-    EmailLog.create(contact_id=contact.id, is_reply=True, user_id=contact.user_id)
     db.session.commit()
-
     return True, "250 Message accepted for delivery"
 
 
