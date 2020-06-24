@@ -5,7 +5,7 @@ import sentry_sdk
 import ssl
 from flask import Flask, redirect, url_for, render_template, request, jsonify, flash
 from flask_admin import Admin
-from flask_cors import cross_origin
+from flask_cors import cross_origin, CORS
 from flask_login import current_user
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -121,6 +121,9 @@ def create_app() -> Flask:
             "ignore": ["^/static/.*", "/git", "/exception"],
         }
         flask_profiler.init_app(app)
+
+    # enable CORS on /api endpoints
+    cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     return app
 

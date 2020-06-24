@@ -3,7 +3,6 @@ from smtplib import SMTPRecipientsRefused
 from flask import g
 from flask import jsonify
 from flask import request
-from flask_cors import cross_origin
 
 from app.api.base import api_bp, require_api_auth
 from app.dashboard.views.mailbox import send_verification_email
@@ -17,7 +16,6 @@ from app.models import Mailbox
 
 
 @api_bp.route("/mailboxes", methods=["POST"])
-@cross_origin()
 @require_api_auth
 def create_mailbox():
     """
@@ -62,7 +60,6 @@ def create_mailbox():
 
 
 @api_bp.route("/mailboxes/<mailbox_id>", methods=["DELETE"])
-@cross_origin()
 @require_api_auth
 def delete_mailbox(mailbox_id):
     """
@@ -89,7 +86,6 @@ def delete_mailbox(mailbox_id):
 
 
 @api_bp.route("/mailboxes/<mailbox_id>", methods=["PUT"])
-@cross_origin()
 @require_api_auth
 def update_mailbox(mailbox_id):
     """
@@ -152,7 +148,6 @@ def update_mailbox(mailbox_id):
 
 
 @api_bp.route("/mailboxes", methods=["GET"])
-@cross_origin()
 @require_api_auth
 def get_mailboxes():
     """

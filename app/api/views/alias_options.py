@@ -1,5 +1,4 @@
 from flask import jsonify, request, g
-from flask_cors import cross_origin
 from sqlalchemy import desc
 
 from app.api.base import api_bp, require_api_auth
@@ -12,7 +11,6 @@ from app.utils import convert_to_id, random_word
 
 
 @api_bp.route("/alias/options")
-@cross_origin()
 @require_api_auth
 def options():
     """
@@ -88,7 +86,6 @@ def options():
 
 
 @api_bp.route("/v2/alias/options")
-@cross_origin()
 @require_api_auth
 def options_v2():
     """
@@ -169,7 +166,6 @@ def options_v2():
 
 
 @api_bp.route("/v3/alias/options")
-@cross_origin()
 @require_api_auth
 def options_v3():
     """
@@ -246,7 +242,6 @@ def options_v3():
 
 
 @api_bp.route("/v4/alias/options")
-@cross_origin()
 @require_api_auth
 def options_v4():
     """

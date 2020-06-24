@@ -1,7 +1,6 @@
 from flask import g
 from flask import jsonify
 from flask import request
-from flask_cors import cross_origin
 
 from app.api.base import api_bp, require_api_auth
 from app.config import PAGE_LIMIT
@@ -10,7 +9,6 @@ from app.models import Notification
 
 
 @api_bp.route("/notifications", methods=["GET"])
-@cross_origin()
 @require_api_auth
 def get_notifications():
     """
@@ -61,7 +59,6 @@ def get_notifications():
 
 
 @api_bp.route("/notifications/<notification_id>/read", methods=["POST"])
-@cross_origin()
 @require_api_auth
 def mark_as_read(notification_id):
     """

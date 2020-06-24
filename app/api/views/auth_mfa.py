@@ -1,6 +1,5 @@
 import pyotp
 from flask import jsonify, request
-from flask_cors import cross_origin
 from itsdangerous import Signer
 
 from app.api.base import api_bp
@@ -11,7 +10,6 @@ from app.models import User, ApiKey
 
 
 @api_bp.route("/auth/mfa", methods=["POST"])
-@cross_origin()
 def auth_mfa():
     """
     Validate the OTP Token

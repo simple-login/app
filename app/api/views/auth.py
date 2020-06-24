@@ -1,9 +1,9 @@
+import random
+
 import facebook
 import google.oauth2.credentials
 import googleapiclient.discovery
-import random
 from flask import jsonify, request, g
-from flask_cors import cross_origin
 from itsdangerous import Signer
 
 from app import email_utils
@@ -22,7 +22,6 @@ from app.models import User, ApiKey, SocialAuth, AccountActivation
 
 
 @api_bp.route("/auth/login", methods=["POST"])
-@cross_origin()
 @limiter.limit(
     "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
 )
@@ -68,7 +67,6 @@ def auth_login():
 
 
 @api_bp.route("/auth/register", methods=["POST"])
-@cross_origin()
 def auth_register():
     """
     User signs up - will need to activate their account with an activation code.
@@ -116,7 +114,6 @@ def auth_register():
 
 
 @api_bp.route("/auth/activate", methods=["POST"])
-@cross_origin()
 @limiter.limit(
     "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
 )
@@ -176,7 +173,6 @@ def auth_activate():
 
 
 @api_bp.route("/auth/reactivate", methods=["POST"])
-@cross_origin()
 def auth_reactivate():
     """
     User asks for another activation code
@@ -218,7 +214,6 @@ def auth_reactivate():
 
 
 @api_bp.route("/auth/facebook", methods=["POST"])
-@cross_origin()
 def auth_facebook():
     """
     Authenticate user with Facebook
@@ -269,7 +264,6 @@ def auth_facebook():
 
 
 @api_bp.route("/auth/google", methods=["POST"])
-@cross_origin()
 def auth_google():
     """
     Authenticate user with Facebook
@@ -343,7 +337,6 @@ def auth_payload(user, device) -> dict:
 
 
 @api_bp.route("/auth/forgot_password", methods=["POST"])
-@cross_origin()
 def forgot_password():
     """
     User forgot password
