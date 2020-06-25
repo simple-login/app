@@ -166,6 +166,10 @@ class User(db.Model, ModelMixin, UserMixin):
     # Fields for WebAuthn
     fido_uuid = db.Column(db.String(), nullable=True, unique=True)
 
+    default_random_alias_domain_id = db.Column(
+        db.ForeignKey("custom_domain.id"), nullable=True, default=None
+    )
+
     def fido_enabled(self) -> bool:
         if self.fido_uuid is not None:
             return True
