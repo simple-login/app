@@ -656,17 +656,20 @@ class OauthToken(db.Model, ModelMixin):
 
 
 def generate_email(
-    scheme: int = AliasGeneratorEnum.word.value, in_hex: bool = False
+    scheme: int = AliasGeneratorEnum.word.value,
+    in_hex: bool = False,
+    alias_domain=FIRST_ALIAS_DOMAIN,
 ) -> str:
     """generate an email address that does not exist before
+    :param alias_domain: the domain used to generate the alias.
     :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
     :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
     """
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
-        random_email = name + "@" + FIRST_ALIAS_DOMAIN
+        random_email = name + "@" + alias_domain
     else:
-        random_email = random_words() + "@" + FIRST_ALIAS_DOMAIN
+        random_email = random_words() + "@" + alias_domain
 
     random_email = random_email.lower().strip()
 
@@ -800,13 +803,27 @@ class Alias(db.Model, ModelMixin):
         note: str = None,
     ):
         """create a new random alias"""
-        random_email = generate_email(scheme=scheme, in_hex=in_hex)
-        return Alias.create(
+        domain = None
+
+        if user.default_random_alias_domain_id:
+            domain = CustomDomain.get(user.default_random_alias_domain_id)
+            random_email = generate_email(
+                scheme=scheme, in_hex=in_hex, alias_domain=domain.domain
+            )
+        else:
+            random_email = generate_email(scheme=scheme, in_hex=in_hex)
+
+        alias = Alias.create(
             user_id=user.id,
             email=random_email,
             mailbox_id=user.default_mailbox_id,
             note=note,
         )
+
+        if domain:
+            alias.custom_domain_id = domain.id
+
+        return alias
 
     def mailbox_email(self):
         if self.mailbox_id:
@@ -1257,7 +1274,7 @@ class CustomDomain(db.Model, ModelMixin):
     # an alias is created automatically the first time it receives an email
     catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
-    user = db.relationship(User)
+    user = db.relationship(User, foreign_keys=[user_id])
 
     def nb_alias(self):
         return Alias.filter_by(custom_domain_id=self.id).count()
