@@ -434,6 +434,12 @@ class User(db.Model, ModelMixin, UserMixin):
     def nb_directory(self):
         return Directory.query.filter_by(user_id=self.id).count()
 
+    def has_custom_domain(self):
+        return CustomDomain.filter_by(user_id=self.id, verified=True).count() > 0
+
+    def custom_domains(self):
+        return CustomDomain.filter_by(user_id=self.id, verified=True).all()
+
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
 

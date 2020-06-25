@@ -10,7 +10,7 @@ from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
 from app import s3, email_utils
-from app.config import URL
+from app.config import URL, FIRST_ALIAS_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
     email_domain_can_be_used_as_mailbox,
@@ -159,6 +159,30 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
+        elif request.form.get("form-name") == "change-random-alias-default-domain":
+            default_domain = request.form.get("random-alias-default-domain")
+            if default_domain:
+                default_domain_id = int(default_domain)
+                # sanity check
+                domain = CustomDomain.get(default_domain_id)
+                if (
+                    not domain
+                    or domain.user_id != current_user.id
+                    or not domain.verified
+                ):
+                    flash(
+                        "Something went wrong, sorry for the inconvenience. Please retry. ",
+                        "error",
+                    )
+                    return redirect(url_for("dashboard.setting"))
+                current_user.default_random_alias_domain_id = default_domain_id
+            else:
+                current_user.default_random_alias_domain_id = None
+
+            db.session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "change-sender-format":
             sender_format = int(request.form.get("sender-format"))
             if SenderFormatEnum.has_value(sender_format):
@@ -215,6 +239,7 @@ def setting():
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
         manual_sub=manual_sub,
+        FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
     )
 
 
