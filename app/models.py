@@ -1368,6 +1368,13 @@ class Mailbox(db.Model, ModelMixin):
     pgp_public_key = db.Column(db.Text, nullable=True)
     pgp_finger_print = db.Column(db.String(512), nullable=True)
 
+    # incremented when a check is failed on the mailbox
+    # alert when the number exceeds a threshold
+    # used in sanity_check()
+    nb_failed_checks = db.Column(
+        db.Integer, default=0, server_default="0", nullable=False
+    )
+
     __table_args__ = (db.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
 
     user = db.relationship(User, foreign_keys=[user_id])
