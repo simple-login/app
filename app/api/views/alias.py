@@ -131,7 +131,7 @@ def delete_alias(alias_id):
     user = g.user
     alias = Alias.get(alias_id)
 
-    if alias.user_id != user.id:
+    if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
     alias_utils.delete_alias(alias, user)
