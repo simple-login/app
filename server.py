@@ -1,9 +1,20 @@
+from datetime import timedelta
+
 import arrow
 import flask_profiler
 import os
 import sentry_sdk
 import ssl
-from flask import Flask, redirect, url_for, render_template, request, jsonify, flash
+from flask import (
+    Flask,
+    redirect,
+    url_for,
+    render_template,
+    request,
+    jsonify,
+    flash,
+    session,
+)
 from flask_admin import Admin
 from flask_cors import cross_origin, CORS
 from flask_login import current_user
@@ -124,6 +135,13 @@ def create_app() -> Flask:
 
     # enable CORS on /api endpoints
     cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+    # set session to permanent so user stays signed in after quitting the browser
+    # the cookie is valid for 7 days
+    @app.before_request
+    def make_session_permanent():
+        session.permanent = True
+        app.permanent_session_lifetime = timedelta(days=7)
 
     return app
 
