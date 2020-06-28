@@ -279,12 +279,23 @@ def sanity_check():
         # hack to not query DNS too often
         sleep(1)
         if not email_domain_can_be_used_as_mailbox(mailbox.email):
-            LOG.error(
+            mailbox.nb_failed_checks += 1
+            # alert if too much fail
+            if mailbox.nb_failed_checks > 10:
+                log_func = LOG.error
+            else:
+                log_func = LOG.warning
+
+            log_func(
                 "issue with mailbox %s domain. #alias %s, nb email log %s",
                 mailbox,
                 mailbox.nb_alias(),
                 mailbox.nb_email_log(),
             )
+        else:  # reset nb check
+            mailbox.nb_failed_checks = 0
+
+    db.session.commit()
 
     for user in User.filter_by(activated=True).all():
         if user.email.lower() != user.email:
