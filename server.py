@@ -39,6 +39,7 @@ from app.config import (
     FLASK_PROFILER_PASSWORD,
     SENTRY_FRONT_END_DSN,
     FIRST_ALIAS_DOMAIN,
+    SESSION_COOKIE_NAME,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -100,7 +101,7 @@ def create_app() -> Flask:
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
     # to avoid conflict with other cookie
-    app.config["SESSION_COOKIE_NAME"] = "slapp"
+    app.config["SESSION_COOKIE_NAME"] = SESSION_COOKIE_NAME
     if URL.startswith("https"):
         app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"

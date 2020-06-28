@@ -144,6 +144,7 @@ DB_URI = os.environ["DB_URI"]
 
 # Flask secret
 FLASK_SECRET = os.environ["FLASK_SECRET"]
+SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
 
