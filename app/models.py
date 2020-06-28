@@ -743,6 +743,7 @@ class Alias(db.Model, ModelMixin):
         for m in self._mailboxes:
             ret.append(m)
 
+        ret = [mb for mb in ret if mb.verified]
         ret = sorted(ret, key=lambda mb: mb.email)
 
         return ret
