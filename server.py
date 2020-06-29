@@ -201,7 +201,7 @@ def fake_data():
     )
     db.session.commit()
 
-    for i in range(31):
+    for i in range(3):
         if i % 2 == 0:
             a = Alias.create(
                 email=f"e{i}@{FIRST_ALIAS_DOMAIN}", user_id=user.id, mailbox_id=m1.id
