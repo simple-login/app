@@ -11,4 +11,4 @@ db.sqlite-journal
 static/upload
 adhoc_*
 adhoc.py
-env/
+venv/
