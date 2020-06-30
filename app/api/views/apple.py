@@ -302,6 +302,9 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     r = requests.post(
         _PROD_URL, json={"receipt-data": receipt_data, "password": password}
     )
+    if r.status_code >= 500:
+        LOG.error("Apple server error, response:%s %s", r, r.content)
+        return None
 
     if r.json() == {"status": 21007}:
         # try sandbox_url
