@@ -290,6 +290,26 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return False
 
+    def is_paid(self) -> bool:
+        """same as _lifetime_or_active_subscription but not include free manual subscription"""
+        sub: Subscription = self.get_subscription()
+        if sub:
+            return True
+
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and apple_sub.is_valid():
+            return True
+
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
+        if (
+            manual_sub
+            and not manual_sub.is_giveaway
+            and manual_sub.end_at > arrow.now()
+        ):
+            return True
+
+        return False
+
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
         if self._lifetime_or_active_subscription():
@@ -1485,8 +1505,16 @@ class Referral(db.Model, ModelMixin):
 
     user = db.relationship(User, foreign_keys=[user_id])
 
-    def nb_user(self):
+    def nb_user(self) -> int:
         return User.filter_by(referral_id=self.id, activated=True).count()
+
+    def nb_paid_user(self) -> int:
+        res = 0
+        for user in User.filter_by(referral_id=self.id, activated=True):
+            if user.is_paid():
+                res += 1
+
+        return res
 
     def link(self):
         return f"{LANDING_PAGE_URL}?slref={self.code}"
