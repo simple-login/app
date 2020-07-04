@@ -170,14 +170,6 @@ class User(db.Model, ModelMixin, UserMixin):
         db.ForeignKey("custom_domain.id"), nullable=True, default=None
     )
 
-    def fido_enabled(self) -> bool:
-        if self.fido_uuid is not None:
-            return True
-        return False
-
-    def two_factor_authentication_enabled(self) -> bool:
-        return self.enable_otp or self.fido_enabled()
-
     # some users could have lifetime premium
     lifetime = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
     paid_lifetime = db.Column(
@@ -459,6 +451,14 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def custom_domains(self):
         return CustomDomain.filter_by(user_id=self.id, verified=True).all()
+
+    def fido_enabled(self) -> bool:
+        if self.fido_uuid is not None:
+            return True
+        return False
+
+    def two_factor_authentication_enabled(self) -> bool:
+        return self.enable_otp or self.fido_enabled()
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
