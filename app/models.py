@@ -877,12 +877,17 @@ class Alias(db.Model, ModelMixin):
         note: str = None,
     ):
         """create a new random alias"""
-        domain = None
+        custom_domain = None
 
         if user.default_random_alias_domain_id:
-            domain = CustomDomain.get(user.default_random_alias_domain_id)
+            custom_domain = CustomDomain.get(user.default_random_alias_domain_id)
             random_email = generate_email(
-                scheme=scheme, in_hex=in_hex, alias_domain=domain.domain
+                scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
+            )
+        elif user.default_random_alias_public_domain_id:
+            public_domain = PublicDomain.get(user.default_random_alias_public_domain_id)
+            random_email = generate_email(
+                scheme=scheme, in_hex=in_hex, alias_domain=public_domain.domain
             )
         else:
             random_email = generate_email(scheme=scheme, in_hex=in_hex)
@@ -894,8 +899,8 @@ class Alias(db.Model, ModelMixin):
             note=note,
         )
 
-        if domain:
-            alias.custom_domain_id = domain.id
+        if custom_domain:
+            alias.custom_domain_id = custom_domain.id
 
         return alias
 
