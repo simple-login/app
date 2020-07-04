@@ -462,6 +462,49 @@ class User(db.Model, ModelMixin, UserMixin):
     def custom_domains(self):
         return CustomDomain.filter_by(user_id=self.id, verified=True).all()
 
+    def available_domains_for_random_alias(self) -> List[Tuple[bool, str]]:
+        """Return available domains for user to create random aliases
+        Each result record contains:
+        - whether the domain is public (i.e. belongs to SimpleLogin)
+        - the domain
+        """
+        res = []
+        for public_domain in PublicDomain.query.all():
+            res.append((True, public_domain.domain))
+
+        for custom_domain in CustomDomain.filter_by(
+            user_id=self.id, verified=True
+        ).all():
+            res.append((False, custom_domain.domain))
+
+        return res
+
+    def default_random_alias_domain(self) -> str:
+        """return the domain used for the random alias"""
+        if self.default_random_alias_domain_id:
+            custom_domain = CustomDomain.get(self.default_random_alias_domain_id)
+            # sanity check
+            if (
+                not custom_domain
+                or not custom_domain.verified
+                or custom_domain.user_id != self.id
+            ):
+                LOG.error("Problem with %s default random alias domain", self)
+                return FIRST_ALIAS_DOMAIN
+
+            return custom_domain.domain
+
+        if self.default_random_alias_public_domain_id:
+            public_domain = PublicDomain.get(self.default_random_alias_public_domain_id)
+            # sanity check
+            if not public_domain:
+                LOG.error("Problem with %s public random alias domain", self)
+                return FIRST_ALIAS_DOMAIN
+
+            return public_domain.domain
+
+        return FIRST_ALIAS_DOMAIN
+
     def fido_enabled(self) -> bool:
         if self.fido_uuid is not None:
             return True
