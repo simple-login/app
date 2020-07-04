@@ -35,3 +35,22 @@ def test_wrong_api_key(flask_client):
     assert r.status_code == 401
 
     assert r.json == {"error": "Wrong api key"}
+
+
+def test_create_api_key(flask_client):
+    # create user, user is activated
+    User.create(email="a@b.c", password="password", name="Test User", activated=True)
+    db.session.commit()
+
+    # login user
+    flask_client.post(
+        url_for("auth.login"),
+        data={"email": "a@b.c", "password": "password"},
+        follow_redirects=True,
+    )
+
+    # create api key
+    r = flask_client.post(url_for("api.create_api_key"), json={"device": "Test device"})
+
+    assert r.status_code == 201
+    assert r.json["api_key"]
