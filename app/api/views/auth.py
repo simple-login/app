@@ -4,6 +4,7 @@ import facebook
 import google.oauth2.credentials
 import googleapiclient.discovery
 from flask import jsonify, request, g
+from flask_login import login_user
 from itsdangerous import Signer
 
 from app import email_utils
@@ -332,6 +333,9 @@ def auth_payload(user, device) -> dict:
             db.session.commit()
         ret["mfa_key"] = None
         ret["api_key"] = api_key.code
+
+        # so user is automatically logged in on the web
+        login_user(user)
 
     return ret
 

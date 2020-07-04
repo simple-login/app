@@ -1,5 +1,6 @@
 import pyotp
 from flask import jsonify, request
+from flask_login import login_user
 from itsdangerous import Signer
 
 from app.api.base import api_bp
@@ -63,5 +64,8 @@ def auth_mfa():
         db.session.commit()
 
     ret["api_key"] = api_key.code
+
+    # so user is logged in automatically on the web
+    login_user(user)
 
     return jsonify(**ret), 200
