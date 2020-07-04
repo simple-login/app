@@ -1,6 +1,8 @@
-from flask import jsonify, g, request
+from flask import jsonify, g, request, make_response
+from flask_login import logout_user
 
 from app.api.base import api_bp, require_api_auth
+from app.config import SESSION_COOKIE_NAME
 from app.extensions import db
 from app.models import ApiKey
 
@@ -43,3 +45,19 @@ def create_api_key():
     db.session.commit()
 
     return jsonify(api_key=api_key.code), 201
+
+
+@api_bp.route("/logout", methods=["GET"])
+@require_api_auth
+def logout():
+    """
+    Log user out on the web, i.e. remove the cookie
+
+    Output:
+    - 200
+    """
+    logout_user()
+    response = make_response(jsonify(msg="User is logged out"), 200)
+    response.delete_cookie(SESSION_COOKIE_NAME)
+
+    return response

@@ -791,7 +791,7 @@ Output: if api key is correct, return a json with user name and whether user is 
 
 If api key is incorrect, return 401.
 
-#### POST /api/api_key 
+#### POST /api/api_key
 
 Create a new API Key
 
@@ -809,6 +809,19 @@ Output
   "api_key": "long string"
 }
 ```
+
+#### GET /api/logout
+
+Log user out
+
+Input:
+- `Authentication` header that contains the api key
+- Or the correct cookie is set, i.e. user is already logged in on the web
+
+Output:
+- 401 if user is not authenticated
+- 200 if success
+
 
 ### Alias endpoints
 
