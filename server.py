@@ -64,6 +64,7 @@ from app.models import (
     Referral,
     AliasMailbox,
     Notification,
+    PublicDomain,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -284,6 +285,10 @@ def fake_data():
         activated=True,
         referral_id=referral.id,
     )
+    db.session.commit()
+
+    for d in ["d1.localhost", "d2.localhost"]:
+        PublicDomain.create(domain=d)
     db.session.commit()
 
 
