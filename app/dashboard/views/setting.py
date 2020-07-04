@@ -31,6 +31,7 @@ from app.models import (
     AliasGeneratorEnum,
     ManualSubscription,
     SenderFormatEnum,
+    PublicDomain,
 )
 from app.utils import random_string
 
@@ -162,20 +163,28 @@ def setting():
         elif request.form.get("form-name") == "change-random-alias-default-domain":
             default_domain = request.form.get("random-alias-default-domain")
             if default_domain:
-                default_domain_id = int(default_domain)
-                # sanity check
-                domain = CustomDomain.get(default_domain_id)
-                if (
-                    not domain
-                    or domain.user_id != current_user.id
-                    or not domain.verified
-                ):
-                    flash(
-                        "Something went wrong, sorry for the inconvenience. Please retry. ",
-                        "error",
-                    )
-                    return redirect(url_for("dashboard.setting"))
-                current_user.default_random_alias_domain_id = default_domain_id
+                custom_domain = CustomDomain.get_by(domain=default_domain)
+                if custom_domain:
+                    # sanity check
+                    if (
+                        custom_domain.user_id != current_user.id
+                        or not custom_domain.verified
+                    ):
+                        LOG.error(
+                            "%s cannot use domain %s", current_user, default_domain
+                        )
+                    else:
+                        # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
+                        current_user.default_random_alias_domain_id = custom_domain.id
+                        current_user.default_random_alias_public_domain_id = None
+                else:
+                    public_domain = PublicDomain.get_by(domain=default_domain)
+                    if public_domain:
+                        # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
+                        current_user.default_random_alias_public_domain_id = (
+                            public_domain.id
+                        )
+                        current_user.default_random_alias_domain_id = None
             else:
                 current_user.default_random_alias_domain_id = None
 
