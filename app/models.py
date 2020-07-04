@@ -2,7 +2,7 @@ import enum
 import random
 import uuid
 from email.utils import formataddr
-from typing import List
+from typing import List, Tuple
 
 import arrow
 import bcrypt
@@ -166,8 +166,18 @@ class User(db.Model, ModelMixin, UserMixin):
     # Fields for WebAuthn
     fido_uuid = db.Column(db.String(), nullable=True, unique=True)
 
+    # the default domain that's used when user creates a new random alias
+    # default_random_alias_domain_id XOR default_random_alias_public_domain_id
     default_random_alias_domain_id = db.Column(
-        db.ForeignKey("custom_domain.id"), nullable=True, default=None
+        db.ForeignKey("custom_domain.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+    )
+
+    default_random_alias_public_domain_id = db.Column(
+        db.ForeignKey("public_domain.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
     )
 
     # some users could have lifetime premium
