@@ -1610,3 +1610,9 @@ class Notification(db.Model, ModelMixin):
 
     # whether user has marked the notification as read
     read = db.Column(db.Boolean, nullable=False, default=False)
+
+
+class PublicDomain(db.Model, ModelMixin):
+    """SimpleLogin domains that all users can use"""
+
+    domain = db.Column(db.String(128), unique=True, nullable=False)
