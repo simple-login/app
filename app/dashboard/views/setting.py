@@ -162,31 +162,37 @@ def setting():
 
         elif request.form.get("form-name") == "change-random-alias-default-domain":
             default_domain = request.form.get("random-alias-default-domain")
+
             if default_domain:
-                custom_domain = CustomDomain.get_by(domain=default_domain)
-                if custom_domain:
-                    # sanity check
-                    if (
-                        custom_domain.user_id != current_user.id
-                        or not custom_domain.verified
-                    ):
-                        LOG.error(
-                            "%s cannot use domain %s", current_user, default_domain
-                        )
-                    else:
-                        # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
-                        current_user.default_random_alias_domain_id = custom_domain.id
-                        current_user.default_random_alias_public_domain_id = None
+                public_domain = PublicDomain.get_by(domain=default_domain)
+                if public_domain:
+                    # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
+                    current_user.default_random_alias_public_domain_id = (
+                        public_domain.id
+                    )
+                    current_user.default_random_alias_domain_id = None
                 else:
-                    public_domain = PublicDomain.get_by(domain=default_domain)
-                    if public_domain:
-                        # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
-                        current_user.default_random_alias_public_domain_id = (
-                            public_domain.id
-                        )
-                        current_user.default_random_alias_domain_id = None
+                    custom_domain = CustomDomain.get_by(domain=default_domain)
+                    if custom_domain:
+                        # sanity check
+                        if (
+                            custom_domain.user_id != current_user.id
+                            or not custom_domain.verified
+                        ):
+                            LOG.error(
+                                "%s cannot use domain %s", current_user, default_domain
+                            )
+                        else:
+                            # make sure only default_random_alias_domain_id or
+                            # default_random_alias_public_domain_id is set
+                            current_user.default_random_alias_domain_id = (
+                                custom_domain.id
+                            )
+                            current_user.default_random_alias_public_domain_id = None
+
             else:
                 current_user.default_random_alias_domain_id = None
+                current_user.default_random_alias_public_domain_id = None
 
             db.session.commit()
             flash("Your preference has been updated", "success")
