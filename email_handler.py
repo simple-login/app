@@ -373,7 +373,7 @@ def handle_forward(
         alias = try_auto_create(address)
         if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
-            return [(False, "550 SL E3")]
+            return [(False, "550 SL E3 Email not exist")]
 
     contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
@@ -428,7 +428,7 @@ def forward_email_to_mailbox(
         email_log.spam_status = spam_status
 
         handle_spam(contact, alias, msg, user, mailbox.email, email_log)
-        return False, "550 SL E1"
+        return False, "550 SL E1 Email detected as spam"
 
     # create PGP email if needed
     if mailbox.pgp_finger_print and user.is_premium() and not alias.disable_pgp:
@@ -440,7 +440,7 @@ def forward_email_to_mailbox(
                 "Cannot encrypt message %s -> %s. %s %s", contact, alias, mailbox, user
             )
             # so the client can retry later
-            return False, "421 SL E12"
+            return False, "421 SL E12 Retry later"
 
     # add custom header
     add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
@@ -524,7 +524,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
         LOG.warning(f"No such forward-email with {reply_email} as reply-email")
-        return False, "550 SL E4"
+        return False, "550 SL E4 Email not exist"
 
     alias = contact.alias
     address: str = contact.alias.email
@@ -634,7 +634,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
             # so the client can retry later
-            return False, "421 SL E13"
+            return False, "421 SL E13 Retry later"
 
     try:
         smtp.sendmail(
@@ -1004,18 +1004,18 @@ def handle_unsubscribe(envelope: Envelope):
         alias = Alias.get(alias_id)
     except Exception:
         LOG.warning("Cannot parse alias from subject %s", msg["Subject"])
-        return "550 SL E8"
+        return "550 SL E8 Wrongly formatted subject"
 
     if not alias:
         LOG.warning("No such alias %s", alias_id)
-        return "550 SL E9"
+        return "550 SL E9 Email not exist"
 
     # This sender cannot unsubscribe
     mail_from = envelope.mail_from.lower().strip()
     mailbox = Mailbox.get_by(user_id=alias.user_id, email=mail_from)
     if not mailbox or mailbox not in alias.mailboxes:
         LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
-        return "550 SL E10"
+        return "550 SL E10 unauthorized"
 
     # Sender is owner of this alias
     alias.enabled = False
