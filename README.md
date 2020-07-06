@@ -486,6 +486,19 @@ sudo docker run --rm \
 
 This command could take a while to download the `simplelogin/app` docker image.
 
+Init data
+
+```bash
+sudo docker run --rm \
+    --name sl-init \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    --network="sl-network" \
+    simplelogin/app:3.2.2 python init_app.py
+```
+
 Now, it's time to run the `webapp` container!
 
 ```bash
