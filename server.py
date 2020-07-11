@@ -398,7 +398,7 @@ def setup_error_page(app):
 
     @app.errorhandler(429)
     def forbidden(e):
-        LOG.error("Client hit rate limit on path %s", request.path)
+        LOG.warning("Client hit rate limit on path %s", request.path)
         if request.path.startswith("/api/"):
             return jsonify(error="Rate limit exceeded"), 429
         else:
