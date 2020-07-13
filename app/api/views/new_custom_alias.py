@@ -141,7 +141,7 @@ def new_custom_alias_v2():
     try:
         alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
     except SignatureExpired:
-        LOG.error("Alias creation time expired for %s", user)
+        LOG.warning("Alias creation time expired for %s", user)
         return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
         LOG.error("Alias suffix is tampered, user %s", user)
@@ -251,7 +251,7 @@ def new_custom_alias_v3():
     try:
         alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
     except SignatureExpired:
-        LOG.error("Alias creation time expired for %s", user)
+        LOG.warning("Alias creation time expired for %s", user)
         return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
         LOG.error("Alias suffix is tampered, user %s", user)
