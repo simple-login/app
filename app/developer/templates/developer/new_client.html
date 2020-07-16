@@ -7,24 +7,25 @@
 {% endblock %}
 
 {% block default_content %}
-  <h1>Create new app</h1>
-  <p>An app can be a website, a SPA webapp or a mobile application</p>
-  <small>Let's get started integrating SimpleLogin into your app! </small>
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">Create new app</h1>
+      <p>An app can be a website, a SPA webapp or a mobile application</p>
+      <p>Let's get started integrating SimpleLogin into your app! </p>
 
-  <hr>
+      <form method="post" enctype="multipart/form-data">
+        {{ form.csrf_token }}
 
-  <form method="post" enctype="multipart/form-data">
-    {{ form.csrf_token }}
-
-    <div class="form-group">
-      <label class="form-label">Display Name</label>
-      {{ form.name(class="form-control",
+        <div class="form-group">
+          <label class="form-label">Display Name</label>
+          {{ form.name(class="form-control",
       placeholder="Usually your product name, e.g. my-super-app.com") }}
-      {{ render_field_errors(form.name) }}
+          {{ render_field_errors(form.name) }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create</button>
+      </form>
     </div>
-
-    <button type="submit" class="btn btn-primary">Create</button>
-  </form>
-
+  </div>
 
 {% endblock %}
