@@ -130,6 +130,6 @@ if __name__ == "__main__":
                         onboarding_browser_extension(user)
 
                 else:
-                    LOG.error("Unknown job name %s", job.name)
+                    LOG.exception("Unknown job name %s", job.name)
 
         time.sleep(10)

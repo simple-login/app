@@ -160,7 +160,7 @@ def authorize():
                     flash("Alias creation time is expired, please retry", "warning")
                     return redirect(request.url)
                 except Exception:
-                    LOG.error("Alias suffix is tampered, user %s", current_user)
+                    LOG.exception("Alias suffix is tampered, user %s", current_user)
                     flash("Unknown error, refresh the page", "error")
                     return redirect(request.url)
 
@@ -178,7 +178,7 @@ def authorize():
                         or DeletedAlias.get_by(email=full_alias)
                         or DomainDeletedAlias.get_by(email=full_alias)
                     ):
-                        LOG.error("alias %s already used, very rare!", full_alias)
+                        LOG.exception("alias %s already used, very rare!", full_alias)
                         flash(f"Alias {full_alias} already used", "error")
                         return redirect(request.url)
                     else:

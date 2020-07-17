@@ -489,7 +489,7 @@ class User(db.Model, ModelMixin, UserMixin):
                 or not custom_domain.verified
                 or custom_domain.user_id != self.id
             ):
-                LOG.error("Problem with %s default random alias domain", self)
+                LOG.exception("Problem with %s default random alias domain", self)
                 return FIRST_ALIAS_DOMAIN
 
             return custom_domain.domain
@@ -498,7 +498,7 @@ class User(db.Model, ModelMixin, UserMixin):
             public_domain = PublicDomain.get(self.default_random_alias_public_domain_id)
             # sanity check
             if not public_domain:
-                LOG.error("Problem with %s public random alias domain", self)
+                LOG.exception("Problem with %s public random alias domain", self)
                 return FIRST_ALIAS_DOMAIN
 
             return public_domain.domain
@@ -1410,7 +1410,7 @@ class Directory(db.Model, ModelMixin):
             db.session.commit()
         # this can happen when a previously deleted alias is re-created via catch-all or directory feature
         except IntegrityError:
-            LOG.error("Some aliases have been added before to DeletedAlias")
+            LOG.exception("Some aliases have been added before to DeletedAlias")
             db.session.rollback()
 
         cls.query.filter(cls.id == obj_id).delete()
@@ -1480,7 +1480,7 @@ class Mailbox(db.Model, ModelMixin):
                 db.session.commit()
         # this can happen when a previously deleted alias is re-created via catch-all or directory feature
         except IntegrityError:
-            LOG.error("Some aliases have been added before to DeletedAlias")
+            LOG.exception("Some aliases have been added before to DeletedAlias")
             db.session.rollback()
 
         cls.query.filter(cls.id == obj_id).delete()

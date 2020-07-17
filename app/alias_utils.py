@@ -147,7 +147,7 @@ def delete_alias(alias: Alias, user: User):
             )
             db.session.commit()
         except IntegrityError:
-            LOG.error(
+            LOG.exception(
                 "alias %s domain %s has been added before to DeletedAlias",
                 alias.email,
                 alias.custom_domain_id,
@@ -158,5 +158,5 @@ def delete_alias(alias: Alias, user: User):
             DeletedAlias.create(email=alias.email)
             db.session.commit()
         except IntegrityError:
-            LOG.error("alias %s has been added before to DeletedAlias", alias.email)
+            LOG.exception("alias %s has been added before to DeletedAlias", alias.email)
             db.session.rollback()

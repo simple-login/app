@@ -142,7 +142,7 @@ def disable_mailbox(mailbox_id):
             email_msg.replace("\n", "<br>"),
         )
     except Exception:
-        LOG.error("Cannot send disable mailbox email to %s", mailbox.user)
+        LOG.exception("Cannot send disable mailbox email to %s", mailbox.user)
 
 
 app = create_app()

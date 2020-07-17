@@ -179,7 +179,7 @@ def setting():
                             custom_domain.user_id != current_user.id
                             or not custom_domain.verified
                         ):
-                            LOG.error(
+                            LOG.exception(
                                 "%s cannot use domain %s", current_user, default_domain
                             )
                         else:

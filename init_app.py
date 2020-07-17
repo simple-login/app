@@ -15,7 +15,9 @@ def load_pgp_public_keys():
 
         # sanity check
         if fingerprint != mailbox.pgp_finger_print:
-            LOG.error("fingerprint %s different for mailbox %s", fingerprint, mailbox)
+            LOG.exception(
+                "fingerprint %s different for mailbox %s", fingerprint, mailbox
+            )
             mailbox.pgp_finger_print = fingerprint
     db.session.commit()
 
@@ -25,7 +27,9 @@ def load_pgp_public_keys():
 
         # sanity check
         if fingerprint != contact.pgp_finger_print:
-            LOG.error("fingerprint %s different for contact %s", fingerprint, contact)
+            LOG.exception(
+                "fingerprint %s different for contact %s", fingerprint, contact
+            )
             contact.pgp_finger_print = fingerprint
 
     db.session.commit()

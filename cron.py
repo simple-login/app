@@ -282,7 +282,7 @@ def sanity_check():
             mailbox.nb_failed_checks += 1
             # alert if too much fail
             if mailbox.nb_failed_checks > 10:
-                log_func = LOG.error
+                log_func = LOG.exception
             else:
                 log_func = LOG.warning
 
@@ -299,11 +299,11 @@ def sanity_check():
 
     for user in User.filter_by(activated=True).all():
         if user.email.lower() != user.email:
-            LOG.error("%s does not have lowercase email", user)
+            LOG.exception("%s does not have lowercase email", user)
 
     for mailbox in Mailbox.filter_by(verified=True).all():
         if mailbox.email.lower() != mailbox.email:
-            LOG.error("%s does not have lowercase email", mailbox)
+            LOG.exception("%s does not have lowercase email", mailbox)
 
     LOG.d("Finish sanity check")
 

@@ -138,7 +138,7 @@ def get_or_create_contact(
         LOG.warning("From header is empty, parse mail_from %s %s", mail_from, alias)
         contact_name, contact_email = parseaddr_unicode(mail_from)
         if not contact_email:
-            LOG.error(
+            LOG.exception(
                 "Cannot parse contact from from_header:%s, mail_from:%s",
                 contact_from_header,
                 mail_from,
@@ -413,7 +413,7 @@ def forward_email_to_mailbox(
 
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
-        LOG.error(
+        LOG.exception(
             "Mailbox has the same domain as alias. %s -> %s -> %s",
             contact,
             alias,
@@ -436,7 +436,7 @@ def forward_email_to_mailbox(
         try:
             msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
         except PGPException:
-            LOG.error(
+            LOG.exception(
                 "Cannot encrypt message %s -> %s. %s %s", contact, alias, mailbox, user
             )
             # so the client can retry later
@@ -630,7 +630,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         try:
             msg = prepare_pgp_message(msg, contact.pgp_finger_print)
         except PGPException:
-            LOG.error(
+            LOG.exception(
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
             # so the client can retry later
@@ -645,7 +645,7 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
             envelope.rcpt_options,
         )
     except Exception:
-        LOG.error("Cannot send email from %s to %s", alias, contact)
+        LOG.exception("Cannot send email from %s to %s", alias, contact)
         send_email(
             mailbox.email,
             f"Email cannot be sent to {contact.email} from {alias.email}",
@@ -685,7 +685,7 @@ def spf_pass(
         try:
             r = spf.check2(i=ip, s=envelope.mail_from.lower(), h=None)
         except Exception:
-            LOG.error("SPF error, mailbox %s, ip %s", mailbox.email, ip)
+            LOG.exception("SPF error, mailbox %s, ip %s", mailbox.email, ip)
         else:
             # TODO: Handle temperr case (e.g. dns timeout)
             # only an absolute pass, or no SPF policy at all is 'valid'
@@ -824,7 +824,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
         mailbox = Mailbox.get(mailbox_id)
         if not mailbox or mailbox.user_id != user.id:
-            LOG.error(
+            LOG.exception(
                 "Tampered message mailbox_id %s, %s, %s, %s %s",
                 mailbox_id,
                 user,

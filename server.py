@@ -458,7 +458,7 @@ def setup_paddle_callback(app: Flask):
 
         # make sure the request comes from Paddle
         if not paddle_utils.verify_incoming_request(dict(request.form)):
-            LOG.error(
+            LOG.exception(
                 "request not coming from paddle. Request data:%s", dict(request.form)
             )
             return "KO", 400

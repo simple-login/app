@@ -144,7 +144,7 @@ def new_custom_alias_v2():
         LOG.warning("Alias creation time expired for %s", user)
         return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
-        LOG.error("Alias suffix is tampered, user %s", user)
+        LOG.exception("Alias suffix is tampered, user %s", user)
         return jsonify(error="Tampered suffix"), 400
 
     if not verify_prefix_suffix(user, alias_prefix, alias_suffix):
@@ -254,7 +254,7 @@ def new_custom_alias_v3():
         LOG.warning("Alias creation time expired for %s", user)
         return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
-        LOG.error("Alias suffix is tampered, user %s", user)
+        LOG.exception("Alias suffix is tampered, user %s", user)
         return jsonify(error="Tampered suffix"), 400
 
     if not verify_prefix_suffix(user, alias_prefix, alias_suffix):

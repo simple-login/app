@@ -71,7 +71,7 @@ def cancel_subscription(subscription_id: int) -> bool:
     )
     res = r.json()
     if not res["success"]:
-        LOG.error(
+        LOG.exception(
             f"cannot cancel subscription {subscription_id}, paddle response: {res}"
         )
 
@@ -90,7 +90,7 @@ def change_plan(subscription_id: int, plan_id) -> bool:
     )
     res = r.json()
     if not res["success"]:
-        LOG.error(
+        LOG.exception(
             f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
         )
 

@@ -519,7 +519,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     else:
         # the same original_transaction_id has been used on another account
         if AppleSubscription.get_by(original_transaction_id=original_transaction_id):
-            LOG.error("Same Apple Sub has been used before, current user %s", user)
+            LOG.exception("Same Apple Sub has been used before, current user %s", user)
             return None
 
         LOG.d(
