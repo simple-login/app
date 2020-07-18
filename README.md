@@ -468,6 +468,8 @@ DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
 FLASK_SECRET=put_something_secret_here
 
 GNUPGHOME=/sl/pgp
+
+LOCAL_FILE_UPLOAD=true
 ```
 
 
