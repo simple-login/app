@@ -498,6 +498,7 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
         )
         score = float(score_section[len("score=") :])
         if score >= max_score:
+            LOG.warning("Spam score %s exceeds %s", score, max_score)
             return True, spam_status_header
 
     return spamassassin_answer.lower() == "yes", spam_status_header
