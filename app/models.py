@@ -2,7 +2,7 @@ import enum
 import random
 import uuid
 from email.utils import formataddr
-from typing import List
+from typing import List, Tuple
 
 import arrow
 import bcrypt
@@ -166,13 +166,19 @@ class User(db.Model, ModelMixin, UserMixin):
     # Fields for WebAuthn
     fido_uuid = db.Column(db.String(), nullable=True, unique=True)
 
-    def fido_enabled(self) -> bool:
-        if self.fido_uuid is not None:
-            return True
-        return False
+    # the default domain that's used when user creates a new random alias
+    # default_random_alias_domain_id XOR default_random_alias_public_domain_id
+    default_random_alias_domain_id = db.Column(
+        db.ForeignKey("custom_domain.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+    )
 
-    def two_factor_authentication_enabled(self) -> bool:
-        return self.enable_otp or self.fido_enabled()
+    default_random_alias_public_domain_id = db.Column(
+        db.ForeignKey("public_domain.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+    )
 
     # some users could have lifetime premium
     lifetime = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
@@ -220,6 +226,9 @@ class User(db.Model, ModelMixin, UserMixin):
     )
 
     default_mailbox = db.relationship("Mailbox", foreign_keys=[default_mailbox_id])
+
+    # user can set a more strict max_spam score to block spams more aggressively
+    max_spam_score = db.Column(db.Integer, nullable=True)
 
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
@@ -282,6 +291,26 @@ class User(db.Model, ModelMixin, UserMixin):
 
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         if manual_sub and manual_sub.end_at > arrow.now():
+            return True
+
+        return False
+
+    def is_paid(self) -> bool:
+        """same as _lifetime_or_active_subscription but not include free manual subscription"""
+        sub: Subscription = self.get_subscription()
+        if sub:
+            return True
+
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and apple_sub.is_valid():
+            return True
+
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
+        if (
+            manual_sub
+            and not manual_sub.is_giveaway
+            and manual_sub.end_at > arrow.now()
+        ):
             return True
 
         return False
@@ -429,6 +458,63 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def nb_directory(self):
         return Directory.query.filter_by(user_id=self.id).count()
+
+    def has_custom_domain(self):
+        return CustomDomain.filter_by(user_id=self.id, verified=True).count() > 0
+
+    def custom_domains(self):
+        return CustomDomain.filter_by(user_id=self.id, verified=True).all()
+
+    def available_domains_for_random_alias(self) -> List[Tuple[bool, str]]:
+        """Return available domains for user to create random aliases
+        Each result record contains:
+        - whether the domain is public (i.e. belongs to SimpleLogin)
+        - the domain
+        """
+        res = []
+        for public_domain in PublicDomain.query.all():
+            res.append((True, public_domain.domain))
+
+        for custom_domain in CustomDomain.filter_by(
+            user_id=self.id, verified=True
+        ).all():
+            res.append((False, custom_domain.domain))
+
+        return res
+
+    def default_random_alias_domain(self) -> str:
+        """return the domain used for the random alias"""
+        if self.default_random_alias_domain_id:
+            custom_domain = CustomDomain.get(self.default_random_alias_domain_id)
+            # sanity check
+            if (
+                not custom_domain
+                or not custom_domain.verified
+                or custom_domain.user_id != self.id
+            ):
+                LOG.exception("Problem with %s default random alias domain", self)
+                return FIRST_ALIAS_DOMAIN
+
+            return custom_domain.domain
+
+        if self.default_random_alias_public_domain_id:
+            public_domain = PublicDomain.get(self.default_random_alias_public_domain_id)
+            # sanity check
+            if not public_domain:
+                LOG.exception("Problem with %s public random alias domain", self)
+                return FIRST_ALIAS_DOMAIN
+
+            return public_domain.domain
+
+        return FIRST_ALIAS_DOMAIN
+
+    def fido_enabled(self) -> bool:
+        if self.fido_uuid is not None:
+            return True
+        return False
+
+    def two_factor_authentication_enabled(self) -> bool:
+        return self.enable_otp or self.fido_enabled()
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
@@ -646,17 +732,20 @@ class OauthToken(db.Model, ModelMixin):
 
 
 def generate_email(
-    scheme: int = AliasGeneratorEnum.word.value, in_hex: bool = False
+    scheme: int = AliasGeneratorEnum.word.value,
+    in_hex: bool = False,
+    alias_domain=FIRST_ALIAS_DOMAIN,
 ) -> str:
     """generate an email address that does not exist before
+    :param alias_domain: the domain used to generate the alias.
     :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
     :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
     """
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
-        random_email = name + "@" + FIRST_ALIAS_DOMAIN
+        random_email = name + "@" + alias_domain
     else:
-        random_email = random_words() + "@" + FIRST_ALIAS_DOMAIN
+        random_email = random_words() + "@" + alias_domain
 
     random_email = random_email.lower().strip()
 
@@ -730,6 +819,7 @@ class Alias(db.Model, ModelMixin):
         for m in self._mailboxes:
             ret.append(m)
 
+        ret = [mb for mb in ret if mb.verified]
         ret = sorted(ret, key=lambda mb: mb.email)
 
         return ret
@@ -790,13 +880,32 @@ class Alias(db.Model, ModelMixin):
         note: str = None,
     ):
         """create a new random alias"""
-        random_email = generate_email(scheme=scheme, in_hex=in_hex)
-        return Alias.create(
+        custom_domain = None
+
+        if user.default_random_alias_domain_id:
+            custom_domain = CustomDomain.get(user.default_random_alias_domain_id)
+            random_email = generate_email(
+                scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
+            )
+        elif user.default_random_alias_public_domain_id:
+            public_domain = PublicDomain.get(user.default_random_alias_public_domain_id)
+            random_email = generate_email(
+                scheme=scheme, in_hex=in_hex, alias_domain=public_domain.domain
+            )
+        else:
+            random_email = generate_email(scheme=scheme, in_hex=in_hex)
+
+        alias = Alias.create(
             user_id=user.id,
             email=random_email,
             mailbox_id=user.default_mailbox_id,
             note=note,
         )
+
+        if custom_domain:
+            alias.custom_domain_id = custom_domain.id
+
+        return alias
 
     def mailbox_email(self):
         if self.mailbox_id:
@@ -1247,7 +1356,7 @@ class CustomDomain(db.Model, ModelMixin):
     # an alias is created automatically the first time it receives an email
     catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
-    user = db.relationship(User)
+    user = db.relationship(User, foreign_keys=[user_id])
 
     def nb_alias(self):
         return Alias.filter_by(custom_domain_id=self.id).count()
@@ -1304,7 +1413,7 @@ class Directory(db.Model, ModelMixin):
             db.session.commit()
         # this can happen when a previously deleted alias is re-created via catch-all or directory feature
         except IntegrityError:
-            LOG.error("Some aliases have been added before to DeletedAlias")
+            LOG.exception("Some aliases have been added before to DeletedAlias")
             db.session.rollback()
 
         cls.query.filter(cls.id == obj_id).delete()
@@ -1340,6 +1449,13 @@ class Mailbox(db.Model, ModelMixin):
     pgp_public_key = db.Column(db.Text, nullable=True)
     pgp_finger_print = db.Column(db.String(512), nullable=True)
 
+    # incremented when a check is failed on the mailbox
+    # alert when the number exceeds a threshold
+    # used in sanity_check()
+    nb_failed_checks = db.Column(
+        db.Integer, default=0, server_default="0", nullable=False
+    )
+
     __table_args__ = (db.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
 
     user = db.relationship(User, foreign_keys=[user_id])
@@ -1367,7 +1483,7 @@ class Mailbox(db.Model, ModelMixin):
                 db.session.commit()
         # this can happen when a previously deleted alias is re-created via catch-all or directory feature
         except IntegrityError:
-            LOG.error("Some aliases have been added before to DeletedAlias")
+            LOG.exception("Some aliases have been added before to DeletedAlias")
             db.session.rollback()
 
         cls.query.filter(cls.id == obj_id).delete()
@@ -1450,8 +1566,16 @@ class Referral(db.Model, ModelMixin):
 
     user = db.relationship(User, foreign_keys=[user_id])
 
-    def nb_user(self):
+    def nb_user(self) -> int:
         return User.filter_by(referral_id=self.id, activated=True).count()
+
+    def nb_paid_user(self) -> int:
+        res = 0
+        for user in User.filter_by(referral_id=self.id, activated=True):
+            if user.is_paid():
+                res += 1
+
+        return res
 
     def link(self):
         return f"{LANDING_PAGE_URL}?slref={self.code}"
@@ -1547,3 +1671,9 @@ class Notification(db.Model, ModelMixin):
 
     # whether user has marked the notification as read
     read = db.Column(db.Boolean, nullable=False, default=False)
+
+
+class PublicDomain(db.Model, ModelMixin):
+    """SimpleLogin domains that all users can use"""
+
+    domain = db.Column(db.String(128), unique=True, nullable=False)

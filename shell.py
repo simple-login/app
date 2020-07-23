@@ -114,6 +114,37 @@ def migrate_domain_trash():
     db.session.commit()
 
 
+def disable_mailbox(mailbox_id):
+    """disable a mailbox and all of its aliases"""
+    mailbox = Mailbox.get(mailbox_id)
+    mailbox.verified = False
+    for alias in mailbox.aliases:
+        alias.enabled = False
+
+    db.session.commit()
+
+    email_msg = f"""Hi,
+
+    Your mailbox {mailbox.email} cannot receive emails. 
+    To avoid forwarding emails to an invalid mailbox, we have disabled this mailbox along with all of its aliases.
+
+    If this is a mistake, please reply to this email.
+
+    Thanks,
+    SimpleLogin team.
+                """
+
+    try:
+        send_email(
+            mailbox.user.email,
+            f"{mailbox.email} is disabled",
+            email_msg,
+            email_msg.replace("\n", "<br>"),
+        )
+    except Exception:
+        LOG.exception("Cannot send disable mailbox email to %s", mailbox.user)
+
+
 app = create_app()
 
 with app.app_context():

@@ -23,4 +23,5 @@ from .views import (
     referral,
     recovery_code,
     contact_detail,
+    setup_done,
 )

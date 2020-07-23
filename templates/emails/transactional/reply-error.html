@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + (user.name or "")) }}
+
+  {% call text() %}
+    Your email cannot be sent to <b>{{ contact.email }}</b> from your alias <b>{{ alias.email }}</b>.
+  {% endcall %}
+
+  {% call text() %}
+    Can you please verify <b>{{ contact.email }}</b> is a valid address?
+  {% endcall %}
+
+  {% call text() %}
+    Usually this is because the DNS record of <b>{{ contact_domain }}</b> does not exist.
+  {% endcall %}
+
+  {% call text() %}
+    You can check its DNS record on any DNS checker websites, for example https://mxtoolbox.com/SuperTool.aspx
+  {% endcall %}
+
+  {% call text() %}
+    Please let us know if you have any question. <br>
+    Best, <br>
+    SimpleLogin team.
+  {% endcall %}
+
+{% endblock %}
+
+

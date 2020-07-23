@@ -490,6 +490,19 @@ sudo docker run --rm \
 
 This command could take a while to download the `simplelogin/app` docker image.
 
+Init data
+
+```bash
+sudo docker run --rm \
+    --name sl-init \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    --network="sl-network" \
+    simplelogin/app:3.2.2 python init_app.py
+```
+
 Now, it's time to run the `webapp` container!
 
 ```bash
@@ -796,6 +809,38 @@ Output: if api key is correct, return a json with user name and whether user is 
 ```
 
 If api key is incorrect, return 401.
+
+#### POST /api/api_key
+
+Create a new API Key
+
+Input:
+- `Authentication` header that contains the api key
+- Or the correct cookie is set, i.e. user is already logged in on the web
+- device: device's name
+
+Output
+- 401 if user is not authenticated
+- 201 with the `api_key`
+
+```json
+{
+  "api_key": "long string"
+}
+```
+
+#### GET /api/logout
+
+Log user out
+
+Input:
+- `Authentication` header that contains the api key
+- Or the correct cookie is set, i.e. user is already logged in on the web
+
+Output:
+- 401 if user is not authenticated
+- 200 if success
+
 
 ### Alias endpoints
 

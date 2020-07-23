@@ -464,7 +464,7 @@ def get_addrs_from_header(msg: Message, header) -> [str]:
     return [r for r in ret if r]
 
 
-def get_spam_info(msg: Message) -> (bool, str):
+def get_spam_info(msg: Message, max_score=None) -> (bool, str):
     """parse SpamAssassin header to detect whether a message is classified as spam.
     Return (is spam, spam status detail)
     The header format is
@@ -476,10 +476,32 @@ def get_spam_info(msg: Message) -> (bool, str):
     if not spamassassin_status:
         return False, ""
 
-    # yes or no
-    spamassassin_answer = spamassassin_status[: spamassassin_status.find(",")]
+    return get_spam_from_header(spamassassin_status, max_score=max_score)
 
-    return spamassassin_answer.lower() == "yes", spamassassin_status
+
+def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
+    """get spam info from X-Spam-Status header
+    Return (is spam, spam status detail).
+    The spam_status_header has the following format
+    ```No, score=-0.1 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
+  DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
+  URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2```
+    """
+    # yes or no
+    spamassassin_answer = spam_status_header[: spam_status_header.find(",")]
+
+    if max_score:
+        # spam score
+        # get the score section "score=-0.1"
+        score_section = (
+            spam_status_header[spam_status_header.find(",") + 1 :].strip().split(" ")[0]
+        )
+        score = float(score_section[len("score=") :])
+        if score >= max_score:
+            LOG.warning("Spam score %s exceeds %s", score, max_score)
+            return True, spam_status_header
+
+    return spamassassin_answer.lower() == "yes", spam_status_header
 
 
 def parseaddr_unicode(addr) -> (str, str):

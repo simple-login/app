@@ -1,6 +1,5 @@
 from flask import g
 from flask import jsonify, request
-from flask_cors import cross_origin
 from itsdangerous import SignatureExpired
 
 from app.api.base import api_bp, require_api_auth
@@ -12,7 +11,7 @@ from app.api.serializer import (
 )
 from app.config import MAX_NB_EMAIL_FREE_PLAN
 from app.dashboard.views.custom_alias import verify_prefix_suffix, signer
-from app.extensions import db
+from app.extensions import db, limiter
 from app.log import LOG
 from app.models import (
     Alias,
@@ -28,7 +27,7 @@ from app.utils import convert_to_id
 
 
 @api_bp.route("/alias/custom/new", methods=["POST"])
-@cross_origin()
+@limiter.limit("5/minute")
 @require_api_auth
 def new_custom_alias():
     """
@@ -99,7 +98,7 @@ def new_custom_alias():
 
 
 @api_bp.route("/v2/alias/custom/new", methods=["POST"])
-@cross_origin()
+@limiter.limit("5/minute")
 @require_api_auth
 def new_custom_alias_v2():
     """
@@ -142,10 +141,10 @@ def new_custom_alias_v2():
     try:
         alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
     except SignatureExpired:
-        LOG.error("Alias creation time expired for %s", user)
-        return jsonify(error="alias creation is expired, please try again"), 400
+        LOG.warning("Alias creation time expired for %s", user)
+        return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
-        LOG.error("Alias suffix is tampered, user %s", user)
+        LOG.exception("Alias suffix is tampered, user %s", user)
         return jsonify(error="Tampered suffix"), 400
 
     if not verify_prefix_suffix(user, alias_prefix, alias_suffix):
@@ -194,7 +193,7 @@ def new_custom_alias_v2():
 
 
 @api_bp.route("/v3/alias/custom/new", methods=["POST"])
-@cross_origin()
+@limiter.limit("5/minute")
 @require_api_auth
 def new_custom_alias_v3():
     """
@@ -252,10 +251,10 @@ def new_custom_alias_v3():
     try:
         alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
     except SignatureExpired:
-        LOG.error("Alias creation time expired for %s", user)
-        return jsonify(error="alias creation is expired, please try again"), 400
+        LOG.warning("Alias creation time expired for %s", user)
+        return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
-        LOG.error("Alias suffix is tampered, user %s", user)
+        LOG.exception("Alias suffix is tampered, user %s", user)
         return jsonify(error="Tampered suffix"), 400
 
     if not verify_prefix_suffix(user, alias_prefix, alias_suffix):

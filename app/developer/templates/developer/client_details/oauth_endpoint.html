@@ -9,10 +9,10 @@
     <label class="form-label">Authorization endpoint</label>
 
     <div class="input-group mt-2">
-      <input type="text" disabled value="https://app.simplelogin.io/oauth2/authorize" class="form-control">
+      <input type="text" disabled value="{{ URL + "/oauth2/authorize" }}" class="form-control">
       <span class="input-group-append">
           <button
-              data-clipboard-text="https://app.simplelogin.io/oauth2/authorize"
+              data-clipboard-text="{{ URL + "/oauth2/authorize" }}"
               class="clipboard btn btn-primary" type="button">
             <i class="fe fe-clipboard"></i>
           </button>
@@ -24,10 +24,10 @@
     <label class="form-label">Token endpoint</label>
 
     <div class="input-group mt-2">
-      <input type="text" disabled value="https://app.simplelogin.io/oauth2/token" class="form-control">
+      <input type="text" disabled value="{{ URL + "/oauth2/token" }}" class="form-control">
       <span class="input-group-append">
           <button
-              data-clipboard-text="https://app.simplelogin.io/oauth2/token"
+              data-clipboard-text="{{ URL + "/oauth2/token" }}"
               class="clipboard btn btn-primary" type="button">
             <i class="fe fe-clipboard"></i>
           </button>
@@ -39,10 +39,10 @@
     <label class="form-label">UserInfo endpoint</label>
 
     <div class="input-group mt-2">
-      <input type="text" disabled value="https://app.simplelogin.io/oauth2/userinfo" class="form-control">
+      <input type="text" disabled value="{{ URL + "/oauth2/userinfo" }}" class="form-control">
       <span class="input-group-append">
           <button
-              data-clipboard-text="https://app.simplelogin.io/oauth2/userinfo"
+              data-clipboard-text="{{ URL + "/oauth2/userinfo" }}"
               class="clipboard btn btn-primary" type="button">
             <i class="fe fe-clipboard"></i>
           </button>

@@ -1,5 +1,6 @@
 """Initial loading script"""
-from app.models import Mailbox, Contact
+from app.config import ALIAS_DOMAINS
+from app.models import Mailbox, Contact, PublicDomain
 from app.log import LOG
 from app.extensions import db
 from app.pgp_utils import load_public_key
@@ -14,7 +15,9 @@ def load_pgp_public_keys():
 
         # sanity check
         if fingerprint != mailbox.pgp_finger_print:
-            LOG.error("fingerprint %s different for mailbox %s", fingerprint, mailbox)
+            LOG.exception(
+                "fingerprint %s different for mailbox %s", fingerprint, mailbox
+            )
             mailbox.pgp_finger_print = fingerprint
     db.session.commit()
 
@@ -24,7 +27,9 @@ def load_pgp_public_keys():
 
         # sanity check
         if fingerprint != contact.pgp_finger_print:
-            LOG.error("fingerprint %s different for contact %s", fingerprint, contact)
+            LOG.exception(
+                "fingerprint %s different for contact %s", fingerprint, contact
+            )
             contact.pgp_finger_print = fingerprint
 
     db.session.commit()
@@ -32,8 +37,20 @@ def load_pgp_public_keys():
     LOG.d("Finish load_pgp_public_keys")
 
 
+def add_public_domains():
+    for alias_domain in ALIAS_DOMAINS:
+        if PublicDomain.get_by(domain=alias_domain):
+            LOG.d("%s is already a public domain", alias_domain)
+        else:
+            LOG.info("Add %s to public domain", alias_domain)
+            PublicDomain.create(domain=alias_domain)
+
+    db.session.commit()
+
+
 if __name__ == "__main__":
     app = create_app()
 
     with app.app_context():
         load_pgp_public_keys()
+        add_public_domains()

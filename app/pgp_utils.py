@@ -39,7 +39,7 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
 
     # todo
     if mem_usage > 300:
-        LOG.error("Force exit")
+        LOG.exception("Force exit")
         hard_exit()
 
     r = gpg.encrypt_file(data, fingerprint, always_trust=True)

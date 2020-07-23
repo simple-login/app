@@ -10,7 +10,7 @@ from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
 from app import s3, email_utils
-from app.config import URL
+from app.config import URL, FIRST_ALIAS_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
     email_domain_can_be_used_as_mailbox,
@@ -31,6 +31,7 @@ from app.models import (
     AliasGeneratorEnum,
     ManualSubscription,
     SenderFormatEnum,
+    PublicDomain,
 )
 from app.utils import random_string
 
@@ -159,6 +160,44 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
+        elif request.form.get("form-name") == "change-random-alias-default-domain":
+            default_domain = request.form.get("random-alias-default-domain")
+
+            if default_domain:
+                public_domain = PublicDomain.get_by(domain=default_domain)
+                if public_domain:
+                    # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
+                    current_user.default_random_alias_public_domain_id = (
+                        public_domain.id
+                    )
+                    current_user.default_random_alias_domain_id = None
+                else:
+                    custom_domain = CustomDomain.get_by(domain=default_domain)
+                    if custom_domain:
+                        # sanity check
+                        if (
+                            custom_domain.user_id != current_user.id
+                            or not custom_domain.verified
+                        ):
+                            LOG.exception(
+                                "%s cannot use domain %s", current_user, default_domain
+                            )
+                        else:
+                            # make sure only default_random_alias_domain_id or
+                            # default_random_alias_public_domain_id is set
+                            current_user.default_random_alias_domain_id = (
+                                custom_domain.id
+                            )
+                            current_user.default_random_alias_public_domain_id = None
+
+            else:
+                current_user.default_random_alias_domain_id = None
+                current_user.default_random_alias_public_domain_id = None
+
+            db.session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "change-sender-format":
             sender_format = int(request.form.get("sender-format"))
             if SenderFormatEnum.has_value(sender_format):
@@ -215,6 +254,7 @@ def setting():
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
         manual_sub=manual_sub,
+        FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
     )
 
 

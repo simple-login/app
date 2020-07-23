@@ -1,7 +1,6 @@
 from flask import g
 from flask import jsonify
 from flask import request
-from flask_cors import cross_origin
 
 from app import alias_utils
 from app.api.base import api_bp, require_api_auth
@@ -25,7 +24,6 @@ from app.utils import random_string
 
 
 @api_bp.route("/aliases", methods=["GET", "POST"])
-@cross_origin()
 @require_api_auth
 def get_aliases():
     """
@@ -68,7 +66,6 @@ def get_aliases():
 
 
 @api_bp.route("/v2/aliases", methods=["GET", "POST"])
-@cross_origin()
 @require_api_auth
 def get_aliases_v2():
     """
@@ -121,7 +118,6 @@ def get_aliases_v2():
 
 
 @api_bp.route("/aliases/<int:alias_id>", methods=["DELETE"])
-@cross_origin()
 @require_api_auth
 def delete_alias(alias_id):
     """
@@ -135,7 +131,7 @@ def delete_alias(alias_id):
     user = g.user
     alias = Alias.get(alias_id)
 
-    if alias.user_id != user.id:
+    if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
     alias_utils.delete_alias(alias, user)
@@ -144,7 +140,6 @@ def delete_alias(alias_id):
 
 
 @api_bp.route("/aliases/<int:alias_id>/toggle", methods=["POST"])
-@cross_origin()
 @require_api_auth
 def toggle_alias(alias_id):
     """
@@ -170,7 +165,6 @@ def toggle_alias(alias_id):
 
 
 @api_bp.route("/aliases/<int:alias_id>/activities")
-@cross_origin()
 @require_api_auth
 def get_alias_activities(alias_id):
     """
@@ -226,7 +220,6 @@ def get_alias_activities(alias_id):
 
 
 @api_bp.route("/aliases/<int:alias_id>", methods=["PUT"])
-@cross_origin()
 @require_api_auth
 def update_alias(alias_id):
     """
@@ -247,7 +240,7 @@ def update_alias(alias_id):
     user = g.user
     alias: Alias = Alias.get(alias_id)
 
-    if alias.user_id != user.id:
+    if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
     changed = False
@@ -310,7 +303,6 @@ def update_alias(alias_id):
 
 
 @api_bp.route("/aliases/<int:alias_id>", methods=["GET"])
-@cross_origin()
 @require_api_auth
 def get_alias(alias_id):
     """
@@ -324,6 +316,9 @@ def get_alias(alias_id):
     user = g.user
     alias: Alias = Alias.get(alias_id)
 
+    if not alias:
+        return jsonify(error="Unknown error"), 400
+
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
@@ -331,7 +326,6 @@ def get_alias(alias_id):
 
 
 @api_bp.route("/aliases/<int:alias_id>/contacts")
-@cross_origin()
 @require_api_auth
 def get_alias_contacts_route(alias_id):
     """
@@ -365,7 +359,6 @@ def get_alias_contacts_route(alias_id):
 
 
 @api_bp.route("/aliases/<int:alias_id>/contacts", methods=["POST"])
-@cross_origin()
 @require_api_auth
 def create_contact_route(alias_id):
     """
@@ -420,7 +413,6 @@ def create_contact_route(alias_id):
 
 
 @api_bp.route("/contacts/<int:contact_id>", methods=["DELETE"])
-@cross_origin()
 @require_api_auth
 def delete_contact(contact_id):
     """

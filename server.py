@@ -1,11 +1,22 @@
+from datetime import timedelta
+
 import arrow
 import flask_profiler
 import os
 import sentry_sdk
 import ssl
-from flask import Flask, redirect, url_for, render_template, request, jsonify, flash
+from flask import (
+    Flask,
+    redirect,
+    url_for,
+    render_template,
+    request,
+    jsonify,
+    flash,
+    session,
+)
 from flask_admin import Admin
-from flask_cors import cross_origin
+from flask_cors import cross_origin, CORS
 from flask_login import current_user
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -28,6 +39,7 @@ from app.config import (
     FLASK_PROFILER_PASSWORD,
     SENTRY_FRONT_END_DSN,
     FIRST_ALIAS_DOMAIN,
+    SESSION_COOKIE_NAME,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -52,6 +64,7 @@ from app.models import (
     Referral,
     AliasMailbox,
     Notification,
+    PublicDomain,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -89,7 +102,7 @@ def create_app() -> Flask:
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
     # to avoid conflict with other cookie
-    app.config["SESSION_COOKIE_NAME"] = "slapp"
+    app.config["SESSION_COOKIE_NAME"] = SESSION_COOKIE_NAME
     if URL.startswith("https"):
         app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -121,6 +134,16 @@ def create_app() -> Flask:
             "ignore": ["^/static/.*", "/git", "/exception"],
         }
         flask_profiler.init_app(app)
+
+    # enable CORS on /api endpoints
+    cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+    # set session to permanent so user stays signed in after quitting the browser
+    # the cookie is valid for 7 days
+    @app.before_request
+    def make_session_permanent():
+        session.permanent = True
+        app.permanent_session_lifetime = timedelta(days=7)
 
     return app
 
@@ -179,7 +202,7 @@ def fake_data():
     )
     db.session.commit()
 
-    for i in range(31):
+    for i in range(3):
         if i % 2 == 0:
             a = Alias.create(
                 email=f"e{i}@{FIRST_ALIAS_DOMAIN}", user_id=user.id, mailbox_id=m1.id
@@ -262,6 +285,10 @@ def fake_data():
         activated=True,
         referral_id=referral.id,
     )
+    db.session.commit()
+
+    for d in ["d1.localhost", "d2.localhost"]:
+        PublicDomain.create(domain=d)
     db.session.commit()
 
 
@@ -371,7 +398,7 @@ def setup_error_page(app):
 
     @app.errorhandler(429)
     def forbidden(e):
-        LOG.error("Client hit rate limit on path %s", request.path)
+        LOG.warning("Client hit rate limit on path %s", request.path)
         if request.path.startswith("/api/"):
             return jsonify(error="Rate limit exceeded"), 429
         else:
@@ -431,7 +458,7 @@ def setup_paddle_callback(app: Flask):
 
         # make sure the request comes from Paddle
         if not paddle_utils.verify_incoming_request(dict(request.form)):
-            LOG.error(
+            LOG.exception(
                 "request not coming from paddle. Request data:%s", dict(request.form)
             )
             return "KO", 400
@@ -610,6 +637,6 @@ if __name__ == "__main__":
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         context.load_cert_chain("local_data/cert.pem", "local_data/key.pem")
 
-        app.run(debug=True, host="0.0.0.0", port=7777, ssl_context=context)
+        app.run(debug=True, port=7777, ssl_context=context)
     else:
-        app.run(debug=True, host="0.0.0.0", port=7777)
+        app.run(debug=True, port=7777)

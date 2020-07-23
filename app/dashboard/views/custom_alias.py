@@ -50,8 +50,7 @@ def available_suffixes(user: User) -> [bool, str, str]:
 def custom_alias():
     # check if user has not exceeded the alias quota
     if not current_user.can_create_new_alias():
-        # notify admin
-        LOG.error("user %s tries to create custom alias", current_user)
+        LOG.warning("user %s tries to create custom alias", current_user)
         flash(
             "You have reached free plan limit, please upgrade to create new aliases",
             "warning",
@@ -95,7 +94,7 @@ def custom_alias():
             flash("Alias creation time is expired, please retry", "warning")
             return redirect(url_for("dashboard.custom_alias"))
         except Exception:
-            LOG.error("Alias suffix is tampered, user %s", current_user)
+            LOG.exception("Alias suffix is tampered, user %s", current_user)
             flash("Unknown error, refresh the page", "error")
             return redirect(url_for("dashboard.custom_alias"))
 
@@ -182,20 +181,20 @@ def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
                 alias_domain not in user_custom_domains
                 and alias_domain not in ALIAS_DOMAINS
             ):
-                LOG.error("wrong alias suffix %s, user %s", alias_suffix, user)
+                LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
         else:
             if alias_domain not in user_custom_domains:
-                LOG.error("wrong alias suffix %s, user %s", alias_suffix, user)
+                LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
     else:
         if not alias_suffix.startswith("."):
-            LOG.error("User %s submits a wrong alias suffix %s", user, alias_suffix)
+            LOG.exception("User %s submits a wrong alias suffix %s", user, alias_suffix)
             return False
 
         full_alias = alias_prefix + alias_suffix
         if not email_belongs_to_alias_domains(full_alias):
-            LOG.error(
+            LOG.exception(
                 "Alias suffix should end with one of the alias domains %s",
                 user,
                 alias_suffix,
@@ -204,7 +203,7 @@ def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
 
         random_word_part = alias_suffix[1 : alias_suffix.find("@")]
         if not word_exist(random_word_part):
-            LOG.error(
+            LOG.exception(
                 "alias suffix %s needs to start with a random word, user %s",
                 alias_suffix,
                 user,

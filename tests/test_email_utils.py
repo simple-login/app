@@ -11,6 +11,7 @@ from app.email_utils import (
     parseaddr_unicode,
     send_email_with_rate_control,
     copy,
+    get_spam_from_header,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -134,3 +135,28 @@ def test_copy():
     msg2 = copy(msg)
 
     assert msg.as_bytes() == msg2.as_bytes()
+
+
+def test_get_spam_from_header():
+    is_spam, _ = get_spam_from_header(
+        """No, score=-0.1 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
+  DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
+  URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2"""
+    )
+    assert not is_spam
+
+    is_spam, _ = get_spam_from_header(
+        """Yes, score=-0.1 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
+  DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
+  URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2"""
+    )
+    assert is_spam
+
+    # the case where max_score is less than the default used by SpamAssassin
+    is_spam, _ = get_spam_from_header(
+        """No, score=6 required=10.0 tests=DKIM_SIGNED,DKIM_VALID,
+  DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
+  URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2""",
+        max_score=5,
+    )
+    assert is_spam

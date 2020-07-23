@@ -43,7 +43,7 @@
         <label class="form-label col">Authorized Redirect URIs</label>
         <p class="col text-right">
           <small class="text-muted">
-            <em>redirect_uri</em> must be <b>HTTPS</b> for security reason.
+            <b>redirect_uri</b> must be <b>HTTPS</b> for security reason.
           </small>
         </p>
       </div>
@@ -52,20 +52,20 @@
         <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
           <p>
             You haven't added any <a href="https://www.oauth.com/oauth2-servers/redirect-uris/">redirect_uri</a>,
-            that is the url that will receive the <em>code</em> or <em>access-token</em> in OAuth2 flow.
+            that is the url that will receive the <b>code</b> or <b>access-token</b> in OAuth2 flow.
           </p>
           <p>
             There's NO NEED to add <em>http://localhost:*</em> as by default,
-            SimpleLogin <em>whitelists</em> localhost (unlike Facebook).
+            SimpleLogin <b>whitelists</b> localhost (unlike Facebook).
           </p>
           <p>
-            You DO need to add your <em>redirect_uri</em> once your website/app goes live (i.e. deployed on production).
+            You DO need to add your <b>redirect_uri</b> once your website/app goes live (i.e. deployed on production).
           </p>
           <p>
-            The <em>redirect_uri</em> needs to be <b>HTTPS</b> for security reason.
+            The <b>redirect_uri</b> needs to be <b>HTTPS</b> for security reason.
           </p>
           <p>
-            Start by adding your first <em>redirect_uri</em> here 👇
+            Start by adding your first <b>redirect_uri</b> here 👇
           </p>
         </div>
       {% endif %}
