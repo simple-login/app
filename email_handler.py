@@ -421,7 +421,7 @@ def forward_email_to_mailbox(
         )
         return False, "550 SL E14"
 
-    is_spam, spam_status = get_spam_info(msg)
+    is_spam, spam_status = get_spam_info(msg, max_score=user.max_spam_score)
     if is_spam:
         LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
         email_log.is_spam = True
