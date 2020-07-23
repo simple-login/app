@@ -292,3 +292,6 @@ ALERT_SPF = "spf"
 
 # Disable onboarding emails
 DISABLE_ONBOARDING = "DISABLE_ONBOARDING" in os.environ
+
+HCAPTCHA_SECRET = os.environ.get("HCAPTCHA_SECRET")
+HCAPTCHA_SITEKEY = os.environ.get("HCAPTCHA_SITEKEY")
