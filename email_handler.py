@@ -1094,11 +1094,18 @@ def handle(envelope: Envelope, smtp: SMTP) -> str:
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
-            LOG.debug(">>> Reply phase %s -> %s", envelope.mail_from, rcpt_to)
+            LOG.debug(
+                ">>> Reply phase %s(%s) -> %s", envelope.mail_from, msg["From"], rcpt_to
+            )
             is_delivered, smtp_status = handle_reply(envelope, smtp, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
-            LOG.debug(">>> Forward phase %s -> %s", envelope.mail_from, rcpt_to)
+            LOG.debug(
+                ">>> Forward phase %s(%s) -> %s",
+                envelope.mail_from,
+                msg["From"],
+                rcpt_to,
+            )
             for is_delivered, smtp_status in handle_forward(
                 envelope, smtp, msg, rcpt_to
             ):
