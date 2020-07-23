@@ -227,6 +227,9 @@ class User(db.Model, ModelMixin, UserMixin):
 
     default_mailbox = db.relationship("Mailbox", foreign_keys=[default_mailbox_id])
 
+    # user can set a more strict max_spam score to block spams more aggressively
+    max_spam_score = db.Column(db.Integer, nullable=True)
+
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
