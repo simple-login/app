@@ -31,6 +31,11 @@
       </div>
       -->
 
+      {% if HCAPTCHA_SITEKEY %}
+        <div class="h-captcha" data-sitekey="{{ HCAPTCHA_SITEKEY }}"></div>
+        <script src="https://hcaptcha.com/1/api.js" async defer></script>
+      {% endif %}
+
       <small class="text-center mt-3">
         By clicking Create Account, you agree to abide by
         <a href="https://simplelogin.io/terms">SimpleLogin's Terms and Conditions.</a>
