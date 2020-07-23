@@ -131,10 +131,14 @@ sudo docker stop sl-email sl-migration sl-app
 # Make sure to remove these containers to avoid conflict
 sudo docker rm -f sl-email sl-migration sl-app
 
+# create ./sl/upload/ if not exist
+mkdir -p ./sl/upload/
+
 # Run the database migration
 sudo docker run --rm \
     --name sl-migration \
     -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
@@ -145,6 +149,7 @@ sudo docker run --rm \
 sudo docker run --rm \
     --name sl-init \
     -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
@@ -155,6 +160,7 @@ sudo docker run --rm \
 sudo docker run -d \
     --name sl-app \
     -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
@@ -167,6 +173,7 @@ sudo docker run -d \
 sudo docker run -d \
     --name sl-email \
     -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
