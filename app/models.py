@@ -1353,10 +1353,19 @@ class CustomDomain(db.Model, ModelMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    _mailboxes = db.relationship("Mailbox", secondary="domain_mailbox", lazy="joined")
+
     # an alias is created automatically the first time it receives an email
     catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
     user = db.relationship(User, foreign_keys=[user_id])
+
+    @property
+    def mailboxes(self):
+        if self._mailboxes:
+            return self._mailboxes
+        else:
+            return [self.user.default_mailbox]
 
     def nb_alias(self):
         return Alias.filter_by(custom_domain_id=self.id).count()
@@ -1619,6 +1628,21 @@ class DirectoryMailbox(db.Model, ModelMixin):
 
     directory_id = db.Column(
         db.ForeignKey(Directory.id, ondelete="cascade"), nullable=False
+    )
+    mailbox_id = db.Column(
+        db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
+    )
+
+
+class DomainMailbox(db.Model, ModelMixin):
+    """store the owning mailboxes for a domain"""
+
+    __table_args__ = (
+        db.UniqueConstraint("domain_id", "mailbox_id", name="uq_domain_mailbox"),
+    )
+
+    domain_id = db.Column(
+        db.ForeignKey(CustomDomain.id, ondelete="cascade"), nullable=False
     )
     mailbox_id = db.Column(
         db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
