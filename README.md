@@ -680,6 +680,42 @@ The code is formatted using https://github.com/psf/black, to format the code, si
 black .
 ```
 
+### Test sending email
+
+[swaks](http://www.jetmore.org/john/code/swaks/) is used for sending test emails to the `email_handler`.
+
+[mailcatcher](https://github.com/sj26/mailcatcher) is used to receive forwarded emails.
+
+There are several steps to set up the email handler
+
+1) run mailcatcher
+
+```bash
+mailcatcher
+```
+
+2) Make sure to set the following variables in the `.env` file
+
+```
+NOT_SEND_EMAIL=true
+POSTFIX_SERVER=localhost
+POSTFIX_PORT=1025
+```
+
+3) Run email_handler
+
+```bash
+python email_handler.py
+```
+
+4) Send a test email
+
+```bash
+swaks --to e1@d1.localhost --from hey@google.com --server 127.0.0.1:20381
+```
+
+Now open http://localhost:1080/, you should see the test email.
+
 ## API
 
 SimpleLogin current API clients are Chrome/Firefox/Safari extension and mobile (iOS/Android) app.

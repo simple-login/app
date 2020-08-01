@@ -50,11 +50,8 @@ def directory():
             dir_id = request.form.get("dir-id")
             dir = Directory.get(dir_id)
 
-            if not dir:
+            if not dir or dir.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
-                return redirect(url_for("dashboard.directory"))
-            elif dir.user_id != current_user.id:
-                flash("You cannot delete this directory", "warning")
                 return redirect(url_for("dashboard.directory"))
 
             mailbox_ids = request.form.getlist("mailbox_ids")
@@ -75,7 +72,7 @@ def directory():
                 flash("You must select at least 1 mailbox", "warning")
                 return redirect(url_for("dashboard.directory"))
 
-            # first remove all existing alias-mailboxes links
+            # first remove all existing directory-mailboxes links
             DirectoryMailbox.query.filter_by(directory_id=dir.id).delete()
             db.session.flush()
 
@@ -125,7 +122,7 @@ def directory():
                                 or not mailbox.verified
                             ):
                                 flash("Something went wrong, please retry", "warning")
-                                return redirect(url_for("dashboard.custom_alias"))
+                                return redirect(url_for("dashboard.directory"))
                             mailboxes.append(mailbox)
 
                         for mailbox in mailboxes:

@@ -98,7 +98,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
     # try to create alias on-the-fly with custom-domain catch-all feature
     # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
     alias_domain = get_email_domain_part(address)
-    custom_domain = CustomDomain.get_by(domain=alias_domain)
+    custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
 
     if not custom_domain:
         return None
@@ -116,13 +116,19 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
 
     try:
         LOG.d("create alias %s for domain %s", address, custom_domain)
+        mailboxes = custom_domain.mailboxes
         alias = Alias.create(
             email=address,
             user_id=custom_domain.user_id,
             custom_domain_id=custom_domain.id,
             automatic_creation=True,
-            mailbox_id=domain_user.default_mailbox_id,
+            mailbox_id=mailboxes[0].id,
         )
+        db.session.flush()
+        for i in range(1, len(mailboxes)):
+            AliasMailbox.create(
+                alias_id=alias.id, mailbox_id=mailboxes[i].id,
+            )
         db.session.commit()
         return alias
     except AliasInTrashError:
