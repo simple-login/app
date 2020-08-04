@@ -89,9 +89,8 @@
           <div class="mb-2 text-muted small-text">
             Created {{ contact.created_at | dt }} <br>
 
-            {% if contact.last_reply() %}
-              {% set email_log = contact.last_reply() %}
-              Last email sent {{ email_log.created_at | dt }}
+            {% if contact.latest_reply %}
+              Last email sent {{ contact.latest_reply | dt }}
             {% endif %}
           </div>
 

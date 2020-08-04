@@ -8,6 +8,9 @@ from app.models import *
 from server import create_app
 from time import sleep
 
+from sqlalchemy import *
+from sqlalchemy.orm import *
+
 
 def create_db():
     if not database_exists(DB_URI):

@@ -2,20 +2,19 @@ import enum
 import random
 import uuid
 from email.utils import formataddr
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import arrow
 import bcrypt
+from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
-from sqlalchemy import text, desc, CheckConstraint
+from sqlalchemy import text, desc, CheckConstraint, and_, func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
 from sqlalchemy_utils import ArrowType
 
 from app import s3
 from app.config import (
-    EMAIL_DOMAIN,
     MAX_NB_EMAIL_FREE_PLAN,
     URL,
     AVATAR_URL_EXPIRATION,
@@ -914,13 +913,27 @@ class Alias(db.Model, ModelMixin):
             return self.user.email
 
     def get_contacts(self, page=0):
-        contacts = (
-            Contact.filter_by(alias_id=self.id)
+        latest_reply = func.max(EmailLog.created_at)
+        q = (
+            db.session.query(Contact, latest_reply)
+            .join(
+                EmailLog,
+                and_(EmailLog.contact_id == Contact.id, EmailLog.is_reply),
+                isouter=True,
+            )
+            .filter(Contact.alias_id == self.id)
+            .group_by(Contact.id)
             .order_by(Contact.created_at.desc())
             .limit(PAGE_LIMIT)
             .offset(page * PAGE_LIMIT)
             .all()
         )
+
+        contacts = []
+        for contact, l in q:
+            contact.latest_reply = l
+            contacts.append(contact)
+
         return contacts
 
     def __repr__(self):
@@ -1049,6 +1062,9 @@ class Contact(db.Model, ModelMixin):
 
     alias = db.relationship(Alias)
     user = db.relationship(User)
+
+    # the latest reply sent to this contact
+    latest_reply: Optional[Arrow] = None
 
     @property
     def email(self):
