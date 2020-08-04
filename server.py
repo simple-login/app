@@ -17,6 +17,7 @@ from flask import (
 )
 from flask_admin import Admin
 from flask_cors import cross_origin, CORS
+from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import current_user
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -621,10 +622,10 @@ if __name__ == "__main__":
     app = create_app()
 
     # enable flask toolbar
-    # app.config["DEBUG_TB_PROFILER_ENABLED"] = True
-    # app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
-    #
-    # toolbar = DebugToolbarExtension(app)
+    app.config["DEBUG_TB_PROFILER_ENABLED"] = True
+    app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
+    app.debug = True
+    toolbar = DebugToolbarExtension(app)
 
     # warning: only used in local
     if RESET_DB:
