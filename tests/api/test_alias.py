@@ -187,6 +187,9 @@ def test_get_aliases_v2(flask_client):
         assert "id" in mailbox
         assert "email" in mailbox
 
+    assert "support_pgp" in r0
+    assert not r0["support_pgp"]
+
 
 def test_delete_alias(flask_client):
     user = User.create(
