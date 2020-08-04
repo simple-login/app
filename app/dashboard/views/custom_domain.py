@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import EMAIL_SERVERS_WITH_PRIORITY
+from app.config import EMAIL_SERVERS_WITH_PRIORITY, ALIAS_DOMAINS
 from app.dashboard.base import dashboard_bp
 from app.email_utils import get_email_domain_part
 from app.extensions import db
@@ -40,7 +40,9 @@ def custom_domain():
                 if new_domain.startswith("https://"):
                     new_domain = new_domain[len("https://") :]
 
-                if CustomDomain.get_by(domain=new_domain):
+                if new_domain in ALIAS_DOMAINS:
+                    flash("A custom domain cannot be a built-in domain.", "error")
+                elif CustomDomain.get_by(domain=new_domain):
                     flash(f"{new_domain} already added", "warning")
                 elif get_email_domain_part(current_user.email) == new_domain:
                     flash(
