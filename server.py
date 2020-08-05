@@ -166,7 +166,10 @@ def fake_data():
         password="password",
         activated=True,
         is_admin=True,
+
+        enable_otp=False,
         otp_secret="base32secret3232",
+
         intro_shown=True,
         fido_uuid=None,
     )
