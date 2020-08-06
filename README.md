@@ -965,7 +965,9 @@ If success, 200 with the list of aliases. Each alias has the following fields:
 - nb_forward
 - nb_reply
 - support_pgp: whether an alias can support PGP, i.e. when one of alias's mailboxes supports PGP.
-- pgp_enabled: whether the PGP is enabled on this alias. This field should only be used when `support_pgp` is true.
+- disable_pgp: whether the PGP is disabled on this alias.
+    This field should only be used when `support_pgp` is true. 
+    By setting `disable_pgp=true`, a user can explicitly disable PGP on an alias even its mailboxes support PGP. 
 - mailbox: obsolete, should use `mailboxes` instead.
     - id
     - email

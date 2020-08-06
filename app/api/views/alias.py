@@ -85,7 +85,7 @@ def get_aliases_v2():
             - mailbox
             - mailboxes
             - support_pgp
-            - pgp_enabled
+            - disable_pgp
             - (optional) latest_activity:
                 - timestamp
                 - action: forward|reply|block|bounced
