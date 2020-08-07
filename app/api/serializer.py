@@ -146,7 +146,11 @@ def get_alias_infos_with_pagination_v2(
 
     if query:
         q = q.filter(
-            or_(Alias.email.ilike(f"%{query}%"), Alias.note.ilike(f"%{query}%"))
+            or_(
+                Alias.email.ilike(f"%{query}%"),
+                Alias.note.ilike(f"%{query}%"),
+                Alias.name.ilike(f"%{query}%"),
+            )
         )
 
     if alias_filter == "enabled":
