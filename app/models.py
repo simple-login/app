@@ -1207,6 +1207,8 @@ class EmailLog(db.Model, ModelMixin):
 
 
 class Subscription(db.Model, ModelMixin):
+    """Paddle subscription"""
+
     # Come from Paddle
     cancel_url = db.Column(db.String(1024), nullable=False)
     update_url = db.Column(db.String(1024), nullable=False)
@@ -1229,6 +1231,9 @@ class Subscription(db.Model, ModelMixin):
             return "Monthly ($2.99/month)"
         else:
             return "Yearly ($29.99/year)"
+
+    def __repr__(self):
+        return f"<Subscription {self.plan} {self.next_bill_date}>"
 
 
 class ManualSubscription(db.Model, ModelMixin):
