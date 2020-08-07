@@ -145,7 +145,9 @@ class Stats:
 
     nb_custom_domain: int
     nb_app: int
+
     nb_premium: int
+    nb_apple_premium: int
 
 
 def stats_before(moment: Arrow) -> Stats:
@@ -200,8 +202,10 @@ def stats_before(moment: Arrow) -> Stats:
         nb_spam,
     )
 
-    nb_premium = Subscription.query.filter(Subscription.created_at < moment).count()
-    nb_premium += AppleSubscription.query.filter(
+    nb_premium = Subscription.query.filter(
+        Subscription.created_at < moment, Subscription.cancelled == False
+    ).count()
+    nb_apple_premium = AppleSubscription.query.filter(
         AppleSubscription.created_at < moment
     ).count()
 
@@ -255,6 +259,7 @@ Stats for {today} <br>
 
 nb_user: {stats_today.nb_user} - {increase_percent(stats_yesterday.nb_user, stats_today.nb_user)}  <br>
 nb_premium: {stats_today.nb_premium} - {increase_percent(stats_yesterday.nb_premium, stats_today.nb_premium)}  <br>
+nb_apple_premium: {stats_today.nb_apple_premium} - {increase_percent(stats_yesterday.nb_apple_premium, stats_today.nb_apple_premium)}  <br>
 nb_alias: {stats_today.nb_alias} - {increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)}  <br>
 
 nb_forward: {stats_today.nb_forward} - {increase_percent(stats_yesterday.nb_forward, stats_today.nb_forward)}  <br>
