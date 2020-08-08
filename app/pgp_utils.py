@@ -6,7 +6,7 @@ from memory_profiler import memory_usage
 
 from app.config import GNUPGHOME
 from app.log import LOG
-from app.models import Mailbox
+from app.models import Mailbox, Contact
 from app.utils import random_string
 
 gpg = gnupg.GPG(gnupghome=GNUPGHOME)
@@ -45,11 +45,22 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
     r = gpg.encrypt_file(data, fingerprint, always_trust=True)
     if not r.ok:
         # maybe the fingerprint is not loaded on this host, try to load it
+        found = False
+        # searching for the key in mailbox
         mailbox = Mailbox.get_by(pgp_finger_print=fingerprint)
         if mailbox:
             LOG.d("(re-)load public key for %s", mailbox)
             load_public_key(mailbox.pgp_public_key)
+            found = True
 
+        # searching for the key in contact
+        contact = Contact.get_by(pgp_finger_print=fingerprint)
+        if contact:
+            LOG.d("(re-)load public key for %s", contact)
+            load_public_key(contact.pgp_public_key)
+            found = True
+
+        if found:
             LOG.d("retry to encrypt")
             data.seek(0)
             r = gpg.encrypt_file(data, fingerprint, always_trust=True)
