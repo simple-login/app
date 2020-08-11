@@ -82,6 +82,14 @@
   {% endblock %}
 </head>
 <body class="">
+
+{% if current_user.is_authenticated %}
+<div class="alert alert-warning text-center" role="alert" style="margin-bottom: 0px">
+  SimpleLogin servers are experiencing some email delays and we are currently investigating.
+  We apologise for this inconvenience!
+</div>
+{% endif %}
+
 <div class="page">
   <div class="container">
     <!-- For flash messages -->
