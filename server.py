@@ -1,10 +1,10 @@
+import os
+import ssl
 from datetime import timedelta
 
 import arrow
 import flask_profiler
-import os
 import sentry_sdk
-import ssl
 from flask import (
     Flask,
     redirect,
@@ -19,7 +19,6 @@ from flask_admin import Admin
 from flask_cors import cross_origin, CORS
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import current_user
-from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -75,12 +74,7 @@ from app.oauth.base import oauth_bp
 if SENTRY_DSN:
     LOG.d("enable sentry")
     sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[
-            FlaskIntegration(),
-            SqlalchemyIntegration(),
-            AioHttpIntegration(),
-        ],
+        dsn=SENTRY_DSN, integrations=[FlaskIntegration(), SqlalchemyIntegration(),],
     )
 
 # the app is served behin nginx which uses http and not https
