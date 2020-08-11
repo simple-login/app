@@ -81,6 +81,18 @@ if SENTRY_DSN:
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
+def create_light_app() -> Flask:
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    app.secret_key = FLASK_SECRET
+
+    init_extensions(app)
+
+    return app
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     # SimpleLogin is deployed behind NGINX

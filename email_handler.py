@@ -99,7 +99,7 @@ from app.models import (
 from app.pgp_utils import PGPException
 from app.utils import random_string
 from init_app import load_pgp_public_keys
-from server import create_app
+from server import create_app, create_light_app
 
 _IP_HEADER = "X-SimpleLogin-Client-IP"
 _MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
@@ -107,7 +107,7 @@ _MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
 # fix the database connection leak issue
 # use this method instead of create_app
 def new_app():
-    app = create_app()
+    app = create_light_app()
 
     @app.teardown_appcontext
     def shutdown_session(response_or_exc):
