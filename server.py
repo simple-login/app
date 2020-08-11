@@ -86,9 +86,7 @@ def create_light_app() -> Flask:
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    app.secret_key = FLASK_SECRET
-
-    init_extensions(app)
+    db.init_app(app)
 
     return app
 
