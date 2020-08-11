@@ -1122,6 +1122,7 @@ def handle(envelope: Envelope, smtp: SMTP) -> str:
 
 class MailHandler:
     async def handle_DATA(self, server, session, envelope: Envelope):
+        start = time.time()
         LOG.debug(
             "===>> New message, mail from %s, rctp tos %s ",
             envelope.mail_from,
@@ -1136,7 +1137,9 @@ class MailHandler:
 
         app = new_app()
         with app.app_context():
-            return handle(envelope, smtp)
+            ret = handle(envelope, smtp)
+            LOG.debug("takes %s seconds <<===", time.time() - start)
+            return ret
 
 
 if __name__ == "__main__":
