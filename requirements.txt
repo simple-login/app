@@ -4,6 +4,7 @@
 #
 #    pip-compile
 #
+aiocontextvars==0.2.2     # via -r requirements.in
 aiohttp==3.5.4            # via raven-aiohttp, yacron
 aiosmtpd==1.2             # via -r requirements.in
 aiosmtplib==1.0.6         # via yacron
