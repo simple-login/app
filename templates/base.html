@@ -68,6 +68,12 @@
   <script
       src="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.js') }}"></script>
 
+
+  {% if PLAUSIBLE_HOST and PLAUSIBLE_DOMAIN %}
+  <!-- Plausible Analytics library -->
+  <script async defer data-domain=”{{PLAUSIBLE_DOMAIN}}” src=”{{PLAUSIBLE_HOST}}/js/plausible.js”></script>
+  {% endif %}
+
   <link rel="stylesheet" href="{{ url_for('static', filename='darkmode.css') }}?v={{ VERSION }}">
   <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
 
