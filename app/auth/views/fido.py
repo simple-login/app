@@ -94,7 +94,7 @@ def fido():
             )
             new_sign_count = webauthn_assertion_response.verify()
         except Exception as e:
-            LOG.exception(f"An error occurred in WebAuthn verification process: {e}")
+            LOG.warning(f"An error occurred in WebAuthn verification process: {e}")
             flash("Key verification failed.", "warning")
             # Trigger rate limiter
             g.deduct_limit = True
