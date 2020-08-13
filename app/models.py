@@ -1314,6 +1314,9 @@ class EmailChange(db.Model, ModelMixin):
     def is_expired(self):
         return self.expired < arrow.now()
 
+    def __repr__(self):
+        return f"<EmailChange {self.id} {self.new_email} {self.user_id}>"
+
 
 class AliasUsedOn(db.Model, ModelMixin):
     """Used to know where an alias is created"""

@@ -7,26 +7,14 @@
 {% block single_content %}
   <div class="card">
     <div class="card-body p-6">
-
-      {% if incorrect_code %}
-        <div class="text-danger text-center h4">
-          The link is incorrect. <br><br>
-        </div>
-        <div class="text-center">
-          Please go to <a href="{{ url_for('dashboard.setting') }}">settings</a>
-          page to re-send confirmation email.
-        </div>
-      {% endif %}
-
-      {% if expired_code %}
-        <div class="text-danger text-center h4">
-          The link is already expired. <br><br>
-        </div>
-        <div class="text-center">
-          Please go to <a href="{{ url_for('dashboard.setting') }}">settings</a>
-          page to re-send confirmation email.
-        </div>
-      {% endif %}
+      <div class="h3 text-center">Email Update</div>
+      <div class="text-danger text-center h4">
+        Incorrect or expired link. <br><br>
+      </div>
+      <div class="text-center">
+        Please go to <a href="{{ url_for('dashboard.setting') }}">settings</a>
+        page to re-send the confirmation email.
+      </div>
     </div>
   </div>
 

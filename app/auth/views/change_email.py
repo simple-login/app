@@ -13,10 +13,13 @@ def change_email():
     email_change: EmailChange = EmailChange.get_by(code=code)
 
     if not email_change:
-        return render_template("auth/change_email.html", incorrect_code=True)
+        return render_template("auth/change_email.html")
 
     if email_change.is_expired():
-        return render_template("auth/change_email.html", expired_code=True)
+        # delete the expired email
+        EmailChange.delete(email_change.id)
+        db.session.commit()
+        return render_template("auth/change_email.html")
 
     user = email_change.user
     user.email = email_change.new_email
