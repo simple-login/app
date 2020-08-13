@@ -67,6 +67,8 @@ def setting():
     if request.method == "POST":
         if request.form.get("form-name") == "update-email":
             if change_email_form.validate():
+                # whether user can proceed with the email update
+                new_email_valid = True
                 if (
                     change_email_form.email.data.lower().strip() != current_user.email
                     and not pending_email
@@ -78,12 +80,38 @@ def setting():
                         email=new_email
                     ):
                         flash(f"Email {new_email} already used", "error")
+                        new_email_valid = False
                     elif not email_domain_can_be_used_as_mailbox(new_email):
                         flash(
                             "You cannot use this email address as your personal inbox.",
                             "error",
                         )
-                    else:
+                        new_email_valid = False
+                    # a pending email change with the same email exists from another user
+                    elif EmailChange.get_by(new_email=new_email):
+                        other_email_change: EmailChange = EmailChange.get_by(
+                            new_email=new_email
+                        )
+                        LOG.warning(
+                            "Another user has a pending %s with the same email address. Current user:%s",
+                            other_email_change,
+                            current_user,
+                        )
+
+                        if other_email_change.is_expired():
+                            LOG.d(
+                                "delete the expired email change %s", other_email_change
+                            )
+                            EmailChange.delete(other_email_change.id)
+                            db.session.commit()
+                        else:
+                            flash(
+                                "You cannot use this email address as your personal inbox.",
+                                "error",
+                            )
+                            new_email_valid = False
+
+                    if new_email_valid:
                         email_change = EmailChange.create(
                             user_id=current_user.id,
                             code=random_string(
