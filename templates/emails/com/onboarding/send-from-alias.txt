@@ -1,5 +1,5 @@
 This email is sent to {{ user.email }} and is part of our onboarding series.
-Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
 Hi {{user.name}}

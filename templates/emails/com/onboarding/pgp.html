@@ -21,7 +21,7 @@
 
   {{ render_text("You can create and manage your PGP keys when adding or editing your mailboxes. Check it out on your mailbox dashboard.") }}
 
-  {{ render_button("Add your PGP key", "https://app.simplelogin.io/dashboard/mailbox") }}
+  {{ render_button("Add your PGP key", URL ~ "/dashboard/mailbox") }}
 
   {{ render_text('Thanks, <br />SimpleLogin Team.') }}
   {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
@@ -30,5 +30,5 @@
 
 {% block footer %}
   This email is sent to {{ user.email }} and is part of our onboarding series. Unsubscribe on
-  <a href="https://app.simplelogin.io/dashboard/setting#notification">Settings</a>
+  <a href="{{URL}}/dashboard/setting#notification">Settings</a>
 {% endblock %}

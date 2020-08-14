@@ -3,7 +3,7 @@ Hi {{name}}
 My name is Son. I’m the founder of SimpleLogin and I wanted to be the first to welcome you on board.
 
 To better secure your account, I recommend enabling Multi-Factor Authentication (MFA) on your setting page at
-https://app.simplelogin.io/dashboard/setting
+{{URL}}/dashboard/setting
 
 If you have any feedback or improvement ideas please let me know by simply replying to this email. Yes, this email is not sent from a no-reply address.
 
@@ -15,7 +15,7 @@ Your trial will end {{ user.trial_end.humanize() }}.
 All aliases you create during the trial will continue to work normally when the trial ends.
 {% endif %}
 
-In the next coming days, you are going to receive some onboarding emails to quickly present some SimpleLogin features. If you don't want to receive these emails, you can disable them in your notification settings on https://app.simplelogin.io/dashboard/setting#notification.
+In the next coming days, you are going to receive some onboarding emails to quickly present some SimpleLogin features. If you don't want to receive these emails, you can disable them in your notification settings on {{URL}}/dashboard/setting#notification.
 
 
 

@@ -19,16 +19,16 @@
 
   {{ render_text('The mailbox doesn\'t have to be your personal email: you can also create aliases for your friend by adding his/her email as a mailbox.') }}
 
-  {{ render_button("Create mailbox", "https://app.simplelogin.io/dashboard/mailbox") }}
+  {{ render_button("Create mailbox", URL ~ "/dashboard/mailbox") }}
 
   {{ render_text('Thanks, <br />SimpleLogin Team.') }}
   {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
 
-  {{ raw_url("https://app.simplelogin.io/dashboard/mailbox") }}
+  {{ raw_url(URL ~ "/dashboard/mailbox") }}
 
 {% endblock %}
 
 {% block footer %}
   This email is sent to {{ user.email }} and is part of our onboarding series. Unsubscribe on
-  <a href="https://app.simplelogin.io/dashboard/setting#notification">Settings</a>
+  <a href="{{URL}}/dashboard/setting#notification">Settings</a>
 {% endblock %}

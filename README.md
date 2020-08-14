@@ -7,11 +7,11 @@
 [SimpleLogin](https://simplelogin.io) | Privacy-First Email Forwarding and Identity Provider Service
 ---
 <p>
-<a href="https://chrome.google.com/webstore/detail/simplelogin-protect-your/dphilobhebphkdjbpfohgikllaljmgbn">
+<a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">
     <img src="https://img.shields.io/chrome-web-store/rating/dphilobhebphkdjbpfohgikllaljmgbn?label=Chrome%20Extension">
 </a>
 
-<a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">
+<a href="https://addons.mozilla.org/firefox/addon/simplelogin/">
 <img src="https://img.shields.io/amo/rating/simplelogin?label=Firefox%20Add-On&logo=SimpleLogin">
 </a>
 
