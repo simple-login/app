@@ -10,10 +10,9 @@ from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text, desc, CheckConstraint, and_, func
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy_utils import ArrowType
 
-from app import s3, alias_utils
+from app import s3
 from app.config import (
     MAX_NB_EMAIL_FREE_PLAN,
     URL,
@@ -1455,6 +1454,8 @@ class Directory(db.Model, ModelMixin):
         user = obj.user
         # Put all aliases belonging to this directory to global or domain trash
         for alias in Alias.query.filter_by(directory_id=obj_id):
+            from app import alias_utils
+
             alias_utils.delete_alias(alias, user)
 
         cls.query.filter(cls.id == obj_id).delete()
@@ -1521,6 +1522,8 @@ class Mailbox(db.Model, ModelMixin):
                 alias.mailbox_id = first_mb.id
                 alias._mailboxes.remove(first_mb)
             else:
+                from app import alias_utils
+
                 # only put aliases that have mailbox as a single mailbox into trash
                 alias_utils.delete_alias(alias, user)
             db.session.commit()
