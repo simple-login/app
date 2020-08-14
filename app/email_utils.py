@@ -43,7 +43,11 @@ def render(template_name, **kwargs) -> str:
 
     template = env.get_template(template_name)
 
-    return template.render(MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN, URL=URL, **kwargs)
+    return template.render(
+        MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN,
+        URL=URL,
+        **kwargs,
+	)
 
 
 def send_welcome_email(user):
