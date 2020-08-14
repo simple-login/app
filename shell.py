@@ -106,11 +106,13 @@ def migrate_domain_trash():
             domain = CustomDomain.get_by(domain=alias_domain)
             if domain:
                 LOG.d("move %s to domain %s trash", deleted_alias, domain)
-                DomainDeletedAlias.create(
-                    user_id=domain.user_id,
-                    email=deleted_alias.email,
-                    domain_id=domain.id,
-                    created_at=deleted_alias.created_at,
+                db.session.add(
+                    DomainDeletedAlias(
+                        user_id=domain.user_id,
+                        email=deleted_alias.email,
+                        domain_id=domain.id,
+                        created_at=deleted_alias.created_at,
+                    )
                 )
                 DeletedAlias.delete(deleted_alias.id)
 
