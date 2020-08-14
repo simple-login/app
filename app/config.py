@@ -3,6 +3,7 @@ import random
 import string
 import subprocess
 from urllib.parse import urlparse
+import socket
 
 from dotenv import load_dotenv
 
@@ -298,3 +299,6 @@ HCAPTCHA_SITEKEY = os.environ.get("HCAPTCHA_SITEKEY")
 
 PLAUSIBLE_HOST = os.environ.get("PLAUSIBLE_HOST")
 PLAUSIBLE_DOMAIN = os.environ.get("PLAUSIBLE_DOMAIN")
+
+# server host
+HOST = socket.gethostname()
