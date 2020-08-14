@@ -1451,15 +1451,11 @@ class Directory(db.Model, ModelMixin):
 
     @classmethod
     def delete(cls, obj_id):
-        # Put all aliases belonging to this directory to global trash
-        try:
-            for alias in Alias.query.filter_by(directory_id=obj_id):
-                DeletedAlias.create(email=alias.email)
-            db.session.commit()
-        # this can happen when a previously deleted alias is re-created via catch-all or directory feature
-        except IntegrityError:
-            LOG.exception("Some aliases have been added before to DeletedAlias")
-            db.session.rollback()
+        obj: Directory = cls.get(obj_id)
+        user = obj.user
+        # Put all aliases belonging to this directory to global or domain trash
+        for alias in Alias.query.filter_by(directory_id=obj_id):
+            alias_utils.delete_alias(alias, user)
 
         cls.query.filter(cls.id == obj_id).delete()
         db.session.commit()
