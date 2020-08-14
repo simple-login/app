@@ -1509,23 +1509,21 @@ class Mailbox(db.Model, ModelMixin):
 
     @classmethod
     def delete(cls, obj_id):
-        # Put all aliases belonging to this mailbox to global trash
-        try:
-            for alias in Alias.query.filter_by(mailbox_id=obj_id):
-                # special handling for alias that has several mailboxes and has mailbox_id=obj_id
-                if len(alias.mailboxes) > 1:
-                    # use the first mailbox found in alias._mailboxes
-                    first_mb = alias._mailboxes[0]
-                    alias.mailbox_id = first_mb.id
-                    alias._mailboxes.remove(first_mb)
-                else:
-                    # only put aliases that have mailbox as a single mailbox into trash
-                    DeletedAlias.create(email=alias.email)
-                db.session.commit()
-        # this can happen when a previously deleted alias is re-created via catch-all or directory feature
-        except IntegrityError:
-            LOG.exception("Some aliases have been added before to DeletedAlias")
-            db.session.rollback()
+        mailbox: Mailbox = cls.get(obj_id)
+        user = mailbox.user
+
+        # Put all aliases belonging to this mailbox to global or domain trash
+        for alias in Alias.query.filter_by(mailbox_id=obj_id):
+            # special handling for alias that has several mailboxes and has mailbox_id=obj_id
+            if len(alias.mailboxes) > 1:
+                # use the first mailbox found in alias._mailboxes
+                first_mb = alias._mailboxes[0]
+                alias.mailbox_id = first_mb.id
+                alias._mailboxes.remove(first_mb)
+            else:
+                # only put aliases that have mailbox as a single mailbox into trash
+                alias_utils.delete_alias(alias, user)
+            db.session.commit()
 
         cls.query.filter(cls.id == obj_id).delete()
         db.session.commit()
