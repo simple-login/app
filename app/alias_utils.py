@@ -142,14 +142,17 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
 
 
 def delete_alias(alias: Alias, user: User):
-    Alias.delete(alias.id)
-    db.session.commit()
-
+    """
+    Delete an alias and add it to either global or domain trash
+    Should be used instead of Alias.delete, DomainDeletedAlias.create, DeletedAlias.create
+    """
     # save deleted alias to either global or domain trash
     if alias.custom_domain_id:
         try:
-            DomainDeletedAlias.create(
-                user_id=user.id, email=alias.email, domain_id=alias.custom_domain_id
+            db.session.add(
+                DomainDeletedAlias(
+                    user_id=user.id, email=alias.email, domain_id=alias.custom_domain_id
+                )
             )
             db.session.commit()
         except IntegrityError:
@@ -161,8 +164,11 @@ def delete_alias(alias: Alias, user: User):
             db.session.rollback()
     else:
         try:
-            DeletedAlias.create(email=alias.email)
+            db.session.add(DeletedAlias(email=alias.email))
             db.session.commit()
         except IntegrityError:
             LOG.exception("alias %s has been added before to DeletedAlias", alias.email)
             db.session.rollback()
+
+    Alias.query.filter(Alias.id == alias.id).delete()
+    db.session.commit()

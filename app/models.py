@@ -13,7 +13,7 @@ from sqlalchemy import text, desc, CheckConstraint, and_, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy_utils import ArrowType
 
-from app import s3
+from app import s3, alias_utils
 from app.config import (
     MAX_NB_EMAIL_FREE_PLAN,
     URL,
@@ -871,6 +871,10 @@ class Alias(db.Model, ModelMixin):
         )
 
     @classmethod
+    def delete(cls, obj_id):
+        raise Exception("should use delete_alias(alias,user) instead")
+
+    @classmethod
     def create_new_random(
         cls,
         user,
@@ -1292,6 +1296,10 @@ class DeletedAlias(db.Model, ModelMixin):
 
     email = db.Column(db.String(256), unique=True, nullable=False)
 
+    @classmethod
+    def create(cls, **kw):
+        raise Exception("should use delete_alias(alias,user) instead")
+
     def __repr__(self):
         return f"<Deleted Alias {self.email}>"
 
@@ -1410,6 +1418,10 @@ class DomainDeletedAlias(db.Model, ModelMixin):
         db.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=False
     )
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+
+    @classmethod
+    def create(cls, **kw):
+        raise Exception("should use delete_alias(alias,user) instead")
 
 
 class LifetimeCoupon(db.Model, ModelMixin):
