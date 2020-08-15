@@ -302,3 +302,7 @@ PLAUSIBLE_DOMAIN = os.environ.get("PLAUSIBLE_DOMAIN")
 
 # server host
 HOST = socket.gethostname()
+
+# by default use a tolerant score
+MAX_SPAM_SCORE = 10
+SPAMASSASSIN_HOST = os.environ.get("SPAMASSASSIN_HOST")
