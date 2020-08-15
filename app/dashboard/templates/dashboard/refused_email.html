@@ -38,13 +38,18 @@
           Sent {{ refused_email.created_at | dt }}
         </div>
 
-        From: {{ contact.website_email }} <br>
+        {% if email_log.is_reply %}
+          From: {{ alias.email }} <br>
+          To: {{ contact.website_email }}
+        {% else %}
+          From: {{ contact.website_email }} <br>
 
-        <span>
+          <span>
           To: {{ alias.email }}
           <a href='{{ url_for("dashboard.index", highlight_alias_id=alias.id) }}'
              class="btn btn-sm btn-outline-danger">Disable Alias</a>
         </span>
+        {% endif %}
 
         {% if refused_email.deleted %}
           <div>
@@ -53,7 +58,7 @@
         {% else %}
           <a href="{{ refused_email.get_url() }}" download
              class="mt-4">Download →</a>
-          <div class="small-text">This will download a ".eml" file that you can open in your favorite email client</div>
+          <div class="small-text">This will download a ".eml" file that you can open in your email client</div>
         {% endif %}
 
       </div>
