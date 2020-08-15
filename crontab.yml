@@ -42,7 +42,7 @@ jobs:
     captureStderr: true
 
   - name: SimpleLogin System Monitoring
-    command: python /code/cron.py -j monitor
+    command: python /code/cron.py -j monitoring
     shell: /bin/bash
     schedule: "*/5 * * * *"
     captureStderr: true
