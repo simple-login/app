@@ -40,3 +40,9 @@ jobs:
     shell: /bin/bash
     schedule: "0 2 * * *"
     captureStderr: true
+
+  - name: SimpleLogin System Monitoring
+    command: python /code/cron.py -j monitor
+    shell: /bin/bash
+    schedule: "*/5 * * * *"
+    captureStderr: true
