@@ -306,3 +306,5 @@ HOST = socket.gethostname()
 # by default use a tolerant score
 MAX_SPAM_SCORE = 10
 SPAMASSASSIN_HOST = os.environ.get("SPAMASSASSIN_HOST")
+# use a more restrictive score when replying
+MAX_REPLY_PHASE_SPAM_SCORE = 5

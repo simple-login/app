@@ -69,6 +69,7 @@ from app.config import (
     SENDER_DIR,
     SPAMASSASSIN_HOST,
     MAX_SPAM_SCORE,
+    MAX_REPLY_PHASE_SPAM_SCORE,
 )
 from app.email_utils import (
     send_email,
@@ -424,6 +425,7 @@ async def forward_email_to_mailbox(
         )
         return False, "550 SL E14"
 
+    # Spam check
     spam_status = ""
     is_spam = False
 
@@ -524,7 +526,7 @@ async def forward_email_to_mailbox(
     return True, "250 Message accepted for delivery"
 
 
-def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str):
+async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str):
     """
     return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
@@ -576,6 +578,33 @@ def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str
         if not spf_pass(ip, envelope, mailbox, user, alias, contact.website_email, msg):
             # cannot use 4** here as sender will retry. 5** because that generates bounce report
             return True, "250 SL E11"
+
+    # Spam check
+    spam_status = ""
+    is_spam = False
+
+    # do not use user.max_spam_score here
+    if SPAMASSASSIN_HOST:
+        spam_score = await get_spam_score(msg)
+        if spam_score > MAX_REPLY_PHASE_SPAM_SCORE:
+            is_spam = True
+            spam_status = "Spam detected by SpamAssassin server"
+    else:
+        is_spam, spam_status = get_spam_info(msg, max_score=MAX_REPLY_PHASE_SPAM_SCORE)
+
+    if is_spam:
+        LOG.exception(
+            "Reply phase - email sent from %s to %s detected as spam", alias, contact
+        )
+        email_log = EmailLog.create(
+            contact_id=contact.id, is_reply=True, user_id=contact.user_id
+        )
+        email_log.is_spam = True
+        email_log.spam_status = spam_status
+        db.session.commit()
+
+        handle_spam(contact, alias, msg, user, mailbox.email, email_log, is_reply=True)
+        return False, "550 SL E15 Email detected as spam"
 
     delete_header(msg, _IP_HEADER)
 
@@ -941,6 +970,7 @@ def handle_spam(
     user: User,
     mailbox_email: str,
     email_log: EmailLog,
+    is_reply=False,  # whether the email is in forward or reply phase
 ):
     # Store the report & original email
     orig_msg = get_orig_message_from_spamassassin_report(msg)
@@ -972,35 +1002,65 @@ def handle_spam(
     )
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
-    # inform user
-    LOG.d(
-        "Inform user %s about spam email sent by %s to alias %s",
-        user,
-        contact.website_email,
-        alias.email,
-    )
-    send_email_with_rate_control(
-        user,
-        ALERT_SPAM_EMAIL,
-        mailbox_email,
-        f"Email from {contact.website_email} to {alias.email} is detected as spam",
-        render(
-            "transactional/spam-email.txt",
-            name=user.name,
-            alias=alias,
-            website_email=contact.website_email,
-            disable_alias_link=disable_alias_link,
-            refused_email_url=refused_email_url,
-        ),
-        render(
-            "transactional/spam-email.html",
-            name=user.name,
-            alias=alias,
-            website_email=contact.website_email,
-            disable_alias_link=disable_alias_link,
-            refused_email_url=refused_email_url,
-        ),
-    )
+    if is_reply:
+        LOG.d(
+            "Inform user %s about spam email sent from alias %s to %s",
+            user,
+            alias,
+            contact,
+        )
+        send_email_with_rate_control(
+            user,
+            ALERT_SPAM_EMAIL,
+            mailbox_email,
+            f"Email from {contact.website_email} to {alias.email} is detected as spam",
+            render(
+                "transactional/spam-email-reply-phase.txt",
+                name=user.name,
+                alias=alias,
+                website_email=contact.website_email,
+                disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email_url,
+            ),
+            render(
+                "transactional/spam-email-reply-phase.html",
+                name=user.name,
+                alias=alias,
+                website_email=contact.website_email,
+                disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email_url,
+            ),
+        )
+    else:
+        # inform user
+        LOG.d(
+            "Inform user %s about spam email sent by %s to alias %s",
+            user,
+            contact,
+            alias,
+        )
+        send_email_with_rate_control(
+            user,
+            ALERT_SPAM_EMAIL,
+            mailbox_email,
+            f"Email from {contact.website_email} to {alias.email} is detected as spam",
+            render(
+                "transactional/spam-email.txt",
+                name=user.name,
+                alias=alias,
+                website_email=contact.website_email,
+                disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email_url,
+            ),
+            render(
+                "transactional/spam-email.html",
+                name=user.name,
+                alias=alias,
+                website_email=contact.website_email,
+                disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email_url,
+            ),
+        )
 
 
 def handle_unsubscribe(envelope: Envelope):
@@ -1112,7 +1172,7 @@ async def handle(envelope: Envelope, smtp: SMTP) -> str:
             LOG.debug(
                 ">>> Reply phase %s(%s) -> %s", envelope.mail_from, msg["From"], rcpt_to
             )
-            is_delivered, smtp_status = handle_reply(envelope, smtp, msg, rcpt_to)
+            is_delivered, smtp_status = await handle_reply(envelope, smtp, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
             LOG.debug(
