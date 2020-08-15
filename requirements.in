@@ -44,3 +44,4 @@ Flask-Limiter
 memory_profiler
 gevent
 aiocontextvars
+aiospamc

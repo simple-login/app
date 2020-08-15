@@ -8,6 +8,7 @@ aiocontextvars==0.2.2     # via -r requirements.in
 aiohttp==3.5.4            # via raven-aiohttp, yacron
 aiosmtpd==1.2             # via -r requirements.in
 aiosmtplib==1.0.6         # via yacron
+aiospamc==0.6.1           # via -r requirements.in
 alembic==1.0.10           # via flask-migrate
 appnope==0.1.0            # via ipython
 arrow==0.14.2             # via -r requirements.in
@@ -23,7 +24,7 @@ boto3==1.9.167            # via -r requirements.in, watchtower
 botocore==1.12.167        # via boto3, s3transfer
 cachetools==4.0.0         # via google-auth
 cbor2==5.1.0              # via webauthn
-certifi==2019.3.9         # via requests, sentry-sdk
+certifi==2019.11.28       # via aiospamc, requests, sentry-sdk
 cffi==1.12.3              # via bcrypt, cryptography
 chardet==3.0.4            # via aiohttp, requests
 click==7.0                # via flask, pip-tools
