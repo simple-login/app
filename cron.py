@@ -1,5 +1,4 @@
 import argparse
-import os
 from dataclasses import dataclass
 from time import sleep
 
@@ -13,7 +12,6 @@ from app.config import (
     ADMIN_EMAIL,
     MACAPP_APPLE_API_SECRET,
     APPLE_API_SECRET,
-    HOST,
 )
 from app.email_utils import (
     send_email,
@@ -34,7 +32,6 @@ from app.models import (
     RefusedEmail,
     AppleSubscription,
     Mailbox,
-    Monitoring,
 )
 from server import create_app
 
@@ -315,36 +312,6 @@ def sanity_check():
     LOG.d("Finish sanity check")
 
 
-def monitoring():
-    """Look at different metrics and alert appropriately"""
-    incoming_queue = nb_files("/var/spool/postfix/incoming")
-    active_queue = nb_files("/var/spool/postfix/active")
-    deferred_queue = nb_files("/var/spool/postfix/deferred")
-    LOG.d("postfix queue sizes %s %s %s", incoming_queue, active_queue, deferred_queue)
-
-    Monitoring.create(
-        host=HOST,
-        incoming_queue=incoming_queue,
-        active_queue=active_queue,
-        deferred_queue=deferred_queue,
-    )
-    db.session.commit()
-
-    # alert when too many emails in incoming + active queue
-    # 20 is an arbitrary number here
-    if incoming_queue + active_queue > 20:
-        LOG.exception(
-            "Too many emails in incoming & active queue %s %s",
-            incoming_queue,
-            active_queue,
-        )
-
-
-def nb_files(directory) -> int:
-    """return the number of files in directory and its sub-directories"""
-    return sum(len(files) for _, _, files in os.walk(directory))
-
-
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -361,7 +328,6 @@ if __name__ == "__main__":
             "delete_refused_emails",
             "poll_apple_subscription",
             "sanity_check",
-            "monitoring",
         ],
     )
     args = parser.parse_args()
@@ -390,6 +356,3 @@ if __name__ == "__main__":
         elif args.job == "sanity_check":
             LOG.d("Check data consistency")
             sanity_check()
-        elif args.job == "monitoring":
-            LOG.d("Collect and monitor system heath")
-            monitoring()
