@@ -1734,3 +1734,18 @@ class PublicDomain(db.Model, ModelMixin):
     """SimpleLogin domains that all users can use"""
 
     domain = db.Column(db.String(128), unique=True, nullable=False)
+
+
+class Monitoring(db.Model, ModelMixin):
+    """
+    Store different host information over the time in order to
+    - alert issues in (almost) real time
+    - analyze data trending
+    """
+
+    host = db.Column(db.String(256), nullable=False)
+
+    # Postfix stats
+    incoming_queue = db.Column(db.Integer, nullable=False)
+    active_queue = db.Column(db.Integer, nullable=False)
+    deferred_queue = db.Column(db.Integer, nullable=False)
