@@ -43,6 +43,7 @@ from io import BytesIO
 from smtplib import SMTP
 from typing import List, Tuple
 
+import aiospamc
 import arrow
 import spf
 from aiosmtpd.controller import Controller
@@ -66,6 +67,8 @@ from app.config import (
     POSTFIX_PORT,
     SENDER,
     SENDER_DIR,
+    SPAMASSASSIN_HOST,
+    MAX_SPAM_SCORE,
 )
 from app.email_utils import (
     send_email,
@@ -359,7 +362,7 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
     return msg
 
 
-def handle_forward(
+async def handle_forward(
     envelope, smtp: SMTP, msg: Message, rcpt_to: str
 ) -> List[Tuple[bool, str]]:
     """return whether an email has been delivered and
@@ -391,7 +394,7 @@ def handle_forward(
     ret = []
     for mailbox in alias.mailboxes:
         ret.append(
-            forward_email_to_mailbox(
+            await forward_email_to_mailbox(
                 alias, copy(msg), email_log, contact, envelope, smtp, mailbox, user
             )
         )
@@ -399,7 +402,7 @@ def handle_forward(
     return ret
 
 
-def forward_email_to_mailbox(
+async def forward_email_to_mailbox(
     alias,
     msg: Message,
     email_log: EmailLog,
@@ -421,7 +424,19 @@ def forward_email_to_mailbox(
         )
         return False, "550 SL E14"
 
-    is_spam, spam_status = get_spam_info(msg, max_score=user.max_spam_score)
+    spam_status = ""
+    is_spam = False
+
+    if SPAMASSASSIN_HOST:
+        spam_score = await get_spam_score(msg)
+        if (user.max_spam_score and spam_score > user.max_spam_score) or (
+            not user.max_spam_score and spam_score > MAX_SPAM_SCORE
+        ):
+            is_spam = True
+            spam_status = "Spam detected by SpamAssassin server"
+    else:
+        is_spam, spam_status = get_spam_info(msg, max_score=user.max_spam_score)
+
     if is_spam:
         LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
         email_log.is_spam = True
@@ -1065,7 +1080,7 @@ def handle_sender_email(envelope: Envelope):
     return "250 email to sender accepted"
 
 
-def handle(envelope: Envelope, smtp: SMTP) -> str:
+async def handle(envelope: Envelope, smtp: SMTP) -> str:
     """Return SMTP status"""
     # unsubscribe request
     if UNSUBSCRIBER and envelope.rcpt_tos == [UNSUBSCRIBER]:
@@ -1106,7 +1121,7 @@ def handle(envelope: Envelope, smtp: SMTP) -> str:
                 msg["From"],
                 rcpt_to,
             )
-            for is_delivered, smtp_status in handle_forward(
+            for is_delivered, smtp_status in await handle_forward(
                 envelope, smtp, msg, rcpt_to
             ):
                 res.append((is_delivered, smtp_status))
@@ -1118,6 +1133,11 @@ def handle(envelope: Envelope, smtp: SMTP) -> str:
 
     # Failed delivery for all, return the first failure
     return res[0][1]
+
+
+async def get_spam_score(message) -> float:
+    response = await aiospamc.check(message, host=SPAMASSASSIN_HOST)
+    return response.headers["Spam"].score
 
 
 class MailHandler:
@@ -1137,7 +1157,7 @@ class MailHandler:
 
         app = new_app()
         with app.app_context():
-            ret = handle(envelope, smtp)
+            ret = await handle(envelope, smtp)
             LOG.debug("takes %s seconds <<===", time.time() - start)
             return ret
 
