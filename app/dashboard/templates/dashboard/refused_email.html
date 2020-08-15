@@ -30,15 +30,15 @@
 
     {% for email_log in email_logs %}
       {% set refused_email = email_log.refused_email %}
-      {% set forward = email_log.forward %}
-      {% set alias = forward.alias %}
+      {% set contact = email_log.contact %}
+      {% set alias = contact.alias %}
 
       <div class="card p-4 shadow-sm {% if email_log.id == highlight_id %} highlight-row {% endif %}">
         <div class="small-text">
           Sent {{ refused_email.created_at | dt }}
         </div>
 
-        From: {{ forward.website_email }} <br>
+        From: {{ contact.website_email }} <br>
 
         <span>
           To: {{ alias.email }}
