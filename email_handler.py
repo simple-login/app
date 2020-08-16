@@ -1226,15 +1226,20 @@ async def get_spam_score(message: Message) -> float:
 
 
 class MailHandler:
+    lock = asyncio.Lock()
+
     async def handle_DATA(self, server, session, envelope: Envelope):
-        try:
-            ret = await self._handle(envelope)
-            return ret
-        except Exception:
-            LOG.exception(
-                "email handling fail %s -> %s", envelope.mail_from, envelope.rcpt_tos
-            )
-            return "421 SL Retry later"
+        async with self.lock:
+            try:
+                ret = await self._handle(envelope)
+                return ret
+            except Exception:
+                LOG.exception(
+                    "email handling fail %s -> %s",
+                    envelope.mail_from,
+                    envelope.rcpt_tos,
+                )
+                return "421 SL Retry later"
 
     async def _handle(self, envelope: Envelope):
         start = time.time()
