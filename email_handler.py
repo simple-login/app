@@ -432,6 +432,8 @@ async def forward_email_to_mailbox(
 
     if SPAMASSASSIN_HOST:
         spam_score = await get_spam_score(msg)
+        LOG.d("%s -> %s  spam score %s", contact, alias, spam_score)
+        email_log.spam_score = spam_score
         if (user.max_spam_score and spam_score > user.max_spam_score) or (
             not user.max_spam_score and spam_score > MAX_SPAM_SCORE
         ):
@@ -580,6 +582,10 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
             # cannot use 4** here as sender will retry. 5** because that generates bounce report
             return True, "250 SL E11"
 
+    email_log = EmailLog.create(
+        contact_id=contact.id, is_reply=True, user_id=contact.user_id
+    )
+
     # Spam check
     spam_status = ""
     is_spam = False
@@ -587,6 +593,8 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
     # do not use user.max_spam_score here
     if SPAMASSASSIN_HOST:
         spam_score = await get_spam_score(msg)
+        LOG.d("%s -> %s - spam score %s", alias, contact, spam_score)
+        email_log.spam_score = spam_score
         if spam_score > MAX_REPLY_PHASE_SPAM_SCORE:
             is_spam = True
             spam_status = "Spam detected by SpamAssassin server"
@@ -597,9 +605,7 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
         LOG.exception(
             "Reply phase - email sent from %s to %s detected as spam", alias, contact
         )
-        email_log = EmailLog.create(
-            contact_id=contact.id, is_reply=True, user_id=contact.user_id
-        )
+
         email_log.is_spam = True
         email_log.spam_status = spam_status
         db.session.commit()
@@ -678,7 +684,9 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
             LOG.exception(
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
-            # so the client can retry later
+            # to not save the email_log
+            db.session.rollback()
+            # return 421 so the client can retry later
             return False, "421 SL E13 Retry later"
 
     try:
@@ -690,6 +698,9 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
             envelope.rcpt_options,
         )
     except Exception:
+        # to not save the email_log
+        db.session.rollback()
+
         LOG.exception("Cannot send email from %s to %s", alias, contact)
         send_email(
             mailbox.email,
@@ -709,8 +720,6 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
                 contact_domain=get_email_domain_part(contact.email),
             ),
         )
-    else:
-        EmailLog.create(contact_id=contact.id, is_reply=True, user_id=contact.user_id)
 
     db.session.commit()
     return True, "250 Message accepted for delivery"
