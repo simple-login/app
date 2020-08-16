@@ -30,6 +30,7 @@ It should contain the following info:
 
 
 """
+import asyncio
 import email
 import os
 import time
@@ -1195,9 +1196,18 @@ async def handle(envelope: Envelope, smtp: SMTP) -> str:
     return res[0][1]
 
 
-async def get_spam_score(message) -> float:
-    response = await aiospamc.check(message, host=SPAMASSASSIN_HOST)
-    return response.headers["Spam"].score
+async def get_spam_score(message: Message) -> float:
+    LOG.d("get spam score")
+    try:
+        # wait for at max 10s
+        response = await asyncio.wait_for(
+            aiospamc.check(message, host=SPAMASSASSIN_HOST), timeout=10
+        )
+        return response.headers["Spam"].score
+    except asyncio.TimeoutError:
+        LOG.warning("SpamAssassin timeout. %s", message)
+        # return a negative score so the message is always considered as ham
+        return -1
 
 
 class MailHandler:
