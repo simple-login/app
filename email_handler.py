@@ -874,20 +874,25 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
             file_path, BytesIO(orig_msg.as_bytes()), random_name
         )
         # <<< END Store the bounced email >>>
-
-        mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
-        mailbox = Mailbox.get(mailbox_id)
-        if not mailbox or mailbox.user_id != user.id:
-            LOG.exception(
-                "Tampered message mailbox_id %s, %s, %s, %s %s",
-                mailbox_id,
-                user,
-                alias,
-                contact,
-                full_report_path,
-            )
+        try:
+            mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
+        except TypeError:
+            LOG.warning("cannot parse mailbox from %s", orig_msg[_MAILBOX_ID_HEADER])
             # use the alias default mailbox
             mailbox = alias.mailbox
+        else:
+            mailbox = Mailbox.get(mailbox_id)
+            if not mailbox or mailbox.user_id != user.id:
+                LOG.exception(
+                    "Tampered message mailbox_id %s, %s, %s, %s %s",
+                    mailbox_id,
+                    user,
+                    alias,
+                    contact,
+                    full_report_path,
+                )
+                # use the alias default mailbox
+                mailbox = alias.mailbox
 
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id
