@@ -8,6 +8,9 @@ RUN cd /code/static && npm install
 FROM python:3.7
 WORKDIR /code
 
+# install some utility packages
+RUN apt update && apt install -y vim telnet
+
 # install dependencies
 COPY ./requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
