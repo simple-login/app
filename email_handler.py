@@ -1251,10 +1251,14 @@ class MailHandler:
             smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
         app = new_app()
-        with app.app_context():
-            ret = await handle(envelope, smtp)
-            LOG.debug("takes %s seconds <<===", time.time() - start)
-            return ret
+        try:
+            with app.app_context():
+                ret = await handle(envelope, smtp)
+                LOG.debug("takes %s seconds <<===", time.time() - start)
+                return ret
+        # ignore the "Popped wrong app context" Assertion Error raised by AppContext
+        except AssertionError as e:
+            LOG.warning("Error %s", e)
 
 
 if __name__ == "__main__":
