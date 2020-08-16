@@ -7,6 +7,12 @@ from app.log import LOG
 from app.models import Monitoring
 from server import create_app
 
+# the number of consecutive fails
+# if more than 3 fails, alert
+# reset whenever the system comes back to normal
+# a system is considered fail if incoming_queue + active_queue > 20
+_nb_failed = 0
+
 
 def get_stats():
     """Look at different metrics and alert appropriately"""
@@ -23,14 +29,23 @@ def get_stats():
     )
     db.session.commit()
 
+    global _nb_failed
     # alert when too many emails in incoming + active queue
     # 20 is an arbitrary number here
     if incoming_queue + active_queue > 20:
-        LOG.exception(
-            "Too many emails in incoming & active queue %s %s",
-            incoming_queue,
-            active_queue,
-        )
+        _nb_failed += 1
+
+        if _nb_failed > 3:
+            # reset
+            _nb_failed = 0
+
+            LOG.exception(
+                "Too many emails in incoming & active queue %s %s",
+                incoming_queue,
+                active_queue,
+            )
+    else:
+        _nb_failed = 0
 
 
 def nb_files(directory) -> int:
