@@ -1225,8 +1225,11 @@ async def get_spam_score(message: Message) -> float:
         )
         return response.headers["Spam"].score
     except asyncio.TimeoutError:
-        LOG.warning("SpamAssassin timeout on: %s", message)
+        LOG.exception("SpamAssassin timeout")
         # return a negative score so the message is always considered as ham
+        return -999
+    except Exception:
+        LOG.exception("SpamAssassin exception")
         return -999
 
 
