@@ -1173,6 +1173,7 @@ class EmailLog(db.Model, ModelMixin):
 
     # SpamAssassin result
     is_spam = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+    spam_score = db.Column(db.Float, nullable=True)
     spam_status = db.Column(db.Text, nullable=True, default=None)
 
     # Point to the email that has been refused
