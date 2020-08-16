@@ -1206,17 +1206,23 @@ async def handle(envelope: Envelope, smtp: SMTP) -> str:
 
 
 async def get_spam_score(message: Message) -> float:
-    LOG.d("get spam score")
+    sa_input = message.as_bytes()
+
+    # Spamassassin requires to have an ending linebreak
+    if not sa_input.endswith(b"\n"):
+        LOG.d("add linebreak to spamassassin input")
+        sa_input += b"\n"
+
     try:
         # wait for at max 10s
         response = await asyncio.wait_for(
-            aiospamc.check(message, host=SPAMASSASSIN_HOST), timeout=10
+            aiospamc.check(sa_input, host=SPAMASSASSIN_HOST), timeout=10
         )
         return response.headers["Spam"].score
     except asyncio.TimeoutError:
-        LOG.warning("SpamAssassin timeout. %s", message)
+        LOG.warning("SpamAssassin timeout on: %s", message)
         # return a negative score so the message is always considered as ham
-        return -1
+        return -999
 
 
 class MailHandler:
