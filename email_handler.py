@@ -1258,7 +1258,7 @@ class MailHandler:
 
 
 if __name__ == "__main__":
-    controller = Controller(MailHandler(), hostname="0.0.0.0", port=20381)
+    controller = Controller(MailHandler(), hostname="127.0.0.1", port=20381)
 
     controller.start()
     LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
