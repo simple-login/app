@@ -1235,40 +1235,39 @@ async def get_spam_score(message: Message) -> float:
 
 
 class MailHandler:
-    lock = asyncio.Lock()
+    def __init__(self, lock):
+        self.lock = lock
 
     async def handle_DATA(self, server, session, envelope: Envelope):
-        async with self.lock:
-            try:
-                ret = await self._handle(envelope)
-                return ret
-            except Exception:
-                LOG.exception(
-                    "email handling fail %s -> %s",
-                    envelope.mail_from,
-                    envelope.rcpt_tos,
-                )
-                return "421 SL Retry later"
+        try:
+            ret = await self._handle(envelope)
+            return ret
+        except Exception:
+            LOG.exception(
+                "email handling fail %s -> %s", envelope.mail_from, envelope.rcpt_tos,
+            )
+            return "421 SL Retry later"
 
     async def _handle(self, envelope: Envelope):
-        start = time.time()
-        LOG.debug(
-            "===>> New message, mail from %s, rctp tos %s ",
-            envelope.mail_from,
-            envelope.rcpt_tos,
-        )
+        async with self.lock:
+            start = time.time()
+            LOG.info(
+                "===>> New message, mail from %s, rctp tos %s ",
+                envelope.mail_from,
+                envelope.rcpt_tos,
+            )
 
-        if POSTFIX_SUBMISSION_TLS:
-            smtp = SMTP(POSTFIX_SERVER, 587)
-            smtp.starttls()
-        else:
-            smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
+            if POSTFIX_SUBMISSION_TLS:
+                smtp = SMTP(POSTFIX_SERVER, 587)
+                smtp.starttls()
+            else:
+                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
-        app = new_app()
-        with app.app_context():
-            ret = await handle(envelope, smtp)
-            LOG.debug("takes %s seconds <<===", time.time() - start)
-            return ret
+            app = new_app()
+            with app.app_context():
+                ret = await handle(envelope, smtp)
+                LOG.info("takes %s seconds <<===", time.time() - start)
+                return ret
 
 
 if __name__ == "__main__":
@@ -1278,9 +1277,10 @@ if __name__ == "__main__":
         with app.app_context():
             load_pgp_public_keys()
 
-    handler = MailHandler()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+    lock = asyncio.Lock()
+    handler = MailHandler(lock)
 
     def factory():
         return aiosmtpd.smtp.SMTP(handler, enable_SMTPUTF8=True)
