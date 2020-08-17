@@ -1220,9 +1220,9 @@ async def get_spam_score(message: Message) -> float:
         sa_input += b"\n"
 
     try:
-        # wait for at max 10s
+        # wait for at max 300s which is the default spamd timeout-child
         response = await asyncio.wait_for(
-            aiospamc.check(sa_input, host=SPAMASSASSIN_HOST), timeout=10
+            aiospamc.check(sa_input, host=SPAMASSASSIN_HOST), timeout=300
         )
         return response.headers["Spam"].score
     except asyncio.TimeoutError:
