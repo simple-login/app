@@ -44,6 +44,7 @@ from io import BytesIO
 from smtplib import SMTP
 from typing import List, Tuple
 
+import aiosmtpd
 import aiospamc
 import arrow
 import spf
@@ -1271,16 +1272,30 @@ class MailHandler:
 
 
 if __name__ == "__main__":
-    controller = Controller(MailHandler(), hostname="0.0.0.0", port=20381)
-
-    controller.start()
-    LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
-
     if LOAD_PGP_EMAIL_HANDLER:
         LOG.warning("LOAD PGP keys")
         app = create_app()
         with app.app_context():
             load_pgp_public_keys()
 
-    while True:
-        time.sleep(2)
+    handler = MailHandler()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    def factory():
+        return aiosmtpd.smtp.SMTP(handler, enable_SMTPUTF8=True)
+
+    server = loop.run_until_complete(
+        loop.create_server(factory, host="0.0.0.0", port=20381)
+    )
+
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+
+    # Close the server
+    LOG.info("Close SMTP server")
+    server.close()
+    loop.run_until_complete(server.wait_closed())
+    loop.close()
