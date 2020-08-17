@@ -32,6 +32,7 @@ from app.models import (
     RefusedEmail,
     AppleSubscription,
     Mailbox,
+    Monitoring,
 )
 from server import create_app
 
@@ -312,6 +313,16 @@ def sanity_check():
     LOG.d("Finish sanity check")
 
 
+def delete_old_monitoring():
+    """
+    Delete old monitoring records
+    """
+    max_time = arrow.now().shift(days=-30)
+    nb_row = Monitoring.query.filter(Monitoring.created_at < max_time).delete()
+    db.session.commit()
+    LOG.d("delete monitoring records older than %s, nb row %s", max_time, nb_row)
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -328,6 +339,7 @@ if __name__ == "__main__":
             "delete_refused_emails",
             "poll_apple_subscription",
             "sanity_check",
+            "delete_old_monitoring",
         ],
     )
     args = parser.parse_args()
@@ -356,3 +368,6 @@ if __name__ == "__main__":
         elif args.job == "sanity_check":
             LOG.d("Check data consistency")
             sanity_check()
+        elif args.job == "delete_old_monitoring":
+            LOG.d("Delete old monitoring records")
+            delete_old_monitoring()
