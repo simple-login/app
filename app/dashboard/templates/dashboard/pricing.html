@@ -93,7 +93,6 @@
     function upgrade(productId) {
       Paddle.Checkout.open({
         product: productId,
-        email: "{{ current_user.email }}",
         success: "{{ success_url }}"
       });
     }
