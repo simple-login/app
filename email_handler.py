@@ -109,6 +109,7 @@ from server import create_app, create_light_app
 
 _IP_HEADER = "X-SimpleLogin-Client-IP"
 _MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
+_EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -476,6 +477,7 @@ async def forward_email_to_mailbox(
 
     delete_header(msg, _IP_HEADER)
     add_or_replace_header(msg, _MAILBOX_ID_HEADER, str(mailbox.id))
+    add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
 
     # change the from header so the sender comes from @SL
     # so it can pass DMARC check
@@ -845,10 +847,6 @@ def handle_unknown_mailbox(envelope, msg, reply_email: str, user: User, alias: A
 
 def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     address = alias.email
-    email_log: EmailLog = EmailLog.create(
-        contact_id=contact.id, bounced=True, user_id=contact.user_id
-    )
-    db.session.commit()
 
     nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
@@ -862,6 +860,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
 
     file_path = None
     mailbox = alias.mailbox
+    email_log: EmailLog = None
     orig_msg = get_orig_message_from_bounce(msg)
     if not orig_msg:
         # Some MTA does not return the original message in bounce message
@@ -899,11 +898,29 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
                 # use the alias default mailbox
                 mailbox = alias.mailbox
 
+        # try to get the original email_log
+        try:
+            email_log_id = int(orig_msg[_EMAIL_LOG_ID_HEADER])
+        except TypeError:
+            LOG.warning(
+                "cannot parse original email log from %s",
+                orig_msg[_EMAIL_LOG_ID_HEADER],
+            )
+        else:
+            email_log = EmailLog.get(email_log_id)
+
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id
     )
     db.session.flush()
 
+    if not email_log:
+        LOG.warning("cannot get the original email_log, create a new one")
+        email_log: EmailLog = EmailLog.create(
+            contact_id=contact.id, user_id=contact.user_id
+        )
+        
+    email_log.bounced = True
     email_log.refused_email_id = refused_email.id
     email_log.bounced_mailbox_id = mailbox.id
     db.session.commit()
