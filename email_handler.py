@@ -919,7 +919,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         email_log: EmailLog = EmailLog.create(
             contact_id=contact.id, user_id=contact.user_id
         )
-        
+
     email_log.bounced = True
     email_log.refused_email_id = refused_email.id
     email_log.bounced_mailbox_id = mailbox.id
