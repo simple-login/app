@@ -383,6 +383,7 @@ async def handle_forward(
 
     contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
+    db.session.commit()
 
     if not alias.enabled:
         LOG.d("%s is disabled, do not forward", alias)
@@ -435,6 +436,8 @@ async def forward_email_to_mailbox(
         spam_score = await get_spam_score(msg)
         LOG.d("%s -> %s  spam score %s", contact, alias, spam_score)
         email_log.spam_score = spam_score
+        db.session.commit()
+
         if (user.max_spam_score and spam_score > user.max_spam_score) or (
             not user.max_spam_score and spam_score > MAX_SPAM_SCORE
         ):
@@ -447,6 +450,7 @@ async def forward_email_to_mailbox(
         LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
         email_log.is_spam = True
         email_log.spam_status = spam_status
+        db.session.commit()
 
         handle_spam(contact, alias, msg, user, mailbox.email, email_log)
         return False, "550 SL E1 Email detected as spam"
