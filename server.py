@@ -1,3 +1,4 @@
+import json
 import os
 import ssl
 from datetime import timedelta
@@ -62,7 +63,6 @@ from app.models import (
     LifetimeCoupon,
     Directory,
     Mailbox,
-    DeletedAlias,
     Referral,
     AliasMailbox,
     Notification,
@@ -470,8 +470,11 @@ def setup_paddle_callback(app: Flask):
         if (
             request.form.get("alert_name") == "subscription_created"
         ):  # new user subscribes
-            user_email = request.form.get("email")
-            user = User.get_by(email=user_email)
+            # the passthrough is json encoded, e.g.
+            # request.form.get("passthrough") = '{"user_id": 88 }'
+            passthrough = json.loads(request.form.get("passthrough"))
+            user_id = passthrough.get("user_id")
+            user = User.get(user_id)
 
             if (
                 int(request.form.get("subscription_plan_id"))
