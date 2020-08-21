@@ -88,7 +88,7 @@ from app.email_utils import (
     parseaddr_unicode,
     send_email_with_rate_control,
     get_email_domain_part,
-    copy,
+    copy, to_bytes,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -1244,7 +1244,7 @@ async def handle(envelope: Envelope, smtp: SMTP) -> str:
 
 
 async def get_spam_score(message: Message) -> float:
-    sa_input = message.as_bytes()
+    sa_input = to_bytes(message)
 
     # Spamassassin requires to have an ending linebreak
     if not sa_input.endswith(b"\n"):

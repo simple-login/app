@@ -528,3 +528,16 @@ def parseaddr_unicode(addr) -> (str, str):
 def copy(msg: Message) -> Message:
     """return a copy of message"""
     return email.message_from_bytes(msg.as_bytes())
+
+
+def to_bytes(msg: Message):
+    """replace Message.as_bytes() method by trying different policies"""
+    try:
+        return msg.as_bytes()
+    except UnicodeEncodeError:
+        LOG.warning("as_bytes fails with default policy, try SMTP policy")
+        try:
+            return msg.as_bytes(policy=email.policy.SMTP)
+        except UnicodeEncodeError:
+            LOG.warning("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
+            return msg.as_bytes(policy=email.policy.SMTPUTF8)
