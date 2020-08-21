@@ -983,7 +983,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
                 contact.website_email,
             )
             alias.enabled = False
-        db.session.commit()
+            db.session.commit()
 
         send_email_with_rate_control(
             user,
