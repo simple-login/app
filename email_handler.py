@@ -453,7 +453,7 @@ async def forward_email_to_mailbox(
         email_log.spam_status = spam_status
         db.session.commit()
 
-        handle_spam(contact, alias, msg, user, mailbox.email, email_log)
+        handle_spam(contact, alias, msg, user, mailbox, email_log)
         return False, "550 SL E1 Email detected as spam"
 
     # create PGP email if needed
@@ -617,7 +617,7 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
         email_log.spam_status = spam_status
         db.session.commit()
 
-        handle_spam(contact, alias, msg, user, mailbox.email, email_log, is_reply=True)
+        handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
         return False, "550 SL E15 Email detected as spam"
 
     delete_header(msg, _IP_HEADER)
@@ -1005,7 +1005,7 @@ def handle_spam(
     alias: Alias,
     msg: Message,
     user: User,
-    mailbox_email: str,
+    mailbox: Mailbox,
     email_log: EmailLog,
     is_reply=False,  # whether the email is in forward or reply phase
 ):
@@ -1049,7 +1049,7 @@ def handle_spam(
         send_email_with_rate_control(
             user,
             ALERT_SPAM_EMAIL,
-            mailbox_email,
+            mailbox.email,
             f"Email from {contact.website_email} to {alias.email} is detected as spam",
             render(
                 "transactional/spam-email-reply-phase.txt",
@@ -1079,7 +1079,7 @@ def handle_spam(
         send_email_with_rate_control(
             user,
             ALERT_SPAM_EMAIL,
-            mailbox_email,
+            mailbox.email,
             f"Email from {contact.website_email} to {alias.email} is detected as spam",
             render(
                 "transactional/spam-email.txt",
