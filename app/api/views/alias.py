@@ -10,9 +10,9 @@ from app.api.serializer import (
     serialize_contact,
     get_alias_infos_with_pagination,
     get_alias_contacts,
-    get_alias_infos_with_pagination_v2,
     serialize_alias_info_v2,
     get_alias_info_v2,
+    get_alias_infos_with_pagination_v3,
 )
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.alias_log import get_alias_log
@@ -107,7 +107,7 @@ def get_aliases_v2():
     if data:
         query = data.get("query")
 
-    alias_infos: [AliasInfo] = get_alias_infos_with_pagination_v2(
+    alias_infos: [AliasInfo] = get_alias_infos_with_pagination_v3(
         user, page_id=page_id, query=query
     )
 

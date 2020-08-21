@@ -1,10 +1,11 @@
 from dataclasses import dataclass
+
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 
 from app import alias_utils
-from app.api.serializer import get_alias_infos_with_pagination_v2
+from app.api.serializer import get_alias_infos_with_pagination_v3
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
@@ -136,7 +137,7 @@ def index():
 
     stats = get_stats(current_user)
 
-    alias_infos = get_alias_infos_with_pagination_v2(
+    alias_infos = get_alias_infos_with_pagination_v3(
         current_user, page, query, sort, alias_filter
     )
     last_page = len(alias_infos) < PAGE_LIMIT

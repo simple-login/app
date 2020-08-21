@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from arrow import Arrow
-from sqlalchemy import or_, func, case
+from sqlalchemy import or_, func, case, and_
 from sqlalchemy.orm import joinedload
 
 from app.config import PAGE_LIMIT
@@ -182,6 +182,106 @@ def get_alias_infos_with_pagination_v2(
 
     for alias, mailbox, latest_activity in q:
         ret.append(get_alias_info_v2(alias, mailbox))
+
+    return ret
+
+
+def get_alias_infos_with_pagination_v3(
+    user, page_id=0, query=None, sort=None, alias_filter=None
+) -> [AliasInfo]:
+    ret = []
+    latest_activity = func.max(
+        case(
+            [
+                (Alias.created_at > EmailLog.created_at, Alias.created_at),
+                (Alias.created_at < EmailLog.created_at, EmailLog.created_at),
+            ],
+            else_=Alias.created_at,
+        )
+    ).label("latest")
+
+    sub = (
+        db.session.query(
+            Alias.id,
+            latest_activity,
+            func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
+            func.sum(
+                case(
+                    [(and_(EmailLog.is_reply == False, EmailLog.blocked), 1)], else_=0,
+                )
+            ).label("nb_blocked"),
+            func.sum(
+                case(
+                    [
+                        (
+                            and_(
+                                EmailLog.is_reply == False, EmailLog.blocked == False,
+                            ),
+                            1,
+                        )
+                    ],
+                    else_=0,
+                )
+            ).label("nb_forward"),
+            func.max(EmailLog.created_at).label("max_created_at"),
+        )
+        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
+        .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
+        .filter(Alias.user_id == user.id)
+        .group_by(Alias.id)
+        .subquery()
+    )
+
+    q = db.session.query(
+        Alias, Contact, EmailLog, sub.c.nb_reply, sub.c.nb_blocked, sub.c.nb_forward
+    ).filter(
+        Alias.id == sub.c.id,
+        Alias.id == Contact.alias_id,
+        Contact.id == EmailLog.contact_id,
+        EmailLog.created_at == sub.c.latest,
+    )
+
+    if query:
+        q = q.filter(
+            or_(
+                Alias.email.ilike(f"%{query}%"),
+                Alias.note.ilike(f"%{query}%"),
+                Alias.name.ilike(f"%{query}%"),
+            )
+        )
+
+    if alias_filter == "enabled":
+        q = q.filter(Alias.enabled)
+    elif alias_filter == "disabled":
+        q = q.filter(Alias.enabled == False)
+
+    if sort == "old2new":
+        q = q.order_by(Alias.created_at)
+    elif sort == "new2old":
+        q = q.order_by(Alias.created_at.desc())
+    elif sort == "a2z":
+        q = q.order_by(Alias.email)
+    elif sort == "z2a":
+        q = q.order_by(Alias.email.desc())
+    else:
+        # default sorting
+        q = q.order_by(sub.c.latest.desc())
+
+    q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
+
+    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in q:
+        ret.append(
+            AliasInfo(
+                alias=alias,
+                mailbox=alias.mailbox,
+                mailboxes=alias.mailboxes,
+                nb_forward=nb_forward,
+                nb_blocked=nb_blocked,
+                nb_reply=nb_reply,
+                latest_email_log=email_log,
+                latest_contact=contact,
+            )
+        )
 
     return ret
 
