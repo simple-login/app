@@ -846,9 +846,6 @@ def handle_unknown_mailbox(envelope, msg, reply_email: str, user: User, alias: A
 
 
 def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
-    address = alias.email
-
-    nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
     # <<< Store the bounced email >>>
@@ -931,19 +928,20 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
     )
 
+    nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
     # inform user if this is the first bounced email
     if nb_bounced == 1:
         LOG.d(
             "Inform user %s about bounced email sent by %s to alias %s",
             user,
             contact.website_email,
-            address,
+            alias,
         )
         send_email_with_rate_control(
             user,
             ALERT_BOUNCE_EMAIL,
             user.email,
-            f"Email from {contact.website_email} to {address} cannot be delivered to your inbox",
+            f"Email from {contact.website_email} to {alias.email} cannot be delivered to your inbox",
             render(
                 "transactional/bounced-email.txt",
                 name=user.name,
@@ -965,14 +963,14 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         )
     # disable the alias the second time email is bounced
     elif nb_bounced >= 2:
-        LOG.d(
-            "Bounce happens again with alias %s from %s. Disable alias now ",
-            address,
-            contact.website_email,
-        )
         if alias.cannot_be_disabled:
             LOG.warning("%s cannot be disabled", alias)
         else:
+            LOG.d(
+                "Bounce happens again with alias %s from %s. Disable alias now ",
+                alias,
+                contact.website_email,
+            )
             alias.enabled = False
         db.session.commit()
 
@@ -980,7 +978,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
             user,
             ALERT_BOUNCE_EMAIL,
             user.email,
-            f"Alias {address} has been disabled due to second undelivered email from {contact.website_email}",
+            f"Alias {alias.email} has been disabled due to second undelivered email from {contact.website_email}",
             render(
                 "transactional/automatic-disable-alias.txt",
                 name=user.name,
