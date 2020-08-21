@@ -232,13 +232,16 @@ def get_alias_infos_with_pagination_v3(
         .subquery()
     )
 
-    q = db.session.query(
-        Alias, Contact, EmailLog, sub.c.nb_reply, sub.c.nb_blocked, sub.c.nb_forward
-    ).filter(
-        Alias.id == sub.c.id,
-        Alias.id == Contact.alias_id,
-        Contact.id == EmailLog.contact_id,
-        EmailLog.created_at == sub.c.latest,
+    q = (
+        db.session.query(
+            Alias, Contact, EmailLog, sub.c.nb_reply, sub.c.nb_blocked, sub.c.nb_forward
+        )
+        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
+        .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
+        .filter(Alias.id == sub.c.id)
+        .filter(
+            or_(EmailLog.created_at == sub.c.latest, Alias.created_at == sub.c.latest)
+        )
     )
 
     if query:
