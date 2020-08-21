@@ -1041,7 +1041,8 @@ def handle_spam(
 
     if is_reply:
         LOG.d(
-            "Inform user %s about spam email sent from alias %s to %s",
+            "Inform %s (%s) about spam email sent from alias %s to %s",
+            mailbox,
             user,
             alias,
             contact,
@@ -1071,7 +1072,8 @@ def handle_spam(
     else:
         # inform user
         LOG.d(
-            "Inform user %s about spam email sent by %s to alias %s",
+            "Inform %s (%s) about spam email sent by %s to alias %s",
+            mailbox,
             user,
             contact,
             alias,
