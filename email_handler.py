@@ -88,7 +88,8 @@ from app.email_utils import (
     parseaddr_unicode,
     send_email_with_rate_control,
     get_email_domain_part,
-    copy, to_bytes,
+    copy,
+    to_bytes,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
