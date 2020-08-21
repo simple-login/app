@@ -189,21 +189,9 @@ def get_alias_infos_with_pagination_v2(
 def get_alias_infos_with_pagination_v3(
     user, page_id=0, query=None, sort=None, alias_filter=None
 ) -> [AliasInfo]:
-    ret = []
-    latest_activity = func.max(
-        case(
-            [
-                (Alias.created_at > EmailLog.created_at, Alias.created_at),
-                (Alias.created_at < EmailLog.created_at, EmailLog.created_at),
-            ],
-            else_=Alias.created_at,
-        )
-    ).label("latest")
-
     sub = (
         db.session.query(
             Alias.id,
-            latest_activity,
             func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
             func.sum(
                 case(
@@ -232,15 +220,32 @@ def get_alias_infos_with_pagination_v3(
         .subquery()
     )
 
+    latest_activity = case(
+        [
+            (Alias.created_at > EmailLog.created_at, Alias.created_at),
+            (Alias.created_at < EmailLog.created_at, EmailLog.created_at),
+        ],
+        else_=Alias.created_at,
+    )
+
     q = (
         db.session.query(
-            Alias, Contact, EmailLog, sub.c.nb_reply, sub.c.nb_blocked, sub.c.nb_forward
+            Alias,
+            Contact,
+            EmailLog,
+            sub.c.nb_reply,
+            sub.c.nb_blocked,
+            sub.c.nb_forward,
+            latest_activity,
         )
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
         .filter(Alias.id == sub.c.id)
         .filter(
-            or_(EmailLog.created_at == sub.c.latest, Alias.created_at == sub.c.latest)
+            or_(
+                EmailLog.created_at == sub.c.max_created_at,
+                sub.c.max_created_at == None,
+            )
         )
     )
 
@@ -268,11 +273,12 @@ def get_alias_infos_with_pagination_v3(
         q = q.order_by(Alias.email.desc())
     else:
         # default sorting
-        q = q.order_by(sub.c.latest.desc())
+        q = q.order_by(latest_activity.desc())
 
     q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
 
-    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in q:
+    ret = []
+    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward, _ in q:
         ret.append(
             AliasInfo(
                 alias=alias,
