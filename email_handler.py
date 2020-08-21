@@ -397,12 +397,23 @@ async def handle_forward(
     user = alias.user
 
     ret = []
-    for mailbox in alias.mailboxes:
+    mailboxes = alias.mailboxes
+    # no need to create a copy of message
+    if len(mailboxes) == 1:
+        mailbox = mailboxes[0]
         ret.append(
             await forward_email_to_mailbox(
-                alias, copy(msg), email_log, contact, envelope, smtp, mailbox, user
+                alias, msg, email_log, contact, envelope, smtp, mailbox, user
             )
         )
+    # create a copy of message for each forward
+    else:
+        for mailbox in mailboxes:
+            ret.append(
+                await forward_email_to_mailbox(
+                    alias, copy(msg), email_log, contact, envelope, smtp, mailbox, user
+                )
+            )
 
     return ret
 
