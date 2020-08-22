@@ -49,7 +49,7 @@
     Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
   </div>
 
-  {% if (GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET) or (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET) or (FACEBOOK_CLIENT_ID and FACEBOOK_CLIENT_SECRET) %}
+  {% if GITHUB_CLIENT_ID or GOOGLE_CLIENT_ID or FACEBOOK_CLIENT_ID %}
   <div class="text-center text-muted mt-5">
     <a href="{{ url_for('auth.social') }}">Social Login</a> is now deprecated
   </div>

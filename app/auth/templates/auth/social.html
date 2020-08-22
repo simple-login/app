@@ -12,21 +12,21 @@
       <div class="card-title text-center">Social login
       </div>
 
-      {% if GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET %}
+      {% if GITHUB_CLIENT_ID %}
       <a href="{{ url_for('auth.github_login', next=next_url) }}"
          class="btn btn-block btn-social btn-github">
         <i class="fa fa-github"></i> Sign in with GitHub
       </a>
       {% endif %}
 
-      {% if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET %}
+      {% if GOOGLE_CLIENT_ID %}
       <a href="{{ url_for('auth.google_login', next=next_url) }}"
          class="btn btn-block btn-social btn-google">
         <i class="fa fa-google"></i> Sign in with Google
       </a>
       {% endif %}
 
-      {% if FACEBOOK_CLIENT_ID and FACEBOOK_CLIENT_SECRET %}
+      {% if FACEBOOK_CLIENT_ID %}
       <a href="{{ url_for('auth.facebook_login', next=next_url) }}"
          class="btn btn-block btn-social btn-facebook">
         <i class="fa fa-facebook"></i> Sign in with Facebook
