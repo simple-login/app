@@ -148,7 +148,7 @@ def delete_alias(alias: Alias, user: User):
     """
     # save deleted alias to either global or domain trash
     if alias.custom_domain_id:
-        if DomainDeletedAlias.get_by(
+        if not DomainDeletedAlias.get_by(
             email=alias.email, domain_id=alias.custom_domain_id
         ):
             LOG.debug("add %s to domain %s trash", alias, alias.custom_domain_id)
