@@ -446,8 +446,15 @@ async def forward_email_to_mailbox(
     is_spam = False
 
     if SPAMASSASSIN_HOST:
+        start = time.time()
         spam_score = await get_spam_score(msg)
-        LOG.d("%s -> %s  spam score %s", contact, alias, spam_score)
+        LOG.d(
+            "%s -> %s - spam score %s in %s seconds",
+            contact,
+            alias,
+            spam_score,
+            time.time() - start,
+        )
         email_log.spam_score = spam_score
         db.session.commit()
 
