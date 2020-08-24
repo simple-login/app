@@ -160,7 +160,7 @@ def authorize():
                     flash("Alias creation time is expired, please retry", "warning")
                     return redirect(request.url)
                 except Exception:
-                    LOG.exception("Alias suffix is tampered, user %s", current_user)
+                    LOG.warning("Alias suffix is tampered, user %s", current_user)
                     flash("Unknown error, refresh the page", "error")
                     return redirect(request.url)
 

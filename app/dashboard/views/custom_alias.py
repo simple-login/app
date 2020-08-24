@@ -94,7 +94,7 @@ def custom_alias():
             flash("Alias creation time is expired, please retry", "warning")
             return redirect(url_for("dashboard.custom_alias"))
         except Exception:
-            LOG.exception("Alias suffix is tampered, user %s", current_user)
+            LOG.warning("Alias suffix is tampered, user %s", current_user)
             flash("Unknown error, refresh the page", "error")
             return redirect(url_for("dashboard.custom_alias"))
 
