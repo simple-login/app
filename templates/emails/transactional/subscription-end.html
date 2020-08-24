@@ -26,13 +26,13 @@
 
   {{ render_text('You can upgrade today to continue using all these Premium features (and much more coming).') }}
 
-  {{ render_button("Upgrade your account", "https://app.simplelogin.io/dashboard/pricing") }}
+  {{ render_button("Upgrade your account", URL ~ "/dashboard/pricing") }}
 
   {{ render_text('Regardless of your choice, we want to say thank you for trying SimpleLogin. We know the product
   requires an investment of your time, and we appreciate you giving us a chance.') }}
   {{ render_text('Thanks, <br />SimpleLogin Team.') }}
   {{ render_text('P.S. If you have any questions or need any help, please don\'t hesitate to reach out. You can simply reply to this email or reach us via Twitter/Github.') }}
-  {{ raw_url("https://app.simplelogin.io/dashboard/pricing") }}
+  {{ raw_url(URL ~ "/dashboard/pricing") }}
 
 
 {% endblock %}

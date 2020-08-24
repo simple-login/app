@@ -5,17 +5,17 @@
 
   {% call text() %}
     If you want to quickly create aliases <b>without</b> going to SimpleLogin website, you can do that with SimpleLogin
-    <a href="https://chrome.google.com/webstore/detail/simplelogin-your-anti-spa/dphilobhebphkdjbpfohgikllaljmgbn">Chrome</a>
+    <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">Chrome</a>
     (or other Chromium-based browsers like Brave or Vivaldi),
-    <a href="https://addons.mozilla.org/en-GB/firefox/addon/simplelogin/">Firefox</a> and
-    <a href="https://apps.apple.com/us/app/simplelogin/id1494051017?mt=12&fbclid=IwAR0M0nnEKgoieMkmx91TSXrtcScj7GouqRxGgXeJz2un_5ydhIKlbAI79Io
+    <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">Firefox</a> and
+    <a href="https://apps.apple.com/app/id1494051017
 ">Safari</a> extension.
   {% endcall %}
 
   {% call text() %}
     You can also manage your aliases using SimpleLogin
     <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android App</a>
-    or <a href="https://apps.apple.com/us/app/simplelogin-anti-spam/id1494359858">iOS app</a>.
+    or <a href="https://apps.apple.com/app/id1494359858">iOS app</a>.
   {% endcall %}
 
   {{ render_text('Thanks, <br />SimpleLogin Team.') }}
@@ -26,5 +26,5 @@
 
 {% block footer %}
   This email is sent to {{ user.email }} and is part of our onboarding series. Unsubscribe on
-  <a href="https://app.simplelogin.io/dashboard/setting#notification">Settings</a>
+  <a href="{{URL}}/dashboard/setting#notification">Settings</a>
 {% endblock %}

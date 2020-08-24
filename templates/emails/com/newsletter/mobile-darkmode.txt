@@ -1,5 +1,5 @@
 This email is sent to {{ user.email }}.
-Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
 Hi {{user.name}}
@@ -14,7 +14,7 @@ Here are some of our latest news:
 Now you can quickly create aliases on-the-go with SimpleLogin Android and iOS app, thanks to our mobile guy Thanh-Nhon!
 Download:
 - the Android app on Play Store https://play.google.com/store/apps/details?id=io.simplelogin.android
-- the iOS app on App Store https://apps.apple.com/us/app/simplelogin-anti-spam/id1494359858
+- the iOS app on App Store https://apps.apple.com/app/id1494359858
 
 With the release of the mobile apps, SimpleLogin now covers most major platforms:
 
@@ -53,7 +53,7 @@ We have decided to deprecate those social login options because of several reaso
     that isn't broadly available for Android users. Again, another big tech enjoying its monopoly.
 
 If you happen to use one of these social login options, please create a password for your account on the Setting page
-https://app.simplelogin.io/dashboard/setting
+{{URL}}/dashboard/setting
 
 You can still sign in using these social login until 2020-05-31. After this date, they will be removed.
 

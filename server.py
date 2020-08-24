@@ -42,6 +42,14 @@ from app.config import (
     FIRST_ALIAS_DOMAIN,
     SESSION_COOKIE_NAME,
     ADMIN_EMAIL,
+    PLAUSIBLE_HOST,
+    PLAUSIBLE_DOMAIN,
+    GITHUB_CLIENT_ID,
+    GOOGLE_CLIENT_ID,
+    FACEBOOK_CLIENT_ID,
+    LANDING_PAGE_URL,
+    STATUS_PAGE_URL,
+    SUPPORT_EMAIL,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -452,6 +460,14 @@ def jinja2_filter(app):
             SENTRY_DSN=SENTRY_FRONT_END_DSN,
             VERSION=SHA1,
             FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
+            PLAUSIBLE_HOST=PLAUSIBLE_HOST,
+            PLAUSIBLE_DOMAIN=PLAUSIBLE_DOMAIN,
+            GITHUB_CLIENT_ID=GITHUB_CLIENT_ID,
+            GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID,
+            FACEBOOK_CLIENT_ID=FACEBOOK_CLIENT_ID,
+            LANDING_PAGE_URL=LANDING_PAGE_URL,
+            STATUS_PAGE_URL=STATUS_PAGE_URL,
+            SUPPORT_EMAIL=SUPPORT_EMAIL,
         )
 
 

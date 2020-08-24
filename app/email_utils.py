@@ -30,6 +30,7 @@ from app.config import (
     MAX_ALERT_24H,
     POSTFIX_PORT,
     SENDER,
+    URL,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -43,7 +44,9 @@ def render(template_name, **kwargs) -> str:
 
     template = env.get_template(template_name)
 
-    return template.render(MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN, **kwargs)
+    return template.render(
+        MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN, URL=URL, **kwargs,
+    )
 
 
 def send_welcome_email(user):

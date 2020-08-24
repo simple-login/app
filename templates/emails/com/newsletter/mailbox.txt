@@ -1,5 +1,5 @@
 This email is sent to {{ user.email }}.
-Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
 Hi {{user.name}}

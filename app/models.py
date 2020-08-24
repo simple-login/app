@@ -1081,7 +1081,18 @@ class Contact(db.Model, ModelMixin):
         """
 
         # Prefer using contact name if possible
+        user = self.user
         name = self.name
+        email = self.website_email
+
+        if (
+            not user
+            or not SenderFormatEnum.has_value(user.sender_format)
+            or user.sender_format == SenderFormatEnum.AT.value
+        ):
+            email = email.replace("@", " at ")
+        elif user.sender_format == SenderFormatEnum.A.value:
+            email = email.replace("@", "(a)")
 
         # if no name, try to parse it from website_from
         if not name and self.website_from:
@@ -1101,9 +1112,9 @@ class Contact(db.Model, ModelMixin):
             name = name.replace('"', "")
 
         if name:
-            name = name + " | " + self.website_email.replace("@", " at ")
+            name = name + " | " + email
         else:
-            name = self.website_email.replace("@", " at ")
+            name = email
 
         # cannot use formataddr here as this field is for email client, not for MTA
         return f'"{name}" <{self.reply_email}>'

@@ -1,5 +1,5 @@
 This email is sent to {{ user.email }}.
-Unsubscribe from our emails on https://app.simplelogin.io/dashboard/setting#notification
+Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
 Hi {{user.name}}
@@ -20,7 +20,7 @@ https://simplelogin.io/blog/with-pgp.png
 
 You can find more info on our announcement post on https://simplelogin.io/blog/introducing-pgp/
 
-You can create and manage your PGP keys when adding or editing your mailboxes. Check it out on your mailbox dashboard at  https://app.simplelogin.io/dashboard/mailbox
+You can create and manage your PGP keys when adding or editing your mailboxes. Check it out on your mailbox dashboard at {{URL}}/dashboard/mailbox
 
 Our next important feature is the coming of an iOS app. If you use iPhone or iPad want to help us testing out the app, please reply to this email so we can add you into the TestFlight program.
 
