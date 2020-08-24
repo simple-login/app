@@ -428,6 +428,21 @@ Finally, restart Postfix
 sudo systemctl restart postfix
 ```
 
+#### [Optional] Enable TLS on Postfix submission
+
+In case your Postfix server is on another server, it's recommended to enable TLS on Postfix submission to 
+secure the connection between SimpleLogin email handler and Postfix.
+
+This can be enabled by adding those lines at the end of `/etc/postfix/master.cf`
+
+```
+submission inet n       -       y       -       -       smtpd
+  -o syslog_name=postfix/submission
+  -o smtpd_tls_security_level=encrypt
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_tls_auth_only=yes
+```
+
 
 ### Run SimpleLogin Docker containers
 
