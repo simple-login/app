@@ -611,8 +611,15 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
 
     # do not use user.max_spam_score here
     if SPAMASSASSIN_HOST:
+        start = time.time()
         spam_score = await get_spam_score(msg)
-        LOG.d("%s -> %s - spam score %s", alias, contact, spam_score)
+        LOG.d(
+            "%s -> %s - spam score %s in %s seconds",
+            alias,
+            contact,
+            spam_score,
+            time.time() - start,
+        )
         email_log.spam_score = spam_score
         if spam_score > MAX_REPLY_PHASE_SPAM_SCORE:
             is_spam = True
