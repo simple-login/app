@@ -12,6 +12,7 @@ from app.email_utils import (
     send_email_with_rate_control,
     copy,
     get_spam_from_header,
+    get_header_from_bounce,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -160,3 +161,125 @@ def test_get_spam_from_header():
         max_score=5,
     )
     assert is_spam
+
+
+def test_get_header_from_bounce():
+    # this is an actual bounce report from iCloud anonymized
+    msg_str = """Received: by mx1.simplelogin.co (Postfix)
+	id 9988776655; Mon, 24 Aug 2020 06:20:07 +0000 (UTC)
+Date: Mon, 24 Aug 2020 06:20:07 +0000 (UTC)
+From: MAILER-DAEMON@bounce.simplelogin.io (Mail Delivery System)
+Subject: Undelivered Mail Returned to Sender
+To: reply+longstring@simplelogin.co
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="XXYYZZTT.1598250007/mx1.simplelogin.co"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20200824062007.9988776655@mx1.simplelogin.co>
+
+This is a MIME-encapsulated message.
+
+--XXYYZZTT.1598250007/mx1.simplelogin.co
+Content-Description: Notification
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+This is the mail system at host mx1.simplelogin.co.
+
+I'm sorry to have to inform you that your message could not
+be delivered to one or more recipients. It's attached below.
+
+For further assistance, please send mail to <postmaster@simplelogin.io>
+
+If you do so, please include this problem report. You can
+delete your own text from the attached returned message.
+
+                   The mail system
+
+<something@icloud.com>: host mx01.mail.icloud.com[17.57.154.6] said:
+    554 5.7.1 [CS01] Message rejected due to local policy. Please visit
+    https://support.apple.com/en-us/HT204137 (in reply to end of DATA command)
+
+--XXYYZZTT.1598250007/mx1.simplelogin.co
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; mx1.simplelogin.co
+X-Postfix-Queue-ID: XXYYZZTT
+X-Postfix-Sender: rfc822; reply+longstring@simplelogin.co
+Arrival-Date: Mon, 24 Aug 2020 06:20:04 +0000 (UTC)
+
+Final-Recipient: rfc822; something@icloud.com
+Original-Recipient: rfc822;something@icloud.com
+Action: failed
+Status: 5.7.1
+Remote-MTA: dns; mx01.mail.icloud.com
+Diagnostic-Code: smtp; 554 5.7.1 [CS01] Message rejected due to local policy.
+    Please visit https://support.apple.com/en-us/HT204137
+
+--XXYYZZTT.1598250007/mx1.simplelogin.co
+Content-Description: Undelivered Message Headers
+Content-Type: text/rfc822-headers
+Content-Transfer-Encoding: 8bit
+
+Return-Path: <reply+longstring@simplelogin.co>
+X-SimpleLogin-Client-IP: 172.17.0.4
+Received: from [172.17.0.4] (unknown [172.17.0.4])
+	by mx1.simplelogin.co (Postfix) with ESMTP id XXYYZZTT
+	for <something@icloud.com>; Mon, 24 Aug 2020 06:20:04 +0000 (UTC)
+Received-SPF: Pass (mailfrom) identity=mailfrom; client-ip=91.241.74.242;
+ helo=mail23-242.srv2.de; envelope-from=return@mailing.dhl.de;
+ receiver=<UNKNOWN>
+Received: from mail23-242.srv2.de (mail23-242.srv2.de [91.241.74.242])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits))
+	(No client certificate requested)
+	by mx1.simplelogin.co (Postfix) with ESMTPS id B7D123F1C6
+	for <dhl@something.com>; Mon, 24 Aug 2020 06:20:03 +0000 (UTC)
+Message-ID: <368362807.12707001.1598249997169@rnd-04.broadmail.live>
+MIME-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pkcs7-signature";
+ micalg=sha-256;
+	boundary="----=_Part_12707000_248822956.1598249997168"
+Date: Mon, 24 Aug 2020 08:19:57 +0200 (CEST)
+To: dhl@something.com
+Subject: Test subject
+X-ulpe:
+ re-pO_5F8NoxrdpyqkmsptkpyTxDqB3osb7gfyo-41ZOK78E-3EOXXNLB-FKZPLZ@mailing.dhl.de
+List-Id: <1CZ4Z7YB-1DYLQB8.mailing.dhl.de>
+X-Report-Spam: complaints@episerver.com
+X-CSA-Complaints: whitelist-complaints@eco.de
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+mkaTechnicalID: 123456
+Feedback-ID: 1CZ4Z7YB:3EOXXNLB:episerver
+X-SimpleLogin-Type: Forward
+X-SimpleLogin-Mailbox-ID: 1234
+X-SimpleLogin-EmailLog-ID: 654321
+From: "DHL Paket - noreply@dhl.de"
+ <reply+longstring@simplelogin.co>
+List-Unsubscribe: <mailto:unsubsribe@simplelogin.co?subject=123456=>
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=simplelogin.co;
+  i=@simplelogin.co; q=dns/txt; s=dkim; t=1598250004; h=from : to;
+  bh=nXVR9uziNfqtwyhq6gQLFJvFtdyQ8WY/w7c1mCaf7bg=;
+  b=QY/Jb4ls0zFOqExWFkwW9ZOKNvkYPDsj74ar1LNm703kyL341KwX3rGnnicrLV7WxYo8+
+  pBY0HO7OSAJEOqmYdagAlVouuFiBMUtS2Jw/jiPHzcuvunE9JFOZFRUnNMKrr099i10U4H9
+  ZwE8i6lQzG6IMN4spjxJ2HCO8hiB3AU=
+
+--XXYYZZTT.1598250007/mx1.simplelogin.co--
+
+    """
+    assert (
+        get_header_from_bounce(
+            email.message_from_string(msg_str), "X-SimpleLogin-Mailbox-ID"
+        )
+        == "1234"
+    )
+    assert (
+        get_header_from_bounce(
+            email.message_from_string(msg_str), "X-SimpleLogin-EmailLog-ID"
+        )
+        == "654321"
+    )
+    assert (
+        get_header_from_bounce(email.message_from_string(msg_str), "Not-exist") is None
+    )

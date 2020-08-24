@@ -8,6 +8,7 @@ from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP
 from typing import Optional
+import re
 
 import arrow
 import dkim
@@ -428,6 +429,22 @@ def get_orig_message_from_bounce(msg: Message) -> Message:
         # 7th is original message
         if i == 7:
             return part
+
+
+def get_header_from_bounce(msg: Message, header: str) -> str:
+    """using regex to get header value from bounce message
+    get_orig_message_from_bounce is better. This should be the last option
+    """
+    msg_str = str(msg)
+    exp = re.compile(f"{header}.*\n")
+    r = re.search(exp, msg_str)
+    if r:
+        # substr should be something like 'HEADER: 1234'
+        substr = msg_str[r.start() : r.end()].strip()
+        parts = substr.split(":")
+        return parts[1].strip()
+
+    return None
 
 
 def get_orig_message_from_spamassassin_report(msg: Message) -> Message:
