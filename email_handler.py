@@ -976,8 +976,11 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     )
 
     nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
+    if nb_bounced >= 2 and alias.cannot_be_disabled:
+        LOG.warning("%s cannot be disabled", alias)
+
     # inform user if this is the first bounced email
-    if nb_bounced == 1:
+    if nb_bounced == 1 or (nb_bounced >= 2 and alias.cannot_be_disabled):
         LOG.d(
             "Inform user %s about bounced email sent by %s to alias %s",
             user,
@@ -1010,16 +1013,13 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         )
     # disable the alias the second time email is bounced
     elif nb_bounced >= 2:
-        if alias.cannot_be_disabled:
-            LOG.warning("%s cannot be disabled", alias)
-        else:
-            LOG.d(
-                "Bounce happens again with alias %s from %s. Disable alias now ",
-                alias,
-                contact.website_email,
-            )
-            alias.enabled = False
-            db.session.commit()
+        LOG.d(
+            "Bounce happens again with alias %s from %s. Disable alias now ",
+            alias,
+            contact.website_email,
+        )
+        alias.enabled = False
+        db.session.commit()
 
         send_email_with_rate_control(
             user,
