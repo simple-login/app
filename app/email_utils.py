@@ -31,6 +31,7 @@ from app.config import (
     POSTFIX_PORT,
     SENDER,
     URL,
+    LANDING_PAGE_URL,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -45,7 +46,10 @@ def render(template_name, **kwargs) -> str:
     template = env.get_template(template_name)
 
     return template.render(
-        MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN, URL=URL, **kwargs,
+        MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN,
+        URL=URL,
+        LANDING_PAGE_URL=LANDING_PAGE_URL,
+        **kwargs,
     )
 
 
