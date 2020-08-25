@@ -39,7 +39,7 @@ from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from email.utils import parseaddr, formataddr
+from email.utils import parseaddr, formataddr, make_msgid
 from io import BytesIO
 from smtplib import SMTP
 from typing import List, Tuple
@@ -111,6 +111,7 @@ from server import create_app, create_light_app
 _IP_HEADER = "X-SimpleLogin-Client-IP"
 _MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
+_MESSAGE_ID = "Message-ID"
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -497,6 +498,7 @@ async def forward_email_to_mailbox(
     delete_header(msg, _IP_HEADER)
     add_or_replace_header(msg, _MAILBOX_ID_HEADER, str(mailbox.id))
     add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
+    add_or_replace_header(msg, _MESSAGE_ID, make_msgid(str(email_log.id), EMAIL_DOMAIN))
 
     # change the from header so the sender comes from @SL
     # so it can pass DMARC check
@@ -677,6 +679,11 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
     replace_header_when_reply(msg, alias, "To")
     replace_header_when_reply(msg, alias, "Cc")
 
+    add_or_replace_header(
+        msg,
+        _MESSAGE_ID,
+        make_msgid(str(email_log.id), get_email_domain_part(alias.email)),
+    )
     # Received-SPF is injected by postfix-policyd-spf-python can reveal user original email
     delete_header(msg, "Received-SPF")
 
