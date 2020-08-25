@@ -194,7 +194,6 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
         return
 
     new_addrs: [str] = []
-    need_replace = False
 
     for addr in addrs:
         contact_name, contact_email = parseaddr_unicode(addr)
@@ -237,14 +236,14 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             db.session.commit()
 
         new_addrs.append(contact.new_addr())
-        need_replace = True
 
-    if need_replace:
+    if new_addrs:
         new_header = ",".join(new_addrs)
         LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
         add_or_replace_header(msg, header, new_header)
     else:
-        LOG.d("No need to replace %s header", header)
+        LOG.d("Delete %s header, old value %s", header, msg[header])
+        delete_header(msg, header)
 
 
 def replace_header_when_reply(msg: Message, alias: Alias, header: str):
@@ -276,9 +275,13 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
         else:
             new_addrs.append(formataddr((contact.name, contact.website_email)))
 
-    new_header = ",".join(new_addrs)
-    LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
-    add_or_replace_header(msg, header, new_header)
+    if new_addrs:
+        new_header = ",".join(new_addrs)
+        LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
+        add_or_replace_header(msg, header, new_header)
+    else:
+        LOG.d("delete the %s header. Old value %s", header, msg[header])
+        delete_header(msg, header)
 
 
 def replace_str_in_msg(msg: Message, fr: str, to: str):
