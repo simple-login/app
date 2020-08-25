@@ -108,6 +108,9 @@ from app.utils import random_string
 from init_app import load_pgp_public_keys
 from server import create_app, create_light_app
 
+# forward or reply
+_DIRECTION = "X-SimpleLogin-Type"
+
 _IP_HEADER = "X-SimpleLogin-Client-IP"
 _MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
@@ -489,7 +492,7 @@ async def forward_email_to_mailbox(
             return False, "421 SL E12 Retry later"
 
     # add custom header
-    add_or_replace_header(msg, "X-SimpleLogin-Type", "Forward")
+    add_or_replace_header(msg, _DIRECTION, "Forward")
 
     # remove reply-to & sender header if present
     delete_header(msg, "Reply-To")
@@ -684,6 +687,7 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
         _MESSAGE_ID,
         make_msgid(str(email_log.id), get_email_domain_part(alias.email)),
     )
+    add_or_replace_header(msg, _DIRECTION, "Reply")
     # Received-SPF is injected by postfix-policyd-spf-python can reveal user original email
     delete_header(msg, "Received-SPF")
 
