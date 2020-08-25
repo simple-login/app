@@ -687,7 +687,10 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
         _MESSAGE_ID,
         make_msgid(str(email_log.id), get_email_domain_part(alias.email)),
     )
+    add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
+
     add_or_replace_header(msg, _DIRECTION, "Reply")
+
     # Received-SPF is injected by postfix-policyd-spf-python can reveal user original email
     delete_header(msg, "Received-SPF")
 
