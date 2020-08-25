@@ -109,7 +109,7 @@ sentry-sdk==0.14.1        # via -r requirements.in
 simplejson==3.17.0        # via flask-profiler
 six==1.12.0               # via bcrypt, cryptography, flask-cors, flask-limiter, google-api-python-client, google-auth, limits, packaging, pip-tools, prompt-toolkit, pyopenssl, pytest, python-dateutil, sqlalchemy-utils, traitlets, webauthn
 sqlalchemy-utils==0.36.1  # via -r requirements.in
-sqlalchemy==1.3.12        # via alembic, flask-sqlalchemy, sqlalchemy-utils
+sqlalchemy==1.3.19        # via alembic, flask-sqlalchemy, sqlalchemy-utils
 strictyaml==1.0.2         # via yacron
 traitlets==4.3.2          # via ipython
 unidecode==1.0.23         # via -r requirements.in
