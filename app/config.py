@@ -289,6 +289,9 @@ ALERT_BOUNCE_EMAIL = "bounce"
 # When a forwarding email is detected as spam
 ALERT_SPAM_EMAIL = "spam"
 
+# When an email is sent from a mailbox to an alias - a cycle
+ALERT_SEND_EMAIL_CYCLE = "cycle"
+
 ALERT_SPF = "spf"
 
 # <<<<< END ALERT EMAIL >>>>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    Hi {{ name }}
+  {% endcall %}
+
+  {% call text() %}
+    SimpleLogin has blocked an email that was sent to your alias <b>{{ alias.email }}</b> from its mailbox
+    <b>{{ mailbox.email }}</b>:
+    the email would be forwarded to the same mailbox <b>{{ mailbox.email }}</b>.
+
+  {% endcall %}
+
+  {% call text() %}
+    This creates a <b>cycle</b> and the email will probably be refused or hidden by your email service anyway.
+  {% endcall %}
+
+  {{ render_button("View the refused email", refused_email_url) }}
+
+  {% call text() %}
+    The email is automatically deleted in 7 days.
+  {% endcall %}
+
+  {% call text() %}
+    Please let us know if you have any question.
+  {% endcall %}
+
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+{% endblock %}

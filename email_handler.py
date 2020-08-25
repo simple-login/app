@@ -71,6 +71,7 @@ from app.config import (
     SPAMASSASSIN_HOST,
     MAX_SPAM_SCORE,
     MAX_REPLY_PHASE_SPAM_SCORE,
+    ALERT_SEND_EMAIL_CYCLE,
 )
 from app.email_utils import (
     send_email,
@@ -115,6 +116,7 @@ _IP_HEADER = "X-SimpleLogin-Client-IP"
 _MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
 _MESSAGE_ID = "Message-ID"
+
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -374,6 +376,41 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
     return msg
 
 
+def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
+    # store the refused email
+    random_name = str(uuid.uuid4())
+    full_report_path = f"refused-emails/cycle-{random_name}.eml"
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
+    refused_email = RefusedEmail.create(
+        path=None, full_report_path=full_report_path, user_id=alias.user_id
+    )
+    db.session.commit()
+    LOG.d("Create refused email %s", refused_email)
+    # link available for 6 days as it gets deleted in 7 days
+    refused_email_url = refused_email.get_url(expires_in=518400)
+
+    send_email_with_rate_control(
+        user,
+        ALERT_SEND_EMAIL_CYCLE,
+        mailbox.email,
+        f"Warning: email sent from {mailbox.email} to {alias.email} forms a cycle",
+        render(
+            "transactional/cycle-email.txt",
+            name=user.name or "",
+            alias=alias,
+            mailbox=mailbox,
+            refused_email_url=refused_email_url,
+        ),
+        render(
+            "transactional/cycle-email.html",
+            name=user.name or "",
+            alias=alias,
+            mailbox=mailbox,
+            refused_email_url=refused_email_url,
+        ),
+    )
+
+
 async def handle_forward(
     envelope, smtp: SMTP, msg: Message, rcpt_to: str
 ) -> List[Tuple[bool, str]]:
@@ -389,6 +426,14 @@ async def handle_forward(
         if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
             return [(False, "550 SL E3 Email not exist")]
+
+    mail_from = envelope.mail_from.lower().strip()
+    for mb in alias.mailboxes:
+        # email send from a mailbox to alias
+        if mb.email.lower().strip() == mail_from:
+            LOG.exception("cycle email sent from %s to %s", mb, alias)
+            handle_email_sent_to_ourself(alias, mb, msg, alias.user)
+            return [(True, "250 Message accepted for delivery")]
 
     contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
