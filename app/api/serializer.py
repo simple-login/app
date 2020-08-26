@@ -244,7 +244,7 @@ def get_alias_infos_with_pagination_v3(
         .filter(
             or_(
                 EmailLog.created_at == sub.c.max_created_at,
-                sub.c.max_created_at == None, # no email log yet for this alias
+                sub.c.max_created_at == None,  # no email log yet for this alias
             )
         )
     )
