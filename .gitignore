@@ -12,3 +12,4 @@ static/upload
 adhoc_*
 adhoc.py
 venv/
+.venv

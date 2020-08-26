@@ -808,6 +808,13 @@ class Alias(db.Model, ModelMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # when a mailbox wants to send an email on behalf of the alias via the reverse-alias
+    # several checks are performed to avoid email spoofing
+    # this option allow disabling these checks
+    disable_email_spoofing_check = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     user = db.relationship(User)
     mailbox = db.relationship("Mailbox", lazy="joined")
 
