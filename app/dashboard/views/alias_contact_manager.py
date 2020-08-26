@@ -1,8 +1,12 @@
 import re
+from dataclasses import dataclass
+from operator import or_
 
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, flash
+from flask import url_for
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
+from sqlalchemy import and_, func, case
 from wtforms import StringField, validators, ValidationError
 
 from app.config import EMAIL_DOMAIN, PAGE_LIMIT
@@ -10,7 +14,7 @@ from app.dashboard.base import dashboard_bp
 from app.email_utils import parseaddr_unicode
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, Contact
+from app.models import Alias, Contact, EmailLog
 from app.utils import random_string
 
 
@@ -43,6 +47,82 @@ class NewContactForm(FlaskForm):
     email = StringField(
         "Email", validators=[validators.DataRequired(), email_validator()]
     )
+
+
+@dataclass
+class ContactInfo(object):
+    contact: Contact
+
+    nb_forward: int
+    nb_reply: int
+
+    latest_email_log: EmailLog
+
+
+def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
+    """if contact_id is set, only return the contact info for this contact"""
+    sub = (
+        db.session.query(
+            Contact.id,
+            func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
+            func.sum(
+                case(
+                    [
+                        (
+                            and_(
+                                EmailLog.is_reply == False, EmailLog.blocked == False,
+                            ),
+                            1,
+                        )
+                    ],
+                    else_=0,
+                )
+            ).label("nb_forward"),
+            func.max(EmailLog.created_at).label("max_email_log_created_at"),
+        )
+        .join(EmailLog, EmailLog.contact_id == Contact.id, isouter=True,)
+        .filter(Contact.alias_id == alias.id)
+        .group_by(Contact.id)
+        .subquery()
+    )
+
+    q = (
+        db.session.query(Contact, EmailLog, sub.c.nb_reply, sub.c.nb_forward,)
+        .join(EmailLog, EmailLog.contact_id == Contact.id, isouter=True,)
+        .filter(Contact.alias_id == alias.id)
+        .filter(Contact.id == sub.c.id)
+        .filter(
+            or_(
+                EmailLog.created_at == sub.c.max_email_log_created_at,
+                # no email log yet for this contact
+                sub.c.max_email_log_created_at == None,
+            )
+        )
+    )
+
+    if contact_id:
+        q = q.filter(Contact.id == contact_id)
+
+    latest_activity = case(
+        [
+            (EmailLog.created_at > Contact.created_at, EmailLog.created_at),
+            (EmailLog.created_at < Contact.created_at, Contact.created_at),
+        ],
+        else_=Contact.created_at,
+    )
+    q = q.order_by(latest_activity.desc()).limit(PAGE_LIMIT).offset(page * PAGE_LIMIT)
+
+    ret = []
+    for contact, latest_email_log, nb_reply, nb_forward in q:
+        contact_info = ContactInfo(
+            contact=contact,
+            nb_forward=nb_forward,
+            nb_reply=nb_reply,
+            latest_email_log=latest_email_log,
+        )
+        ret.append(contact_info)
+
+    return ret
 
 
 @dashboard_bp.route("/alias_contact_manager/<alias_id>/", methods=["GET", "POST"])
@@ -149,20 +229,20 @@ def alias_contact_manager(alias_id):
                 url_for("dashboard.alias_contact_manager", alias_id=alias_id)
             )
 
+    contact_infos = get_contact_infos(alias, page)
+    last_page = len(contact_infos) < PAGE_LIMIT
+
+    # if highlighted contact isn't included, fetch it
     # make sure highlighted contact is at array start
-    contacts = alias.get_contacts(page)
-    contact_ids = [contact.id for contact in contacts]
-
-    last_page = len(contacts) < PAGE_LIMIT
-
+    contact_ids = [contact_info.contact.id for contact_info in contact_infos]
     if highlight_contact_id not in contact_ids:
-        contact = Contact.get(highlight_contact_id)
-        if contact and contact.alias_id == alias.id:
-            contacts.insert(0, contact)
+        contact_infos = (
+            get_contact_infos(alias, contact_id=highlight_contact_id) + contact_infos
+        )
 
     return render_template(
         "dashboard/alias_contact_manager.html",
-        contacts=contacts,
+        contact_infos=contact_infos,
         alias=alias,
         new_contact_form=new_contact_form,
         highlight_contact_id=highlight_contact_id,

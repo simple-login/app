@@ -9,7 +9,7 @@ import bcrypt
 from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
-from sqlalchemy import text, desc, CheckConstraint, and_, func
+from sqlalchemy import text, desc, CheckConstraint, and_, func, case
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -914,30 +914,6 @@ class Alias(db.Model, ModelMixin):
             return self.mailbox.email
         else:
             return self.user.email
-
-    def get_contacts(self, page=0):
-        latest_reply = func.max(EmailLog.created_at)
-        q = (
-            db.session.query(Contact, latest_reply)
-            .join(
-                EmailLog,
-                and_(EmailLog.contact_id == Contact.id, EmailLog.is_reply),
-                isouter=True,
-            )
-            .filter(Contact.alias_id == self.id)
-            .group_by(Contact.id)
-            .order_by(Contact.created_at.desc())
-            .limit(PAGE_LIMIT)
-            .offset(page * PAGE_LIMIT)
-            .all()
-        )
-
-        contacts = []
-        for contact, l in q:
-            contact.latest_reply = l
-            contacts.append(contact)
-
-        return contacts
 
     def __repr__(self):
         return f"<Alias {self.id} {self.email}>"
