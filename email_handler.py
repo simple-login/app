@@ -651,11 +651,21 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
 
     mailbox = Mailbox.get_by(email=mail_from, user_id=user.id)
     if not mailbox or mailbox not in alias.mailboxes:
-        # only mailbox can send email to the reply-email
-        handle_unknown_mailbox(envelope, msg, reply_email, user, alias)
-        return False, "550 SL E7"
+        if alias.disable_email_spoofing_check:
+            # ignore this error, use default alias mailbox
+            LOG.warning(
+                "ignore unknown sender to reverse-alias %s: %s -> %s",
+                mail_from,
+                alias,
+                contact,
+            )
+            mailbox = alias.mailbox
+        else:
+            # only mailbox can send email to the reply-email
+            handle_unknown_mailbox(envelope, msg, reply_email, user, alias)
+            return False, "550 SL E7"
 
-    if ENFORCE_SPF and mailbox.force_spf:
+    if ENFORCE_SPF and mailbox.force_spf and not alias.disable_email_spoofing_check:
         ip = msg[_IP_HEADER]
         if not spf_pass(ip, envelope, mailbox, user, alias, contact.website_email, msg):
             # cannot use 4** here as sender will retry. 5** because that generates bounce report
