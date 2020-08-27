@@ -408,6 +408,7 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
             mailbox=mailbox,
             refused_email_url=refused_email_url,
         ),
+        max_alert_24h=1,
     )
 
 
