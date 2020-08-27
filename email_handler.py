@@ -91,6 +91,7 @@ from app.email_utils import (
     copy,
     to_bytes,
     get_header_from_bounce,
+    send_email_at_most_times,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -395,7 +396,7 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
     # link available for 6 days as it gets deleted in 7 days
     refused_email_url = refused_email.get_url(expires_in=518400)
 
-    send_email_with_rate_control(
+    send_email_at_most_times(
         user,
         ALERT_SEND_EMAIL_CYCLE,
         mailbox.email,
@@ -414,7 +415,6 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
             mailbox=mailbox,
             refused_email_url=refused_email_url,
         ),
-        max_alert_24h=1,
     )
 
 
