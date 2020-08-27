@@ -273,6 +273,41 @@ def send_email_with_rate_control(
     return True
 
 
+def send_email_at_most_times(
+    user: User,
+    alert_type: str,
+    to_email: str,
+    subject,
+    plaintext,
+    html=None,
+    max_times=1,
+) -> bool:
+    """Same as send_email with rate control over alert_type.
+    Sent at most `max_times`
+    This is used to inform users about a warning.
+
+    Return true if the email is sent, otherwise False
+    """
+    to_email = to_email.lower().strip()
+    nb_alert = SentAlert.query.filter_by(
+        alert_type=alert_type, to_email=to_email
+    ).count()
+
+    if nb_alert >= max_times:
+        LOG.warning(
+            "%s emails were sent to %s alert type %s",
+            nb_alert,
+            to_email,
+            alert_type,
+        )
+        return False
+
+    SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
+    db.session.commit()
+    send_email(to_email, subject, plaintext, html)
+    return True
+
+
 def get_email_local_part(address):
     """
     Get the local part from email
