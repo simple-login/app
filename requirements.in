@@ -45,3 +45,4 @@ memory_profiler
 gevent
 aiocontextvars
 aiospamc
+black
