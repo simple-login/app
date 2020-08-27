@@ -400,7 +400,7 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
         user,
         ALERT_SEND_EMAIL_CYCLE,
         mailbox.email,
-        f"Warning: email sent from {mailbox.email} to {alias.email} forms a cycle",
+        f"Email sent to {alias.email} from its own mailbox {mailbox.email}",
         render(
             "transactional/cycle-email.txt",
             name=user.name or "",
