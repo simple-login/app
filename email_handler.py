@@ -431,7 +431,7 @@ async def handle_forward(
     for mb in alias.mailboxes:
         # email send from a mailbox to alias
         if mb.email.lower().strip() == mail_from:
-            LOG.exception("cycle email sent from %s to %s", mb, alias)
+            LOG.warning("cycle email sent from %s to %s", mb, alias)
             handle_email_sent_to_ourself(alias, mb, msg, alias.user)
             return [(True, "250 Message accepted for delivery")]
 
