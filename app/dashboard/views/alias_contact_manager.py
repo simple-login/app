@@ -70,7 +70,8 @@ def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
                     [
                         (
                             and_(
-                                EmailLog.is_reply == False, EmailLog.blocked == False,
+                                EmailLog.is_reply == False,
+                                EmailLog.blocked == False,
                             ),
                             1,
                         )
@@ -80,15 +81,28 @@ def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
             ).label("nb_forward"),
             func.max(EmailLog.created_at).label("max_email_log_created_at"),
         )
-        .join(EmailLog, EmailLog.contact_id == Contact.id, isouter=True,)
+        .join(
+            EmailLog,
+            EmailLog.contact_id == Contact.id,
+            isouter=True,
+        )
         .filter(Contact.alias_id == alias.id)
         .group_by(Contact.id)
         .subquery()
     )
 
     q = (
-        db.session.query(Contact, EmailLog, sub.c.nb_reply, sub.c.nb_forward,)
-        .join(EmailLog, EmailLog.contact_id == Contact.id, isouter=True,)
+        db.session.query(
+            Contact,
+            EmailLog,
+            sub.c.nb_reply,
+            sub.c.nb_forward,
+        )
+        .join(
+            EmailLog,
+            EmailLog.contact_id == Contact.id,
+            isouter=True,
+        )
         .filter(Contact.alias_id == alias.id)
         .filter(Contact.id == sub.c.id)
         .filter(
@@ -167,7 +181,10 @@ def alias_contact_manager(alias_id):
                 except Exception:
                     flash(f"{contact_addr} is invalid", "error")
                     return redirect(
-                        url_for("dashboard.alias_contact_manager", alias_id=alias_id,)
+                        url_for(
+                            "dashboard.alias_contact_manager",
+                            alias_id=alias_id,
+                        )
                     )
                 contact_email = contact_email.lower()
 

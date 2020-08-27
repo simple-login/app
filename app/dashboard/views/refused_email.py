@@ -13,9 +13,13 @@ def refused_email_route():
     if highlight_id:
         highlight_id = int(highlight_id)
 
-    email_logs: [EmailLog] = EmailLog.query.filter(
-        EmailLog.user_id == current_user.id, EmailLog.refused_email_id != None
-    ).order_by(EmailLog.id.desc()).all()
+    email_logs: [EmailLog] = (
+        EmailLog.query.filter(
+            EmailLog.user_id == current_user.id, EmailLog.refused_email_id != None
+        )
+        .order_by(EmailLog.id.desc())
+        .all()
+    )
 
     # make sure the highlighted email_log is the first email_log
     highlight_index = None

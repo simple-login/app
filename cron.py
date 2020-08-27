@@ -151,8 +151,7 @@ class Stats:
 
 
 def stats_before(moment: Arrow) -> Stats:
-    """return the stats before a specific moment, ignoring all stats come from users in IGNORED_EMAILS
-    """
+    """return the stats before a specific moment, ignoring all stats come from users in IGNORED_EMAILS"""
     # nb user
     q = User.query
     for ie in IGNORED_EMAILS:
@@ -175,7 +174,9 @@ def stats_before(moment: Arrow) -> Stats:
     q = (
         db.session.query(EmailLog)
         .join(User, EmailLog.user_id == User.id)
-        .filter(EmailLog.created_at < moment,)
+        .filter(
+            EmailLog.created_at < moment,
+        )
     )
     for ie in IGNORED_EMAILS:
         q = q.filter(~User.email.contains(ie))

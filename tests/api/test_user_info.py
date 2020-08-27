@@ -69,6 +69,9 @@ def test_logout(flask_client):
     )
 
     # logout
-    r = flask_client.get(url_for("auth.logout"), follow_redirects=True,)
+    r = flask_client.get(
+        url_for("auth.logout"),
+        follow_redirects=True,
+    )
 
     assert r.status_code == 200

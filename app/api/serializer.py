@@ -195,7 +195,8 @@ def get_alias_infos_with_pagination_v3(
             func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
             func.sum(
                 case(
-                    [(and_(EmailLog.is_reply == False, EmailLog.blocked), 1)], else_=0,
+                    [(and_(EmailLog.is_reply == False, EmailLog.blocked), 1)],
+                    else_=0,
                 )
             ).label("nb_blocked"),
             func.sum(
@@ -203,7 +204,8 @@ def get_alias_infos_with_pagination_v3(
                     [
                         (
                             and_(
-                                EmailLog.is_reply == False, EmailLog.blocked == False,
+                                EmailLog.is_reply == False,
+                                EmailLog.blocked == False,
                             ),
                             1,
                         )

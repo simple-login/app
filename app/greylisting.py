@@ -17,14 +17,19 @@ def greylisting_needed_for_alias(alias: Alias) -> bool:
     nb_activity = (
         db.session.query(EmailLog)
         .join(Contact, EmailLog.contact_id == Contact.id)
-        .filter(Contact.alias_id == alias.id, EmailLog.created_at > min_time,)
+        .filter(
+            Contact.alias_id == alias.id,
+            EmailLog.created_at > min_time,
+        )
         .group_by(EmailLog.id)
         .count()
     )
 
     if nb_activity > MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS:
         LOG.d(
-            "Too much forward on alias %s. Nb Activity %s", alias, nb_activity,
+            "Too much forward on alias %s. Nb Activity %s",
+            alias,
+            nb_activity,
         )
         return True
 
@@ -39,7 +44,10 @@ def greylisting_needed_for_mailbox(alias: Alias) -> bool:
         db.session.query(EmailLog)
         .join(Contact, EmailLog.contact_id == Contact.id)
         .join(Alias, Contact.alias_id == Alias.id)
-        .filter(Alias.mailbox_id == alias.mailbox_id, EmailLog.created_at > min_time,)
+        .filter(
+            Alias.mailbox_id == alias.mailbox_id,
+            EmailLog.created_at > min_time,
+        )
         .group_by(EmailLog.id)
         .count()
     )

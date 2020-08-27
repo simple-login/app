@@ -177,7 +177,8 @@ def test_get_mailboxes(flask_client):
     db.session.commit()
 
     r = flask_client.get(
-        url_for("api.get_mailboxes"), headers={"Authentication": api_key.code},
+        url_for("api.get_mailboxes"),
+        headers={"Authentication": api_key.code},
     )
     assert r.status_code == 200
     # m2@example.com is not returned as it's not verified

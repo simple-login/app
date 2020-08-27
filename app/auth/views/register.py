@@ -54,7 +54,9 @@ def register():
             #  'hostname': '127.0.0.1'}
             if not hcaptcha_res["success"]:
                 LOG.warning(
-                    "User put wrong captcha %s %s", form.email.data, hcaptcha_res,
+                    "User put wrong captcha %s %s",
+                    form.email.data,
+                    hcaptcha_res,
                 )
                 flash("Wrong Captcha", "error")
                 return render_template(

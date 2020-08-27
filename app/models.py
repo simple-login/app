@@ -608,7 +608,9 @@ class MfaBrowser(db.Model, ModelMixin):
                 found = True
 
         return MfaBrowser.create(
-            user_id=user.id, token=token, expires=arrow.now().shift(days=30),
+            user_id=user.id,
+            token=token,
+            expires=arrow.now().shift(days=30),
         )
 
     @classmethod

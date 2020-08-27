@@ -23,8 +23,7 @@ from app.models import (
 
 
 def try_auto_create(address: str) -> Optional[Alias]:
-    """Try to auto-create the alias using directory or catch-all domain
-    """
+    """Try to auto-create the alias using directory or catch-all domain"""
     alias = try_auto_create_catch_all_domain(address)
     if not alias:
         alias = try_auto_create_directory(address)
@@ -77,7 +76,8 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             db.session.flush()
             for i in range(1, len(mailboxes)):
                 AliasMailbox.create(
-                    alias_id=alias.id, mailbox_id=mailboxes[i].id,
+                    alias_id=alias.id,
+                    mailbox_id=mailboxes[i].id,
                 )
 
             db.session.commit()
@@ -127,7 +127,8 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         db.session.flush()
         for i in range(1, len(mailboxes)):
             AliasMailbox.create(
-                alias_id=alias.id, mailbox_id=mailboxes[i].id,
+                alias_id=alias.id,
+                mailbox_id=mailboxes[i].id,
             )
         db.session.commit()
         return alias
