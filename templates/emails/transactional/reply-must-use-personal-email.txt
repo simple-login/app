@@ -8,8 +8,10 @@ Please note that sending from this alias only works from one of these mailboxes:
 - {{mailbox.email}}
 {% endfor %}
 
-
+This is to protect against "email spoofing", i.e. someone else sending emails from your mailbox.
 Indeed only you can send emails on behalf of your alias.
+If you think this is a wrong alert, please let us know by replying to this email.
+
 
 Best,
 SimpleLogin team.

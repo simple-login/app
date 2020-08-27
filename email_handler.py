@@ -919,7 +919,7 @@ def handle_unknown_mailbox(envelope, msg, reply_email: str, user: User, alias: A
         user,
         ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
         user.email,
-        f"Reply from your alias {alias.email} only works from your mailbox",
+        f"Attempt to use your alias {alias.email} from {envelope.mail_from}",
         render(
             "transactional/reply-must-use-personal-email.txt",
             name=user.name,
