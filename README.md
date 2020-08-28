@@ -428,7 +428,6 @@ Finally, restart Postfix
 sudo systemctl restart postfix
 ```
 
-
 ### Run SimpleLogin Docker containers
 
 To run the server, you need a config file. Please have a look at [config example](example.env) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
@@ -584,6 +583,7 @@ Below are pointers to different topics:
 - [SES - Amazon Simple Email Service](docs/ses.md)
 - [Upgrade existing SimpleLogin installation](docs/upgrade.md)
 - [Enforce SPF](docs/enforce-spf.md)
+- [Postfix TLS](docs/postfix-tls.md)
 
 ## Contributing
 
