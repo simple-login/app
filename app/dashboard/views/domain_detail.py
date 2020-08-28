@@ -111,7 +111,8 @@ def domain_detail_dns(custom_domain_id):
                 custom_domain.dmarc_verified = False
                 db.session.commit()
                 flash(
-                    f"DMARC: The TXT record is not correctly set", "warning",
+                    f"DMARC: The TXT record is not correctly set",
+                    "warning",
                 )
                 dmarc_ok = False
                 dmarc_errors = txt_records
@@ -207,7 +208,8 @@ def domain_detail_trash(custom_domain_id):
             DomainDeletedAlias.delete(deleted_alias.id)
             db.session.commit()
             flash(
-                f"{deleted_alias.email} can now be re-created", "success",
+                f"{deleted_alias.email} can now be re-created",
+                "success",
             )
 
             return redirect(

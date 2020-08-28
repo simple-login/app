@@ -34,7 +34,9 @@ def upload_from_bytesio(key: str, bs: BytesIO, content_type="string"):
 
     else:
         _session.resource("s3").Bucket(BUCKET).put_object(
-            Key=key, Body=bs, ContentType=content_type,
+            Key=key,
+            Body=bs,
+            ContentType=content_type,
         )
 
 

@@ -243,14 +243,16 @@ def test_auth_login_forgot_password(flask_client):
     db.session.commit()
 
     r = flask_client.post(
-        url_for("api.forgot_password"), json={"email": "abcd@gmail.com"},
+        url_for("api.forgot_password"),
+        json={"email": "abcd@gmail.com"},
     )
 
     assert r.status_code == 200
 
     # No such email, still return 200
     r = flask_client.post(
-        url_for("api.forgot_password"), json={"email": "not-exist@b.c"},
+        url_for("api.forgot_password"),
+        json={"email": "not-exist@b.c"},
     )
 
     assert r.status_code == 200

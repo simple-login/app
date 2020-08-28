@@ -120,7 +120,11 @@ def test_success_v2(flask_client):
     r = flask_client.post(
         url_for("api.new_custom_alias_v2", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
-        json={"alias_prefix": "prefix", "signed_suffix": suffix, "note": "test note",},
+        json={
+            "alias_prefix": "prefix",
+            "signed_suffix": suffix,
+            "note": "test note",
+        },
     )
 
     assert r.status_code == 201
@@ -163,7 +167,11 @@ def test_cannot_create_alias_in_trash(flask_client):
     r = flask_client.post(
         url_for("api.new_custom_alias_v2", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
-        json={"alias_prefix": "prefix", "signed_suffix": suffix, "note": "test note",},
+        json={
+            "alias_prefix": "prefix",
+            "signed_suffix": suffix,
+            "note": "test note",
+        },
     )
 
     # assert alias creation is successful
@@ -179,14 +187,21 @@ def test_cannot_create_alias_in_trash(flask_client):
     r = flask_client.post(
         url_for("api.new_custom_alias_v2", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
-        json={"alias_prefix": "prefix", "signed_suffix": suffix, "note": "test note",},
+        json={
+            "alias_prefix": "prefix",
+            "signed_suffix": suffix,
+            "note": "test note",
+        },
     )
     assert r.status_code == 409
 
 
 def test_success_v3(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True,
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
     )
     db.session.commit()
 

@@ -288,7 +288,8 @@ def new_custom_alias_v3():
 
     for i in range(1, len(mailboxes)):
         AliasMailbox.create(
-            alias_id=alias.id, mailbox_id=mailboxes[i].id,
+            alias_id=alias.id,
+            mailbox_id=mailboxes[i].id,
         )
 
     db.session.commit()

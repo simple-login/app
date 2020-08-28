@@ -74,7 +74,11 @@ from app.oauth.base import oauth_bp
 if SENTRY_DSN:
     LOG.d("enable sentry")
     sentry_sdk.init(
-        dsn=SENTRY_DSN, integrations=[FlaskIntegration(), SqlalchemyIntegration(),],
+        dsn=SENTRY_DSN,
+        integrations=[
+            FlaskIntegration(),
+            SqlalchemyIntegration(),
+        ],
     )
 
 # the app is served behin nginx which uses http and not https

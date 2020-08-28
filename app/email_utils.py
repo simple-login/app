@@ -396,8 +396,7 @@ def get_mx_domain_list(domain) -> [str]:
 
 
 def personal_email_already_used(email: str) -> bool:
-    """test if an email can be used as user email
-    """
+    """test if an email can be used as user email"""
     if User.get_by(email=email):
         return True
 
@@ -483,11 +482,11 @@ def get_addrs_from_header(msg: Message, header) -> [str]:
 
 def get_spam_info(msg: Message, max_score=None) -> (bool, str):
     """parse SpamAssassin header to detect whether a message is classified as spam.
-    Return (is spam, spam status detail)
-    The header format is
-    ```X-Spam-Status: No, score=-0.1 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
-  DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
-  URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2```
+      Return (is spam, spam status detail)
+      The header format is
+      ```X-Spam-Status: No, score=-0.1 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
+    DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
+    URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2```
     """
     spamassassin_status = msg["X-Spam-Status"]
     if not spamassassin_status:
@@ -498,11 +497,11 @@ def get_spam_info(msg: Message, max_score=None) -> (bool, str):
 
 def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
     """get spam info from X-Spam-Status header
-    Return (is spam, spam status detail).
-    The spam_status_header has the following format
-    ```No, score=-0.1 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
-  DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
-  URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2```
+      Return (is spam, spam status detail).
+      The spam_status_header has the following format
+      ```No, score=-0.1 required=5.0 tests=DKIM_SIGNED,DKIM_VALID,
+    DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
+    URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2```
     """
     # yes or no
     spamassassin_answer = spam_status_header[: spam_status_header.find(",")]

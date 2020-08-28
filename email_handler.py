@@ -156,13 +156,18 @@ def get_or_create_contact(
     if contact:
         if contact.name != contact_name:
             LOG.d(
-                "Update contact %s name %s to %s", contact, contact.name, contact_name,
+                "Update contact %s name %s to %s",
+                contact,
+                contact.name,
+                contact_name,
             )
             contact.name = contact_name
             db.session.commit()
     else:
         LOG.debug(
-            "create contact for alias %s and contact %s", alias, contact_from_header,
+            "create contact for alias %s and contact %s",
+            alias,
+            contact_from_header,
         )
 
         reply_email = generate_reply_email()
@@ -346,7 +351,8 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
 
     # Delete unnecessary headers in orig_msg except to save space
     delete_all_headers_except(
-        orig_msg, _MIME_HEADERS,
+        orig_msg,
+        _MIME_HEADERS,
     )
 
     first = MIMEApplication(
@@ -590,7 +596,10 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
     # the "reply email"
     if mail_from == "<>":
         LOG.warning(
-            "Bounce when sending to alias %s from %s, user %s", alias, contact, user,
+            "Bounce when sending to alias %s from %s, user %s",
+            alias,
+            contact,
+            user,
         )
 
         handle_bounce(contact, alias, msg, user)
@@ -1326,7 +1335,9 @@ class MailHandler:
             return ret
         except Exception:
             LOG.exception(
-                "email handling fail %s -> %s", envelope.mail_from, envelope.rcpt_tos,
+                "email handling fail %s -> %s",
+                envelope.mail_from,
+                envelope.rcpt_tos,
             )
             return "421 SL Retry later"
 

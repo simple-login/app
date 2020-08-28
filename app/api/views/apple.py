@@ -310,7 +310,8 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
         # try sandbox_url
         LOG.warning("Use the sandbox url instead")
         r = requests.post(
-            _SANDBOX_URL, json={"receipt-data": receipt_data, "password": password},
+            _SANDBOX_URL,
+            json={"receipt-data": receipt_data, "password": password},
         )
 
     data = r.json()
@@ -466,7 +467,8 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
 
     if data["status"] != 0:
         LOG.warning(
-            "verifyReceipt status !=0, probably invalid receipt. User %s", user,
+            "verifyReceipt status !=0, probably invalid receipt. User %s",
+            user,
         )
         return None
 

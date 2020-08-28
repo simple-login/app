@@ -102,7 +102,10 @@ def index():
                 flash("Unknown error, sorry for the inconvenience", "error")
                 return redirect(
                     url_for(
-                        "dashboard.index", query=query, sort=sort, filter=alias_filter,
+                        "dashboard.index",
+                        query=query,
+                        sort=sort,
+                        filter=alias_filter,
                     )
                 )
 

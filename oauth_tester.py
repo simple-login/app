@@ -54,7 +54,7 @@ def demo():
 
 @app.route("/callback", methods=["GET"])
 def callback():
-    """ Step 3: Retrieving an access token.
+    """Step 3: Retrieving an access token.
     The user has been redirected back from the provider to your registered
     callback URL. With this redirection comes an authorization code included
     in the redirect URL. We will use that to obtain an access token.
@@ -75,8 +75,7 @@ def callback():
 
 @app.route("/profile", methods=["GET"])
 def profile():
-    """Fetching a protected resource using an OAuth 2 token.
-    """
+    """Fetching a protected resource using an OAuth 2 token."""
     simplelogin = OAuth2Session(client_id, token=session["oauth_token"])
     return jsonify(simplelogin.get(userinfo_url).json())
 

@@ -87,7 +87,10 @@ def alias_contact_manager(alias_id):
                 except Exception:
                     flash(f"{contact_addr} is invalid", "error")
                     return redirect(
-                        url_for("dashboard.alias_contact_manager", alias_id=alias_id,)
+                        url_for(
+                            "dashboard.alias_contact_manager",
+                            alias_id=alias_id,
+                        )
                     )
                 contact_email = contact_email.lower()
 
