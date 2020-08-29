@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from app.config import PAGE_LIMIT
 from app.extensions import db
-from app.models import Alias, Contact, EmailLog, Mailbox
+from app.models import Alias, Contact, EmailLog, Mailbox, AliasMailbox
 
 
 @dataclass
@@ -239,9 +239,14 @@ def get_alias_infos_with_pagination_v3(
             sub.c.nb_blocked,
             sub.c.nb_forward,
             latest_activity,
+            Mailbox,
         )
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
+        .join(AliasMailbox, AliasMailbox.alias_id == Alias.id, isouter=True)
+        .filter(
+            or_(Mailbox.id == AliasMailbox.mailbox_id, Mailbox.id == Alias.mailbox_id)
+        )
         .filter(Alias.id == sub.c.id)
         .filter(
             or_(
@@ -257,6 +262,7 @@ def get_alias_infos_with_pagination_v3(
                 Alias.email.ilike(f"%{query}%"),
                 Alias.note.ilike(f"%{query}%"),
                 Alias.name.ilike(f"%{query}%"),
+                Mailbox.email.ilike(f"%{query}%"),
             )
         )
 
@@ -280,7 +286,7 @@ def get_alias_infos_with_pagination_v3(
     q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
 
     ret = []
-    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward, _ in q:
+    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward, _, _ in q:
         ret.append(
             AliasInfo(
                 alias=alias,
