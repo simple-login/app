@@ -193,7 +193,7 @@ def send_cannot_create_domain_alias(user, alias, domain):
 def send_email(to_email, subject, plaintext, html=None):
     if NOT_SEND_EMAIL:
         LOG.d(
-            "send email with subject %s to %s, plaintext: %s",
+            "send email with subject '%s' to '%s', plaintext: %s",
             subject,
             to_email,
             plaintext,

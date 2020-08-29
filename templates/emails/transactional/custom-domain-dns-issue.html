@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + name) }}
+
+  {% call text() %}
+    We have detected that your domain <b>{{ custom_domain.domain }}</b> does not have the DNS set up correctly.
+  {% endcall %}
+
+  {% call text() %}
+    Please make sure to set up your domain following the instructions on your domain DNS page at
+    <a href="{{ domain_dns_url }}">{{ custom_domain.domain }} DNS</a>.
+  {% endcall %}
+
+  {% call text() %}
+    Feel free reply to this email if you have any question. <br>
+    Best, <br>
+    SimpleLogin team.
+  {% endcall %}
+
+{% endblock %}
+
+

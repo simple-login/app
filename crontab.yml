@@ -47,3 +47,8 @@ jobs:
     schedule: "0 14 * * *"
     captureStderr: true
 
+  - name: SimpleLogin Custom Domain check
+    command: python /code/cron.py -j check_custom_domain
+    shell: /bin/bash
+    schedule: "0 15 * * *"
+    captureStderr: true

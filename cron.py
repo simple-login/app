@@ -12,7 +12,10 @@ from app.config import (
     ADMIN_EMAIL,
     MACAPP_APPLE_API_SECRET,
     APPLE_API_SECRET,
+    EMAIL_SERVERS_WITH_PRIORITY,
+    URL,
 )
+from app.dns_utils import get_mx_domains
 from app.email_utils import (
     send_email,
     send_trial_end_soon_email,
@@ -314,6 +317,41 @@ def sanity_check():
     LOG.d("Finish sanity check")
 
 
+def check_custom_domain():
+    LOG.d("Check verified domain for DNS issues")
+
+    for custom_domain in CustomDomain.query.filter(CustomDomain.verified == True):
+        mx_domains = get_mx_domains(custom_domain.domain)
+
+        if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
+            user = custom_domain.user
+            LOG.exception(
+                "The MX record is not correctly set for %s %s %s",
+                custom_domain,
+                user,
+                mx_domains,
+            )
+
+            domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
+
+            send_email(
+                user.email,
+                f"Please update {custom_domain.domain} DNS on SimpleLogin",
+                render(
+                    "transactional/custom-domain-dns-issue.txt",
+                    custom_domain=custom_domain,
+                    name=user.name or "",
+                    domain_dns_url=domain_dns_url,
+                ),
+                render(
+                    "transactional/custom-domain-dns-issue.html",
+                    custom_domain=custom_domain,
+                    name=user.name or "",
+                    domain_dns_url=domain_dns_url,
+                ),
+            )
+
+
 def delete_old_monitoring():
     """
     Delete old monitoring records
@@ -341,6 +379,7 @@ if __name__ == "__main__":
             "poll_apple_subscription",
             "sanity_check",
             "delete_old_monitoring",
+            "check_custom_domain",
         ],
     )
     args = parser.parse_args()
@@ -372,3 +411,6 @@ if __name__ == "__main__":
         elif args.job == "delete_old_monitoring":
             LOG.d("Delete old monitoring records")
             delete_old_monitoring()
+        elif args.job == "check_custom_domain":
+            LOG.d("Check custom domain")
+            check_custom_domain()
