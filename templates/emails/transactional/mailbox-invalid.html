@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi " + name) }}
+
+  {% call text() %}
+    We have detected that your mailbox <b>{{ mailbox.email }}</b> cannot receive emails as it's a SimpleLogin alias.
+  {% endcall %}
+
+  {% call text() %}
+    A mailbox needs to be a "final" email address and cannot be an email alias.
+  {% endcall %}
+
+  {% call text() %}
+    Please update this mailbox to a non-alias email address on
+    <a href="{{ mailbox_url }}">{{ mailbox.email }} setting</a>.
+  {% endcall %}
+
+  {% call text() %}
+    Feel free reply to this email if you have any question. <br>
+    Best, <br>
+    SimpleLogin team.
+  {% endcall %}
+
+{% endblock %}
+
+

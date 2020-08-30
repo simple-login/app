@@ -127,7 +127,6 @@ DKIM_SELECTOR = b"dkim"
 with open(DKIM_PRIVATE_KEY_PATH) as f:
     DKIM_PRIVATE_KEY = f.read()
 
-
 with open(DKIM_PUBLIC_KEY_PATH) as f:
     DKIM_DNS_VALUE = (
         f.read()
@@ -136,7 +135,6 @@ with open(DKIM_PUBLIC_KEY_PATH) as f:
         .replace("\r", "")
         .replace("\n", "")
     )
-
 
 DKIM_HEADERS = [b"from", b"to"]
 
@@ -207,7 +205,6 @@ else:
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
 
-
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 
@@ -222,7 +219,6 @@ MFA_USER_ID = "mfa_user_id"
 
 FLASK_PROFILER_PATH = os.environ.get("FLASK_PROFILER_PATH")
 FLASK_PROFILER_PASSWORD = os.environ.get("FLASK_PROFILER_PASSWORD")
-
 
 # Job names
 JOB_ONBOARDING_1 = "onboarding-1"
@@ -293,6 +289,11 @@ ALERT_SPAM_EMAIL = "spam"
 ALERT_SEND_EMAIL_CYCLE = "cycle"
 
 ALERT_SPF = "spf"
+
+# when a mailbox is also an alias
+# happens when user adds a mailbox with their domain
+# then later adds this domain into SimpleLogin
+ALERT_MAILBOX_IS_ALIAS = "mailbox_is_alias"
 
 # <<<<< END ALERT EMAIL >>>>
 

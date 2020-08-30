@@ -72,6 +72,7 @@ from app.config import (
     MAX_SPAM_SCORE,
     MAX_REPLY_PHASE_SPAM_SCORE,
     ALERT_SEND_EMAIL_CYCLE,
+    ALERT_MAILBOX_IS_ALIAS,
 )
 from app.email_utils import (
     send_email,
@@ -492,12 +493,33 @@ async def forward_email_to_mailbox(
 
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
-        LOG.exception(
+        LOG.warning(
             "Mailbox has the same domain as alias. %s -> %s -> %s",
             contact,
             alias,
             mailbox,
         )
+        mailbox_url = f"{URL}/dashboard/mailbox/{mailbox.id}/"
+        send_email_with_rate_control(
+            user,
+            ALERT_MAILBOX_IS_ALIAS,
+            user.email,
+            f"Your SimpleLogin mailbox {mailbox.email} cannot be an email alias",
+            render(
+                "transactional/mailbox-invalid.txt",
+                name=user.name or "",
+                mailbox=mailbox,
+                mailbox_url=mailbox_url,
+            ),
+            render(
+                "transactional/mailbox-invalid.html",
+                name=user.name or "",
+                mailbox=mailbox,
+                mailbox_url=mailbox_url,
+            ),
+            max_alert_24h=1,
+        )
+
         return False, "550 SL E14"
 
     # Spam check
