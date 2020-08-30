@@ -422,8 +422,9 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
 async def handle_forward(
     envelope, smtp: SMTP, msg: Message, rcpt_to: str
 ) -> List[Tuple[bool, str]]:
-    """return whether an email has been delivered and
-    the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
+    """return an array of SMTP status (is_success, smtp_status)
+    is_success indicates whether an email has been delivered and
+    smtp_status is the SMTP Status ("250 Message accepted", "550 Non-existent email address", etc)
     """
     address = rcpt_to.lower().strip()  # alias@SL
 
@@ -459,6 +460,11 @@ async def handle_forward(
 
     ret = []
     mailboxes = alias.mailboxes
+
+    # no valid mailbox
+    if not mailboxes:
+        return [(False, "550 SL E16 invalid mailbox")]
+
     # no need to create a copy of message
     if len(mailboxes) == 1:
         mailbox = mailboxes[0]
