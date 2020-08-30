@@ -520,7 +520,9 @@ async def forward_email_to_mailbox(
             max_alert_24h=1,
         )
 
-        return False, "550 SL E14"
+        # retry later
+        # so when user fixes the mailbox, the email can be delivered
+        return False, "421 SL E14"
 
     # Spam check
     spam_status = ""
