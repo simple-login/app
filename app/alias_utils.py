@@ -19,6 +19,9 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     AliasMailbox,
+    Mailbox,
+    EmailLog,
+    Contact,
 )
 
 
@@ -167,3 +170,30 @@ def delete_alias(alias: Alias, user: User):
 
     Alias.query.filter(Alias.id == alias.id).delete()
     db.session.commit()
+
+
+def aliases_for_mailbox(mailbox: Mailbox) -> [Alias]:
+    """
+    get list of aliases for a given mailbox
+    """
+    ret = set(Alias.query.filter(Alias.mailbox_id == mailbox.id).all())
+
+    for alias in (
+        db.session.query(Alias)
+        .join(AliasMailbox, Alias.id == AliasMailbox.alias_id)
+        .filter(AliasMailbox.mailbox_id == mailbox.id)
+    ):
+        ret.add(alias)
+
+    return list(ret)
+
+
+def nb_email_log_for_mailbox(mailbox: Mailbox):
+    aliases = aliases_for_mailbox(mailbox)
+    alias_ids = [alias.id for alias in aliases]
+    return (
+        db.session.query(EmailLog)
+        .join(Contact, EmailLog.contact_id == Contact.id)
+        .filter(Contact.alias_id.in_(alias_ids))
+        .count()
+    )
