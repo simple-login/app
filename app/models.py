@@ -1528,15 +1528,6 @@ class Mailbox(db.Model, ModelMixin):
         cls.query.filter(cls.id == obj_id).delete()
         db.session.commit()
 
-    def nb_email_log(self):
-        return (
-            db.session.query(EmailLog)
-            .join(Contact, EmailLog.contact_id == Contact.id)
-            .join(Alias, Alias.id == Contact.alias_id)
-            .filter(Alias.mailbox_id == self.id)
-            .count()
-        )
-
     @property
     def aliases(self) -> [Alias]:
         ret = Alias.filter_by(mailbox_id=self.id).all()

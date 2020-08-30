@@ -6,6 +6,7 @@ import arrow
 from arrow import Arrow
 
 from app import s3
+from app.alias_utils import nb_email_log_for_mailbox
 from app.api.views.apple import verify_receipt
 from app.config import (
     IGNORED_EMAILS,
@@ -289,8 +290,10 @@ def sanity_check():
         sleep(1)
         if not email_domain_can_be_used_as_mailbox(mailbox.email):
             mailbox.nb_failed_checks += 1
-            # alert if too much fail
-            if mailbox.nb_failed_checks > 10:
+            nb_email_log = nb_email_log_for_mailbox(mailbox)
+
+            # alert if too much fail and nb_email_log > 100
+            if mailbox.nb_failed_checks > 10 and nb_email_log > 100:
                 log_func = LOG.exception
             else:
                 log_func = LOG.warning
@@ -299,7 +302,7 @@ def sanity_check():
                 "issue with mailbox %s domain. #alias %s, nb email log %s",
                 mailbox,
                 mailbox.nb_alias(),
-                mailbox.nb_email_log(),
+                nb_email_log,
             )
         else:  # reset nb check
             mailbox.nb_failed_checks = 0
