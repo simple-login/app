@@ -330,7 +330,7 @@ def check_custom_domain():
 
         if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
             user = custom_domain.user
-            LOG.exception(
+            LOG.warning(
                 "The MX record is not correctly set for %s %s %s",
                 custom_domain,
                 user,
