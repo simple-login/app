@@ -243,26 +243,28 @@ def send_email_with_rate_control(
     subject,
     plaintext,
     html=None,
-    max_alert_24h=MAX_ALERT_24H,
+    max_nb_alert=MAX_ALERT_24H,
+    nb_day=1,
 ) -> bool:
     """Same as send_email with rate control over alert_type.
-    For now no more than _MAX_ALERT_24h alert can be sent in the last 24h
+    Make sure no more than `max_nb_alert` emails are sent over the period of `nb_day` days
 
     Return true if the email is sent, otherwise False
     """
     to_email = to_email.lower().strip()
-    one_day_ago = arrow.now().shift(days=-1)
+    min_dt = arrow.now().shift(days=-1 * nb_day)
     nb_alert = (
         SentAlert.query.filter_by(alert_type=alert_type, to_email=to_email)
-        .filter(SentAlert.created_at > one_day_ago)
+        .filter(SentAlert.created_at > min_dt)
         .count()
     )
 
-    if nb_alert >= max_alert_24h:
+    if nb_alert >= max_nb_alert:
         LOG.warning(
-            "%s emails were sent to %s in the last 24h, alert type %s",
+            "%s emails were sent to %s in the last %s days, alert type %s",
             nb_alert,
             to_email,
+            nb_day,
             alert_type,
         )
         return False

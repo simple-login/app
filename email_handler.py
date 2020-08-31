@@ -523,7 +523,7 @@ async def forward_email_to_mailbox(
                 mailbox=mailbox,
                 mailbox_url=mailbox_url,
             ),
-            max_alert_24h=1,
+            max_nb_alert=1,
         )
 
         # retry later
