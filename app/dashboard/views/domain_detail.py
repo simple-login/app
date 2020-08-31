@@ -37,8 +37,7 @@ def domain_detail_dns(custom_domain_id):
 
             if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
                 flash("The MX record is not correctly set", "warning")
-                custom_domain.verified = False
-                db.session.commit()
+
                 mx_ok = False
                 # build mx_errors to show to user
                 mx_errors = [

@@ -71,7 +71,10 @@
             {% endfor %}
           </div>
           {% if custom_domain.verified %}
-            Please make sure to fix this ASAP - your aliases might not work properly.
+            <div class="alert alert-danger">
+              Without the MX record set up correctly, you can miss emails sent to your aliases.
+              Please update the MX record ASAP.
+            </div>
           {% endif %}
         </div>
       {% endif %}
@@ -89,7 +92,8 @@
       </div>
 
       <div>
-        SPF <a href="https://en.wikipedia.org/wiki/Sender_Policy_Framework" target="_blank" rel="noopener">(Wikipedia↗)</a> is an email
+        SPF <a href="https://en.wikipedia.org/wiki/Sender_Policy_Framework" target="_blank"
+               rel="noopener">(Wikipedia↗)</a> is an email
         authentication method
         designed to detect forging sender addresses during the delivery of the email. <br>
         Setting up SPF is highly recommended to reduce the chance your emails ending up in the recipient's Spam folder.
@@ -153,7 +157,8 @@
       </div>
 
       <div>
-        DKIM <a href="https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail" target="_blank" rel="noopener">(Wikipedia↗)</a> is an
+        DKIM <a href="https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail" target="_blank" rel="noopener">(Wikipedia↗)</a>
+        is an
         email
         authentication method
         designed to avoid email spoofing. <br>
