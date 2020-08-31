@@ -15,6 +15,7 @@ from app.config import (
     APPLE_API_SECRET,
     EMAIL_SERVERS_WITH_PRIORITY,
     URL,
+    AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
 )
 from app.dns_utils import get_mx_domains
 from app.email_utils import (
@@ -22,6 +23,7 @@ from app.email_utils import (
     send_trial_end_soon_email,
     render,
     email_domain_can_be_used_as_mailbox,
+    send_email_with_rate_control,
 )
 from app.extensions import db
 from app.log import LOG
@@ -337,7 +339,9 @@ def check_custom_domain():
 
             domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
 
-            send_email(
+            send_email_with_rate_control(
+                user,
+                AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
                 user.email,
                 f"Please update {custom_domain.domain} DNS on SimpleLogin",
                 render(
@@ -352,6 +356,8 @@ def check_custom_domain():
                     name=user.name or "",
                     domain_dns_url=domain_dns_url,
                 ),
+                max_nb_alert=1,
+                nb_day=30,
             )
 
 

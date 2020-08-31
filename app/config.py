@@ -295,6 +295,8 @@ ALERT_SPF = "spf"
 # then later adds this domain into SimpleLogin
 ALERT_MAILBOX_IS_ALIAS = "mailbox_is_alias"
 
+AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN = "custom_domain_mx_record_issue"
+
 # <<<<< END ALERT EMAIL >>>>
 
 # Disable onboarding emails
