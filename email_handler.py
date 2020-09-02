@@ -1086,9 +1086,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         try:
             email_log_id = int(get_header_from_bounce(msg, _EMAIL_LOG_ID_HEADER))
         except Exception:
-            LOG.exception(
-                "cannot get email log id from bounce report, %s", refused_email
-            )
+            LOG.warning("cannot get email log id from bounce report, %s", refused_email)
         else:
             email_log = EmailLog.get(email_log_id)
 
