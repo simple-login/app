@@ -426,7 +426,7 @@ async def handle_forward(
     is_success indicates whether an email has been delivered and
     smtp_status is the SMTP Status ("250 Message accepted", "550 Non-existent email address", etc)
     """
-    address = rcpt_to.lower().strip()  # alias@SL
+    address = rcpt_to.lower().strip().replace(" ", "")  # alias@SL
 
     alias = Alias.get_by(email=address)
     if not alias:
