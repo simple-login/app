@@ -643,7 +643,7 @@ async def forward_email_to_mailbox(
         )
     except SMTPRecipientsRefused:
         # that means the mailbox is maybe invalid
-        LOG.exception(
+        LOG.warning(
             "SMTPRecipientsRefused forward phase %s -> %s -> %s",
             contact,
             alias,
