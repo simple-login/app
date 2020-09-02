@@ -60,8 +60,8 @@ def new_custom_alias():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    alias_prefix = data.get("alias_prefix", "").strip().lower()
-    alias_suffix = data.get("alias_suffix", "").strip().lower()
+    alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
+    alias_suffix = data.get("alias_suffix", "").strip().lower().replace(" ", "")
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
@@ -132,7 +132,7 @@ def new_custom_alias_v2():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    alias_prefix = data.get("alias_prefix", "").strip().lower()
+    alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
     signed_suffix = data.get("signed_suffix", "").strip()
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
@@ -229,7 +229,7 @@ def new_custom_alias_v3():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    alias_prefix = data.get("alias_prefix", "").strip().lower()
+    alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
     signed_suffix = data.get("signed_suffix", "").strip()
     mailbox_ids = data.get("mailbox_ids")
     note = data.get("note")

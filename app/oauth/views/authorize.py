@@ -152,6 +152,8 @@ def authorize():
                 if not current_user.can_create_new_alias():
                     raise Exception(f"User {current_user} cannot create custom email")
 
+                alias_prefix = alias_prefix.strip().lower().replace(" ", "")
+
                 # hypothesis: user will click on the button in the 600 secs
                 try:
                     alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()

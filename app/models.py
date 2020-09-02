@@ -847,8 +847,11 @@ class Alias(db.Model, ModelMixin):
     def create(cls, **kw):
         r = cls(**kw)
 
-        # make sure alias is not in global trash, i.e. DeletedAlias table
         email = kw["email"]
+        # make sure email is lowercase and doesn't have any whitespace
+        email = email.lower().strip().replace(" ", "")
+
+        # make sure alias is not in global trash, i.e. DeletedAlias table
         if DeletedAlias.get_by(email=email):
             raise AliasInTrashError
 
@@ -860,6 +863,8 @@ class Alias(db.Model, ModelMixin):
 
     @classmethod
     def create_new(cls, user, prefix, note=None, mailbox_id=None):
+        prefix = prefix.lower().strip().replace(" ", "")
+
         if not prefix:
             raise Exception("alias prefix cannot be empty")
 

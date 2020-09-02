@@ -64,7 +64,7 @@ def custom_alias():
     mailboxes = current_user.mailboxes()
 
     if request.method == "POST":
-        alias_prefix = request.form.get("prefix").strip().lower()
+        alias_prefix = request.form.get("prefix").strip().lower().replace(" ", "")
         signed_suffix = request.form.get("suffix")
         mailbox_ids = request.form.getlist("mailboxes")
         alias_note = request.form.get("note")
