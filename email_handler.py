@@ -1067,7 +1067,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         try:
             mailbox_id = int(get_header_from_bounce(msg, _MAILBOX_ID_HEADER))
         except Exception:
-            LOG.exception("cannot get mailbox-id from bounce report, %s", refused_email)
+            LOG.warning("cannot get mailbox-id from bounce report, %s", refused_email)
         else:
             mailbox = Mailbox.get(mailbox_id)
             if not mailbox or mailbox.user_id != user.id:
