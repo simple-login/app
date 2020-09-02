@@ -30,6 +30,7 @@ It should contain the following info:
 
 
 """
+import argparse
 import asyncio
 import email
 import os
@@ -1477,6 +1478,14 @@ class MailHandler:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-p", "--port", help="SMTP port to listen for", type=int, default=20381
+    )
+    args = parser.parse_args()
+
+    LOG.info("Listen for port %s", args.port)
+
     if LOAD_PGP_EMAIL_HANDLER:
         LOG.warning("LOAD PGP keys")
         app = create_app()
@@ -1492,7 +1501,7 @@ if __name__ == "__main__":
         return aiosmtpd.smtp.SMTP(handler, enable_SMTPUTF8=True)
 
     server = loop.run_until_complete(
-        loop.create_server(factory, host="0.0.0.0", port=20381)
+        loop.create_server(factory, host="0.0.0.0", port=args.port)
     )
 
     try:
