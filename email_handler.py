@@ -41,7 +41,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr, formataddr, make_msgid
 from io import BytesIO
-from smtplib import SMTP
+from smtplib import SMTP, SMTPRecipientsRefused
 from typing import List, Tuple
 
 import aiosmtpd
@@ -633,16 +633,27 @@ async def forward_email_to_mailbox(
 
     # smtp.send_message has UnicodeEncodeErroremail issue
     # encode message raw directly instead
-    smtp.sendmail(
-        contact.reply_email,
-        mailbox.email,
-        msg.as_bytes(),
-        envelope.mail_options,
-        envelope.rcpt_options,
-    )
-
-    db.session.commit()
-    return True, "250 Message accepted for delivery"
+    try:
+        smtp.sendmail(
+            contact.reply_email,
+            mailbox.email,
+            msg.as_bytes(),
+            envelope.mail_options,
+            envelope.rcpt_options,
+        )
+    except SMTPRecipientsRefused:
+        # that means the mailbox is maybe invalid
+        LOG.exception(
+            "SMTPRecipientsRefused forward phase %s -> %s -> %s",
+            contact,
+            alias,
+            mailbox,
+        )
+        # return 421 so Postfix can retry later
+        return False, "421 SL E17 Retry later"
+    else:
+        db.session.commit()
+        return True, "250 Message accepted for delivery"
 
 
 async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str):
@@ -846,7 +857,7 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
         # to not save the email_log
         db.session.rollback()
 
-        LOG.exception("Cannot send email from %s to %s", alias, contact)
+        LOG.warning("Cannot send email from %s to %s", alias, contact)
         send_email(
             mailbox.email,
             f"Email cannot be sent to {contact.email} from {alias.email}",
@@ -866,6 +877,7 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
             ),
         )
 
+    # return 250 even if error as user is already informed of the incident and can retry sending the email
     db.session.commit()
     return True, "250 Message accepted for delivery"
 
