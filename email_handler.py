@@ -1050,7 +1050,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         try:
             email_log_id = int(orig_msg[_EMAIL_LOG_ID_HEADER])
         except TypeError:
-            LOG.exception(
+            LOG.warning(
                 "cannot parse email log from original message header %s",
                 orig_msg[_EMAIL_LOG_ID_HEADER],
             )
