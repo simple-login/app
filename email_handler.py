@@ -1028,7 +1028,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         try:
             mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
         except TypeError:
-            LOG.exception(
+            LOG.warning(
                 "cannot parse mailbox from original message header %s",
                 orig_msg[_MAILBOX_ID_HEADER],
             )
