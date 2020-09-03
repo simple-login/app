@@ -50,6 +50,7 @@ import aiospamc
 import arrow
 import spf
 from aiosmtpd.smtp import Envelope
+from sqlalchemy.exc import IntegrityError
 
 from app import pgp_utils, s3
 from app.alias_utils import try_auto_create
@@ -181,14 +182,19 @@ def get_or_create_contact(
 
         reply_email = generate_reply_email()
 
-        contact = Contact.create(
-            user_id=alias.user_id,
-            alias_id=alias.id,
-            website_email=contact_email,
-            name=contact_name,
-            reply_email=reply_email,
-        )
-        db.session.commit()
+        try:
+            contact = Contact.create(
+                user_id=alias.user_id,
+                alias_id=alias.id,
+                website_email=contact_email,
+                name=contact_name,
+                reply_email=reply_email,
+            )
+            db.session.commit()
+        except IntegrityError:
+            LOG.warning("Contact %s %s already exist", alias, contact_email)
+            db.session.rollback()
+            contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
 
     return contact
 
