@@ -157,7 +157,7 @@ def toggle_alias(alias_id):
     user = g.user
     alias: Alias = Alias.get(alias_id)
 
-    if alias.user_id != user.id:
+    if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
     alias.enabled = not alias.enabled
