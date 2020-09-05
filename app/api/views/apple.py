@@ -299,9 +299,14 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     https://developer.apple.com/documentation/appstorereceipts/verifyreceipt
     """
     LOG.d("start verify_receipt")
-    r = requests.post(
-        _PROD_URL, json={"receipt-data": receipt_data, "password": password}
-    )
+    try:
+        r = requests.post(
+            _PROD_URL, json={"receipt-data": receipt_data, "password": password}
+        )
+    except ConnectionError:
+        LOG.warning("cannot call Apple server %s", _PROD_URL)
+        return None
+
     if r.status_code >= 500:
         LOG.warning("Apple server error, response:%s %s", r, r.content)
         return None
