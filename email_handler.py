@@ -379,8 +379,10 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
     first.set_payload("Version: 1")
     msg.attach(first)
 
-    second = MIMEApplication("octet-stream", _encoder=encoders.encode_7or8bit)
-    second.add_header("Content-Disposition", "inline")
+    second = MIMEApplication(
+        "octet-stream", _encoder=encoders.encode_7or8bit, name="encrypted.asc"
+    )
+    second.add_header("Content-Disposition", 'inline; filename="encrypted.asc"')
     # encrypt original message
     encrypted_data = pgp_utils.encrypt_file(
         BytesIO(orig_msg.as_bytes()), pgp_fingerprint
