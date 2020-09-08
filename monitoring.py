@@ -10,7 +10,7 @@ from server import create_app
 # the number of consecutive fails
 # if more than 3 fails, alert
 # reset whenever the system comes back to normal
-# a system is considered fail if incoming_queue + active_queue > 20
+# a system is considered fail if incoming_queue + active_queue > 50
 _nb_failed = 0
 
 
@@ -31,8 +31,8 @@ def get_stats():
 
     global _nb_failed
     # alert when too many emails in incoming + active queue
-    # 20 is an arbitrary number here
-    if incoming_queue + active_queue > 20:
+    # 50 is an arbitrary number here
+    if incoming_queue + active_queue > 50:
         _nb_failed += 1
 
         if _nb_failed > 3:
@@ -59,5 +59,5 @@ if __name__ == "__main__":
         with app.app_context():
             get_stats()
 
-        # 5 min
-        sleep(300)
+        # 2 min
+        sleep(120)
