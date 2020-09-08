@@ -12,10 +12,6 @@
   <div class="row">
     <div class="col">
       <h1 class="h3"> Custom Domains
-        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
-           aria-expanded="false" aria-controls="collapseExample">
-          What is this? <i class="fe fe-chevrons-down"></i>
-        </a>
       </h1>
 
       {% if not current_user.is_premium() %}
@@ -26,11 +22,6 @@
           </a>
         </div>
       {% endif %}
-
-      <div class="alert alert-primary collapse" id="howtouse" role="alert">
-        Here you can add your own domain, you can then add custom aliases using it.
-        Catch-all domains can also be setup to create new aliases on the fly.
-      </div>
 
       <div class="row">
         {% for custom_domain in custom_domains %}
