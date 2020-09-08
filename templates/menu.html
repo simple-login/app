@@ -8,13 +8,6 @@
   </li>
 
   <li class="nav-item">
-    <a href="{{ url_for('dashboard.custom_domain') }}"
-       class="nav-link {{ 'active' if active_page == 'custom_domain' }}">
-      <i class="fe fe-server"></i> Domains
-    </a>
-  </li>
-
-  <li class="nav-item">
     <a href="{{ url_for('dashboard.directory') }}"
        class="nav-link {{ 'active' if active_page == 'directory' }}">
       <i class="fe fe-folder"></i> Directories
@@ -25,6 +18,13 @@
     <a href="{{ url_for('dashboard.mailbox_route') }}"
        class="nav-link {{ 'active' if active_page == 'mailbox' }}">
       <i class="fe fe-inbox"></i> Mailboxes
+    </a>
+  </li>
+
+  <li class="nav-item">
+    <a href="{{ url_for('dashboard.custom_domain') }}"
+       class="nav-link {{ 'active' if active_page == 'custom_domain' }}">
+      <i class="fe fe-server"></i> Domains
     </a>
   </li>
 
