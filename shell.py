@@ -159,8 +159,8 @@ def disable_mailbox(mailbox_id):
 def send_onboarding_emails(user):
     onboarding_send_from_alias(user)
     onboarding_mailbox(user)
-    onboarding_pgp(user)
     onboarding_browser_extension(user)
+    onboarding_pgp(user)
 
 
 app = create_app()
