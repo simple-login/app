@@ -18,13 +18,13 @@
     or <a href="https://apps.apple.com/app/id1494359858">iOS app</a>.
   {% endcall %}
 
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
-  {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
+  <img src="https://simplelogin.io/images/everywhere.png" alt="Available Everywhere"
+       style="max-width: 100%;">
 
 
 {% endblock %}
 
 {% block footer %}
   This email is sent to {{ user.email }} and is part of our onboarding series. Unsubscribe on
-  <a href="{{URL}}/dashboard/setting#notification">Settings</a>
+  <a href="{{ URL }}/dashboard/setting#notification">Settings</a>
 {% endblock %}
