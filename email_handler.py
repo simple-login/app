@@ -241,15 +241,20 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
 
             reply_email = generate_reply_email()
 
-            contact = Contact.create(
-                user_id=alias.user_id,
-                alias_id=alias.id,
-                website_email=contact_email,
-                name=contact_name,
-                reply_email=reply_email,
-                is_cc=header.lower() == "cc",
-            )
-            db.session.commit()
+            try:
+                contact = Contact.create(
+                    user_id=alias.user_id,
+                    alias_id=alias.id,
+                    website_email=contact_email,
+                    name=contact_name,
+                    reply_email=reply_email,
+                    is_cc=header.lower() == "cc",
+                )
+                db.session.commit()
+            except IntegrityError:
+                LOG.warning("Contact %s %s already exist", alias, contact_email)
+                db.session.rollback()
+                contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
 
         new_addrs.append(contact.new_addr())
 
