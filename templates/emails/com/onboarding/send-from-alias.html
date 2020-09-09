@@ -2,31 +2,46 @@
 
 {% block content %}
   {{ render_text("Hi " + user.name) }}
-  {{ render_text("Do you know you can send emails to anyone from your alias?") }}
-  {{ render_text("This Youtube video quickly walks you through the steps:") }}
 
-  {{ render_text('<a href="https://youtu.be/VsypF-DBaow">https://youtu.be/VsypF-DBaow</a>') }}
+  {% call text() %}
+    Do you know you can send emails <b>from your alias</b>? <br>
+  {% endcall %}
 
-  {{ render_text("Or you can follow the steps below. This can seem a bit daunting but believe us, it's going to be much easier the second time.") }}
+  {% call text() %}
+    If you want to reply to an email, just hit "Reply"
+    and your response will come from your alias.
 
-  {{ render_text("1. First click <b>Send Email</b> on your alias you want to send email from.") }}
-  {{ render_text('<img src="https://static.simplelogin.io/send-from-alias/1.png" style="max-width: 500px">') }}
+  {% endcall %}
 
-  {{ render_text("2. Enter your contact email, this will generate a <b>reverse-alias</b>.") }}
-  {{ render_text('<img src="https://static.simplelogin.io/send-from-alias/2.png" style="max-width: 500px">') }}
+  {% call text() %}
+    To send an email to a <b>new contact</b>, please follow the steps below.
+    You can also watch this <a href="https://youtu.be/VsypF-DBaow">Youtube video</a>
+    that quickly walks you through the steps.
+  {% endcall %}
 
-  {{ render_text("3. Use this reverse-alias <b>instead of your contact email</b>.") }}
-  {{ render_text('<img src="https://static.simplelogin.io/send-from-alias/3.png" style="max-width: 500px">') }}
+  {% call text() %}
+    1. First click <b>Send Email</b> on the alias you want to send email from. <br>
+    <img src="https://static.simplelogin.io/send-from-alias/1.png" style="max-width: 500px">
+  {% endcall %}
 
-  {{ render_text("4. Your contact will receive this email from your alias.") }}
-  {{ render_text('<img src="https://static.simplelogin.io/send-from-alias/4.png" style="max-width: 500px">') }}
+  {% call text() %}
+    2. Enter your contact email, this will create a <b>reverse-alias</b> for the contact. <br>
+    <img src="https://static.simplelogin.io/send-from-alias/2.png" style="max-width: 500px">
+  {% endcall %}
 
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
-  {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
+  {% call text() %}
+    3. Send the email to this reverse-alias <b>instead of the contact email</b>. <br>
+    <img src="https://static.simplelogin.io/send-from-alias/3.png" style="max-width: 500px">
+  {% endcall %}
+
+  {% call text() %}
+    And voilà, your contact will receive this email sent from your alias! <br>
+    <img src="https://static.simplelogin.io/send-from-alias/4.png" style="max-width: 500px">
+  {% endcall %}
 
 {% endblock %}
 
 {% block footer %}
   This email is sent to {{ user.email }} and is part of our onboarding series. Unsubscribe on
-  <a href="{{URL}}/dashboard/setting#notification">Settings</a>
+  <a href="{{ URL }}/dashboard/setting#notification">Settings</a>
 {% endblock %}
