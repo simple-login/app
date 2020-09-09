@@ -1,15 +1,21 @@
-import flask_migrate
-from IPython import embed
-from sqlalchemy_utils import create_database, database_exists, drop_database
-
-from app.config import DB_URI, ALIAS_DOMAINS
-from app.email_utils import send_email, render, get_email_domain_part
-from app.models import *
-from server import create_app
 from time import sleep
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
+import flask_migrate
+from sqlalchemy_utils import create_database, database_exists, drop_database
+
+from app.config import (
+    DB_URI,
+    ALIAS_DOMAINS,
+)
+from app.email_utils import send_email, render, get_email_domain_part
+from app.models import *
+from job_runner import (
+    onboarding_pgp,
+    onboarding_browser_extension,
+    onboarding_mailbox,
+    onboarding_send_from_alias,
+)
+from server import create_app
 
 
 def create_db():
@@ -148,6 +154,13 @@ def disable_mailbox(mailbox_id):
         )
     except Exception:
         LOG.exception("Cannot send disable mailbox email to %s", mailbox.user)
+
+
+def send_onboarding_emails(user):
+    onboarding_send_from_alias(user)
+    onboarding_mailbox(user)
+    onboarding_pgp(user)
+    onboarding_browser_extension(user)
 
 
 app = create_app()
