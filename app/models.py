@@ -490,7 +490,7 @@ class User(db.Model, ModelMixin, UserMixin):
                 or not custom_domain.verified
                 or custom_domain.user_id != self.id
             ):
-                LOG.exception("Problem with %s default random alias domain", self)
+                LOG.warning("Problem with %s default random alias domain", self)
                 return FIRST_ALIAS_DOMAIN
 
             return custom_domain.domain
