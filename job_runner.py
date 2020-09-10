@@ -2,20 +2,36 @@
 Run scheduled jobs.
 Not meant for running job at precise time (+- 1h)
 """
+import csv
 import time
 
 import arrow
+import requests
 
+from app import s3
 from app.config import (
     JOB_ONBOARDING_1,
     JOB_ONBOARDING_2,
     JOB_ONBOARDING_3,
     JOB_ONBOARDING_4,
+    JOB_BATCH_IMPORT,
 )
-from app.email_utils import send_email, render
+from app.email_utils import (
+    send_email,
+    render,
+    get_email_domain_part,
+)
 from app.extensions import db
 from app.log import LOG
-from app.models import User, Job
+from app.models import (
+    User,
+    Job,
+    BatchImport,
+    Alias,
+    DeletedAlias,
+    DomainDeletedAlias,
+    CustomDomain,
+)
 from server import create_app
 
 
@@ -69,6 +85,55 @@ def onboarding_mailbox(user):
         render("com/onboarding/mailbox.txt", user=user),
         render("com/onboarding/mailbox.html", user=user),
     )
+
+
+def handle_batch_import(batch_import: BatchImport):
+    user = batch_import.user
+
+    batch_import.processed = True
+    db.session.commit()
+
+    LOG.debug("Start batch import for %s %s", batch_import, user)
+    file_url = s3.get_url(batch_import.file.path)
+
+    LOG.d("Download file %s from %s", batch_import.file, file_url)
+    r = requests.get(file_url)
+    lines = [l.decode() for l in r.iter_lines()]
+    reader = csv.DictReader(lines)
+
+    for row in reader:
+        full_alias = row["alias"].lower().strip().replace(" ", "")
+        note = row["note"]
+
+        alias_domain = get_email_domain_part(full_alias)
+        custom_domain = CustomDomain.get_by(domain=alias_domain)
+
+        if (
+            not custom_domain
+            or not custom_domain.verified
+            or custom_domain.user_id != user.id
+        ):
+            LOG.debug("domain %s can't be used %s", alias_domain, user)
+            continue
+
+        if (
+            Alias.get_by(email=full_alias)
+            or DeletedAlias.get_by(email=full_alias)
+            or DomainDeletedAlias.get_by(email=full_alias)
+        ):
+            LOG.d("alias already used %s", full_alias)
+            continue
+
+        alias = Alias.create(
+            user_id=user.id,
+            email=full_alias,
+            note=note,
+            mailbox_id=user.default_mailbox_id,
+            custom_domain_id=custom_domain.id,
+            batch_import_id=batch_import.id,
+        )
+        db.session.commit()
+        LOG.d("Create %s", alias)
 
 
 if __name__ == "__main__":
@@ -128,6 +193,11 @@ if __name__ == "__main__":
                     if user and user.notification and user.activated:
                         LOG.d("send onboarding pgp email to user %s", user)
                         onboarding_pgp(user)
+
+                elif job.name == JOB_BATCH_IMPORT:
+                    batch_import_id = job.payload.get("batch_import_id")
+                    batch_import = BatchImport.get(batch_import_id)
+                    handle_batch_import(batch_import)
 
                 else:
                     LOG.exception("Unknown job name %s", job.name)

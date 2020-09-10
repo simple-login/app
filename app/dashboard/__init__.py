@@ -24,4 +24,5 @@ from .views import (
     recovery_code,
     contact_detail,
     setup_done,
+    batch_import,
 )
