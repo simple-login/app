@@ -482,19 +482,34 @@ async def handle_forward(
     # no need to create a copy of message
     if len(mailboxes) == 1:
         mailbox = mailboxes[0]
-        ret.append(
-            await forward_email_to_mailbox(
-                alias, msg, email_log, contact, envelope, smtp, mailbox, user
+        if not mailbox.verified:
+            LOG.debug("Mailbox %s unverified, do not forward", mailbox)
+            return [(False, "550 SL E18 unverified mailbox")]
+        else:
+            ret.append(
+                await forward_email_to_mailbox(
+                    alias, msg, email_log, contact, envelope, smtp, mailbox, user
+                )
             )
-        )
     # create a copy of message for each forward
     else:
         for mailbox in mailboxes:
-            ret.append(
-                await forward_email_to_mailbox(
-                    alias, copy(msg), email_log, contact, envelope, smtp, mailbox, user
+            if not mailbox.verified:
+                LOG.debug("Mailbox %s unverified, do not forward", mailbox)
+                ret.append((False, "550 SL E19 unverified mailbox"))
+            else:
+                ret.append(
+                    await forward_email_to_mailbox(
+                        alias,
+                        copy(msg),
+                        email_log,
+                        contact,
+                        envelope,
+                        smtp,
+                        mailbox,
+                        user,
+                    )
                 )
-            )
 
     return ret
 
