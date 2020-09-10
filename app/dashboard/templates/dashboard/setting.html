@@ -8,11 +8,11 @@
 
 {% block head %}
   <style>
-    .card-title {
-      font-size: 22px;
-      font-weight: 600;
-      margin-bottom: 3px;
-    }
+      .card-title {
+          font-size: 22px;
+          font-weight: 600;
+          margin-bottom: 3px;
+      }
   </style>
 {% endblock %}
 
@@ -156,9 +156,9 @@
           <select class="form-control mr-sm-2" name="random-alias-default-domain">
             {% for is_public, domain in current_user.available_domains_for_random_alias() %}
               <option value="{{ domain }}"
-                {% if current_user.default_random_alias_domain() == domain %} selected {% endif %} >
-              {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
-            </option>
+                  {% if current_user.default_random_alias_domain() == domain %} selected {% endif %} >
+                {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
+              </option>
             {% endfor %}
           </select>
           <button class="btn btn-outline-primary">Update</button>
@@ -293,6 +293,19 @@
         <a href="{{ url_for('dashboard.refused_email_route') }}" class="btn btn-outline-primary">
           See refused emails
         </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Import alias</div>
+        <div class="mb-3">
+          You can import your aliases created on other platforms into SimpleLogin.
+        </div>
+        <a href="{{ url_for('dashboard.batch_import_route') }}" class="btn btn-outline-primary">
+          Batch Import
+        </a>
+
       </div>
     </div>
 
