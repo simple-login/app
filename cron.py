@@ -297,6 +297,7 @@ def sanity_check():
             # alert if too much fail and nb_email_log > 100
             if mailbox.nb_failed_checks > 10 and nb_email_log > 100:
                 log_func = LOG.exception
+                mailbox.verified = False
             else:
                 log_func = LOG.warning
 
@@ -309,7 +310,7 @@ def sanity_check():
         else:  # reset nb check
             mailbox.nb_failed_checks = 0
 
-    db.session.commit()
+        db.session.commit()
 
     for user in User.filter_by(activated=True).all():
         if user.email.lower() != user.email:
