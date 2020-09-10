@@ -94,6 +94,9 @@ class File(db.Model, ModelMixin):
     def get_url(self, expires_in=3600):
         return s3.get_url(self.path, expires_in)
 
+    def __repr__(self):
+        return f"<File {self.path}>"
+
 
 class EnumE(enum.Enum):
     @classmethod
@@ -815,6 +818,13 @@ class Alias(db.Model, ModelMixin):
     # this option allow disabling these checks
     disable_email_spoofing_check = db.Column(
         db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
+    # to know whether an alias is added using a batch import
+    batch_import_id = db.Column(
+        db.ForeignKey("batch_import.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
     )
 
     user = db.relationship(User)
@@ -1742,3 +1752,19 @@ class Monitoring(db.Model, ModelMixin):
     incoming_queue = db.Column(db.Integer, nullable=False)
     active_queue = db.Column(db.Integer, nullable=False)
     deferred_queue = db.Column(db.Integer, nullable=False)
+
+
+class BatchImport(db.Model, ModelMixin):
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    file_id = db.Column(db.ForeignKey(File.id, ondelete="cascade"), nullable=False)
+    processed = db.Column(db.Boolean, nullable=False, default=False)
+    summary = db.Column(db.Text, nullable=True, default=None)
+
+    file = db.relationship(File)
+    user = db.relationship(User)
+
+    def nb_alias(self):
+        return Alias.query.filter_by(batch_import_id=self.id).count()
+
+    def __repr__(self):
+        return f"<BatchImport {self.id}>"
