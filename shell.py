@@ -1,6 +1,7 @@
 from time import sleep
 
 import flask_migrate
+from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from app.config import (
