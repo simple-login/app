@@ -5,6 +5,7 @@ import requests
 from flask import g
 from flask import jsonify
 from flask import request
+from requests import RequestException
 
 from app.api.base import api_bp, require_api_auth
 from app.config import APPLE_API_SECRET, MACAPP_APPLE_API_SECRET
@@ -303,7 +304,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
         r = requests.post(
             _PROD_URL, json={"receipt-data": receipt_data, "password": password}
         )
-    except ConnectionError:
+    except RequestException:
         LOG.warning("cannot call Apple server %s", _PROD_URL)
         return None
 
