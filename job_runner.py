@@ -102,8 +102,12 @@ def handle_batch_import(batch_import: BatchImport):
     reader = csv.DictReader(lines)
 
     for row in reader:
-        full_alias = row["alias"].lower().strip().replace(" ", "")
-        note = row["note"]
+        try:
+            full_alias = row["alias"].lower().strip().replace(" ", "")
+            note = row["note"]
+        except KeyError:
+            LOG.warning("Cannot parse row %s", row)
+            continue
 
         alias_domain = get_email_domain_part(full_alias)
         custom_domain = CustomDomain.get_by(domain=alias_domain)
