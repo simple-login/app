@@ -54,7 +54,7 @@ from app.config import (
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
 from app.discover.base import discover_bp
-from app.email_utils import send_email
+from app.email_utils import send_email, render
 from app.extensions import db, login_manager, migrate, limiter
 from app.jose_utils import get_jwk_key
 from app.log import LOG
@@ -571,11 +571,18 @@ def setup_paddle_callback(app: Flask):
                 sub.cancelled = True
                 db.session.commit()
 
+                user = sub.user
+
                 send_email(
-                    ADMIN_EMAIL,
-                    subject=f"{sub.user} cancels",
-                    plaintext=f"{sub} {request.form.get('cancellation_effective_date')}",
+                    user.email,
+                    f"SimpleLogin - what can we do to improve the product?",
+                    render(
+                        "transactional/subscription-cancel.txt",
+                        name=user.name or "",
+                        end_date=request.form.get("cancellation_effective_date"),
+                    ),
                 )
+
             else:
                 return "No such subscription", 400
         elif request.form.get("alert_name") == "subscription_updated":

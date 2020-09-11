@@ -1,0 +1,16 @@
+Hi {{name}}
+
+This is Son, SimpleLogin founder. I saw that you have canceled your subscription.
+
+Your subscription will end at {{end_date}}.
+
+I would appreciate if you could tell me what we can do to improve the product or what is missing?
+
+Thanks for giving SimpleLogin a try!
+
+Best,
+Son.
+
+-----------------------------------------
+Son NK - SimpleLogin founder.
+https://simplelogin.io
