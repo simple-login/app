@@ -237,7 +237,7 @@ def increase_percent(old, new) -> str:
         return "N/A"
 
     increase = (new - old) / old * 100
-    return f"{increase:.1f}%"
+    return f"{increase:.1f}%. Delta: {new-old}"
 
 
 def stats():
