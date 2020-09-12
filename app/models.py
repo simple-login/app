@@ -250,7 +250,16 @@ class User(db.Model, ModelMixin, UserMixin):
         user.default_mailbox_id = mb.id
 
         # create a first alias mail to show user how to use when they login
-        Alias.create_new(user, prefix="my-first-alias", mailbox_id=mb.id)
+        alias = Alias.create_new(
+            user,
+            prefix="simplelogin-newsletter",
+            mailbox_id=mb.id,
+            note="This is your first alias. It's used to receive SimpleLogin communications "
+            "like new features announcements, newsletters.",
+        )
+        db.session.flush()
+
+        user.newsletter_alias_id = alias.id
         db.session.flush()
 
         if DISABLE_ONBOARDING:
@@ -521,6 +530,22 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def two_factor_authentication_enabled(self) -> bool:
         return self.enable_otp or self.fido_enabled()
+
+    def get_communication_email(self) -> Optional[str]:
+        """return the email that user uses to receive email communication"""
+        if self.notification and self.activated:
+            if self.newsletter_alias_id:
+                alias = Alias.get(self.newsletter_alias_id)
+                if alias.enabled:
+                    return alias.email
+
+                # user doesn't want to receive newsletter
+                else:
+                    return None
+            else:
+                return self.email
+
+        return None
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
@@ -832,7 +857,7 @@ class Alias(db.Model, ModelMixin):
         default=None,
     )
 
-    user = db.relationship(User)
+    user = db.relationship(User, foreign_keys=[user_id])
     mailbox = db.relationship("Mailbox", lazy="joined")
 
     @property
