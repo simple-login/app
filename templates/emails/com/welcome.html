@@ -3,31 +3,57 @@
 {% block greeting %}
   <h1 style="margin-top: 0; color: #333333; font-size: 22px; font-weight: bold; text-align: left;" align="left">
     {% if name %}
-    Welcome, {{ name }}!
+      Welcome, {{ name }}!
     {% else %}
-    Welcome!
+      Welcome!
     {% endif %}
   </h1>
 {% endblock %}
 
 {% block content %}
-  {{ render_text("My name is Son. I’m the founder of SimpleLogin and I wanted to be the first to welcome you on board.") }}
+  {% call text() %}
+    My name is Son. I’m the founder of SimpleLogin and I wanted to be the first to welcome you on board.
+  {% endcall %}
 
-  {{ render_text('To better secure your account, I recommend enabling Multi-Factor Authentication (MFA) on your <a href="' ~ URL ~ '/dashboard/setting/#totp">Setting page</a>.') }}
+  {% call text() %}
+    To better secure your account, I recommend enabling Multi-Factor Authentication (MFA) on your
+    <a href="{{ URL + '/dashboard/setting/#totp' }}">Setting page</a>.
+  {% endcall %}
 
-  {{ render_text('If you have any feedback or improvement ideas please let me know by simply replying to this email. Yes, this email is not sent from a no-reply address.
-') }}
+  {% call text() %}
+    If you have any feedback or improvement ideas please let me know by simply replying to this email. Yes, this email
+    is not sent from a no-reply address.
+  {% endcall %}
 
-  {{ render_text('To be informed of SimpleLogin latest features, you can follow our
- <a href="https://twitter.com/simple_login">Twitter</a> or join our <a href="https://www.reddit.com/r/Simplelogin/">Reddit sub</a>.') }}
+  {% call text() %}
+    To be informed of SimpleLogin latest features, you can follow our
+    <a href="https://twitter.com/simple_login">Twitter</a> or join our
+    <a href="https://www.reddit.com/r/Simplelogin/">Reddit sub</a>.
+  {% endcall %}
 
-  {% if user.in_trial() %}
-    {{ render_text('You can use all premium features like <em>custom domain</em> or <em>alias directory</em> during the <b>trial period</b>. Your trial will end ' + user.trial_end.humanize() + ". All aliases you create during the trial will continue to work normally when the trial ends.") }}
+  {% if user.in_trial() and user.trial_end %}
+    {% call text() %}
+      You can use all premium features like <em>custom domain</em> or <em>alias directory</em> during the
+      <b>trial period</b>. Your trial will end {{user.trial_end.humanize() }}. <br>
+      All aliases you create during the trial
+      will continue to work normally when the trial ends.
+    {% endcall %}
+
   {% endif %}
 
-  {{ render_text('In the next coming days, you are going to receive some onboarding emails to quickly present some SimpleLogin features. If you don\'t want to receive these emails, you can disable them in your <a href="' ~ URL ~ '/dashboard/setting#notification">notification settings</a>.') }}
+  {% call text() %}
+    In the next coming days, you are going to receive some onboarding emails to quickly present some SimpleLogin
+    features.
+    If you don't want to receive these emails, you can disable them in your
+    <a href="{{ URL + '/dashboard/setting#notification' }}">notification settings</a>.
+  {% endcall %}
 
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {% call text() %}
+    Thanks, <br/>
+    SimpleLogin Team.
+  {% endcall %}
+
+
 
 {% endblock %}
 
