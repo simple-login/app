@@ -52,8 +52,12 @@ def new_app():
 
 
 def onboarding_send_from_alias(user):
+    to_email = user.get_communication_email()
+    if not to_email:
+        return
+
     send_email(
-        user.email,
+        to_email,
         f"Do you know you can send emails from your alias?",
         render("com/onboarding/send-from-alias.txt", user=user),
         render("com/onboarding/send-from-alias.html", user=user),
@@ -61,8 +65,12 @@ def onboarding_send_from_alias(user):
 
 
 def onboarding_pgp(user):
+    to_email = user.get_communication_email()
+    if not to_email:
+        return
+
     send_email(
-        user.email,
+        to_email,
         f"Do you know you can encrypt your emails so only you can read them?",
         render("com/onboarding/pgp.txt", user=user),
         render("com/onboarding/pgp.html", user=user),
@@ -70,8 +78,12 @@ def onboarding_pgp(user):
 
 
 def onboarding_browser_extension(user):
+    to_email = user.get_communication_email()
+    if not to_email:
+        return
+
     send_email(
-        user.email,
+        to_email,
         f"Have you tried SimpleLogin Chrome/Firefox extensions and Android/iOS apps?",
         render("com/onboarding/browser-extension.txt", user=user),
         render("com/onboarding/browser-extension.html", user=user),
@@ -79,8 +91,12 @@ def onboarding_browser_extension(user):
 
 
 def onboarding_mailbox(user):
+    to_email = user.get_communication_email()
+    if not to_email:
+        return
+
     send_email(
-        user.email,
+        to_email,
         f"Do you know you can have multiple mailboxes on SimpleLogin?",
         render("com/onboarding/mailbox.txt", user=user),
         render("com/onboarding/mailbox.html", user=user),
