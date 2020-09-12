@@ -4,14 +4,18 @@
 
 {% block head %}
   <style>
-    .alias-activity {
-      font-weight: 600;
-      font-size: 14px;
-    }
+      .alias-activity {
+          font-weight: 600;
+          font-size: 14px;
+      }
 
-    .btn-group-border-left {
-      border-left: 1px #fbfbfb4f solid;
-    }
+      .btn-group-border-left {
+          border-left: 1px #fbfbfb4f solid;
+      }
+
+      em {
+          padding: 0px;
+      }
   </style>
 {% endblock %}
 
@@ -177,10 +181,8 @@
             <div class="col-8">
               <span class="clipboard cursor mb-0"
                   {% if loop.index ==1 %}
-                    data-intro="This is an <em>alias</em>. <br><br>
-          <b>All</b> emails sent to an alias will be <em>forwarded</em> to your inbox. <br><br>
-          Alias is a great way to hide your personal email address so feel free to
-          use it whenever possible, for example when signing up for a newsletter or creating a new account on a suspicious website 😎"
+                    data-intro="This is your first <em>alias</em>'. <br><br>
+          Emails sent to an alias are <em>forwarded</em> to your <em>real</em> email address. <br><br>"
                     data-step="2"
                   {% endif %}
                   {% if alias.enabled %}
@@ -196,17 +198,14 @@
               <label class="custom-switch cursor"
                      data-toggle="tooltip"
                   {% if alias.enabled %}
-                     title="Disable alias - you will stop receiving emails sent to this alias"
+                     title="Disable alias - stop receiving emails sent to this alias"
                   {% else %}
-                     title="Enable alias - you will start receiving emails sent to this alias"
+                     title="Enable alias - start receiving emails sent to this alias"
                   {% endif %}
 
                   {% if loop.index ==1 %}
-                     data-intro="By turning off an alias, emails sent to this alias will <em>not</em>
-                         be forwarded to your inbox. <br><br>
-                         This should be used with care as others might
-                         not be able to reach you after ...
-                          "
+                     data-intro="By <em>disabling</em> an alias, emails sent to this alias will <em>not</em>
+                         be forwarded to your inbox. <br><br>"
                      data-step="3"
                   {% endif %}
                      style="padding-left: 0px"
@@ -265,7 +264,9 @@
                  id="send-email-{{ alias.id }}"
                   {% if loop.index ==1 %}
                  data-intro="Not only alias can receive emails, it can <em>send</em> emails too! <br><br>
-                 You can add a new <em>contact</em> for your alias here. <br><br>"
+                 You can add a new <em>contact</em> for your alias here. <br><br>
+                 If you need to reply to an email, just hit 'Reply': the response will come from your alias
+                 and your real email address stays <em>hidden</em>."
                  data-step="4"
                   {% endif %}
                  class="btn btn-sm btn-outline-primary {% if not alias.enabled %} disabled {% endif %}"
