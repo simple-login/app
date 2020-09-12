@@ -231,6 +231,11 @@ class User(db.Model, ModelMixin, UserMixin):
     # user can set a more strict max_spam score to block spams more aggressively
     max_spam_score = db.Column(db.Integer, nullable=True)
 
+    # newsletter is sent to this address
+    newsletter_alias_id = db.Column(
+        db.ForeignKey("alias.id", ondelete="SET NULL"), nullable=True, default=None
+    )
+
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
