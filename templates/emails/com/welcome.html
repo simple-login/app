@@ -13,12 +13,12 @@
 {% block content %}
   {% if alias %}
     {% call text() %}
-      This is the first email you receive via your <b>first alias</b> {{ alias }}.
-      This alias is automatically created when you signed up on SimpleLogin.
+      This is the first email you receive via your <b>first alias</b> <em>{{ alias }}</em>.
+      It is automatically created when you signed up on SimpleLogin.
     {% endcall %}
 
     {% call text() %}
-      It's for receiving our news, feature announcements or tips -
+      This alias is for receiving our news, feature announcements or tips -
       feel free to <a href="{{ URL + '/dashboard/setting#notification' }}">disable</a> it if you don't need any of
       these.
     {% endcall %}
@@ -26,9 +26,11 @@
 
   {% call text() %}
     You can reach out to us by: <br>
-    - Simply replying to this email <br>
-    - On <a href="https://twitter.com/simple_login">Twitter</a> <br>
-    - On <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a>
+    <ul>
+      <li>Simply replying to this email </li>
+      <li>On <a href="https://twitter.com/simple_login">Twitter</a> </li>
+      <li>On <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a></li>
+    </ul>
   {% endcall %}
 
   {% if user.in_trial() and user.trial_end %}
