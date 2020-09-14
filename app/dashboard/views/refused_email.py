@@ -2,6 +2,7 @@ from flask import render_template, request
 from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
+from app.log import LOG
 from app.models import EmailLog
 
 
@@ -11,7 +12,11 @@ def refused_email_route():
     # Highlight a refused email
     highlight_id = request.args.get("highlight_id")
     if highlight_id:
-        highlight_id = int(highlight_id)
+        try:
+            highlight_id = int(highlight_id)
+        except ValueError:
+            LOG.warning("Cannot parse highlight_id %s", highlight_id)
+            highlight_id = None
 
     email_logs: [EmailLog] = (
         EmailLog.query.filter(
