@@ -186,7 +186,6 @@ def alias_contact_manager(alias_id):
                             alias_id=alias_id,
                         )
                     )
-                contact_email = contact_email.lower()
 
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
                 # already been added
