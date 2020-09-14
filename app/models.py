@@ -1099,6 +1099,12 @@ class Contact(db.Model, ModelMixin):
     # the latest reply sent to this contact
     latest_reply: Optional[Arrow] = None
 
+    # to investigate why the website_email is sometimes not correctly parsed
+    # the envelope mail_from
+    mail_from = db.Column(db.Text, nullable=True, default=None)
+    # the message["From"] header
+    from_header = db.Column(db.Text, nullable=True, default=None)
+
     @property
     def email(self):
         return self.website_email
