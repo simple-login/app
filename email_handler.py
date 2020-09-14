@@ -189,6 +189,8 @@ def get_or_create_contact(
                 website_email=contact_email,
                 name=contact_name,
                 reply_email=reply_email,
+                mail_from=mail_from,
+                from_header=contact_from_header,
             )
             db.session.commit()
         except IntegrityError:
@@ -249,6 +251,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     name=contact_name,
                     reply_email=reply_email,
                     is_cc=header.lower() == "cc",
+                    from_header=addr,
                 )
                 db.session.commit()
             except IntegrityError:
