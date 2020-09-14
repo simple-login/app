@@ -576,6 +576,7 @@ def parseaddr_unicode(addr) -> (str, str):
     '=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>' -> ('Nhơn Nguyễn', "abcd@gmail.com")
     """
     name, email = parseaddr(addr)
+    # email can have whitespace so we can't remove whitespace here
     email = email.strip().lower()
     if name:
         name = name.strip()
