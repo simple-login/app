@@ -95,7 +95,6 @@ def greylisting_needed_reply_phase(reply_email: str) -> bool:
 
 def greylisting_needed(mail_from: str, rcpt_tos: [str]) -> bool:
     for rcpt_to in rcpt_tos:
-        rcpt_to = rcpt_to.lower().strip().replace(" ", "")
         if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
             if greylisting_needed_reply_phase(rcpt_to):
                 return True

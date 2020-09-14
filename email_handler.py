@@ -1391,42 +1391,47 @@ def handle_sender_email(envelope: Envelope):
 
 async def handle(envelope: Envelope, smtp: SMTP) -> str:
     """Return SMTP status"""
+
+    # sanitize mail_from, rcpt_tos
+    mail_from = envelope.mail_from.lower().strip().replace(" ", "")
+    rcpt_tos = [
+        rcpt_to.lower().strip().replace(" ", "") for rcpt_to in envelope.rcpt_tos
+    ]
+    envelope.mail_from = mail_from
+    envelope.rcpt_tos = rcpt_tos
+
     # unsubscribe request
-    if UNSUBSCRIBER and envelope.rcpt_tos == [UNSUBSCRIBER]:
-        LOG.d("Handle unsubscribe request from %s", envelope.mail_from)
+    if UNSUBSCRIBER and rcpt_tos == [UNSUBSCRIBER]:
+        LOG.d("Handle unsubscribe request from %s", mail_from)
         return handle_unsubscribe(envelope)
 
     # emails sent to sender. Probably bounce emails
-    if SENDER and envelope.rcpt_tos == [SENDER]:
-        LOG.d("Handle email sent to sender from %s", envelope.mail_from)
+    if SENDER and rcpt_tos == [SENDER]:
+        LOG.d("Handle email sent to sender from %s", mail_from)
         return handle_sender_email(envelope)
 
     # Whether it's necessary to apply greylisting
-    if greylisting_needed(envelope.mail_from, envelope.rcpt_tos):
-        LOG.warning(
-            "Grey listing applied for %s %s", envelope.mail_from, envelope.rcpt_tos
-        )
+    if greylisting_needed(mail_from, rcpt_tos):
+        LOG.warning("Grey listing applied for %s %s", mail_from, rcpt_tos)
         return "421 SL Retry later"
 
     # result of all deliveries
     # each element is a couple of whether the delivery is successful and the smtp status
     res: [(bool, str)] = []
 
-    for rcpt_to in envelope.rcpt_tos:
+    for rcpt_to in rcpt_tos:
         msg = email.message_from_bytes(envelope.original_content)
 
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
-            LOG.debug(
-                ">>> Reply phase %s(%s) -> %s", envelope.mail_from, msg["From"], rcpt_to
-            )
+            LOG.debug(">>> Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
             is_delivered, smtp_status = await handle_reply(envelope, smtp, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
             LOG.debug(
                 ">>> Forward phase %s(%s) -> %s",
-                envelope.mail_from,
+                mail_from,
                 msg["From"],
                 rcpt_to,
             )

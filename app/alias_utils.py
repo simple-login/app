@@ -150,7 +150,6 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         return alias
 
 
-
 def delete_alias(alias: Alias, user: User):
     """
     Delete an alias and add it to either global or domain trash
