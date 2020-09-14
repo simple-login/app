@@ -95,13 +95,13 @@ def greylisting_needed_reply_phase(reply_email: str) -> bool:
 
 def greylisting_needed(mail_from: str, rcpt_tos: [str]) -> bool:
     for rcpt_to in rcpt_tos:
+        rcpt_to = rcpt_to.lower().strip().replace(" ", "")
         if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
-            reply_email = rcpt_to.lower()
-            if greylisting_needed_reply_phase(reply_email):
+            if greylisting_needed_reply_phase(rcpt_to):
                 return True
         else:
             # Forward phase
-            address = rcpt_to.lower()  # alias@SL
+            address = rcpt_to  # alias@SL
             if greylisting_needed_forward_phase(address):
                 return True
 
