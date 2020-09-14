@@ -440,7 +440,7 @@ async def handle_forward(
     is_success indicates whether an email has been delivered and
     smtp_status is the SMTP Status ("250 Message accepted", "550 Non-existent email address", etc)
     """
-    address = rcpt_to.lower().strip().replace(" ", "")  # alias@SL
+    address = rcpt_to  # alias@SL
 
     alias = Alias.get_by(email=address)
     if not alias:
@@ -450,7 +450,7 @@ async def handle_forward(
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
             return [(False, "550 SL E3 Email not exist")]
 
-    mail_from = envelope.mail_from.lower().strip()
+    mail_from = envelope.mail_from
     for mb in alias.mailboxes:
         # email send from a mailbox to alias
         if mb.email.lower().strip() == mail_from:
@@ -690,7 +690,7 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
     return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
     """
-    reply_email = rcpt_to.lower().strip()
+    reply_email = rcpt_to
 
     # reply_email must end with EMAIL_DOMAIN
     if not reply_email.endswith(EMAIL_DOMAIN):
@@ -712,7 +712,7 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
             return False, "550 SL E5"
 
     user = alias.user
-    mail_from = envelope.mail_from.lower().strip()
+    mail_from = envelope.mail_from
 
     # bounce email initiated by Postfix
     # can happen in case emails cannot be delivered to user-email
@@ -923,7 +923,7 @@ def spf_pass(
     if ip:
         LOG.d("Enforce SPF")
         try:
-            r = spf.check2(i=ip, s=envelope.mail_from.lower(), h=None)
+            r = spf.check2(i=ip, s=envelope.mail_from, h=None)
         except Exception:
             LOG.exception("SPF error, mailbox %s, ip %s", mailbox.email, ip)
         else:
@@ -1335,7 +1335,7 @@ def handle_unsubscribe(envelope: Envelope):
         return "550 SL E9 Email not exist"
 
     # This sender cannot unsubscribe
-    mail_from = envelope.mail_from.lower().strip()
+    mail_from = envelope.mail_from
     mailbox = Mailbox.get_by(user_id=alias.user_id, email=mail_from)
     if not mailbox or mailbox not in alias.mailboxes:
         LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
