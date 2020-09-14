@@ -143,6 +143,12 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
             domain_user,
         )
         return None
+    except IntegrityError:
+        LOG.warning("Alias %s already exists", address)
+        db.session.rollback()
+        alias = Alias.get_by(email=address)
+        return alias
+
 
 
 def delete_alias(alias: Alias, user: User):
