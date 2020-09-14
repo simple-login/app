@@ -252,7 +252,7 @@ def alias_contact_manager(alias_id):
     # if highlighted contact isn't included, fetch it
     # make sure highlighted contact is at array start
     contact_ids = [contact_info.contact.id for contact_info in contact_infos]
-    if highlight_contact_id not in contact_ids:
+    if highlight_contact_id and highlight_contact_id not in contact_ids:
         contact_infos = (
             get_contact_infos(alias, contact_id=highlight_contact_id) + contact_infos
         )
