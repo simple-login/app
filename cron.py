@@ -39,6 +39,7 @@ from app.models import (
     AppleSubscription,
     Mailbox,
     Monitoring,
+    Contact,
 )
 from server import create_app
 
@@ -313,12 +314,20 @@ def sanity_check():
         db.session.commit()
 
     for user in User.filter_by(activated=True).all():
-        if user.email.lower() != user.email:
-            LOG.exception("%s does not have lowercase email", user)
+        if user.email.lower().strip().replace(" ", "") != user.email:
+            LOG.exception("%s does not have sanitized email", user)
 
-    for mailbox in Mailbox.filter_by(verified=True).all():
-        if mailbox.email.lower() != mailbox.email:
-            LOG.exception("%s does not have lowercase email", mailbox)
+    for alias in Alias.query.all():
+        if alias.email.lower().strip().replace(" ", "") != alias.email:
+            LOG.exception("Alias %s email not sanitized", alias)
+
+    for contact in Contact.query.all():
+        if contact.reply_email.lower().strip().replace(" ", "") != contact.reply_email:
+            LOG.exception("Contact %s reply-email not sanitized", contact)
+
+    for mailbox in Mailbox.query.all():
+        if mailbox.email.lower().strip().replace(" ", "") != mailbox.email:
+            LOG.exception("Mailbox %s address not sanitized", mailbox)
 
     LOG.d("Finish sanity check")
 
