@@ -593,6 +593,8 @@ def parseaddr_unicode(addr) -> (str, str):
         else:
             name = decoded_string
 
+    if type(name) == bytes:
+        name = name.decode()
     return name, email
 
 
