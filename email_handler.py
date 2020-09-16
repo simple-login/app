@@ -36,6 +36,7 @@ import email
 import os
 import time
 import uuid
+from asyncio import shield
 from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
@@ -1466,7 +1467,7 @@ async def get_spam_score(message: Message) -> float:
     try:
         # wait for at max 300s which is the default spamd timeout-child
         response = await asyncio.wait_for(
-            aiospamc.check(sa_input, host=SPAMASSASSIN_HOST), timeout=300
+            shield(aiospamc.check(sa_input, host=SPAMASSASSIN_HOST)), timeout=300
         )
         return response.headers["Spam"].score
     except asyncio.TimeoutError:
