@@ -745,7 +745,7 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
             mailbox = alias.mailbox
         else:
             # only mailbox can send email to the reply-email
-            handle_unknown_mailbox(envelope, msg, reply_email, user, alias)
+            handle_unknown_mailbox(envelope, msg, reply_email, user, alias, contact)
             return False, "550 SL E7"
 
     if ENFORCE_SPF and mailbox.force_spf and not alias.disable_email_spoofing_check:
@@ -978,15 +978,18 @@ def spf_pass(
     return True
 
 
-def handle_unknown_mailbox(envelope, msg, reply_email: str, user: User, alias: Alias):
+def handle_unknown_mailbox(
+    envelope, msg, reply_email: str, user: User, alias: Alias, contact: Contact
+):
     LOG.warning(
         f"Reply email can only be used by mailbox. "
-        f"Actual mail_from: %s. msg from header: %s, reverse-alias %s, %s %s",
+        f"Actual mail_from: %s. msg from header: %s, reverse-alias %s, %s %s %s",
         envelope.mail_from,
         msg["From"],
         reply_email,
         alias,
         user,
+        contact,
     )
 
     send_email_with_rate_control(
