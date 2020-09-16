@@ -572,9 +572,12 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
 
 
 def parseaddr_unicode(addr) -> (str, str):
-    """Like parseaddr but return name in unicode instead of in RFC 2047 format
+    """Like parseaddr() but return name in unicode instead of in RFC 2047 format
+    Should be used instead of parseaddr()
     '=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>' -> ('Nhơn Nguyễn', "abcd@gmail.com")
     """
+    # sometimes linebreaks are present in addr
+    addr = addr.replace("\n", "").strip()
     name, email = parseaddr(addr)
     # email can have whitespace so we can't remove whitespace here
     email = email.strip().lower()
