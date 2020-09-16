@@ -283,7 +283,7 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     new_addrs: [str] = []
 
     for addr in addrs:
-        name, reply_email = parseaddr(addr)
+        _, reply_email = parseaddr_unicode(addr)
 
         # no transformation when alias is already in the header
         if reply_email == alias.email:
