@@ -82,7 +82,9 @@ def mailbox_route():
                 return redirect(url_for("dashboard.mailbox_route"))
 
             if new_mailbox_form.validate():
-                mailbox_email = new_mailbox_form.email.data.lower().strip()
+                mailbox_email = (
+                    new_mailbox_form.email.data.lower().strip().replace(" ", "")
+                )
 
                 if mailbox_already_used(mailbox_email, current_user):
                     flash(f"{mailbox_email} already used", "error")

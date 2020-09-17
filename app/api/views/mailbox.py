@@ -30,7 +30,7 @@ def create_mailbox():
 
     """
     user = g.user
-    mailbox_email = request.get_json().get("email").lower().strip()
+    mailbox_email = request.get_json().get("email").lower().strip().replace(" ", "")
 
     if mailbox_already_used(mailbox_email, user):
         return jsonify(error=f"{mailbox_email} already used"), 400
