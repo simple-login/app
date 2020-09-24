@@ -440,16 +440,13 @@ class User(db.Model, ModelMixin, UserMixin):
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
 
-    def get_subscription(self) -> "Subscription":
+    def get_subscription(self) -> Optional["Subscription"]:
         """return *active* subscription
         TODO: support user unsubscribe and re-subscribe
         """
         sub = Subscription.get_by(user_id=self.id)
-        # TODO: sub is active only if sub.next_bill_date > now
-        # due to a bug on next_bill_date, wait until next month (May 8)
-        # when all next_bill_date are correctly updated to add this check
 
-        if sub and sub.cancelled:
+        if sub:
             # sub is active until the next billing_date + 1
             if sub.next_bill_date >= arrow.now().shift(days=-1).date():
                 return sub
