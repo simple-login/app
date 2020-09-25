@@ -288,9 +288,20 @@ def sanity_check():
     Different sanity checks
     - detect if there's mailbox that's using a invalid domain
     """
-    for mailbox in Mailbox.filter_by(verified=True).all():
+    mailbox_ids = db.session.query(Mailbox.id).filter(Mailbox.verified == True).all()
+    mailbox_ids = [e[0] for e in mailbox_ids]
+
+    # iterate over id instead of mailbox directly
+    # as a mailbox can be deleted during the sleep time
+    for mailbox_id in mailbox_ids:
+        mailbox = Mailbox.get(mailbox_id)
+        # a mailbox has been deleted
+        if not mailbox:
+            continue
+
         # hack to not query DNS too often
         sleep(1)
+
         if not email_domain_can_be_used_as_mailbox(mailbox.email):
             mailbox.nb_failed_checks += 1
             nb_email_log = nb_email_log_for_mailbox(mailbox)
