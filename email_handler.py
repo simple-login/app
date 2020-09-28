@@ -43,7 +43,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr, make_msgid
 from io import BytesIO
 from smtplib import SMTP, SMTPRecipientsRefused
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import aiosmtpd
 import aiospamc
@@ -912,6 +912,24 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
     # return 250 even if error as user is already informed of the incident and can retry sending the email
     db.session.commit()
     return True, "250 Message accepted for delivery"
+
+
+def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
+    """return the corresponding mailbox given the mail_from and alias
+    Usually the mail_from=mailbox.email but it can also be one of the authorized address
+    """
+    for mailbox in alias.mailboxes:
+        if mailbox.email == mail_from:
+            return mailbox
+
+        for address in mailbox.authorized_addresses:
+            if address.email == mail_from:
+                LOG.debug(
+                    "Found an authorized address for %s %s %s", alias, mailbox, address
+                )
+                return mailbox
+
+    return None
 
 
 def spf_pass(
