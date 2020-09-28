@@ -14,7 +14,7 @@ from app.email_utils import email_domain_can_be_used_as_mailbox
 from app.email_utils import mailbox_already_used, render, send_email
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, DeletedAlias
+from app.models import Alias, DeletedAlias, AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key
 
@@ -88,6 +88,38 @@ def mailbox_detail_route(mailbox_id):
                 else "disabled" + " successfully",
                 "success",
             )
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+            )
+        elif request.form.get("form-name") == "add-authorized-address":
+            address = request.form.get("email").lower().strip().replace(" ", "")
+            if AuthorizedAddress.get_by(mailbox_id=mailbox.id, email=address):
+                flash(f"{address} already added", "error")
+            else:
+                AuthorizedAddress.create(
+                    user_id=current_user.id,
+                    mailbox_id=mailbox.id,
+                    email=address,
+                    commit=True,
+                )
+                flash(f"{address} added as authorized address", "success")
+
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+            )
+        elif request.form.get("form-name") == "delete-authorized-address":
+            authorized_address_id = request.form.get("authorized-address-id")
+            authorized_address: AuthorizedAddress = AuthorizedAddress.get(
+                authorized_address_id
+            )
+            if not authorized_address or authorized_address.mailbox_id != mailbox.id:
+                flash("Unknown error. Refresh the page", "warning")
+            else:
+                address = authorized_address.email
+                AuthorizedAddress.delete(authorized_address_id)
+                db.session.commit()
+                flash(f"{address} has been deleted", "success")
+
             return redirect(
                 url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
             )
