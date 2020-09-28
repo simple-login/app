@@ -1812,3 +1812,22 @@ class BatchImport(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<BatchImport {self.id}>"
+
+
+class AuthorizedAddress(db.Model, ModelMixin):
+    """Authorize other addresses to send emails from aliases that are owned by a mailbox"""
+
+    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    mailbox_id = db.Column(
+        db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
+    )
+    email = db.Column(db.String(256), nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("mailbox_id", "email", name="uq_authorize_address"),
+    )
+
+    mailbox = db.relationship(Mailbox, backref="authorized_addresses")
+
+    def __repr__(self):
+        return f"<AuthorizedAddress {self.id} {self.email} {self.mailbox_id}>"
