@@ -732,8 +732,9 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
         handle_bounce(contact, alias, msg, user)
         return False, "550 SL E6"
 
-    mailbox = Mailbox.get_by(email=mail_from, user_id=user.id)
-    if not mailbox or mailbox not in alias.mailboxes:
+    # Anti-spoofing
+    mailbox = get_mailbox_from_mail_from(mail_from, alias)
+    if not mailbox:
         if alias.disable_email_spoofing_check:
             # ignore this error, use default alias mailbox
             LOG.warning(
