@@ -67,8 +67,14 @@ class ModelMixin(object):
 
     @classmethod
     def create(cls, **kw):
+        # whether should call db.session.commit
+        commit = kw.pop("commit", False)
+
         r = cls(**kw)
         db.session.add(r)
+
+        if commit:
+            db.session.commit()
         return r
 
     def save(self):
@@ -882,6 +888,9 @@ class Alias(db.Model, ModelMixin):
 
     @classmethod
     def create(cls, **kw):
+        # whether should call db.session.commit
+        commit = kw.pop("commit", False)
+
         r = cls(**kw)
 
         email = kw["email"]
@@ -896,6 +905,8 @@ class Alias(db.Model, ModelMixin):
             raise AliasInTrashError
 
         db.session.add(r)
+        if commit:
+            db.session.commit()
         return r
 
     @classmethod

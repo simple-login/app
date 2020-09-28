@@ -5,13 +5,18 @@ from app.models import User, Alias, DeletedAlias
 
 def test_delete_alias(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
     alias = Alias.create(
-        user_id=user.id, email="first@d1.test", mailbox_id=user.default_mailbox_id
+        user_id=user.id,
+        email="first@d1.test",
+        mailbox_id=user.default_mailbox_id,
+        commit=True,
     )
-    db.session.commit()
     assert Alias.get_by(email="first@d1.test")
 
     delete_alias(alias, user)
@@ -22,13 +27,18 @@ def test_delete_alias(flask_client):
 def test_delete_alias_already_in_trash(flask_client):
     """delete an alias that's already in alias trash"""
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
     alias = Alias.create(
-        user_id=user.id, email="first@d1.test", mailbox_id=user.default_mailbox_id
+        user_id=user.id,
+        email="first@d1.test",
+        mailbox_id=user.default_mailbox_id,
+        commit=True,
     )
-    db.session.commit()
 
     # add the alias to global trash
     db.session.add(DeletedAlias(email=alias.email))

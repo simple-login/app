@@ -7,9 +7,12 @@ from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
 
 def test_get_aliases_error_without_pagination(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
@@ -25,9 +28,12 @@ def test_get_aliases_error_without_pagination(flask_client):
 
 def test_get_aliases_with_pagination(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")

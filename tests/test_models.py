@@ -28,9 +28,12 @@ def test_generate_email(flask_client):
 
 def test_profile_picture_url(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
 
     assert user.profile_picture_url() == "http://sl.test/static/default-avatar.png"
 
@@ -43,9 +46,8 @@ def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
         name="Test User",
         activated=True,
         trial_end=None,
+        commit=True,
     )
-
-    db.session.commit()
 
     # make sure user runs out of quota to create new email
     for i in range(MAX_NB_EMAIL_FREE_PLAN):
@@ -64,9 +66,12 @@ def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
 
 def test_alias_create_random(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
 
     alias = Alias.create_new_random(user)
     assert alias.email.endswith(EMAIL_DOMAIN)
@@ -74,9 +79,12 @@ def test_alias_create_random(flask_client):
 
 def test_website_send_to(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
 
     alias = Alias.create_new_random(user)
     db.session.commit()
@@ -104,9 +112,12 @@ def test_website_send_to(flask_client):
 
 def test_new_addr(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
 
     alias = Alias.create_new_random(user)
     db.session.commit()
@@ -118,8 +129,8 @@ def test_new_addr(flask_client):
         website_email="abcd@example.com",
         reply_email="rep@SL",
         name="First Last",
+        commit=True,
     )
-    db.session.commit()
     assert c1.new_addr() == '"abcd@example.com via SimpleLogin" <rep@SL>'
 
     # set sender_format = AT
@@ -144,14 +155,22 @@ def test_new_addr(flask_client):
 
 def test_mailbox_delete(flask_client):
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
 
-    m1 = Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
-    m2 = Mailbox.create(user_id=user.id, email="m2@example.com", verified=True)
-    m3 = Mailbox.create(user_id=user.id, email="m3@example.com", verified=True)
-    db.session.commit()
+    m1 = Mailbox.create(
+        user_id=user.id, email="m1@example.com", verified=True, commit=True
+    )
+    m2 = Mailbox.create(
+        user_id=user.id, email="m2@example.com", verified=True, commit=True
+    )
+    m3 = Mailbox.create(
+        user_id=user.id, email="m3@example.com", verified=True, commit=True
+    )
 
     # alias has 2 mailboxes
     alias = Alias.create_new(user, "prefix", mailbox_id=m1.id)
