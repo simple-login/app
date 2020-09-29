@@ -37,11 +37,6 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
     mem_usage = memory_usage(-1, interval=1, timeout=1)[0]
     LOG.d("mem_usage %s", mem_usage)
 
-    # todo
-    if mem_usage > 300:
-        LOG.exception("Force exit")
-        hard_exit()
-
     r = gpg.encrypt_file(data, fingerprint, always_trust=True)
     if not r.ok:
         # maybe the fingerprint is not loaded on this host, try to load it
