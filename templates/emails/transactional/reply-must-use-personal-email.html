@@ -8,10 +8,8 @@
   {% endcall %}
 
   {% call text() %}
-    Please note that sending from this alias only works from one of these mailboxes: <br>
-    {% for mailbox in alias.mailboxes %}
-      - {{ mailbox.email }} <br>
-    {% endfor %}
+    Please note that sending from this alias only works from alias's owning mailboxes, that are
+    {{ mailbox_emails|join(", ") }}
   {% endcall %}
 
   {% call text() %}

@@ -1010,6 +1010,7 @@ def handle_unknown_mailbox(
     authorize_address_link = (
         f"{URL}/dashboard/mailbox/{alias.mailbox_id}/#authorized-address"
     )
+    mailbox_emails = [mailbox.email for mailbox in alias.mailboxes]
     send_email_with_rate_control(
         user,
         ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
@@ -1021,6 +1022,7 @@ def handle_unknown_mailbox(
             alias=alias,
             sender=envelope.mail_from,
             authorize_address_link=authorize_address_link,
+            mailbox_emails=mailbox_emails
         ),
         render(
             "transactional/reply-must-use-personal-email.html",
@@ -1028,6 +1030,7 @@ def handle_unknown_mailbox(
             alias=alias,
             sender=envelope.mail_from,
             authorize_address_link=authorize_address_link,
+            mailbox_emails=mailbox_emails
         ),
     )
 
