@@ -437,7 +437,7 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
 
 
 async def handle_forward(
-    envelope, smtp: SMTP, msg: Message, rcpt_to: str
+    envelope, msg: Message, rcpt_to: str
 ) -> List[Tuple[bool, str]]:
     """return an array of SMTP status (is_success, smtp_status)
     is_success indicates whether an email has been delivered and
@@ -491,7 +491,7 @@ async def handle_forward(
         else:
             ret.append(
                 await forward_email_to_mailbox(
-                    alias, msg, email_log, contact, envelope, smtp, mailbox, user
+                    alias, msg, email_log, contact, envelope, mailbox, user
                 )
             )
     # create a copy of message for each forward
@@ -508,7 +508,6 @@ async def handle_forward(
                         email_log,
                         contact,
                         envelope,
-                        smtp,
                         mailbox,
                         user,
                     )
@@ -523,7 +522,6 @@ async def forward_email_to_mailbox(
     email_log: EmailLog,
     contact: Contact,
     envelope,
-    smtp: SMTP,
     mailbox,
     user,
 ) -> (bool, str):
@@ -663,13 +661,11 @@ async def forward_email_to_mailbox(
         envelope.rcpt_options,
     )
 
-    # smtp.send_message has UnicodeEncodeErroremail issue
-    # encode message raw directly instead
     try:
-        smtp.sendmail(
+        sl_sendmail(
             contact.reply_email,
             mailbox.email,
-            msg.as_bytes(),
+            msg,
             envelope.mail_options,
             envelope.rcpt_options,
         )
@@ -688,7 +684,7 @@ async def forward_email_to_mailbox(
         return True, "250 Message accepted for delivery"
 
 
-async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (bool, str):
+async def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     """
     return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
@@ -879,10 +875,10 @@ async def handle_reply(envelope, smtp: SMTP, msg: Message, rcpt_to: str) -> (boo
             return False, "421 SL E13 Retry later"
 
     try:
-        smtp.sendmail(
+        sl_sendmail(
             alias.email,
             contact.website_email,
-            msg.as_bytes(),
+            msg,
             envelope.mail_options,
             envelope.rcpt_options,
         )
@@ -1419,7 +1415,7 @@ def handle_sender_email(envelope: Envelope):
     return "250 email to sender accepted"
 
 
-async def handle(envelope: Envelope, smtp: SMTP) -> str:
+async def handle(envelope: Envelope) -> str:
     """Return SMTP status"""
 
     # sanitize mail_from, rcpt_tos
@@ -1456,7 +1452,7 @@ async def handle(envelope: Envelope, smtp: SMTP) -> str:
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
             LOG.debug(">>> Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
-            is_delivered, smtp_status = await handle_reply(envelope, smtp, msg, rcpt_to)
+            is_delivered, smtp_status = await handle_reply(envelope, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
             LOG.debug(
@@ -1466,7 +1462,7 @@ async def handle(envelope: Envelope, smtp: SMTP) -> str:
                 rcpt_to,
             )
             for is_delivered, smtp_status in await handle_forward(
-                envelope, smtp, msg, rcpt_to
+                envelope, msg, rcpt_to
             ):
                 res.append((is_delivered, smtp_status))
 
@@ -1502,6 +1498,25 @@ async def get_spam_score(message: Message) -> float:
         return -999
 
 
+def sl_sendmail(from_addr, to_addr, msg: Message, mail_options, rcpt_options):
+    """replace smtp.sendmail"""
+    if POSTFIX_SUBMISSION_TLS:
+        smtp = SMTP(POSTFIX_SERVER, 587)
+        smtp.starttls()
+    else:
+        smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
+
+    # smtp.send_message has UnicodeEncodeErroremail issue
+    # encode message raw directly instead
+    smtp.sendmail(
+        from_addr,
+        to_addr,
+        msg.as_bytes(),
+        mail_options,
+        rcpt_options,
+    )
+
+
 class MailHandler:
     def __init__(self, lock):
         self.lock = lock
@@ -1527,15 +1542,9 @@ class MailHandler:
                 envelope.rcpt_tos,
             )
 
-            if POSTFIX_SUBMISSION_TLS:
-                smtp = SMTP(POSTFIX_SERVER, 587)
-                smtp.starttls()
-            else:
-                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
-
             app = new_app()
             with app.app_context():
-                ret = await handle(envelope, smtp)
+                ret = await handle(envelope)
                 LOG.info("takes %s seconds <<===", time.time() - start)
                 return ret
 
