@@ -1479,6 +1479,7 @@ async def handle(envelope: Envelope) -> str:
 
 
 async def get_spam_score(message: Message) -> float:
+    LOG.debug("get spam score for %s", message[_MESSAGE_ID])
     sa_input = to_bytes(message)
 
     # Spamassassin requires to have an ending linebreak
