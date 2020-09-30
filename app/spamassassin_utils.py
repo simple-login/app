@@ -4,19 +4,19 @@ https://github.com/petermat/spamassassin_client
 import socket, select, re, logging
 from io import BytesIO
 
-divider_pattern = re.compile(br'^(.*?)\r?\n(.*?)\r?\n\r?\n', re.DOTALL)
-first_line_pattern = re.compile(br'^SPAMD/[^ ]+ 0 EX_OK$')
+divider_pattern = re.compile(br"^(.*?)\r?\n(.*?)\r?\n\r?\n", re.DOTALL)
+first_line_pattern = re.compile(br"^SPAMD/[^ ]+ 0 EX_OK$")
 
 
 class SpamAssassin(object):
-    def __init__(self, message, timeout=20):
+    def __init__(self, message, timeout=20, host="127.0.0.1"):
         self.score = None
         self.symbols = None
 
         # Connecting
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.settimeout(timeout)
-        client.connect(('127.0.0.1', 783))
+        client.connect((host, 783))
 
         # Sending
         client.sendall(self._build_message(message))
@@ -28,11 +28,11 @@ class SpamAssassin(object):
             ready = select.select([client], [], [], timeout)
             if ready[0] is None:
                 # Kill with Timeout!
-                logging.info('[SpamAssassin] - Timeout ({0}s)!'.format(str(timeout)))
+                logging.info("[SpamAssassin] - Timeout ({0}s)!".format(str(timeout)))
                 break
 
             data = client.recv(4096)
-            if data == b'':
+            if data == b"":
                 break
 
             resfp.write(data)
@@ -46,14 +46,14 @@ class SpamAssassin(object):
     def _build_message(self, message):
         reqfp = BytesIO()
         data_len = str(len(message)).encode()
-        reqfp.write(b'REPORT SPAMC/1.2\r\n')
-        reqfp.write(b'Content-Length: ' + data_len + b'\r\n')
-        reqfp.write(b'User: cx42\r\n\r\n')
+        reqfp.write(b"REPORT SPAMC/1.2\r\n")
+        reqfp.write(b"Content-Length: " + data_len + b"\r\n")
+        reqfp.write(b"User: cx42\r\n\r\n")
         reqfp.write(message)
         return reqfp.getvalue()
 
     def _parse_response(self, response):
-        if response == b'':
+        if response == b"":
             logging.info("[SPAM ASSASSIN] Empty response")
             return None
 
@@ -65,7 +65,7 @@ class SpamAssassin(object):
 
         first_line = match.group(1)
         headers = match.group(2)
-        body = response[match.end(0):]
+        body = response[match.end(0) :]
 
         # Checking response is good
         match = first_line_pattern.match(first_line)
@@ -74,19 +74,20 @@ class SpamAssassin(object):
             logging.error(first_line)
             return None
 
-        report_list = [s.strip() for s in body.decode('utf-8').strip().split('\n')]
+        report_list = [s.strip() for s in body.decode("utf-8").strip().split("\n")]
         linebreak_num = report_list.index([s for s in report_list if "---" in s][0])
-        tablelists = [s for s in report_list[linebreak_num + 1:]]
+        tablelists = [s for s in report_list[linebreak_num + 1 :]]
 
-        self.report_fulltext = '\n'.join(report_list)
-
+        self.report_fulltext = "\n".join(report_list)
 
         # join line when current one is only wrap of previous
         tablelists_temp = []
         if tablelists:
             for counter, tablelist in enumerate(tablelists):
-                if len(tablelist)>1:
-                    if (tablelist[0].isnumeric() or tablelist[0] == '-') and (tablelist[1].isnumeric() or tablelist[1] == '.'):
+                if len(tablelist) > 1:
+                    if (tablelist[0].isnumeric() or tablelist[0] == "-") and (
+                        tablelist[1].isnumeric() or tablelist[1] == "."
+                    ):
                         tablelists_temp.append(tablelist)
                     else:
                         if tablelists_temp:
@@ -96,10 +97,19 @@ class SpamAssassin(object):
         # create final json
         self.report_json = dict()
         for tablelist in tablelists:
-            wordlist = re.split('\s+', tablelist)
-            self.report_json[wordlist[1]] = {'partscore': float(wordlist[0]), 'description': ' '.join(wordlist[1:])}
+            wordlist = re.split("\s+", tablelist)
+            self.report_json[wordlist[1]] = {
+                "partscore": float(wordlist[0]),
+                "description": " ".join(wordlist[1:]),
+            }
 
-        headers = headers.decode('utf-8').replace(' ', '').replace(':', ';').replace('/', ';').split(';')
+        headers = (
+            headers.decode("utf-8")
+            .replace(" ", "")
+            .replace(":", ";")
+            .replace("/", ";")
+            .split(";")
+        )
         self.score = float(headers[2])
 
     def get_report_json(self):
@@ -113,6 +123,3 @@ class SpamAssassin(object):
 
     def get_fulltext(self):
         return self.report_fulltext
-
-
-
