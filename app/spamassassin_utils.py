@@ -48,7 +48,7 @@ class SpamAssassin(object):
         data_len = str(len(message)).encode()
         reqfp.write(b"REPORT SPAMC/1.2\r\n")
         reqfp.write(b"Content-Length: " + data_len + b"\r\n")
-        reqfp.write(b"User: cx42\r\n\r\n")
+        reqfp.write(b"User: spamd\r\n\r\n")
         reqfp.write(message)
         return reqfp.getvalue()
 
