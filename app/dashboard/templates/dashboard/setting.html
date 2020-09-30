@@ -315,10 +315,23 @@
         <div class="mb-3">
           You can download all aliases you have created on SimpleLogin along with other data.
         </div>
-        <form method="post">
-          <input type="hidden" name="form-name" value="export-data">
-          <button class="btn btn-outline-info">Export Data</button>
-        </form>
+
+        <div class="d-flex">
+          <div>
+            <form method="post">
+              <input type="hidden" name="form-name" value="export-data">
+              <button class="btn btn-outline-info">Export Data</button>
+            </form>
+          </div>
+          <div class="ml-5">
+            <form method="post">
+              <input type="hidden" name="form-name" value="export-alias">
+              <button class="btn btn-outline-primary">Export Aliases</button>
+            </form>
+          </div>
+        </div>
+
+
       </div>
     </div>
 

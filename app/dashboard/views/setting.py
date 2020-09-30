@@ -1,8 +1,17 @@
+import csv
 import json
-from io import BytesIO
+from io import BytesIO, StringIO
 
 import arrow
-from flask import render_template, request, redirect, url_for, flash, Response
+from flask import (
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    Response,
+    make_response,
+)
 from flask_login import login_required, current_user, logout_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
@@ -270,6 +279,18 @@ def setting():
                 mimetype="text/json",
                 headers={"Content-Disposition": "attachment;filename=data.json"},
             )
+        elif request.form.get("form-name") == "export-alias":
+            data = [["alias", "note", "enabled"]]
+            for alias in Alias.filter_by(user_id=current_user.id).all():  # type: Alias
+                data.append([alias.email, alias.note, alias.enabled])
+
+            si = StringIO()
+            cw = csv.writer(si)
+            cw.writerows(data)
+            output = make_response(si.getvalue())
+            output.headers["Content-Disposition"] = "attachment; filename=aliases.csv"
+            output.headers["Content-type"] = "text/csv"
+            return output
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     return render_template(
