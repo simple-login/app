@@ -1510,7 +1510,8 @@ def get_spam_score(message: Message) -> float:
         sa_input += b"\n"
 
     try:
-        sa = SpamAssassin(sa_input, host=SPAMASSASSIN_HOST)
+        # wait for at max 300s which is the default spamd timeout-child
+        sa = SpamAssassin(sa_input, host=SPAMASSASSIN_HOST, timeout=300)
         return sa.get_score()
     except Exception:
         LOG.exception("SpamAssassin exception")
