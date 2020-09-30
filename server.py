@@ -20,6 +20,7 @@ from flask_admin import Admin
 from flask_cors import cross_origin, CORS
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import current_user
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -86,6 +87,7 @@ if SENTRY_DSN:
         integrations=[
             FlaskIntegration(),
             SqlalchemyIntegration(),
+            AioHttpIntegration(),
         ],
     )
 
