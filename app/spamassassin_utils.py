@@ -4,6 +4,8 @@ https://github.com/petermat/spamassassin_client
 import socket, select, re, logging
 from io import BytesIO
 
+from app.log import LOG
+
 divider_pattern = re.compile(br"^(.*?)\r?\n(.*?)\r?\n\r?\n", re.DOTALL)
 first_line_pattern = re.compile(br"^SPAMD/[^ ]+ 0 EX_OK$")
 
@@ -101,10 +103,13 @@ class SpamAssassin(object):
         self.report_json = dict()
         for tablelist in tablelists:
             wordlist = re.split("\s+", tablelist)
-            self.report_json[wordlist[1]] = {
-                "partscore": float(wordlist[0]),
-                "description": " ".join(wordlist[1:]),
-            }
+            try:
+                self.report_json[wordlist[1]] = {
+                    "partscore": float(wordlist[0]),
+                    "description": " ".join(wordlist[1:]),
+                }
+            except ValueError:
+                LOG.warning("Cannot parse %s %s", wordlist[0], wordlist)
 
         headers = (
             headers.decode("utf-8")
