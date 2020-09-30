@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + user.name) }}
+  {% call text() %}
+    <h1>
+      Add other mailboxes to SimpleLogin.
+    </h1>
+  {% endcall %}
 
   {% call text() %}
     If you have several email addresses, e.g. Gmail for work and Protonmail for personal uses,

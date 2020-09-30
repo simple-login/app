@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + user.name) }}
+  {% call text() %}
+    <h1>
+      Download SimpleLogin browser extensions and mobile apps to create aliases on-the-fly.
+    </h1>
+  {% endcall %}
 
   {% call text() %}
     If you want to quickly create aliases <b>without</b> going to SimpleLogin website, you can do that with SimpleLogin

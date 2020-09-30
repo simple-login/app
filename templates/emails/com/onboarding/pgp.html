@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + user.name) }}
+  {% call text() %}
+    <h1>
+      Secure your emails with PGP.
+    </h1>
+  {% endcall %}
 
   {% call text() %}
     If you use Gmail, Yahoo, Outlook, etc, you might want to use

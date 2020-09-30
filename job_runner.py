@@ -58,7 +58,7 @@ def onboarding_send_from_alias(user):
 
     send_email(
         to_email,
-        f"Do you know you can send emails from your alias?",
+        f"SimpleLogin Tip: Send emails from your alias",
         render("com/onboarding/send-from-alias.txt", user=user, to_email=to_email),
         render("com/onboarding/send-from-alias.html", user=user, to_email=to_email),
     )
@@ -71,7 +71,7 @@ def onboarding_pgp(user):
 
     send_email(
         to_email,
-        f"Do you know you can encrypt your emails so only you can read them?",
+        f"SimpleLogin Tip: Secure your emails with PGP",
         render("com/onboarding/pgp.txt", user=user, to_email=to_email),
         render("com/onboarding/pgp.html", user=user, to_email=to_email),
     )
@@ -84,7 +84,7 @@ def onboarding_browser_extension(user):
 
     send_email(
         to_email,
-        f"Have you tried SimpleLogin Chrome/Firefox extensions and Android/iOS apps?",
+        f"SimpleLogin Tip: Chrome/Firefox/Safari extensions and Android/iOS apps",
         render("com/onboarding/browser-extension.txt", user=user, to_email=to_email),
         render("com/onboarding/browser-extension.html", user=user, to_email=to_email),
     )
@@ -97,7 +97,7 @@ def onboarding_mailbox(user):
 
     send_email(
         to_email,
-        f"Do you know you can have multiple mailboxes on SimpleLogin?",
+        f"SimpleLogin Tip: Multiple mailboxes",
         render("com/onboarding/mailbox.txt", user=user, to_email=to_email),
         render("com/onboarding/mailbox.html", user=user, to_email=to_email),
     )
