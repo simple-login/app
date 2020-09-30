@@ -9,9 +9,10 @@ first_line_pattern = re.compile(br"^SPAMD/[^ ]+ 0 EX_OK$")
 
 
 class SpamAssassin(object):
-    def __init__(self, message, timeout=20, host="127.0.0.1"):
+    def __init__(self, message, timeout=20, host="127.0.0.1", spamd_user="spamd"):
         self.score = None
         self.symbols = None
+        self.spamd_user = spamd_user
 
         # Connecting
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,7 +49,7 @@ class SpamAssassin(object):
         data_len = str(len(message)).encode()
         reqfp.write(b"REPORT SPAMC/1.2\r\n")
         reqfp.write(b"Content-Length: " + data_len + b"\r\n")
-        reqfp.write(b"User: spamd\r\n\r\n")
+        reqfp.write(f"User: {self.spamd_user}\r\n\r\n".encode())
         reqfp.write(message)
         return reqfp.getvalue()
 
