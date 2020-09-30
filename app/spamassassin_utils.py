@@ -74,7 +74,9 @@ class SpamAssassin(object):
             logging.error(first_line)
             return None
 
-        report_list = [s.strip() for s in body.decode("utf-8").strip().split("\n")]
+        report_list = [
+            s.strip() for s in body.decode("utf-8", errors="ignore").strip().split("\n")
+        ]
         linebreak_num = report_list.index([s for s in report_list if "---" in s][0])
         tablelists = [s for s in report_list[linebreak_num + 1 :]]
 
