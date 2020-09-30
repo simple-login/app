@@ -117,7 +117,7 @@ requests==2.22.0          # via facebook-sdk, requests-oauthlib
 rsa==4.0                  # via google-auth
 ruamel.yaml==0.15.97      # via strictyaml
 s3transfer==0.2.1         # via boto3
-sentry-sdk==0.14.1        # via -r requirements.in
+sentry-sdk==0.18.0        # via -r requirements.in
 simplejson==3.17.0        # via flask-profiler
 six==1.12.0               # via bcrypt, cryptography, flask-cors, flask-limiter, google-api-python-client, google-auth, limits, packaging, pip-tools, prompt-toolkit, pyopenssl, pytest, python-dateutil, sqlalchemy-utils, traitlets, virtualenv, webauthn
 sqlalchemy-utils==0.36.1  # via -r requirements.in
