@@ -1,13 +1,5 @@
 [[package]]
 category = "main"
-description = "Asyncio support for PEP-567 contextvars backport."
-name = "aiocontextvars"
-optional = false
-python-versions = ">=3.5"
-version = "0.2.2"
-
-[[package]]
-category = "main"
 description = "Async http client/server framework (asyncio)"
 name = "aiohttp"
 optional = false
@@ -1696,15 +1688,11 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "3bbaf7732527d268d88fa45d58bb9ba4026075e1cced5986033259608c3b7114"
+content-hash = "0e3ade53af79b805e718ebf5e7a047ff0d067ec4ed32154d77255579b1940e83"
 lock-version = "1.0"
 python-versions = "^3.7"
 
 [metadata.files]
-aiocontextvars = [
-    {file = "aiocontextvars-0.2.2-py2.py3-none-any.whl", hash = "sha256:885daf8261818767d8f7cbd79f9d4482d118f024b6586ef6e67980236a27bfa3"},
-    {file = "aiocontextvars-0.2.2.tar.gz", hash = "sha256:f027372dc48641f683c559f247bd84962becaacdc9ba711d583c3871fb5652aa"},
-]
 aiohttp = [
     {file = "aiohttp-3.6.2-cp35-cp35m-macosx_10_13_x86_64.whl", hash = "sha256:1e984191d1ec186881ffaed4581092ba04f7c61582a177b187d3a2f07ed9719e"},
     {file = "aiohttp-3.6.2-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:50aaad128e6ac62e7bf7bd1f0c0a24bc968a0c0590a726d5a955af193544bcec"},
