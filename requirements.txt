@@ -114,7 +114,7 @@ regex==2020.7.14          # via black
 requests-oauthlib==1.2.0  # via -r requirements.in
 requests==2.22.0          # via facebook-sdk, requests-oauthlib
 rsa==4.0                  # via google-auth
-ruamel.yaml==0.15.97      # via strictyaml
+ruamel.yaml==0.16.12      # via strictyaml
 s3transfer==0.2.1         # via boto3
 sentry-sdk==0.18.0        # via -r requirements.in, yacron
 simplejson==3.17.0        # via flask-profiler
