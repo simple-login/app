@@ -1181,19 +1181,16 @@ class Contact(db.Model, ModelMixin):
             or user.sender_format == SenderFormatEnum.VIA.value
         ):
             new_name = f"{self.website_email} via SimpleLogin"
-        elif user.sender_format == SenderFormatEnum.AT.value:
-            name = self.name or ""
-            new_name = (
-                name + (" - " if name else "") + self.website_email.replace("@", " at ")
-            ).strip()
-        elif user.sender_format == SenderFormatEnum.A.value:
-            name = self.name or ""
-            new_name = (
-                name + (" - " if name else "") + self.website_email.replace("@", "(a)")
-            ).strip()
-        elif user.sender_format == SenderFormatEnum.FULL.value:
-            name = self.name or ""
-            new_name = (name + (" - " if name else "") + self.website_email).strip()
+        else:
+            if user.sender_format == SenderFormatEnum.AT.value:
+                formatted_email = self.website_email.replace("@", " at ").strip()
+            elif user.sender_format == SenderFormatEnum.A.value:
+                formatted_email = self.website_email.replace("@", "(a)").strip()
+            elif user.sender_format == SenderFormatEnum.FULL.value:
+                formatted_email = self.website_email.strip()
+
+            # Prefix name to formatted email if available
+            new_name = (self.name + " - " + formatted_email) if self.name and self.name != self.website_email.strip() else formatted_email
 
         new_addr = formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
