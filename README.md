@@ -591,10 +591,15 @@ All work on SimpleLogin happens directly on GitHub.
 
 ### Run code locally
 
-The project uses Python 3.7+ and Node v10. First, install all dependencies by running the following command. Feel free to use `virtualenv` or similar tools to isolate development environment.
+The project uses 
+- Python 3.7+ and [poetry](https://python-poetry.org/) to manage dependencies
+- Node v10 for front-end. 
+
+First, install all dependencies by running the following command. 
+Feel free to use `virtualenv` or similar tools to isolate development environment.
 
 ```bash
-pip3 install -r requirements.txt
+poetry install
 ```
 
 You also need to install `gpg`, on Mac it can be done with:
@@ -602,7 +607,6 @@ You also need to install `gpg`, on Mac it can be done with:
 ```bash
 brew install gnupg
 ```
-
 
 Then make sure all tests pass
 
