@@ -1190,7 +1190,11 @@ class Contact(db.Model, ModelMixin):
                 formatted_email = self.website_email.strip()
 
             # Prefix name to formatted email if available
-            new_name = (self.name + " - " + formatted_email) if self.name and self.name != self.website_email.strip() else formatted_email
+            new_name = (
+                (self.name + " - " + formatted_email)
+                if self.name and self.name != self.website_email.strip()
+                else formatted_email
+            )
 
         new_addr = formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
