@@ -128,7 +128,7 @@ typed-ast==1.4.1          # via black
 typing-extensions==3.7.4.3  # via black
 unidecode==1.0.23         # via -r requirements.in
 uritemplate==3.0.1        # via google-api-python-client
-urllib3==1.25.3           # via botocore, requests, sentry-sdk
+urllib3==1.25.8           # via botocore, requests, sentry-sdk
 virtualenv==20.0.31       # via pre-commit
 watchtower==0.6.0         # via -r requirements.in
 wcwidth==0.1.7            # via prompt-toolkit, pytest
