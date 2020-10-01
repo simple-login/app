@@ -108,7 +108,7 @@ def create_light_app() -> Flask:
 def create_app() -> Flask:
     app = Flask(__name__)
     # SimpleLogin is deployed behind NGINX
-    app.wsgi_app = ProxyFix(app.wsgi_app, num_proxies=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1)
     limiter.init_app(app)
 
     app.url_map.strict_slashes = False
