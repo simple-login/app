@@ -394,7 +394,7 @@ smtpd_recipient_restrictions =
 ```
 
 Create the `/etc/postfix/pgsql-relay-domains.cf` file with the following content.
-Make sure that the database config is correctly set and replace `mydomain.com` with your domain.
+Make sure that the database config is correctly set, replace `mydomain.com` with your domain, update 'myuser' and 'mypassword' with your postgress credentials.
 
 ```
 # postgres config
@@ -408,7 +408,7 @@ query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true
 ```
 
 Create the `/etc/postfix/pgsql-transport-maps.cf` file with the following content.
-Again, make sure that the database config is correctly set and replace `mydomain.com` with your domain.
+Again, make sure that the database config is correctly set, replace `mydomain.com` with your domain, update 'myuser' and 'mypassword' with your postgress credentials.
 
 ```
 # postgres config
@@ -432,7 +432,7 @@ sudo systemctl restart postfix
 
 To run the server, you need a config file. Please have a look at [config example](example.env) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
-Let's put your config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to replace `mydomain.com` by your domain and set `FLASK_SECRET` to a secret string.
+Let's put your config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to replace `mydomain.com` by your domain, set `FLASK_SECRET` to a secret string, update 'myuser' and 'mypassword' with your postgress credentials.
 
 Make sure to update the following variables and replace these values by yours.
 
@@ -537,7 +537,7 @@ sudo docker run -d \
 
 ### Nginx
 
-Install Nginx
+Install Nginx and make sure to replace `mydomain.com` by your domain
 
 ```bash
 sudo apt-get install -y nginx
