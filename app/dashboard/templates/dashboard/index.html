@@ -193,6 +193,7 @@
               >
                 <span class="font-weight-bold">{{ alias.email }}</span>
               </span>
+              {% if alias.automatic_creation %} <span class="fa fa-inbox" data-toggle="tooltip" title="This alias was automatically generated because of an incoming email"></span>{% endif %}
             </div>
             <div class="col text-right">
               <label class="custom-switch cursor"
