@@ -310,6 +310,8 @@ def fake_data():
 @login_manager.user_loader
 def load_user(user_id):
     user = User.get(user_id)
+    if user.disabled:
+        return None
 
     return user
 
