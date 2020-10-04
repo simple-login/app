@@ -453,6 +453,12 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
             return [(False, "550 SL E3 Email not exist")]
 
+    if alias.user.disabled:
+        LOG.exception(
+            "User %s disabled, disable forwarding emails for %s", alias.user, alias
+        )
+        return [(False, "550 SL E20 Account disabled")]
+
     mail_from = envelope.mail_from
     for mb in alias.mailboxes:
         # email send from a mailbox to alias
@@ -712,6 +718,15 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     user = alias.user
     mail_from = envelope.mail_from
+
+    if user.disabled:
+        LOG.exception(
+            "User %s disabled, disable sending emails from %s to %s",
+            user,
+            alias,
+            contact,
+        )
+        return [(False, "550 SL E20 Account disabled")]
 
     # bounce email initiated by Postfix
     # can happen in case emails cannot be delivered to user-email
