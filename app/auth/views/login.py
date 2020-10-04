@@ -36,6 +36,11 @@ def login():
             g.deduct_limit = True
             form.password.data = None
             flash("Email or password incorrect", "error")
+        elif user.disabled:
+            flash(
+                "Your account is disabled. Please contact SimpleLogin team to re-enable your account.",
+                "error",
+            )
         elif not user.activated:
             show_resend_activation = True
             flash(
