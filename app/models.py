@@ -162,6 +162,9 @@ class User(db.Model, ModelMixin, UserMixin):
 
     activated = db.Column(db.Boolean, default=False, nullable=False)
 
+    # an account can be disabled if having harmful behavior
+    disabled = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+
     profile_picture_id = db.Column(db.ForeignKey(File.id), nullable=True)
 
     otp_secret = db.Column(db.String(16), nullable=True)
