@@ -1101,7 +1101,7 @@ class Contact(db.Model, ModelMixin):
     pgp_public_key = db.Column(db.Text, nullable=True)
     pgp_finger_print = db.Column(db.String(512), nullable=True)
 
-    alias = db.relationship(Alias)
+    alias = db.relationship(Alias, backref="contacts")
     user = db.relationship(User)
 
     # the latest reply sent to this contact
@@ -1245,7 +1245,7 @@ class EmailLog(db.Model, ModelMixin):
     refused_email = db.relationship("RefusedEmail")
     forward = db.relationship(Contact)
 
-    contact = db.relationship(Contact)
+    contact = db.relationship(Contact, backref="email_logs")
 
     def bounced_mailbox(self) -> str:
         if self.bounced_mailbox_id:
