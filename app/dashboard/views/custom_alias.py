@@ -34,10 +34,7 @@ def available_suffixes(user: User) -> [bool, str, str]:
     # put custom domain first
     # for each user domain, generate both the domain and a random suffix version
     for alias_domain in user_custom_domains:
-        domain_suffixes = [
-            "@" + alias_domain,
-            "." + random_word() + "@" + alias_domain
-        ]
+        domain_suffixes = ["@" + alias_domain, "." + random_word() + "@" + alias_domain]
         for suffix in domain_suffixes:
             suffixes.append((True, suffix, signer.sign(suffix).decode()))
 
@@ -182,10 +179,15 @@ def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
 
     if alias_domain_prefix:
         if not alias_domain_prefix.startswith(".") or len(alias_domain_prefix) < 2:
-            LOG.exception("nonsensical alias suffix %s, user %s", alias_domain_prefix, user)
+            LOG.exception(
+                "nonsensical alias suffix %s, user %s", alias_domain_prefix, user
+            )
             return False
 
-        if alias_domain not in user_custom_domains and alias_domain not in ALIAS_DOMAINS:
+        if (
+            alias_domain not in user_custom_domains
+            and alias_domain not in ALIAS_DOMAINS
+        ):
             LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
             return False
     else:
