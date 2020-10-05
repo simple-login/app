@@ -8,7 +8,6 @@ from app.config import (
     CUSTOM_ALIAS_SECRET,
 )
 from app.dashboard.base import dashboard_bp
-from app.email_utils import email_belongs_to_alias_domains
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -33,9 +32,14 @@ def available_suffixes(user: User) -> [bool, str, str]:
     suffixes = []
 
     # put custom domain first
+    # for each user domain, generate both the domain and a random suffix version
     for alias_domain in user_custom_domains:
-        suffix = "@" + alias_domain
-        suffixes.append((True, suffix, signer.sign(suffix).decode()))
+        domain_suffixes = [
+            "@" + alias_domain,
+            "." + random_word() + "@" + alias_domain
+        ]
+        for suffix in domain_suffixes:
+            suffixes.append((True, suffix, signer.sign(suffix).decode()))
 
     # then default domain
     for domain in ALIAS_DOMAINS:
@@ -174,41 +178,24 @@ def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
 
     # make sure alias_suffix is either .random_word@simplelogin.co or @my-domain.com
     alias_suffix = alias_suffix.strip()
-    if alias_suffix.startswith("@"):
-        alias_domain = alias_suffix[1:]
-        # alias_domain can be either custom_domain or if DISABLE_ALIAS_SUFFIX, one of the default ALIAS_DOMAINS
-        if DISABLE_ALIAS_SUFFIX:
-            if (
-                alias_domain not in user_custom_domains
-                and alias_domain not in ALIAS_DOMAINS
-            ):
-                LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
-                return False
-        else:
-            if alias_domain not in user_custom_domains:
-                LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
-                return False
+    alias_domain_prefix, alias_domain = alias_suffix.split("@", 1)
+
+    if alias_domain_prefix:
+        if not alias_domain_prefix.startswith(".") or len(alias_domain_prefix) < 2:
+            LOG.exception("nonsensical alias suffix %s, user %s", alias_domain_prefix, user)
+            return False
+
+        if alias_domain not in user_custom_domains and alias_domain not in ALIAS_DOMAINS:
+            LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
+            return False
     else:
-        if not alias_suffix.startswith("."):
-            LOG.exception("User %s submits a wrong alias suffix %s", user, alias_suffix)
-            return False
+        if alias_domain not in user_custom_domains:
+            if not DISABLE_ALIAS_SUFFIX:
+                LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
+                return False
 
-        full_alias = alias_prefix + alias_suffix
-        if not email_belongs_to_alias_domains(full_alias):
-            LOG.exception(
-                "Alias suffix should end with one of the alias domains %s",
-                user,
-                alias_suffix,
-            )
-            return False
-
-        random_word_part = alias_suffix[1 : alias_suffix.find("@")]
-        if not word_exist(random_word_part):
-            LOG.exception(
-                "alias suffix %s needs to start with a random word, user %s",
-                alias_suffix,
-                user,
-            )
-            return False
+            if alias_domain not in ALIAS_DOMAINS:
+                LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
+                return False
 
     return True
