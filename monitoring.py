@@ -8,10 +8,12 @@ from app.models import Monitoring
 from server import create_app
 
 # the number of consecutive fails
-# if more than 3 fails, alert
+# if more than _max_nb_fails, alert
 # reset whenever the system comes back to normal
 # a system is considered fail if incoming_queue + active_queue > 50
 _nb_failed = 0
+
+_max_nb_fails = 10
 
 
 def get_stats():
@@ -35,7 +37,7 @@ def get_stats():
     if incoming_queue + active_queue > 50:
         _nb_failed += 1
 
-        if _nb_failed > 3:
+        if _nb_failed > _max_nb_fails:
             # reset
             _nb_failed = 0
 
@@ -59,5 +61,5 @@ if __name__ == "__main__":
         with app.app_context():
             get_stats()
 
-        # 2 min
-        sleep(120)
+        # 1 min
+        sleep(60)

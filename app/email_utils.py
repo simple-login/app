@@ -135,15 +135,6 @@ def send_change_email(new_email, current_email, name, link):
     )
 
 
-def send_new_app_email(email, name):
-    send_email(
-        email,
-        f"Any question/feedback for SimpleLogin {name}?",
-        render("com/new-app.txt", name=name),
-        render("com/new-app.html", name=name),
-    )
-
-
 def send_test_email_alias(email, name):
     send_email(
         email,

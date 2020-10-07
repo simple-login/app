@@ -22,15 +22,16 @@ jobs:
 
       - uses: actions/cache@v1
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          path: ~/.cache/poetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/peotry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-poetry-
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install poetry==1.0.10
+          poetry config virtualenvs.create false
+          poetry install
 
       - name: Test formatting
         run: |

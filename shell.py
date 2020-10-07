@@ -41,16 +41,6 @@ def reset_db():
     create_db()
 
 
-def send_safari_extension_newsletter():
-    for user in User.query.all():
-        send_email(
-            user.email,
-            "Quickly create alias with our Safari extension",
-            render("com/safari-extension.txt", user=user),
-            render("com/safari-extension.html", user=user),
-        )
-
-
 def send_mailbox_newsletter():
     for user in User.query.order_by(User.id).all():
         if user.notification and user.activated:

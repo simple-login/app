@@ -57,6 +57,8 @@ def auth_login():
         # Trigger rate limiter
         g.deduct_limit = True
         return jsonify(error="Email or password incorrect"), 400
+    elif user.disabled:
+        return jsonify(error="Account disabled"), 400
     elif not user.activated:
         return jsonify(error="Account not activated"), 400
     elif user.fido_enabled():

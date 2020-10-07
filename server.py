@@ -41,7 +41,6 @@ from app.config import (
     SENTRY_FRONT_END_DSN,
     FIRST_ALIAS_DOMAIN,
     SESSION_COOKIE_NAME,
-    ADMIN_EMAIL,
     PLAUSIBLE_HOST,
     PLAUSIBLE_DOMAIN,
     GITHUB_CLIENT_ID,
@@ -106,7 +105,7 @@ def create_light_app() -> Flask:
 def create_app() -> Flask:
     app = Flask(__name__)
     # SimpleLogin is deployed behind NGINX
-    app.wsgi_app = ProxyFix(app.wsgi_app, num_proxies=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1)
     limiter.init_app(app)
 
     app.url_map.strict_slashes = False
@@ -155,7 +154,7 @@ def create_app() -> Flask:
         flask_profiler.init_app(app)
 
     # enable CORS on /api endpoints
-    cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # set session to permanent so user stays signed in after quitting the browser
     # the cookie is valid for 7 days
@@ -310,7 +309,9 @@ def fake_data():
 
 @login_manager.user_loader
 def load_user(user_id):
-    user = User.query.get(user_id)
+    user = User.get(user_id)
+    if user.disabled:
+        return None
 
     return user
 
@@ -657,14 +658,14 @@ window.location.href = "/";
         """
 
 
-if __name__ == "__main__":
+def local_main():
     app = create_app()
 
     # enable flask toolbar
     app.config["DEBUG_TB_PROFILER_ENABLED"] = True
     app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
     app.debug = True
-    toolbar = DebugToolbarExtension(app)
+    DebugToolbarExtension(app)
 
     # warning: only used in local
     if RESET_DB:
@@ -680,3 +681,7 @@ if __name__ == "__main__":
         app.run(debug=True, port=7777, ssl_context=context)
     else:
         app.run(debug=True, port=7777)
+
+
+if __name__ == "__main__":
+    local_main()

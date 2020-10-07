@@ -133,8 +133,19 @@ def test_new_addr(flask_client):
     )
     assert c1.new_addr() == '"abcd@example.com via SimpleLogin" <rep@SL>'
 
+    # set sender format = FULL
+    user.sender_format = SenderFormatEnum.FULL.value
+    db.session.commit()
+    assert c1.new_addr() == '"First Last - abcd@example.com" <rep@SL>'
+
+    # Make sure email isn't duplicated if sender name equals email
+    c1.name = "abcd@example.com"
+    db.session.commit()
+    assert c1.new_addr() == '"abcd@example.com" <rep@SL>'
+
     # set sender_format = AT
     user.sender_format = SenderFormatEnum.AT.value
+    c1.name = "First Last"
     db.session.commit()
     assert c1.new_addr() == '"First Last - abcd at example.com" <rep@SL>'
 

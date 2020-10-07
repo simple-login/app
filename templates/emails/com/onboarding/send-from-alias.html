@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + user.name) }}
-
   {% call text() %}
-    Do you know you can send emails <b>from your alias</b>? <br>
+    <h1>
+      Send emails from your alias.
+    </h1>
   {% endcall %}
 
   {% call text() %}

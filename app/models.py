@@ -162,6 +162,9 @@ class User(db.Model, ModelMixin, UserMixin):
 
     activated = db.Column(db.Boolean, default=False, nullable=False)
 
+    # an account can be disabled if having harmful behavior
+    disabled = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
+
     profile_picture_id = db.Column(db.ForeignKey(File.id), nullable=True)
 
     otp_secret = db.Column(db.String(16), nullable=True)
@@ -1101,7 +1104,7 @@ class Contact(db.Model, ModelMixin):
     pgp_public_key = db.Column(db.Text, nullable=True)
     pgp_finger_print = db.Column(db.String(512), nullable=True)
 
-    alias = db.relationship(Alias)
+    alias = db.relationship(Alias, backref="contacts")
     user = db.relationship(User)
 
     # the latest reply sent to this contact
@@ -1181,19 +1184,20 @@ class Contact(db.Model, ModelMixin):
             or user.sender_format == SenderFormatEnum.VIA.value
         ):
             new_name = f"{self.website_email} via SimpleLogin"
-        elif user.sender_format == SenderFormatEnum.AT.value:
-            name = self.name or ""
+        else:
+            if user.sender_format == SenderFormatEnum.AT.value:
+                formatted_email = self.website_email.replace("@", " at ").strip()
+            elif user.sender_format == SenderFormatEnum.A.value:
+                formatted_email = self.website_email.replace("@", "(a)").strip()
+            elif user.sender_format == SenderFormatEnum.FULL.value:
+                formatted_email = self.website_email.strip()
+
+            # Prefix name to formatted email if available
             new_name = (
-                name + (" - " if name else "") + self.website_email.replace("@", " at ")
-            ).strip()
-        elif user.sender_format == SenderFormatEnum.A.value:
-            name = self.name or ""
-            new_name = (
-                name + (" - " if name else "") + self.website_email.replace("@", "(a)")
-            ).strip()
-        elif user.sender_format == SenderFormatEnum.FULL.value:
-            name = self.name or ""
-            new_name = (name + (" - " if name else "") + self.website_email).strip()
+                (self.name + " - " + formatted_email)
+                if self.name and self.name != self.website_email.strip()
+                else formatted_email
+            )
 
         new_addr = formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
@@ -1245,7 +1249,7 @@ class EmailLog(db.Model, ModelMixin):
     refused_email = db.relationship("RefusedEmail")
     forward = db.relationship(Contact)
 
-    contact = db.relationship(Contact)
+    contact = db.relationship(Contact, backref="email_logs")
 
     def bounced_mailbox(self) -> str:
         if self.bounced_mailbox_id:
