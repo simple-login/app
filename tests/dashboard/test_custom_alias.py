@@ -1,5 +1,6 @@
 from flask import url_for
 
+from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.custom_alias import (
     signer,
@@ -7,7 +8,14 @@ from app.dashboard.views.custom_alias import (
     available_suffixes,
 )
 from app.extensions import db
-from app.models import Mailbox, CustomDomain, Alias
+from app.models import (
+    Mailbox,
+    CustomDomain,
+    Alias,
+    User,
+    DomainDeletedAlias,
+    DeletedAlias,
+)
 from app.utils import random_word
 from tests.utils import login
 
@@ -107,3 +115,120 @@ def test_available_suffixes(flask_client):
     assert first_suffix[0]
     assert first_suffix[1] == "@test.com"
     assert first_suffix[2].startswith("@test.com")
+
+
+def test_add_already_existed_alias(flask_client):
+    user = login(flask_client)
+    db.session.commit()
+
+    another_user = User.create(
+        email="a2@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
+    )
+
+    word = random_word()
+    suffix = f".{word}@{EMAIL_DOMAIN}"
+    signed_suffix = signer.sign(suffix).decode()
+
+    # alias already exist
+    Alias.create(
+        user_id=another_user.id,
+        email=f"prefix{suffix}",
+        mailbox_id=another_user.default_mailbox_id,
+        commit=True,
+    )
+
+    # create the same alias, should return error
+    r = flask_client.post(
+        url_for("dashboard.custom_alias"),
+        data={
+            "prefix": "prefix",
+            "suffix": signed_suffix,
+            "mailboxes": [user.default_mailbox_id],
+        },
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    assert b"already exists, please choose another one" in r.data
+
+
+def test_add_alias_in_global_trash(flask_client):
+    user = login(flask_client)
+    db.session.commit()
+
+    another_user = User.create(
+        email="a2@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
+    )
+
+    word = random_word()
+    suffix = f".{word}@{EMAIL_DOMAIN}"
+    signed_suffix = signer.sign(suffix).decode()
+
+    # delete an alias: alias should go the DeletedAlias
+    alias = Alias.create(
+        user_id=another_user.id,
+        email=f"prefix{suffix}",
+        mailbox_id=another_user.default_mailbox_id,
+        commit=True,
+    )
+
+    assert DeletedAlias.query.count() == 0
+    delete_alias(alias, another_user)
+    assert DeletedAlias.query.count() == 1
+
+    # create the same alias, should return error
+    r = flask_client.post(
+        url_for("dashboard.custom_alias"),
+        data={
+            "prefix": "prefix",
+            "suffix": signed_suffix,
+            "mailboxes": [user.default_mailbox_id],
+        },
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    assert b"already exists, please choose another one" in r.data
+
+
+def test_add_alias_in_custom_domain_trash(flask_client):
+    user = login(flask_client)
+    db.session.commit()
+
+    custom_domain = CustomDomain.create(
+        user_id=user.id, domain="ab.cd", verified=True, commit=True
+    )
+
+    # delete a custom-domain alias: alias should go the DomainDeletedAlias
+    alias = Alias.create(
+        user_id=user.id,
+        email=f"prefix@ab.cd",
+        custom_domain_id=custom_domain.id,
+        mailbox_id=user.default_mailbox_id,
+        commit=True,
+    )
+
+    assert DomainDeletedAlias.query.count() == 0
+    delete_alias(alias, user)
+    assert DomainDeletedAlias.query.count() == 1
+
+    # create the same alias, should return error
+    suffix = f"@ab.cd"
+    signed_suffix = signer.sign(suffix).decode()
+    r = flask_client.post(
+        url_for("dashboard.custom_alias"),
+        data={
+            "prefix": "prefix",
+            "suffix": signed_suffix,
+            "mailboxes": [user.default_mailbox_id],
+        },
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    assert b"already exists, please choose another one" in r.data
