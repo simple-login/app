@@ -26,7 +26,7 @@ signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 
 def available_suffixes(user: User) -> [bool, str, str]:
     """Return (is_custom_domain, alias-suffix, time-signed alias-suffix)"""
-    user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
+    user_custom_domains = user.verified_custom_domains()
 
     # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
     suffixes = []
@@ -34,8 +34,10 @@ def available_suffixes(user: User) -> [bool, str, str]:
     # put custom domain first
     # for each user domain, generate both the domain and a random suffix version
     for alias_domain in user_custom_domains:
-        domain_suffixes = ["@" + alias_domain, "." + random_word() + "@" + alias_domain]
-        for suffix in domain_suffixes:
+        suffix = "@" + alias_domain.domain
+        suffixes.append((True, suffix, signer.sign(suffix).decode()))
+        if alias_domain.random_prefix_generation:
+            suffix = "." + random_word() + "@" + alias_domain.domain
             suffixes.append((True, suffix, signer.sign(suffix).decode()))
 
     # then default domain
