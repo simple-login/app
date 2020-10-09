@@ -1450,7 +1450,9 @@ class CustomDomain(db.Model, ModelMixin):
     catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
     # option to generate random prefix version automatically
-    random_prefix_generation = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+    random_prefix_generation = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     user = db.relationship(User, foreign_keys=[user_id])
 
