@@ -101,16 +101,35 @@ def custom_alias():
         if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
             full_alias = alias_prefix + alias_suffix
 
-            if (
-                Alias.get_by(email=full_alias)
-                or DeletedAlias.get_by(email=full_alias)
-                or DomainDeletedAlias.get_by(email=full_alias)
-            ):
-                LOG.d("full alias already used %s", full_alias)
-                flash(
-                    f"Alias {full_alias} already exists, please choose another one",
-                    "warning",
+            general_error_msg = f"{full_alias} cannot be used"
+
+            if Alias.get_by(email=full_alias):
+                alias = Alias.get_by(email=full_alias)
+                if alias.user_id == current_user.id:
+                    flash(f"You already have this alias {full_alias}", "error")
+                else:
+                    flash(general_error_msg, "error")
+            elif DomainDeletedAlias.get_by(email=full_alias):
+                domain_deleted_alias: DomainDeletedAlias = DomainDeletedAlias.get_by(
+                    email=full_alias
                 )
+                custom_domain = domain_deleted_alias.domain
+                if domain_deleted_alias.user_id == current_user.id:
+                    flash(
+                        f"You have deleted this alias before. You can restore it on "
+                        f"{custom_domain.domain} 'Deleted Alias' page",
+                        "error",
+                    )
+                else:
+                    # should never happen as user can only choose their domains
+                    LOG.exception(
+                        "Deleted Alias %s does not belong to user %s",
+                        domain_deleted_alias,
+                    )
+
+            elif DeletedAlias.get_by(email=full_alias):
+                flash(general_error_msg, "error")
+
             else:
                 custom_domain_id = None
                 # get the custom_domain_id if alias is created with a custom domain

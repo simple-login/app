@@ -152,7 +152,7 @@ def test_add_already_existed_alias(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert b"already exists, please choose another one" in r.data
+    assert f"prefix{suffix} cannot be used" in r.get_data(True)
 
 
 def test_add_alias_in_global_trash(flask_client):
@@ -194,7 +194,7 @@ def test_add_alias_in_global_trash(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert b"already exists, please choose another one" in r.data
+    assert f"prefix{suffix} cannot be used" in r.get_data(True)
 
 
 def test_add_alias_in_custom_domain_trash(flask_client):
@@ -231,4 +231,6 @@ def test_add_alias_in_custom_domain_trash(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert b"already exists, please choose another one" in r.data
+    assert "You have deleted this alias before. You can restore it on" in r.get_data(
+        True
+    )

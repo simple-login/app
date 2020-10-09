@@ -1478,9 +1478,14 @@ class DomainDeletedAlias(db.Model, ModelMixin):
     )
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
+    domain = db.relationship(CustomDomain)
+
     @classmethod
     def create(cls, **kw):
         raise Exception("should use delete_alias(alias,user) instead")
+
+    def __repr__(self):
+        return f"<DomainDeletedAlias {self.id} {self.email}>"
 
 
 class LifetimeCoupon(db.Model, ModelMixin):
