@@ -15,6 +15,9 @@ _nb_failed = 0
 
 _max_nb_fails = 10
 
+# the maximum number of emails in incoming & active queue
+_max_incoming_active = 50
+
 
 def get_stats():
     """Look at different metrics and alert appropriately"""
@@ -33,8 +36,7 @@ def get_stats():
 
     global _nb_failed
     # alert when too many emails in incoming + active queue
-    # 50 is an arbitrary number here
-    if incoming_queue + active_queue > 50:
+    if incoming_queue + active_queue > _max_incoming_active:
         _nb_failed += 1
 
         if _nb_failed > _max_nb_fails:
