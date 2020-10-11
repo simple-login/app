@@ -160,6 +160,25 @@ def domain_detail(custom_domain_id):
             return redirect(
                 url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
             )
+        elif request.form.get("form-name") == "switch-random-prefix-generation":
+            custom_domain.random_prefix_generation = (
+                not custom_domain.random_prefix_generation
+            )
+            db.session.commit()
+
+            if custom_domain.random_prefix_generation:
+                flash(
+                    f"Random prefix generation has been enabled for {custom_domain.domain}",
+                    "success",
+                )
+            else:
+                flash(
+                    f"Random prefix generation has been disabled for {custom_domain.domain}",
+                    "warning",
+                )
+            return redirect(
+                url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
+            )
         elif request.form.get("form-name") == "delete":
             name = custom_domain.domain
             CustomDomain.delete(custom_domain_id)

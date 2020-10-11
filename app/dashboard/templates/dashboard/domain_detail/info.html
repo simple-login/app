@@ -57,7 +57,7 @@
   </div>
 
   <hr>
-  <div>Default Alias name</div>
+  <div>Default Alias Name</div>
   <div class="small-text">
     This name will be used as the default alias name when you send
     or reply from an alias, unless overwritten by the alias specific name.
@@ -73,6 +73,32 @@
                placeholder="Alias name">
       </div>
       <button class="btn btn-primary">Save</button>
+    </form>
+  </div>
+
+  <hr>
+  <div>Random Prefix Generation</div>
+  <div class="small-text">
+    A random prefix can be generated for this domain for usage in the New Alias
+    feature.
+  </div>
+
+  <div>
+    <form method="post">
+      <input type="hidden" name="form-name" value="switch-random-prefix-generation">
+      <label class="custom-switch cursor mt-2 pl-0"
+             data-toggle="tooltip"
+          {% if custom_domain.random_prefix_generation %}
+             title="Disable random prefix generation"
+          {% else %}
+             title="Enable random prefix generation"
+          {% endif %}
+      >
+        <input type="checkbox" class="custom-switch-input"
+            {{ "checked" if custom_domain.random_prefix_generation else "" }}>
+
+        <span class="custom-switch-indicator"></span>
+      </label>
     </form>
   </div>
 
