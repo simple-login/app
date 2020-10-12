@@ -545,7 +545,7 @@ for docker-compose add this to your file:
         image: simplelogin/app:3.2.2
         container_name: sl-app
         ports:
-            - "8009:7777"
+            - "7777:7777"
         restart: unless-stopped
         volumes:
         # this is to add more words to create more unique aliases
