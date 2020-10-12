@@ -8,7 +8,7 @@
 ---
 <p>
 <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">
-    <img src="https://img.shields.io/chrome-web-store/rating/dphilobhebphkdjbpfohgikllaljmgbn?label=Chrome%20Extension">
+    <img src="https://img.shields.io/chrome-web-store/v/dphilobhebphkdjbpfohgikllaljmgbn">
 </a>
 
 <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">
