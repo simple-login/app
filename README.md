@@ -305,7 +305,7 @@ sudo docker run -d \
     postgres:12.1
 ```
 
-if you want to use docker-compose you can paste this inside your docker-compose.yml file
+if you want to use docker-compose you can paste this inside your `docker-compose.yml` file
 
 ```
 version: "3"
@@ -368,6 +368,10 @@ readme_directory = no
 # See http://www.postfix.org/COMPATIBILITY_README.html -- default to 2 on
 # fresh installs.
 compatibility_level = 2
+
+# if you have an issue local recipient tables uncomment the nextline to 
+# remove the table completely
+# local_recipient_maps = 
 
 # TLS parameters
 smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
