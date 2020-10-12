@@ -574,6 +574,25 @@ for docker-compose add this to your file:
 
 ```
 
+**note**: the words.txt volume is optional and it allows you to add your own custom words for random aliases.
+to use it make sure to create a words.txt file and type each word in each line, for example:
+
+```
+moldovanlongterm
+tremblelikable
+warpedmainsail
+opisthenarsneak
+grimahump
+chinchillastemson
+feebleperformer
+vicarchoose
+ventureinflate
+agreeablearm
+raftpelennor
+
+```
+these words will be used to create new random aliases>
+
 for docker-cli:
 
 `webapp` container:
