@@ -305,6 +305,33 @@ sudo docker run -d \
     postgres:12.1
 ```
 
+if you want to use docker-compose you can paste this inside your docker-compose.yml file
+
+```
+version: "3"
+#connecting to the pre made sl-network.
+networks:
+    default:
+        external:
+            name: sl-network
+
+# all file paths are relative to the docker-compose file
+
+services:
+    postgres:
+        image: postgres:12.1
+        container_name: sl-db
+        ports:
+            - "5432:5432"
+        volumes:
+            - ./sl/db:/var/lib/postgresql/data
+        environment:
+            - POSTGRES_PASSWORD=mypassword
+            - POSTGRES_USER=myuser
+            - POSTGRES_DB=simplelogin
+        restart: unless-stopped
+```
+
 To test whether the database operates correctly or not, run the following command:
 
 ```bash
