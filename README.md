@@ -659,8 +659,16 @@ At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot
 
 If all of the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
-By default, new accounts are not premium so don't have unlimited alias. To make your account premium,
-please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
+By default, new accounts are **not premium** so don't have unlimited alias. To make all accounts premium by default,
+use the following commands:
+
+`sudo docker exec -it sl-db psql -U myuser simplelogin`
+
+then
+
+`ALTER TABLE users ALTER COLUMN lifetime SET DEFAULT TRUE;`
+
+make sure to create your commands **after** the changes.
 
 You don't have to pay anything to SimpleLogin to use all its features.
 You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though.
