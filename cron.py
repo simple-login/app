@@ -293,7 +293,11 @@ def sanity_check():
     Different sanity checks
     - detect if there's mailbox that's using a invalid domain
     """
-    mailbox_ids = db.session.query(Mailbox.id).filter(Mailbox.verified == True).all()
+    mailbox_ids = (
+        db.session.query(Mailbox.id)
+        .filter(Mailbox.verified == True, Mailbox.disabled == False)
+        .all()
+    )
     mailbox_ids = [e[0] for e in mailbox_ids]
 
     # iterate over id instead of mailbox directly
@@ -310,13 +314,35 @@ def sanity_check():
         if not email_domain_can_be_used_as_mailbox(mailbox.email):
             mailbox.nb_failed_checks += 1
             nb_email_log = nb_email_log_for_mailbox(mailbox)
+            log_func = LOG.warning
+
+            # send a warning
+            if mailbox.nb_failed_checks == 5:
+                if mailbox.user.email != mailbox.email:
+                    send_email(
+                        mailbox.user.email,
+                        f"Mailbox {mailbox.email} is disabled",
+                        render(
+                            "transactional/disable-mailbox-warning.txt", mailbox=mailbox
+                        ),
+                        render(
+                            "transactional/disable-mailbox-warning.html",
+                            mailbox=mailbox,
+                        ),
+                    )
 
             # alert if too much fail and nb_email_log > 100
             if mailbox.nb_failed_checks > 10 and nb_email_log > 100:
                 log_func = LOG.exception
-                mailbox.verified = False
-            else:
-                log_func = LOG.warning
+                mailbox.disabled = True
+
+                if mailbox.user.email != mailbox.email:
+                    send_email(
+                        mailbox.user.email,
+                        f"Mailbox {mailbox.email} is disabled",
+                        render("transactional/disable-mailbox.txt", mailbox=mailbox),
+                        render("transactional/disable-mailbox.html", mailbox=mailbox),
+                    )
 
             log_func(
                 "issue with mailbox %s domain. #alias %s, nb email log %s",

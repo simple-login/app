@@ -1,0 +1,16 @@
+Issues with {{ mailbox.email }}.
+
+We have detected that your mailbox cannot reliably receive emails from SimpleLogin for a consecutive period of time.
+The mailbox will be disabled in 5 days if the problem isn't solved by then.
+
+Please note that a mailbox must be a "final" email address and cannot be
+another email alias or a disposable email address.
+
+If you have any question, you can reach out to us by replying to this email.
+
+Best,
+SimpleLogin Team.
+
+
+
+

@@ -533,6 +533,10 @@ def forward_email_to_mailbox(
 ) -> (bool, str):
     LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
 
+    if mailbox.disabled:
+        LOG.debug("%s disabled, do not forward")
+        return False, "550 SL E21 Disabled mailbox"
+
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
         LOG.warning(
