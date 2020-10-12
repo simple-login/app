@@ -350,7 +350,7 @@ sudo apt-get install -y postfix postfix-pgsql -y
 
 Choose "Internet Site" in Postfix installation window then keep using the proposed value as *System mail name* in the next window.
 
-to make sure pgsql is working correctly, run `postconf -m` and make sure its listed.
+to make sure pgsql is working correctly, run `postconf -m` and make sure `pgsql` is listed.
 
 Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain.
 
@@ -536,7 +536,47 @@ sudo docker run --rm \
     simplelogin/app:3.2.2 python init_app.py
 ```
 
-Now, it's time to run the `webapp` container!
+now it time to setup the `webapp` and `email handler` containers
+
+for docker-compose add this to your file:
+
+```
+    simplelogin:
+        image: simplelogin/app:3.2.2
+        container_name: sl-app
+        ports:
+            - "8009:7777"
+        restart: unless-stopped
+        volumes:
+        # this is to add more words to create more unique aliases
+        # - ./words.txt:/code/local_data/words.txt
+        - ./sl:/sl
+        - ./sl/upload:/code/static/upload
+        - ./simplelogin.env:/code/.env
+        - ./dkim.key:/dkim.key
+        - ./dkim.pub.key:/dkim.pub.key
+
+    simplelogin-email_handler:
+        image: simplelogin/app:3.2.2
+        container_name: sl-email
+        command: python email_handler.py
+        ports:
+            - "20381:20381"
+        restart: unless-stopped
+        volumes:
+        # this is to add more words to create more unique aliases you have to create a word.txt file.
+        # - ./words.txt:/code/local_data/words.txt
+        - ./sl:/sl
+        - ./sl/upload:/code/static/upload
+        - ./simplelogin.env:/code/.env
+        - ./dkim.key:/dkim.key
+        - ./dkim.pub.key:/dkim.pub.key
+
+```
+
+for docker-cli:
+
+`webapp` container:
 
 ```bash
 sudo docker run -d \
@@ -552,7 +592,7 @@ sudo docker run -d \
     simplelogin/app:3.2.2
 ```
 
-Next run the `email handler`
+`email handler` container:
 
 ```bash
 sudo docker run -d \
