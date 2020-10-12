@@ -78,7 +78,8 @@ def cancel_subscription(subscription_id: int) -> bool:
     return res["success"]
 
 
-def change_plan(subscription_id: int, plan_id) -> bool:
+def change_plan(subscription_id: str, plan_id) -> (bool, str):
+    """return whether the operation is successful and an optional error message"""
     r = requests.post(
         "https://vendors.paddle.com/api/2.0/subscription/users/update",
         data={
@@ -93,5 +94,14 @@ def change_plan(subscription_id: int, plan_id) -> bool:
         LOG.exception(
             f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
         )
+        try:
+            # "unable to complete the resubscription because we could not charge the customer for the resubscription"
+            if res["error"]["code"] == 147:
+                return False, "Your card cannot be charged"
+        except:
+            LOG.warning("Cannot parse error code from %s", res)
+            return False, ""
 
-    return res["success"]
+        return False, ""
+
+    return res["success"], ""

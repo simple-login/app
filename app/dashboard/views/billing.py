@@ -38,34 +38,40 @@ def billing():
             return redirect(url_for("dashboard.billing"))
         elif request.form.get("form-name") == "change-monthly":
             LOG.debug(f"User {current_user} changes to monthly plan")
-            success = change_plan(sub.subscription_id, PADDLE_MONTHLY_PRODUCT_ID)
+            success, msg = change_plan(sub.subscription_id, PADDLE_MONTHLY_PRODUCT_ID)
 
             if success:
                 sub.plan = PlanEnum.monthly
                 db.session.commit()
                 flash("Your subscription has been updated", "success")
             else:
-                flash(
-                    "Something went wrong, sorry for the inconvenience. Please retry. "
-                    "We are already notified and will be on it asap",
-                    "error",
-                )
+                if msg:
+                    flash(msg, "error")
+                else:
+                    flash(
+                        "Something went wrong, sorry for the inconvenience. Please retry. "
+                        "We are already notified and will be on it asap",
+                        "error",
+                    )
 
             return redirect(url_for("dashboard.billing"))
         elif request.form.get("form-name") == "change-yearly":
             LOG.debug(f"User {current_user} changes to yearly plan")
-            success = change_plan(sub.subscription_id, PADDLE_YEARLY_PRODUCT_ID)
+            success, msg = change_plan(sub.subscription_id, PADDLE_YEARLY_PRODUCT_ID)
 
             if success:
                 sub.plan = PlanEnum.yearly
                 db.session.commit()
                 flash("Your subscription has been updated", "success")
             else:
-                flash(
-                    "Something went wrong, sorry for the inconvenience. Please retry. "
-                    "We are already notified and will be on it asap",
-                    "error",
-                )
+                if msg:
+                    flash(msg, "error")
+                else:
+                    flash(
+                        "Something went wrong, sorry for the inconvenience. Please retry. "
+                        "We are already notified and will be on it asap",
+                        "error",
+                    )
 
             return redirect(url_for("dashboard.billing"))
 
