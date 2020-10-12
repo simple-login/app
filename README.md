@@ -655,6 +655,39 @@ sudo systemctl reload nginx
 
 At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
 
+
+### Apache
+
+Install Apache and make sure to replace `mydomain.com` by your domain
+
+```bash
+sudo apt-get install -y apache2
+```
+```
+<IfModule mod_ssl.c>
+  <VirtualHost _default_:443>
+    ServerName mydomain.com
+    DocumentRoot /var/www/html
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    SSLEngine on
+    SSLCertificateFile      /etc/ssl/certs/ssl-cert-snakeoil.pem
+    SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:7777/
+    ProxyPassReverse / http://127.0.0.1:7777/
+    <FilesMatch "\.(cgi|shtml|phtml|php)$">
+      SSLOptions +StdEnvVars
+    </FilesMatch>
+    <Directory /usr/lib/cgi-bin>
+      SSLOptions +StdEnvVars
+    </Directory>
+  </VirtualHost>
+</IfModule>
+```
+
+this will use the default self-signed cert.
+
 ### Enjoy!
 
 If all of the above steps are successful, open http://app.mydomain.com/ and create your first account!
