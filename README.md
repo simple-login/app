@@ -350,6 +350,8 @@ sudo apt-get install -y postfix postfix-pgsql -y
 
 Choose "Internet Site" in Postfix installation window then keep using the proposed value as *System mail name* in the next window.
 
+to make sure pgsql is working correctly, run `postconf -m` and make sure its listed.
+
 Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain.
 
 ```
