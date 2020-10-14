@@ -314,7 +314,6 @@ def sanity_check():
         if not email_domain_can_be_used_as_mailbox(mailbox.email):
             mailbox.nb_failed_checks += 1
             nb_email_log = nb_email_log_for_mailbox(mailbox)
-            log_func = LOG.warning
 
             # send a warning
             if mailbox.nb_failed_checks == 5:
@@ -333,7 +332,6 @@ def sanity_check():
 
             # alert if too much fail and nb_email_log > 100
             if mailbox.nb_failed_checks > 10 and nb_email_log > 100:
-                log_func = LOG.exception
                 mailbox.disabled = True
 
                 if mailbox.user.email != mailbox.email:
@@ -344,7 +342,7 @@ def sanity_check():
                         render("transactional/disable-mailbox.html", mailbox=mailbox),
                     )
 
-            log_func(
+            LOG.warning(
                 "issue with mailbox %s domain. #alias %s, nb email log %s",
                 mailbox,
                 mailbox.nb_alias(),
