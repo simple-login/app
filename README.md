@@ -651,9 +651,6 @@ Reload Nginx with the command below
 sudo systemctl reload nginx
 ```
 
-At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
-
-
 ### Apache
 
 Install Apache and make sure to replace `mydomain.com` by your domain
