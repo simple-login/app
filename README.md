@@ -556,7 +556,7 @@ for docker-compose add this to your file:
         - ./dkim.key:/dkim.key
         - ./dkim.pub.key:/dkim.pub.key
 
-    simplelogin-email_handler:
+    sl-email:
         image: simplelogin/app:3.2.2
         container_name: sl-email
         command: python email_handler.py
