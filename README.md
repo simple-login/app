@@ -541,9 +541,8 @@ now it time to setup the `webapp` and `email handler` containers
 for docker-compose add this to your file:
 
 ```
-    simplelogin:
+    sl-app:
         image: simplelogin/app:3.2.2
-        container_name: sl-app
         ports:
             - "7777:7777"
         restart: unless-stopped
@@ -558,7 +557,6 @@ for docker-compose add this to your file:
 
     sl-email:
         image: simplelogin/app:3.2.2
-        container_name: sl-email
         command: python email_handler.py
         ports:
             - "20381:20381"
