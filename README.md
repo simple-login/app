@@ -547,8 +547,6 @@ for docker-compose add this to your file:
             - "7777:7777"
         restart: unless-stopped
         volumes:
-        # this is to add more words to create more unique aliases
-        # - ./words.txt:/code/local_data/words.txt
         - ./sl:/sl
         - ./sl/upload:/code/static/upload
         - ./simplelogin.env:/code/.env
@@ -562,8 +560,6 @@ for docker-compose add this to your file:
             - "20381:20381"
         restart: unless-stopped
         volumes:
-        # this is to add more words to create more unique aliases you have to create a word.txt file.
-        # - ./words.txt:/code/local_data/words.txt
         - ./sl:/sl
         - ./sl/upload:/code/static/upload
         - ./simplelogin.env:/code/.env
@@ -571,25 +567,6 @@ for docker-compose add this to your file:
         - ./dkim.pub.key:/dkim.pub.key
 
 ```
-
-**note**: the words.txt volume is optional and it allows you to add your own custom words for random aliases.
-to use it make sure to create a words.txt file and type each word in each line, for example:
-
-```
-moldovanlongterm
-tremblelikable
-warpedmainsail
-opisthenarsneak
-grimahump
-chinchillastemson
-feebleperformer
-vicarchoose
-ventureinflate
-agreeablearm
-raftpelennor
-
-```
-these words will be used to create new random aliases>
 
 for docker-cli:
 
