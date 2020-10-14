@@ -4,7 +4,7 @@ from email.message import EmailMessage
 from app.config import MAX_ALERT_24H
 from app.email_utils import (
     get_email_domain_part,
-    email_belongs_to_alias_domains,
+    email_belongs_to_default_domains,
     email_domain_can_be_used_as_mailbox,
     delete_header,
     add_or_replace_header,
@@ -24,11 +24,11 @@ def test_get_email_domain_part():
 
 def test_email_belongs_to_alias_domains():
     # default alias domain
-    assert email_belongs_to_alias_domains("ab@sl.local")
-    assert not email_belongs_to_alias_domains("ab@not-exist.local")
+    assert email_belongs_to_default_domains("ab@sl.local")
+    assert not email_belongs_to_default_domains("ab@not-exist.local")
 
-    assert email_belongs_to_alias_domains("hey@d1.test")
-    assert not email_belongs_to_alias_domains("hey@d3.test")
+    assert email_belongs_to_default_domains("hey@d1.test")
+    assert not email_belongs_to_default_domains("hey@d3.test")
 
 
 def test_can_be_used_as_personal_email(flask_client):

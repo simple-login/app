@@ -369,7 +369,7 @@ def delete_all_headers_except(msg: Message, headers: [str]):
             del msg._headers[i]
 
 
-def email_belongs_to_alias_domains(address: str) -> bool:
+def email_belongs_to_default_domains(address: str) -> bool:
     """return True if an email ends with one of the alias domains provided by SimpleLogin"""
     for domain in ALIAS_DOMAINS:
         if address.endswith("@" + domain):

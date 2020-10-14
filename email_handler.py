@@ -82,7 +82,7 @@ from app.email_utils import (
     add_dkim_signature,
     add_or_replace_header,
     delete_header,
-    email_belongs_to_alias_domains,
+    email_belongs_to_default_domains,
     render,
     get_orig_message_from_bounce,
     delete_all_headers_except,
@@ -716,7 +716,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     alias_domain = address[address.find("@") + 1 :]
 
     # alias must end with one of the ALIAS_DOMAINS or custom-domain
-    if not email_belongs_to_alias_domains(alias.email):
+    if not email_belongs_to_default_domains(alias.email):
         if not CustomDomain.get_by(domain=alias_domain):
             return False, "550 SL E5"
 
