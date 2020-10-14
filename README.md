@@ -609,7 +609,7 @@ sudo docker run -d \
     simplelogin/app:3.2.2
 ```
 
-`email handler` container:
+Next run the `email handler`:
 
 ```bash
 sudo docker run -d \
