@@ -1,5 +1,5 @@
 """Initial loading script"""
-from app.config import ALIAS_DOMAINS
+from app.config import ALIAS_DOMAINS, PREMIUM_ALIAS_DOMAINS
 from app.models import Mailbox, Contact, PublicDomain
 from app.log import LOG
 from app.extensions import db
@@ -44,6 +44,13 @@ def add_public_domains():
         else:
             LOG.info("Add %s to public domain", alias_domain)
             PublicDomain.create(domain=alias_domain)
+
+    for premium_domain in PREMIUM_ALIAS_DOMAINS:
+        if PublicDomain.get_by(domain=premium_domain):
+            LOG.d("%s is already a public domain", premium_domain)
+        else:
+            LOG.info("Add %s to public domain", premium_domain)
+            PublicDomain.create(domain=premium_domain, premium_only=True)
 
     db.session.commit()
 

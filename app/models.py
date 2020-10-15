@@ -25,6 +25,8 @@ from app.config import (
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
     PAGE_LIMIT,
+    ALIAS_DOMAINS,
+    PREMIUM_ALIAS_DOMAINS,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -465,7 +467,7 @@ class User(db.Model, ModelMixin, UserMixin):
         else:
             return sub
 
-    def verified_custom_domains(self):
+    def verified_custom_domains(self) -> ["CustomDomain"]:
         return CustomDomain.query.filter_by(user_id=self.id, verified=True).all()
 
     def mailboxes(self) -> List["Mailbox"]:
@@ -489,16 +491,14 @@ class User(db.Model, ModelMixin, UserMixin):
     def available_domains_for_random_alias(self) -> List[Tuple[bool, str]]:
         """Return available domains for user to create random aliases
         Each result record contains:
-        - whether the domain is public (i.e. belongs to SimpleLogin)
+        - whether the domain belongs to SimpleLogin
         - the domain
         """
         res = []
-        for public_domain in PublicDomain.query.all():
-            res.append((True, public_domain.domain))
+        for domain in self.available_sl_domains():
+            res.append((True, domain))
 
-        for custom_domain in CustomDomain.filter_by(
-            user_id=self.id, verified=True
-        ).all():
+        for custom_domain in self.verified_custom_domains():
             res.append((False, custom_domain.domain))
 
         return res
@@ -523,6 +523,12 @@ class User(db.Model, ModelMixin, UserMixin):
             # sanity check
             if not public_domain:
                 LOG.exception("Problem with %s public random alias domain", self)
+                return FIRST_ALIAS_DOMAIN
+
+            if public_domain.premium_only and not self.is_premium():
+                LOG.exception(
+                    "%s is not premium and cannot use %s", self, public_domain
+                )
                 return FIRST_ALIAS_DOMAIN
 
             return public_domain.domain
@@ -552,6 +558,32 @@ class User(db.Model, ModelMixin, UserMixin):
                 return self.email
 
         return None
+
+    def available_sl_domains(self) -> [str]:
+        """
+        Return all SimpleLogin domains that user can use when creating a new alias, including:
+        - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
+        - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
+        """
+        domains = ALIAS_DOMAINS
+        if self.is_premium():
+            domains += PREMIUM_ALIAS_DOMAINS
+
+        return domains
+
+    def available_alias_domains(self) -> [str]:
+        """return all domains that user can use when creating a new alias, including:
+        - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
+        - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
+        - Verified custom domains
+
+        """
+        domains = self.get_sl_domains()
+
+        for custom_domain in self.verified_custom_domains():
+            domains.append(custom_domain.domain)
+
+        return domains
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
@@ -949,17 +981,25 @@ class Alias(db.Model, ModelMixin):
         """create a new random alias"""
         custom_domain = None
 
+        random_email = None
+
         if user.default_random_alias_domain_id:
             custom_domain = CustomDomain.get(user.default_random_alias_domain_id)
             random_email = generate_email(
                 scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
             )
         elif user.default_random_alias_public_domain_id:
-            public_domain = PublicDomain.get(user.default_random_alias_public_domain_id)
-            random_email = generate_email(
-                scheme=scheme, in_hex=in_hex, alias_domain=public_domain.domain
+            public_domain: PublicDomain = PublicDomain.get(
+                user.default_random_alias_public_domain_id
             )
-        else:
+            if public_domain.premium_only and not user.is_premium():
+                LOG.exception("%s not premium, cannot use %s", user, public_domain)
+            else:
+                random_email = generate_email(
+                    scheme=scheme, in_hex=in_hex, alias_domain=public_domain.domain
+                )
+
+        if not random_email:
             random_email = generate_email(scheme=scheme, in_hex=in_hex)
 
         alias = Alias.create(

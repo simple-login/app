@@ -6,7 +6,7 @@ from app.email_utils import (
     get_email_domain_part,
     send_cannot_create_directory_alias,
     send_cannot_create_domain_alias,
-    email_belongs_to_default_domains,
+    can_create_directory_for_address,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -39,7 +39,7 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
     Try to create an alias with directory
     """
     # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
-    if email_belongs_to_default_domains(address):
+    if can_create_directory_for_address(address):
         # if there's no directory separator in the alias, no way to auto-create it
         if "/" not in address and "+" not in address and "#" not in address:
             return None

@@ -22,7 +22,7 @@ from app.email_utils import (
     send_email,
     send_trial_end_soon_email,
     render,
-    email_domain_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox,
     send_email_with_rate_control,
 )
 from app.extensions import db
@@ -311,7 +311,7 @@ def sanity_check():
         # hack to not query DNS too often
         sleep(1)
 
-        if not email_domain_can_be_used_as_mailbox(mailbox.email):
+        if not email_can_be_used_as_mailbox(mailbox.email):
             mailbox.nb_failed_checks += 1
             nb_email_log = nb_email_log_for_mailbox(mailbox)
 

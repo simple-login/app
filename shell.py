@@ -7,6 +7,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 from app.config import (
     DB_URI,
     ALIAS_DOMAINS,
+    PREMIUM_ALIAS_DOMAINS,
 )
 from app.email_utils import send_email, render, get_email_domain_part
 from app.models import *
@@ -99,7 +100,10 @@ def migrate_domain_trash():
     """Move aliases from global trash to domain trash if applicable"""
     for deleted_alias in DeletedAlias.query.all():
         alias_domain = get_email_domain_part(deleted_alias.email)
-        if alias_domain not in ALIAS_DOMAINS:
+        if (
+            alias_domain not in ALIAS_DOMAINS
+            and alias_domain not in PREMIUM_ALIAS_DOMAINS
+        ):
             domain = CustomDomain.get_by(domain=alias_domain)
             if domain:
                 LOG.d("move %s to domain %s trash", deleted_alias, domain)
