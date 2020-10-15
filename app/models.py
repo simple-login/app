@@ -578,7 +578,7 @@ class User(db.Model, ModelMixin, UserMixin):
         - Verified custom domains
 
         """
-        domains = self.get_sl_domains()
+        domains = self.available_sl_domains()
 
         for custom_domain in self.verified_custom_domains():
             domains.append(custom_domain.domain)
