@@ -100,6 +100,15 @@ else:
 
 ALIAS_DOMAINS = [d.lower().strip() for d in ALIAS_DOMAINS]
 
+if "PREMIUM_ALIAS_DOMAINS" in os.environ:
+    PREMIUM_ALIAS_DOMAINS = eval(
+        os.environ["PREMIUM_ALIAS_DOMAINS"]
+    )  # ["domain1.com", "domain2.com"]
+else:
+    PREMIUM_ALIAS_DOMAINS = []
+
+PREMIUM_ALIAS_DOMAINS = [d.lower().strip() for d in PREMIUM_ALIAS_DOMAINS]
+
 # the alias domain used when creating the first alias for user
 FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN
 
