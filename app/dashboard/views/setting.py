@@ -200,15 +200,15 @@ def setting():
             default_domain = request.form.get("random-alias-default-domain")
 
             if default_domain:
-                public_domain: SLDomain = SLDomain.get_by(domain=default_domain)
-                if public_domain:
-                    if public_domain.premium_only and not current_user.is_premium():
+                sl_domain: SLDomain = SLDomain.get_by(domain=default_domain)
+                if sl_domain:
+                    if sl_domain.premium_only and not current_user.is_premium():
                         flash("You cannot use this domain", "error")
                         return redirect(url_for("dashboard.setting"))
 
                     # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
                     current_user.default_random_alias_public_domain_id = (
-                        public_domain.id
+                        sl_domain.id
                     )
                     current_user.default_random_alias_domain_id = None
                 else:

@@ -516,19 +516,19 @@ class User(db.Model, ModelMixin, UserMixin):
             return custom_domain.domain
 
         if self.default_random_alias_public_domain_id:
-            public_domain = SLDomain.get(self.default_random_alias_public_domain_id)
+            sl_domain = SLDomain.get(self.default_random_alias_public_domain_id)
             # sanity check
-            if not public_domain:
+            if not sl_domain:
                 LOG.exception("Problem with %s public random alias domain", self)
                 return FIRST_ALIAS_DOMAIN
 
-            if public_domain.premium_only and not self.is_premium():
+            if sl_domain.premium_only and not self.is_premium():
                 LOG.exception(
-                    "%s is not premium and cannot use %s", self, public_domain
+                    "%s is not premium and cannot use %s", self, sl_domain
                 )
                 return FIRST_ALIAS_DOMAIN
 
-            return public_domain.domain
+            return sl_domain.domain
 
         return FIRST_ALIAS_DOMAIN
 
@@ -567,7 +567,7 @@ class User(db.Model, ModelMixin, UserMixin):
         else:
             query = SLDomain.filter_by(premium_only=False)
 
-        domains = [public_domain.domain for public_domain in query]
+        domains = [sl_domain.domain for sl_domain in query]
 
         return domains
 
@@ -989,14 +989,14 @@ class Alias(db.Model, ModelMixin):
                 scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
             )
         elif user.default_random_alias_public_domain_id:
-            public_domain: SLDomain = SLDomain.get(
+            sl_domain: SLDomain = SLDomain.get(
                 user.default_random_alias_public_domain_id
             )
-            if public_domain.premium_only and not user.is_premium():
-                LOG.exception("%s not premium, cannot use %s", user, public_domain)
+            if sl_domain.premium_only and not user.is_premium():
+                LOG.exception("%s not premium, cannot use %s", user, sl_domain)
             else:
                 random_email = generate_email(
-                    scheme=scheme, in_hex=in_hex, alias_domain=public_domain.domain
+                    scheme=scheme, in_hex=in_hex, alias_domain=sl_domain.domain
                 )
 
         if not random_email:
