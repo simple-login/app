@@ -5,7 +5,7 @@ from itsdangerous import Signer
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
-from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, MAILBOX_SECRET, URL
+from app.config import MAILBOX_SECRET, URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
     email_can_be_used_as_mailbox,
@@ -113,8 +113,6 @@ def mailbox_route():
         "dashboard/mailbox.html",
         mailboxes=mailboxes,
         new_mailbox_form=new_mailbox_form,
-        EMAIL_DOMAIN=EMAIL_DOMAIN,
-        ALIAS_DOMAINS=ALIAS_DOMAINS,
     )
 
 

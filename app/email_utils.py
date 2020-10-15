@@ -383,10 +383,7 @@ def can_create_directory_for_address(address: str) -> bool:
 def is_valid_alias_address_domain(address) -> bool:
     """Return whether an address domain might a domain handled by SimpleLogin"""
     domain = get_email_domain_part(address)
-    if domain in ALIAS_DOMAINS:
-        return True
-
-    if domain in PREMIUM_ALIAS_DOMAINS:
+    if PublicDomain.get_by(domain=domain):
         return True
 
     if CustomDomain.get_by(domain=domain, verified=True):
@@ -407,10 +404,7 @@ def email_can_be_used_as_mailbox(email: str) -> bool:
     if not domain:
         return False
 
-    if domain in ALIAS_DOMAINS:
-        return False
-
-    if domain in PREMIUM_ALIAS_DOMAINS:
+    if PublicDomain.get_by(domain=domain):
         return False
 
     from app.models import CustomDomain

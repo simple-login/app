@@ -565,9 +565,12 @@ class User(db.Model, ModelMixin, UserMixin):
         - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         """
-        domains = ALIAS_DOMAINS
         if self.is_premium():
-            domains += PREMIUM_ALIAS_DOMAINS
+            query = PublicDomain.query.all()
+        else:
+            query = PublicDomain.filter_by(premium_only=False)
+
+        domains = [public_domain.domain for public_domain in query]
 
         return domains
 

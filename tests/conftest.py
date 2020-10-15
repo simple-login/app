@@ -1,5 +1,6 @@
 import os
 
+
 os.environ["CONFIG"] = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests/test.env")
 )
@@ -13,6 +14,7 @@ import pytest
 
 from app.extensions import db
 from server import create_app
+from init_app import add_public_domains
 
 
 @pytest.fixture
@@ -27,6 +29,7 @@ def flask_app():
 
     with app.app_context():
         db.create_all()
+        add_public_domains()
 
     yield app
 
@@ -45,4 +48,5 @@ def flask_client():
 
     with app.app_context():
         db.create_all()
+        add_public_domains()
         yield client
