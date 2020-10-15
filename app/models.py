@@ -523,9 +523,7 @@ class User(db.Model, ModelMixin, UserMixin):
                 return FIRST_ALIAS_DOMAIN
 
             if sl_domain.premium_only and not self.is_premium():
-                LOG.exception(
-                    "%s is not premium and cannot use %s", self, sl_domain
-                )
+                LOG.exception("%s is not premium and cannot use %s", self, sl_domain)
                 return FIRST_ALIAS_DOMAIN
 
             return sl_domain.domain

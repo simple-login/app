@@ -207,9 +207,7 @@ def setting():
                         return redirect(url_for("dashboard.setting"))
 
                     # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
-                    current_user.default_random_alias_public_domain_id = (
-                        sl_domain.id
-                    )
+                    current_user.default_random_alias_public_domain_id = sl_domain.id
                     current_user.default_random_alias_domain_id = None
                 else:
                     custom_domain = CustomDomain.get_by(domain=default_domain)
