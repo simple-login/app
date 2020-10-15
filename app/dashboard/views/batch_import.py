@@ -1,15 +1,13 @@
 import arrow
 from flask import render_template, flash, request, redirect, url_for
 from flask_login import login_required, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, validators
 
 from app import s3
 from app.config import JOB_BATCH_IMPORT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.log import LOG
-from app.models import CustomDomain, File, BatchImport, Job
+from app.models import File, BatchImport, Job
 from app.utils import random_string
 
 

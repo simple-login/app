@@ -34,7 +34,6 @@ from app.models import (
     EmailChange,
     User,
     Alias,
-    DeletedAlias,
     CustomDomain,
     Client,
     AliasGeneratorEnum,

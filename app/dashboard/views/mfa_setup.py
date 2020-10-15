@@ -5,9 +5,9 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.dashboard.base import dashboard_bp
+from app.dashboard.views.enter_sudo import sudo_required
 from app.extensions import db
 from app.log import LOG
-from app.dashboard.views.enter_sudo import sudo_required
 
 
 class OtpTokenForm(FlaskForm):

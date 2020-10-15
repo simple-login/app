@@ -9,7 +9,7 @@ import bcrypt
 from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
-from sqlalchemy import text, desc, CheckConstraint, and_, func, case
+from sqlalchemy import text, desc, CheckConstraint
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -24,9 +24,6 @@ from app.config import (
     LANDING_PAGE_URL,
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
-    PAGE_LIMIT,
-    ALIAS_DOMAINS,
-    PREMIUM_ALIAS_DOMAINS,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db

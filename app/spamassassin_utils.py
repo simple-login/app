@@ -1,7 +1,10 @@
 """Inspired from
 https://github.com/petermat/spamassassin_client
 """
-import socket, select, re, logging
+import logging
+import re
+import select
+import socket
 from io import BytesIO
 
 from app.log import LOG

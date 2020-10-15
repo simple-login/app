@@ -14,7 +14,7 @@ from app.email_utils import email_can_be_used_as_mailbox
 from app.email_utils import mailbox_already_used, render, send_email
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, DeletedAlias, AuthorizedAddress
+from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key
 

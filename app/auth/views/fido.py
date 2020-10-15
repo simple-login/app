@@ -1,5 +1,6 @@
 import json
 import secrets
+
 import webauthn
 from flask import (
     request,

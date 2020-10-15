@@ -1,9 +1,9 @@
 import os
 import random
+import socket
 import string
 import subprocess
 from urllib.parse import urlparse
-import socket
 
 from dotenv import load_dotenv
 

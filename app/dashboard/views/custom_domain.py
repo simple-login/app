@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import EMAIL_SERVERS_WITH_PRIORITY, ALIAS_DOMAINS
+from app.config import EMAIL_SERVERS_WITH_PRIORITY
 from app.dashboard.base import dashboard_bp
 from app.email_utils import get_email_domain_part
 from app.extensions import db

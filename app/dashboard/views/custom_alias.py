@@ -4,9 +4,7 @@ from itsdangerous import TimestampSigner, SignatureExpired
 
 from app.config import (
     DISABLE_ALIAS_SUFFIX,
-    ALIAS_DOMAINS,
     CUSTOM_ALIAS_SECRET,
-    PREMIUM_ALIAS_DOMAINS,
 )
 from app.dashboard.base import dashboard_bp
 from app.extensions import db

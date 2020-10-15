@@ -1,14 +1,12 @@
 import email
 import os
+import re
 from email.header import decode_header
 from email.message import Message
-from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP
-from typing import Optional
-import re
 
 import arrow
 import dkim
@@ -32,7 +30,6 @@ from app.config import (
     SENDER,
     URL,
     LANDING_PAGE_URL,
-    PREMIUM_ALIAS_DOMAINS,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
