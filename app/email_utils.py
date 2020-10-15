@@ -37,7 +37,7 @@ from app.config import (
 from app.dns_utils import get_mx_domains
 from app.extensions import db
 from app.log import LOG
-from app.models import Mailbox, User, SentAlert, CustomDomain
+from app.models import Mailbox, User, SentAlert, CustomDomain, PublicDomain
 
 
 def render(template_name, **kwargs) -> str:
@@ -627,3 +627,14 @@ def to_bytes(msg: Message):
         except UnicodeEncodeError:
             LOG.warning("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
             return msg.as_bytes(policy=email.policy.SMTPUTF8)
+
+
+def should_add_dkim_signature(domain: str) -> bool:
+    if PublicDomain.get_by(domain=domain):
+        return True
+
+    custom_domain: CustomDomain = CustomDomain.get_by(domain=domain)
+    if custom_domain.dkim_verified:
+        return True
+
+    return False

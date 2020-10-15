@@ -98,6 +98,7 @@ from app.email_utils import (
     get_header_from_bounce,
     send_email_at_most_times,
     is_valid_alias_address_domain,
+    should_add_dkim_signature,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -874,13 +875,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         else:
             msg = replace_str_in_msg(msg, reply_email, contact.website_email)
 
-    if alias_domain in ALIAS_DOMAINS or alias_domain in PREMIUM_ALIAS_DOMAINS:
+    if should_add_dkim_signature(alias_domain):
         add_dkim_signature(msg, alias_domain)
-    # add DKIM-Signature for custom-domain alias
-    else:
-        custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
-        if custom_domain.dkim_verified:
-            add_dkim_signature(msg, alias_domain)
 
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():
