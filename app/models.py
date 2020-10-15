@@ -581,7 +581,8 @@ class User(db.Model, ModelMixin, UserMixin):
         for custom_domain in self.verified_custom_domains():
             domains.append(custom_domain.domain)
 
-        return domains
+        # can have duplicate where a "root" user has a domain that's also listed in SL domains
+        return list(set(domains))
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
