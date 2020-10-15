@@ -1795,9 +1795,19 @@ class Notification(db.Model, ModelMixin):
 
 
 class PublicDomain(db.Model, ModelMixin):
-    """SimpleLogin domains that all users can use"""
+    """SimpleLogin domains"""
 
     domain = db.Column(db.String(128), unique=True, nullable=False)
+
+    # only available for premium accounts
+    premium_only = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
+    def __repr__(self):
+        return (
+            f"<PublicDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
+        )
 
 
 class Monitoring(db.Model, ModelMixin):
