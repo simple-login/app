@@ -1,10 +1,10 @@
+from functools import wraps
 from time import time
 
 from flask import render_template, flash, redirect, url_for, session, request
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, validators
-from functools import wraps
 
 from app.dashboard.base import dashboard_bp
 from app.log import LOG

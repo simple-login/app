@@ -10,11 +10,11 @@ from wtforms.fields.html5 import EmailField
 from app.config import ENFORCE_SPF, MAILBOX_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
-from app.email_utils import email_domain_can_be_used_as_mailbox
+from app.email_utils import email_can_be_used_as_mailbox
 from app.email_utils import mailbox_already_used, render, send_email
 from app.extensions import db
 from app.log import LOG
-from app.models import Alias, DeletedAlias, AuthorizedAddress
+from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key
 
@@ -52,7 +52,7 @@ def mailbox_detail_route(mailbox_id):
                     email=new_email
                 ):
                     flash(f"Email {new_email} already used", "error")
-                elif not email_domain_can_be_used_as_mailbox(new_email):
+                elif not email_can_be_used_as_mailbox(new_email):
                     flash("You cannot use this email address as your mailbox", "error")
                 else:
                     mailbox.new_email = new_email

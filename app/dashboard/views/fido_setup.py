@@ -1,7 +1,6 @@
 import json
 import secrets
 import uuid
-from time import time
 
 import webauthn
 from flask import render_template, flash, redirect, url_for, session
@@ -11,10 +10,10 @@ from wtforms import StringField, HiddenField, validators
 
 from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
+from app.dashboard.views.enter_sudo import sudo_required
 from app.extensions import db
 from app.log import LOG
 from app.models import Fido, RecoveryCode
-from app.dashboard.views.enter_sudo import sudo_required
 
 
 class FidoTokenForm(FlaskForm):

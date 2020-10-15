@@ -4,10 +4,10 @@ from flask_wtf import FlaskForm
 from wtforms import HiddenField, validators
 
 from app.dashboard.base import dashboard_bp
+from app.dashboard.views.enter_sudo import sudo_required
 from app.extensions import db
 from app.log import LOG
 from app.models import RecoveryCode, Fido
-from app.dashboard.views.enter_sudo import sudo_required
 
 
 class FidoManageForm(FlaskForm):

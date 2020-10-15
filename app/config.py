@@ -1,9 +1,9 @@
 import os
 import random
+import socket
 import string
 import subprocess
 from urllib.parse import urlparse
-import socket
 
 from dotenv import load_dotenv
 
@@ -99,6 +99,15 @@ else:
     ALIAS_DOMAINS = OTHER_ALIAS_DOMAINS + [EMAIL_DOMAIN]
 
 ALIAS_DOMAINS = [d.lower().strip() for d in ALIAS_DOMAINS]
+
+if "PREMIUM_ALIAS_DOMAINS" in os.environ:
+    PREMIUM_ALIAS_DOMAINS = eval(
+        os.environ["PREMIUM_ALIAS_DOMAINS"]
+    )  # ["domain1.com", "domain2.com"]
+else:
+    PREMIUM_ALIAS_DOMAINS = []
+
+PREMIUM_ALIAS_DOMAINS = [d.lower().strip() for d in PREMIUM_ALIAS_DOMAINS]
 
 # the alias domain used when creating the first alias for user
 FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN

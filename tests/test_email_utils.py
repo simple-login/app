@@ -4,8 +4,8 @@ from email.message import EmailMessage
 from app.config import MAX_ALERT_24H
 from app.email_utils import (
     get_email_domain_part,
-    email_belongs_to_default_domains,
-    email_domain_can_be_used_as_mailbox,
+    can_create_directory_for_address,
+    email_can_be_used_as_mailbox,
     delete_header,
     add_or_replace_header,
     parseaddr_unicode,
@@ -24,19 +24,19 @@ def test_get_email_domain_part():
 
 def test_email_belongs_to_alias_domains():
     # default alias domain
-    assert email_belongs_to_default_domains("ab@sl.local")
-    assert not email_belongs_to_default_domains("ab@not-exist.local")
+    assert can_create_directory_for_address("ab@sl.local")
+    assert not can_create_directory_for_address("ab@not-exist.local")
 
-    assert email_belongs_to_default_domains("hey@d1.test")
-    assert not email_belongs_to_default_domains("hey@d3.test")
+    assert can_create_directory_for_address("hey@d1.test")
+    assert not can_create_directory_for_address("hey@d3.test")
 
 
 def test_can_be_used_as_personal_email(flask_client):
     # default alias domain
-    assert not email_domain_can_be_used_as_mailbox("ab@sl.local")
-    assert not email_domain_can_be_used_as_mailbox("hey@d1.test")
+    assert not email_can_be_used_as_mailbox("ab@sl.local")
+    assert not email_can_be_used_as_mailbox("hey@d1.test")
 
-    assert email_domain_can_be_used_as_mailbox("hey@ab.cd")
+    assert email_can_be_used_as_mailbox("hey@ab.cd")
     # custom domain
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
@@ -44,17 +44,17 @@ def test_can_be_used_as_personal_email(flask_client):
     db.session.commit()
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
     db.session.commit()
-    assert not email_domain_can_be_used_as_mailbox("hey@ab.cd")
+    assert not email_can_be_used_as_mailbox("hey@ab.cd")
 
     # disposable domain
-    assert not email_domain_can_be_used_as_mailbox("abcd@10minutesmail.fr")
-    assert not email_domain_can_be_used_as_mailbox("abcd@temp-mail.com")
+    assert not email_can_be_used_as_mailbox("abcd@10minutesmail.fr")
+    assert not email_can_be_used_as_mailbox("abcd@temp-mail.com")
     # subdomain will not work
-    assert not email_domain_can_be_used_as_mailbox("abcd@sub.temp-mail.com")
+    assert not email_can_be_used_as_mailbox("abcd@sub.temp-mail.com")
     # valid domains should not be affected
-    assert email_domain_can_be_used_as_mailbox("abcd@protonmail.com")
-    assert email_domain_can_be_used_as_mailbox("abcd@gmail.com")
-    assert email_domain_can_be_used_as_mailbox("abcd@example.com")
+    assert email_can_be_used_as_mailbox("abcd@protonmail.com")
+    assert email_can_be_used_as_mailbox("abcd@gmail.com")
+    assert email_can_be_used_as_mailbox("abcd@example.com")
 
 
 def test_delete_header():

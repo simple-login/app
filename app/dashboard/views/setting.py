@@ -22,7 +22,7 @@ from app import s3, email_utils
 from app.config import URL, FIRST_ALIAS_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
-    email_domain_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
 from app.extensions import db
@@ -34,13 +34,12 @@ from app.models import (
     EmailChange,
     User,
     Alias,
-    DeletedAlias,
     CustomDomain,
     Client,
     AliasGeneratorEnum,
     ManualSubscription,
     SenderFormatEnum,
-    PublicDomain,
+    SLDomain,
 )
 from app.utils import random_string
 
@@ -90,7 +89,7 @@ def setting():
                     ):
                         flash(f"Email {new_email} already used", "error")
                         new_email_valid = False
-                    elif not email_domain_can_be_used_as_mailbox(new_email):
+                    elif not email_can_be_used_as_mailbox(new_email):
                         flash(
                             "You cannot use this email address as your personal inbox.",
                             "error",
@@ -201,12 +200,14 @@ def setting():
             default_domain = request.form.get("random-alias-default-domain")
 
             if default_domain:
-                public_domain = PublicDomain.get_by(domain=default_domain)
-                if public_domain:
+                sl_domain: SLDomain = SLDomain.get_by(domain=default_domain)
+                if sl_domain:
+                    if sl_domain.premium_only and not current_user.is_premium():
+                        flash("You cannot use this domain", "error")
+                        return redirect(url_for("dashboard.setting"))
+
                     # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
-                    current_user.default_random_alias_public_domain_id = (
-                        public_domain.id
-                    )
+                    current_user.default_random_alias_public_domain_id = sl_domain.id
                     current_user.default_random_alias_domain_id = None
                 else:
                     custom_domain = CustomDomain.get_by(domain=default_domain)

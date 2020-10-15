@@ -1,14 +1,12 @@
 import email
 import os
+import re
 from email.header import decode_header
 from email.message import Message
-from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP
-from typing import Optional
-import re
 
 import arrow
 import dkim
@@ -36,7 +34,7 @@ from app.config import (
 from app.dns_utils import get_mx_domains
 from app.extensions import db
 from app.log import LOG
-from app.models import Mailbox, User, SentAlert
+from app.models import Mailbox, User, SentAlert, CustomDomain, SLDomain
 
 
 def render(template_name, **kwargs) -> str:
@@ -369,8 +367,9 @@ def delete_all_headers_except(msg: Message, headers: [str]):
             del msg._headers[i]
 
 
-def email_belongs_to_default_domains(address: str) -> bool:
+def can_create_directory_for_address(address: str) -> bool:
     """return True if an email ends with one of the alias domains provided by SimpleLogin"""
+    # not allow creating directory with premium domain
     for domain in ALIAS_DOMAINS:
         if address.endswith("@" + domain):
             return True
@@ -378,17 +377,31 @@ def email_belongs_to_default_domains(address: str) -> bool:
     return False
 
 
-def email_domain_can_be_used_as_mailbox(email: str) -> bool:
-    """return True if an email can be used as a personal email. An email domain can be used if it is not
+def is_valid_alias_address_domain(address) -> bool:
+    """Return whether an address domain might a domain handled by SimpleLogin"""
+    domain = get_email_domain_part(address)
+    if SLDomain.get_by(domain=domain):
+        return True
+
+    if CustomDomain.get_by(domain=domain, verified=True):
+        return True
+
+    return False
+
+
+def email_can_be_used_as_mailbox(email: str) -> bool:
+    """Return True if an email can be used as a personal email.
+    Use the email domain as criteria. A domain can be used if it is not:
     - one of ALIAS_DOMAINS
+    - one of PREMIUM_ALIAS_DOMAINS
     - one of custom domains
-    - disposable domain
+    - a disposable domain
     """
     domain = get_email_domain_part(email)
     if not domain:
         return False
 
-    if domain in ALIAS_DOMAINS:
+    if SLDomain.get_by(domain=domain):
         return False
 
     from app.models import CustomDomain
@@ -605,3 +618,14 @@ def to_bytes(msg: Message):
         except UnicodeEncodeError:
             LOG.warning("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
             return msg.as_bytes(policy=email.policy.SMTPUTF8)
+
+
+def should_add_dkim_signature(domain: str) -> bool:
+    if SLDomain.get_by(domain=domain):
+        return True
+
+    custom_domain: CustomDomain = CustomDomain.get_by(domain=domain)
+    if custom_domain.dkim_verified:
+        return True
+
+    return False

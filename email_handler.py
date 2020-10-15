@@ -76,13 +76,14 @@ from app.config import (
     MAX_REPLY_PHASE_SPAM_SCORE,
     ALERT_SEND_EMAIL_CYCLE,
     ALERT_MAILBOX_IS_ALIAS,
+    PREMIUM_ALIAS_DOMAINS,
 )
 from app.email_utils import (
     send_email,
     add_dkim_signature,
     add_or_replace_header,
     delete_header,
-    email_belongs_to_default_domains,
+    can_create_directory_for_address,
     render,
     get_orig_message_from_bounce,
     delete_all_headers_except,
@@ -96,6 +97,8 @@ from app.email_utils import (
     to_bytes,
     get_header_from_bounce,
     send_email_at_most_times,
+    is_valid_alias_address_domain,
+    should_add_dkim_signature,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -715,10 +718,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     address: str = contact.alias.email
     alias_domain = address[address.find("@") + 1 :]
 
-    # alias must end with one of the ALIAS_DOMAINS or custom-domain
-    if not email_belongs_to_default_domains(alias.email):
-        if not CustomDomain.get_by(domain=alias_domain):
-            return False, "550 SL E5"
+    # Sanity check: verify alias domain is managed by SimpleLogin
+    # scenario: a user have removed a domain but due to a bug, the aliases are still there
+    if not is_valid_alias_address_domain(alias.email):
+        LOG.exception("%s domain isn't known", alias)
+        return False, "550 SL E5"
 
     user = alias.user
     mail_from = envelope.mail_from
@@ -871,13 +875,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         else:
             msg = replace_str_in_msg(msg, reply_email, contact.website_email)
 
-    if alias_domain in ALIAS_DOMAINS:
+    if should_add_dkim_signature(alias_domain):
         add_dkim_signature(msg, alias_domain)
-    # add DKIM-Signature for custom-domain alias
-    else:
-        custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
-        if custom_domain.dkim_verified:
-            add_dkim_signature(msg, alias_domain)
 
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():

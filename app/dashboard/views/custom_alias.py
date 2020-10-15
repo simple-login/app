@@ -4,7 +4,6 @@ from itsdangerous import TimestampSigner, SignatureExpired
 
 from app.config import (
     DISABLE_ALIAS_SUFFIX,
-    ALIAS_DOMAINS,
     CUSTOM_ALIAS_SECRET,
 )
 from app.dashboard.base import dashboard_bp
@@ -40,8 +39,8 @@ def available_suffixes(user: User) -> [bool, str, str]:
             suffix = "." + random_word() + "@" + alias_domain.domain
             suffixes.append((True, suffix, signer.sign(suffix).decode()))
 
-    # then default domain
-    for domain in ALIAS_DOMAINS:
+    # then SimpleLogin domain
+    for domain in user.available_sl_domains():
         suffix = ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain
         suffixes.append((False, suffix, signer.sign(suffix).decode()))
 
@@ -185,7 +184,7 @@ def custom_alias():
     )
 
 
-def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
+def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
     """verify if user could create an alias with the given prefix and suffix"""
     if not alias_prefix or not alias_suffix:  # should be caught on frontend
         return False
@@ -200,14 +199,17 @@ def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
     alias_domain_prefix, alias_domain = alias_suffix.split("@", 1)
 
     # alias_domain must be either one of user custom domains or built-in domains
-    if alias_domain not in user_custom_domains and alias_domain not in ALIAS_DOMAINS:
+    if alias_domain not in user.available_alias_domains():
         LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
         return False
 
-    # built-in domain case:
+    # SimpleLogin domain case:
     # 1) alias_suffix must start with "." and
     # 2) alias_domain_prefix must come from the word list
-    if alias_domain in ALIAS_DOMAINS and alias_domain not in user_custom_domains:
+    if (
+        alias_domain in user.available_sl_domains()
+        and alias_domain not in user_custom_domains
+    ):
         if not alias_domain_prefix.startswith("."):
             LOG.exception("User %s submits a wrong alias suffix %s", user, alias_suffix)
             return False
@@ -226,7 +228,7 @@ def verify_prefix_suffix(user, alias_prefix, alias_suffix) -> bool:
                 LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
 
-            if alias_domain not in ALIAS_DOMAINS:
+            if alias_domain not in user.available_sl_domains():
                 LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
 

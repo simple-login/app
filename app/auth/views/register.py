@@ -9,7 +9,7 @@ from app.auth.base import auth_bp
 from app.auth.views.login_utils import get_referral
 from app.config import URL, HCAPTCHA_SECRET, HCAPTCHA_SITEKEY
 from app.email_utils import (
-    email_domain_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
 from app.extensions import db
@@ -67,7 +67,7 @@ def register():
                 )
 
         email = form.email.data.strip().lower()
-        if not email_domain_can_be_used_as_mailbox(email):
+        if not email_can_be_used_as_mailbox(email):
             flash("You cannot use this email address as your personal inbox.", "error")
 
         else:
