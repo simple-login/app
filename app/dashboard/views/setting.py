@@ -22,7 +22,7 @@ from app import s3, email_utils
 from app.config import URL, FIRST_ALIAS_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
-    email_domain_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
 from app.extensions import db
@@ -90,7 +90,7 @@ def setting():
                     ):
                         flash(f"Email {new_email} already used", "error")
                         new_email_valid = False
-                    elif not email_domain_can_be_used_as_mailbox(new_email):
+                    elif not email_can_be_used_as_mailbox(new_email):
                         flash(
                             "You cannot use this email address as your personal inbox.",
                             "error",

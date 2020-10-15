@@ -9,7 +9,7 @@ from app.dashboard.views.mailbox import send_verification_email
 from app.dashboard.views.mailbox_detail import verify_mailbox_change
 from app.email_utils import (
     mailbox_already_used,
-    email_domain_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox,
 )
 from app.extensions import db
 from app.models import Mailbox
@@ -34,7 +34,7 @@ def create_mailbox():
 
     if mailbox_already_used(mailbox_email, user):
         return jsonify(error=f"{mailbox_email} already used"), 400
-    elif not email_domain_can_be_used_as_mailbox(mailbox_email):
+    elif not email_can_be_used_as_mailbox(mailbox_email):
         return (
             jsonify(
                 error=f"{mailbox_email} cannot be used. Please note a mailbox cannot "
@@ -118,7 +118,7 @@ def update_mailbox(mailbox_id):
 
         if mailbox_already_used(new_email, user):
             return jsonify(error=f"{new_email} already used"), 400
-        elif not email_domain_can_be_used_as_mailbox(new_email):
+        elif not email_can_be_used_as_mailbox(new_email):
             return (
                 jsonify(
                     error=f"{new_email} cannot be used. Please note a mailbox cannot "
