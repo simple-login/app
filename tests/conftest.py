@@ -14,7 +14,7 @@ import pytest
 
 from app.extensions import db
 from server import create_app
-from init_app import add_public_domains
+from init_app import add_sl_domains
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def flask_app():
 
     with app.app_context():
         db.create_all()
-        add_public_domains()
+        add_sl_domains()
 
     yield app
 
@@ -48,5 +48,5 @@ def flask_client():
 
     with app.app_context():
         db.create_all()
-        add_public_domains()
+        add_sl_domains()
         yield client

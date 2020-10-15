@@ -516,7 +516,7 @@ class User(db.Model, ModelMixin, UserMixin):
             return custom_domain.domain
 
         if self.default_random_alias_public_domain_id:
-            public_domain = PublicDomain.get(self.default_random_alias_public_domain_id)
+            public_domain = SLDomain.get(self.default_random_alias_public_domain_id)
             # sanity check
             if not public_domain:
                 LOG.exception("Problem with %s public random alias domain", self)
@@ -563,9 +563,9 @@ class User(db.Model, ModelMixin, UserMixin):
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         """
         if self.is_premium():
-            query = PublicDomain.query.all()
+            query = SLDomain.query.all()
         else:
-            query = PublicDomain.filter_by(premium_only=False)
+            query = SLDomain.filter_by(premium_only=False)
 
         domains = [public_domain.domain for public_domain in query]
 
@@ -989,7 +989,7 @@ class Alias(db.Model, ModelMixin):
                 scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
             )
         elif user.default_random_alias_public_domain_id:
-            public_domain: PublicDomain = PublicDomain.get(
+            public_domain: SLDomain = SLDomain.get(
                 user.default_random_alias_public_domain_id
             )
             if public_domain.premium_only and not user.is_premium():
@@ -1834,8 +1834,10 @@ class Notification(db.Model, ModelMixin):
     read = db.Column(db.Boolean, nullable=False, default=False)
 
 
-class PublicDomain(db.Model, ModelMixin):
+class SLDomain(db.Model, ModelMixin):
     """SimpleLogin domains"""
+
+    __tablename__ = "public_domain"
 
     domain = db.Column(db.String(128), unique=True, nullable=False)
 
@@ -1845,9 +1847,7 @@ class PublicDomain(db.Model, ModelMixin):
     )
 
     def __repr__(self):
-        return (
-            f"<PublicDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
-        )
+        return f"<SLDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
 
 
 class Monitoring(db.Model, ModelMixin):

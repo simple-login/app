@@ -34,7 +34,7 @@ from app.config import (
 from app.dns_utils import get_mx_domains
 from app.extensions import db
 from app.log import LOG
-from app.models import Mailbox, User, SentAlert, CustomDomain, PublicDomain
+from app.models import Mailbox, User, SentAlert, CustomDomain, SLDomain
 
 
 def render(template_name, **kwargs) -> str:
@@ -380,7 +380,7 @@ def can_create_directory_for_address(address: str) -> bool:
 def is_valid_alias_address_domain(address) -> bool:
     """Return whether an address domain might a domain handled by SimpleLogin"""
     domain = get_email_domain_part(address)
-    if PublicDomain.get_by(domain=domain):
+    if SLDomain.get_by(domain=domain):
         return True
 
     if CustomDomain.get_by(domain=domain, verified=True):
@@ -401,7 +401,7 @@ def email_can_be_used_as_mailbox(email: str) -> bool:
     if not domain:
         return False
 
-    if PublicDomain.get_by(domain=domain):
+    if SLDomain.get_by(domain=domain):
         return False
 
     from app.models import CustomDomain
@@ -621,7 +621,7 @@ def to_bytes(msg: Message):
 
 
 def should_add_dkim_signature(domain: str) -> bool:
-    if PublicDomain.get_by(domain=domain):
+    if SLDomain.get_by(domain=domain):
         return True
 
     custom_domain: CustomDomain = CustomDomain.get_by(domain=domain)

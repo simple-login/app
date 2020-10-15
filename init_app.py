@@ -1,6 +1,6 @@
 """Initial loading script"""
 from app.config import ALIAS_DOMAINS, PREMIUM_ALIAS_DOMAINS
-from app.models import Mailbox, Contact, PublicDomain
+from app.models import Mailbox, Contact, SLDomain
 from app.log import LOG
 from app.extensions import db
 from app.pgp_utils import load_public_key
@@ -37,20 +37,20 @@ def load_pgp_public_keys():
     LOG.d("Finish load_pgp_public_keys")
 
 
-def add_public_domains():
+def add_sl_domains():
     for alias_domain in ALIAS_DOMAINS:
-        if PublicDomain.get_by(domain=alias_domain):
+        if SLDomain.get_by(domain=alias_domain):
             LOG.d("%s is already a public domain", alias_domain)
         else:
             LOG.info("Add %s to public domain", alias_domain)
-            PublicDomain.create(domain=alias_domain)
+            SLDomain.create(domain=alias_domain)
 
     for premium_domain in PREMIUM_ALIAS_DOMAINS:
-        if PublicDomain.get_by(domain=premium_domain):
+        if SLDomain.get_by(domain=premium_domain):
             LOG.d("%s is already a public domain", premium_domain)
         else:
             LOG.info("Add %s to public domain", premium_domain)
-            PublicDomain.create(domain=premium_domain, premium_only=True)
+            SLDomain.create(domain=premium_domain, premium_only=True)
 
     db.session.commit()
 
@@ -60,4 +60,4 @@ if __name__ == "__main__":
 
     with app.app_context():
         load_pgp_public_keys()
-        add_public_domains()
+        add_sl_domains()

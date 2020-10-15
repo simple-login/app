@@ -39,7 +39,7 @@ from app.models import (
     AliasGeneratorEnum,
     ManualSubscription,
     SenderFormatEnum,
-    PublicDomain,
+    SLDomain,
 )
 from app.utils import random_string
 
@@ -200,7 +200,7 @@ def setting():
             default_domain = request.form.get("random-alias-default-domain")
 
             if default_domain:
-                public_domain: PublicDomain = PublicDomain.get_by(domain=default_domain)
+                public_domain: SLDomain = SLDomain.get_by(domain=default_domain)
                 if public_domain:
                     if public_domain.premium_only and not current_user.is_premium():
                         flash("You cannot use this domain", "error")
