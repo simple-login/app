@@ -302,10 +302,6 @@ def fake_data():
     )
     db.session.commit()
 
-    for d in ["d1.localhost", "d2.localhost"]:
-        SLDomain.create(domain=d)
-    db.session.commit()
-
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -669,9 +665,12 @@ def local_main():
 
     # warning: only used in local
     if RESET_DB:
+        from init_app import add_sl_domains
+
         LOG.warning("reset db, add fake data")
         with app.app_context():
             fake_data()
+            add_sl_domains()
 
     if URL.startswith("https"):
         LOG.d("enable https")
