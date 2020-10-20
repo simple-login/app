@@ -375,7 +375,9 @@ def sanity_check():
 def check_custom_domain():
     LOG.d("Check verified domain for DNS issues")
 
-    for custom_domain in CustomDomain.query.filter(CustomDomain.verified == True):
+    for custom_domain in CustomDomain.query.filter(
+        CustomDomain.verified == True
+    ):  # type: CustomDomain
         mx_domains = get_mx_domains(custom_domain.domain)
 
         if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
@@ -387,28 +389,39 @@ def check_custom_domain():
                 mx_domains,
             )
 
-            domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
+            custom_domain.nb_failed_checks += 1
 
-            send_email_with_rate_control(
-                user,
-                AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
-                user.email,
-                f"Please update {custom_domain.domain} DNS on SimpleLogin",
-                render(
-                    "transactional/custom-domain-dns-issue.txt",
-                    custom_domain=custom_domain,
-                    name=user.name or "",
-                    domain_dns_url=domain_dns_url,
-                ),
-                render(
-                    "transactional/custom-domain-dns-issue.html",
-                    custom_domain=custom_domain,
-                    name=user.name or "",
-                    domain_dns_url=domain_dns_url,
-                ),
-                max_nb_alert=1,
-                nb_day=30,
-            )
+            # send alert if fail for 5 consecutive days
+            if custom_domain.nb_failed_checks > 5:
+                domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
+                LOG.exception("Alert %s about %s", user, custom_domain)
+                send_email_with_rate_control(
+                    user,
+                    AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
+                    user.email,
+                    f"Please update {custom_domain.domain} DNS on SimpleLogin",
+                    render(
+                        "transactional/custom-domain-dns-issue.txt",
+                        custom_domain=custom_domain,
+                        name=user.name or "",
+                        domain_dns_url=domain_dns_url,
+                    ),
+                    render(
+                        "transactional/custom-domain-dns-issue.html",
+                        custom_domain=custom_domain,
+                        name=user.name or "",
+                        domain_dns_url=domain_dns_url,
+                    ),
+                    max_nb_alert=1,
+                    nb_day=30,
+                )
+                # reset checks
+                custom_domain.nb_failed_checks = 0
+        else:
+            # reset checks
+            custom_domain.nb_failed_checks = 0
+
+        db.session.commit()
 
 
 def delete_old_monitoring():
