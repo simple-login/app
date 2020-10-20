@@ -209,7 +209,10 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
     if (
         alias_domain in user.available_sl_domains()
         and alias_domain not in user_custom_domains
+        # when DISABLE_ALIAS_SUFFIX is true, alias_domain_prefix is empty
+        and not DISABLE_ALIAS_SUFFIX
     ):
+
         if not alias_domain_prefix.startswith("."):
             LOG.exception("User %s submits a wrong alias suffix %s", user, alias_suffix)
             return False
