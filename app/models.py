@@ -1494,6 +1494,13 @@ class CustomDomain(db.Model, ModelMixin):
         db.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # incremented when a check is failed on the domain
+    # alert when the number exceeds a threshold
+    # used in check_custom_domain()
+    nb_failed_checks = db.Column(
+        db.Integer, default=0, server_default="0", nullable=False
+    )
+
     user = db.relationship(User, foreign_keys=[user_id])
 
     @property
