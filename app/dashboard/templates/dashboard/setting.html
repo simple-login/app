@@ -19,71 +19,43 @@
 {% block default_content %}
 
   <div class="col pb-3">
-    <!-- Change email -->
+    <!-- Current plan -->
     <div class="card">
-      <form method="post" enctype="multipart/form-data">
-        <input type="hidden" name="form-name" value="update-email">
-        {{ change_email_form.csrf_token }}
+      <div class="card-body">
+        <div class="card-title mb-3">Current Plan</div>
 
-        <div class="card-body">
-          <div class="card-title">
-            Email Address
-          </div>
-          <div class="form-group">
-            <label class="form-label">Email</label>
+        {% if current_user.lifetime %}
+          You have lifetime access to the Premium plan.
+          {% if not current_user.paid_lifetime %}
+            <br>
+            To support Simple Login you can switch to a paid plan. <br>
+            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+          {% endif %}
+        {% elif current_user.get_subscription() %}
+          You are on the  {{ current_user.get_subscription().plan_name() }} plan. <br>
+          <a href="{{ url_for('dashboard.billing') }}" class="btn btn-outline-primary">
+            Manage Subscription
+          </a>
+          {% if current_user.lifetime %}
+            You have however lifetime access to the Premium plan now so make sure to cancel the previous plan :).
+          {% endif %}
+        {% elif manual_sub %}
+          You are on the Premium plan which expires {{ manual_sub.end_at | dt }}
+          ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
+          {% if manual_sub.is_giveaway %}
+            <br>
+            To gain additional features and support Simple Login you can upgrade to a Premium plan. <br>
+            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+          {% endif %}
 
-            <!-- Not allow user to change email if there's a pending change -->
-            {{ change_email_form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
-            {{ render_field_errors(change_email_form.email) }}
-
-            {% if pending_email %}
-              <div class="mt-2">
-                <span class="text-danger">Pending email change: {{ pending_email }}</span>
-                <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Resend
-                  confirmation email</a>
-                <a href="{{ url_for('dashboard.cancel_email_change') }}" class="btn btn-secondary btn-sm">Cancel email
-                  change</a>
-              </div>
-            {% endif %}
-          </div>
-          <button class="btn btn-outline-primary">Change Email</button>
-        </div>
-      </form>
+        {% elif current_user.in_trial() %}
+          Your Premium trial expires {{ current_user.trial_end | dt }}.
+        {% else %}
+          You are on the Free plan.
+        {% endif %}
+      </div>
     </div>
-    <!-- END Change email -->
-
-    <!-- Change name & profile picture -->
-    <div class="card">
-      <form method="post" enctype="multipart/form-data">
-        {{ form.csrf_token }}
-        <input type="hidden" name="form-name" value="update-profile">
-
-        <div class="card-body">
-          <div class="card-title">
-            Profile
-          </div>
-          <div>
-            This information will be filled in automatically when you use "Sign in with SimpleLogin" button.
-          </div>
-          <div class="form-group mt-3">
-            <label class="form-label">Name</label>
-            {{ form.name(class="form-control", value=current_user.name) }}
-            {{ render_field_errors(form.name) }}
-          </div>
-
-          <div class="form-group">
-            <div class="form-label">Profile picture</div>
-            {{ form.profile_picture(class="form-control-file") }}
-            {{ render_field_errors(form.profile_picture) }}
-            {% if current_user.profile_picture_id %}
-              <img src="{{ current_user.profile_picture_url() }}" class="profile-picture">
-            {% endif %}
-          </div>
-          <button class="btn btn-outline-primary">Update</button>
-        </div>
-      </form>
-    </div>
-    <!-- END change name & profile picture -->
+    <!-- END Current plan -->
 
     <!-- WebAuthn -->
     <div class="card">
@@ -120,6 +92,92 @@
       </div>
     </div>
     <!-- END TOTP -->
+
+    <!-- Newsletter -->
+    <div class="card" id="notification">
+      <div class="card-body">
+        <div class="card-title">Newsletters</div>
+        <div class="mb-3">
+          We will occasionally send you emails with new feature announcements.
+        </div>
+        <form method="post">
+          <input type="hidden" name="form-name" value="notification-preference">
+          <div class="form-check">
+            <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
+                   checked {% endif %} class="form-check-input">
+            <label for="notification">I want to be emailed when new features are released.</label>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Submit</button>
+        </form>
+      </div>
+    </div>
+    <!-- END Newsletter -->
+
+    <!-- Change name & profile picture -->
+    <div class="card">
+      <form method="post" enctype="multipart/form-data">
+        {{ form.csrf_token }}
+        <input type="hidden" name="form-name" value="update-profile">
+
+        <div class="card-body">
+          <div class="card-title">
+            Profile
+          </div>
+          <div>
+            This information will be filled in automatically when you use "Sign in with SimpleLogin" button.
+          </div>
+          <div class="form-group mt-3">
+            <label class="form-label">Name</label>
+            {{ form.name(class="form-control", value=current_user.name) }}
+            {{ render_field_errors(form.name) }}
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">Profile picture</div>
+            {{ form.profile_picture(class="form-control-file") }}
+            {{ render_field_errors(form.profile_picture) }}
+            {% if current_user.profile_picture_id %}
+              <img src="{{ current_user.profile_picture_url() }}" class="profile-picture">
+            {% endif %}
+          </div>
+          <button class="btn btn-outline-primary">Update</button>
+        </div>
+      </form>
+    </div>
+    <!-- END change name & profile picture -->
+
+    <!-- Change email -->
+    <div class="card">
+      <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="form-name" value="update-email">
+        {{ change_email_form.csrf_token }}
+
+        <div class="card-body">
+          <div class="card-title">
+            Email Address
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+
+            <!-- Not allow user to change email if there's a pending change -->
+            {{ change_email_form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
+            {{ render_field_errors(change_email_form.email) }}
+
+            {% if pending_email %}
+              <div class="mt-2">
+                <span class="text-danger">Pending email change: {{ pending_email }}</span>
+                <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Resend
+                  confirmation email</a>
+                <a href="{{ url_for('dashboard.cancel_email_change') }}" class="btn btn-secondary btn-sm">Cancel email
+                  change</a>
+              </div>
+            {% endif %}
+          </div>
+          <button class="btn btn-outline-primary">Change Email</button>
+        </div>
+      </form>
+    </div>
+    <!-- END Change email -->
 
     <!-- Change password -->
     <div class="card">
@@ -173,64 +231,6 @@
       </div>
     </div>
     <!-- END Random alias -->
-
-    <!-- Newsletter -->
-    <div class="card" id="notification">
-      <div class="card-body">
-        <div class="card-title">Newsletters</div>
-        <div class="mb-3">
-          We will occasionally send you emails with new feature announcements.
-        </div>
-        <form method="post">
-          <input type="hidden" name="form-name" value="notification-preference">
-          <div class="form-check">
-            <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
-                   checked {% endif %} class="form-check-input">
-            <label for="notification">I want to be emailed when new features are released.</label>
-          </div>
-          <button type="submit" class="btn btn-outline-primary">Submit</button>
-        </form>
-      </div>
-    </div>
-    <!-- END Newsletter -->
-
-    <!-- Current plan -->
-    <div class="card">
-      <div class="card-body">
-        <div class="card-title mb-3">Current Plan</div>
-
-        {% if current_user.lifetime %}
-          You have lifetime access to the Premium plan.
-          {% if not current_user.paid_lifetime %}
-            <br>
-            To support Simple Login you can switch to a paid plan. <br>
-            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
-          {% endif %}
-        {% elif current_user.get_subscription() %}
-          You are on the  {{ current_user.get_subscription().plan_name() }} plan. <br>
-          <a href="{{ url_for('dashboard.billing') }}" class="btn btn-outline-primary">
-            Manage Subscription
-          </a>
-          {% if current_user.lifetime %}
-            You have however lifetime access to the Premium plan now so make sure to cancel the previous plan :).
-          {% endif %}
-        {% elif manual_sub %}
-          You are on the Premium plan which expires {{ manual_sub.end_at | dt }}
-          ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
-          {% if manual_sub.is_giveaway %}
-            <br>
-            To gain additional features and support Simple Login you can upgrade to a Premium plan. <br>
-            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
-          {% endif %}
-
-        {% elif current_user.in_trial() %}
-          Your Premium trial expires {{ current_user.trial_end | dt }}.
-        {% else %}
-          You are on the Free plan.
-        {% endif %}
-      </div>
-    </div>
-    <!-- END Current plan -->
 
     <!-- Sender Format -->
     <div class="card" id="sender-format">
@@ -351,7 +351,6 @@
 
       </div>
     </div>
-
 
     <div class="card">
       <div class="card-body">
