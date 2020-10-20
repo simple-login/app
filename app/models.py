@@ -560,14 +560,15 @@ class User(db.Model, ModelMixin, UserMixin):
         - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         """
+        return [sl_domain.domain for sl_domain in self.get_sl_domains()]
+
+    def get_sl_domains(self) -> ["SLDomain"]:
         if self.is_premium():
-            query = SLDomain.query.all()
+            query = SLDomain.query
         else:
             query = SLDomain.filter_by(premium_only=False)
 
-        domains = [sl_domain.domain for sl_domain in query]
-
-        return domains
+        return query.all()
 
     def available_alias_domains(self) -> [str]:
         """return all domains that user can use when creating a new alias, including:

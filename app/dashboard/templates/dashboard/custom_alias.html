@@ -43,12 +43,22 @@
 
           <div class="col-sm-6 p-1">
             <select class="form-control" name="suffix">
-              {% for suffix in suffixes %}
-                <option value="{{ suffix[2] }}">
-                  {% if suffix[0] %}
-                    {{ suffix[1] }} (your domain)
+              {% for suffix_info in suffixes %}
+                <option value="{{ suffix_info.signed_suffix }}"
+                    {% if suffix_info.is_premium %}
+                      title="Only available to Premium accounts"
+                    {% elif not suffix_info.is_custom and at_least_a_premium_domain %}
+                      title="Available to all accounts"
+                    {% endif %}
+                >
+                  {% if suffix_info.is_custom %}
+                    {{ suffix_info.suffix }} (your domain)
                   {% else %}
-                    {{ suffix[1] }}
+                    {% if suffix_info.is_premium %}
+                      {{ suffix_info.suffix }} (Premium domain)
+                    {% else %}
+                      {{ suffix_info.suffix }} (Public domain)
+                    {% endif %}
                   {% endif %}
                 </option>
               {% endfor %}

@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from itsdangerous import TimestampSigner, SignatureExpired
@@ -47,6 +49,50 @@ def available_suffixes(user: User) -> [bool, str, str]:
     return suffixes
 
 
+@dataclass
+class SuffixInfo:
+    is_custom: bool
+    suffix: str
+    signed_suffix: str
+    is_premium: bool
+
+
+def available_suffixes_more_info(user: User) -> [SuffixInfo]:
+    """
+    Similar to as available_suffixes() but also return whether the suffix comes from a premium domain
+    Note that is-premium-domain is only relevant for SL domain
+    """
+    user_custom_domains = user.verified_custom_domains()
+
+    suffixes: [SuffixInfo] = []
+
+    # put custom domain first
+    # for each user domain, generate both the domain and a random suffix version
+    for alias_domain in user_custom_domains:
+        suffix = "@" + alias_domain.domain
+        suffixes.append(SuffixInfo(True, suffix, signer.sign(suffix).decode(), False))
+        if alias_domain.random_prefix_generation:
+            suffix = "." + random_word() + "@" + alias_domain.domain
+            suffixes.append(
+                SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
+            )
+
+    # then SimpleLogin domain
+    for sl_domain in user.get_sl_domains():
+        suffix = (
+            ("" if DISABLE_ALIAS_SUFFIX else "." + random_word())
+            + "@"
+            + sl_domain.domain
+        )
+        suffixes.append(
+            SuffixInfo(
+                False, suffix, signer.sign(suffix).decode(), sl_domain.premium_only
+            )
+        )
+
+    return suffixes
+
+
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
 @login_required
 def custom_alias():
@@ -60,8 +106,12 @@ def custom_alias():
         return redirect(url_for("dashboard.index"))
 
     user_custom_domains = [cd.domain for cd in current_user.verified_custom_domains()]
-    # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
-    suffixes = available_suffixes(current_user)
+    suffixes = available_suffixes_more_info(current_user)
+    at_least_a_premium_domain = False
+    for suffix in suffixes:
+        if not suffix.is_custom and suffix.is_premium:
+            at_least_a_premium_domain = True
+            break
 
     mailboxes = current_user.mailboxes()
 
@@ -180,6 +230,7 @@ def custom_alias():
         "dashboard/custom_alias.html",
         user_custom_domains=user_custom_domains,
         suffixes=suffixes,
+        at_least_a_premium_domain=at_least_a_premium_domain,
         mailboxes=mailboxes,
     )
 
