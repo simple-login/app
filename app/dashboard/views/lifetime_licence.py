@@ -33,11 +33,12 @@ def lifetime_licence():
     if coupon_form.validate_on_submit():
         code = coupon_form.code.data
 
-        coupon = LifetimeCoupon.get_by(code=code)
-
+        coupon: LifetimeCoupon = LifetimeCoupon.get_by(code=code)
         if coupon and coupon.nb_used > 0:
             coupon.nb_used -= 1
             current_user.lifetime = True
+            if coupon.paid:
+                current_user.paid_lifetime = True
             db.session.commit()
 
             # notify admin
