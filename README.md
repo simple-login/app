@@ -673,7 +673,14 @@ then
 
 `ALTER TABLE users ALTER COLUMN lifetime SET DEFAULT TRUE;`
 
-make sure to create your commands **after** the changes.
+make sure to create your account **after** the changes.
+
+in case this doesnt work try:
+```
+update users
+set lifetime=true;
+```
+this will work on **existing** accounts too.
 
 You don't have to pay anything to SimpleLogin to use all its features.
 You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though.
