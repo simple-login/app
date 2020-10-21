@@ -682,6 +682,16 @@ set lifetime=true;
 ```
 this will work on **existing** accounts too.
 
+you can set your self as the admin of the instance by using this:
+
+make sure to replace `{your_email}` with the account email:
+
+```
+update users
+set is_admin=true
+where email='{your_email}'
+```
+
 You don't have to pay anything to SimpleLogin to use all its features.
 You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though.
 
