@@ -1444,6 +1444,8 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
         ),
     )
 
+    return "250 Unsubscribe request accepted"
+
 
 def handle_sender_email(envelope: Envelope):
     filename = (
