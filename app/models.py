@@ -1020,6 +1020,15 @@ class Alias(db.Model, ModelMixin):
         else:
             return self.user.email
 
+    def unsubscribe_link(self) -> (str, bool):
+        """return the unsubscribe link along with whether this is via email (mailto:) or Http POST
+        The mailto: method is preferred
+        """
+        if UNSUBSCRIBER:
+            return f"mailto:{UNSUBSCRIBER}?subject={self.id}=", True
+        else:
+            return f"{URL}/dashboard/unsubscribe/{self.id}", False
+
     def __repr__(self):
         return f"<Alias {self.id} {self.email}>"
 

@@ -654,12 +654,9 @@ def forward_email_to_mailbox(
         add_or_replace_header(msg, "To", to_header.strip())
 
     # add List-Unsubscribe header
-    if UNSUBSCRIBER:
-        unsubscribe_link = f"mailto:{UNSUBSCRIBER}?subject={alias.id}="
-        add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
-    else:
-        unsubscribe_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
-        add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+    unsubscribe_link, via_email = alias.unsubscribe_link()
+    add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+    if not via_email:
         add_or_replace_header(
             msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
         )
