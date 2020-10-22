@@ -14,23 +14,36 @@
   {% if alias %}
     {% call text() %}
       This is the first email you receive via your <b>first alias</b> <em>{{ alias }}</em>.
-      It is automatically created when you signed up on SimpleLogin.
     {% endcall %}
 
     {% call text() %}
-      This alias is for receiving our news, feature announcements or tips -
+      This alias is automatically created for receiving SimpleLogin news and tips -
       feel free to <a href="{{ URL + '/dashboard/setting#notification' }}">disable</a> it if you don't need any of
       these.
     {% endcall %}
   {% endif %}
 
   {% call text() %}
-    You can reach out to us by: <br>
-    <ul>
-      <li>Simply replying to this email </li>
-      <li>On <a href="https://twitter.com/simple_login">Twitter</a> </li>
-      <li>On <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a></li>
-    </ul>
+    To better secure your account, we recommend enabling Multi-Factor Authentication (MFA) or WebAuthn (Yubikey) on your
+    <a href="{{ URL + '/dashboard/setting/#totp' }}">Setting page</a>.
+  {% endcall %}
+
+  {% call text() %}
+    If you are using Firefox or a Chromium-browser like Chrome, Edge, Brave, you can
+    install our <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">Firefox add-on</a>
+    or <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">Chrome extension</a>
+    to create aliases in one click (literally).
+  {% endcall %}
+
+  {% call text() %}
+    <img src="https://simplelogin.io/images/one-click-alias.gif" style="max-width: 80%; margin: auto; border: 1px solid">
+  {% endcall %}
+
+  {% call text() %}
+    SimpleLogin is also available on
+    <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android</a> and
+    <a href="https://apps.apple.com/app/id1494359858">iOS</a>
+    so you can create new aliases on the fly.
   {% endcall %}
 
   {% if user.in_trial() and user.trial_end %}
@@ -44,12 +57,15 @@
   {% endif %}
 
   {% call text() %}
-    Please don't hesitate to talk around you about the benefits of using <b>email alias</b>
-    to protect your personal email address and your privacy. <br>
+    At any time, you can reach out to us by: <br>
+    <ul>
+      <li>Simply replying to this email </li>
+      <li>On <a href="https://twitter.com/simple_login">Twitter</a> </li>
+      <li>On <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a></li>
+    </ul>
   {% endcall %}
 
   {% call text() %}
-    Let's make spammers and Big Tech's life harder.<br/>
     SimpleLogin Team.
   {% endcall %}
 

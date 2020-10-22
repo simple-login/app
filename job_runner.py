@@ -12,7 +12,6 @@ from app import s3
 from app.config import (
     JOB_ONBOARDING_1,
     JOB_ONBOARDING_2,
-    JOB_ONBOARDING_3,
     JOB_ONBOARDING_4,
     JOB_BATCH_IMPORT,
 )
@@ -200,18 +199,6 @@ if __name__ == "__main__":
                     if user and user.notification and user.activated:
                         LOG.d("send onboarding mailbox email to user %s", user)
                         onboarding_mailbox(user)
-                elif job.name == JOB_ONBOARDING_3:
-                    user_id = job.payload.get("user_id")
-                    user = User.get(user_id)
-
-                    # user might delete their account in the meantime
-                    # or disable the notification
-                    if user and user.notification and user.activated:
-                        LOG.d(
-                            "send onboarding browser-extension email to user %s", user
-                        )
-                        onboarding_browser_extension(user)
-
                 elif job.name == JOB_ONBOARDING_4:
                     user_id = job.payload.get("user_id")
                     user = User.get(user_id)
