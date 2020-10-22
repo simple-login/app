@@ -1359,7 +1359,8 @@ def handle_spam(
         )
 
 
-def handle_unsubscribe(envelope: Envelope):
+def handle_unsubscribe(envelope: Envelope) -> str:
+    """return the SMTP status"""
     msg = email.message_from_bytes(envelope.original_content)
 
     # format: alias_id:
@@ -1368,6 +1369,10 @@ def handle_unsubscribe(envelope: Envelope):
         # subject has the format {alias.id}=
         if subject.endswith("="):
             alias_id = int(subject[:-1])
+        # {user.id}*
+        elif subject.endswith("*"):
+            user_id = int(subject[:-1])
+            return handle_unsubscribe_user(user_id, envelope.mail_from)
         # some email providers might strip off the = suffix
         else:
             alias_id = int(subject)
@@ -1413,6 +1418,34 @@ def handle_unsubscribe(envelope: Envelope):
         )
 
     return "250 Unsubscribe request accepted"
+
+
+def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
+    """return the SMTP status"""
+    user = User.get(user_id)
+    if not user:
+        LOG.exception("No such user %s %s", user_id, mail_from)
+        return "550 SL E22 so such user"
+
+    if mail_from != user.email:
+        LOG.exception("Unauthorized mail_from %s %s", user, mail_from)
+        return "550 SL E23 unsubscribe error"
+
+    user.notification = False
+    db.session.commit()
+
+    send_email(
+        user.email,
+        f"You have been unsubscribed from SimpleLogin newsletter",
+        render(
+            "transactional/unsubscribe-newsletter.txt",
+            user=user,
+        ),
+        render(
+            "transactional/unsubscribe-newsletter.html",
+            user=user,
+        ),
+    )
 
 
 def handle_sender_email(envelope: Envelope):

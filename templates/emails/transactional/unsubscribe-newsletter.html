@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    <h1>
+      You have been unsubscribed from SimpleLogin newsletter.
+    </h1>
+  {% endcall %}
+
+  {% call text() %}
+    We would love to know why do you want to unsubscribe from our communication.
+    Please let us know by replying to this email.
+  {% endcall %}
+
+  {% call text() %}
+    Best, <br/>
+    SimpleLogin Team.
+  {% endcall %}
+
+{% endblock %}
+
+
