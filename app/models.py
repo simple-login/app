@@ -24,6 +24,7 @@ from app.config import (
     LANDING_PAGE_URL,
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
+    UNSUBSCRIBER,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -538,21 +539,29 @@ class User(db.Model, ModelMixin, UserMixin):
     def two_factor_authentication_enabled(self) -> bool:
         return self.enable_otp or self.fido_enabled()
 
-    def get_communication_email(self) -> Optional[str]:
-        """return the email that user uses to receive email communication"""
+    def get_communication_email(self) -> (Optional[str], str, bool):
+        """
+        Return
+        - the email that user uses to receive email communication. None if user unsubscribes from newsletter
+        - the unsubscribe URL
+        - whether the unsubscribe method is via sending email (mailto:) or Http POST
+        """
         if self.notification and self.activated:
             if self.newsletter_alias_id:
                 alias = Alias.get(self.newsletter_alias_id)
                 if alias.enabled:
-                    return alias.email
-
-                # user doesn't want to receive newsletter
+                    unsubscribe_link, via_email = alias.unsubscribe_link()
+                    return alias.email, unsubscribe_link, via_email
+                # alias disabled -> user doesn't want to receive newsletter
                 else:
-                    return None
+                    return None, None, False
             else:
-                return self.email
+                # do not handle http POST unsubscribe
+                if UNSUBSCRIBER:
+                    # use * as suffix instead of = as for alias unsubscribe
+                    return self.email, f"mailto:{UNSUBSCRIBER}?subject={self.id}*", True
 
-        return None
+        return None, None, False
 
     def available_sl_domains(self) -> [str]:
         """

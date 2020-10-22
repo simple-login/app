@@ -52,7 +52,7 @@ def new_app():
 
 
 def onboarding_send_from_alias(user):
-    to_email = user.get_communication_email()
+    to_email, unsubscribe_link, via_email = user.get_communication_email()
     if not to_email:
         return
 
@@ -61,11 +61,13 @@ def onboarding_send_from_alias(user):
         f"SimpleLogin Tip: Send emails from your alias",
         render("com/onboarding/send-from-alias.txt", user=user, to_email=to_email),
         render("com/onboarding/send-from-alias.html", user=user, to_email=to_email),
+        unsubscribe_link,
+        via_email,
     )
 
 
 def onboarding_pgp(user):
-    to_email = user.get_communication_email()
+    to_email, unsubscribe_link, via_email = user.get_communication_email()
     if not to_email:
         return
 
@@ -74,11 +76,13 @@ def onboarding_pgp(user):
         f"SimpleLogin Tip: Secure your emails with PGP",
         render("com/onboarding/pgp.txt", user=user, to_email=to_email),
         render("com/onboarding/pgp.html", user=user, to_email=to_email),
+        unsubscribe_link,
+        via_email,
     )
 
 
 def onboarding_browser_extension(user):
-    to_email = user.get_communication_email()
+    to_email, unsubscribe_link, via_email = user.get_communication_email()
     if not to_email:
         return
 
@@ -87,11 +91,13 @@ def onboarding_browser_extension(user):
         f"SimpleLogin Tip: Chrome/Firefox/Safari extensions and Android/iOS apps",
         render("com/onboarding/browser-extension.txt", user=user, to_email=to_email),
         render("com/onboarding/browser-extension.html", user=user, to_email=to_email),
+        unsubscribe_link,
+        via_email,
     )
 
 
 def onboarding_mailbox(user):
-    to_email = user.get_communication_email()
+    to_email, unsubscribe_link, via_email = user.get_communication_email()
     if not to_email:
         return
 
@@ -100,6 +106,8 @@ def onboarding_mailbox(user):
         f"SimpleLogin Tip: Multiple mailboxes",
         render("com/onboarding/mailbox.txt", user=user, to_email=to_email),
         render("com/onboarding/mailbox.html", user=user, to_email=to_email),
+        unsubscribe_link,
+        via_email,
     )
 
 

@@ -52,7 +52,7 @@ def render(template_name, **kwargs) -> str:
 
 
 def send_welcome_email(user):
-    to_email = user.get_communication_email()
+    to_email, unsubscribe_link, via_email = user.get_communication_email()
     if not to_email:
         return
 
@@ -64,6 +64,8 @@ def send_welcome_email(user):
         f"Welcome to SimpleLogin {user.name}",
         render("com/welcome.txt", name=user.name, user=user, alias=alias),
         render("com/welcome.html", name=user.name, user=user, alias=alias),
+        unsubscribe_link,
+        via_email,
     )
 
 
@@ -186,7 +188,14 @@ def send_cannot_create_domain_alias(user, alias, domain):
     )
 
 
-def send_email(to_email, subject, plaintext, html=None):
+def send_email(
+    to_email,
+    subject,
+    plaintext,
+    html=None,
+    unsubscribe_link=None,
+    unsubscribe_via_email=False,
+):
     if NOT_SEND_EMAIL:
         LOG.d(
             "send email with subject '%s' to '%s', plaintext: %s",
@@ -220,6 +229,13 @@ def send_email(to_email, subject, plaintext, html=None):
 
     date_header = formatdate()
     msg["Date"] = date_header
+
+    if unsubscribe_link:
+        add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+        if not unsubscribe_via_email:
+            add_or_replace_header(
+                msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
+            )
 
     # add DKIM
     email_domain = SUPPORT_EMAIL[SUPPORT_EMAIL.find("@") + 1 :]
