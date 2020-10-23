@@ -93,6 +93,11 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
                 dir_user,
             )
             return None
+        except IntegrityError:
+            LOG.warning("Alias %s already exists", address)
+            db.session.rollback()
+            alias = Alias.get_by(email=address)
+            return alias
 
 
 def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
