@@ -1385,8 +1385,9 @@ def handle_unsubscribe(envelope: Envelope) -> str:
 
     # This sender cannot unsubscribe
     mail_from = envelope.mail_from
-    mailbox = Mailbox.get_by(user_id=alias.user_id, email=mail_from)
-    if not mailbox or mailbox not in alias.mailboxes:
+    # Only alias's owning mailbox can send the unsubscribe request
+    mailbox = get_mailbox_from_mail_from(mail_from, alias)
+    if not mailbox:
         LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
         return "550 SL E10 unauthorized"
 
