@@ -60,6 +60,12 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
             r = gpg.encrypt_file(data, fingerprint, always_trust=True)
 
         if not r.ok:
-            raise PGPException(f"Cannot encrypt, status: {r.status}")
+            # save the data for debugging
+            data.seek(0)
+            file_path = f"/tmp/{random_string(10)}.eml"
+            with open(file_path, "wb") as f:
+                f.write(data.getbuffer())
+
+            raise PGPException(f"Cannot encrypt, status: {r.status}, {file_path}")
 
     return str(r)
