@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from itsdangerous import TimestampSigner, SignatureExpired
+from sqlalchemy.exc import IntegrityError
 
 from app.config import (
     DISABLE_ALIAS_SUFFIX,
@@ -203,14 +204,20 @@ def custom_alias():
                     if domain:
                         custom_domain_id = domain.id
 
-                alias = Alias.create(
-                    user_id=current_user.id,
-                    email=full_alias,
-                    note=alias_note,
-                    mailbox_id=mailboxes[0].id,
-                    custom_domain_id=custom_domain_id,
-                )
-                db.session.flush()
+                try:
+                    alias = Alias.create(
+                        user_id=current_user.id,
+                        email=full_alias,
+                        note=alias_note,
+                        mailbox_id=mailboxes[0].id,
+                        custom_domain_id=custom_domain_id,
+                    )
+                    db.session.flush()
+                except IntegrityError:
+                    LOG.warning("Alias %s already exists", full_alias)
+                    db.session.rollback()
+                    flash("Unknown error, please retry", "error")
+                    return redirect(url_for("dashboard.custom_alias"))
 
                 for i in range(1, len(mailboxes)):
                     AliasMailbox.create(
