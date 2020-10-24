@@ -14,28 +14,26 @@
 
       <div class="alert alert-primary" id="howtouse" role="alert">
         <p>
-          To send an email from your alias to a contact, says <b>friend@example.com</b>, you need to: <br>
+          To send an email from your alias to a contact, you need to create a <em>reverse-alias</em>,
+          a special email address. <br>
+          When you send an email to the reverse-alias, the email will be sent <b>from your alias</b> to the contact. <br>
 
-          1. Create a special email address called <em>reverse-alias</em> for friend@example.com using the form below
-          <br>
-          2. Send the email to the reverse-alias <em>instead of</em> friend@example.com
-          <br>
-          3. SimpleLogin will send this email <em>from the alias</em> to friend@example.com for you
+          <img src="/static/images/reverse-alias.svg" style="border: 1px solid" class="my-2 img-fluid">
         </p>
+
         <p>
-          This might sound complicated but trust us, only the first time is a bit awkward.
+          This might seem like "magic" but trust us, only the first time is a bit awkward.
         </p>
         <p>
           {% if alias.mailbox_id %}
             {% if alias.mailboxes | length == 1 %}
-              Make sure you send the email from the mailbox <b>{{ alias.mailbox.email }}</b>.
+              Make sure you send the email from your mailbox <b>{{ alias.mailbox.email }}</b>.
             {% else %}
               Make sure you send the email from one of the following mailboxes: <br>
               {% for mailbox in alias.mailboxes %}
                 - <b>{{ mailbox.email }}</b> <br>
               {% endfor %}
             {% endif %}
-            This is because only the mailbox that owns the alias can send emails from it.
           {% else %}
             Make sure you send the email from your personal email address ({{ current_user.email }}).
           {% endif %}
