@@ -184,7 +184,7 @@ def options_v3():
 
 
     """
-    LOG.exception("/v3/alias/options is obsolete")
+    LOG.warning("/v3/alias/options is obsolete")
     user = g.user
     hostname = request.args.get("hostname")
 
