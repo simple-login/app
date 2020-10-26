@@ -57,7 +57,13 @@ def index():
 
     highlight_alias_id = None
     if request.args.get("highlight_alias_id"):
-        highlight_alias_id = int(request.args.get("highlight_alias_id"))
+        try:
+            highlight_alias_id = int(request.args.get("highlight_alias_id"))
+        except ValueError:
+            LOG.warning(
+                "highlight_alias_id must be a number, received %s",
+                request.args.get("highlight_alias_id"),
+            )
 
     # User generates a new email
     if request.method == "POST":
