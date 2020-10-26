@@ -25,7 +25,7 @@ def options():
         existing: array of existing aliases
 
     """
-    LOG.exception("/alias/options is obsolete")
+    LOG.warning("/alias/options is obsolete")
     user = g.user
     hostname = request.args.get("hostname")
 
