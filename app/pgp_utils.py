@@ -7,6 +7,7 @@ from memory_profiler import memory_usage
 from app.config import GNUPGHOME
 from app.log import LOG
 from app.models import Mailbox, Contact
+from app.utils import random_string
 
 gpg = gnupg.GPG(gnupghome=GNUPGHOME)
 gpg.encoding = "utf-8"
