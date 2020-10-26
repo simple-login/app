@@ -457,7 +457,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             return [(False, "550 SL E3 Email not exist")]
 
     if alias.user.disabled:
-        LOG.exception(
+        LOG.warning(
             "User %s disabled, disable forwarding emails for %s", alias.user, alias
         )
         return [(False, "550 SL E20 Account disabled")]
