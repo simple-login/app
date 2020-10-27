@@ -10,9 +10,13 @@
   <div class="row">
     <div class="col">
       <h1 class="h3"> {{ alias.email }} contacts
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
       </h1>
 
-      <div class="alert alert-primary" id="howtouse" role="alert">
+      <div class="alert alert-primary collapse" id="howtouse" role="alert">
         <p>
           To send an email from your alias to a contact, you need to create a <em>reverse-alias</em>,
           a special email address. <br>
@@ -38,6 +42,8 @@
             Make sure you send the email from your personal email address ({{ current_user.email }}).
           {% endif %}
         </p>
+        <p>This video can also quickly walk you through the steps:</p>
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/VsypF-DBaow" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       </div>
     </div>
 
@@ -49,7 +55,7 @@
 
     <label class="form-label">Where do you want to send the email?</label>
 
-    {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>") }}
+    {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>", autofocus=True) }}
     {{ render_field_errors(new_contact_form.email) }}
     <button class="btn btn-primary mt-2">Create reverse-alias</button>
   </form>
