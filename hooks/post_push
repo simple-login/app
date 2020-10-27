@@ -1,0 +1,159 @@
+#!/bin/bash
+# hooks/post_push
+# https://docs.docker.com/docker-cloud/builds/advanced/
+# https://semver.org/
+# https://github.com/ckulka/docker-multi-arch-example/
+# Credits: https://github.com/jnovack/docker-multi-arch-hooks
+
+## requires to be a os/arch combination
+DEFAULT_ARCH="linux/amd64"
+
+## Use manifest-tool to create the manifest, given the experimental
+## "docker manifest" command isn't available yet on Docker Hub.
+TOOL_DOWNLOAD_URL="https://github.com/estesp/manifest-tool/releases/download"
+TOOL_LATEST_TAG=$(curl -s https://api.github.com/repos/estesp/manifest-tool/tags \
+    | grep 'name.*v[0-9]' \
+    | head -n 1 \
+    | cut -d '"' -f 4)
+
+echo "[***] Downloading ${TOOL_DOWNLOAD_URL}/${TOOL_LATEST_TAG}/manifest-tool-linux-amd64"
+curl -Lo manifest-tool ${TOOL_DOWNLOAD_URL}/${TOOL_LATEST_TAG}/manifest-tool-linux-amd64
+chmod +x manifest-tool
+
+
+## add_tag will add a tag and a manifest for each version
+function add_tag() {
+    echo "[***] Adding tag ${1}"
+    docker tag $IMAGE_NAME $DOCKER_REPO:$1
+    docker push $DOCKER_REPO:$1
+
+    echo "[---] Running ./manifest-tool push from-args --platforms '${2}' --template '${IMAGE_NAME}_ARCHVARIANT' --target '${DOCKER_REPO}:${1}'"
+    ./manifest-tool push from-args \
+        --platforms ${2} \
+        --template ${IMAGE_NAME}_ARCHVARIANT \
+        --target ${DOCKER_REPO}:${1}
+}
+
+
+## Push all variant images
+## must be done in post_push
+#for FILE in ${DOCKERFILE_PATH}.*
+#do
+#    TARGET_ARCH=$(echo "${FILE}" | cut -d '.' -f 2)
+for TARGET_ARCH in $(cat hooks/TARGET_ARCHS.txt | grep -v "^#")
+do
+
+    echo "[---] TARGET_ARCH: ${TARGET_ARCH}"
+
+    ## FUDGE Factor because Docker Hub does not respect "32"
+    case "$TARGET_ARCH" in
+        *arm32v5)
+            BUILD_ARCH="armv5"
+            ;;
+        *arm32v6)
+            BUILD_ARCH="armv6"
+            ;;
+        *arm32v7)
+            BUILD_ARCH="armv7"
+            ;;
+        *)
+            BUILD_ARCH="${TARGET_ARCH}"
+            ;;
+    esac
+
+    echo "[---] BUILD_ARCH: ${BUILD_ARCH}"
+
+    docker push ${IMAGE_NAME}_${BUILD_ARCH}
+done
+
+
+## The git repository MUST have tags as "v2.1.3", which updates docker tags "2.1.3", "2.1", "2".
+TAG=`git describe --tag --match "v*"`
+
+## Optional Kill Switch for bugfix builds.
+## -- uncomment to NOT update MAJOR, MINOR, PATCH versions on PRE-RELEASE builds
+## -- comment to ALWAYS update all release tags on every push
+KILL=`echo ${TAG} | awk -F'-' '{print $3}'`
+
+
+## Extract versions
+MAJOR=`echo ${TAG} | awk -F'-' '{print $1}' | awk -F'.' '{print $1}' | sed 's/v//'`
+MINOR=`echo ${TAG} | awk -F'-' '{print $1}' | awk -F'.' '{print $2}' | sed 's/v//'`
+PATCH=`echo ${TAG} | awk -F'-' '{print $1}' | awk -F'.' '{print $3}' | sed 's/v//'`
+PRLS=`echo ${TAG} | awk -F'-' '{print $2}'`
+
+echo "[***] Current Build: ${TAG}"
+
+## Iterate over architectures
+MULTIARCH="${DEFAULT_ARCH}"
+#for FILE in ${DOCKERFILE_PATH}.*
+#do
+#    TARGET_ARCH=$(echo "${FILE}" | cut -d '.' -f 2)
+for TARGET_ARCH in $(cat hooks/TARGET_ARCHS.txt | grep -v "^#")
+do
+    case "$TARGET_ARCH" in
+        *amd64)
+            echo "[---] Target Architecture: ${TARGET_ARCH}"
+            ARCH_VARIANT="linux/amd64"
+            ;;
+        *arm32v5)
+            echo "[---] Target Architecture: ${TARGET_ARCH}"
+            ARCH_VARIANT="linux/arm/v5"
+            ;;
+        *arm32v6)
+            echo "[---] Target Architecture: ${TARGET_ARCH}"
+            ARCH_VARIANT="linux/arm/v6"
+            ;;
+        *arm32v7)
+            echo "[---] Target Architecture: ${TARGET_ARCH}"
+            ARCH_VARIANT="linux/arm/v7"
+            ;;
+        *arm64v8)
+            echo "[---] Target Architecture: ${TARGET_ARCH}"
+            ARCH_VARIANT="linux/arm64/v8"
+            ;;
+        *i386)
+            echo "[---] Target Architecture: ${TARGET_ARCH}"
+            ARCH_VARIANT="linux/386"
+            ;;
+        *)
+            echo "[!!!] Unknown target architecture ${TARGET_ARCH}, ignoring"
+            ARCH_VARIANT=""
+            ;;
+    esac
+
+    # Append all the architectures together to build a valid platforms string.
+    if [ ! -n "${DEMO}" ]; then
+        MULTIARCH="${MULTIARCH},${ARCH_VARIANT}"
+    fi
+done
+
+## Tag all the images with the base tag.
+add_tag ${DOCKER_TAG} ${MULTIARCH}
+
+## Tag all the releases
+num='^[0-9]+$'
+pre='^[0-9A-Za-z\.]+$'
+if [ ! -z $MAJOR ] && [[ $MAJOR =~ $num ]]; then
+    if [ -z $KILL ]; then
+        add_tag ${MAJOR} ${MULTIARCH}
+    fi
+
+    if [ ! -z $MINOR ] && [[ $MINOR =~ $num ]]; then
+        if [ -z $KILL ]; then
+            add_tag ${MAJOR}.${MINOR} ${MULTIARCH}
+        fi
+
+        if [ ! -z $PATCH ] && [[ $PATCH =~ $num ]]; then
+            if [ -z $KILL ]; then
+                add_tag ${MAJOR}.${MINOR}.${PATCH} ${MULTIARCH}
+            fi
+
+            if [ ! -z $PRLS ] && [[ ! $PRLS =~ $num ]] && [[ $PRLS =~ $pre ]]; then
+                add_tag ${MAJOR}.${MINOR}.${PATCH}-${PRLS} ${MULTIARCH}
+            fi
+        fi
+    fi
+fi
+
+exit $?
