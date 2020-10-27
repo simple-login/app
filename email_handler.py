@@ -178,6 +178,26 @@ def get_or_create_contact(
             )
             contact.name = contact_name
             db.session.commit()
+
+        if contact.mail_from != mail_from:
+            LOG.d(
+                "Update contact %s mail_from %s to %s",
+                contact,
+                contact.mail_from,
+                mail_from,
+            )
+            contact.mail_from = mail_from
+            db.session.commit()
+
+        if contact.from_header != contact_from_header:
+            LOG.d(
+                "Update contact %s from_header %s to %s",
+                contact,
+                contact.from_header,
+                contact_from_header,
+            )
+            contact.from_header = contact_from_header
+            db.session.commit()
     else:
         LOG.debug(
             "create contact for alias %s and contact %s",
