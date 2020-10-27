@@ -17,6 +17,10 @@ class PGPException(Exception):
     pass
 
 
+class IncorrectPassphrasePGPException(Exception):
+    pass
+
+
 def load_public_key(public_key: str) -> str:
     """Load a public key into keyring and return the fingerprint. If error, raise Exception"""
     import_result = gpg.import_keys(public_key)
@@ -24,6 +28,30 @@ def load_public_key(public_key: str) -> str:
         return import_result.fingerprints[0]
     except Exception as e:
         raise PGPException("Cannot load key") from e
+
+
+def load_public_key_and_check(public_key: str) -> str:
+    """Same as load_public_key but will try an encryption using the new key.
+    If the encryption fails, remove the newly created fingerprint.
+    Return the fingerprint
+    """
+    import_result = gpg.import_keys(public_key)
+    try:
+        fingerprint = import_result.fingerprints[0]
+    except Exception as e:
+        raise PGPException("Cannot load key") from e
+    else:
+        dummy_data = BytesIO(b"test")
+        r = gpg.encrypt_file(dummy_data, fingerprint)
+        if not r.ok:
+            # remove the fingerprint
+            gpg.delete_keys([fingerprint])
+            if r.GPG_ERROR_CODES == {11: "incorrect passphrase"}:
+                LOG.warning("Incorrect passphrase")
+                raise IncorrectPassphrasePGPException()
+            raise PGPException("Encryption fails with the key")
+
+        return fingerprint
 
 
 def hard_exit():
@@ -61,12 +89,6 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
             r = gpg.encrypt_file(data, fingerprint, always_trust=True)
 
         if not r.ok:
-            # save the data for debugging
-            data.seek(0)
-            file_path = f"/tmp/{random_string(10)}.eml"
-            with open(file_path, "wb") as f:
-                f.write(data.getbuffer())
-
-            raise PGPException(f"Cannot encrypt, status: {r.status}, {file_path}")
+            raise PGPException(f"Cannot encrypt, status: {r.status}")
 
     return str(r)
