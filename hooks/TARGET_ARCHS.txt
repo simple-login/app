@@ -1,0 +1,3 @@
+#amd64 arm32v5 arm32v6 arm32v7 i386
+ arm64v8
+ 
