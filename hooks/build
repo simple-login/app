@@ -1,0 +1,113 @@
+#!/bin/bash
+# hooks/build
+# https://docs.docker.com/docker-cloud/builds/advanced/
+# Credits: https://github.com/jnovack/docker-multi-arch-hooks
+
+## requires to be an architecture+variant as defined by the manifest
+DEFAULT_ARCH="amd64"
+
+## $IMAGE_NAME var is injected into the build so the tag is correct.
+echo "[***] Build hook starting..."
+
+# $(echo "index.docker.io/user/respository" | cut -d '/' -f 3) = "repository"
+APPLICATION=$(echo "${DOCKER_REPO}" | cut -d '/' -f 3)
+
+echo "[---] DOCKERFILE_PATH: ${DOCKERFILE_PATH}"
+echo "[---] DOCKER_REPO: ${DOCKER_REPO}"
+echo "[---] IMAGE_NAME: ${IMAGE_NAME}"
+echo "[---] APPLICATION: ${APPLICATION}"
+
+# $(echo "index.docker.io/user/repository" | cut -d '/' -f 2-3) = "user/repository"
+# otherwise, you will need to set ENVIRONMENT VARIABLES for your build.
+if [ -z $GITHUB_USERREPO ]; then
+    GITHUB_USERREPO=$(echo "${DOCKER_REPO}" | cut -d '/' -f 2-3)
+fi
+
+# Set description from github
+DESCRIPTION=$(curl -s https://api.github.com/repos/${GITHUB_USERREPO} \
+    | grep '"description".*' \
+    | head -n 1 \
+    | cut -d '"' -f 4)
+
+echo "[---] GITHUB_USERREPO: ${GITHUB_USERREPO}"
+echo "[---] DESCRIPTION: ${DESCRIPTION}"
+
+## Build all variant images.
+#for FILE in ${DOCKERFILE_PATH}.*
+#do
+#    TARGET_ARCH=$(echo "${FILE}" | cut -d '.' -f 2)
+for TARGET_ARCH in $(cat hooks/TARGET_ARCHS.txt | grep -v "^#")
+do
+
+    ## FUDGE Factor because Docker Hub does not respect "32" in os/arch model
+    case "$TARGET_ARCH" in
+        *amd64)
+            BUILD_ARCH="amd64"
+            QEMU_ARCH="x86_64"
+            #Skip default default build
+            continue
+            ;;
+        *arm32v5)
+            BUILD_ARCH="armv5"
+            QEMU_ARCH="arm"
+            ;;
+        *arm32v6)
+            BUILD_ARCH="armv6"
+            QEMU_ARCH="arm"
+            ;;
+        *arm32v7)
+            BUILD_ARCH="armv7"
+            QEMU_ARCH="arm"
+            ;;
+        *arm64v8)
+            BUILD_ARCH="arm64v8"
+            QEMU_ARCH="aarch64"
+            ;;
+        *i386)
+            BUILD_ARCH="i386"
+            QEMU_ARCH="i386"
+            ;;
+        *)
+            BUILD_ARCH="${TARGET_ARCH}"
+            echo "[---] Unknown target architecture"
+            exit 0
+            ;;
+    esac
+
+    # Not exactly sure this needs to run EVERY time, but for good measure.
+    docker run --rm --privileged multiarch/qemu-user-static:register --reset
+
+  #     --file "${DOCKERFILE_PATH}.${TARGET_ARCH}" \
+    docker build \
+        --file Dockerfile.multiarch \
+        --build-arg APPLICATION=${APPLICATION} \
+        --build-arg BUILD_RFC3339=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+        --build-arg REVISION=$(git rev-parse --short HEAD) \
+    	--build-arg PACKAGE="${GITHUB_USERREPO}" \
+        --build-arg DESCRIPTION="${DESCRIPTION}" \
+        --build-arg VERSION=$(git describe --tags --always) \
+        --build-arg QEMU_ARCH="${QEMU_ARCH}" \
+        --build-arg TARGET_ARCH="${TARGET_ARCH}" \
+        -t ${IMAGE_NAME}_${BUILD_ARCH} \
+        .
+done
+
+## Build the prime image at the end.
+docker build \
+    --file "${DOCKERFILE_PATH}" \
+    --build-arg APPLICATION=${APPLICATION} \
+    --build-arg BUILD_RFC3339=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+    --build-arg REVISION=$(git rev-parse --short HEAD) \
+  	--build-arg PACKAGE="${GITHUB_USERREPO}" \
+    --build-arg DESCRIPTION="${DESCRIPTION}" \
+    --build-arg VERSION=$(git describe --tags --always) \
+    -t ${IMAGE_NAME}_${DEFAULT_ARCH} \
+    .
+
+## Push the default arch image so manifest-tool can find it
+docker push ${IMAGE_NAME}_${DEFAULT_ARCH}
+
+## Tag the default image so dockerhub can push it.
+docker tag ${IMAGE_NAME}_${DEFAULT_ARCH} ${IMAGE_NAME}
+
+echo "[***] ...build hook complete."
