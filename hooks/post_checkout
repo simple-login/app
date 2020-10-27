@@ -1,0 +1,64 @@
+#!/bin/bash
+# hooks/post_checkout
+# - https://docs.docker.com/docker-cloud/builds/advanced/
+# - https://stackoverflow.com/questions/54578066/how-to-build-a-docker-image-on-a-specific-architecture-with-docker-hub.
+# Credits: https://github.com/jnovack/docker-multi-arch-hooks
+
+
+## Unshallow the repository to get all the tags.
+if [ -f $(git rev-parse --git-dir)/shallow ]; then
+    echo "[***] Unshallowing to get correct tags to work."
+    git fetch --tags --unshallow --quiet origin
+else
+    echo "[***] Not a shallow repository."
+fi
+
+
+## Set QEMU URL and TAG, no time wasted if we are not building multiple architectures
+QEMU_DOWNLOAD_URL="https://github.com/multiarch/qemu-user-static/releases/download"
+QEMU_LATEST_TAG=$(curl -s https://api.github.com/repos/multiarch/qemu-user-static/tags \
+    | grep 'name.*v[0-9]' \
+    | head -n 1 \
+    | cut -d '"' -f 4)
+
+
+## Download all variant architecture QEMU images.
+#for FILE in ${DOCKERFILE_PATH}.*
+#do
+#    TARGET_ARCH=$(echo "${FILE}" | cut -d '.' -f 2)
+for TARGET_ARCH in $(cat hooks/TARGET_ARCHS.txt | grep -v "^#")
+do
+    case "$TARGET_ARCH" in
+        *amd64)
+            QEMU_ARCH="x86_64"
+            ;;
+        *arm32v5)
+            QEMU_ARCH="arm"
+            ;;
+        *arm32v6)
+            QEMU_ARCH="arm"
+            ;;
+        *arm32v7)
+            QEMU_ARCH="arm"
+            ;;
+        *arm64v8)
+            QEMU_ARCH="aarch64"
+            ;;
+        *i386)
+            QEMU_ARCH="i386"
+            ;;
+        *)
+            echo "[---] Unknown target architecture, skipping qemu-user-static download"
+            exit 0
+            ;;
+    esac
+
+    if [[ ! -f qemu-${QEMU_ARCH}-static ]]; then
+        echo "[***] Downloading ${QEMU_DOWNLOAD_URL}/${QEMU_LATEST_TAG}/x86_64_qemu-${QEMU_ARCH}-static.tar.gz"
+        curl -sL "${QEMU_DOWNLOAD_URL}/${QEMU_LATEST_TAG}/x86_64_qemu-${QEMU_ARCH}-static.tar.gz" \
+            | tar xzv
+    else
+        echo "[***] qemu-${QEMU_ARCH}-static already exists. Skipping download."
+    fi
+
+done
