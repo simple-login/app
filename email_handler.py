@@ -125,6 +125,7 @@ _IP_HEADER = "X-SimpleLogin-Client-IP"
 _MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
 _MESSAGE_ID = "Message-ID"
+_ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
 
 
 # fix the database connection leak issue
@@ -650,6 +651,7 @@ def forward_email_to_mailbox(
     add_or_replace_header(msg, _MAILBOX_ID_HEADER, str(mailbox.id))
     add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
     add_or_replace_header(msg, _MESSAGE_ID, make_msgid(str(email_log.id), EMAIL_DOMAIN))
+    add_or_replace_header(msg, _ENVELOPE_FROM, envelope.mail_from)
 
     # change the from header so the sender comes from @SL
     # so it can pass DMARC check
