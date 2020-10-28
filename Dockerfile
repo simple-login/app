@@ -8,7 +8,7 @@ RUN cd /code/static && npm install
 FROM python:3.7-alpine
 
 # install some utility packages
-RUN apt update && apt install -y vim telnet
+RUN apk update && apk add vim busybox-extras
 
 RUN pip3 install poetry==1.0.10
 
