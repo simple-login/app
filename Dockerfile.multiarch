@@ -19,7 +19,7 @@ COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm install
 
 # Main image
-FROM $TARGET_ARCH/python:3.7
+FROM $TARGET_ARCH/python:3.7-alpine
 # Copy downloaded architecture emulation static binary
 COPY qemu-$QEMU_ARCH-static /usr/bin/
 
