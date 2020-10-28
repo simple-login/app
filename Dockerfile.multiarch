@@ -20,7 +20,6 @@ RUN cd /code/static && npm install
 
 # Main image
 FROM $TARGET_ARCH/python:3.7
-ARG QEMU_ARCH=x86_64
 # Copy downloaded architecture emulation static binary
 COPY qemu-$QEMU_ARCH-static /usr/bin/
 
