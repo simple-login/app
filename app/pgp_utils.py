@@ -3,11 +3,13 @@ from io import BytesIO
 
 import gnupg
 from memory_profiler import memory_usage
+from pgpy import PGPMessage
 
 from app.config import GNUPGHOME
 from app.log import LOG
 from app.models import Mailbox, Contact
 from app.utils import random_string
+import pgpy
 
 gpg = gnupg.GPG(gnupghome=GNUPGHOME)
 gpg.encoding = "utf-8"
@@ -92,3 +94,12 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
             raise PGPException(f"Cannot encrypt, status: {r.status}")
 
     return str(r)
+
+
+def encrypt_file_with_pgpy(data: bytes, public_key: str) -> PGPMessage:
+    key = pgpy.PGPKey()
+    key.parse(public_key)
+    msg = pgpy.PGPMessage.new(data, encoding="utf-8")
+    r = key.encrypt(msg)
+
+    return r

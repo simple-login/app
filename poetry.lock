@@ -985,6 +985,19 @@ ptyprocess = ">=0.5"
 
 [[package]]
 category = "main"
+description = "Pretty Good Privacy for Python"
+name = "pgpy"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+version = "0.5.3"
+
+[package.dependencies]
+cryptography = ">=2.6"
+pyasn1 = "*"
+six = ">=1.9.0"
+
+[[package]]
+category = "main"
 description = "a port of the serialize and unserialize functions of php to python."
 name = "phpserialize"
 optional = false
@@ -1688,7 +1701,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "0e3ade53af79b805e718ebf5e7a047ff0d067ec4ed32154d77255579b1940e83"
+content-hash = "16dc20a48cada11374ca312b3cbcccfe3b4b93380c6d8b3964eb6a64d37c1fe5"
 lock-version = "1.0"
 python-versions = "^3.7"
 
@@ -2160,6 +2173,10 @@ pathspec = [
 pexpect = [
     {file = "pexpect-4.8.0-py2.py3-none-any.whl", hash = "sha256:0b48a55dcb3c05f3329815901ea4fc1537514d6ba867a152b581d69ae3710937"},
     {file = "pexpect-4.8.0.tar.gz", hash = "sha256:fc65a43959d153d0114afe13997d439c22823a27cefceb5ff35c2178c6784c0c"},
+]
+pgpy = [
+    {file = "PGPy-0.5.3-py2.py3-none-any.whl", hash = "sha256:cba6fbbb44a896a8a4f5807b3d8d4943a8f7a6607be11587f4a27734c711c1dd"},
+    {file = "PGPy-0.5.3.tar.gz", hash = "sha256:a49c269cedcaf82ac6999bcae5fd3f543ecb1c759f9d48a15ad8d8fa4ac03987"},
 ]
 phpserialize = [
     {file = "phpserialize-1.3.tar.gz", hash = "sha256:bf672d312d203d09a84c26366fab8f438a3ffb355c407e69974b7ef2d39a0fa7"},

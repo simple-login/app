@@ -34,6 +34,7 @@ import argparse
 import asyncio
 import email
 import os
+import random
 import time
 import uuid
 from email import encoders
@@ -392,7 +393,7 @@ _MIME_HEADERS = [
 _MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
 
 
-def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
+def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str):
     msg = MIMEMultipart("encrypted", protocol="application/pgp-encrypted")
 
     # copy all headers from original message except all standard MIME headers
@@ -417,11 +418,23 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str):
         "octet-stream", _encoder=encoders.encode_7or8bit, name="encrypted.asc"
     )
     second.add_header("Content-Disposition", 'inline; filename="encrypted.asc"')
+
     # encrypt original message
-    encrypted_data = pgp_utils.encrypt_file(
-        BytesIO(orig_msg.as_bytes()), pgp_fingerprint
-    )
-    second.set_payload(encrypted_data)
+    # ABTest between pgpy and python-gnupg
+    x = random.randint(0, 9)
+    if x >= 5:
+        LOG.d("encrypt using python-gnupg")
+        encrypted_data = pgp_utils.encrypt_file(
+            BytesIO(orig_msg.as_bytes()), pgp_fingerprint
+        )
+        second.set_payload(encrypted_data)
+    else:
+        LOG.d("encrypt using pgpy")
+        encrypted_data = pgp_utils.encrypt_file_with_pgpy(
+            orig_msg.as_bytes(), public_key
+        )
+        second.set_payload(str(encrypted_data))
+
     msg.attach(second)
 
     return msg
@@ -632,7 +645,9 @@ def forward_email_to_mailbox(
     if mailbox.pgp_finger_print and user.is_premium() and not alias.disable_pgp:
         LOG.d("Encrypt message using mailbox %s", mailbox)
         try:
-            msg = prepare_pgp_message(msg, mailbox.pgp_finger_print)
+            msg = prepare_pgp_message(
+                msg, mailbox.pgp_finger_print, mailbox.pgp_public_key
+            )
         except PGPException:
             LOG.exception(
                 "Cannot encrypt message %s -> %s. %s %s", contact, alias, mailbox, user
@@ -901,7 +916,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     if contact.pgp_finger_print and user.is_premium():
         LOG.d("Encrypt message for contact %s", contact)
         try:
-            msg = prepare_pgp_message(msg, contact.pgp_finger_print)
+            msg = prepare_pgp_message(
+                msg, contact.pgp_finger_print, contact.pgp_public_key
+            )
         except PGPException:
             LOG.exception(
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
