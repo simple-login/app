@@ -744,7 +744,7 @@ Some errors should be fixed during development however: for example error like `
 
 All following endpoint return `401` status code if the API Key is incorrect.
 
-### Authentication endpoints
+### Account endpoints
 
 #### POST /api/auth/login
 
@@ -845,7 +845,8 @@ Output: if api key is correct, return a json with user name and whether user is 
   "name": "John Wick",
   "is_premium": false,
   "email": "john@wick.com",
-  "in_trial": true
+  "in_trial": true,
+  "profile_picture_url": "https://profile.png"
 }
 ```
 

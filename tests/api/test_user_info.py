@@ -2,6 +2,7 @@ from flask import url_for
 
 from app.extensions import db
 from app.models import User, ApiKey
+from tests.utils import login
 
 
 def test_user_in_trial(flask_client):
@@ -24,6 +25,7 @@ def test_user_in_trial(flask_client):
         "name": "Test User",
         "email": "a@b.c",
         "in_trial": True,
+        "profile_picture_url": None,
     }
 
 

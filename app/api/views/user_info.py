@@ -1,10 +1,31 @@
+import base64
+from io import BytesIO
+
 from flask import jsonify, g, request, make_response
 from flask_login import logout_user
 
+from app import s3
 from app.api.base import api_bp, require_api_auth
 from app.config import SESSION_COOKIE_NAME
 from app.extensions import db
-from app.models import ApiKey
+from app.models import ApiKey, File, User
+from app.utils import random_string
+
+
+def user_to_dict(user: User) -> dict:
+    ret = {
+        "name": user.name,
+        "is_premium": user.is_premium(),
+        "email": user.email,
+        "in_trial": user.in_trial(),
+    }
+
+    if user.profile_picture_id:
+        ret["profile_picture_url"] = user.profile_picture.get_url()
+    else:
+        ret["profile_picture_url"] = None
+
+    return ret
 
 
 @api_bp.route("/user_info")
@@ -15,14 +36,7 @@ def user_info():
     """
     user = g.user
 
-    return jsonify(
-        {
-            "name": user.name,
-            "is_premium": user.is_premium(),
-            "email": user.email,
-            "in_trial": user.in_trial(),
-        }
-    )
+    return jsonify(user_to_dict(user))
 
 
 @api_bp.route("/api_key", methods=["POST"])
