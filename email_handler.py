@@ -420,27 +420,16 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str
     second.add_header("Content-Disposition", 'inline; filename="encrypted.asc"')
 
     # encrypt original message
-    # ABTest between pgpy and python-gnupg
-    x = random.randint(0, 9)
-    if x >= 5:
-        LOG.d("encrypt using python-gnupg")
-        try:
-            encrypted_data = pgp_utils.encrypt_file(
-                BytesIO(orig_msg.as_bytes()), pgp_fingerprint
-            )
-            second.set_payload(encrypted_data)
-        except PGPException:
-            LOG.exception("Cannot encrypt using python-gnupg, use pgpy")
-            encrypted_data = pgp_utils.encrypt_file_with_pgpy(
-                orig_msg.as_bytes(), public_key
-            )
-            second.set_payload(str(encrypted_data))
-    else:
-        LOG.d("encrypt using pgpy")
-        encrypted_data = pgp_utils.encrypt_file_with_pgpy(
-            orig_msg.as_bytes(), public_key
+    # use pgpy as fallback
+    try:
+        encrypted_data = pgp_utils.encrypt_file(
+            BytesIO(orig_msg.as_bytes()), pgp_fingerprint
         )
-        second.set_payload(str(encrypted_data))
+        second.set_payload(encrypted_data)
+    except PGPException:
+        LOG.exception("Cannot encrypt using python-gnupg, use pgpy")
+        encrypted = pgp_utils.encrypt_file_with_pgpy(orig_msg.as_bytes(), public_key)
+        second.set_payload(str(encrypted))
 
     msg.attach(second)
 
