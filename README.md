@@ -852,6 +852,17 @@ Output: if api key is correct, return a json with user name and whether user is 
 
 If api key is incorrect, return 401.
 
+#### PATCH /api/user_info
+
+Update user info
+
+Input:
+- profile_picture: the profile picture in base64. Setting to `null` remove the current profile picture.
+- name
+
+Output: same as GET /api/user_info
+
+
 #### POST /api/api_key
 
 Create a new API Key

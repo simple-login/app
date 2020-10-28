@@ -39,6 +39,43 @@ def user_info():
     return jsonify(user_to_dict(user))
 
 
+@api_bp.route("/user_info", methods=["PATCH"])
+@require_api_auth
+def update_user_info():
+    """
+    Input
+    - profile_picture (optional): base64 of the profile picture. Set to null to remove the profile picture
+    - name (optional)
+
+    """
+    user = g.user
+    data = request.get_json() or {}
+
+    if "profile_picture" in data:
+        if data["profile_picture"] is None:
+            if user.profile_picture_id:
+                file = user.profile_picture
+                File.delete(file.id)
+                s3.delete(file.path)
+
+                user.profile_picture_id = None
+        else:
+            raw_data = base64.decodebytes(data["profile_picture"].encode())
+            file_path = random_string(30)
+            file = File.create(user_id=user.id, path=file_path)
+            db.session.flush()
+            s3.upload_from_bytesio(file_path, BytesIO(raw_data))
+            user.profile_picture_id = file.id
+            db.session.flush()
+
+    if "name" in data:
+        user.name = data["name"]
+
+    db.session.commit()
+
+    return jsonify(user_to_dict(user))
+
+
 @api_bp.route("/api_key", methods=["POST"])
 @require_api_auth
 def create_api_key():
