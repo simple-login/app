@@ -9,4 +9,5 @@ from .views import (
     apple,
     mailbox,
     notification,
+    setting,
 )

@@ -1381,6 +1381,19 @@ Input:
 Output: 
 200 if success
 
+### Settings endpoints
+
+#### GET /api/setting
+
+Return user setting
+
+```json
+{
+  "alias_generator": "uuid",
+  "notification": true,
+  "random_alias_default_domain": "sl.local"
+}
+```  
 
 ### Misc endpoints
 #### POST /api/apple/process_payment
