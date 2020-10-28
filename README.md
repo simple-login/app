@@ -1395,6 +1395,17 @@ Return user setting
 }
 ```
 
+#### PATCH /api/setting
+
+Update user setting. All input fields are optional.
+
+Input:
+- alias_generator (string): uuid or word
+- notification (boolean): true or false
+- random_alias_default_domain (string): one of the domains returned by `GET /api/setting/domains`
+
+Output: same as `GET /api/setting`
+
 #### GET /api/setting/domains
 
 Return domains that user can use to create random alias
