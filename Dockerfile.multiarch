@@ -27,7 +27,7 @@ COPY qemu-$QEMU_ARCH-static /usr/bin/
 RUN echo "DEBUG QEMU_ARCH=$QEMU_ARCH"
 
 # install some utility packages
-RUN apt update && apt install -y vim telnet
+RUN apk update && apk add vim busybox-extras
 
 RUN pip3 install poetry==1.0.10
 
