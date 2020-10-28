@@ -25,3 +25,18 @@ def get_setting():
     user = g.user
 
     return jsonify(setting_to_dict(user))
+
+
+@api_bp.route("/setting/domains")
+@require_api_auth
+def get_available_domains_for_random_alias():
+    """
+    Available domains for random alias
+    """
+    user = g.user
+
+    ret = [
+        (is_sl, domain) for is_sl, domain in user.available_domains_for_random_alias()
+    ]
+
+    return jsonify(ret)

@@ -1393,7 +1393,33 @@ Return user setting
   "notification": true,
   "random_alias_default_domain": "sl.local"
 }
-```  
+```
+
+#### GET /api/setting/domains
+
+Return domains that user can use to create random alias
+
+```json
+[
+  [
+    true,
+    "d1.test"
+  ],
+  [
+    true,
+    "d2.test"
+  ],
+  [
+    true,
+    "sl.local"
+  ],
+  [
+    false,
+    "ab.cd"
+  ]
+]
+```
+  
 
 ### Misc endpoints
 #### POST /api/apple/process_payment
