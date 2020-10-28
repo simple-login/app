@@ -2,24 +2,19 @@ import os
 from io import BytesIO
 
 import gnupg
+import pgpy
 from memory_profiler import memory_usage
 from pgpy import PGPMessage
 
 from app.config import GNUPGHOME
 from app.log import LOG
 from app.models import Mailbox, Contact
-from app.utils import random_string
-import pgpy
 
 gpg = gnupg.GPG(gnupghome=GNUPGHOME)
 gpg.encoding = "utf-8"
 
 
 class PGPException(Exception):
-    pass
-
-
-class IncorrectPassphrasePGPException(Exception):
     pass
 
 
@@ -48,9 +43,6 @@ def load_public_key_and_check(public_key: str) -> str:
         if not r.ok:
             # remove the fingerprint
             gpg.delete_keys([fingerprint])
-            if r.GPG_ERROR_CODES == {11: "incorrect passphrase"}:
-                LOG.warning("Incorrect passphrase")
-                raise IncorrectPassphrasePGPException()
             raise PGPException("Encryption fails with the key")
 
         return fingerprint
