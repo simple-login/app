@@ -5,7 +5,7 @@ COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm install
 
 # Main image
-FROM python:3.7
+FROM python:3.7-alpine
 
 # install some utility packages
 RUN apt update && apt install -y vim telnet
