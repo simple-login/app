@@ -8,7 +8,7 @@ RUN cd /code/static && npm install
 FROM python:3.7-alpine
 
 # install some utility packages
-RUN apk update && apk add vim busybox-extras build-base
+RUN apk update && apk add vim busybox-extras build-base libffi-dev
 
 RUN pip3 install poetry==1.0.10
 
