@@ -1,219 +1,127 @@
- sudo docker build . -t simplelogin/app:3.2.3
-Sending build context to Docker daemon  29.34MB
-Step 1/14 : FROM node:10.17.0-alpine AS npm
-10.17.0-alpine: Pulling from library/node
-8bfa91304040: Pull complete
-21cfd525eb13: Pull complete
-bfe64a197007: Pull complete
-27a61482b48f: Pull complete
-Digest: sha256:da8161962573bd6ab16b54a9bfa81a263458e5199074d0678d0556376b22bd22
-^C
-freebox@mxrelay:~/app> sudo docker build . -t simplelogin/app:latest
-Sending build context to Docker daemon  29.34MB
+sudo docker  build . -t multiarch/app
+
+Sending build context to Docker daemon   29.4MB
 Step 1/14 : FROM node:10.17.0-alpine AS npm
  ---> f121ec547465
 Step 2/14 : WORKDIR /code
- ---> Running in 4ad5b55e437e
-Removing intermediate container 4ad5b55e437e
- ---> e1c1fc79d001
+ ---> Using cache
+ ---> 9a7d319e60e2
 Step 3/14 : COPY ./static/package*.json /code/static/
- ---> 62866e6f7acd
+ ---> Using cache
+ ---> e569d5f0c186
 Step 4/14 : RUN cd /code/static && npm install
- ---> Running in 617dda23300d
-added 17 packages from 18 contributors and audited 17 packages in 3.5s
-found 1 moderate severity vulnerability
-  run `npm audit fix` to fix them, or `npm audit` for details
-Removing intermediate container 617dda23300d
- ---> c72b2a5df437
-Step 5/14 : FROM python:3.7
-3.7: Pulling from library/python
-04aacb10cb67: Pull complete
-136d6e4f4b17: Pull complete
-28db65b8364f: Pull complete
-ff74fb95e956: Pull complete
-8d0afbf256ed: Pull complete
-2ae6747d2813: Pull complete
-4db45a3c5fd3: Pull complete
-c56f5d31428b: Pull complete
-4e68d4625592: Pull complete
-Digest: sha256:c952606af7157b7439359a0e3141f429269eedac71fd27361ac001cdb8f7764f
-Status: Downloaded newer image for python:3.7
- ---> 9fa4d7ffde51
-Step 6/14 : RUN apt update && apt install -y vim telnet
- ---> Running in 6748b32a37e3
-
-WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
-
-Get:1 http://deb.debian.org/debian buster InRelease [121 kB]
-Get:2 http://security.debian.org/debian-security buster/updates InRelease [65.4 kB]
-Get:3 http://deb.debian.org/debian buster-updates InRelease [51.9 kB]
-Get:4 http://security.debian.org/debian-security buster/updates/main arm64 Packages [237 kB]
-Get:5 http://deb.debian.org/debian buster/main arm64 Packages [7736 kB]
-Get:6 http://deb.debian.org/debian buster-updates/main arm64 Packages [7848 B]
-Fetched 8219 kB in 3s (3115 kB/s)
-Reading package lists...
-Building dependency tree...
-Reading state information...
-8 packages can be upgraded. Run 'apt list --upgradable' to see them.
-
-WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
-
-Reading package lists...
-Building dependency tree...
-Reading state information...
-The following additional packages will be installed:
-  libgpm2 vim-common vim-runtime xxd
-Suggested packages:
-  gpm ctags vim-doc vim-scripts
-The following NEW packages will be installed:
-  libgpm2 telnet vim vim-common vim-runtime xxd
-0 upgraded, 6 newly installed, 0 to remove and 8 not upgraded.
-Need to get 7400 kB of archives.
-After this operation, 34.0 MB of additional disk space will be used.
-Get:1 http://deb.debian.org/debian buster/main arm64 xxd arm64 2:8.1.0875-5 [139 kB]
-Get:2 http://deb.debian.org/debian buster/main arm64 vim-common all 2:8.1.0875-5 [195 kB]
-Get:3 http://deb.debian.org/debian buster/main arm64 telnet arm64 0.17-41.2 [68.4 kB]
-Get:4 http://deb.debian.org/debian buster/main arm64 libgpm2 arm64 1.20.7-5 [34.5 kB]
-Get:5 http://deb.debian.org/debian buster/main arm64 vim-runtime all 2:8.1.0875-5 [5775 kB]
-Get:6 http://deb.debian.org/debian buster/main arm64 vim arm64 2:8.1.0875-5 [1189 kB]
-debconf: delaying package configuration, since apt-utils is not installed
-Fetched 7400 kB in 0s (15.0 MB/s)
-Selecting previously unselected package xxd.
-(Reading database ... 24576 files and directories currently installed.)
-Preparing to unpack .../0-xxd_2%3a8.1.0875-5_arm64.deb ...
-Unpacking xxd (2:8.1.0875-5) ...
-Selecting previously unselected package vim-common.
-Preparing to unpack .../1-vim-common_2%3a8.1.0875-5_all.deb ...
-Unpacking vim-common (2:8.1.0875-5) ...
-Selecting previously unselected package telnet.
-Preparing to unpack .../2-telnet_0.17-41.2_arm64.deb ...
-Unpacking telnet (0.17-41.2) ...
-Selecting previously unselected package libgpm2:arm64.
-Preparing to unpack .../3-libgpm2_1.20.7-5_arm64.deb ...
-Unpacking libgpm2:arm64 (1.20.7-5) ...
-Selecting previously unselected package vim-runtime.
-Preparing to unpack .../4-vim-runtime_2%3a8.1.0875-5_all.deb ...
-Adding 'diversion of /usr/share/vim/vim81/doc/help.txt to /usr/share/vim/vim81/doc/help.txt.vim-tiny by vim-runtime'
-Adding 'diversion of /usr/share/vim/vim81/doc/tags to /usr/share/vim/vim81/doc/tags.vim-tiny by vim-runtime'
-Unpacking vim-runtime (2:8.1.0875-5) ...
-Selecting previously unselected package vim.
-Preparing to unpack .../5-vim_2%3a8.1.0875-5_arm64.deb ...
-Unpacking vim (2:8.1.0875-5) ...
-Setting up libgpm2:arm64 (1.20.7-5) ...
-Setting up telnet (0.17-41.2) ...
-update-alternatives: using /usr/bin/telnet.netkit to provide /usr/bin/telnet (telnet) in auto mode
-Setting up xxd (2:8.1.0875-5) ...
-Setting up vim-common (2:8.1.0875-5) ...
-Setting up vim-runtime (2:8.1.0875-5) ...
-Setting up vim (2:8.1.0875-5) ...
-update-alternatives: using /usr/bin/vim.basic to provide /usr/bin/vim (vim) in auto mode
-update-alternatives: using /usr/bin/vim.basic to provide /usr/bin/vimdiff (vimdiff) in auto mode
-update-alternatives: using /usr/bin/vim.basic to provide /usr/bin/rvim (rvim) in auto mode
-update-alternatives: using /usr/bin/vim.basic to provide /usr/bin/rview (rview) in auto mode
-update-alternatives: using /usr/bin/vim.basic to provide /usr/bin/vi (vi) in auto mode
-update-alternatives: using /usr/bin/vim.basic to provide /usr/bin/view (view) in auto mode
-update-alternatives: using /usr/bin/vim.basic to provide /usr/bin/ex (ex) in auto mode
-update-alternatives: using /usr/bin/vim.basic to provide /usr/bin/editor (editor) in auto mode
-Processing triggers for hicolor-icon-theme (0.17-2) ...
-Processing triggers for libc-bin (2.28-10) ...
-Processing triggers for mime-support (3.62) ...
-Removing intermediate container 6748b32a37e3
- ---> 4fc7a2f12464
+ ---> Using cache
+ ---> 478e98e9cd13
+Step 5/14 : FROM python:3.7-alpine
+ ---> 26b2b74f710c
+Step 6/14 : RUN apk update && apk add --no-cache vim busybox-extras build-base libffi-dev libressl-dev musl-dev postgresql-dev python3-dev
+ ---> Using cache
+ ---> 1e4f814101cc
 Step 7/14 : RUN pip3 install poetry==1.0.10
- ---> Running in bf0422b64e26
+ ---> Running in 293de7c43534
 Collecting poetry==1.0.10
   Downloading poetry-1.0.10-py2.py3-none-any.whl (224 kB)
-Collecting jsonschema<4.0,>=3.1
-  Downloading jsonschema-3.2.0-py2.py3-none-any.whl (56 kB)
-Collecting shellingham<2.0,>=1.1
-  Downloading shellingham-1.3.2-py2.py3-none-any.whl (11 kB)
+Collecting cachecontrol[filecache]<0.13.0,>=0.12.4
+  Downloading CacheControl-0.12.6-py2.py3-none-any.whl (19 kB)
 Collecting keyring<21.0.0,>=20.0.1; python_version >= "3.5" and python_version < "4.0"
   Downloading keyring-20.0.1-py2.py3-none-any.whl (31 kB)
-Collecting requests-toolbelt<0.9.0,>=0.8.0
-  Downloading requests_toolbelt-0.8.0-py2.py3-none-any.whl (54 kB)
 Collecting importlib-metadata<1.2.0,>=1.1.3; python_version < "3.8"
   Downloading importlib_metadata-1.1.3-py2.py3-none-any.whl (29 kB)
 Collecting pexpect<5.0.0,>=4.7.0
   Downloading pexpect-4.8.0-py2.py3-none-any.whl (59 kB)
-Collecting tomlkit<0.6.0,>=0.5.11
-  Downloading tomlkit-0.5.11-py2.py3-none-any.whl (31 kB)
-Collecting requests<3.0,>=2.18
-  Downloading requests-2.24.0-py2.py3-none-any.whl (61 kB)
-Collecting pyrsistent<0.15.0,>=0.14.2
-  Downloading pyrsistent-0.14.11.tar.gz (104 kB)
-Collecting html5lib<2.0,>=1.0
-  Downloading html5lib-1.1-py2.py3-none-any.whl (112 kB)
-Collecting clikit<0.5.0,>=0.4.2
-  Downloading clikit-0.4.3-py2.py3-none-any.whl (88 kB)
-Collecting cachy<0.4.0,>=0.3.0
-  Downloading cachy-0.3.0-py2.py3-none-any.whl (20 kB)
-Collecting cachecontrol[filecache]<0.13.0,>=0.12.4
-  Downloading CacheControl-0.12.6-py2.py3-none-any.whl (19 kB)
+Collecting requests-toolbelt<0.9.0,>=0.8.0
+  Downloading requests_toolbelt-0.8.0-py2.py3-none-any.whl (54 kB)
 Collecting pkginfo<2.0,>=1.4
   Downloading pkginfo-1.6.1-py2.py3-none-any.whl (25 kB)
-Collecting pyparsing<3.0,>=2.2
-  Downloading pyparsing-2.4.7-py2.py3-none-any.whl (67 kB)
+Collecting tomlkit<0.6.0,>=0.5.11
+  Downloading tomlkit-0.5.11-py2.py3-none-any.whl (31 kB)
+Collecting html5lib<2.0,>=1.0
+  Downloading html5lib-1.1-py2.py3-none-any.whl (112 kB)
+Collecting cachy<0.4.0,>=0.3.0
+  Downloading cachy-0.3.0-py2.py3-none-any.whl (20 kB)
+Collecting clikit<0.5.0,>=0.4.2
+  Downloading clikit-0.4.3-py2.py3-none-any.whl (88 kB)
 Collecting cleo<0.8.0,>=0.7.6
   Downloading cleo-0.7.6-py2.py3-none-any.whl (21 kB)
-Collecting attrs>=17.4.0
-  Downloading attrs-20.2.0-py2.py3-none-any.whl (48 kB)
-Collecting six>=1.11.0
-  Downloading six-1.15.0-py2.py3-none-any.whl (10 kB)
-Requirement already satisfied: setuptools in /usr/local/lib/python3.7/site-packages (from jsonschema<4.0,>=3.1->poetry==1.0.10) (50.3.2)
+Collecting requests<3.0,>=2.18
+  Downloading requests-2.24.0-py2.py3-none-any.whl (61 kB)
+Collecting shellingham<2.0,>=1.1
+  Downloading shellingham-1.3.2-py2.py3-none-any.whl (11 kB)
+Collecting pyrsistent<0.15.0,>=0.14.2
+  Downloading pyrsistent-0.14.11.tar.gz (104 kB)
+Collecting jsonschema<4.0,>=3.1
+  Downloading jsonschema-3.2.0-py2.py3-none-any.whl (56 kB)
+Collecting pyparsing<3.0,>=2.2
+  Downloading pyparsing-2.4.7-py2.py3-none-any.whl (67 kB)
+Collecting msgpack>=0.5.2
+  Downloading msgpack-1.0.0.tar.gz (232 kB)
+Collecting lockfile>=0.9; extra == "filecache"
+  Downloading lockfile-0.12.2-py2.py3-none-any.whl (13 kB)
 Collecting secretstorage; sys_platform == "linux"
   Downloading SecretStorage-3.1.2-py3-none-any.whl (14 kB)
 Collecting zipp>=0.5
   Downloading zipp-3.4.0-py3-none-any.whl (5.2 kB)
 Collecting ptyprocess>=0.5
   Downloading ptyprocess-0.6.0-py2.py3-none-any.whl (39 kB)
-Collecting certifi>=2017.4.17
-  Downloading certifi-2020.6.20-py2.py3-none-any.whl (156 kB)
-Collecting idna<3,>=2.5
-  Downloading idna-2.10-py2.py3-none-any.whl (58 kB)
-Collecting urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1
-  Downloading urllib3-1.25.11-py2.py3-none-any.whl (127 kB)
-Collecting chardet<4,>=3.0.2
-  Downloading chardet-3.0.4-py2.py3-none-any.whl (133 kB)
+Collecting six>=1.9
+  Downloading six-1.15.0-py2.py3-none-any.whl (10 kB)
 Collecting webencodings
   Downloading webencodings-0.5.1-py2.py3-none-any.whl (11 kB)
 Collecting pylev<2.0,>=1.3
   Downloading pylev-1.3.0-py2.py3-none-any.whl (4.9 kB)
 Collecting pastel<0.3.0,>=0.2.0
   Downloading pastel-0.2.1-py2.py3-none-any.whl (6.0 kB)
-Collecting msgpack>=0.5.2
-  Downloading msgpack-1.0.0.tar.gz (232 kB)
-Collecting lockfile>=0.9; extra == "filecache"
-  Downloading lockfile-0.12.2-py2.py3-none-any.whl (13 kB)
+Collecting certifi>=2017.4.17
+  Downloading certifi-2020.6.20-py2.py3-none-any.whl (156 kB)
+Collecting urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1
+  Downloading urllib3-1.25.11-py2.py3-none-any.whl (127 kB)
+Collecting idna<3,>=2.5
+  Downloading idna-2.10-py2.py3-none-any.whl (58 kB)
+Collecting chardet<4,>=3.0.2
+  Downloading chardet-3.0.4-py2.py3-none-any.whl (133 kB)
+Requirement already satisfied: setuptools in /usr/local/lib/python3.7/site-packages (from jsonschema<4.0,>=3.1->poetry==1.0.10) (50.3.2)
+Collecting attrs>=17.4.0
+  Downloading attrs-20.2.0-py2.py3-none-any.whl (48 kB)
 Collecting jeepney>=0.4.2
   Downloading jeepney-0.4.3-py3-none-any.whl (21 kB)
 Collecting cryptography
-  Downloading cryptography-3.2-cp35-abi3-manylinux2014_aarch64.whl (2.6 MB)
-Collecting cffi!=1.11.3,>=1.8
-  Downloading cffi-1.14.3-cp37-cp37m-manylinux2014_aarch64.whl (205 kB)
+  Downloading cryptography-3.2.1.tar.gz (540 kB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+    Preparing wheel metadata: started
+    Preparing wheel metadata: finished with status 'done'
+Processing /root/.cache/pip/wheels/82/27/92/7797f36c5203b94eb5919cbe14a6535d4d46317fc00b9b06cf/cffi-1.14.3-cp37-cp37m-linux_aarch64.whl
 Collecting pycparser
-  Downloading pycparser-2.20-py2.py3-none-any.whl (112 kB)
-Building wheels for collected packages: pyrsistent, msgpack
+  Using cached pycparser-2.20-py2.py3-none-any.whl (112 kB)
+Building wheels for collected packages: pyrsistent, msgpack, cryptography
   Building wheel for pyrsistent (setup.py): started
   Building wheel for pyrsistent (setup.py): finished with status 'done'
-  Created wheel for pyrsistent: filename=pyrsistent-0.14.11-cp37-cp37m-linux_aarch64.whl size=122720 sha256=9978c56a03f6ec3c34e7cd777a209ee98b188407e729010b1f44b5920321da62
+  Created wheel for pyrsistent: filename=pyrsistent-0.14.11-cp37-cp37m-linux_aarch64.whl size=72811 sha256=0c8ff3ef4b7c1df182fe8b26fc47b54c2054eb6cc10f1090a489ecef21741bb4
   Stored in directory: /root/.cache/pip/wheels/20/78/0a/4d5c19e3868f7dd8df2fa8c2933f01ba28948a3f0b10faccf4
   Building wheel for msgpack (setup.py): started
   Building wheel for msgpack (setup.py): finished with status 'done'
-  Created wheel for msgpack: filename=msgpack-1.0.0-cp37-cp37m-linux_aarch64.whl size=268453 sha256=f54abe4d18be6c775af1cdc8966fddadbeed40130ac43628419f3cbd142a48aa
+  Created wheel for msgpack: filename=msgpack-1.0.0-cp37-cp37m-linux_aarch64.whl size=76902 sha256=84f78dfb7b92eab064d854d77a760581b5eb4e365dc9b53dd22f90c1442101c0
   Stored in directory: /root/.cache/pip/wheels/6b/f9/4e/2e80ac9d6632ac56099e51e11232096a9306243478e0f6d8c6
-Successfully built pyrsistent msgpack
-Installing collected packages: six, pyrsistent, zipp, importlib-metadata, attrs, jsonschema, shellingham, jeepney, pycparser, cffi, cryptography, secretstorage, keyring, certifi, idna, urllib3, chardet, requests, requests-toolbelt, ptyprocess, pexpect, tomlkit, webencodings, html5lib, pylev, pastel, clikit, cachy, msgpack, lockfile, cachecontrol, pkginfo, pyparsing, cleo, poetry
-Successfully installed attrs-20.2.0 cachecontrol-0.12.6 cachy-0.3.0 certifi-2020.6.20 cffi-1.14.3 chardet-3.0.4 cleo-0.7.6 clikit-0.4.3 cryptography-3.2 html5lib-1.1 idna-2.10 importlib-metadata-1.1.3 jeepney-0.4.3 jsonschema-3.2.0 keyring-20.0.1 lockfile-0.12.2 msgpack-1.0.0 pastel-0.2.1 pexpect-4.8.0 pkginfo-1.6.1 poetry-1.0.10 ptyprocess-0.6.0 pycparser-2.20 pylev-1.3.0 pyparsing-2.4.7 pyrsistent-0.14.11 requests-2.24.0 requests-toolbelt-0.8.0 secretstorage-3.1.2 shellingham-1.3.2 six-1.15.0 tomlkit-0.5.11 urllib3-1.25.11 webencodings-0.5.1 zipp-3.4.0
-Removing intermediate container bf0422b64e26
- ---> a969d6ce392d
+  Building wheel for cryptography (PEP 517): started
+  Building wheel for cryptography (PEP 517): still running...
+  Building wheel for cryptography (PEP 517): finished with status 'done'
+  Created wheel for cryptography: filename=cryptography-3.2.1-cp37-cp37m-linux_aarch64.whl size=335780 sha256=b3467642e73e8d9597b4648a29ae27821d72bcb41e37c904a0e0f8a913152ed2
+  Stored in directory: /root/.cache/pip/wheels/03/a5/70/f834a5c113244ec554aefd6eb6b778e5ecc719567cb42b8a8f
+Successfully built pyrsistent msgpack cryptography
+Installing collected packages: certifi, urllib3, idna, chardet, requests, msgpack, lockfile, cachecontrol, jeepney, pycparser, cffi, six, cryptography, secretstorage, zipp, importlib-metadata, keyring, ptyprocess, pexpect, requests-toolbelt, pkginfo, tomlkit, webencodings, html5lib, cachy, pylev, pastel, clikit, cleo, shellingham, pyrsistent, attrs, jsonschema, pyparsing, poetry
+Successfully installed attrs-20.2.0 cachecontrol-0.12.6 cachy-0.3.0 certifi-2020.6.20 cffi-1.14.3 chardet-3.0.4 cleo-0.7.6 clikit-0.4.3 cryptography-3.2.1 html5lib-1.1 idna-2.10 importlib-metadata-1.1.3 jeepney-0.4.3 jsonschema-3.2.0 keyring-20.0.1 lockfile-0.12.2 msgpack-1.0.0 pastel-0.2.1 pexpect-4.8.0 pkginfo-1.6.1 poetry-1.0.10 ptyprocess-0.6.0 pycparser-2.20 pylev-1.3.0 pyparsing-2.4.7 pyrsistent-0.14.11 requests-2.24.0 requests-toolbelt-0.8.0 secretstorage-3.1.2 shellingham-1.3.2 six-1.15.0 tomlkit-0.5.11 urllib3-1.25.11 webencodings-0.5.1 zipp-3.4.0
+Removing intermediate container 293de7c43534
+ ---> abfe70c7aee1
 Step 8/14 : WORKDIR /code
- ---> Running in ff6b28f43289
-Removing intermediate container ff6b28f43289
- ---> 14c63e594e72
+ ---> Running in cfaf8fe24e0d
+Removing intermediate container cfaf8fe24e0d
+ ---> 893ef48cd74f
 Step 9/14 : COPY poetry.lock pyproject.toml ./
- ---> 7c293bd2307c
+ ---> f1e2f956a17e
 Step 10/14 : RUN poetry config virtualenvs.create false   && poetry install
- ---> Running in 8f421d0e4811
+ ---> Running in 16453e1cba60
 Skipping virtualenv creation, as specified in config file.
 Installing dependencies from lock file
 
@@ -243,7 +151,7 @@ Package operations: 120 installs, 5 updates, 0 removals
   - Installing werkzeug (1.0.1)
   - Updating zipp (3.4.0 -> 3.2.0)
   - Installing appdirs (1.4.4)
-  - Updating cryptography (3.2 -> 3.1.1)
+  - Updating cryptography (3.2.1 -> 3.1.1)
   - Installing distlib (0.3.1)
   - Installing filelock (3.0.12)
   - Installing flask (1.1.2)
@@ -345,64 +253,20 @@ Package operations: 120 installs, 5 updates, 0 removals
   - Installing watchtower (0.8.0)
   - Installing webauthn (0.4.7)
   - Installing yacron (0.11.1)
-Removing intermediate container 8f421d0e4811
- ---> 8df48e8b0beb
+Removing intermediate container 16453e1cba60
+ ---> 30e338e86822
 Step 11/14 : COPY --from=npm /code /code
- ---> fade419503ee
+ ---> 9278db61a466
 Step 12/14 : COPY . .
- ---> a49290ada9cf
+ ---> d10cc73e0e31
 Step 13/14 : EXPOSE 7777
- ---> Running in 93a64aee83bf
-Removing intermediate container 93a64aee83bf
- ---> ece115153cb5
+ ---> Running in 5fd232db59dd
+Removing intermediate container 5fd232db59dd
+ ---> 7f97b7199675
 Step 14/14 : CMD ["gunicorn","wsgi:app","-b","0.0.0.0:7777","-w","2","--timeout","15"]
- ---> Running in e107db79224c
-Removing intermediate container e107db79224c
- ---> 6f1f4ca3af01
-Successfully built 6f1f4ca3af01
-Successfully tagged simplelogin/app:latest
-freebox@mxrelay:~/app> sudo docker build . -t metabaron/app:latest
-Sending build context to Docker daemon  29.34MB
-Step 1/14 : FROM node:10.17.0-alpine AS npm
- ---> f121ec547465
-Step 2/14 : WORKDIR /code
- ---> Using cache
- ---> e1c1fc79d001
-Step 3/14 : COPY ./static/package*.json /code/static/
- ---> Using cache
- ---> 62866e6f7acd
-Step 4/14 : RUN cd /code/static && npm install
- ---> Using cache
- ---> c72b2a5df437
-Step 5/14 : FROM python:3.7
- ---> 9fa4d7ffde51
-Step 6/14 : RUN apt update && apt install -y vim telnet
- ---> Using cache
- ---> 4fc7a2f12464
-Step 7/14 : RUN pip3 install poetry==1.0.10
- ---> Using cache
- ---> a969d6ce392d
-Step 8/14 : WORKDIR /code
- ---> Using cache
- ---> 14c63e594e72
-Step 9/14 : COPY poetry.lock pyproject.toml ./
- ---> Using cache
- ---> 7c293bd2307c
-Step 10/14 : RUN poetry config virtualenvs.create false   && poetry install
- ---> Using cache
- ---> 8df48e8b0beb
-Step 11/14 : COPY --from=npm /code /code
- ---> Using cache
- ---> fade419503ee
-Step 12/14 : COPY . .
- ---> Using cache
- ---> a49290ada9cf
-Step 13/14 : EXPOSE 7777
- ---> Using cache
- ---> ece115153cb5
-Step 14/14 : CMD ["gunicorn","wsgi:app","-b","0.0.0.0:7777","-w","2","--timeout","15"]
- ---> Using cache
- ---> 6f1f4ca3af01
-Successfully built 6f1f4ca3af01
-Successfully tagged metabaron/app:latest
-
+ ---> Running in faf2d5fe93ba
+Removing intermediate container faf2d5fe93ba
+ ---> 0443e601dace
+Successfully built 0443e601dace
+Successfully tagged multiarch/app:latest
+freebox@mxrelay:~/app> 
