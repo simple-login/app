@@ -5,6 +5,8 @@ COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm install
 
 # Main image
+# python:3.7 -> python:3.7-alpine
+# https://github.com/docker-library/python/issues/431
 FROM python:3.7-alpine
 
 # install some utility packages
