@@ -16,7 +16,8 @@ FROM python:3.7-alpine
 # ffi.h -> libffi-dev
 # openssl/opensslv.h -> libressl-dev musl-dev
 # psycopg2-binary install error -> postgresql-dev python3-dev
-RUN apk update && apk add --no-cache vim busybox-extras build-base libffi-dev libressl-dev musl-dev postgresql-dev python3-dev
+# gpg -> gnupg 
+RUN apk update && apk add --no-cache vim busybox-extras build-base libffi-dev libressl-dev musl-dev postgresql-dev python3-dev gnupg
 
 RUN pip3 install poetry==1.0.10
 
