@@ -27,7 +27,7 @@ COPY qemu-$QEMU_ARCH-static /usr/bin/
 RUN echo "DEBUG QEMU_ARCH=$QEMU_ARCH"
 
 # install some utility packages
-RUN apk update && apk add --no-cache vim busybox-extras build-base libffi-dev libressl-dev musl-dev postgresql-dev python3-dev
+RUN apk update && apk add --no-cache vim busybox-extras build-base libffi-dev libressl-dev musl-dev postgresql-dev python3-dev gnupg
 
 RUN pip3 install poetry==1.0.10
 
