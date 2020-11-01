@@ -852,6 +852,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
         return False, "550 SL E15 Email detected as spam"
 
+    delete_all_headers_except(msg, ["From", "To", "Cc", "Subject"])
+
     # replace "ra+string@simplelogin.co" by the contact email in the email body
     # as this is usually included when replying
     if user.replace_reverse_alias:
@@ -900,14 +902,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     add_or_replace_header(msg, "From", from_header)
 
-    # some email providers like ProtonMail adds automatically the Reply-To field
-    # make sure to delete it
-    delete_header(msg, "Reply-To")
-
-    # remove sender header if present as this could reveal user real email
-    delete_header(msg, "Sender")
-    delete_header(msg, "X-Sender")
-
     replace_header_when_reply(msg, alias, "To")
     replace_header_when_reply(msg, alias, "Cc")
 
@@ -919,9 +913,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
 
     add_or_replace_header(msg, _DIRECTION, "Reply")
-
-    # Received-SPF is injected by postfix-policyd-spf-python can reveal user original email
-    delete_header(msg, "Received-SPF")
 
     LOG.d(
         "send email from %s to %s, mail_options:%s,rcpt_options:%s",
