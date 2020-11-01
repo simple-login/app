@@ -842,6 +842,34 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
         return False, "550 SL E15 Email detected as spam"
 
+    # replace "ra+string@simplelogin.co" by the contact email in the email body
+    # as this is usually included when replying
+    if user.replace_reverse_alias:
+        if msg.is_multipart():
+            for part in msg.walk():
+                if part.get_content_maintype() != "text":
+                    continue
+                part = replace_str_in_msg(part, reply_email, contact.website_email)
+
+        else:
+            msg = replace_str_in_msg(msg, reply_email, contact.website_email)
+
+    # create PGP email if needed
+    if contact.pgp_finger_print and user.is_premium():
+        LOG.d("Encrypt message for contact %s", contact)
+        try:
+            msg = prepare_pgp_message(
+                msg, contact.pgp_finger_print, contact.pgp_public_key
+            )
+        except PGPException:
+            LOG.exception(
+                "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
+            )
+            # to not save the email_log
+            db.session.rollback()
+            # return 421 so the client can retry later
+            return False, "421 SL E13 Retry later"
+
     delete_header(msg, _IP_HEADER)
 
     delete_header(msg, "DKIM-Signature")
@@ -893,36 +921,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         envelope.rcpt_options,
     )
 
-    # replace "ra+string@simplelogin.co" by the contact email in the email body
-    # as this is usually included when replying
-    if user.replace_reverse_alias:
-        if msg.is_multipart():
-            for part in msg.walk():
-                if part.get_content_maintype() != "text":
-                    continue
-                part = replace_str_in_msg(part, reply_email, contact.website_email)
-
-        else:
-            msg = replace_str_in_msg(msg, reply_email, contact.website_email)
-
     if should_add_dkim_signature(alias_domain):
         add_dkim_signature(msg, alias_domain)
-
-    # create PGP email if needed
-    if contact.pgp_finger_print and user.is_premium():
-        LOG.d("Encrypt message for contact %s", contact)
-        try:
-            msg = prepare_pgp_message(
-                msg, contact.pgp_finger_print, contact.pgp_public_key
-            )
-        except PGPException:
-            LOG.exception(
-                "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
-            )
-            # to not save the email_log
-            db.session.rollback()
-            # return 421 so the client can retry later
-            return False, "421 SL E13 Retry later"
 
     try:
         sl_sendmail(
