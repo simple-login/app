@@ -518,7 +518,14 @@ class User(db.Model, ModelMixin, UserMixin):
                 return FIRST_ALIAS_DOMAIN
 
             if sl_domain.premium_only and not self.is_premium():
-                LOG.exception("%s is not premium and cannot use %s", self, sl_domain)
+                LOG.warning(
+                    "%s is not premium and cannot use %s. Reset default random alias domain setting",
+                    self,
+                    sl_domain,
+                )
+                self.default_random_alias_domain_id = None
+                self.default_random_alias_public_domain_id = None
+                db.session.commit()
                 return FIRST_ALIAS_DOMAIN
 
             return sl_domain.domain
