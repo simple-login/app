@@ -338,7 +338,12 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
 def replace_str_in_msg(msg: Message, fr: str, to: str):
     if msg.get_content_maintype() != "text":
         return msg
-    new_body = msg.get_payload(decode=True).replace(fr.encode(), to.encode())
+
+    msg_payload = msg.get_payload(decode=True)
+    if not msg_payload:
+        return msg
+
+    new_body = msg_payload.replace(fr.encode(), to.encode())
 
     # If utf-8 decoding fails, do not touch message part
     try:
