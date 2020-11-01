@@ -396,15 +396,18 @@ _MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
 def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str):
     msg = MIMEMultipart("encrypted", protocol="application/pgp-encrypted")
 
-    # copy all headers from original message except all standard MIME headers
-    for i in reversed(range(len(orig_msg._headers))):
-        header_name = orig_msg._headers[i][0].lower()
-        if header_name.lower() not in _MIME_HEADERS:
-            msg[header_name] = orig_msg._headers[i][1]
+    # clone orig message to avoid modifying it
+    clone_msg = copy(orig_msg)
 
-    # Delete unnecessary headers in orig_msg except to save space
+    # copy all headers from original message except all standard MIME headers
+    for i in reversed(range(len(clone_msg._headers))):
+        header_name = clone_msg._headers[i][0].lower()
+        if header_name.lower() not in _MIME_HEADERS:
+            msg[header_name] = clone_msg._headers[i][1]
+
+    # Delete unnecessary headers in orig_msg except _MIME_HEADERS to save space
     delete_all_headers_except(
-        orig_msg,
+        clone_msg,
         _MIME_HEADERS,
     )
 
@@ -421,14 +424,13 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str
 
     # encrypt original message
     # use pgpy as fallback
+    msg_bytes = clone_msg.as_bytes()
     try:
-        encrypted_data = pgp_utils.encrypt_file(
-            BytesIO(orig_msg.as_bytes()), pgp_fingerprint
-        )
+        encrypted_data = pgp_utils.encrypt_file(BytesIO(msg_bytes), pgp_fingerprint)
         second.set_payload(encrypted_data)
     except PGPException:
         LOG.exception("Cannot encrypt using python-gnupg, use pgpy")
-        encrypted = pgp_utils.encrypt_file_with_pgpy(orig_msg.as_bytes(), public_key)
+        encrypted = pgp_utils.encrypt_file_with_pgpy(msg_bytes, public_key)
         second.set_payload(str(encrypted))
 
     msg.attach(second)
