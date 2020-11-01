@@ -411,6 +411,14 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str
         _MIME_HEADERS,
     )
 
+    if clone_msg["Content-Type"] is None:
+        LOG.d("Content-Type missing")
+        clone_msg["Content-Type"] = "text/plain"
+
+    if clone_msg["Mime-Version"] is None:
+        LOG.d("Mime-Version missing")
+        clone_msg["Mime-Version"] = "1.0"
+
     first = MIMEApplication(
         _subtype="pgp-encrypted", _encoder=encoders.encode_7or8bit, _data=""
     )
