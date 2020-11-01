@@ -64,6 +64,7 @@ def serialize_alias_info_v2(alias_info: AliasInfo) -> dict:
         ],
         "support_pgp": alias_info.alias.mailbox_support_pgp(),
         "disable_pgp": alias_info.alias.disable_pgp,
+        "latest_activity": None,
     }
     if alias_info.latest_email_log:
         email_log = alias_info.latest_email_log

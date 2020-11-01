@@ -991,7 +991,7 @@ If success, 200 with the list of aliases. Each alias has the following fields:
 - mailboxes: list of mailbox, contains at least 1 mailbox.
     - id
     - email
-- (optional) latest_activity:
+- (nullable) latest_activity:
     - action: forward|reply|block|bounced
     - timestamp
     - contact:
