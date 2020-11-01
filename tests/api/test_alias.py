@@ -73,7 +73,7 @@ def test_get_aliases_with_pagination(flask_client):
     assert len(r.json["aliases"]) == 2
 
 
-def test_get_aliases_with_pagination(flask_client):
+def test_get_aliases_query(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
