@@ -17,7 +17,7 @@
   "homepage": "https://github.com/simple-login/app#readme",
   "dependencies": {
     "@sentry/browser": "^5.25.0",
-    "bootbox": "^5.4.0",
+    "bootbox": "^5.5.1",
     "font-awesome": "^4.7.0",
     "intro.js": "^2.9.3",
     "multiple-select": "^1.5.2",
