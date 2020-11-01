@@ -674,7 +674,7 @@ def forward_email_to_mailbox(
     add_or_replace_header(msg, _MESSAGE_ID, make_msgid(str(email_log.id), EMAIL_DOMAIN))
     add_or_replace_header(msg, _ENVELOPE_FROM, envelope.mail_from)
 
-    # change the from header so the sender comes from @SL
+    # change the from header so the sender comes from a reverse-alias
     # so it can pass DMARC check
     # replace the email part in from: header
     contact_from_header = msg["From"]
@@ -682,7 +682,7 @@ def forward_email_to_mailbox(
     add_or_replace_header(msg, "From", new_from_header)
     LOG.d("new_from_header:%s, old header %s", new_from_header, contact_from_header)
 
-    # replace CC & To emails by reply-email for all emails that are not alias
+    # replace CC & To emails by reverse-alias for all emails that are not alias
     replace_header_when_forward(msg, alias, "Cc")
     replace_header_when_forward(msg, alias, "To")
 
