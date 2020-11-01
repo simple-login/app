@@ -222,6 +222,22 @@ def get_alias_infos_with_pagination_v3(
         .subquery()
     )
 
+    mailboxes_sub = (
+        db.session.query(
+            Alias.id,
+            func.count(AliasMailbox.id).label("nb_matched_mailboxes"),
+        )
+        .join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
+        .join(Mailbox, AliasMailbox.mailbox_id == Mailbox.id, isouter=True)
+    )
+
+    if query:
+        mailboxes_sub = mailboxes_sub.filter(
+            or_(Mailbox.email == None, Mailbox.email.ilike(f"%{query}%"))
+        )
+
+    mailboxes_sub = mailboxes_sub.group_by(Alias.id).subquery()
+
     latest_activity = case(
         [
             (Alias.created_at > EmailLog.created_at, Alias.created_at),
@@ -232,16 +248,13 @@ def get_alias_infos_with_pagination_v3(
 
     q = (
         db.session.query(
-            Alias,
-            Contact,
-            EmailLog,
-            sub.c.nb_reply,
-            sub.c.nb_blocked,
-            sub.c.nb_forward,
+            Alias, Contact, EmailLog, sub.c.nb_reply, sub.c.nb_blocked, sub.c.nb_forward
         )
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
+        .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
         .filter(Alias.id == sub.c.id)
+        .filter(Alias.id == mailboxes_sub.c.id)
         .filter(
             or_(
                 EmailLog.created_at == sub.c.max_created_at,
@@ -256,6 +269,7 @@ def get_alias_infos_with_pagination_v3(
                 Alias.email.ilike(f"%{query}%"),
                 Alias.note.ilike(f"%{query}%"),
                 Alias.name.ilike(f"%{query}%"),
+                mailboxes_sub.c.nb_matched_mailboxes > 0,
                 Mailbox.email.ilike(f"%{query}%"),
             )
         )
