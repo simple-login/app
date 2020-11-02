@@ -672,6 +672,10 @@ def forward_email_to_mailbox(
     add_or_replace_header(msg, _MESSAGE_ID, make_msgid(str(email_log.id), EMAIL_DOMAIN))
     add_or_replace_header(msg, _ENVELOPE_FROM, envelope.mail_from)
 
+    if not msg["Date"]:
+        date_header = formatdate()
+        msg["Date"] = date_header
+
     # change the from header so the sender comes from a reverse-alias
     # so it can pass DMARC check
     # replace the email part in from: header
