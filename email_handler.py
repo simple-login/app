@@ -34,14 +34,13 @@ import argparse
 import asyncio
 import email
 import os
-import random
 import time
 import uuid
 from email import encoders
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr, make_msgid
+from email.utils import formataddr, make_msgid, formatdate
 from io import BytesIO
 from smtplib import SMTP, SMTPRecipientsRefused
 from typing import List, Tuple, Optional
@@ -60,7 +59,6 @@ from app.config import (
     EMAIL_DOMAIN,
     POSTFIX_SERVER,
     URL,
-    ALIAS_DOMAINS,
     POSTFIX_SUBMISSION_TLS,
     UNSUBSCRIBER,
     LOAD_PGP_EMAIL_HANDLER,
@@ -77,14 +75,12 @@ from app.config import (
     MAX_REPLY_PHASE_SPAM_SCORE,
     ALERT_SEND_EMAIL_CYCLE,
     ALERT_MAILBOX_IS_ALIAS,
-    PREMIUM_ALIAS_DOMAINS,
 )
 from app.email_utils import (
     send_email,
     add_dkim_signature,
     add_or_replace_header,
     delete_header,
-    can_create_directory_for_address,
     render,
     get_orig_message_from_bounce,
     delete_all_headers_except,
@@ -108,7 +104,6 @@ from app.models import (
     Alias,
     Contact,
     EmailLog,
-    CustomDomain,
     User,
     RefusedEmail,
     Mailbox,
@@ -128,6 +123,13 @@ _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
 _MESSAGE_ID = "Message-ID"
 _ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
 
+_MIME_HEADERS = [
+    "MIME-Version",
+    "Content-Type",
+    "Content-Disposition",
+    "Content-Transfer-Encoding",
+]
+_MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -387,15 +389,6 @@ def should_append_alias(msg: Message, address: str):
         return False
 
     return True
-
-
-_MIME_HEADERS = [
-    "MIME-Version",
-    "Content-Type",
-    "Content-Disposition",
-    "Content-Transfer-Encoding",
-]
-_MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
 
 
 def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str):
@@ -857,7 +850,16 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
         return False, "550 SL E15 Email detected as spam"
 
-    delete_all_headers_except(msg, ["From", "To", "Cc", "Subject"])
+    delete_all_headers_except(
+        msg,
+        [
+            "From",
+            "To",
+            "Cc",
+            "Subject",
+        ]
+        + _MIME_HEADERS,
+    )
 
     # replace "ra+string@simplelogin.co" by the contact email in the email body
     # as this is usually included when replying
@@ -887,11 +889,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             # return 421 so the client can retry later
             return False, "421 SL E13 Retry later"
 
-    delete_header(msg, _IP_HEADER)
-
-    delete_header(msg, "DKIM-Signature")
-    delete_header(msg, "Received")
-
     # make the email comes from alias
     from_header = alias.email
     # add alias name from alias
@@ -916,6 +913,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         make_msgid(str(email_log.id), get_email_domain_part(alias.email)),
     )
     add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
+    date_header = formatdate()
+    msg["Date"] = date_header
 
     add_or_replace_header(msg, _DIRECTION, "Reply")
 
