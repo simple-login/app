@@ -508,6 +508,18 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             handle_email_sent_to_ourself(alias, mb, msg, alias.user)
             return [(True, "250 Message accepted for delivery")]
 
+    # bounce email initiated by Postfix
+    # can happen in case an email cannot be sent from an alias to a contact
+    # in this case Postfix will send a bounce report to original sender, which is the alias
+    if mail_from == "<>":
+        LOG.exception("Bounce email sent to %s", alias)
+        # save the data for debugging
+        file_path = f"/tmp/{random_string(10)}.eml"
+        with open(file_path, "wb") as f:
+            f.write(msg.as_bytes())
+
+        return [(False, "421 SL Retry later")]
+
     contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
     db.session.commit()
