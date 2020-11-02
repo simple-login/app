@@ -6,7 +6,7 @@ import pgpy
 from memory_profiler import memory_usage
 from pgpy import PGPMessage
 
-from app.config import GNUPGHOME
+from app.config import GNUPGHOME, PGP_SENDER_PRIVATE_KEY
 from app.log import LOG
 from app.models import Mailbox, Contact
 
@@ -95,3 +95,19 @@ def encrypt_file_with_pgpy(data: bytes, public_key: str) -> PGPMessage:
     r = key.encrypt(msg)
 
     return r
+
+
+if PGP_SENDER_PRIVATE_KEY:
+    _SIGN_KEY_ID = gpg.import_keys(PGP_SENDER_PRIVATE_KEY).fingerprints[0]
+
+
+def sign_data(data: str) -> str:
+    signature = str(gpg.sign(data, keyid=_SIGN_KEY_ID, detach=True))
+    return signature
+
+
+def sign_data_with_pgpy(data: str) -> str:
+    key = pgpy.PGPKey()
+    key.parse(PGP_SENDER_PRIVATE_KEY)
+    signature = str(key.sign(data))
+    return signature

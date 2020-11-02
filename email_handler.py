@@ -37,6 +37,7 @@ import os
 import time
 import uuid
 from email import encoders
+from email.encoders import encode_noop
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
@@ -75,6 +76,7 @@ from app.config import (
     MAX_REPLY_PHASE_SPAM_SCORE,
     ALERT_SEND_EMAIL_CYCLE,
     ALERT_MAILBOX_IS_ALIAS,
+    PGP_SENDER_PRIVATE_KEY,
 )
 from app.email_utils import (
     send_email,
@@ -108,7 +110,7 @@ from app.models import (
     RefusedEmail,
     Mailbox,
 )
-from app.pgp_utils import PGPException
+from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.spamassassin_utils import SpamAssassin
 from app.utils import random_string
 from init_app import load_pgp_public_keys
@@ -130,6 +132,7 @@ _MIME_HEADERS = [
     "Content-Transfer-Encoding",
 ]
 _MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
+
 
 # fix the database connection leak issue
 # use this method instead of create_app
@@ -391,7 +394,9 @@ def should_append_alias(msg: Message, address: str):
     return True
 
 
-def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str):
+def prepare_pgp_message(
+    orig_msg: Message, pgp_fingerprint: str, public_key: str, can_sign: bool = False
+):
     msg = MIMEMultipart("encrypted", protocol="application/pgp-encrypted")
 
     # clone orig message to avoid modifying it
@@ -403,7 +408,7 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str
         if header_name.lower() not in _MIME_HEADERS:
             msg[header_name] = clone_msg._headers[i][1]
 
-    # Delete unnecessary headers in orig_msg except _MIME_HEADERS to save space
+    # Delete unnecessary headers in clone_msg except _MIME_HEADERS to save space
     delete_all_headers_except(
         clone_msg,
         _MIME_HEADERS,
@@ -423,12 +428,17 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str
     first.set_payload("Version: 1")
     msg.attach(first)
 
+    if can_sign and PGP_SENDER_PRIVATE_KEY:
+        LOG.d("Sign msg")
+        clone_msg = sign_msg(clone_msg)
+
+    # use pgpy as fallback
     second = MIMEApplication(
         "octet-stream", _encoder=encoders.encode_7or8bit, name="encrypted.asc"
     )
     second.add_header("Content-Disposition", 'inline; filename="encrypted.asc"')
 
-    # encrypt original message
+    # encrypt
     # use pgpy as fallback
     msg_bytes = clone_msg.as_bytes()
     try:
@@ -442,6 +452,30 @@ def prepare_pgp_message(orig_msg: Message, pgp_fingerprint: str, public_key: str
     msg.attach(second)
 
     return msg
+
+
+def sign_msg(msg: Message) -> Message:
+    container = MIMEMultipart(
+        "signed", protocol="application/pgp-signature", micalg="pgp-sha256"
+    )
+    container.attach(msg)
+
+    signature = MIMEApplication(
+        _subtype="pgp-signature", name="signature.asc", _data="", _encoder=encode_noop
+    )
+    signature.add_header("Content-Disposition", 'attachment; filename="signature.asc"')
+
+    try:
+        signature.set_payload(sign_data(msg.as_string().replace("\n", "\r\n")))
+    except Exception:
+        LOG.exception("Cannot sign, try using pgpy")
+        signature.set_payload(
+            sign_data_with_pgpy(msg.as_string().replace("\n", "\r\n"))
+        )
+
+    container.attach(signature)
+
+    return container
 
 
 def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
@@ -662,7 +696,7 @@ def forward_email_to_mailbox(
         LOG.d("Encrypt message using mailbox %s", mailbox)
         try:
             msg = prepare_pgp_message(
-                msg, mailbox.pgp_finger_print, mailbox.pgp_public_key
+                msg, mailbox.pgp_finger_print, mailbox.pgp_public_key, can_sign=True
             )
         except PGPException:
             LOG.exception(
