@@ -81,6 +81,9 @@ def test_get_alias_infos_with_pagination_v3_query_alias_mailboxes(flask_client):
     alias_infos = get_alias_infos_with_pagination_v3(user, query=mb.email)
     assert len(alias_infos) == 1
 
+    alias_infos = get_alias_infos_with_pagination_v3(user, query=alias.email)
+    assert len(alias_infos) == 1
+
 
 def test_get_alias_infos_with_pagination_v3_query_alias_note(flask_client):
     """test the query on the alias note"""

@@ -223,18 +223,30 @@ def get_alias_infos_with_pagination_v3(
         .subquery()
     )
 
-    mailboxes_sub = (
-        db.session.query(
-            Alias.id,
-            func.count(AliasMailbox.id).label("nb_matched_mailboxes"),
-        )
-        .join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
-        .join(Mailbox, AliasMailbox.mailbox_id == Mailbox.id, isouter=True)
-    )
-
     if query:
-        mailboxes_sub = mailboxes_sub.filter(
-            or_(Mailbox.email == None, Mailbox.email.ilike(f"%{query}%"))
+        mailboxes_sub = (
+            db.session.query(
+                Alias.id,
+                func.count(Mailbox.id).label("nb_matched_mailboxes"),
+            )
+            .join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
+            .join(
+                Mailbox,
+                and_(
+                    AliasMailbox.mailbox_id == Mailbox.id,
+                    Mailbox.email.ilike(f"%{query}%"),
+                ),
+                isouter=True,
+            )
+        )
+    else:
+        mailboxes_sub = (
+            db.session.query(
+                Alias.id,
+                func.count(Mailbox.id).label("nb_matched_mailboxes"),
+            )
+            .join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
+            .join(Mailbox, AliasMailbox.mailbox_id == Mailbox.id, isouter=True)
         )
 
     mailboxes_sub = mailboxes_sub.group_by(Alias.id).subquery()
