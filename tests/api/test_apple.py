@@ -24,7 +24,7 @@ def test_apple_process_payment(flask_client):
 
     # will fail anyway as there's apple secret is not valid
     assert r.status_code == 400
-    assert r.json == {"ok": False}
+    assert r.json == {"error": "Processing failed"}
 
 
 def test_apple_update_notification(flask_client):
@@ -213,4 +213,4 @@ def test_apple_update_notification(flask_client):
 
     # will fail anyway as there's no such AppleSub in Test DB
     assert r.status_code == 400
-    assert r.json == {"ok": False}
+    assert r.json == {"error": "Processing failed"}

@@ -51,7 +51,7 @@ def apple_process_payment():
     if apple_sub:
         return jsonify(ok=True), 200
 
-    return jsonify(ok=False), 400
+    return jsonify(error="Processing failed"), 400
 
 
 @api_bp.route("/apple/update_notification", methods=["GET", "POST"])
@@ -287,7 +287,7 @@ def apple_update_notification():
                 original_transaction_id,
             )
             LOG.d("request data %s", data)
-            return jsonify(ok=False), 400
+            return jsonify(error="Processing failed"), 400
 
 
 def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
