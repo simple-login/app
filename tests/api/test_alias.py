@@ -3,6 +3,7 @@ from flask import url_for
 from app.config import PAGE_LIMIT
 from app.extensions import db
 from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
+from tests.utils import login
 
 
 def test_get_aliases_error_without_pagination(flask_client):
@@ -501,6 +502,32 @@ def test_create_contact_route(flask_client):
         json={"contact": "First2 Last2 <first@example.com>"},
     )
     assert r.status_code == 409
+
+
+def test_create_contact_route_empty_contact_address(flask_client):
+    login(flask_client)
+    alias = Alias.query.first()
+
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=alias.id),
+        json={"contact": ""},
+    )
+
+    assert r.status_code == 400
+    assert r.json["error"] == "Contact cannot be empty"
+
+
+def test_create_contact_route_invalid_contact_email(flask_client):
+    login(flask_client)
+    alias = Alias.query.first()
+
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=alias.id),
+        json={"contact": "with space@gmail.com"},
+    )
+
+    assert r.status_code == 400
+    assert r.json["error"] == "invalid contact email with space@gmail.com"
 
 
 def test_delete_contact(flask_client):

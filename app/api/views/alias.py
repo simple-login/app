@@ -16,7 +16,7 @@ from app.api.serializer import (
 )
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.alias_log import get_alias_log
-from app.email_utils import parseaddr_unicode
+from app.email_utils import parseaddr_unicode, is_valid_email
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, Mailbox, AliasMailbox
@@ -386,6 +386,9 @@ def create_contact_route(alias_id):
 
     contact_addr = data.get("contact")
 
+    if not contact_addr:
+        return jsonify(error="Contact cannot be empty"), 400
+
     # generate a reply_email, make sure it is unique
     # not use while to avoid infinite loop
     reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
@@ -395,6 +398,8 @@ def create_contact_route(alias_id):
             break
 
     contact_name, contact_email = parseaddr_unicode(contact_addr)
+    if not is_valid_email(contact_email):
+        return jsonify(error=f"invalid contact email {contact_email}"), 400
 
     # already been added
     if Contact.get_by(alias_id=alias.id, website_email=contact_email):
