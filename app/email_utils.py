@@ -11,6 +11,7 @@ from smtplib import SMTP
 import arrow
 import dkim
 from jinja2 import Environment, FileSystemLoader
+from validate_email import validate_email
 
 from app.config import (
     SUPPORT_EMAIL,
@@ -645,3 +646,10 @@ def should_add_dkim_signature(domain: str) -> bool:
         return True
 
     return False
+
+
+def is_valid_email(email_address: str) -> bool:
+    """Used to check whether an email address is valid"""
+    return validate_email(
+        email_address=email_address, check_mx=False, use_blacklist=False
+    )

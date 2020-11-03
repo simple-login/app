@@ -13,6 +13,7 @@ from app.email_utils import (
     copy,
     get_spam_from_header,
     get_header_from_bounce,
+    is_valid_email,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -286,3 +287,10 @@ DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=simplelogin.co;
     assert (
         get_header_from_bounce(email.message_from_string(msg_str), "Not-exist") is None
     )
+
+
+def test_is_valid_email():
+    assert is_valid_email("abcd@gmail.com")
+    assert not is_valid_email("with space@gmail.com")
+    assert not is_valid_email("strange char !ç@gmail.com")
+    assert not is_valid_email("emoji👌@gmail.com")
