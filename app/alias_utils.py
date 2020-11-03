@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
@@ -207,3 +208,14 @@ def nb_email_log_for_mailbox(mailbox: Mailbox):
         .filter(Contact.alias_id.in_(alias_ids))
         .count()
     )
+
+
+# Only lowercase letters, numbers, dashes (-) and underscores (_) are currently supported
+_ALIAS_PREFIX_PATTERN = r"[0-9a-z-_]{1,}"
+
+
+def check_alias_prefix(alias_prefix) -> bool:
+    if re.fullmatch(_ALIAS_PREFIX_PATTERN, alias_prefix) is None:
+        return False
+
+    return True

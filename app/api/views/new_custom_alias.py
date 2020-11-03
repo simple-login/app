@@ -2,6 +2,7 @@ from flask import g
 from flask import jsonify, request
 from itsdangerous import SignatureExpired
 
+from app.alias_utils import check_alias_prefix
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
     serialize_alias_info,
@@ -235,6 +236,9 @@ def new_custom_alias_v3():
     note = data.get("note")
     name = data.get("name")
     alias_prefix = convert_to_id(alias_prefix)
+
+    if not check_alias_prefix(alias_prefix):
+        return jsonify(error="alias prefix format problem"), 400
 
     # check if mailbox is not tempered with
     mailboxes = []

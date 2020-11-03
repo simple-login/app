@@ -5,6 +5,7 @@ from flask import request, render_template, redirect, flash
 from flask_login import current_user
 from itsdangerous import SignatureExpired
 
+from app.alias_utils import check_alias_prefix
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.custom_alias import available_suffixes, signer
 from app.extensions import db
@@ -153,6 +154,14 @@ def authorize():
                     raise Exception(f"User {current_user} cannot create custom email")
 
                 alias_prefix = alias_prefix.strip().lower().replace(" ", "")
+
+                if not check_alias_prefix(alias_prefix):
+                    flash(
+                        "Only lowercase letters, numbers, dashes (-) and underscores (_) "
+                        "are currently supported for alias prefix",
+                        "error",
+                    )
+                    return redirect(request.url)
 
                 # hypothesis: user will click on the button in the 600 secs
                 try:

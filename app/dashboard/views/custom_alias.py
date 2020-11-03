@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 from itsdangerous import TimestampSigner, SignatureExpired
 from sqlalchemy.exc import IntegrityError
 
+from app.alias_utils import check_alias_prefix
 from app.config import (
     DISABLE_ALIAS_SUFFIX,
     CUSTOM_ALIAS_SECRET,
@@ -121,6 +122,14 @@ def custom_alias():
         signed_suffix = request.form.get("suffix")
         mailbox_ids = request.form.getlist("mailboxes")
         alias_note = request.form.get("note")
+
+        if not check_alias_prefix(alias_prefix):
+            flash(
+                "Only lowercase letters, numbers, dashes (-) and underscores (_) "
+                "are currently supported for alias prefix",
+                "error",
+            )
+            return redirect(url_for("dashboard.custom_alias"))
 
         # check if mailbox is not tempered with
         mailboxes = []
