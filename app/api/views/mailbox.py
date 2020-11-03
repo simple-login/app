@@ -15,6 +15,17 @@ from app.extensions import db
 from app.models import Mailbox
 
 
+def mailbox_to_dict(mailbox: Mailbox):
+    return {
+        "id": mailbox.id,
+        "email": mailbox.email,
+        "verified": mailbox.verified,
+        "default": mailbox.user.default_mailbox_id == mailbox.id,
+        "creation_timestamp": mailbox.created_at.timestamp,
+        "nb_alias": mailbox.nb_alias(),
+    }
+
+
 @api_bp.route("/mailboxes", methods=["POST"])
 @require_api_auth
 def create_mailbox():
@@ -23,11 +34,7 @@ def create_mailbox():
     Input:
         email: in body
     Output:
-        the new mailbox
-        - id
-        - email
-        - verified
-
+        the new mailbox dict
     """
     user = g.user
     mailbox_email = request.get_json().get("email").lower().strip().replace(" ", "")
@@ -49,12 +56,7 @@ def create_mailbox():
         send_verification_email(user, new_mailbox)
 
         return (
-            jsonify(
-                id=new_mailbox.id,
-                email=new_mailbox.email,
-                verified=new_mailbox.verified,
-                default=user.default_mailbox_id == new_mailbox.id,
-            ),
+            jsonify(mailbox_to_dict(new_mailbox)),
             201,
         )
 
@@ -153,27 +155,11 @@ def get_mailboxes():
     """
     Get mailboxes
     Output:
-        - mailboxes: list of alias:
-            - id
-            - email
-            - default: boolean - whether the mailbox is the default one
-            - creation_timestamp
-            - nb_alias
+        - mailboxes: list of alias dict
     """
     user = g.user
 
     return (
-        jsonify(
-            mailboxes=[
-                {
-                    "id": mb.id,
-                    "email": mb.email,
-                    "default": user.default_mailbox_id == mb.id,
-                    "creation_timestamp": mb.created_at.timestamp,
-                    "nb_alias": mb.nb_alias(),
-                }
-                for mb in user.mailboxes()
-            ]
-        ),
+        jsonify(mailboxes=[mailbox_to_dict(mb) for mb in user.mailboxes()]),
         200,
     )

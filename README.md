@@ -1260,14 +1260,16 @@ List of mailboxes. Each mailbox has id, email, default, creation_timestamp field
       "id": 1,
       "default": true,
       "creation_timestamp": 1590918512,
-      "nb_alias": 10
+      "nb_alias": 10,
+      "verified": true
     },
     {
       "email": "m1@example.com",
       "id": 2,
       "default": false,
       "creation_timestamp": 1590918512,
-      "nb_alias": 0
+      "nb_alias": 0,
+      "verified": false
     }
   ]
 }

@@ -1,7 +1,3 @@
-import json
-
-from flask import url_for
-
 from flask import url_for
 
 from app.extensions import db
@@ -25,10 +21,13 @@ def test_create_mailbox(flask_client):
     )
 
     assert r.status_code == 201
+
+    # {'creation_timestamp': 1604398668, 'default': False, 'email': 'mailbox@gmail.com', 'id': 2, 'nb_alias': 0, 'verified': False}
     assert r.json["email"] == "mailbox@gmail.com"
     assert r.json["verified"] is False
     assert r.json["id"] > 0
     assert r.json["default"] is False
+    assert r.json["nb_alias"] == 0
 
 
 def test_delete_mailbox(flask_client):
@@ -183,9 +182,11 @@ def test_get_mailboxes(flask_client):
     assert r.status_code == 200
     # m2@example.com is not returned as it's not verified
     assert len(r.json["mailboxes"]) == 2
+
     for mb in r.json["mailboxes"]:
         assert "email" in mb
         assert "id" in mb
         assert "default" in mb
         assert "creation_timestamp" in mb
         assert "nb_alias" in mb
+        assert "verified" in mb
