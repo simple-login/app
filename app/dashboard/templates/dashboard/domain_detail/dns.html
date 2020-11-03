@@ -37,7 +37,11 @@
       {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
         <div class="mb-3 p-3 dns-record">
           Record: MX <br>
-          Domain: {{ custom_domain.domain }} or @ <br>
+          Domain: {{ custom_domain.domain }} or
+          <em data-toggle="tooltip"
+              title="Click to copy"
+              class="clipboard"
+              data-clipboard-text="@">@</em> <br>
           Priority: {{ priority }} <br>
           Target: <em data-toggle="tooltip"
                       title="Click to copy"
@@ -103,7 +107,11 @@
 
       <div class="mb-2 p-3 dns-record">
         Record: TXT <br>
-        Domain: {{ custom_domain.domain }} or @ <br>
+        Domain: {{ custom_domain.domain }} or
+        <em data-toggle="tooltip"
+            title="Click to copy"
+            class="clipboard"
+            data-clipboard-text="@">@</em> <br>
         Value:
         <em data-toggle="tooltip"
             title="Click to copy"
@@ -172,7 +180,7 @@
         Domain: <em data-toggle="tooltip"
                     title="Click to copy"
                     class="clipboard"
-                    data-clipboard-text="dkim._domainkey">dkim._domainkey</em>.{{ custom_domain.domain }} <br>
+                    data-clipboard-text="dkim._domainkey">dkim._domainkey</em> <br>
         Value:
         <em data-toggle="tooltip"
             title="Click to copy"
@@ -181,6 +189,14 @@
           {{ dkim_cname }}.
         </em>
       </div>
+
+    <div class="alert alert-info">
+      Some DNS registrar might require a full record path, in this case please use
+      <i>dkim._domainkey.{{ custom_domain.domain }}</i> as domain value instead. <br>
+      If you are using a subdomain, e.g. <i>subdomain.domain.com</i>,
+      you need to use <i>dkim._domainkey.subdomain</i> as domain value instead.
+      <br>
+    </div>
 
       <form method="post" action="#dkim-form">
         <input type="hidden" name="form-name" value="check-dkim">
@@ -241,7 +257,7 @@
         Domain: <em data-toggle="tooltip"
                     title="Click to copy"
                     class="clipboard"
-                    data-clipboard-text="_dmarc">_dmarc</em>.{{ custom_domain.domain }} <br>
+                    data-clipboard-text="_dmarc">_dmarc</em> <br>
         Value:
         <em data-toggle="tooltip"
             title="Click to copy"
@@ -249,6 +265,14 @@
             data-clipboard-text="{{ dmarc_record }}">
           {{ dmarc_record }}
         </em>
+      </div>
+
+      <div class="alert alert-info">
+        Some DNS registrar might require a full record path, in this case please use
+        <i>_dmarc.{{ custom_domain.domain }}</i> as domain value instead. <br>
+        If you are using a subdomain, e.g. <i>subdomain.domain.com</i>,
+        you need to use <i>_dmarc.subdomain</i> as domain value instead.
+        <br>
       </div>
 
       <form method="post" action="#dmarc-form">
