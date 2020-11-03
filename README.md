@@ -1242,9 +1242,9 @@ Return 409 if contact is already added.
 
 ### Mailbox endpoints
 
-#### GET /api/mailboxes
+#### GET /api/v2/mailboxes
 
-Get user verified mailboxes.
+Get user's mailboxes, including unverified ones.
 
 Input:
 - `Authentication` header that contains the api key

@@ -153,13 +153,33 @@ def update_mailbox(mailbox_id):
 @require_api_auth
 def get_mailboxes():
     """
-    Get mailboxes
+    Get verified mailboxes
     Output:
-        - mailboxes: list of alias dict
+        - mailboxes: list of mailbox dict
     """
     user = g.user
 
     return (
         jsonify(mailboxes=[mailbox_to_dict(mb) for mb in user.mailboxes()]),
+        200,
+    )
+
+
+@api_bp.route("/v2/mailboxes", methods=["GET"])
+@require_api_auth
+def get_mailboxes_v2():
+    """
+    Get all mailboxes - including unverified mailboxes
+    Output:
+        - mailboxes: list of mailbox dict
+    """
+    user = g.user
+    mailboxes = []
+
+    for mailbox in Mailbox.query.filter_by(user_id=user.id):
+        mailboxes.append(mailbox)
+
+    return (
+        jsonify(mailboxes=[mailbox_to_dict(mb) for mb in mailboxes]),
         200,
     )

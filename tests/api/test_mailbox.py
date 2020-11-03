@@ -2,6 +2,7 @@ from flask import url_for
 
 from app.extensions import db
 from app.models import User, ApiKey, Mailbox
+from tests.utils import login
 
 
 def test_create_mailbox(flask_client):
@@ -182,6 +183,29 @@ def test_get_mailboxes(flask_client):
     assert r.status_code == 200
     # m2@example.com is not returned as it's not verified
     assert len(r.json["mailboxes"]) == 2
+
+    for mb in r.json["mailboxes"]:
+        assert "email" in mb
+        assert "id" in mb
+        assert "default" in mb
+        assert "creation_timestamp" in mb
+        assert "nb_alias" in mb
+        assert "verified" in mb
+
+
+def test_get_mailboxes_v2(flask_client):
+    user = login(flask_client)
+
+    Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
+    Mailbox.create(user_id=user.id, email="m2@example.com", verified=False)
+    db.session.commit()
+
+    r = flask_client.get(
+        "/api/v2/mailboxes",
+    )
+    assert r.status_code == 200
+    # 3 mailboxes: the default, m1 and m2
+    assert len(r.json["mailboxes"]) == 3
 
     for mb in r.json["mailboxes"]:
         assert "email" in mb
