@@ -1,5 +1,6 @@
 import os
 from io import BytesIO
+from typing import Union
 
 import gnupg
 import pgpy
@@ -101,12 +102,12 @@ if PGP_SENDER_PRIVATE_KEY:
     _SIGN_KEY_ID = gpg.import_keys(PGP_SENDER_PRIVATE_KEY).fingerprints[0]
 
 
-def sign_data(data: str) -> str:
+def sign_data(data: Union[str, bytes]) -> str:
     signature = str(gpg.sign(data, keyid=_SIGN_KEY_ID, detach=True))
     return signature
 
 
-def sign_data_with_pgpy(data: str) -> str:
+def sign_data_with_pgpy(data: Union[str, bytes]) -> str:
     key = pgpy.PGPKey()
     key.parse(PGP_SENDER_PRIVATE_KEY)
     signature = str(key.sign(data))

@@ -10,6 +10,8 @@ from app.pgp_utils import (
     gpg,
     encrypt_file,
     encrypt_file_with_pgpy,
+    sign_data,
+    sign_data_with_pgpy,
 )
 
 
@@ -51,3 +53,13 @@ def encrypt_decrypt_text(text: str):
         assert decrypted == text
     elif type(decrypted) == bytearray:
         assert decrypted.decode() == text
+
+
+def test_sign_data():
+    assert sign_data("heyhey")
+    assert sign_data(b"bytes")
+
+
+def test_sign_data_with_pgpy():
+    assert sign_data_with_pgpy("unicode")
+    assert sign_data_with_pgpy(b"bytes")
