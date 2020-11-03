@@ -185,6 +185,15 @@ def alias_contact_manager(alias_id):
                         )
                     )
 
+                if not is_valid_email(contact_email):
+                    flash(f"{contact_email} is invalid", "error")
+                    return redirect(
+                        url_for(
+                            "dashboard.alias_contact_manager",
+                            alias_id=alias_id,
+                        )
+                    )
+
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
                 # already been added
                 if contact:

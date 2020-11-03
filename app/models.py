@@ -83,6 +83,10 @@ class ModelMixin(object):
     def delete(cls, obj_id):
         cls.query.filter(cls.id == obj_id).delete()
 
+    @classmethod
+    def first(cls):
+        return cls.query.first()
+
     def __repr__(self):
         values = ", ".join(
             "%s=%r" % (n, getattr(self, n))
