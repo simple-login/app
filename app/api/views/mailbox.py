@@ -112,6 +112,13 @@ def update_mailbox(mailbox_id):
     if "default" in data:
         is_default = data.get("default")
         if is_default:
+            if not mailbox.verified:
+                return (
+                    jsonify(
+                        error="Unverified mailbox cannot be used as default mailbox"
+                    ),
+                    400,
+                )
             user.default_mailbox_id = mailbox.id
             changed = True
 
