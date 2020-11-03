@@ -11,7 +11,7 @@ from wtforms import StringField, validators, ValidationError
 
 from app.config import EMAIL_DOMAIN, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
-from app.email_utils import parseaddr_unicode
+from app.email_utils import parseaddr_unicode, is_valid_email
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
@@ -35,10 +35,8 @@ def email_validator():
             if email.find("<") + 1 < email.find(">"):
                 email_part = email[email.find("<") + 1 : email.find(">")].strip()
 
-        if re.match(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$", email_part):
-            return
-
-        raise ValidationError(message)
+        if not is_valid_email(email_part):
+            raise ValidationError(message)
 
     return _check
 
