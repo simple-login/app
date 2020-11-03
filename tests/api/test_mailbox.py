@@ -15,7 +15,7 @@ def test_create_mailbox(flask_client):
     db.session.commit()
 
     r = flask_client.post(
-        url_for("api.create_mailbox"),
+        "/api/mailboxes",
         headers={"Authentication": api_key.code},
         json={"email": "mailbox@gmail.com"},
     )
@@ -45,7 +45,7 @@ def test_delete_mailbox(flask_client):
     db.session.commit()
 
     r = flask_client.delete(
-        url_for("api.delete_mailbox", mailbox_id=mb.id),
+        f"/api/mailboxes/{mb.id}",
         headers={"Authentication": api_key.code},
     )
 
@@ -87,7 +87,7 @@ def test_set_mailbox_as_default(flask_client):
     assert user.default_mailbox_id != mb.id
 
     r = flask_client.put(
-        url_for("api.delete_mailbox", mailbox_id=mb.id),
+        f"/api/mailboxes/{mb.id}",
         headers={"Authentication": api_key.code},
         json={"default": True},
     )
@@ -113,7 +113,7 @@ def test_update_mailbox_email(flask_client):
     db.session.commit()
 
     r = flask_client.put(
-        url_for("api.delete_mailbox", mailbox_id=mb.id),
+        f"/api/mailboxes/{mb.id}",
         headers={"Authentication": api_key.code},
         json={"email": "new-email@gmail.com"},
     )
@@ -140,7 +140,7 @@ def test_cancel_mailbox_email_change(flask_client):
 
     # update mailbox email
     r = flask_client.put(
-        url_for("api.delete_mailbox", mailbox_id=mb.id),
+        f"/api/mailboxes/{mb.id}",
         headers={"Authentication": api_key.code},
         json={"email": "new-email@gmail.com"},
     )
@@ -176,7 +176,7 @@ def test_get_mailboxes(flask_client):
     db.session.commit()
 
     r = flask_client.get(
-        url_for("api.get_mailboxes"),
+        "/api/mailboxes",
         headers={"Authentication": api_key.code},
     )
     assert r.status_code == 200
