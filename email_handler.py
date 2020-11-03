@@ -466,11 +466,11 @@ def sign_msg(msg: Message) -> Message:
     signature.add_header("Content-Disposition", 'attachment; filename="signature.asc"')
 
     try:
-        signature.set_payload(sign_data(msg.as_string().replace("\n", "\r\n")))
+        signature.set_payload(sign_data(msg.as_bytes().replace(b"\n", b"\r\n")))
     except Exception:
         LOG.exception("Cannot sign, try using pgpy")
         signature.set_payload(
-            sign_data_with_pgpy(msg.as_string().replace("\n", "\r\n"))
+            sign_data_with_pgpy(msg.as_bytes().replace(b"\n", b"\r\n"))
         )
 
     container.attach(signature)
