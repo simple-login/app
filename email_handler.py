@@ -573,35 +573,23 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         return [(False, "550 SL E16 invalid mailbox")]
 
     # no need to create a copy of message
-    if len(mailboxes) == 1:
-        mailbox = mailboxes[0]
+    for mailbox in mailboxes:
         if not mailbox.verified:
             LOG.debug("Mailbox %s unverified, do not forward", mailbox)
-            return [(False, "550 SL E18 unverified mailbox")]
+            ret.append((False, "550 SL E19 unverified mailbox"))
         else:
+            # create a copy of message for each forward
             ret.append(
                 forward_email_to_mailbox(
-                    alias, msg, email_log, contact, envelope, mailbox, user
+                    alias,
+                    copy(msg),
+                    email_log,
+                    contact,
+                    envelope,
+                    mailbox,
+                    user,
                 )
             )
-    # create a copy of message for each forward
-    else:
-        for mailbox in mailboxes:
-            if not mailbox.verified:
-                LOG.debug("Mailbox %s unverified, do not forward", mailbox)
-                ret.append((False, "550 SL E19 unverified mailbox"))
-            else:
-                ret.append(
-                    forward_email_to_mailbox(
-                        alias,
-                        copy(msg),
-                        email_log,
-                        contact,
-                        envelope,
-                        mailbox,
-                        user,
-                    )
-                )
 
     return ret
 
