@@ -1358,6 +1358,14 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
     s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
 
     orig_msg = get_orig_message_from_bounce(msg)
+    if not orig_msg:
+        # save the data for debugging
+        file_path = f"/tmp/{random_string(10)}.eml"
+        with open(file_path, "wb") as f:
+            f.write(msg.as_bytes())
+
+        LOG.exception("Cannot parse bounce message, %s", file_path)
+        raise Exception("Cannot parse bounce message")
 
     file_path = f"refused-emails/{random_name}.eml"
     s3.upload_email_from_bytesio(file_path, BytesIO(orig_msg.as_bytes()), random_name)
