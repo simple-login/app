@@ -1352,6 +1352,7 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
             user,
             file_path,
         )
+        LOG.d("Msg:\n%s", msg)
         return
 
     email_log = EmailLog.get(email_log_id)
@@ -1675,12 +1676,12 @@ def handle(envelope: Envelope) -> str:
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
-            LOG.debug(">>> Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
+            LOG.debug("Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
             is_delivered, smtp_status = handle_reply(envelope, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
             LOG.debug(
-                ">>> Forward phase %s(%s) -> %s",
+                "Forward phase %s(%s) -> %s",
                 mail_from,
                 msg["From"],
                 rcpt_to,
