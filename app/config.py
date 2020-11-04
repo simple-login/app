@@ -292,6 +292,8 @@ ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX = "reverse_alias_unknown_mailbox"
 # When a forwarding email is bounced
 ALERT_BOUNCE_EMAIL = "bounce"
 
+ALERT_BOUNCE_EMAIL_REPLY_PHASE = "bounce-when-reply"
+
 # When a forwarding email is detected as spam
 ALERT_SPAM_EMAIL = "spam"
 

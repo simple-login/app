@@ -77,6 +77,7 @@ from app.config import (
     ALERT_SEND_EMAIL_CYCLE,
     ALERT_MAILBOX_IS_ALIAS,
     PGP_SENDER_PRIVATE_KEY,
+    ALERT_BOUNCE_EMAIL_REPLY_PHASE,
 )
 from app.email_utils import (
     send_email,
@@ -528,10 +529,10 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
             return [(False, "550 SL E3 Email not exist")]
 
-    if alias.user.disabled:
-        LOG.warning(
-            "User %s disabled, disable forwarding emails for %s", alias.user, alias
-        )
+    user = alias.user
+
+    if user.disabled:
+        LOG.warning("User %s disabled, disable forwarding emails for %s", user, alias)
         return [(False, "550 SL E20 Account disabled")]
 
     mail_from = envelope.mail_from
@@ -539,7 +540,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         # email send from a mailbox to alias
         if mb.email == mail_from:
             LOG.warning("cycle email sent from %s to %s", mb, alias)
-            handle_email_sent_to_ourself(alias, mb, msg, alias.user)
+            handle_email_sent_to_ourself(alias, mb, msg, user)
             return [(True, "250 Message accepted for delivery")]
 
     # bounce email initiated by Postfix
@@ -547,14 +548,12 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     # in this case Postfix will send a bounce report to original sender, which is the alias
     if mail_from == "<>":
         LOG.exception("Bounce email sent to %s", alias)
-        # save the data for debugging
-        file_path = f"/tmp/{random_string(10)}.eml"
-        with open(file_path, "wb") as f:
-            f.write(msg.as_bytes())
 
-        return [(False, "421 SL Retry later")]
+        handle_bounce_reply_phase(alias, msg, user)
+        return [(False, "550 SL E24 Email cannot be sent to contact")]
 
     contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
+
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
     db.session.commit()
 
@@ -565,8 +564,6 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         db.session.commit()
         # do not return 5** to allow user to receive emails later when alias is enabled
         return [(True, "250 Message accepted for delivery")]
-
-    user = alias.user
 
     ret = []
     mailboxes = alias.mailboxes
@@ -939,6 +936,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             # return 421 so the client can retry later
             return False, "421 SL E13 Retry later"
 
+    # save the email_log to DB
+    db.session.commit()
+
     # make the email comes from alias
     from_header = alias.email
     # add alias name from alias
@@ -962,11 +962,12 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         _MESSAGE_ID,
         make_msgid(str(email_log.id), get_email_domain_part(alias.email)),
     )
-    add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
     date_header = formatdate()
     msg["Date"] = date_header
 
-    add_or_replace_header(msg, _DIRECTION, "Reply")
+    msg[_DIRECTION] = "Reply"
+    msg[_MAILBOX_ID_HEADER] = str(mailbox.id)
+    msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
 
     LOG.d(
         "send email from %s to %s, mail_options:%s,rcpt_options:%s",
@@ -1012,7 +1013,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         )
 
     # return 250 even if error as user is already informed of the incident and can retry sending the email
-    db.session.commit()
+
     return True, "250 Message accepted for delivery"
 
 
@@ -1342,6 +1343,80 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
                 mailbox_email=mailbox.email,
             ),
         )
+
+
+def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
+    """
+    Handle bounce that is sent to alias
+    Happens when  an email cannot be sent from an alias to a contact
+    """
+    # Store the bounced email
+    # generate a name for the email
+    random_name = str(uuid.uuid4())
+
+    full_report_path = f"refused-emails/full-{random_name}.eml"
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
+
+    orig_msg = get_orig_message_from_bounce(msg)
+
+    file_path = f"refused-emails/{random_name}.eml"
+    s3.upload_email_from_bytesio(file_path, BytesIO(orig_msg.as_bytes()), random_name)
+
+    email_log_id = int(orig_msg[_EMAIL_LOG_ID_HEADER])
+    email_log = EmailLog.get(email_log_id)
+    contact = email_log.contact
+
+    try:
+        mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
+    except TypeError:
+        LOG.warning(
+            "cannot parse mailbox from original message header %s",
+            orig_msg[_MAILBOX_ID_HEADER],
+        )
+        # fall back to the default mailbox
+        mailbox = alias.mailbox
+    else:
+        mailbox = Mailbox.get(mailbox_id)
+        email_log.bounced_mailbox_id = mailbox.id
+
+    refused_email = RefusedEmail.create(
+        path=file_path, full_report_path=full_report_path, user_id=user.id
+    )
+    db.session.flush()
+    LOG.d("Create refused email %s", refused_email)
+
+    email_log.bounced = True
+    email_log.refused_email_id = refused_email.id
+    db.session.commit()
+
+    refused_email_url = (
+        URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
+    )
+
+    LOG.d(
+        "Inform user %s about bounced email sent by %s to %s",
+        user,
+        alias,
+        contact,
+    )
+    send_email_with_rate_control(
+        user,
+        ALERT_BOUNCE_EMAIL_REPLY_PHASE,
+        mailbox.email,
+        f"Email cannot be sent to { contact.email } from your alias { alias.email }",
+        render(
+            "transactional/bounce-email-reply-phase.txt",
+            alias=alias,
+            contact=contact,
+            refused_email_url=refused_email_url,
+        ),
+        render(
+            "transactional/bounce-email-reply-phase.html",
+            alias=alias,
+            contact=contact,
+            refused_email_url=refused_email_url,
+        ),
+    )
 
 
 def handle_spam(
