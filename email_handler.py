@@ -1338,6 +1338,25 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
     Handle bounce that is sent to alias
     Happens when  an email cannot be sent from an alias to a contact
     """
+    try:
+        email_log_id = int(get_header_from_bounce(msg, _EMAIL_LOG_ID_HEADER))
+    except Exception:
+        # save the data for debugging
+        file_path = f"/tmp/{random_string(10)}.eml"
+        with open(file_path, "wb") as f:
+            f.write(msg.as_bytes())
+
+        LOG.exception(
+            "Cannot get email-log-id from bounced report, %s %s %s",
+            alias,
+            user,
+            file_path,
+        )
+        return
+
+    email_log = EmailLog.get(email_log_id)
+    contact = email_log.contact
+
     # Store the bounced email
     # generate a name for the email
     random_name = str(uuid.uuid4())
@@ -1346,44 +1365,34 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
     s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
 
     orig_msg = get_orig_message_from_bounce(msg)
-    if not orig_msg:
-        # save the data for debugging
-        file_path = f"/tmp/{random_string(10)}.eml"
-        with open(file_path, "wb") as f:
-            f.write(msg.as_bytes())
+    file_path = None
+    if orig_msg:
+        file_path = f"refused-emails/{random_name}.eml"
+        s3.upload_email_from_bytesio(
+            file_path, BytesIO(orig_msg.as_bytes()), random_name
+        )
 
-        LOG.exception("Cannot parse bounce message, %s", file_path)
-        raise Exception("Cannot parse bounce message")
+    refused_email = RefusedEmail.create(
+        path=file_path, full_report_path=full_report_path, user_id=user.id, commit=True
+    )
+    LOG.d("Create refused email %s", refused_email)
 
-    file_path = f"refused-emails/{random_name}.eml"
-    s3.upload_email_from_bytesio(file_path, BytesIO(orig_msg.as_bytes()), random_name)
-
-    email_log_id = int(orig_msg[_EMAIL_LOG_ID_HEADER])
-    email_log = EmailLog.get(email_log_id)
-    contact = email_log.contact
+    email_log.bounced = True
+    email_log.refused_email_id = refused_email.id
+    db.session.commit()
 
     try:
-        mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
-    except TypeError:
+        mailbox_id = int(get_header_from_bounce(msg, _MAILBOX_ID_HEADER))
+    except Exception:
         LOG.warning(
-            "cannot parse mailbox from original message header %s",
-            orig_msg[_MAILBOX_ID_HEADER],
+            "cannot parse mailbox from bounce message report %s %s", alias, user
         )
         # fall back to the default mailbox
         mailbox = alias.mailbox
     else:
         mailbox = Mailbox.get(mailbox_id)
         email_log.bounced_mailbox_id = mailbox.id
-
-    refused_email = RefusedEmail.create(
-        path=file_path, full_report_path=full_report_path, user_id=user.id
-    )
-    db.session.flush()
-    LOG.d("Create refused email %s", refused_email)
-
-    email_log.bounced = True
-    email_log.refused_email_id = refused_email.id
-    db.session.commit()
+        db.session.commit()
 
     refused_email_url = (
         URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
