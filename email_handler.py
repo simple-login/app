@@ -547,7 +547,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     # can happen in case an email cannot be sent from an alias to a contact
     # in this case Postfix will send a bounce report to original sender, which is the alias
     if mail_from == "<>":
-        LOG.exception("Bounce email sent to %s", alias)
+        LOG.warning("Bounce email sent to %s", alias)
 
         handle_bounce_reply_phase(alias, msg, user)
         return [(False, "550 SL E24 Email cannot be sent to contact")]
