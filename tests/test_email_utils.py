@@ -55,7 +55,6 @@ def test_can_be_used_as_personal_email(flask_client):
     # valid domains should not be affected
     assert email_can_be_used_as_mailbox("abcd@protonmail.com")
     assert email_can_be_used_as_mailbox("abcd@gmail.com")
-    assert email_can_be_used_as_mailbox("abcd@example.com")
 
 
 def test_delete_header():
