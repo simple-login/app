@@ -169,7 +169,7 @@ def get_or_create_contact(
         LOG.warning("From header is empty, parse mail_from %s %s", mail_from, alias)
         contact_name, contact_email = parseaddr_unicode(mail_from)
         if not contact_email:
-            LOG.exception(
+            raise Exception(
                 "Cannot parse contact from from_header:%s, mail_from:%s",
                 contact_from_header,
                 mail_from,
@@ -552,7 +552,15 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         handle_bounce_reply_phase(alias, msg, user)
         return [(False, "550 SL E24 Email cannot be sent to contact")]
 
-    contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
+    try:
+        contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
+    except:
+        LOG.exception(
+            "Cannot create contact for %s %s %s", msg["From"], envelope.mail_from, alias
+        )
+        LOG.d("msg:\n%s", msg)
+        # return 421 for debug now, will use 5** in future
+        return [(True, "421 SL E25 - Invalid from address")]
 
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
     db.session.commit()
