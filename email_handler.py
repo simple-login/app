@@ -556,8 +556,17 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     try:
         contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
     except:
+        # save the data for debugging
+        file_path = f"/tmp/{random_string(10)}.eml"
+        with open(file_path, "wb") as f:
+            f.write(msg.as_bytes())
+
         LOG.exception(
-            "Cannot create contact for %s %s %s", msg["From"], envelope.mail_from, alias
+            "Cannot create contact for %s %s %s %s",
+            msg["From"],
+            envelope.mail_from,
+            alias,
+            file_path,
         )
         LOG.d("msg:\n%s", msg)
         # return 421 for debug now, will use 5** in future
