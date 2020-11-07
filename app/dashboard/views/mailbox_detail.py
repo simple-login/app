@@ -155,7 +155,8 @@ def mailbox_detail_route(mailbox_id):
             if request.form.get("action") == "save":
                 if not mailbox.pgp_finger_print:
                     flash(
-                        "Generic subject can only be used on PGP-enabled mailbox", "error"
+                        "Generic subject can only be used on PGP-enabled mailbox",
+                        "error",
                     )
                     return redirect(
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
