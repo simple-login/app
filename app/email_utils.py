@@ -653,3 +653,40 @@ def is_valid_email(email_address: str) -> bool:
     return validate_email(
         email_address=email_address, check_mx=False, use_blacklist=False
     )
+
+
+def add_header(msg: Message, text_header, html_header) -> Message:
+    if msg.get_content_type() == "text/plain":
+        payload = msg.get_payload()
+        if type(payload) is str:
+            clone_msg = copy(msg)
+            payload = f"{text_header}\n---\n{payload}"
+            clone_msg.set_payload(payload)
+            return clone_msg
+    elif msg.get_content_type() == "text/html":
+        payload = msg.get_payload()
+        if type(payload) is str:
+
+            new_payload = f"""
+<table width="100%" style="width: 100%; -premailer-width: 100%; -premailer-cellpadding: 0; -premailer-cellspacing: 0; margin: 0; padding: 0;">
+    <tr>
+        <td style="border-bottom:1px dashed #5675E2; padding: 10px 0px">{html_header}</td>
+    </tr>
+    <tr>
+        <td>{payload}</td>
+    </tr>
+</table>
+            """
+            clone_msg = copy(msg)
+            clone_msg.set_payload(new_payload)
+            return clone_msg
+    elif msg.get_content_type() in ("multipart/alternative", "multipart/related"):
+        new_parts = []
+        for part in msg.get_payload():
+            new_parts.append(add_header(part, text_header, html_header))
+        clone_msg = copy(msg)
+        clone_msg.set_payload(new_parts)
+        return clone_msg
+
+    LOG.d("No header added for %s", msg.get_content_type())
+    return msg
