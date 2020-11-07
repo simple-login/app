@@ -151,6 +151,30 @@ def mailbox_detail_route(mailbox_id):
                 return redirect(
                     url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                 )
+        elif request.form.get("form-name") == "generic-subject":
+            if request.form.get("action") == "save":
+                if not mailbox.pgp_finger_print:
+                    flash(
+                        "Generic subject can only be used on PGP-enabled mailbox",
+                        "error",
+                    )
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
+
+                mailbox.generic_subject = request.form.get("generic-subject")
+                db.session.commit()
+                flash("Generic subject for PGP-encrypted email is enabled", "success")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                )
+            elif request.form.get("action") == "remove":
+                mailbox.generic_subject = None
+                db.session.commit()
+                flash("Generic subject for PGP-encrypted email is disabled", "success")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                )
 
     spf_available = ENFORCE_SPF
     return render_template("dashboard/mailbox_detail.html", **locals())

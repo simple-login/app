@@ -49,6 +49,7 @@ from app.config import (
     LANDING_PAGE_URL,
     STATUS_PAGE_URL,
     SUPPORT_EMAIL,
+    get_abs_path,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -77,6 +78,7 @@ from app.models import (
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
+from app.pgp_utils import load_public_key
 
 if SENTRY_DSN:
     LOG.d("enable sentry")
@@ -213,12 +215,14 @@ def fake_data():
     api_key = ApiKey.create(user_id=user.id, name="Firefox")
     api_key.code = "codeFF"
 
+    pgp_public_key = open(get_abs_path("local_data/public-pgp.asc")).read()
     m1 = Mailbox.create(
         user_id=user.id,
-        email="m1@cd.ef",
+        email="pgp@example.org",
         verified=True,
-        pgp_finger_print="fake fingerprint",
+        pgp_public_key=pgp_public_key,
     )
+    m1.pgp_finger_print = load_public_key(pgp_public_key)
     db.session.commit()
 
     for i in range(3):

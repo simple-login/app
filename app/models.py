@@ -1642,6 +1642,8 @@ class Mailbox(db.Model, ModelMixin):
     # a mailbox can be disabled if it can't be reached
     disabled = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
 
+    generic_subject = db.Column(db.String(78), nullable=True)
+
     __table_args__ = (db.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
 
     user = db.relationship(User, foreign_keys=[user_id])
