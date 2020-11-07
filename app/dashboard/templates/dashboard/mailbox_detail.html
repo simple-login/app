@@ -6,6 +6,17 @@
   Mailbox {{ mailbox.email }}
 {% endblock %}
 
+{% block head %}
+  <style>
+      div[disabled]
+      {
+          pointer-events: none;
+          opacity: 0.7;
+      }
+  </style>
+{% endblock %}
+
+
 {% block default_content %}
 
   <div class="row">
@@ -72,7 +83,7 @@
           <div class="card-body">
             <div class="card-title">
               Pretty Good Privacy (PGP)
-              <div class="small-text">
+              <div class="small-text mt-1">
                 By importing your PGP Public Key into SimpleLogin, all emails sent to {{ mailbox.email }} are
                 <b>encrypted</b> with your key.
               </div>
@@ -98,6 +109,45 @@
                     value="save">Save
             </button>
             {% if mailbox.pgp_finger_print %}
+              <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+            {% endif %}
+
+          </div>
+        </form>
+
+      </div>
+
+      <div class="card" {% if not mailbox.pgp_finger_print %} disabled {% endif %}>
+        <form method="post">
+          <input type="hidden" name="form-name" value="generic-subject">
+
+          <div class="card-body">
+            <div class="card-title">
+              Hide email subject when PGP is enabled
+              <div class="small-text mt-1">
+                When PGP is enabled, you can choose to use a <b>generic</b> subject for the forwarded emails.
+                The original subject is then added into the email body. <br>
+                As PGP does not encrypt the email subject and the email subject might contain sensitive information,
+                this option will allow a further protection of your email content.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Generic Subject</label>
+
+              <input name="generic-subject"
+                  {% if not mailbox.pgp_finger_print %} disabled {% endif %}
+                        class="form-control" maxlength="78"
+                        placeholder="Generic Subject"
+                     value="{{ mailbox.generic_subject or "" }}"
+              >
+            </div>
+
+            <button class="btn btn-primary" name="action"
+                {% if not mailbox.pgp_finger_print %} disabled {% endif %}
+                    value="save">Save
+            </button>
+            {% if mailbox.generic_subject %}
               <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
             {% endif %}
 
