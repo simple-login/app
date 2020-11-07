@@ -699,11 +699,12 @@ def forward_email_to_mailbox(
         LOG.d("Encrypt message using mailbox %s", mailbox)
         if mailbox.generic_subject:
             LOG.d("Use a generic subject for %s", mailbox)
+            orig_subject = msg["Subject"]
             add_or_replace_header(msg, "Subject", mailbox.generic_subject)
             msg = add_header(
                 msg,
-                f"""Forwarded by SimpleLogin to {alias.email} with "{msg["Subject"]}" as subject""",
-                f"""Forwarded by SimpleLogin to {alias.email} with <b>{msg["Subject"]}</b> as subject""",
+                f"""Forwarded by SimpleLogin to {alias.email} with "{orig_subject}" as subject""",
+                f"""Forwarded by SimpleLogin to {alias.email} with <b>{orig_subject}</b> as subject""",
             )
 
         try:
