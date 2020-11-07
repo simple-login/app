@@ -99,6 +99,7 @@ from app.email_utils import (
     send_email_at_most_times,
     is_valid_alias_address_domain,
     should_add_dkim_signature,
+    add_header,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -397,7 +398,7 @@ def should_append_alias(msg: Message, address: str):
 
 def prepare_pgp_message(
     orig_msg: Message, pgp_fingerprint: str, public_key: str, can_sign: bool = False
-):
+) -> Message:
     msg = MIMEMultipart("encrypted", protocol="application/pgp-encrypted")
 
     # clone orig message to avoid modifying it
@@ -687,6 +688,15 @@ def forward_email_to_mailbox(
     # create PGP email if needed
     if mailbox.pgp_finger_print and user.is_premium() and not alias.disable_pgp:
         LOG.d("Encrypt message using mailbox %s", mailbox)
+        if mailbox.generic_subject:
+            LOG.d("Use a generic subject for %s", mailbox)
+            add_or_replace_header(msg, "Subject", mailbox.generic_subject)
+            msg = add_header(
+                msg,
+                f"""Forwarded by SimpleLogin to {alias.email} with "{msg["Subject"]}" as subject""",
+                f"""Forwarded by SimpleLogin to {alias.email} with <b>{msg["Subject"]}</b> as subject""",
+            )
+
         try:
             msg = prepare_pgp_message(
                 msg, mailbox.pgp_finger_print, mailbox.pgp_public_key, can_sign=True
