@@ -218,6 +218,7 @@ def send_email(
     msg.attach(MIMEText(plaintext, "text"))
 
     if not html:
+        LOG.d("Use plaintext as html")
         html = plaintext.replace("\n", "<br>")
     msg.attach(MIMEText(html, "html"))
 
