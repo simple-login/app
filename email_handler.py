@@ -903,7 +903,10 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     if is_spam:
         LOG.exception(
-            "Reply phase - email sent from %s to %s detected as spam", alias, contact
+            "Reply phase - email sent from %s to %s detected as spam. %s",
+            alias,
+            contact,
+            user,
         )
 
         email_log.is_spam = True
