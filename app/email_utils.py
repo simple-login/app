@@ -622,7 +622,11 @@ def parseaddr_unicode(addr) -> (str, str):
 
 def copy(msg: Message) -> Message:
     """return a copy of message"""
-    return email.message_from_bytes(to_bytes(msg))
+    try:
+        return email.message_from_bytes(to_bytes(msg))
+    except UnicodeEncodeError:
+        LOG.warning("to_bytes() fails, try string")
+        return email.message_from_string(msg.as_string())
 
 
 def to_bytes(msg: Message):
