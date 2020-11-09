@@ -442,7 +442,7 @@ def prepare_pgp_message(
 
     # encrypt
     # use pgpy as fallback
-    msg_bytes = clone_msg.as_bytes()
+    msg_bytes = to_bytes(clone_msg)
     try:
         encrypted_data = pgp_utils.encrypt_file(BytesIO(msg_bytes), pgp_fingerprint)
         second.set_payload(encrypted_data)
@@ -468,11 +468,11 @@ def sign_msg(msg: Message) -> Message:
     signature.add_header("Content-Disposition", 'attachment; filename="signature.asc"')
 
     try:
-        signature.set_payload(sign_data(msg.as_bytes().replace(b"\n", b"\r\n")))
+        signature.set_payload(sign_data(to_bytes(msg).replace(b"\n", b"\r\n")))
     except Exception:
         LOG.exception("Cannot sign, try using pgpy")
         signature.set_payload(
-            sign_data_with_pgpy(msg.as_bytes().replace(b"\n", b"\r\n"))
+            sign_data_with_pgpy(to_bytes(msg).replace(b"\n", b"\r\n"))
         )
 
     container.attach(signature)
@@ -484,7 +484,7 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
     # store the refused email
     random_name = str(uuid.uuid4())
     full_report_path = f"refused-emails/cycle-{random_name}.eml"
-    s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(to_bytes(msg)), random_name)
     refused_email = RefusedEmail.create(
         path=None, full_report_path=full_report_path, user_id=alias.user_id
     )
@@ -559,7 +559,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         # save the data for debugging
         file_path = f"/tmp/{random_string(10)}.eml"
         with open(file_path, "wb") as f:
-            f.write(msg.as_bytes())
+            f.write(to_bytes(msg))
 
         LOG.exception(
             "Cannot create contact for %s %s %s %s",
@@ -1183,7 +1183,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     random_name = str(uuid.uuid4())
 
     full_report_path = f"refused-emails/full-{random_name}.eml"
-    s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(to_bytes(msg)), random_name)
 
     file_path = None
     mailbox = None
@@ -1201,9 +1201,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         )
     else:
         file_path = f"refused-emails/{random_name}.eml"
-        s3.upload_email_from_bytesio(
-            file_path, BytesIO(orig_msg.as_bytes()), random_name
-        )
+        s3.upload_email_from_bytesio(file_path, BytesIO(to_bytes(msg)), random_name)
         try:
             mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
         except TypeError:
@@ -1372,7 +1370,7 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
         # save the data for debugging
         file_path = f"/tmp/{random_string(10)}.eml"
         with open(file_path, "wb") as f:
-            f.write(msg.as_bytes())
+            f.write(to_bytes(msg))
 
         LOG.exception(
             "Cannot get email-log-id from bounced report, %s %s %s",
@@ -1391,14 +1389,14 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
     random_name = str(uuid.uuid4())
 
     full_report_path = f"refused-emails/full-{random_name}.eml"
-    s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(to_bytes(msg)), random_name)
 
     orig_msg = get_orig_message_from_bounce(msg)
     file_path = None
     if orig_msg:
         file_path = f"refused-emails/{random_name}.eml"
         s3.upload_email_from_bytesio(
-            file_path, BytesIO(orig_msg.as_bytes()), random_name
+            file_path, BytesIO(to_bytes(orig_msg)), random_name
         )
 
     refused_email = RefusedEmail.create(
@@ -1468,13 +1466,13 @@ def handle_spam(
     random_name = str(uuid.uuid4())
 
     full_report_path = f"spams/full-{random_name}.eml"
-    s3.upload_email_from_bytesio(full_report_path, BytesIO(msg.as_bytes()), random_name)
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(to_bytes(msg)), random_name)
 
     file_path = None
     if orig_msg:
         file_path = f"spams/{random_name}.eml"
         s3.upload_email_from_bytesio(
-            file_path, BytesIO(orig_msg.as_bytes()), random_name
+            file_path, BytesIO(to_bytes(orig_msg)), random_name
         )
 
     refused_email = RefusedEmail.create(
@@ -1782,7 +1780,7 @@ def sl_sendmail(from_addr, to_addr, msg: Message, mail_options, rcpt_options):
     smtp.sendmail(
         from_addr,
         to_addr,
-        msg.as_bytes(),
+        to_bytes(msg),
         mail_options,
         rcpt_options,
     )

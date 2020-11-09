@@ -243,7 +243,7 @@ def send_email(
     email_domain = SUPPORT_EMAIL[SUPPORT_EMAIL.find("@") + 1 :]
     add_dkim_signature(msg, email_domain)
 
-    msg_raw = msg.as_bytes()
+    msg_raw = to_bytes(msg)
     if SENDER:
         smtp.sendmail(SENDER, to_email, msg_raw)
     else:
@@ -346,7 +346,7 @@ def add_dkim_signature(msg: Message, email_domain: str):
     # Specify headers in "byte" form
     # Generate message signature
     sig = dkim.sign(
-        msg.as_bytes(),
+        to_bytes(msg),
         DKIM_SELECTOR,
         email_domain.encode(),
         DKIM_PRIVATE_KEY.encode(),
@@ -622,7 +622,7 @@ def parseaddr_unicode(addr) -> (str, str):
 
 def copy(msg: Message) -> Message:
     """return a copy of message"""
-    return email.message_from_bytes(msg.as_bytes())
+    return email.message_from_bytes(to_bytes(msg))
 
 
 def to_bytes(msg: Message):
