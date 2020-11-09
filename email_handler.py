@@ -100,6 +100,7 @@ from app.email_utils import (
     is_valid_alias_address_domain,
     should_add_dkim_signature,
     add_header,
+    get_header_unicode,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -700,6 +701,7 @@ def forward_email_to_mailbox(
         if mailbox.generic_subject:
             LOG.d("Use a generic subject for %s", mailbox)
             orig_subject = msg["Subject"]
+            orig_subject = get_header_unicode(orig_subject)
             add_or_replace_header(msg, "Subject", mailbox.generic_subject)
             msg = add_header(
                 msg,

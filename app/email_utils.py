@@ -593,6 +593,17 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
     return spamassassin_answer.lower() == "yes", spam_status_header
 
 
+def get_header_unicode(header: str):
+    decoded_string, charset = decode_header(header)[0]
+    if charset is not None:
+        try:
+            return decoded_string.decode(charset)
+        except UnicodeDecodeError:
+            LOG.warning("Cannot decode header %s", header)
+
+    return header
+
+
 def parseaddr_unicode(addr) -> (str, str):
     """Like parseaddr() but return name in unicode instead of in RFC 2047 format
     Should be used instead of parseaddr()
