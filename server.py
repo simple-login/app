@@ -50,6 +50,8 @@ from app.config import (
     STATUS_PAGE_URL,
     SUPPORT_EMAIL,
     get_abs_path,
+    PADDLE_MONTHLY_PRODUCT_IDS,
+    PADDLE_YEARLY_PRODUCT_IDS,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -497,13 +499,19 @@ def setup_paddle_callback(app: Flask):
             user_id = passthrough.get("user_id")
             user = User.get(user_id)
 
-            if (
-                int(request.form.get("subscription_plan_id"))
-                == PADDLE_MONTHLY_PRODUCT_ID
-            ):
+            subscription_plan_id = int(request.form.get("subscription_plan_id"))
+
+            if subscription_plan_id in PADDLE_MONTHLY_PRODUCT_IDS:
                 plan = PlanEnum.monthly
-            else:
+            elif subscription_plan_id in PADDLE_YEARLY_PRODUCT_IDS:
                 plan = PlanEnum.yearly
+            else:
+                LOG.exception(
+                    "Unknown subscription_plan_id %s %s",
+                    subscription_plan_id,
+                    request.form,
+                )
+                return "No such subscription", 400
 
             sub = Subscription.get_by(user_id=user.id)
 
