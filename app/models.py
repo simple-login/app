@@ -1354,9 +1354,9 @@ class Subscription(db.Model, ModelMixin):
 
     def plan_name(self):
         if self.plan == PlanEnum.monthly:
-            return "Monthly ($2.99/month)"
+            return "Monthly ($3/month)"
         else:
-            return "Yearly ($29.99/year)"
+            return "Yearly ($30/year)"
 
     def __repr__(self):
         return f"<Subscription {self.plan} {self.next_bill_date}>"
