@@ -636,7 +636,7 @@ def copy(msg: Message) -> Message:
     try:
         # prefer the unicode way
         return email.message_from_string(msg.as_string())
-    except (UnicodeEncodeError, ValueError):
+    except (UnicodeEncodeError, KeyError):
         LOG.warning("as_string() fails, try to_bytes")
         return email.message_from_bytes(to_bytes(msg))
 
