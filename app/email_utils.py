@@ -634,10 +634,11 @@ def parseaddr_unicode(addr) -> (str, str):
 def copy(msg: Message) -> Message:
     """return a copy of message"""
     try:
-        return email.message_from_bytes(to_bytes(msg))
-    except UnicodeEncodeError:
-        LOG.warning("to_bytes() fails, try string")
+        # prefer the unicode way
         return email.message_from_string(msg.as_string())
+    except UnicodeEncodeError:
+        LOG.warning("as_string() fails, try to_bytes")
+        return email.message_from_bytes(to_bytes(msg))
 
 
 def to_bytes(msg: Message):
@@ -650,7 +651,13 @@ def to_bytes(msg: Message):
             return msg.as_bytes(policy=email.policy.SMTP)
         except UnicodeEncodeError:
             LOG.warning("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
-            return msg.as_bytes(policy=email.policy.SMTPUTF8)
+            try:
+                return msg.as_bytes(policy=email.policy.SMTPUTF8)
+            except UnicodeEncodeError:
+                LOG.warning(
+                    "as_bytes fails with SMTPUTF8 policy, try converting to string"
+                )
+                return msg.as_string().encode()
 
 
 def should_add_dkim_signature(domain: str) -> bool:

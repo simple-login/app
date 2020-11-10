@@ -15,6 +15,7 @@ from app.email_utils import (
     get_header_from_bounce,
     is_valid_email,
     add_header,
+    to_bytes,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -138,8 +139,11 @@ def test_copy():
     """
     msg = email.message_from_string(email_str)
     msg2 = copy(msg)
+    assert to_bytes(msg) == to_bytes(msg2)
 
-    assert msg.as_bytes() == msg2.as_bytes()
+    msg = email.message_from_string("👌")
+    msg2 = copy(msg)
+    assert to_bytes(msg) == to_bytes(msg2)
 
 
 def test_get_spam_from_header():
@@ -369,3 +373,16 @@ Content-Type: text/html;
     assert "</table>" in new_msg.as_string()
     assert "html header" in new_msg.as_string()
     assert "text header" in new_msg.as_string()
+
+
+def test_to_bytes():
+    msg = email.message_from_string("☕️ emoji")
+    assert to_bytes(msg)
+    # \n is appended when message is converted to bytes
+    assert to_bytes(msg).decode() == "\n☕️ emoji"
+
+    msg = email.message_from_string("ascii")
+    assert to_bytes(msg) == b"\nascii"
+
+    msg = email.message_from_string("éèà€")
+    assert to_bytes(msg).decode() == "\néèà€"
