@@ -22,7 +22,8 @@ def word_exist(word):
 
 def random_words():
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
-    nb_words = random.randint(2, 3)
+    # nb_words = random.randint(2, 3)
+    nb_words = 2
     return "_".join([random.choice(_words) for i in range(nb_words)])
 
 
