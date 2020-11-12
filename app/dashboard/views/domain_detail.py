@@ -15,7 +15,6 @@ from app.email_utils import send_email
 from app.extensions import db
 from app.log import LOG
 from app.models import CustomDomain, Alias, DomainDeletedAlias
-from server import create_light_app
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
@@ -202,6 +201,8 @@ def domain_detail(custom_domain_id):
 
 
 def delete_domain(custom_domain_id: CustomDomain):
+    from server import create_light_app
+
     with create_light_app().app_context():
         custom_domain = CustomDomain.get(custom_domain_id)
         if not custom_domain:
