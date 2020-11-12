@@ -1,3 +1,5 @@
+from threading import Thread
+
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
@@ -9,8 +11,11 @@ from app.dns_utils import (
     get_txt_record,
     get_cname_record,
 )
+from app.email_utils import send_email
 from app.extensions import db
+from app.log import LOG
 from app.models import CustomDomain, Alias, DomainDeletedAlias
+from server import create_light_app
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
@@ -181,15 +186,44 @@ def domain_detail(custom_domain_id):
             )
         elif request.form.get("form-name") == "delete":
             name = custom_domain.domain
-            CustomDomain.delete(custom_domain_id)
-            db.session.commit()
-            flash(f"Domain {name} has been deleted", "success")
+            LOG.d("Schedule deleting %s", custom_domain)
+            Thread(target=delete_domain, args=(custom_domain_id,)).start()
+            flash(
+                f"{name} scheduled for deletion."
+                f"You will receive a confirmation email when the deletion is finished",
+                "success",
+            )
 
             return redirect(url_for("dashboard.custom_domain"))
 
     nb_alias = Alias.filter_by(custom_domain_id=custom_domain.id).count()
 
     return render_template("dashboard/domain_detail/info.html", **locals())
+
+
+def delete_domain(custom_domain_id: CustomDomain):
+    with create_light_app().app_context():
+        custom_domain = CustomDomain.get(custom_domain_id)
+        if not custom_domain:
+            return
+
+        domain_name = custom_domain.domain
+        user = custom_domain.user
+
+        CustomDomain.delete(custom_domain.id)
+        db.session.commit()
+
+        LOG.d("Domain %s deleted", domain_name)
+
+        send_email(
+            user.email,
+            f"Your domain {domain_name} has been deleted",
+            f"""Domain {domain_name} along with its aliases are deleted successfully.
+    
+Regards,
+SimpleLogin team.
+        """,
+        )
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/trash", methods=["GET", "POST"])

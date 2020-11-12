@@ -125,8 +125,8 @@
       let that = $(this);
 
       bootbox.confirm({
-        message: "All aliases associated with <b>{{ custom_domain.domain }}</b> will be also deleted, " +
-          " please confirm.",
+        message: "All aliases associated with <b>{{ custom_domain.domain }}</b> will be also deleted. <br>" +
+          "This operation is not reversible, please confirm.",
         buttons: {
           confirm: {
             label: 'Yes, delete it',
