@@ -1,3 +1,5 @@
+import re
+
 from flask import render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
@@ -7,21 +9,26 @@ from app.log import LOG
 from app.models import Referral
 from app.utils import random_string
 
+_REFERRAL_PATTERN = r"[0-9a-z-_]{3,}"
+
 
 @dashboard_bp.route("/referral", methods=["GET", "POST"])
 @login_required
 def referral_route():
     if request.method == "POST":
         if request.form.get("form-name") == "create":
-            # Generate a new unique ref code
-            code = random_string(15)
-            for _ in range(100):
-                if not Referral.get_by(code=code):
-                    # found
-                    break
+            code = request.form.get("code")
+            if re.fullmatch(_REFERRAL_PATTERN, code) is None:
+                flash(
+                    "At least 3 characters. Only lowercase letters, "
+                    "numbers, dashes (-) and underscores (_) are currently supported.",
+                    "error",
+                )
+                return redirect(url_for("dashboard.referral_route"))
 
-                LOG.warning("Referral Code %s already used", code)
-                code = random_string(15)
+            if Referral.get_by(code=code):
+                flash("Code already used", "error")
+                return redirect(url_for("dashboard.referral_route"))
 
             name = request.form.get("name")
             referral = Referral.create(user_id=current_user.id, code=code, name=name)

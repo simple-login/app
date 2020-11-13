@@ -8,7 +8,19 @@
 
 {% block default_content %}
   <div class="col">
-    <h1 class="h3 mb-5"> Referrals </h1>
+    <h1 class="h3 mb-5"> Referrals
+      <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+         aria-expanded="false" aria-controls="collapseExample">
+        How to use <i class="fe fe-chevrons-down"></i>
+      </a>
+    </h1>
+
+    <div class="alert alert-primary collapse" id="howtouse" role="alert">
+      On this page, you can create a <b>referral code</b> that you can use when referring people to SimpleLogin.
+      For every user who <b>upgrades</b>, you'll get $5 :). <br>
+      The payout can be initiated any time, just send us an email at
+      <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a> when you want to receive the payout.
+    </div>
 
     {% if referrals|length == 0 %}
       <div class="alert alert-info">
@@ -24,7 +36,6 @@
           <input type="hidden" name="form-name" value="update">
           <input type="hidden" name="referral-id" value="{{ referral.id }}">
 
-          <b>Name</b>
           <div class="d-flex mb-3">
             <div class="mr-2">
               <input name="name" class="form-control" value="{{ referral.name or '' }}">
@@ -35,14 +46,13 @@
           </div>
         </form>
 
-
         {% set nb_user = referral.nb_user() %}
         {% set nb_paid_user = referral.nb_paid_user() %}
         {% if nb_user > 0 %}
           <div class="mb-3">
             <b class="h1">{{ nb_user }}</b>
             {% if nb_user == 1 %} person {% else %} people {% endif %}
-            has protected their emails thanks to you! <br>
+            has their online privacy protected thanks to you! <br>
 
             Among them, <b class="h1">{{ nb_paid_user }}</b>
             {% if nb_paid_user == 1 %} person {% else %} people {% endif %}
@@ -71,7 +81,14 @@
 
         <div class="mb-3">
           You can also use the referral code <b>{{ referral.code }}</b> when sharing any link on SimpleLogin. <br>
-          Just append <em>?slref={{ referral.code }}</em> to any link on SimpleLogin website.
+          Just append
+          <em data-toggle="tooltip"
+              title="Click to copy"
+              class="clipboard"
+              data-clipboard-text="{{ '?slref=' + referral.code }}" style="overflow-wrap: break-word">
+            ?slref={{ referral.code }}
+          </em>
+          to any link on SimpleLogin website.
         </div>
 
         <div>
@@ -91,9 +108,24 @@
 
     <form method="post" class="mt-6">
       <input type="hidden" name="form-name" value="create">
-      <input name="name" class="form-control"
+
+      <div class="form-group">
+        <input name="code" class="form-control"
+               pattern="[0-9a-z-_]{3,}"
+               placeholder="Referral Code"
+               title="At least 3 characters. Only lowercase letters, numbers, dashes (-) and underscores (_) are currently supported.">
+        <div class="small-text">
+          At least 3 characters. Only lowercase letters, numbers,
+          dashes (-) and underscores (_) are currently supported.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input name="name" class="form-control"
              placeholder="Referral name, something to help you remember why you create it :)">
-      <button class="btn btn-success mt-2">Create a new referral code</button>
+      </div>
+
+      <button class="btn btn-success mb-5">Create</button>
     </form>
   </div>
 {% endblock %}
