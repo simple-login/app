@@ -1,5 +1,21 @@
 ## API
 
+[1. Account endpoints](#account-endpoints)
+
+[2. Alias endpoints](#alias-endpoints)
+
+[3. Mailbox endpoints](#mailbox-endpoints)
+
+[4. Contact endpoints](#contact-endpoints)
+
+[5. Notification endpoints](#notification-endpoints)
+
+[6. Settings endpoints](#settings-endpoints)
+
+[7. MISC endpoints](#misc-endpoints)
+
+---
+
 SimpleLogin current API clients are Chrome/Firefox/Safari extension and mobile (iOS/Android) app.
 These clients rely on `API Code` for authentication.
 
