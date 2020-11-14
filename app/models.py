@@ -1179,6 +1179,11 @@ class Contact(db.Model, ModelMixin):
     # the message["From"] header
     from_header = db.Column(db.Text, nullable=True, default=None)
 
+    # a contact can have an empty email address, in this case it can't receive emails
+    invalid_email = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     @property
     def email(self):
         return self.website_email
