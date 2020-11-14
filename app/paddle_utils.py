@@ -91,15 +91,14 @@ def change_plan(subscription_id: str, plan_id) -> (bool, str):
     )
     res = r.json()
     if not res["success"]:
-        LOG.exception(
-            f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
-        )
         try:
             # "unable to complete the resubscription because we could not charge the customer for the resubscription"
             if res["error"]["code"] == 147:
                 return False, "Your card cannot be charged"
         except:
-            LOG.warning("Cannot parse error code from %s", res)
+            LOG.exception(
+                f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
+            )
             return False, ""
 
         return False, ""
