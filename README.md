@@ -4,7 +4,7 @@
     </a>
 </p>
 
-[SimpleLogin](https://simplelogin.io) | Privacy-First Email Forwarding and Identity Provider Service
+[SimpleLogin](https://simplelogin.io) | Protect your online identity with email alias
 ---
 <p>
 <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">
@@ -43,27 +43,23 @@
 
 ---
 
-> Yet another email forwarding service?
+Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked and loose your privacy. In addition, you become an easy target for spammers and phishing attempts.
 
-In some way yes... However, SimpleLogin is a bit different because:
-
-- Fully open source: both the server and client code (browser extension, JS library) are open source so anyone can freely inspect and (hopefully) improve the code.
-
-- The only email forwarding solution that is **self-hostable**: with our detailed self-hosting instructions and most of components running as Docker container, anyone who knows `ssh` is able to deploy SimpleLogin on their server.
-
-- Not just email alias: SimpleLogin is a privacy-first and developer-friendly identity provider that:
-    - offers privacy for users
-    - is simple to use for developers. SimpleLogin is a privacy-focused alternative to the "Login with Facebook/Google/Twitter" buttons.
-
-- Plenty of features: browser extension, custom domain, catch-all alias, OAuth libraries, etc.
-
-- Open roadmap at https://trello.com/b/4d6A69I4/open-roadmap: you know the exciting features we are working on.
-
-At the heart of SimpleLogin is `email alias`: an alias is a normal email address but all emails sent to an alias are **forwarded** to your email inbox. SimpleLogin alias can also **send** emails: for your contact, the alias is therefore your email address. Use alias whenever you need to give out your email address to protect your online identity. More info on our website at https://simplelogin.io
+SimpleLogin allows you to create a different email address (alias) for each website.
 
 <p align="center">
-    <img src="./docs/custom-alias.png" height="150px">
+    <img src="./docs/one-click-alias.gif" height="150px">
 </p>
+
+At the heart of SimpleLogin is `email alias`: an alias is an email address but all emails sent to an alias are **forwarded** to your mailbox. You can also **send** emails from your alias: for your contact, your alias is just a normal email address. Use alias whenever you need to give out your email address to protect your online identity. More info on https://simplelogin.io
+
+All components in SimpleLogin, including the web app, Chrome/Firefox extension, Android/iOS app are open-source and available on https://github.com/simple-login
+
+SimpleLogin server can be self-hosted. The self-hosting instructions are mostly based on Docker.
+
+SimpleLogin roadmap is at https://trello.com/b/4d6A69I4/open-roadmap, feel free to submit new ideas or vote on features you want to happen :).
+
+
 
 # Quick start
 
@@ -592,11 +588,11 @@ All work on SimpleLogin happens directly on GitHub.
 
 ### Run code locally
 
-The project uses 
+The project uses
 - Python 3.7+ and [poetry](https://python-poetry.org/) to manage dependencies
-- Node v10 for front-end. 
+- Node v10 for front-end.
 
-First, install all dependencies by running the following command. 
+First, install all dependencies by running the following command.
 Feel free to use `virtualenv` or similar tools to isolate development environment.
 
 ```bash
@@ -650,17 +646,17 @@ The database migration is handled by `alembic`
 
 Whenever the model changes, a new migration has to be created.
 
-If you have Docker installed, you can create the migration by the following script: 
+If you have Docker installed, you can create the migration by the following script:
 
 ```bash
-sh new_migration.sh 
+sh new_migration.sh
 ```
 
-Make sure to review the migration script before committing it. 
+Make sure to review the migration script before committing it.
 Sometimes (very rarely though), the automatically generated script can be incorrect.
 
-We cannot use the local database to generate migration script as the local database doesn't use migration. 
-It is created via `db.create_all()` (cf `fake_data()` method). This is convenient for development and 
+We cannot use the local database to generate migration script as the local database doesn't use migration.
+It is created via `db.create_all()` (cf `fake_data()` method). This is convenient for development and
 unit tests as we don't have to wait for the migration.
 
 ### Code structure
