@@ -29,8 +29,6 @@
 
 </p>
 
-# Table of Contents
-
 [1. Quick start](#quick-start)
 
 [2. General Architecture](#general-architecture)
@@ -43,6 +41,7 @@
 
 [6. OAuth2/OpenID Connect](docs/oauth.md)
 
+---
 
 > Yet another email forwarding service?
 
