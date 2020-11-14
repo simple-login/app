@@ -29,6 +29,21 @@
 
 </p>
 
+# Table of Contents
+
+[1. Quick start](#quick-start)
+
+[2. General Architecture](#general-architecture)
+
+[3. Self Hosting](#self-hosting)
+
+[4. Contributing Guide](#contributing)
+
+[5. API](docs/api.md)
+
+[6. OAuth2/OpenID Connect](docs/oauth.md)
+
+
 > Yet another email forwarding service?
 
 In some way yes... However, SimpleLogin is a bit different because:
@@ -68,19 +83,6 @@ Then open http://localhost:7777, you should be able to login with `john@wick.com
 
 To use SimpleLogin aliases, you need to deploy it on your server with some DNS setup though,
 the following section will show a step-by-step guide on how to get your own email forwarder service!
-
-# Table of Contents
-
-[1. General Architecture](#general-architecture)
-
-[2. Self Hosting](#self-hosting)
-
-[3. Contributing Guide](#contributing)
-
-[4. API](docs/api.md)
-
-[5. OAuth2/OpenID Connect](docs/oauth.md)
-
 
 ## General Architecture
 
