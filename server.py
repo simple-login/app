@@ -52,6 +52,7 @@ from app.config import (
     get_abs_path,
     PADDLE_MONTHLY_PRODUCT_IDS,
     PADDLE_YEARLY_PRODUCT_IDS,
+    PGP_SIGNER,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -475,6 +476,7 @@ def jinja2_filter(app):
             LANDING_PAGE_URL=LANDING_PAGE_URL,
             STATUS_PAGE_URL=STATUS_PAGE_URL,
             SUPPORT_EMAIL=SUPPORT_EMAIL,
+            PGP_SIGNER=PGP_SIGNER,
         )
 
 

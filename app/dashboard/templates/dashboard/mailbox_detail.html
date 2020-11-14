@@ -85,7 +85,10 @@
               Pretty Good Privacy (PGP)
               <div class="small-text mt-1">
                 By importing your PGP Public Key into SimpleLogin, all emails sent to {{ mailbox.email }} are
-                <b>encrypted</b> with your key.
+                <b>encrypted</b> with your key. <br>
+                {% if PGP_SIGNER %}
+                  All forwarded emails will be signed with <b>{{ PGP_SIGNER }}</b>.
+                {% endif %}
               </div>
             </div>
 

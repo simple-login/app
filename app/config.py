@@ -349,3 +349,6 @@ PGP_SENDER_PRIVATE_KEY_PATH = os.environ.get("PGP_SENDER_PRIVATE_KEY_PATH")
 if PGP_SENDER_PRIVATE_KEY_PATH:
     with open(get_abs_path(PGP_SENDER_PRIVATE_KEY_PATH)) as f:
         PGP_SENDER_PRIVATE_KEY = f.read()
+
+# the signer address that signes outgoing encrypted emails
+PGP_SIGNER = os.environ.get("PGP_SIGNER")
