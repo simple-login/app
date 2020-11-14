@@ -1,6 +1,6 @@
 <p align="center">
     <a href="https://simplelogin.io">
-        <img src="./docs/diagram.png" height="300px">
+        <img src="./docs/hero.svg" height="300px">
     </a>
 </p>
 
