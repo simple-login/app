@@ -78,6 +78,7 @@ from app.config import (
     ALERT_MAILBOX_IS_ALIAS,
     PGP_SENDER_PRIVATE_KEY,
     ALERT_BOUNCE_EMAIL_REPLY_PHASE,
+    NOREPLY,
 )
 from app.email_utils import (
     send_email,
@@ -168,14 +169,9 @@ def get_or_create_contact(
     contact_name, contact_email = parseaddr_unicode(contact_from_header)
     if not contact_email:
         # From header is wrongly formatted, try with mail_from
-        LOG.warning("From header is empty, parse mail_from %s %s", mail_from, alias)
-        contact_name, contact_email = parseaddr_unicode(mail_from)
-        if not contact_email:
-            raise Exception(
-                "Cannot parse contact from from_header:%s, mail_from:%s",
-                contact_from_header,
-                mail_from,
-            )
+        if mail_from and mail_from != "<>":
+            LOG.warning("From header is empty, parse mail_from %s %s", mail_from, alias)
+            _, contact_email = parseaddr_unicode(mail_from)
 
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
@@ -227,6 +223,13 @@ def get_or_create_contact(
                 mail_from=mail_from,
                 from_header=contact_from_header,
             )
+            if contact_email:
+                contact.reply_email = generate_reply_email()
+            else:
+                LOG.d("Create a contact with invalid email for %s", alias)
+                contact.reply_email = NOREPLY
+                contact.invalid_email = True
+
             db.session.commit()
         except IntegrityError:
             LOG.warning("Contact %s %s already exist", alias, contact_email)
@@ -554,24 +557,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     #     handle_bounce_reply_phase(alias, msg, user)
     #     return [(False, "550 SL E24 Email cannot be sent to contact")]
 
-    try:
-        contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
-    except:
-        # save the data for debugging
-        file_path = f"/tmp/{random_string(10)}.eml"
-        with open(file_path, "wb") as f:
-            f.write(to_bytes(msg))
-
-        LOG.exception(
-            "Cannot create contact for %s %s %s %s",
-            msg["From"],
-            envelope.mail_from,
-            alias,
-            file_path,
-        )
-        LOG.d("msg:\n%s", msg)
-        # return 421 for debug now, will use 5** in future
-        return [(True, "421 SL E25 - Invalid from address")]
+    contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
 
     email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
     db.session.commit()
@@ -694,6 +680,14 @@ def forward_email_to_mailbox(
 
         handle_spam(contact, alias, msg, user, mailbox, email_log)
         return False, "550 SL E1 Email detected as spam"
+
+    if contact.invalid_email:
+        LOG.d("add noreply information %s %s", alias, mailbox)
+        msg = add_header(
+            msg,
+            f"""Email sent to {alias.email} from an invalid address and cannot be replied""",
+            f"""Email sent to {alias.email} from an invalid address and cannot be replied""",
+        )
 
     # create PGP email if needed
     if mailbox.pgp_finger_print and user.is_premium() and not alias.disable_pgp:
@@ -1383,7 +1377,6 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
             user,
             file_path,
         )
-        LOG.d("Msg:\n%s", msg)
         return
 
     email_log = EmailLog.get(email_log_id)
@@ -1702,6 +1695,10 @@ def handle(envelope: Envelope) -> str:
     res: [(bool, str)] = []
 
     for rcpt_to in rcpt_tos:
+        if rcpt_to == NOREPLY:
+            LOG.exception("email sent to noreply address from %s", mail_from)
+            return "550 SL E25 Email sent to noreply address"
+
         msg = email.message_from_bytes(envelope.original_content)
 
         # Reply case
