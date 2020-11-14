@@ -65,3 +65,17 @@ def test_get_setting_domains(flask_client):
         [True, "sl.local"],
         [False, "ab.cd"],
     ]
+
+
+def test_get_setting_domains_v2(flask_client):
+    user = login(flask_client)
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+
+    r = flask_client.get("/api/v2/setting/domains")
+    assert r.status_code == 200
+    assert r.json == [
+        {"domain": "d1.test", "is_custom": False},
+        {"domain": "d2.test", "is_custom": False},
+        {"domain": "sl.local", "is_custom": False},
+        {"domain": "ab.cd", "is_custom": True},
+    ]

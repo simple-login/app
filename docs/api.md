@@ -701,28 +701,30 @@ Input:
 
 Output: same as `GET /api/setting`
 
-#### GET /api/setting/domains
+#### GET /api/v2/setting/domains
 
 Return domains that user can use to create random alias
 
+`is_custom` is true if this is a user's domain, otherwise false.
+
 ```json
 [
-  [
-    true,
-    "d1.test"
-  ],
-  [
-    true,
-    "d2.test"
-  ],
-  [
-    true,
-    "sl.local"
-  ],
-  [
-    false,
-    "ab.cd"
-  ]
+  {
+    "domain": "d1.test",
+    "is_custom": false
+  },
+  {
+    "domain": "d2.test",
+    "is_custom": false
+  },
+  {
+    "domain": "sl.local",
+    "is_custom": false
+  },
+  {
+    "domain": "ab.cd",
+    "is_custom": true
+  }
 ]
 ```
   
