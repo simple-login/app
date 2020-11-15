@@ -909,6 +909,9 @@ class Alias(db.Model, ModelMixin):
         default=None,
     )
 
+    # alias is pinned on top
+    pinned = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     user = db.relationship(User, foreign_keys=[user_id])
     mailbox = db.relationship("Mailbox", lazy="joined")
 
