@@ -112,6 +112,14 @@ class EnumE(enum.Enum):
     def has_value(cls, value: int) -> bool:
         return value in set(item.value for item in cls)
 
+    @classmethod
+    def get_name(cls, value: int):
+        for item in cls:
+            if item.value == value:
+                return item.name
+
+        return None
+
 
 class PlanEnum(EnumE):
     monthly = 2

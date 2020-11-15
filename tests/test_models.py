@@ -12,6 +12,7 @@ from app.models import (
     Mailbox,
     AliasMailbox,
     SenderFormatEnum,
+    EnumE,
 )
 
 
@@ -197,3 +198,16 @@ def test_mailbox_delete(flask_client):
     Mailbox.delete(m1.id)
     alias = Alias.get(alias.id)
     assert len(alias.mailboxes) == 2
+
+
+def test_EnumE():
+    class E(EnumE):
+        A = 100
+        B = 200
+
+    assert E.has_value(100)
+    assert not E.has_value(101)
+
+    assert E.get_name(100) == "A"
+    assert E.get_name(200) == "B"
+    assert E.get_name(101) is None
