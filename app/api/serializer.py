@@ -272,6 +272,7 @@ def get_alias_infos_with_pagination_v3(
             or_(
                 EmailLog.created_at == sub.c.max_created_at,
                 sub.c.max_created_at == None,  # no email log yet for this alias
+                Alias.pinned == True,
             )
         )
     )
@@ -291,6 +292,8 @@ def get_alias_infos_with_pagination_v3(
         q = q.filter(Alias.enabled)
     elif alias_filter == "disabled":
         q = q.filter(Alias.enabled == False)
+
+    q = q.order_by(Alias.pinned.desc())
 
     if sort == "old2new":
         q = q.order_by(Alias.created_at)

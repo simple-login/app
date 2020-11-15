@@ -1,9 +1,7 @@
-from flask import url_for
-
 from app.api.serializer import get_alias_infos_with_pagination_v3
 from app.config import PAGE_LIMIT
 from app.extensions import db
-from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
+from app.models import User, Alias, Mailbox
 
 
 def test_get_alias_infos_with_pagination_v3(flask_client):
@@ -140,3 +138,40 @@ def test_get_alias_infos_with_pagination_v3_no_duplicate(flask_client):
 
     alias_infos = get_alias_infos_with_pagination_v3(user)
     assert len(alias_infos) == 1
+
+
+def test_get_alias_infos_pinned_alias(flask_client):
+    """Different scenarios with pinned alias"""
+    user = User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
+    )
+
+    # to have 3 pages: 2*PAGE_LIMIT + the alias automatically created for a new account
+    for i in range(2 * PAGE_LIMIT):
+        Alias.create_new_random(user)
+
+    first_alias = Alias.query.order_by(Alias.id).first()
+
+    # should return PAGE_LIMIT alias
+    alias_infos = get_alias_infos_with_pagination_v3(user)
+    assert len(alias_infos) == PAGE_LIMIT
+    # make sure first_alias is not returned as the default order is alias creation date
+    assert first_alias not in [ai.alias for ai in alias_infos]
+
+    # pin the first alias
+    first_alias.pinned = True
+    db.session.commit()
+
+    alias_infos = get_alias_infos_with_pagination_v3(user)
+    # now first_alias is the first result
+    assert first_alias == alias_infos[0].alias
+    # and the page size is still the same
+    assert len(alias_infos) == PAGE_LIMIT
+
+    # pinned alias isn't included in the search
+    alias_infos = get_alias_infos_with_pagination_v3(user, query="no match")
+    assert len(alias_infos) == 0
