@@ -1,6 +1,7 @@
 import json
 
-from app.models import CustomDomain
+from app.alias_utils import delete_alias
+from app.models import CustomDomain, DomainDeletedAlias, Alias
 from tests.utils import login
 
 
@@ -23,3 +24,29 @@ def test_get_custom_domains(flask_client):
             {"domain": "test2.org", "id": 2, "nb_alias": 0, "verified": False},
         ]
     }
+
+
+def test_get_custom_domain_trash(flask_client):
+    user = login(flask_client)
+
+    cd = CustomDomain.create(
+        user_id=user.id, domain="test1.org", verified=True, commit=True
+    )
+
+    alias = Alias.create(
+        user_id=user.id,
+        email="first@test1.org",
+        custom_domain_id=cd.id,
+        mailbox_id=user.default_mailbox_id,
+        commit=True,
+    )
+
+    delete_alias(alias, user)
+
+    r = flask_client.get(
+        f"/api/custom_domains/{cd.id}/trash",
+    )
+
+    for deleted_alias in r.json["aliases"]:
+        assert deleted_alias["alias"]
+        assert deleted_alias["creation_timestamp"] > 0

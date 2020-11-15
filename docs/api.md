@@ -652,6 +652,27 @@ List of custom domains.
 }
 ```
 
+#### GET /api/custom_domains/:custom_domain_id/trash
+
+Get deleted alias for a custom domain
+
+Input:
+- `Authentication` header that contains the api key
+
+Output:
+List of deleted alias.
+
+```json
+{
+  "aliases": [
+    {
+      "alias": "first@test1.org",
+      "creation_timestamp": 1605464595
+    }
+  ]
+}
+```
+
 ### Contact endpoints
 
 #### DELETE /api/contacts/:contact_id
