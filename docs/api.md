@@ -760,6 +760,7 @@ Input:
 - alias_generator (string): uuid or word
 - notification (boolean): true or false
 - random_alias_default_domain (string): one of the domains returned by `GET /api/setting/domains`
+- sender_format (string): possible values are AT, VIA, A, FULL
 
 Output: same as `GET /api/setting`
 
