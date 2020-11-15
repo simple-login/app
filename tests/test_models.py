@@ -211,3 +211,9 @@ def test_EnumE():
     assert E.get_name(100) == "A"
     assert E.get_name(200) == "B"
     assert E.get_name(101) is None
+
+    assert E.has_name("A")
+    assert not E.has_name("Not existent")
+
+    assert E.get_value("A") == 100
+    assert E.get_value("Not existent") is None

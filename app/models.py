@@ -113,10 +113,26 @@ class EnumE(enum.Enum):
         return value in set(item.value for item in cls)
 
     @classmethod
-    def get_name(cls, value: int):
+    def get_name(cls, value: int) -> Optional[str]:
         for item in cls:
             if item.value == value:
                 return item.name
+
+        return None
+
+    @classmethod
+    def has_name(cls, name: str) -> bool:
+        for item in cls:
+            if item.name == name:
+                return True
+
+        return False
+
+    @classmethod
+    def get_value(cls, name: str) -> Optional[int]:
+        for item in cls:
+            if item.name == name:
+                return item.value
 
         return None
 
