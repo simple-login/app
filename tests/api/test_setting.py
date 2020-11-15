@@ -1,6 +1,6 @@
 import json
 
-from app.models import CustomDomain, AliasGeneratorEnum
+from app.models import CustomDomain, AliasGeneratorEnum, SenderFormatEnum
 from tests.utils import login, pretty
 
 
@@ -52,6 +52,18 @@ def test_update_settings_random_alias_default_domain(flask_client):
     )
     assert r.status_code == 200
     assert user.default_random_alias_domain() == "d1.test"
+
+
+def test_update_settings_sender_format(flask_client):
+    user = login(flask_client)
+    assert user.sender_format == SenderFormatEnum.VIA.value
+
+    r = flask_client.patch("/api/setting", json={"sender_format": "invalid"})
+    assert r.status_code == 400
+
+    r = flask_client.patch("/api/setting", json={"sender_format": "AT"})
+    assert r.status_code == 200
+    assert user.sender_format == SenderFormatEnum.AT.value
 
 
 def test_get_setting_domains(flask_client):

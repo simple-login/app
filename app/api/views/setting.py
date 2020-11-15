@@ -62,6 +62,13 @@ def update_setting():
         else:
             user.alias_generator = AliasGeneratorEnum.uuid.value
 
+    if "sender_format" in data:
+        sender_format = data["sender_format"]
+        if not SenderFormatEnum.has_name(sender_format):
+            return jsonify(error="Invalid sender_format"), 400
+
+        user.sender_format = SenderFormatEnum.get_value(sender_format)
+
     if "random_alias_default_domain" in data:
         default_domain = data["random_alias_default_domain"]
         sl_domain: SLDomain = SLDomain.get_by(domain=default_domain)
