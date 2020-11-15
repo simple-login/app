@@ -1,18 +1,20 @@
 ## API
 
-[1. Account endpoints](#account-endpoints)
+[Account endpoints](#account-endpoints)
 
-[2. Alias endpoints](#alias-endpoints)
+[Alias endpoints](#alias-endpoints)
 
-[3. Mailbox endpoints](#mailbox-endpoints)
+[Mailbox endpoints](#mailbox-endpoints)
 
-[4. Contact endpoints](#contact-endpoints)
+[Custom domain endpoints](#custom-domain-endpoints)
 
-[5. Notification endpoints](#notification-endpoints)
+[Contact endpoints](#contact-endpoints)
 
-[6. Settings endpoints](#settings-endpoints)
+[Notification endpoints](#notification-endpoints)
 
-[7. MISC endpoints](#misc-endpoints)
+[Settings endpoints](#settings-endpoints)
+
+[MISC endpoints](#misc-endpoints)
 
 ---
 
@@ -619,6 +621,34 @@ Output:
 - 200 if updated successfully
 - 400 if error
 
+### Custom domain endpoints
+
+#### GET /api/custom_domains
+
+Return user's custom domains
+
+Input:
+- `Authentication` header that contains the api key
+
+Output:
+List of custom domains.
+
+```json
+{
+  "custom_domains": [
+    {
+      "domain": "test1.org",
+      "id": 1,
+      "verified": true
+    },
+    {
+      "domain": "test2.org",
+      "id": 2,
+      "verified": false
+    }
+  ]
+}
+```
 
 ### Contact endpoints
 
