@@ -197,6 +197,11 @@
                 <span class="fa fa-inbox" data-toggle="tooltip"
                       title="This alias was automatically generated because of an incoming email"></span>
               {% endif %}
+
+              {% if alias.pinned %}
+                <span class="fa fa-heart" data-toggle="tooltip"
+                      title="This alias added to favorite"></span>
+              {% endif %}
             </div>
             <div class="col text-right">
               <label class="custom-switch cursor"
@@ -394,6 +399,22 @@
                 </label>
               </div>
             {% endif %}
+
+            <div class="small-text mt-2" data-toogle="tooltip"
+                 title="Add alias to favorite so it's always pinned on top">
+              Add to favorite
+              <i class="fe fe-help-circle"></i>
+            </div>
+            <div>
+              <label class="custom-switch cursor pl-0">
+                <input type="checkbox" class="pin-alias custom-switch-input"
+                       data-alias="{{ alias.id }}"
+                       data-alias-email="{{ alias.email }}"
+                    {{ "checked" if alias.pinned else "" }}>
+
+                <span class="custom-switch-indicator"></span>
+              </label>
+            </div>
 
             <div class="row mt-3">
               <div class="col">
@@ -604,6 +625,41 @@
             toastr.success(`PGP is enabled for ${alias}`);
           } else {
             toastr.info(`PGP is disabled for ${alias}`);
+          }
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        $(this).prop("checked", oldValue);
+      }
+    })
+
+    $(".pin-alias").change(async function (e) {
+      let aliasId = $(this).data("alias");
+      let alias = $(this).data("alias-email");
+      var oldValue = !$(this).prop("checked");
+      let newValue = !oldValue;
+
+      try {
+        let res = await fetch(`/api/aliases/${aliasId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            pinned: newValue,
+          }),
+        });
+
+        if (res.ok) {
+          if (newValue) {
+            toastr.success(`${alias} is added to favorite`);
+          } else {
+            toastr.info(`${alias} is removed from favorite`);
           }
         } else {
           toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");

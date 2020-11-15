@@ -65,7 +65,6 @@ def index():
                 request.args.get("highlight_alias_id"),
             )
 
-    # User generates a new email
     if request.method == "POST":
         if request.form.get("form-name") == "create-custom-email":
             if current_user.can_create_new_alias():
