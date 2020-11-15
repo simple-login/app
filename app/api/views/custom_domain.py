@@ -10,6 +10,7 @@ def custom_domain_to_dict(custom_domain: CustomDomain):
         "id": custom_domain.id,
         "domain": custom_domain.domain,
         "verified": custom_domain.verified,
+        "nb_alias": custom_domain.nb_alias(),
     }
 
 

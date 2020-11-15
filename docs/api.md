@@ -639,11 +639,13 @@ List of custom domains.
     {
       "domain": "test1.org",
       "id": 1,
+      "nb_alias": 0,
       "verified": true
     },
     {
       "domain": "test2.org",
       "id": 2,
+      "nb_alias": 0,
       "verified": false
     }
   ]

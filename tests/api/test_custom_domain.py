@@ -19,7 +19,7 @@ def test_get_custom_domains(flask_client):
     assert r.status_code == 200
     assert r.json == {
         "custom_domains": [
-            {"domain": "test1.org", "id": 1, "verified": True},
-            {"domain": "test2.org", "id": 2, "verified": False},
+            {"domain": "test1.org", "id": 1, "nb_alias": 0, "verified": True},
+            {"domain": "test2.org", "id": 2, "nb_alias": 0, "verified": False},
         ]
     }
