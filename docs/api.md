@@ -281,7 +281,7 @@ If success, 200 with the list of aliases. Each alias has the following fields:
 - support_pgp: whether an alias can support PGP, i.e. when one of alias's mailboxes supports PGP.
 - disable_pgp: whether the PGP is disabled on this alias.
     This field should only be used when `support_pgp` is true. 
-    By setting `disable_pgp=true`, a user can explicitly disable PGP on an alias even its mailboxes support PGP. 
+    By setting `disable_pgp=true`, a user can explicitly disable PGP on an alias even its mailboxes support PGP.
 - mailbox: obsolete, should use `mailboxes` instead.
     - id
     - email
@@ -295,6 +295,7 @@ If success, 200 with the list of aliases. Each alias has the following fields:
         - email
         - name
         - reverse_alias
+- pinned: whether an alias is pinned
 
 Here's an example:
 
@@ -334,7 +335,8 @@ Here's an example:
       "nb_block": 0,
       "nb_forward": 1,
       "nb_reply": 0,
-      "note": null
+      "note": null,
+      "pinned": true
     }
   ]
 }
@@ -385,7 +387,8 @@ Alias info, use the same format as in /api/v2/aliases. For example:
   "nb_block": 0,
   "nb_forward": 1,
   "nb_reply": 0,
-  "note": null
+  "note": null,
+  "pinned": true
 }
 ```
 

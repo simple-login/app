@@ -183,6 +183,7 @@ def test_get_aliases_v2(flask_client):
     assert r0["latest_activity"]["contact"]["email"] == "c1@example.com"
     assert "name" in r0["latest_activity"]["contact"]
     assert "reverse_alias" in r0["latest_activity"]["contact"]
+    assert "pinned" in r0
 
 
 def test_delete_alias(flask_client):
@@ -607,3 +608,4 @@ def test_get_alias(flask_client):
     assert "nb_reply" in res
     assert "enabled" in res
     assert "note" in res
+    assert "pinned" in res
