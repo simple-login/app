@@ -419,6 +419,21 @@ def test_update_disable_pgp(flask_client):
     assert alias.disable_pgp
 
 
+def test_update_pinned(flask_client):
+    login(flask_client)
+
+    alias = Alias.first()
+    assert not alias.pinned
+
+    r = flask_client.patch(
+        url_for("api.update_alias", alias_id=alias.id),
+        json={"pinned": True},
+    )
+
+    assert r.status_code == 200
+    assert alias.pinned
+
+
 def test_alias_contacts(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True

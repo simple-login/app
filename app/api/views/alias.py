@@ -221,7 +221,7 @@ def get_alias_activities(alias_id):
     return jsonify(activities=activities), 200
 
 
-@api_bp.route("/aliases/<int:alias_id>", methods=["PUT"])
+@api_bp.route("/aliases/<int:alias_id>", methods=["PUT", "PATCH"])
 @require_api_auth
 def update_alias(alias_id):
     """
@@ -296,6 +296,10 @@ def update_alias(alias_id):
 
     if "disable_pgp" in data:
         alias.disable_pgp = data.get("disable_pgp")
+        changed = True
+
+    if "pinned" in data:
+        alias.pinned = data.get("pinned")
         changed = True
 
     if changed:

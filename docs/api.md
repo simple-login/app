@@ -457,7 +457,7 @@ If success, 200 with the list of activities, for example:
 }
 ```
 
-#### PUT /api/aliases/:alias_id
+#### PATCH /api/aliases/:alias_id
 
 Update alias info.
  
@@ -469,6 +469,7 @@ Input:
 - (optional) `name` in request body
 - (optional) `mailbox_ids` in request body: array of mailbox_id
 - (optional) `disable_pgp` in request body: boolean
+- (optional) `pinned` in request body: boolean
 
 Output:
 If success, return 200
