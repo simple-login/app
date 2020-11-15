@@ -1,3 +1,5 @@
+import json
+
 from flask import url_for
 
 from app.extensions import db
@@ -21,3 +23,8 @@ def login(flask_client) -> User:
     assert b"/auth/logout" in r.data
 
     return user
+
+
+def pretty(d):
+    """pretty print as json"""
+    print(json.dumps(d, indent=2))
