@@ -1,7 +1,7 @@
 import json
 
 from app.models import CustomDomain, AliasGeneratorEnum
-from tests.utils import login
+from tests.utils import login, pretty
 
 
 def test_get_setting(flask_client):
@@ -13,6 +13,7 @@ def test_get_setting(flask_client):
         "alias_generator": "word",
         "notification": True,
         "random_alias_default_domain": "sl.local",
+        "sender_format": "VIA",
     }
 
 

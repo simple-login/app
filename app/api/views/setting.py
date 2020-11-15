@@ -3,7 +3,13 @@ from flask import jsonify, g, request
 from app.api.base import api_bp, require_api_auth
 from app.extensions import db
 from app.log import LOG
-from app.models import User, AliasGeneratorEnum, SLDomain, CustomDomain
+from app.models import (
+    User,
+    AliasGeneratorEnum,
+    SLDomain,
+    CustomDomain,
+    SenderFormatEnum,
+)
 
 
 def setting_to_dict(user: User):
@@ -13,6 +19,7 @@ def setting_to_dict(user: User):
         if user.alias_generator == AliasGeneratorEnum.word.value
         else "uuid",
         "random_alias_default_domain": user.default_random_alias_domain(),
+        "sender_format": SenderFormatEnum.get_name(user.sender_format),
     }
 
     return ret

@@ -741,13 +741,14 @@ Output:
 
 #### GET /api/setting
 
-Return user setting
+Return user setting. 
 
 ```json
 {
-  "alias_generator": "uuid",
+  "alias_generator": "word",
   "notification": true,
-  "random_alias_default_domain": "sl.local"
+  "random_alias_default_domain": "sl.local",
+  "sender_format": "VIA"
 }
 ```
 
