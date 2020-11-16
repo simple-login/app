@@ -1,7 +1,7 @@
 import email
 from email.message import EmailMessage
 
-from app.config import MAX_ALERT_24H
+from app.config import MAX_ALERT_24H, EMAIL_DOMAIN
 from app.email_utils import (
     get_email_domain_part,
     can_create_directory_for_address,
@@ -16,6 +16,7 @@ from app.email_utils import (
     is_valid_email,
     add_header,
     to_bytes,
+    generate_reply_email,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -386,3 +387,9 @@ def test_to_bytes():
 
     msg = email.message_from_string("éèà€")
     assert to_bytes(msg).decode() == "\néèà€"
+
+
+def test_generate_reply_email(flask_client):
+    reply_email = generate_reply_email()
+    assert reply_email.startswith("ra+")
+    assert reply_email.endswith(EMAIL_DOMAIN)

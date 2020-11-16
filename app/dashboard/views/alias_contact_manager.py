@@ -11,7 +11,7 @@ from wtforms import StringField, validators, ValidationError
 
 from app.config import EMAIL_DOMAIN, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
-from app.email_utils import parseaddr_unicode, is_valid_email
+from app.email_utils import parseaddr_unicode, is_valid_email, generate_reply_email
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
@@ -166,14 +166,6 @@ def alias_contact_manager(alias_id):
             if new_contact_form.validate():
                 contact_addr = new_contact_form.email.data.strip()
 
-                # generate a reply_email, make sure it is unique
-                # not use while to avoid infinite loop
-                reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
-                for _ in range(1000):
-                    reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
-                    if not Contact.get_by(reply_email=reply_email):
-                        break
-
                 try:
                     contact_name, contact_email = parseaddr_unicode(contact_addr)
                 except Exception:
@@ -211,7 +203,7 @@ def alias_contact_manager(alias_id):
                     alias_id=alias.id,
                     website_email=contact_email,
                     name=contact_name,
-                    reply_email=reply_email,
+                    reply_email=generate_reply_email(),
                 )
 
                 LOG.d("create reverse-alias for %s", contact_addr)

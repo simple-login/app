@@ -102,6 +102,7 @@ from app.email_utils import (
     should_add_dkim_signature,
     add_header,
     get_header_unicode,
+    generate_reply_email,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -373,19 +374,6 @@ def replace_str_in_msg(msg: Message, fr: str, to: str):
 
     email.contentmanager.set_text_content(msg, new_body, subtype=subtype, cte=cte)
     return msg
-
-
-def generate_reply_email():
-    # generate a reply_email, make sure it is unique
-    # not use while loop to avoid infinite loop
-    reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
-    for _ in range(1000):
-        if not Contact.get_by(reply_email=reply_email):
-            # found!
-            break
-        reply_email = f"reply+{random_string(30)}@{EMAIL_DOMAIN}"
-
-    return reply_email
 
 
 def should_append_alias(msg: Message, address: str):
@@ -923,7 +911,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         + _MIME_HEADERS,
     )
 
-    # replace "ra+string@simplelogin.co" by the contact email in the email body
+    # replace the reverse-alias (i.e. "ra+string@simplelogin.co") by the contact email in the email body
     # as this is usually included when replying
     if user.replace_reverse_alias:
         if msg.is_multipart():

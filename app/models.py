@@ -1185,7 +1185,7 @@ class Contact(db.Model, ModelMixin):
     # when user clicks on "reply", they will reply to this address.
     # This address allows to hide user personal email
     # this reply email is created every time a website sends an email to user
-    # it has the prefix "reply+" to distinguish with other email
+    # it has the prefix "reply+" or "ra+" to distinguish with other email
     reply_email = db.Column(db.String(512), nullable=False)
 
     # whether a contact is created via CC

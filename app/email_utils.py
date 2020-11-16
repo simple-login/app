@@ -7,6 +7,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP
+from uuid import uuid4
 
 import arrow
 import dkim
@@ -31,11 +32,13 @@ from app.config import (
     SENDER,
     URL,
     LANDING_PAGE_URL,
+    EMAIL_DOMAIN,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
 from app.log import LOG
-from app.models import Mailbox, User, SentAlert, CustomDomain, SLDomain
+from app.models import Mailbox, User, SentAlert, CustomDomain, SLDomain, Contact
+from app.utils import random_string
 
 
 def render(template_name, **kwargs) -> str:
@@ -713,3 +716,18 @@ def add_header(msg: Message, text_header, html_header) -> Message:
 
     LOG.d("No header added for %s", msg.get_content_type())
     return msg
+
+
+def generate_reply_email() -> str:
+    """
+    generate a reply_email (aka reverse-alias), make sure it isn't used by any contact
+    """
+    # not use while to avoid infinite loop
+    for _ in range(1000):
+        reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
+        if not Contact.get_by(reply_email=reply_email):
+            return reply_email
+
+    # use UUID as fallback
+    reply_email = f"ra+{uuid4()}@{EMAIL_DOMAIN}"
+    return reply_email
