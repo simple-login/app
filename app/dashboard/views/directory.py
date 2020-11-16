@@ -100,9 +100,9 @@ def directory():
 
                 if Directory.get_by(name=new_dir_name):
                     flash(f"{new_dir_name} already added", "warning")
-                elif new_dir_name == "reply":
+                elif new_dir_name in ("reply", "ra"):
                     flash(
-                        "directory name cannot be *reply*, please choose another name",
+                        "directory name cannot be *reply* or *ra*, please choose another name",
                         "warning",
                     )
                 else:
