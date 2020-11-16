@@ -9,6 +9,7 @@ from app.config import (
     ALIAS_DOMAINS,
     PREMIUM_ALIAS_DOMAINS,
 )
+from app.dns_utils import get_ns
 from app.email_utils import send_email, render, get_email_domain_part
 from app.models import *
 from job_runner import (

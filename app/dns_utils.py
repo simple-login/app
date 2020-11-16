@@ -12,6 +12,14 @@ def _get_dns_resolver():
     return my_resolver
 
 
+def get_ns(hostname) -> [str]:
+    try:
+        answers = _get_dns_resolver().resolve(hostname, "NS")
+    except:
+        return []
+    return [a.to_text() for a in answers]
+
+
 def get_cname_record(hostname) -> Optional[str]:
     """Return the CNAME record if exists for a domain, WITHOUT the trailing period at the end"""
     try:
