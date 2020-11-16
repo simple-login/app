@@ -92,6 +92,7 @@ def serialize_contact(contact: Contact) -> dict:
         "last_email_sent_timestamp": None,
         "contact": contact.website_email,
         "reverse_alias": contact.website_send_to(),
+        "reverse_alias_address": contact.reply_email,
     }
 
     email_log: EmailLog = contact.last_reply()

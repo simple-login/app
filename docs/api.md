@@ -510,7 +510,8 @@ If success, 200 with the list of contacts, for example:
       "creation_timestamp": 1582284900,
       "last_email_sent_date": "2020-02-21 11:35:00+00:00",
       "last_email_sent_timestamp": 1582284900,
-      "reverse_alias": "newsletter at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>"
+      "reverse_alias": "newsletter at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>",
+      "reverse_alias_address": "reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co"
     }
   ]
 }
@@ -531,7 +532,7 @@ Output:
 If success, return 201
 Return 409 if contact is already added.
 
-```
+```json
 {
   "id": 1,
   "contact": "First Last <first@example.com>",
@@ -539,7 +540,8 @@ Return 409 if contact is already added.
   "creation_timestamp": 1584186761,
   "last_email_sent_date": null,
   "last_email_sent_timestamp": null,
-  "reverse_alias": "First Last first@example.com <ra+qytyzjhrumrreuszrbjxqjlkh@sl.local>"
+  "reverse_alias": "First Last first@example.com <ra+qytyzjhrumrreuszrbjxqjlkh@sl.local>",
+  "reverse_alias_address": "reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co"
 }
 ```
 

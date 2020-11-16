@@ -476,6 +476,7 @@ def test_alias_contacts(flask_client):
         assert ac["last_email_sent_timestamp"]
         assert ac["contact"]
         assert ac["reverse_alias"]
+        assert ac["reverse_alias_address"]
 
     # second page, should return 1 result only
     r = flask_client.get(
@@ -511,6 +512,7 @@ def test_create_contact_route(flask_client):
     assert r.json["last_email_sent_date"] is None
     assert r.json["last_email_sent_timestamp"] is None
     assert r.json["reverse_alias"]
+    assert r.json["reverse_alias_address"]
 
     # re-add a contact, should return 409
     r = flask_client.post(
