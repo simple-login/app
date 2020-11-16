@@ -1,6 +1,7 @@
 from flask import url_for
 
 from app.config import PAGE_LIMIT
+from app.email_utils import is_reply_email
 from app.extensions import db
 from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
 from tests.utils import login
@@ -609,3 +610,9 @@ def test_get_alias(flask_client):
     assert "enabled" in res
     assert "note" in res
     assert "pinned" in res
+
+
+def test_is_reply_email(flask_client):
+    assert is_reply_email("ra+abcd@test.org")
+    assert is_reply_email("reply+abcd@test.org")
+    assert not is_reply_email("abcd@test.org")

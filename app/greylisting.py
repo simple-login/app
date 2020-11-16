@@ -5,6 +5,7 @@ from app.config import (
     MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS,
     MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX,
 )
+from app.email_utils import is_reply_email
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, EmailLog, Contact
@@ -95,7 +96,7 @@ def greylisting_needed_reply_phase(reply_email: str) -> bool:
 
 def greylisting_needed(mail_from: str, rcpt_tos: [str]) -> bool:
     for rcpt_to in rcpt_tos:
-        if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
+        if is_reply_email(rcpt_to):
             if greylisting_needed_reply_phase(rcpt_to):
                 return True
         else:

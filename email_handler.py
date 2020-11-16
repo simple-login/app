@@ -103,6 +103,7 @@ from app.email_utils import (
     add_header,
     get_header_unicode,
     generate_reply_email,
+    is_reply_email,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -1691,7 +1692,7 @@ def handle(envelope: Envelope) -> str:
 
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
-        if rcpt_to.startswith("reply+") or rcpt_to.startswith("ra+"):
+        if is_reply_email(rcpt_to):
             LOG.debug("Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
             is_delivered, smtp_status = handle_reply(envelope, msg, rcpt_to)
             res.append((is_delivered, smtp_status))

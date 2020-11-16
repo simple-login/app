@@ -731,3 +731,7 @@ def generate_reply_email() -> str:
     # use UUID as fallback
     reply_email = f"ra+{uuid4()}@{EMAIL_DOMAIN}"
     return reply_email
+
+
+def is_reply_email(address: str) -> bool:
+    return address.startswith("reply+") or address.startswith("ra+")
