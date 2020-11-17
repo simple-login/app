@@ -84,7 +84,7 @@ def get_alias_log(alias: Alias, page_id=0) -> [AliasLog]:
             blocked=email_log.blocked,
             bounced=email_log.bounced,
             email_log=email_log,
-            contact=contact
+            contact=contact,
         )
         logs.append(al)
     logs = sorted(logs, key=lambda l: l.when, reverse=True)
