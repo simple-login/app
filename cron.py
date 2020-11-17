@@ -157,6 +157,10 @@ class Stats:
     nb_apple_premium: int
     nb_cancelled_premium: int
 
+    # nb users who have been referred
+    nb_referred_user: int
+    nb_referred_user_upgrade: int
+
 
 def stats_before(moment: Arrow) -> Stats:
     """return the stats before a specific moment, ignoring all stats come from users in IGNORED_EMAILS"""
@@ -167,6 +171,19 @@ def stats_before(moment: Arrow) -> Stats:
 
     nb_user = q.count()
     LOG.d("total number user %s", nb_user)
+
+    nb_referred_user = q.filter(User.referral_id != None).count()
+    nb_referred_user_upgrade = 0
+    for user in q.filter(User.referral_id != None):
+        if user.is_premium():
+            nb_referred_user_upgrade += 1
+
+    LOG.d(
+        "%s nb_referred_user:%s nb_referred_user_upgrade:%s",
+        moment,
+        nb_referred_user,
+        nb_referred_user_upgrade,
+    )
 
     # nb alias
     q = db.session.query(Alias, User).filter(
@@ -283,6 +300,8 @@ nb_spam: {stats_today.nb_spam} - {increase_percent(stats_yesterday.nb_spam, stat
 
 nb_custom_domain: {stats_today.nb_custom_domain} - {increase_percent(stats_yesterday.nb_custom_domain, stats_today.nb_custom_domain)}  <br>
 nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_today.nb_app)}  <br>
+nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yesterday.nb_referred_user, stats_today.nb_referred_user)}  <br>
+nb_referred_user_upgrade: {stats_today.nb_referred_user_upgrade} - {increase_percent(stats_yesterday.nb_referred_user_upgrade, stats_today.nb_referred_user_upgrade)}  <br>
     """,
     )
 
