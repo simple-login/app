@@ -272,6 +272,7 @@ def test_alias_activities(flask_client):
         assert ac["timestamp"]
         assert ac["action"]
         assert ac["reverse_alias"]
+        assert ac["reverse_alias_address"]
 
     # second page, should return 1 or 2 results only
     r = flask_client.get(

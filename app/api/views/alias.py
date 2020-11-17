@@ -200,6 +200,7 @@ def get_alias_activities(alias_id):
         activity = {
             "timestamp": alias_log.when.timestamp,
             "reverse_alias": alias_log.reverse_alias,
+            "reverse_alias_address": alias_log.contact.reply_email,
         }
         if alias_log.is_reply:
             activity["from"] = alias_log.alias
