@@ -215,6 +215,9 @@ _ALIAS_PREFIX_PATTERN = r"[0-9a-z-_]{1,}"
 
 
 def check_alias_prefix(alias_prefix) -> bool:
+    if len(alias_prefix) > 40:
+        return False
+
     if re.fullmatch(_ALIAS_PREFIX_PATTERN, alias_prefix) is None:
         return False
 

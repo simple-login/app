@@ -238,7 +238,7 @@ def new_custom_alias_v3():
     alias_prefix = convert_to_id(alias_prefix)
 
     if not check_alias_prefix(alias_prefix):
-        return jsonify(error="alias prefix format problem"), 400
+        return jsonify(error="alias prefix invalid format or too long"), 400
 
     # check if mailbox is not tempered with
     mailboxes = []

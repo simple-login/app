@@ -54,3 +54,4 @@ def test_check_alias_prefix(flask_client):
     assert not check_alias_prefix("éè")
     assert not check_alias_prefix("a b")
     assert not check_alias_prefix("+👌")
+    assert not check_alias_prefix("too-long" * 10)
