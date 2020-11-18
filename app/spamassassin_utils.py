@@ -18,6 +18,9 @@ class SpamAssassin(object):
         self.score = None
         self.symbols = None
         self.spamd_user = spamd_user
+        self.report_json = dict()
+        self.report_fulltext = ""
+        self.score = -999
 
         # Connecting
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
