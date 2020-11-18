@@ -213,20 +213,17 @@ def get_or_create_contact(
             contact_from_header,
         )
 
-        reply_email = generate_reply_email()
-
         try:
             contact = Contact.create(
                 user_id=alias.user_id,
                 alias_id=alias.id,
                 website_email=contact_email,
                 name=contact_name,
-                reply_email=reply_email,
                 mail_from=mail_from,
                 from_header=contact_from_header,
             )
             if contact_email:
-                contact.reply_email = generate_reply_email()
+                contact.reply_email = generate_reply_email(contact_email)
             else:
                 LOG.d("Create a contact with invalid email for %s", alias)
                 contact.reply_email = NOREPLY
@@ -281,15 +278,13 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                 header,
             )
 
-            reply_email = generate_reply_email()
-
             try:
                 contact = Contact.create(
                     user_id=alias.user_id,
                     alias_id=alias.id,
                     website_email=contact_email,
                     name=contact_name,
-                    reply_email=reply_email,
+                    reply_email=generate_reply_email(contact_email),
                     is_cc=header.lower() == "cc",
                     from_header=addr,
                 )

@@ -391,7 +391,15 @@ def test_to_bytes():
 
 
 def test_generate_reply_email(flask_client):
-    reply_email = generate_reply_email()
+    reply_email = generate_reply_email("test@example.org")
+    # return something like
+    # ra+test.at.example.org+gjbnnddll@sl.local
+    assert reply_email.startswith("ra+test.at.example.org+")
+    assert reply_email.endswith(EMAIL_DOMAIN)
+
+    reply_email = generate_reply_email("")
+    # return something like
+    # ra+qdrcxzppngmvtajklnhqvvuyyzgkyityrzjwikk@sl.local
     assert reply_email.startswith("ra+")
     assert reply_email.endswith(EMAIL_DOMAIN)
 

@@ -203,7 +203,7 @@ def alias_contact_manager(alias_id):
                     alias_id=alias.id,
                     website_email=contact_email,
                     name=contact_name,
-                    reply_email=generate_reply_email(),
+                    reply_email=generate_reply_email(contact_email),
                 )
 
                 LOG.d("create reverse-alias for %s", contact_addr)

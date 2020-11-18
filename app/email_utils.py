@@ -1,5 +1,6 @@
 import email
 import os
+import random
 import re
 from email.header import decode_header
 from email.message import Message
@@ -727,19 +728,37 @@ def add_header(msg: Message, text_header, html_header) -> Message:
     return msg
 
 
-def generate_reply_email() -> str:
+def generate_reply_email(contact_email: str) -> str:
     """
     generate a reply_email (aka reverse-alias), make sure it isn't used by any contact
     """
+    # shorten email to avoid exceeding the 64 characters
+    # from https://tools.ietf.org/html/rfc5321#section-4.5.3
+    # "The maximum total length of a user name or other local-part is 64
+    #    octets."
+
+    if contact_email:
+        # control char: 4 chars (ra+, +)
+        # random suffix: max 10 chars
+        # maximum: 64
+        contact_email = contact_email[:45]
+        contact_email = contact_email.replace("@", ".at.")
+
     # not use while to avoid infinite loop
     for _ in range(1000):
-        reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
+        if contact_email:
+            random_length = random.randint(5, 10)
+            reply_email = (
+                f"ra+{contact_email}+{random_string(random_length)}@{EMAIL_DOMAIN}"
+            )
+        else:
+            random_length = random.randint(10, 50)
+            reply_email = f"ra+{random_string(random_length)}@{EMAIL_DOMAIN}"
+
         if not Contact.get_by(reply_email=reply_email):
             return reply_email
 
-    # use UUID as fallback
-    reply_email = f"ra+{uuid4()}@{EMAIL_DOMAIN}"
-    return reply_email
+    raise Exception("Cannot generate reply email")
 
 
 def is_reply_email(address: str) -> bool:
