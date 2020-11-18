@@ -221,12 +221,12 @@ def get_or_create_contact(
                 name=contact_name,
                 mail_from=mail_from,
                 from_header=contact_from_header,
+                reply_email=generate_reply_email(contact_email)
+                if contact_email
+                else NOREPLY,
             )
-            if contact_email:
-                contact.reply_email = generate_reply_email(contact_email)
-            else:
+            if not contact_email:
                 LOG.d("Create a contact with invalid email for %s", alias)
-                contact.reply_email = NOREPLY
                 contact.invalid_email = True
 
             db.session.commit()
