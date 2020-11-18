@@ -17,6 +17,7 @@ from app.email_utils import (
     add_header,
     to_bytes,
     generate_reply_email,
+    get_addrs_from_header,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -393,3 +394,22 @@ def test_generate_reply_email(flask_client):
     reply_email = generate_reply_email()
     assert reply_email.startswith("ra+")
     assert reply_email.endswith(EMAIL_DOMAIN)
+
+
+def test_get_addrs_from_header():
+    msg = email.message_from_string("""To: abcd@test.org""")
+    assert get_addrs_from_header(msg, "To") == ["abcd@test.org"]
+
+    msg = email.message_from_string("""To: abcd@test.org, xyz@test.org""")
+    assert get_addrs_from_header(msg, "To") == ["abcd@test.org", "xyz@test.org"]
+
+    msg = email.message_from_string("""To: ABCD <abcd@test.org>, XYZ <xyz@test.org>""")
+    assert get_addrs_from_header(msg, "To") == [
+        "ABCD <abcd@test.org>",
+        "XYZ <xyz@test.org>",
+    ]
+
+    msg = email.message_from_string(
+        """To: =?unknown-8bit?q?test=40example=2eorg=2c_xyz=40test=2eorg?="""
+    )
+    assert get_addrs_from_header(msg, "To") == ["test@example.org", "xyz@test.org"]
