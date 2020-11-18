@@ -603,10 +603,8 @@ def get_header_unicode(header: str):
             return decoded_string.decode(charset)
         except UnicodeDecodeError:
             LOG.warning("Cannot decode header %s", header)
-        except LookupError:  # charset is unknown, e.g.
-            LOG.exception(
-                "Cannot decode %s with %s, use utf-8", decoded_string, charset
-            )
+        except LookupError:  # charset is unknown
+            LOG.warning("Cannot decode %s with %s, use utf-8", decoded_string, charset)
             return decoded_string.decode("utf-8")
 
     return header
@@ -631,8 +629,8 @@ def parseaddr_unicode(addr) -> (str, str):
             except UnicodeDecodeError:
                 LOG.warning("Cannot decode addr name %s", name)
                 name = ""
-            except LookupError:  # charset is unknown, e.g.
-                LOG.exception(
+            except LookupError:  # charset is unknown
+                LOG.warning(
                     "Cannot decode %s with %s, use utf-8", decoded_string, charset
                 )
                 name = decoded_string.decode("utf-8")
