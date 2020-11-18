@@ -388,6 +388,10 @@ def sanity_check():
         if mailbox.email.lower().strip().replace(" ", "") != mailbox.email:
             LOG.exception("Mailbox %s address not sanitized", mailbox)
 
+    for contact in Contact.query.all():
+        if not contact.reply_email.isascii():
+            LOG.exception("Contact %s reply email is not ascii", contact)
+
     LOG.d("Finish sanity check")
 
 
