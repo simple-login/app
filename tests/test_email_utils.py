@@ -403,6 +403,9 @@ def test_generate_reply_email(flask_client):
     assert reply_email.startswith("ra+")
     assert reply_email.endswith(EMAIL_DOMAIN)
 
+    reply_email = generate_reply_email("👌汉字@example.org")
+    assert reply_email.startswith("ra+YiZi.at.example.org+")
+
 
 def test_get_addrs_from_header():
     msg = email.message_from_string("""To: abcd@test.org""")

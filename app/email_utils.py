@@ -39,7 +39,7 @@ from app.dns_utils import get_mx_domains
 from app.extensions import db
 from app.log import LOG
 from app.models import Mailbox, User, SentAlert, CustomDomain, SLDomain, Contact
-from app.utils import random_string
+from app.utils import random_string, convert_to_id
 
 
 def render(template_name, **kwargs) -> str:
@@ -739,6 +739,11 @@ def generate_reply_email(contact_email: str) -> str:
         # control char: 4 chars (ra+, +)
         # random suffix: max 10 chars
         # maximum: 64
+
+        # make sure contact_email can be ascii-encoded
+        contact_email = convert_to_id(contact_email)
+        # remove potential space
+        contact_email = contact_email.replace(" ", "")
         contact_email = contact_email[:45]
         contact_email = contact_email.replace("@", ".at.")
 
