@@ -118,7 +118,7 @@ from app.models import (
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.spamassassin_utils import SpamAssassin
-from app.utils import random_string
+from app.utils import random_string, convert_to_id
 from init_app import load_pgp_public_keys
 from server import create_app, create_light_app
 
@@ -789,6 +789,10 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     if not reply_email.endswith(EMAIL_DOMAIN):
         LOG.warning(f"Reply email {reply_email} has wrong domain")
         return False, "550 SL E2"
+
+    # handle case where reply email is generated with non-ascii char
+    if not reply_email.isascii():
+        reply_email = convert_to_id(reply_email)
 
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
