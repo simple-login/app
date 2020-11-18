@@ -1488,7 +1488,7 @@ def handle_spam(
             user,
             ALERT_SPAM_EMAIL,
             mailbox.email,
-            f"Email from {contact.website_email} to {alias.email} is detected as spam",
+            f"Email from {alias.email} to {contact.website_email} is detected as spam",
             render(
                 "transactional/spam-email-reply-phase.txt",
                 name=user.name,
