@@ -404,7 +404,11 @@ def test_generate_reply_email(flask_client):
     assert reply_email.endswith(EMAIL_DOMAIN)
 
     reply_email = generate_reply_email("👌汉字@example.org")
-    assert reply_email.startswith("ra+YiZi.at.example.org+")
+    assert reply_email.startswith("ra+yizi.at.example.org+")
+
+    # make sure reply_email only contain lowercase
+    reply_email = generate_reply_email("TEST@example.org")
+    assert reply_email.startswith("ra+test.at.example.org")
 
 
 def test_get_addrs_from_header():
