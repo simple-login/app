@@ -291,7 +291,8 @@ def update_alias(alias_id):
         changed = True
 
     if "name" in data:
-        new_name = data.get("name")
+        # to make sure alias name doesn't contain linebreak
+        new_name = data.get("name").replace("\n", "")
         alias.name = new_name
         changed = True
 

@@ -380,6 +380,9 @@ def sanity_check():
         if alias.email.lower().strip().replace(" ", "") != alias.email:
             LOG.exception("Alias %s email not sanitized", alias)
 
+        if alias.name and "\n" in alias.name:
+            LOG.exception("Alias %s name contains linebreak %s", alias, alias.name)
+
     for contact in Contact.query.all():
         if contact.reply_email.lower().strip().replace(" ", "") != contact.reply_email:
             LOG.exception("Contact %s reply-email not sanitized", contact)

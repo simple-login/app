@@ -354,7 +354,16 @@ def test_update_alias_name(flask_client):
         headers={"Authentication": api_key.code},
         json={"name": "Test Name"},
     )
+    assert r.status_code == 200
+    alias = Alias.get(alias.id)
+    assert alias.name == "Test Name"
 
+    # update name with linebreak
+    r = flask_client.put(
+        url_for("api.update_alias", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"name": "Test \nName"},
+    )
     assert r.status_code == 200
     alias = Alias.get(alias.id)
     assert alias.name == "Test Name"
