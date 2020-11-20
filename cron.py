@@ -395,6 +395,10 @@ def sanity_check():
         if not contact.reply_email.isascii():
             LOG.exception("Contact %s reply email is not ascii", contact)
 
+    for domain in CustomDomain.query.all():
+        if domain.name and "\n" in domain.name:
+            LOG.exception("Domain %s name contain linebreak %s", domain, domain.name)
+
     LOG.d("Finish sanity check")
 
 
