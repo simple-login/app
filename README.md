@@ -43,7 +43,7 @@
 
 ---
 
-Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked and loose your privacy. In addition, you become an easy target for spammers and phishing attempts.
+Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked and lose your privacy. In addition, you become an easy target for spammers and phishing attempts.
 
 SimpleLogin allows you to create a different email address (alias) for each website.
 
