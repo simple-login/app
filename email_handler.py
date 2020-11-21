@@ -41,7 +41,7 @@ from email.encoders import encode_noop
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr, make_msgid, formatdate
+from email.utils import formataddr, make_msgid, formatdate, getaddresses
 from io import BytesIO
 from smtplib import SMTP, SMTPRecipientsRefused
 from typing import List, Tuple, Optional
@@ -88,7 +88,6 @@ from app.email_utils import (
     render,
     get_orig_message_from_bounce,
     delete_all_headers_except,
-    get_addrs_from_header,
     get_spam_info,
     get_orig_message_from_spamassassin_report,
     parseaddr_unicode,
@@ -242,16 +241,12 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
     """
     Replace CC or To header by Reply emails in forward phase
     """
-    addrs = get_addrs_from_header(msg, header)
-
-    # Nothing to do
-    if not addrs:
-        return
-
     new_addrs: [str] = []
 
-    for addr in addrs:
-        contact_name, contact_email = parseaddr_unicode(addr)
+    for contact_name, contact_email in getaddresses(msg.get_all(header, [])):
+        # convert back to original then parse again to make sure contact_name is unicode
+        addr = formataddr((contact_name, contact_email))
+        contact_name, contact = parseaddr_unicode(addr)
 
         # no transformation when alias is already in the header
         if contact_email == alias.email:
@@ -309,17 +304,9 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     """
     Replace CC or To Reply emails by original emails
     """
-    addrs = get_addrs_from_header(msg, header)
-
-    # Nothing to do
-    if not addrs:
-        return
-
     new_addrs: [str] = []
 
-    for addr in addrs:
-        _, reply_email = parseaddr_unicode(addr)
-
+    for _, reply_email in getaddresses(msg.get_all(header, [])):
         # no transformation when alias is already in the header
         if reply_email == alias.email:
             continue
@@ -330,7 +317,7 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
                 "%s email in reply phase %s must be reply emails", header, reply_email
             )
             # still keep this email in header
-            new_addrs.append(addr)
+            new_addrs.append(reply_email)
         else:
             new_addrs.append(formataddr((contact.name, contact.website_email)))
 

@@ -538,24 +538,6 @@ def get_orig_message_from_spamassassin_report(msg: Message) -> Message:
             return part
 
 
-def get_addrs_from_header(msg: Message, header) -> [str]:
-    """Get all addresses contained in `header`
-    Used for To or CC header.
-    """
-    ret = []
-    header_content = msg.get_all(header)
-    if not header_content:
-        return ret
-
-    for addrs in header_content:
-        addrs = get_header_unicode(addrs)
-        for addr in addrs.split(","):
-            ret.append(addr.strip())
-
-    # do not return empty string
-    return [r for r in ret if r]
-
-
 def get_spam_info(msg: Message, max_score=None) -> (bool, str):
     """parse SpamAssassin header to detect whether a message is classified as spam.
       Return (is spam, spam status detail)
