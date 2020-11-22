@@ -12,6 +12,7 @@ from app.email_utils import (
     mailbox_already_used,
     render,
     send_email,
+    is_valid_email,
 )
 from app.extensions import db
 from app.log import LOG
@@ -86,7 +87,9 @@ def mailbox_route():
                     new_mailbox_form.email.data.lower().strip().replace(" ", "")
                 )
 
-                if mailbox_already_used(mailbox_email, current_user):
+                if not is_valid_email(mailbox_email):
+                    flash(f"{mailbox_email} invalid", "error")
+                elif mailbox_already_used(mailbox_email, current_user):
                     flash(f"{mailbox_email} already used", "error")
                 elif not email_can_be_used_as_mailbox(mailbox_email):
                     flash(f"You cannot use {mailbox_email}.", "error")

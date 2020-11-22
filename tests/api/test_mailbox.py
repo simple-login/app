@@ -15,12 +15,20 @@ def test_create_mailbox(flask_client):
 
     assert r.status_code == 201
 
-    # {'creation_timestamp': 1604398668, 'default': False, 'email': 'mailbox@gmail.com', 'id': 2, 'nb_alias': 0, 'verified': False}
     assert r.json["email"] == "mailbox@gmail.com"
     assert r.json["verified"] is False
     assert r.json["id"] > 0
     assert r.json["default"] is False
     assert r.json["nb_alias"] == 0
+
+    # invalid email address
+    r = flask_client.post(
+        "/api/mailboxes",
+        json={"email": "gmail.com"},
+    )
+
+    assert r.status_code == 400
+    assert r.json == {"error": "gmail.com invalid"}
 
 
 def test_delete_mailbox(flask_client):

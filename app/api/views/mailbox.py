@@ -10,6 +10,7 @@ from app.dashboard.views.mailbox_detail import verify_mailbox_change
 from app.email_utils import (
     mailbox_already_used,
     email_can_be_used_as_mailbox,
+    is_valid_email,
 )
 from app.extensions import db
 from app.models import Mailbox
@@ -39,7 +40,9 @@ def create_mailbox():
     user = g.user
     mailbox_email = request.get_json().get("email").lower().strip().replace(" ", "")
 
-    if mailbox_already_used(mailbox_email, user):
+    if not is_valid_email(mailbox_email):
+        return jsonify(error=f"{mailbox_email} invalid"), 400
+    elif mailbox_already_used(mailbox_email, user):
         return jsonify(error=f"{mailbox_email} already used"), 400
     elif not email_can_be_used_as_mailbox(mailbox_email):
         return (
