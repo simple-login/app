@@ -6,18 +6,10 @@ from tests.utils import login
 
 
 def test_create_mailbox(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     r = flask_client.post(
         "/api/mailboxes",
-        headers={"Authentication": api_key.code},
         json={"email": "mailbox@gmail.com"},
     )
 
@@ -32,14 +24,7 @@ def test_create_mailbox(flask_client):
 
 
 def test_delete_mailbox(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     # create a mailbox
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
@@ -47,26 +32,17 @@ def test_delete_mailbox(flask_client):
 
     r = flask_client.delete(
         f"/api/mailboxes/{mb.id}",
-        headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 200
 
 
 def test_delete_default_mailbox(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     # assert user cannot delete the default mailbox
     r = flask_client.delete(
         url_for("api.delete_mailbox", mailbox_id=user.default_mailbox_id),
-        headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 400
@@ -102,14 +78,7 @@ def test_set_mailbox_as_default(flask_client):
 
 
 def test_update_mailbox_email(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     # create a mailbox
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
@@ -117,7 +86,6 @@ def test_update_mailbox_email(flask_client):
 
     r = flask_client.put(
         f"/api/mailboxes/{mb.id}",
-        headers={"Authentication": api_key.code},
         json={"email": "new-email@gmail.com"},
     )
 
@@ -128,14 +96,7 @@ def test_update_mailbox_email(flask_client):
 
 
 def test_cancel_mailbox_email_change(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     # create a mailbox
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
@@ -144,7 +105,6 @@ def test_cancel_mailbox_email_change(flask_client):
     # update mailbox email
     r = flask_client.put(
         f"/api/mailboxes/{mb.id}",
-        headers={"Authentication": api_key.code},
         json={"email": "new-email@gmail.com"},
     )
     assert r.status_code == 200
@@ -155,7 +115,6 @@ def test_cancel_mailbox_email_change(flask_client):
     # cancel mailbox email change
     r = flask_client.put(
         url_for("api.delete_mailbox", mailbox_id=mb.id),
-        headers={"Authentication": api_key.code},
         json={"cancel_email_change": True},
     )
     assert r.status_code == 200
@@ -165,14 +124,7 @@ def test_cancel_mailbox_email_change(flask_client):
 
 
 def test_get_mailboxes(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
     Mailbox.create(user_id=user.id, email="m2@example.com", verified=False)
@@ -180,7 +132,6 @@ def test_get_mailboxes(flask_client):
 
     r = flask_client.get(
         "/api/mailboxes",
-        headers={"Authentication": api_key.code},
     )
     assert r.status_code == 200
     # m2@example.com is not returned as it's not verified
