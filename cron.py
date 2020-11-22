@@ -24,6 +24,7 @@ from app.email_utils import (
     render,
     email_can_be_used_as_mailbox,
     send_email_with_rate_control,
+    normalize_reply_email,
 )
 from app.extensions import db
 from app.log import LOG
@@ -392,8 +393,12 @@ def sanity_check():
             LOG.exception("Mailbox %s address not sanitized", mailbox)
 
     for contact in Contact.query.all():
-        if not contact.reply_email.isascii():
-            LOG.exception("Contact %s reply email is not ascii", contact)
+        if normalize_reply_email(contact.reply_email) != contact.reply_email:
+            LOG.exception(
+                "Contact %s reply email is not normalized %s",
+                contact,
+                contact.reply_email,
+            )
 
     for domain in CustomDomain.query.all():
         if domain.name and "\n" in domain.name:

@@ -17,6 +17,7 @@ from app.email_utils import (
     add_header,
     to_bytes,
     generate_reply_email,
+    normalize_reply_email,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -408,3 +409,8 @@ def test_generate_reply_email(flask_client):
     # make sure reply_email only contain lowercase
     reply_email = generate_reply_email("TEST@example.org")
     assert reply_email.startswith("ra+test.at.example.org")
+
+
+def test_normalize_reply_email(flask_client):
+    assert normalize_reply_email("re+abcd@sl.local") == "re+abcd@sl.local"
+    assert normalize_reply_email('re+"ab cd"@sl.local') == "re+_ab_cd_@sl.local"

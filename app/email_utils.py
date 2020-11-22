@@ -39,7 +39,7 @@ from app.dns_utils import get_mx_domains
 from app.extensions import db
 from app.log import LOG
 from app.models import Mailbox, User, SentAlert, CustomDomain, SLDomain, Contact
-from app.utils import random_string, convert_to_id
+from app.utils import random_string, convert_to_id, convert_to_alphanumeric
 
 
 def render(template_name, **kwargs) -> str:
@@ -727,6 +727,7 @@ def generate_reply_email(contact_email: str) -> str:
         contact_email = contact_email.lower().strip().replace(" ", "")
         contact_email = contact_email[:45]
         contact_email = contact_email.replace("@", ".at.")
+        contact_email = convert_to_alphanumeric(contact_email)
 
     # not use while to avoid infinite loop
     for _ in range(1000):
@@ -747,3 +748,23 @@ def generate_reply_email(contact_email: str) -> str:
 
 def is_reply_email(address: str) -> bool:
     return address.startswith("reply+") or address.startswith("ra+")
+
+
+# allow also + and @ that are present in a reply address
+_ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.+@"
+
+
+def normalize_reply_email(reply_email: str) -> str:
+    """Handle the case where reply email contains *strange* char that was wrongly generated in the past"""
+    if not reply_email.isascii():
+        reply_email = convert_to_id(reply_email)
+
+    ret = []
+    # drop all control characters like shift, separator, etc
+    for c in reply_email:
+        if c not in _ALLOWED_CHARS:
+            ret.append("_")
+        else:
+            ret.append(c)
+
+    return "".join(ret)

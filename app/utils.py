@@ -38,7 +38,23 @@ def convert_to_id(s: str):
     s = s.replace(" ", "")
     s = s.lower()
     s = unidecode(s)
+
     return s
+
+
+_ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-."
+
+
+def convert_to_alphanumeric(s: str) -> str:
+    ret = []
+    # drop all control characters like shift, separator, etc
+    for c in s:
+        if c not in _ALLOWED_CHARS:
+            ret.append("_")
+        else:
+            ret.append(c)
+
+    return "".join(ret)
 
 
 def encode_url(url):

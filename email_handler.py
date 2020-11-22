@@ -103,6 +103,7 @@ from app.email_utils import (
     get_header_unicode,
     generate_reply_email,
     is_reply_email,
+    normalize_reply_email,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -777,9 +778,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         LOG.warning(f"Reply email {reply_email} has wrong domain")
         return False, "550 SL E2"
 
-    # handle case where reply email is generated with non-ascii char
-    if not reply_email.isascii():
-        reply_email = convert_to_id(reply_email)
+    # handle case where reply email is generated with non-allowed char
+    reply_email = normalize_reply_email(reply_email)
 
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
