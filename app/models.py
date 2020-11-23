@@ -1034,7 +1034,7 @@ class Alias(db.Model, ModelMixin):
                 user.default_random_alias_public_domain_id
             )
             if sl_domain.premium_only and not user.is_premium():
-                LOG.exception("%s not premium, cannot use %s", user, sl_domain)
+                LOG.warning("%s not premium, cannot use %s", user, sl_domain)
             else:
                 random_email = generate_email(
                     scheme=scheme, in_hex=in_hex, alias_domain=sl_domain.domain
