@@ -615,7 +615,7 @@ def forward_email_to_mailbox(
         return False, "421 SL E14"
 
     email_log = EmailLog.create(
-        contact_id=contact.id, user_id=user.id, mailbox=mailbox.id, commit=True
+        contact_id=contact.id, user_id=user.id, mailbox_id=mailbox.id, commit=True
     )
 
     # Spam check
