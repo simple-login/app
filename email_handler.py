@@ -1153,6 +1153,10 @@ def handle_unknown_mailbox(
 
 
 def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
+    """
+    Handle bounce that is sent to the reverse-alias
+    Happens when  an email cannot be to a mailbox
+    """
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
     # Store the bounced email
