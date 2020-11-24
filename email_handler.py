@@ -531,13 +531,11 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
 
-    email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
-    db.session.commit()
-
     if not alias.enabled:
         LOG.d("%s is disabled, do not forward", alias)
-        email_log.blocked = True
-
+        EmailLog.create(
+            contact_id=contact.id, user_id=contact.user_id, blocked=True, commit=True
+        )
         db.session.commit()
         # do not return 5** to allow user to receive emails later when alias is enabled
         return [(True, "250 Message accepted for delivery")]
@@ -560,7 +558,6 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
                 forward_email_to_mailbox(
                     alias,
                     copy(msg),
-                    email_log,
                     contact,
                     envelope,
                     mailbox,
@@ -574,7 +571,6 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 def forward_email_to_mailbox(
     alias,
     msg: Message,
-    email_log: EmailLog,
     contact: Contact,
     envelope,
     mailbox,
@@ -618,6 +614,10 @@ def forward_email_to_mailbox(
         # retry later
         # so when user fixes the mailbox, the email can be delivered
         return False, "421 SL E14"
+
+    email_log = EmailLog.create(
+        contact_id=contact.id, user_id=user.id, mailbox=mailbox.id, commit=True
+    )
 
     # Spam check
     spam_status = ""
@@ -847,7 +847,10 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             return True, "250 SL E11"
 
     email_log = EmailLog.create(
-        contact_id=contact.id, is_reply=True, user_id=contact.user_id
+        contact_id=contact.id,
+        is_reply=True,
+        user_id=contact.user_id,
+        mailbox_id=mailbox.id,
     )
 
     # Spam check
