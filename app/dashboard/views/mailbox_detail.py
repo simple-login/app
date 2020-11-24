@@ -146,14 +146,28 @@ def mailbox_detail_route(mailbox_id):
                 # Free user can decide to remove their added PGP key
                 mailbox.pgp_public_key = None
                 mailbox.pgp_finger_print = None
+                mailbox.disable_pgp = False
                 db.session.commit()
                 flash("Your PGP public key is removed successfully", "success")
                 return redirect(
                     url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                 )
+
+        elif request.form.get("form-name") == "toggle-pgp":
+            if request.form.get("pgp-enabled") == "on":
+                mailbox.disable_pgp = False
+                flash(f"PGP is enabled on {mailbox.email}", "success")
+            else:
+                mailbox.disable_pgp = True
+                flash(f"PGP is disabled on {mailbox.email}", "info")
+
+            db.session.commit()
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+            )
         elif request.form.get("form-name") == "generic-subject":
             if request.form.get("action") == "save":
-                if not mailbox.pgp_finger_print:
+                if not mailbox.pgp_enabled():
                     flash(
                         "Generic subject can only be used on PGP-enabled mailbox",
                         "error",
