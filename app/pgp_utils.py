@@ -65,7 +65,7 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
         # maybe the fingerprint is not loaded on this host, try to load it
         found = False
         # searching for the key in mailbox
-        mailbox = Mailbox.get_by(pgp_finger_print=fingerprint)
+        mailbox = Mailbox.get_by(pgp_finger_print=fingerprint, disable_pgp=False)
         if mailbox:
             LOG.d("(re-)load public key for %s", mailbox)
             load_public_key(mailbox.pgp_public_key)

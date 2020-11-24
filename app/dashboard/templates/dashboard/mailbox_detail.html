@@ -29,7 +29,7 @@
           🚫
         </span>
         {% endif %}
-        {% if mailbox.pgp_finger_print %}
+        {% if mailbox.pgp_enabled() %}
           <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
         {% endif %}
       </h1>
@@ -120,7 +120,7 @@
 
       </div>
 
-      <div class="card" {% if not mailbox.pgp_finger_print %} disabled {% endif %}>
+      <div class="card" {% if not mailbox.pgp_enabled() %} disabled {% endif %}>
         <form method="post">
           <input type="hidden" name="form-name" value="generic-subject">
 
@@ -139,7 +139,7 @@
               <label class="form-label">Generic Subject</label>
 
               <input name="generic-subject"
-                  {% if not mailbox.pgp_finger_print %} disabled {% endif %}
+                  {% if not mailbox.pgp_enabled() %} disabled {% endif %}
                         class="form-control" maxlength="78"
                         placeholder="Generic Subject"
                      value="{{ mailbox.generic_subject or "" }}"
@@ -147,7 +147,7 @@
             </div>
 
             <button class="btn btn-primary" name="action"
-                {% if not mailbox.pgp_finger_print %} disabled {% endif %}
+                {% if not mailbox.pgp_enabled() %} disabled {% endif %}
                     value="save">Save
             </button>
             {% if mailbox.generic_subject %}

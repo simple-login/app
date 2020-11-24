@@ -953,7 +953,7 @@ class Alias(db.Model, ModelMixin):
     def mailbox_support_pgp(self) -> bool:
         """return True of one of the mailboxes support PGP"""
         for mb in self.mailboxes:
-            if mb.pgp_finger_print:
+            if mb.pgp_enabled():
                 return True
         return False
 
@@ -1682,6 +1682,12 @@ class Mailbox(db.Model, ModelMixin):
     __table_args__ = (db.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
 
     user = db.relationship(User, foreign_keys=[user_id])
+
+    def pgp_enabled(self) -> bool:
+        if self.pgp_finger_print and not self.disable_pgp:
+            return True
+
+        return False
 
     def nb_alias(self):
         return (

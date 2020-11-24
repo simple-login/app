@@ -662,7 +662,11 @@ def forward_email_to_mailbox(
         )
 
     # create PGP email if needed
-    if mailbox.pgp_finger_print and user.is_premium() and not alias.disable_pgp:
+    if (
+        mailbox.pgp_enabled()
+        and user.is_premium()
+        and not alias.disable_pgp
+    ):
         LOG.d("Encrypt message using mailbox %s", mailbox)
         if mailbox.generic_subject:
             LOG.d("Use a generic subject for %s", mailbox)

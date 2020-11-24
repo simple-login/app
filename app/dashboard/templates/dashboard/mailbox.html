@@ -48,7 +48,7 @@
                   🚫
                 </span>
                   {% endif %}
-                  {% if mailbox.pgp_finger_print %}
+                  {% if mailbox.pgp_enabled() %}
                     <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
                   {% endif %}
 
