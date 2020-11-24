@@ -1663,6 +1663,9 @@ class Mailbox(db.Model, ModelMixin):
 
     pgp_public_key = db.Column(db.Text, nullable=True)
     pgp_finger_print = db.Column(db.String(512), nullable=True)
+    disable_pgp = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
 
     # incremented when a check is failed on the mailbox
     # alert when the number exceeds a threshold
