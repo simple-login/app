@@ -584,7 +584,7 @@ def forward_email_to_mailbox(
 
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
-        LOG.warning(
+        LOG.exception(
             "Mailbox has the same domain as alias. %s -> %s -> %s",
             contact,
             alias,
