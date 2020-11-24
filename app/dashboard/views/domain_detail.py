@@ -154,12 +154,20 @@ def domain_detail(custom_domain_id):
                 url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
             )
         elif request.form.get("form-name") == "set-name":
-            custom_domain.name = request.form.get("alias-name").replace("\n", "")
-            db.session.commit()
-            flash(
-                f"Default alias name for Domain {custom_domain.domain} has been set",
-                "success",
-            )
+            if request.form.get("action") == "save":
+                custom_domain.name = request.form.get("alias-name").replace("\n", "")
+                db.session.commit()
+                flash(
+                    f"Default alias name for Domain {custom_domain.domain} has been set",
+                    "success",
+                )
+            else:
+                custom_domain.name = None
+                db.session.commit()
+                flash(
+                    f"Default alias name for Domain {custom_domain.domain} has been removed",
+                    "info",
+                )
 
             return redirect(
                 url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)

@@ -72,7 +72,10 @@
                name="alias-name"
                placeholder="Alias name">
       </div>
-      <button class="btn btn-primary">Save</button>
+      <button class="btn btn-primary" name="action" value="save">Save</button>
+      {% if custom_domain.name %}
+        <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+      {% endif %}
     </form>
   </div>
 
