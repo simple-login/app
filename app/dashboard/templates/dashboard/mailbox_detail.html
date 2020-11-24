@@ -77,9 +77,6 @@
 
 
       <div class="card">
-        <form method="post">
-          <input type="hidden" name="form-name" value="pgp">
-
           <div class="card-body">
             <div class="card-title">
               Pretty Good Privacy (PGP)
@@ -107,17 +104,17 @@
                         placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
             </div>
 
-            <button class="btn btn-primary" name="action"
-                {% if not current_user.is_premium() %} disabled {% endif %}
-                    value="save">Save
-            </button>
-            {% if mailbox.pgp_finger_print %}
-              <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
-            {% endif %}
-
+            <form method="post">
+              <input type="hidden" name="form-name" value="pgp">
+              <button class="btn btn-primary" name="action"
+                  {% if not current_user.is_premium() %} disabled {% endif %}
+                      value="save">Save
+              </button>
+              {% if mailbox.pgp_finger_print %}
+                <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+              {% endif %}
+            </form>
           </div>
-        </form>
-
       </div>
 
       <div class="card" {% if not mailbox.pgp_enabled() %} disabled {% endif %}>
