@@ -1352,6 +1352,12 @@ class EmailLog(db.Model, ModelMixin):
 
     contact = db.relationship(Contact, backref="email_logs")
 
+    @property
+    def mailbox(self) -> Optional["Mailbox"]:
+        if self.mailbox_id:
+            return Mailbox.get(self.mailbox_id)
+        return None
+
     def bounced_mailbox(self) -> str:
         if self.bounced_mailbox_id:
             return Mailbox.get(self.bounced_mailbox_id).email
