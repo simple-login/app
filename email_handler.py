@@ -104,6 +104,7 @@ from app.email_utils import (
     generate_reply_email,
     is_reply_email,
     normalize_reply_email,
+    is_valid_email,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -177,6 +178,16 @@ def get_or_create_contact(
                 mail_from,
             )
             _, contact_email = parseaddr_unicode(mail_from)
+
+    if contact_email and not is_valid_email(contact_email):
+        LOG.exception(
+            "invalid contact email %s. Parse from %s %s",
+            contact_email,
+            contact_from_header,
+            mail_from,
+        )
+        # either reuse a contact with empty email or create a new contact with empty email
+        contact_email = ""
 
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
