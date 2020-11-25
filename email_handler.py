@@ -43,7 +43,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr, make_msgid, formatdate, getaddresses
 from io import BytesIO
-from smtplib import SMTP, SMTPRecipientsRefused
+from smtplib import SMTP, SMTPRecipientsRefused, SMTPServerDisconnected
 from typing import List, Tuple, Optional
 
 import aiosmtpd
@@ -1695,7 +1695,9 @@ def get_spam_score(message: Message) -> float:
         return -999
 
 
-def sl_sendmail(from_addr, to_addr, msg: Message, mail_options, rcpt_options):
+def sl_sendmail(
+    from_addr, to_addr, msg: Message, mail_options, rcpt_options, can_retry=True
+):
     """replace smtp.sendmail"""
     if POSTFIX_SUBMISSION_TLS:
         smtp = SMTP(POSTFIX_SERVER, 587)
@@ -1705,13 +1707,22 @@ def sl_sendmail(from_addr, to_addr, msg: Message, mail_options, rcpt_options):
 
     # smtp.send_message has UnicodeEncodeErroremail issue
     # encode message raw directly instead
-    smtp.sendmail(
-        from_addr,
-        to_addr,
-        to_bytes(msg),
-        mail_options,
-        rcpt_options,
-    )
+    try:
+        smtp.sendmail(
+            from_addr,
+            to_addr,
+            to_bytes(msg),
+            mail_options,
+            rcpt_options,
+        )
+    except SMTPServerDisconnected:
+        if can_retry:
+            LOG.warning("SMTPServerDisconnected error, retry")
+            sl_sendmail(
+                from_addr, to_addr, msg, mail_options, rcpt_options, can_retry=False
+            )
+        else:
+            raise
 
 
 class MailHandler:
