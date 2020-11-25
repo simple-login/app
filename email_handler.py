@@ -169,7 +169,7 @@ def get_or_create_contact(
     contact_from_header = str(contact_from_header)
 
     contact_name, contact_email = parseaddr_unicode(contact_from_header)
-    if not contact_email:
+    if not is_valid_email(contact_email):
         # From header is wrongly formatted, try with mail_from
         if mail_from and mail_from != "<>":
             LOG.warning(
@@ -179,7 +179,7 @@ def get_or_create_contact(
             )
             _, contact_email = parseaddr_unicode(mail_from)
 
-    if contact_email and not is_valid_email(contact_email):
+    if not is_valid_email(contact_email):
         LOG.exception(
             "invalid contact email %s. Parse from %s %s",
             contact_email,
@@ -237,7 +237,7 @@ def get_or_create_contact(
                 mail_from=mail_from,
                 from_header=contact_from_header,
                 reply_email=generate_reply_email(contact_email)
-                if contact_email
+                if is_valid_email(contact_email)
                 else NOREPLY,
             )
             if not contact_email:
