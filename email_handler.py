@@ -1705,7 +1705,7 @@ def sl_sendmail(
     else:
         smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
-    # smtp.send_message has UnicodeEncodeErroremail issue
+    # smtp.send_message has UnicodeEncodeError
     # encode message raw directly instead
     try:
         smtp.sendmail(
@@ -1718,6 +1718,7 @@ def sl_sendmail(
     except SMTPServerDisconnected:
         if can_retry:
             LOG.warning("SMTPServerDisconnected error, retry")
+            time.sleep(3)
             sl_sendmail(
                 from_addr, to_addr, msg, mail_options, rcpt_options, can_retry=False
             )
