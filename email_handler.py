@@ -269,6 +269,13 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             new_addrs.append(addr)
             continue
 
+        if not is_valid_email(contact_email):
+            LOG.exception(
+                "invalid contact email %s. Skip",
+                contact_email,
+            )
+            continue
+
         contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
         if contact:
             # update the contact name if needed
