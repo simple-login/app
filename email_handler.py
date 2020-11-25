@@ -126,7 +126,6 @@ from server import create_app, create_light_app
 _DIRECTION = "X-SimpleLogin-Type"
 
 _IP_HEADER = "X-SimpleLogin-Client-IP"
-_MAILBOX_ID_HEADER = "X-SimpleLogin-Mailbox-ID"
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
 _MESSAGE_ID = "Message-ID"
 _ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
@@ -531,13 +530,11 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
 
-    email_log = EmailLog.create(contact_id=contact.id, user_id=contact.user_id)
-    db.session.commit()
-
     if not alias.enabled:
         LOG.d("%s is disabled, do not forward", alias)
-        email_log.blocked = True
-
+        EmailLog.create(
+            contact_id=contact.id, user_id=contact.user_id, blocked=True, commit=True
+        )
         db.session.commit()
         # do not return 5** to allow user to receive emails later when alias is enabled
         return [(True, "250 Message accepted for delivery")]
@@ -560,7 +557,6 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
                 forward_email_to_mailbox(
                     alias,
                     copy(msg),
-                    email_log,
                     contact,
                     envelope,
                     mailbox,
@@ -574,7 +570,6 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 def forward_email_to_mailbox(
     alias,
     msg: Message,
-    email_log: EmailLog,
     contact: Contact,
     envelope,
     mailbox,
@@ -588,7 +583,7 @@ def forward_email_to_mailbox(
 
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
-        LOG.warning(
+        LOG.exception(
             "Mailbox has the same domain as alias. %s -> %s -> %s",
             contact,
             alias,
@@ -618,6 +613,10 @@ def forward_email_to_mailbox(
         # retry later
         # so when user fixes the mailbox, the email can be delivered
         return False, "421 SL E14"
+
+    email_log = EmailLog.create(
+        contact_id=contact.id, user_id=user.id, mailbox_id=mailbox.id, commit=True
+    )
 
     # Spam check
     spam_status = ""
@@ -694,7 +693,6 @@ def forward_email_to_mailbox(
     delete_header(msg, "Sender")
 
     delete_header(msg, _IP_HEADER)
-    add_or_replace_header(msg, _MAILBOX_ID_HEADER, str(mailbox.id))
     add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
     add_or_replace_header(msg, _MESSAGE_ID, make_msgid(str(email_log.id), EMAIL_DOMAIN))
     add_or_replace_header(msg, _ENVELOPE_FROM, envelope.mail_from)
@@ -847,7 +845,10 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             return True, "250 SL E11"
 
     email_log = EmailLog.create(
-        contact_id=contact.id, is_reply=True, user_id=contact.user_id
+        contact_id=contact.id,
+        is_reply=True,
+        user_id=contact.user_id,
+        mailbox_id=mailbox.id,
     )
 
     # Spam check
@@ -956,7 +957,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     msg["Date"] = date_header
 
     msg[_DIRECTION] = "Reply"
-    msg[_MAILBOX_ID_HEADER] = str(mailbox.id)
     msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
 
     LOG.d(
@@ -1150,6 +1150,10 @@ def handle_unknown_mailbox(
 
 
 def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
+    """
+    Handle bounce that is sent to the reverse-alias
+    Happens when  an email cannot be to a mailbox
+    """
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
     # Store the bounced email
@@ -1160,8 +1164,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     s3.upload_email_from_bytesio(full_report_path, BytesIO(to_bytes(msg)), random_name)
 
     file_path = None
-    mailbox = None
-    email_log: EmailLog = None
+
     orig_msg = get_orig_message_from_bounce(msg)
     if not orig_msg:
         # Some MTA does not return the original message in bounce message
@@ -1176,37 +1179,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     else:
         file_path = f"refused-emails/{random_name}.eml"
         s3.upload_email_from_bytesio(file_path, BytesIO(to_bytes(msg)), random_name)
-        try:
-            mailbox_id = int(orig_msg[_MAILBOX_ID_HEADER])
-        except TypeError:
-            LOG.warning(
-                "cannot parse mailbox from original message header %s",
-                orig_msg[_MAILBOX_ID_HEADER],
-            )
-        else:
-            mailbox = Mailbox.get(mailbox_id)
-            if not mailbox or mailbox.user_id != user.id:
-                LOG.exception(
-                    "Tampered message mailbox_id %s, %s, %s, %s %s",
-                    mailbox_id,
-                    user,
-                    alias,
-                    contact,
-                    full_report_path,
-                )
-                # cannot use this tampered mailbox, reset it
-                mailbox = None
-
-        # try to get the original email_log
-        try:
-            email_log_id = int(orig_msg[_EMAIL_LOG_ID_HEADER])
-        except TypeError:
-            LOG.warning(
-                "cannot parse email log from original message header %s",
-                orig_msg[_EMAIL_LOG_ID_HEADER],
-            )
-        else:
-            email_log = EmailLog.get(email_log_id)
 
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id
@@ -1214,45 +1186,31 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     db.session.flush()
     LOG.d("Create refused email %s", refused_email)
 
-    if not mailbox:
-        LOG.debug("Try to get mailbox from bounce report")
-        try:
-            mailbox_id = int(get_header_from_bounce(msg, _MAILBOX_ID_HEADER))
-        except Exception:
-            LOG.warning("cannot get mailbox-id from bounce report, %s", refused_email)
-        else:
-            mailbox = Mailbox.get(mailbox_id)
-            if not mailbox or mailbox.user_id != user.id:
-                LOG.exception(
-                    "Tampered message mailbox_id %s, %s, %s, %s %s",
-                    mailbox_id,
-                    user,
-                    alias,
-                    contact,
-                    full_report_path,
-                )
-                mailbox = None
+    # try to parse email_log
+    email_log = None
+    try:
+        email_log_id = int(get_header_from_bounce(msg, _EMAIL_LOG_ID_HEADER))
+    except Exception:
+        LOG.warning("cannot get email log id from bounce report, %s", refused_email)
+    else:
+        email_log = EmailLog.get(email_log_id)
 
-    if not email_log:
-        LOG.d("Try to get email log from bounce report")
-        try:
-            email_log_id = int(get_header_from_bounce(msg, _EMAIL_LOG_ID_HEADER))
-        except Exception:
-            LOG.warning("cannot get email log id from bounce report, %s", refused_email)
-        else:
-            email_log = EmailLog.get(email_log_id)
-
-    # use the default mailbox as the last option
-    if not mailbox:
-        LOG.warning("Use %s default mailbox %s", alias, refused_email)
-        mailbox = alias.mailbox
-
-    # create a new email log as the last option
+    # create new email_log if unable to parse from bounce report
     if not email_log:
         LOG.warning("cannot get the original email_log, create a new one")
         email_log: EmailLog = EmailLog.create(
             contact_id=contact.id, user_id=contact.user_id
         )
+
+    # try to get mailbox
+    mailbox = None
+    if email_log:
+        mailbox = email_log.mailbox
+
+    # use the default mailbox if unable to parse from bounce report
+    if not mailbox:
+        LOG.warning("Use %s default mailbox %s", alias, refused_email)
+        mailbox = alias.mailbox
 
     email_log.bounced = True
     email_log.refused_email_id = refused_email.id
@@ -1379,20 +1337,11 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
 
     email_log.bounced = True
     email_log.refused_email_id = refused_email.id
-    db.session.commit()
 
-    try:
-        mailbox_id = int(get_header_from_bounce(msg, _MAILBOX_ID_HEADER))
-    except Exception:
-        LOG.warning(
-            "cannot parse mailbox from bounce message report %s %s", alias, user
-        )
-        # fall back to the default mailbox
-        mailbox = alias.mailbox
-    else:
-        mailbox = Mailbox.get(mailbox_id)
-        email_log.bounced_mailbox_id = mailbox.id
-        db.session.commit()
+    mailbox = email_log.mailbox or alias.mailbox
+    email_log.bounced_mailbox_id = mailbox.id
+
+    db.session.commit()
 
     refused_email_url = (
         URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)

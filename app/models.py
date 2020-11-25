@@ -1335,6 +1335,12 @@ class EmailLog(db.Model, ModelMixin):
         db.ForeignKey("refused_email.id", ondelete="SET NULL"), nullable=True
     )
 
+    # in forward phase, this is the mailbox that will receive the email
+    # in reply phase, this is the mailbox (or a mailbox's authorized address) that sends the email
+    mailbox_id = db.Column(
+        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=True
+    )
+
     # in case of bounce, record on what mailbox the email has been bounced
     # useful when an alias has several mailboxes
     bounced_mailbox_id = db.Column(
@@ -1345,6 +1351,7 @@ class EmailLog(db.Model, ModelMixin):
     forward = db.relationship(Contact)
 
     contact = db.relationship(Contact, backref="email_logs")
+    mailbox = db.relationship("Mailbox", lazy="joined", foreign_keys=[mailbox_id])
 
     def bounced_mailbox(self) -> str:
         if self.bounced_mailbox_id:
