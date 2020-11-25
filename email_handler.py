@@ -1050,6 +1050,7 @@ def spf_pass(
                     r[0],
                     ip,
                 )
+                subject = get_header_unicode(msg["Subject"])
                 send_email_with_rate_control(
                     user,
                     ALERT_SPF,
@@ -1062,7 +1063,7 @@ def spf_pass(
                         ip=ip,
                         mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
                         to_email=contact_email,
-                        subject=msg["Subject"],
+                        subject=subject,
                         time=arrow.now(),
                     ),
                     render(
@@ -1072,7 +1073,7 @@ def spf_pass(
                         ip=ip,
                         mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
                         to_email=contact_email,
-                        subject=msg["Subject"],
+                        subject=subject,
                         time=arrow.now(),
                     ),
                 )
