@@ -25,6 +25,7 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
     send_email_with_rate_control,
     normalize_reply_email,
+    is_valid_email,
 )
 from app.extensions import db
 from app.log import LOG
@@ -387,6 +388,11 @@ def sanity_check():
     for contact in Contact.query.all():
         if contact.reply_email.lower().strip().replace(" ", "") != contact.reply_email:
             LOG.exception("Contact %s reply-email not sanitized", contact)
+
+        if not contact.invalid_email and not is_valid_email(contact.website_email):
+            LOG.exception("%s invalid email", contact)
+            contact.invalid_email = True
+            db.session.commit()
 
     for mailbox in Mailbox.query.all():
         if mailbox.email.lower().strip().replace(" ", "") != mailbox.email:
