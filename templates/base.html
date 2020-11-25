@@ -89,6 +89,9 @@
 </head>
 <body class="">
 <div class="page">
+  {% block announcement %}
+  {% endblock %}
+
   <div class="container">
     <!-- For flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}

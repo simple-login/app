@@ -17,6 +17,16 @@
 
 {% endblock %}
 
+{% block announcement %}
+  {#  TODO: to remove#}
+  <div class="alert alert-danger text-center mb-0" role="alert">
+    Our payment provider Paddle is experiencing
+    <a href="https://paddle.status.io" target="_blank">server issue <i class="fe fe-external-link"></i></a>
+    that can make our checkout page unusable. <br>
+    Please retry later and sorry for this issue!
+  </div>
+{% endblock %}
+
 {% block default_content %}
   <div class="row">
     <div class="col-sm-6 col-lg-6">
