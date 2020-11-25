@@ -171,7 +171,11 @@ def get_or_create_contact(
     if not contact_email:
         # From header is wrongly formatted, try with mail_from
         if mail_from and mail_from != "<>":
-            LOG.warning("From header is empty, parse mail_from %s %s", mail_from, alias)
+            LOG.warning(
+                "Cannot parse email from from_header %s, parse from mail_from %s",
+                contact_from_header,
+                mail_from,
+            )
             _, contact_email = parseaddr_unicode(mail_from)
 
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
@@ -186,9 +190,10 @@ def get_or_create_contact(
             contact.name = contact_name
             db.session.commit()
 
-        if contact.mail_from != mail_from:
+        # contact created in the past does not have mail_from and from_header field
+        if not contact.mail_from and mail_from:
             LOG.d(
-                "Update contact %s mail_from %s to %s",
+                "Set contact mail_from %s: %s to %s",
                 contact,
                 contact.mail_from,
                 mail_from,
@@ -196,9 +201,9 @@ def get_or_create_contact(
             contact.mail_from = mail_from
             db.session.commit()
 
-        if contact.from_header != contact_from_header:
+        if not contact.from_header and contact_from_header:
             LOG.d(
-                "Update contact %s from_header %s to %s",
+                "Set contact from_header %s: %s to %s",
                 contact,
                 contact.from_header,
                 contact_from_header,
@@ -206,10 +211,10 @@ def get_or_create_contact(
             contact.from_header = contact_from_header
             db.session.commit()
     else:
-        LOG.debug(
-            "create contact for alias %s and contact %s",
+        LOG.d(
+            "create contact %s for alias %s",
+            contact_email,
             alias,
-            contact_from_header,
         )
 
         try:

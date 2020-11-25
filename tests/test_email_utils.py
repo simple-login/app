@@ -297,6 +297,8 @@ DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=simplelogin.co;
 
 def test_is_valid_email():
     assert is_valid_email("abcd@gmail.com")
+    assert not is_valid_email("")
+    assert not is_valid_email("  ")
     assert not is_valid_email("with space@gmail.com")
     assert not is_valid_email("strange char !ç@gmail.com")
     assert not is_valid_email("emoji👌@gmail.com")
