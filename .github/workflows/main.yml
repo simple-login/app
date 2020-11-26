@@ -19,7 +19,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-
       - uses: actions/cache@v1
         with:
           path: ~/.cache/poetry
@@ -42,7 +41,7 @@ jobs:
           pytest
 
       - name: Publish to Docker Registry
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v1
         with:
           repository: simplelogin/app-ci
@@ -51,7 +50,7 @@ jobs:
           tag_with_ref: true
 
       - name: Send Telegram message
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
