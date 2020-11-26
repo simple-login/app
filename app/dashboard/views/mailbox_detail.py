@@ -16,7 +16,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
-from app.pgp_utils import PGPException, load_public_key
+from app.pgp_utils import PGPException, load_public_key, load_public_key_and_check
 
 
 class ChangeEmailForm(FlaskForm):
@@ -133,7 +133,9 @@ def mailbox_detail_route(mailbox_id):
 
                 mailbox.pgp_public_key = request.form.get("pgp")
                 try:
-                    mailbox.pgp_finger_print = load_public_key(mailbox.pgp_public_key)
+                    mailbox.pgp_finger_print = load_public_key_and_check(
+                        mailbox.pgp_public_key
+                    )
                 except PGPException:
                     flash("Cannot add the public key, please verify it", "error")
                 else:

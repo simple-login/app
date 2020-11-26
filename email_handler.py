@@ -180,7 +180,7 @@ def get_or_create_contact(
             _, contact_email = parseaddr_unicode(mail_from)
 
     if not is_valid_email(contact_email):
-        LOG.exception(
+        LOG.warning(
             "invalid contact email %s. Parse from %s %s",
             contact_email,
             contact_from_header,

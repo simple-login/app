@@ -33,18 +33,20 @@ def load_public_key_and_check(public_key: str) -> str:
     If the encryption fails, remove the newly created fingerprint.
     Return the fingerprint
     """
-    import_result = gpg.import_keys(public_key)
     try:
+        import_result = gpg.import_keys(public_key)
         fingerprint = import_result.fingerprints[0]
     except Exception as e:
         raise PGPException("Cannot load key") from e
     else:
         dummy_data = BytesIO(b"test")
-        r = gpg.encrypt_file(dummy_data, fingerprint)
-        if not r.ok:
+        try:
+            r = encrypt_file(dummy_data, fingerprint)
+        except Exception as e:
+            LOG.exception("Cannot encrypt using the imported key")
             # remove the fingerprint
             gpg.delete_keys([fingerprint])
-            raise PGPException("Encryption fails with the key")
+            raise PGPException("Encryption fails with the key") from e
 
         return fingerprint
 
