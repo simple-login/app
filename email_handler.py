@@ -119,7 +119,7 @@ from app.models import (
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.spamassassin_utils import SpamAssassin
-from app.utils import random_string, convert_to_id
+from app.utils import random_string
 from init_app import load_pgp_public_keys
 from server import create_app, create_light_app
 
