@@ -49,6 +49,16 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           tag_with_ref: true
 
+      - name: Create Sentry release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          environment: production
+
       - name: Send Telegram message
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: appleboy/telegram-action@master
