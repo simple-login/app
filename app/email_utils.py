@@ -702,26 +702,38 @@ def encode_text(text: str, encoding: str = "base64") -> str:
 
 def add_header(msg: Message, text_header, html_header) -> Message:
     if msg.get_content_type() == "text/plain":
+        encoding = get_encoding(msg)
         payload = msg.get_payload()
         if type(payload) is str:
             clone_msg = copy(msg)
-            payload = f"{text_header}\n---\n{payload}"
+            to_append = encode_text(f"{text_header}\n---\n", encoding)
+            payload = f"{to_append}{payload}"
             clone_msg.set_payload(payload)
             return clone_msg
     elif msg.get_content_type() == "text/html":
+        encoding = get_encoding(msg)
         payload = msg.get_payload()
         if type(payload) is str:
-
-            new_payload = f"""
+            new_payload = (
+                encode_text(
+                    f"""
 <table width="100%" style="width: 100%; -premailer-width: 100%; -premailer-cellpadding: 0; -premailer-cellspacing: 0; margin: 0; padding: 0;">
     <tr>
         <td style="border-bottom:1px dashed #5675E2; padding: 10px 0px">{html_header}</td>
     </tr>
     <tr>
-        <td>{payload}</td>
+        <td>""",
+                    encoding,
+                )
+                + payload
+                + encode_text(
+                    """</td>
     </tr>
 </table>
-            """
+            """,
+                    encoding,
+                )
+            )
             clone_msg = copy(msg)
             clone_msg.set_payload(new_payload)
             return clone_msg
