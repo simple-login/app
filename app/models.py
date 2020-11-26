@@ -1735,7 +1735,7 @@ class Mailbox(db.Model, ModelMixin):
         return ret
 
     def __repr__(self):
-        return f"<Mailbox {self.email}>"
+        return f"<Mailbox {self.id} {self.email}>"
 
 
 class AccountActivation(db.Model, ModelMixin):
