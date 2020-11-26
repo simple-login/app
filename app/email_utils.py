@@ -677,27 +677,30 @@ def get_encoding(msg: Message) -> str:
     """
     Return the message encoding, possible values:
     - quoted-printable
-    - base64: default if unknown
+    - base64
+    - 7bit: default if unknown or empty
     """
     cte = str(msg.get("content-transfer-encoding", "")).lower()
-    if cte == "":
-        return "base64"
+    if cte in ("", "7bit"):
+        return "7bit"
 
-    if cte == "quoted-printable" or cte == "base64":
+    if cte in ("quoted-printable", "base64"):
         return cte
 
     LOG.exception("Unknown encoding %s", cte)
 
-    return "base64"
+    return "7bit"
 
 
-def encode_text(text: str, encoding: str = "base64") -> str:
+def encode_text(text: str, encoding: str = "7bit") -> str:
     if encoding == "quoted-printable":
         encoded = quopri.encodestring(text.encode("utf-8"))
         return str(encoded, "utf-8")
-    else:  # use base64 by default
+    elif encoding == "base64":
         encoded = base64.b64encode(text.encode("utf-8"))
         return str(encoded, "utf-8")
+    else:  # 7bit - no encoding
+        return text
 
 
 def add_header(msg: Message, text_header, html_header) -> Message:
