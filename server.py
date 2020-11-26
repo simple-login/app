@@ -87,6 +87,7 @@ if SENTRY_DSN:
     LOG.d("enable sentry")
     sentry_sdk.init(
         dsn=SENTRY_DSN,
+        release=f"app@{SHA1}",
         integrations=[
             FlaskIntegration(),
             SqlalchemyIntegration(),
