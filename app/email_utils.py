@@ -1,5 +1,7 @@
+import base64
 import email
 import os
+import quopri
 import random
 import re
 from email.header import decode_header
@@ -669,6 +671,33 @@ def is_valid_email(email_address: str) -> bool:
     return validate_email(
         email_address=email_address, check_mx=False, use_blacklist=False
     )
+
+
+def get_encoding(msg: Message) -> str:
+    """
+    Return the message encoding, possible values:
+    - quoted-printable
+    - base64: default if unknown
+    """
+    cte = str(msg.get("content-transfer-encoding", "")).lower()
+    if cte == "":
+        return "base64"
+
+    if cte == "quoted-printable" or cte == "base64":
+        return cte
+
+    LOG.exception("Unknown encoding %s", cte)
+
+    return "base64"
+
+
+def encode_text(text: str, encoding: str = "base64") -> str:
+    if encoding == "quoted-printable":
+        encoded = quopri.encodestring(text.encode("utf-8"))
+        return str(encoded, "utf-8")
+    else:  # use base64 by default
+        encoded = base64.b64encode(text.encode("utf-8"))
+        return str(encoded, "utf-8")
 
 
 def add_header(msg: Message, text_header, html_header) -> Message:

@@ -18,6 +18,8 @@ from app.email_utils import (
     to_bytes,
     generate_reply_email,
     normalize_reply_email,
+    get_encoding,
+    encode_text,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -416,3 +418,23 @@ def test_generate_reply_email(flask_client):
 def test_normalize_reply_email(flask_client):
     assert normalize_reply_email("re+abcd@sl.local") == "re+abcd@sl.local"
     assert normalize_reply_email('re+"ab cd"@sl.local') == "re+_ab_cd_@sl.local"
+
+
+def test_get_encoding():
+    msg = email.message_from_string("")
+    assert get_encoding(msg) == "base64"
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: Invalid")
+    assert get_encoding(msg) == "base64"
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: quoted-printable")
+    assert get_encoding(msg) == "quoted-printable"
+
+
+def test_encode_text():
+    assert encode_text("") == ""
+    assert encode_text("ascii") == "YXNjaWk="
+    assert encode_text("ascii", "quoted-printable") == "ascii"
+
+    assert encode_text("mèo méo") == "bcOobyBtw6lv"
+    assert encode_text("mèo méo", "quoted-printable") == "m=C3=A8o m=C3=A9o"
