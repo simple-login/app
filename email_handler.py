@@ -442,7 +442,7 @@ def prepare_pgp_message(
         encrypted_data = pgp_utils.encrypt_file(BytesIO(msg_bytes), pgp_fingerprint)
         second.set_payload(encrypted_data)
     except PGPException:
-        LOG.exception("Cannot encrypt using python-gnupg, use pgpy")
+        LOG.warning("Cannot encrypt using python-gnupg, use pgpy")
         encrypted = pgp_utils.encrypt_file_with_pgpy(msg_bytes, public_key)
         second.set_payload(str(encrypted))
 
