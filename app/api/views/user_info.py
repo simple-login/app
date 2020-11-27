@@ -54,11 +54,12 @@ def update_user_info():
     if "profile_picture" in data:
         if data["profile_picture"] is None:
             if user.profile_picture_id:
+                user.profile_picture_id = None
+                db.session.flush()
+
                 file = user.profile_picture
                 File.delete(file.id)
                 s3.delete(file.path)
-
-                user.profile_picture_id = None
         else:
             raw_data = base64.decodebytes(data["profile_picture"].encode())
             file_path = random_string(30)
