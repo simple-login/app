@@ -270,7 +270,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             continue
 
         if not is_valid_email(contact_email):
-            LOG.exception("invalid contact email %s. %s. Skip", contact_email, headers)
+            LOG.warning("invalid contact email %s. %s. Skip", contact_email, headers)
             continue
 
         contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
