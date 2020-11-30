@@ -774,7 +774,11 @@ def replace(msg: Message, old, new) -> Message:
             clone_msg.set_payload(new_payload)
             return clone_msg
 
-    elif msg.get_content_type() in ("multipart/alternative", "multipart/related"):
+    elif msg.get_content_type() in (
+        "multipart/alternative",
+        "multipart/related",
+        "multipart/mixed",
+    ):
         new_parts = []
         for part in msg.get_payload():
             new_parts.append(replace(part, old, new))
