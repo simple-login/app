@@ -105,6 +105,7 @@ from app.email_utils import (
     is_reply_email,
     normalize_reply_email,
     is_valid_email,
+    replace,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -348,35 +349,6 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     else:
         LOG.d("delete the %s header. Old value %s", header, msg[header])
         delete_header(msg, header)
-
-
-def replace_str_in_msg(msg: Message, fr: str, to: str):
-    if msg.get_content_maintype() != "text":
-        return msg
-
-    msg_payload = msg.get_payload(decode=True)
-    if not msg_payload:
-        return msg
-
-    new_body = msg_payload.replace(fr.encode(), to.encode())
-
-    # If utf-8 decoding fails, do not touch message part
-    try:
-        new_body = new_body.decode("utf-8")
-    except:
-        return msg
-
-    cte = (
-        msg["Content-Transfer-Encoding"].lower()
-        if msg["Content-Transfer-Encoding"]
-        else None
-    )
-    subtype = msg.get_content_subtype()
-    delete_header(msg, "Content-Transfer-Encoding")
-    delete_header(msg, "Content-Type")
-
-    email.contentmanager.set_text_content(msg, new_body, subtype=subtype, cte=cte)
-    return msg
 
 
 def should_append_alias(msg: Message, address: str):
@@ -922,14 +894,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # replace the reverse-alias (i.e. "ra+string@simplelogin.co") by the contact email in the email body
     # as this is usually included when replying
     if user.replace_reverse_alias:
-        if msg.is_multipart():
-            for part in msg.walk():
-                if part.get_content_maintype() != "text":
-                    continue
-                part = replace_str_in_msg(part, reply_email, contact.website_email)
-
-        else:
-            msg = replace_str_in_msg(msg, reply_email, contact.website_email)
+        LOG.d("Replace reverse-alias %s by contact email %s", reply_email, contact)
+        msg = replace(msg, reply_email, contact.website_email)
 
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():
