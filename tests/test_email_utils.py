@@ -428,6 +428,15 @@ def test_get_encoding():
     msg = email.message_from_string("Content-TRANSFER-encoding: Invalid")
     assert get_encoding(msg) == EmailEncoding.NO
 
+    msg = email.message_from_string("Content-TRANSFER-encoding: 7bit")
+    assert get_encoding(msg) == EmailEncoding.NO
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: 8bit")
+    assert get_encoding(msg) == EmailEncoding.NO
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: binary")
+    assert get_encoding(msg) == EmailEncoding.NO
+
     msg = email.message_from_string("Content-TRANSFER-encoding: quoted-printable")
     assert get_encoding(msg) == EmailEncoding.QUOTED
 
