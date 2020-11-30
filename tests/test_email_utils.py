@@ -20,6 +20,7 @@ from app.email_utils import (
     normalize_reply_email,
     get_encoding,
     encode_text,
+    EmailEncoding,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -422,24 +423,24 @@ def test_normalize_reply_email(flask_client):
 
 def test_get_encoding():
     msg = email.message_from_string("")
-    assert get_encoding(msg) == "7bit"
+    assert get_encoding(msg) == EmailEncoding.NO
 
     msg = email.message_from_string("Content-TRANSFER-encoding: Invalid")
-    assert get_encoding(msg) == "7bit"
+    assert get_encoding(msg) == EmailEncoding.NO
 
     msg = email.message_from_string("Content-TRANSFER-encoding: quoted-printable")
-    assert get_encoding(msg) == "quoted-printable"
+    assert get_encoding(msg) == EmailEncoding.QUOTED
 
     msg = email.message_from_string("Content-TRANSFER-encoding: base64")
-    assert get_encoding(msg) == "base64"
+    assert get_encoding(msg) == EmailEncoding.BASE64
 
 
 def test_encode_text():
     assert encode_text("") == ""
     assert encode_text("ascii") == "ascii"
-    assert encode_text("ascii", "base64") == "YXNjaWk="
-    assert encode_text("ascii", "quoted-printable") == "ascii"
+    assert encode_text("ascii", EmailEncoding.BASE64) == "YXNjaWk="
+    assert encode_text("ascii", EmailEncoding.QUOTED) == "ascii"
 
     assert encode_text("mèo méo") == "mèo méo"
-    assert encode_text("mèo méo", "base64") == "bcOobyBtw6lv"
-    assert encode_text("mèo méo", "quoted-printable") == "m=C3=A8o m=C3=A9o"
+    assert encode_text("mèo méo", EmailEncoding.BASE64) == "bcOobyBtw6lv"
+    assert encode_text("mèo méo", EmailEncoding.QUOTED) == "m=C3=A8o m=C3=A9o"

@@ -1,5 +1,6 @@
 import base64
 import email
+import enum
 import os
 import quopri
 import random
@@ -673,7 +674,13 @@ def is_valid_email(email_address: str) -> bool:
     )
 
 
-def get_encoding(msg: Message) -> str:
+class EmailEncoding(enum.Enum):
+    BASE64 = "base64"
+    QUOTED = "quoted-printable"
+    NO = "no-encoding"
+
+
+def get_encoding(msg: Message) -> EmailEncoding:
     """
     Return the message encoding, possible values:
     - quoted-printable
@@ -682,21 +689,24 @@ def get_encoding(msg: Message) -> str:
     """
     cte = str(msg.get("content-transfer-encoding", "")).lower()
     if cte in ("", "7bit"):
-        return "7bit"
+        return EmailEncoding.NO
 
-    if cte in ("quoted-printable", "base64"):
-        return cte
+    if cte == "base64":
+        return EmailEncoding.BASE64
+
+    if cte == "quoted-printable":
+        return EmailEncoding.QUOTED
 
     LOG.exception("Unknown encoding %s", cte)
 
-    return "7bit"
+    return EmailEncoding.NO
 
 
-def encode_text(text: str, encoding: str = "7bit") -> str:
-    if encoding == "quoted-printable":
+def encode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
+    if encoding == EmailEncoding.QUOTED:
         encoded = quopri.encodestring(text.encode("utf-8"))
         return str(encoded, "utf-8")
-    elif encoding == "base64":
+    elif encoding == EmailEncoding.BASE64:
         encoded = base64.b64encode(text.encode("utf-8"))
         return str(encoded, "utf-8")
     else:  # 7bit - no encoding
