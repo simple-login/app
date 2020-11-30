@@ -21,6 +21,7 @@ from app.email_utils import (
     get_encoding,
     encode_text,
     EmailEncoding,
+    replace,
 )
 from app.extensions import db
 from app.models import User, CustomDomain
@@ -380,6 +381,73 @@ Content-Type: text/html;
     assert "</table>" in new_msg.as_string()
     assert "html header" in new_msg.as_string()
     assert "text header" in new_msg.as_string()
+
+
+def test_replace_no_encoding():
+    msg = email.message_from_string(
+        """Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Test-Header: Test-Value
+
+old
+"""
+    )
+    new_msg = replace(msg, "old", "new")
+    assert "new" in new_msg.as_string()
+    assert "old" not in new_msg.as_string()
+
+    # headers are not affected
+    assert "Test-Header: Test-Value" in new_msg.as_string()
+
+
+def test_replace_base64_encoding():
+    # "b2xk" is "old" base64-encoded
+    msg = email.message_from_string(
+        """Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: base64
+
+b2xk
+"""
+    )
+    new_msg = replace(msg, "old", "new")
+    # bmV3 is new base64 encoded
+    assert "bmV3" in new_msg.as_string()
+    assert "b2xk" not in new_msg.as_string()
+
+
+def test_replace_multipart_alternative():
+    msg = email.message_from_string(
+        """Content-Type: multipart/alternative;
+    boundary="foo"
+Content-Transfer-Encoding: 7bit
+Test-Header: Test-Value
+
+--foo
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;	charset=us-ascii
+
+old
+
+--foo
+Content-Transfer-Encoding: 7bit
+Content-Type: text/html;	charset=us-ascii
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+</head>
+<body style="word-wrap: break-word;" class="">
+<b class="">old</b>
+</body>
+</html>
+"""
+    )
+    new_msg = replace(msg, "old", "new")
+    # headers are not affected
+    assert "Test-Header: Test-Value" in new_msg.as_string()
+
+    assert "new" in new_msg.as_string()
+    assert "old" not in new_msg.as_string()
 
 
 def test_to_bytes():

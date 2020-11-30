@@ -762,6 +762,30 @@ def add_header(msg: Message, text_header, html_header) -> Message:
     return msg
 
 
+def replace(msg: Message, old, new) -> Message:
+    if msg.get_content_type() in ("text/plain", "text/html"):
+        encoding = get_encoding(msg)
+        payload = msg.get_payload()
+        if type(payload) is str:
+            clone_msg = copy(msg)
+            new_payload = payload.replace(
+                encode_text(old, encoding), encode_text(new, encoding)
+            )
+            clone_msg.set_payload(new_payload)
+            return clone_msg
+
+    elif msg.get_content_type() in ("multipart/alternative", "multipart/related"):
+        new_parts = []
+        for part in msg.get_payload():
+            new_parts.append(replace(part, old, new))
+        clone_msg = copy(msg)
+        clone_msg.set_payload(new_parts)
+        return clone_msg
+
+    LOG.exception("Cannot replace text for %s", msg.get_content_type())
+    return msg
+
+
 def generate_reply_email(contact_email: str) -> str:
     """
     generate a reply_email (aka reverse-alias), make sure it isn't used by any contact
