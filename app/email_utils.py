@@ -763,7 +763,16 @@ def add_header(msg: Message, text_header, html_header) -> Message:
 
 
 def replace(msg: Message, old, new) -> Message:
-    if msg.get_content_type() in ("text/plain", "text/html"):
+    content_type = msg.get_content_type()
+
+    if (
+        content_type.startswith("image/")
+        or content_type.startswith("video/")
+        or content_type.startswith("audio/")
+    ):
+        return msg
+
+    if content_type in ("text/plain", "text/html"):
         encoding = get_encoding(msg)
         payload = msg.get_payload()
         if type(payload) is str:
@@ -774,7 +783,7 @@ def replace(msg: Message, old, new) -> Message:
             clone_msg.set_payload(new_payload)
             return clone_msg
 
-    elif msg.get_content_type() in (
+    elif content_type in (
         "multipart/alternative",
         "multipart/related",
         "multipart/mixed",
