@@ -1401,11 +1401,12 @@ def handle_spam(
 
     if is_reply:
         LOG.d(
-            "Inform %s (%s) about spam email sent from alias %s to %s",
+            "Inform %s (%s) about spam email sent from alias %s to %s. %s",
             mailbox,
             user,
             alias,
             contact,
+            refused_email,
         )
         send_email_with_rate_control(
             user,
@@ -1673,8 +1674,9 @@ def get_spam_score(message: Message) -> float:
     try:
         # wait for at max 300s which is the default spamd timeout-child
         sa = SpamAssassin(sa_input, host=SPAMASSASSIN_HOST, timeout=300)
-        LOG.d("SA report %s", sa.get_report_json())
-        return sa.get_score()
+        score = sa.get_score()
+        LOG.d("SA report, score %s. %s", score, sa.get_report_json())
+        return score
     except Exception:
         LOG.exception("SpamAssassin exception")
         # return a negative score so the message is always considered as ham
