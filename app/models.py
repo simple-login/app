@@ -871,9 +871,9 @@ def generate_email(
 
 
 class Alias(db.Model, ModelMixin):
-    """Alias"""
-
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+    )
     email = db.Column(db.String(128), unique=True, nullable=False)
 
     # the name to use when user replies/sends from alias
@@ -901,7 +901,7 @@ class Alias(db.Model, ModelMixin):
 
     # an alias can be owned by another mailbox
     mailbox_id = db.Column(
-        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=False
+        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=False, index=True
     )
 
     # prefix _ to avoid this object being used accidentally.
@@ -1169,8 +1169,12 @@ class Contact(db.Model, ModelMixin):
         db.UniqueConstraint("alias_id", "website_email", name="uq_contact"),
     )
 
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-    alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+    )
+    alias_id = db.Column(
+        db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+    )
 
     name = db.Column(
         db.String(512), nullable=True, default=None, server_default=text("NULL")
@@ -1310,9 +1314,11 @@ class Contact(db.Model, ModelMixin):
 
 
 class EmailLog(db.Model, ModelMixin):
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+    )
     contact_id = db.Column(
-        db.ForeignKey(Contact.id, ondelete="cascade"), nullable=False
+        db.ForeignKey(Contact.id, ondelete="cascade"), nullable=False, index=True
     )
 
     # whether this is a reply
@@ -1660,8 +1666,10 @@ class Job(db.Model, ModelMixin):
 
 
 class Mailbox(db.Model, ModelMixin):
-    user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-    email = db.Column(db.String(256), nullable=False)
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+    )
+    email = db.Column(db.String(256), nullable=False, index=True)
     verified = db.Column(db.Boolean, default=False, nullable=False)
     force_spf = db.Column(db.Boolean, default=True, server_default="1", nullable=False)
 
@@ -1831,9 +1839,11 @@ class AliasMailbox(db.Model, ModelMixin):
         db.UniqueConstraint("alias_id", "mailbox_id", name="uq_alias_mailbox"),
     )
 
-    alias_id = db.Column(db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
+    alias_id = db.Column(
+        db.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+    )
     mailbox_id = db.Column(
-        db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
+        db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False, index=True
     )
 
     alias = db.relationship(Alias)
