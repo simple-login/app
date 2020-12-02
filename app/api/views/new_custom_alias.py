@@ -235,6 +235,8 @@ def new_custom_alias_v3():
     mailbox_ids = data.get("mailbox_ids")
     note = data.get("note")
     name = data.get("name")
+    if name:
+        name = name.replace("\n", "")
     alias_prefix = convert_to_id(alias_prefix)
 
     if not check_alias_prefix(alias_prefix):
