@@ -29,15 +29,21 @@ class Stats:
 
 def get_stats(user: User) -> Stats:
     nb_alias = Alias.query.filter_by(user_id=user.id).count()
-    nb_forward = EmailLog.query.filter_by(
-        user_id=user.id, is_reply=False, blocked=False, bounced=False
-    ).count()
-    nb_reply = EmailLog.query.filter_by(
-        user_id=user.id, is_reply=True, blocked=False, bounced=False
-    ).count()
-    nb_block = EmailLog.query.filter_by(
-        user_id=user.id, is_reply=False, blocked=True, bounced=False
-    ).count()
+    nb_forward = (
+        db.session.query(EmailLog.id)
+        .filter_by(user_id=user.id, is_reply=False, blocked=False, bounced=False)
+        .count()
+    )
+    nb_reply = (
+        db.session.query(EmailLog.id)
+        .filter_by(user_id=user.id, is_reply=True, blocked=False, bounced=False)
+        .count()
+    )
+    nb_block = (
+        db.session.query(EmailLog.id)
+        .filter_by(user_id=user.id, is_reply=False, blocked=True, bounced=False)
+        .count()
+    )
 
     return Stats(
         nb_alias=nb_alias, nb_forward=nb_forward, nb_reply=nb_reply, nb_block=nb_block
@@ -114,7 +120,7 @@ def index():
                     )
                 )
 
-            LOG.d("delete gen email %s", alias)
+            LOG.d("delete alias %s", alias)
             email = alias.email
             alias_utils.delete_alias(alias, current_user)
             flash(f"Alias {email} has been deleted", "success")
