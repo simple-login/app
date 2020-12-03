@@ -769,6 +769,7 @@ def replace(msg: Message, old, new) -> Message:
         content_type.startswith("image/")
         or content_type.startswith("video/")
         or content_type.startswith("audio/")
+        or content_type == "multipart/signed"
     ):
         return msg
 
