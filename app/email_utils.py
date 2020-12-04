@@ -770,7 +770,9 @@ def replace(msg: Message, old, new) -> Message:
         or content_type.startswith("video/")
         or content_type.startswith("audio/")
         or content_type == "multipart/signed"
+        or content_type.startswith("application/")
     ):
+        LOG.d("not applicable for %s", content_type)
         return msg
 
     if content_type in ("text/plain", "text/html"):
