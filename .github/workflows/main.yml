@@ -40,6 +40,12 @@ jobs:
         run: |
           pytest
 
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-report
+          path: htmlcov
+
       - name: Publish to Docker Registry
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v1
