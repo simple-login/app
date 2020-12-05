@@ -13,3 +13,5 @@ adhoc_*
 adhoc.py
 venv/
 .venv
+.coverage
+htmlcov
