@@ -157,19 +157,17 @@ def new_app():
     return app
 
 
-def get_or_create_contact(
-    contact_from_header: str, mail_from: str, alias: Alias
-) -> Contact:
+def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Contact:
     """
     contact_from_header is the RFC 2047 format FROM header
     """
-    contact_name, contact_email = parseaddr_unicode(contact_from_header)
+    contact_name, contact_email = parseaddr_unicode(from_header)
     if not is_valid_email(contact_email):
         # From header is wrongly formatted, try with mail_from
         if mail_from and mail_from != "<>":
             LOG.warning(
                 "Cannot parse email from from_header %s, parse from mail_from %s",
-                contact_from_header,
+                from_header,
                 mail_from,
             )
             _, contact_email = parseaddr_unicode(mail_from)
@@ -178,7 +176,7 @@ def get_or_create_contact(
         LOG.warning(
             "invalid contact email %s. Parse from %s %s",
             contact_email,
-            contact_from_header,
+            from_header,
             mail_from,
         )
         # either reuse a contact with empty email or create a new contact with empty email
@@ -207,14 +205,14 @@ def get_or_create_contact(
             contact.mail_from = mail_from
             db.session.commit()
 
-        if not contact.from_header and contact_from_header:
+        if not contact.from_header and from_header:
             LOG.d(
                 "Set contact from_header %s: %s to %s",
                 contact,
                 contact.from_header,
-                contact_from_header,
+                from_header,
             )
-            contact.from_header = contact_from_header
+            contact.from_header = from_header
             db.session.commit()
     else:
         LOG.d(
@@ -230,7 +228,7 @@ def get_or_create_contact(
                 website_email=contact_email,
                 name=contact_name,
                 mail_from=mail_from,
-                from_header=contact_from_header,
+                from_header=from_header,
                 reply_email=generate_reply_email(contact_email)
                 if is_valid_email(contact_email)
                 else NOREPLY,
@@ -523,9 +521,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     else:
         from_header = str(msg["From"])
 
-    contact = get_or_create_contact(
-        from_header, envelope.mail_from, alias
-    )
+    contact = get_or_create_contact(from_header, envelope.mail_from, alias)
 
     if not alias.enabled:
         LOG.d("%s is disabled, do not forward", alias)
