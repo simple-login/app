@@ -163,12 +163,6 @@ def get_or_create_contact(
     """
     contact_from_header is the RFC 2047 format FROM header
     """
-    # contact_from_header can be None, use mail_from in this case instead
-    contact_from_header = contact_from_header or mail_from
-
-    # force convert header to string, sometimes contact_from_header is Header object
-    contact_from_header = str(contact_from_header)
-
     contact_name, contact_email = parseaddr_unicode(contact_from_header)
     if not is_valid_email(contact_email):
         # From header is wrongly formatted, try with mail_from
@@ -520,7 +514,18 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     #     handle_bounce_reply_phase(alias, msg, user)
     #     return [(False, "550 SL E24 Email cannot be sent to contact")]
 
-    contact = get_or_create_contact(msg["From"], envelope.mail_from, alias)
+    LOG.d("Create or get contact for %s %s", msg["From"], msg["Reply-To"])
+    # prefer using Reply-To when creating contact
+    if msg["Reply-To"]:
+        # force convert header to string, sometimes contact_from_header is Header object
+        LOG.d("Use Reply-To header")
+        from_header = str(msg["Reply-To"])
+    else:
+        from_header = str(msg["From"])
+
+    contact = get_or_create_contact(
+        from_header, envelope.mail_from, alias
+    )
 
     if not alias.enabled:
         LOG.d("%s is disabled, do not forward", alias)
