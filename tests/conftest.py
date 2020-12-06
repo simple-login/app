@@ -1,5 +1,5 @@
 import os
-
+# flake8: noqa: E402
 
 os.environ["CONFIG"] = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests/test.env")
