@@ -229,7 +229,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 name=contact_name,
                 mail_from=mail_from,
                 from_header=from_header,
-                reply_email=generate_reply_email(contact_email)
+                reply_email=generate_reply_email(contact_email, alias.user)
                 if is_valid_email(contact_email)
                 else NOREPLY,
             )
@@ -292,7 +292,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     alias_id=alias.id,
                     website_email=contact_email,
                     name=contact_name,
-                    reply_email=generate_reply_email(contact_email),
+                    reply_email=generate_reply_email(contact_email, alias.user),
                     is_cc=header.lower() == "cc",
                     from_header=addr,
                 )
