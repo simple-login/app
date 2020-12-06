@@ -26,6 +26,8 @@ from app.email_utils import (
 from app.extensions import db
 from app.models import User, CustomDomain
 
+# flake8: noqa: E101, W191
+
 
 def test_get_email_domain_part():
     assert get_email_domain_part("ab@cd.com") == "cd.com"
@@ -140,8 +142,8 @@ def test_copy():
     From: abcd@gmail.com
     To: hey@example.org
     Subject: subject
-    
-    Body    
+
+    Body
     """
     msg = email.message_from_string(email_str)
     msg2 = copy(msg)
