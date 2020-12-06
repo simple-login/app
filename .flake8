@@ -1,5 +1,6 @@
 [flake8]
 ignore = 
+    # line length is handled by black
     E501,
     # W503 & E203 are not PEP 8 compliant and conflicts with black
     W503,
@@ -15,4 +16,5 @@ exclude =
     docs
 
 per-file-ignores =
+    # ignore unused imports in __init__
     __init__.py:F401
