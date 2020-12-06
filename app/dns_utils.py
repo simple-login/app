@@ -15,7 +15,7 @@ def _get_dns_resolver():
 def get_ns(hostname) -> [str]:
     try:
         answers = _get_dns_resolver().resolve(hostname, "NS")
-    except:
+    except Exception:
         return []
     return [a.to_text() for a in answers]
 
@@ -74,7 +74,7 @@ def get_spf_domain(hostname) -> [str]:
                 parts = record.split(" ")
                 for part in parts:
                     if part.startswith(_include_spf):
-                        ret.append(part[part.find(_include_spf) + len(_include_spf) :])
+                        ret.append(part[part.find(_include_spf) + len(_include_spf):])
 
     return ret
 
