@@ -159,7 +159,7 @@ def setting():
                     profile_updated = True
 
                 if profile_updated:
-                    flash(f"Your profile has been updated", "success")
+                    flash("Your profile has been updated", "success")
                     return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "change-password":
