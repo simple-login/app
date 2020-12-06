@@ -1,8 +1,9 @@
 [flake8]
 ignore = 
     E501,
-    # W503 is incompatible with PEP 8
-    W503
+    # W503 & E203 are not PEP 8 compliant and conflicts with black
+    W503,
+    E203
 exclude = 
     .git,
     __pycache__,
