@@ -106,7 +106,7 @@ def auth_register():
 
     send_email(
         email,
-        f"Just one more step to join SimpleLogin",
+        "Just one more step to join SimpleLogin",
         render("transactional/code-activation.txt", code=code),
         render("transactional/code-activation.html", code=code),
     )
@@ -206,7 +206,7 @@ def auth_reactivate():
 
     send_email(
         email,
-        f"Just one more step to join SimpleLogin",
+        "Just one more step to join SimpleLogin",
         render("transactional/code-activation.txt", code=code),
         render("transactional/code-activation.html", code=code),
     )
