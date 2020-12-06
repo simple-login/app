@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.models import Contact
-from app.pgp_utils import PGPException, load_public_key, load_public_key_and_check
+from app.pgp_utils import PGPException, load_public_key_and_check
 
 
 @dashboard_bp.route("/contact/<int:contact_id>/", methods=["GET", "POST"])
