@@ -10,7 +10,6 @@ from app.models import (
     Alias,
     Contact,
     Mailbox,
-    AliasMailbox,
     SenderFormatEnum,
     EnumE,
 )
