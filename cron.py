@@ -48,7 +48,7 @@ from server import create_app
 
 def notify_trial_end():
     for user in User.query.filter(
-        User.activated == True, User.trial_end.isnot(None), User.lifetime == False
+        User.activated.is_(True), User.trial_end.isnot(None), User.lifetime.is_(False)
     ).all():
         if user.in_trial() and arrow.now().shift(
             days=3
@@ -58,7 +58,7 @@ def notify_trial_end():
 
 
 def delete_refused_emails():
-    for refused_email in RefusedEmail.query.filter(RefusedEmail.deleted == False).all():
+    for refused_email in RefusedEmail.query.filter_by(deleted=False).all():
         if arrow.now().shift(days=1) > refused_email.delete_at >= arrow.now():
             LOG.d("Delete refused email %s", refused_email)
             if refused_email.path:
@@ -76,7 +76,7 @@ def delete_refused_emails():
 
 def notify_premium_end():
     """sent to user who has canceled their subscription and who has their subscription ending soon"""
-    for sub in Subscription.query.filter(Subscription.cancelled == True).all():
+    for sub in Subscription.query.filter(cancelled=True).all():
         if (
             arrow.now().shift(days=3).date()
             > sub.next_bill_date
@@ -174,9 +174,9 @@ def stats_before(moment: Arrow) -> Stats:
     nb_user = q.count()
     LOG.d("total number user %s", nb_user)
 
-    nb_referred_user = q.filter(User.referral_id != None).count()
+    nb_referred_user = q.filter(User.referral_id.isnot(None)).count()
     nb_referred_user_upgrade = 0
-    for user in q.filter(User.referral_id != None):
+    for user in q.filter(User.referral_id.isnot(None)):
         if user.is_premium():
             nb_referred_user_upgrade += 1
 
@@ -231,13 +231,13 @@ def stats_before(moment: Arrow) -> Stats:
     )
 
     nb_premium = Subscription.query.filter(
-        Subscription.created_at < moment, Subscription.cancelled == False
+        Subscription.created_at < moment, Subscription.cancelled.is_(False)
     ).count()
     nb_apple_premium = AppleSubscription.query.filter(
         AppleSubscription.created_at < moment
     ).count()
     nb_cancelled_premium = Subscription.query.filter(
-        Subscription.created_at < moment, Subscription.cancelled == True
+        Subscription.created_at < moment, Subscription.cancelled.is_(True)
     ).count()
 
     nb_custom_domain = CustomDomain.query.filter(
@@ -316,7 +316,7 @@ def sanity_check():
     """
     mailbox_ids = (
         db.session.query(Mailbox.id)
-        .filter(Mailbox.verified == True, Mailbox.disabled == False)
+        .filter(Mailbox.verified.is_(True), Mailbox.disabled.is_(False))
         .all()
     )
     mailbox_ids = [e[0] for e in mailbox_ids]
@@ -418,9 +418,7 @@ def sanity_check():
 def check_custom_domain():
     LOG.d("Check verified domain for DNS issues")
 
-    for custom_domain in CustomDomain.query.filter(
-        CustomDomain.verified == True
-    ):  # type: CustomDomain
+    for custom_domain in CustomDomain.query.filter_by(verified=True):  # type: CustomDomain
         mx_domains = get_mx_domains(custom_domain.domain)
 
         if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
