@@ -622,7 +622,7 @@ def test_authorize_code_id_token_flow(flask_client):
 def test_authorize_page_invalid_client_id(flask_client):
     """make sure to redirect user to redirect_url?error=invalid_client_id"""
     user = login(flask_client)
-    client = Client.create_new("test client", user.id)
+    Client.create_new("test client", user.id)
 
     db.session.commit()
 
