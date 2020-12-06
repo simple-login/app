@@ -95,7 +95,7 @@ def change_plan(subscription_id: str, plan_id) -> (bool, str):
             # "unable to complete the resubscription because we could not charge the customer for the resubscription"
             if res["error"]["code"] == 147:
                 return False, "Your card cannot be charged"
-        except:
+        except KeyError:
             LOG.exception(
                 f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
             )
