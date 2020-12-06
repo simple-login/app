@@ -76,7 +76,7 @@ def index():
             if current_user.can_create_new_alias():
                 return redirect(url_for("dashboard.custom_alias"))
             else:
-                flash(f"You need to upgrade your plan to create new alias.", "warning")
+                flash("You need to upgrade your plan to create new alias.", "warning")
 
         elif request.form.get("form-name") == "create-random-email":
             if current_user.can_create_new_alias():
@@ -104,7 +104,7 @@ def index():
                     )
                 )
             else:
-                flash(f"You need to upgrade your plan to create new alias.", "warning")
+                flash("You need to upgrade your plan to create new alias.", "warning")
 
         elif request.form.get("form-name") == "delete-email":
             alias_id = request.form.get("alias-id")
