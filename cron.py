@@ -418,7 +418,9 @@ def sanity_check():
 def check_custom_domain():
     LOG.d("Check verified domain for DNS issues")
 
-    for custom_domain in CustomDomain.query.filter_by(verified=True):  # type: CustomDomain
+    for custom_domain in CustomDomain.query.filter_by(
+        verified=True
+    ):  # type: CustomDomain
         mx_domains = get_mx_domains(custom_domain.domain)
 
         if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):

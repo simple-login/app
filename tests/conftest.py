@@ -1,4 +1,5 @@
 import os
+
 # flake8: noqa: E402
 
 os.environ["CONFIG"] = os.path.abspath(

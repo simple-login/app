@@ -246,7 +246,7 @@ def send_email(
             )
 
     # add DKIM
-    email_domain = SUPPORT_EMAIL[SUPPORT_EMAIL.find("@") + 1:]
+    email_domain = SUPPORT_EMAIL[SUPPORT_EMAIL.find("@") + 1 :]
     add_dkim_signature(msg, email_domain)
 
     msg_raw = to_bytes(msg)
@@ -343,7 +343,7 @@ def get_email_domain_part(address):
     Get the domain part from email
     ab@cd.com -> cd.com
     """
-    return address[address.find("@") + 1:].strip().lower()
+    return address[address.find("@") + 1 :].strip().lower()
 
 
 def add_dkim_signature(msg: Message, email_domain: str):
@@ -362,7 +362,7 @@ def add_dkim_signature(msg: Message, email_domain: str):
 
     # remove linebreaks from sig
     sig = sig.replace("\n", " ").replace("\r", "")
-    msg["DKIM-Signature"] = sig[len("DKIM-Signature: "):]
+    msg["DKIM-Signature"] = sig[len("DKIM-Signature: ") :]
 
 
 def add_or_replace_header(msg: Message, header: str, value: str):
@@ -518,7 +518,7 @@ def get_header_from_bounce(msg: Message, header: str) -> str:
     r = re.search(exp, msg_str)
     if r:
         # substr should be something like 'HEADER: 1234'
-        substr = msg_str[r.start():r.end()].strip()
+        substr = msg_str[r.start() : r.end()].strip()
         parts = substr.split(":")
         return parts[1].strip()
 
@@ -570,9 +570,9 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
         # spam score
         # get the score section "score=-0.1"
         score_section = (
-            spam_status_header[spam_status_header.find(",") + 1:].strip().split(" ")[0]
+            spam_status_header[spam_status_header.find(",") + 1 :].strip().split(" ")[0]
         )
-        score = float(score_section[len("score="):])
+        score = float(score_section[len("score=") :])
         if score >= max_score:
             LOG.warning("Spam score %s exceeds %s", score, max_score)
             return True, spam_status_header

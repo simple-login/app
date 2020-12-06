@@ -31,7 +31,7 @@ def email_validator():
 
         if "<" in email and ">" in email:
             if email.find("<") + 1 < email.find(">"):
-                email_part = email[email.find("<") + 1:email.find(">")].strip()
+                email_part = email[email.find("<") + 1 : email.find(">")].strip()
 
         if not is_valid_email(email_part):
             raise ValidationError(message)

@@ -199,7 +199,9 @@ def mailbox_detail_route(mailbox_id):
 def verify_mailbox_change(user, mailbox, new_email):
     s = Signer(MAILBOX_SECRET)
     mailbox_id_signed = s.sign(str(mailbox.id)).decode()
-    verification_url = f"{URL}/dashboard/mailbox/confirm_change?mailbox_id={mailbox_id_signed}"
+    verification_url = (
+        f"{URL}/dashboard/mailbox/confirm_change?mailbox_id={mailbox_id_signed}"
+    )
 
     send_email(
         new_email,

@@ -35,10 +35,10 @@ def custom_domain():
                 new_domain = new_custom_domain_form.domain.data.lower().strip()
 
                 if new_domain.startswith("http://"):
-                    new_domain = new_domain[len("http://"):]
+                    new_domain = new_domain[len("http://") :]
 
                 if new_domain.startswith("https://"):
-                    new_domain = new_domain[len("https://"):]
+                    new_domain = new_domain[len("https://") :]
 
                 if SLDomain.get_by(domain=new_domain):
                     flash("A custom domain cannot be a built-in domain.", "error")
