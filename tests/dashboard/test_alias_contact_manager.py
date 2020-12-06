@@ -1,6 +1,5 @@
 from flask import url_for
 
-from app.config import EMAIL_DOMAIN
 from app.models import (
     Alias,
     Contact,
