@@ -208,7 +208,7 @@ def test_add_alias_in_custom_domain_trash(flask_client):
     # delete a custom-domain alias: alias should go the DomainDeletedAlias
     alias = Alias.create(
         user_id=user.id,
-        email=f"prefix@ab.cd",
+        email="prefix@ab.cd",
         custom_domain_id=custom_domain.id,
         mailbox_id=user.default_mailbox_id,
         commit=True,
@@ -219,7 +219,7 @@ def test_add_alias_in_custom_domain_trash(flask_client):
     assert DomainDeletedAlias.query.count() == 1
 
     # create the same alias, should return error
-    suffix = f"@ab.cd"
+    suffix = "@ab.cd"
     signed_suffix = signer.sign(suffix).decode()
     r = flask_client.post(
         url_for("dashboard.custom_alias"),
