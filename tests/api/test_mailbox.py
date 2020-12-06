@@ -1,12 +1,12 @@
 from flask import url_for
 
 from app.extensions import db
-from app.models import User, ApiKey, Mailbox
+from app.models import Mailbox
 from tests.utils import login
 
 
 def test_create_mailbox(flask_client):
-    user = login(flask_client)
+    login(flask_client)
 
     r = flask_client.post(
         "/api/mailboxes",
