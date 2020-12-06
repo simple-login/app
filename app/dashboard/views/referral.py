@@ -5,9 +5,7 @@ from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
-from app.log import LOG
 from app.models import Referral
-from app.utils import random_string
 
 _REFERRAL_PATTERN = r"[0-9a-z-_]{3,}"
 
