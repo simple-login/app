@@ -20,7 +20,7 @@ def refused_email_route():
 
     email_logs: [EmailLog] = (
         EmailLog.query.filter(
-            EmailLog.user_id == current_user.id, EmailLog.refused_email_id != None
+            EmailLog.user_id == current_user.id, EmailLog.refused_email_id.isnot(None)
         )
         .order_by(EmailLog.id.desc())
         .all()
