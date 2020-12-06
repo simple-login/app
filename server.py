@@ -77,7 +77,6 @@ from app.models import (
     Referral,
     AliasMailbox,
     Notification,
-    SLDomain,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -94,7 +93,7 @@ if SENTRY_DSN:
         ],
     )
 
-# the app is served behin nginx which uses http and not https
+# the app is served behind nginx which uses http and not https
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
@@ -418,7 +417,7 @@ def setup_error_page(app):
             return render_template("error/403.html"), 403
 
     @app.errorhandler(429)
-    def forbidden(e):
+    def rate_limited(e):
         LOG.warning("Client hit rate limit on path %s", request.path)
         if request.path.startswith("/api/"):
             return jsonify(error="Rate limit exceeded"), 429
@@ -587,7 +586,7 @@ def setup_paddle_callback(app: Flask):
 
                 send_email(
                     user.email,
-                    f"SimpleLogin - what can we do to improve the product?",
+                    "SimpleLogin - what can we do to improve the product?",
                     render(
                         "transactional/subscription-cancel.txt",
                         name=user.name or "",
