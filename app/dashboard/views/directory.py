@@ -46,6 +46,26 @@ def directory():
             flash(f"Directory {name} has been deleted", "success")
 
             return redirect(url_for("dashboard.directory"))
+
+        if request.form.get("form-name") == "toggle-directory":
+            dir_id = request.form.get("dir-id")
+            dir = Directory.get(dir_id)
+
+            if not dir or dir.user_id != current_user.id:
+                flash("Unknown error. Refresh the page", "warning")
+                return redirect(url_for("dashboard.directory"))
+
+            if request.form.get("dir-status") == "on":
+                dir.disabled = False
+                flash(f"On-the-fly is enabled for {dir.name}", "success")
+            else:
+                dir.disabled = True
+                flash(f"On-the-fly is disabled for {dir.name}", "warning")
+
+            db.session.commit()
+
+            return redirect(url_for("dashboard.directory"))
+
         elif request.form.get("form-name") == "update":
             dir_id = request.form.get("dir-id")
             dir = Directory.get(dir_id)

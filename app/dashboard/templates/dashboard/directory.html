@@ -61,9 +61,35 @@
             <div class="card" style="">
               <div class="card-body">
                 <h5 class="card-title">
-                  {{ dir.name }}
+                  <div class="d-flex">
+                    {{ dir.name }}
+
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="toggle-directory">
+                      <input type="hidden" name="dir-id" value="{{ dir.id }}">
+
+                      <label class="custom-switch cursor" style="padding-left: 1rem"
+                             data-toggle="tooltip"
+                          {% if dir.disabled %}
+                             title="Enable directory on-the-fly alias creation"
+                          {% else %}
+                             title="Disable directory on-the-fly alias creation"
+                          {% endif %}
+                      >
+                        <input type="checkbox" class="custom-switch-input" name="dir-status"
+                            {{ "" if dir.disabled else "checked" }}>
+                        <span class="custom-switch-indicator"></span>
+                      </label>
+                    </form>
+                  </div>
                 </h5>
+
                 <h6 class="card-subtitle mb-2 text-muted">
+                  {% if dir.disabled %}
+                    <div class="mb-3">
+                      ⚠️ On-the-fly alias creation is disabled, you can't create new aliases with this directory.
+                    </div>
+                  {% endif %}
                   Created {{ dir.created_at | dt }} <br>
                   <span class="font-weight-bold">{{ dir.nb_alias() }}</span> aliases.
 
@@ -194,6 +220,10 @@
     });
 
     $('.mailbox-select').multipleSelect();
+
+    $(".custom-switch-input").change(function (e) {
+      $(this).closest("form").submit();
+    });
 
   </script>
 {% endblock %}
