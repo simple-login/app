@@ -321,7 +321,8 @@
           <input type="hidden" name="form-name" value="sender-in-ra">
           <div class="form-check">
             <input type="checkbox" id="include-sender-ra" name="enable"
-                {% if current_user.include_sender_in_reverse_alias %} checked {% endif %} class="form-check-input">
+{#                   todo: remove current_user.include_sender_in_reverse_alias is none condition #}
+                {% if current_user.include_sender_in_reverse_alias is none or current_user.include_sender_in_reverse_alias %} checked {% endif %} class="form-check-input">
             <label for="include-sender-ra">Include sender address in reverse-alias</label>
           </div>
           <button type="submit" class="btn btn-outline-primary">Update</button>
