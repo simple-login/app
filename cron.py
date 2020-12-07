@@ -76,7 +76,7 @@ def delete_refused_emails():
 
 def notify_premium_end():
     """sent to user who has canceled their subscription and who has their subscription ending soon"""
-    for sub in Subscription.query.filter(cancelled=True).all():
+    for sub in Subscription.query.filter_by(cancelled=True).all():
         if (
             arrow.now().shift(days=3).date()
             > sub.next_bill_date
