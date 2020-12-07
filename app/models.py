@@ -1622,6 +1622,8 @@ class LifetimeCoupon(db.Model, ModelMixin):
 class Directory(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     name = db.Column(db.String(128), unique=True, nullable=False)
+    # when a directory is disabled, new alias can't be created on the fly
+    disabled = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
 
     user = db.relationship(User)
 

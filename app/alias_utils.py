@@ -8,6 +8,7 @@ from app.email_utils import (
     send_cannot_create_directory_alias,
     send_cannot_create_domain_alias,
     can_create_directory_for_address,
+    send_cannot_create_directory_alias_disabled,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -64,6 +65,12 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
 
         if not dir_user.can_create_new_alias():
             send_cannot_create_directory_alias(dir_user, address, directory_name)
+            return None
+
+        if directory.disabled:
+            send_cannot_create_directory_alias_disabled(
+                dir_user, address, directory_name
+            )
             return None
 
         try:

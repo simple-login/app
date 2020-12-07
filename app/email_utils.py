@@ -37,6 +37,7 @@ from app.config import (
     URL,
     LANDING_PAGE_URL,
     EMAIL_DOMAIN,
+    ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -152,24 +153,48 @@ def send_test_email_alias(email, name):
     )
 
 
-def send_cannot_create_directory_alias(user, alias, directory):
+def send_cannot_create_directory_alias(user, alias_address, directory_name):
     """when user cancels their subscription, they cannot create alias on the fly.
     If this happens, send them an email to notify
     """
     send_email(
         user.email,
-        f"Alias {alias} cannot be created",
+        f"Alias {alias_address} cannot be created",
         render(
             "transactional/cannot-create-alias-directory.txt",
             name=user.name,
-            alias=alias,
-            directory=directory,
+            alias=alias_address,
+            directory=directory_name,
         ),
         render(
             "transactional/cannot-create-alias-directory.html",
             name=user.name,
-            alias=alias,
-            directory=directory,
+            alias=alias_address,
+            directory=directory_name,
+        ),
+    )
+
+
+def send_cannot_create_directory_alias_disabled(user, alias_address, directory_name):
+    """when the directory is disabled, new alias can't be created on-the-fly.
+    Send user an email to notify of an attempt
+    """
+    send_email_with_rate_control(
+        user,
+        ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
+        user.email,
+        f"Alias {alias_address} cannot be created",
+        render(
+            "transactional/cannot-create-alias-directory-disabled.txt",
+            name=user.name,
+            alias=alias_address,
+            directory=directory_name,
+        ),
+        render(
+            "transactional/cannot-create-alias-directory-disabled.html",
+            name=user.name,
+            alias=alias_address,
+            directory=directory_name,
         ),
     )
 
