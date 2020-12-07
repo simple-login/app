@@ -11,7 +11,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP
-from uuid import uuid4
 
 import arrow
 import dkim
@@ -109,7 +108,7 @@ def send_activation_email(email, name, activation_link):
 def send_reset_password_email(email, name, reset_password_link):
     send_email(
         email,
-        f"Reset your password on SimpleLogin",
+        "Reset your password on SimpleLogin",
         render(
             "transactional/reset-password.txt",
             name=name,
@@ -126,7 +125,7 @@ def send_reset_password_email(email, name, reset_password_link):
 def send_change_email(new_email, current_email, name, link):
     send_email(
         new_email,
-        f"Confirm email update on SimpleLogin",
+        "Confirm email update on SimpleLogin",
         render(
             "transactional/change-email.txt",
             name=name,

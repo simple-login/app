@@ -15,7 +15,7 @@ def _get_dns_resolver():
 def get_ns(hostname) -> [str]:
     try:
         answers = _get_dns_resolver().resolve(hostname, "NS")
-    except:
+    except Exception:
         return []
     return [a.to_text() for a in answers]
 

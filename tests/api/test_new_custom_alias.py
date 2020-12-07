@@ -161,7 +161,7 @@ def test_cannot_create_alias_in_trash(flask_client):
     db.session.commit()
 
     # create new alias with note
-    suffix = f"@ab.cd"
+    suffix = "@ab.cd"
     suffix = signer.sign(suffix).decode()
 
     r = flask_client.post(
@@ -176,7 +176,7 @@ def test_cannot_create_alias_in_trash(flask_client):
 
     # assert alias creation is successful
     assert r.status_code == 201
-    assert r.json["alias"] == f"prefix@ab.cd"
+    assert r.json["alias"] == "prefix@ab.cd"
 
     # delete alias: it's going to be moved to ab.cd trash
     alias = Alias.get_by(email="prefix@ab.cd")

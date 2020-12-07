@@ -108,7 +108,7 @@ class SpamAssassin(object):
         # create final json
         self.report_json = dict()
         for tablelist in tablelists:
-            wordlist = re.split("\s+", tablelist)
+            wordlist = re.split(r"\s+", tablelist)
             try:
                 self.report_json[wordlist[1]] = {
                     "partscore": float(wordlist[0]),

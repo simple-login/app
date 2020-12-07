@@ -1081,8 +1081,8 @@ def handle_unknown_mailbox(
     envelope, msg, reply_email: str, user: User, alias: Alias, contact: Contact
 ):
     LOG.warning(
-        f"Reply email can only be used by mailbox. "
-        f"Actual mail_from: %s. msg from header: %s, reverse-alias %s, %s %s %s",
+        "Reply email can only be used by mailbox. "
+        "Actual mail_from: %s. msg from header: %s, reverse-alias %s, %s %s %s",
         envelope.mail_from,
         msg["From"],
         reply_email,
@@ -1205,9 +1205,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     email_log.bounced_mailbox_id = mailbox.id
     db.session.commit()
 
-    refused_email_url = (
-        URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
-    )
+    refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
 
     nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
     if nb_bounced >= 2 and alias.cannot_be_disabled:
@@ -1331,9 +1329,7 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
 
     db.session.commit()
 
-    refused_email_url = (
-        URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
-    )
+    refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
 
     LOG.d(
         "Inform user %s about bounced email sent by %s to %s",
@@ -1395,9 +1391,7 @@ def handle_spam(
 
     LOG.d("Create spam email %s", refused_email)
 
-    refused_email_url = (
-        URL + f"/dashboard/refused_email?highlight_id=" + str(email_log.id)
-    )
+    refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
     if is_reply:
@@ -1542,7 +1536,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
 
     send_email(
         user.email,
-        f"You have been unsubscribed from SimpleLogin newsletter",
+        "You have been unsubscribed from SimpleLogin newsletter",
         render(
             "transactional/unsubscribe-newsletter.txt",
             user=user,

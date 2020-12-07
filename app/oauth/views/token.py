@@ -54,7 +54,7 @@ def token():
         return jsonify(error=f"{code} already expired"), 400
 
     if auth_code.client_id != client.id:
-        return jsonify(error=f"are you sure this code belongs to you?"), 400
+        return jsonify(error="are you sure this code belongs to you?"), 400
 
     LOG.debug(
         "Create Oauth token for user %s, client %s", auth_code.user, auth_code.client

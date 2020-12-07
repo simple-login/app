@@ -85,7 +85,7 @@ def register():
 
                 try:
                     send_activation_email(user, next_url)
-                except:
+                except Exception:
                     flash("Invalid email, are you sure the email is correct?", "error")
                     return redirect(url_for("auth.register"))
 

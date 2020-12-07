@@ -173,7 +173,7 @@ try:
     PADDLE_VENDOR_ID = int(os.environ["PADDLE_VENDOR_ID"])
     PADDLE_MONTHLY_PRODUCT_ID = int(os.environ["PADDLE_MONTHLY_PRODUCT_ID"])
     PADDLE_YEARLY_PRODUCT_ID = int(os.environ["PADDLE_YEARLY_PRODUCT_ID"])
-except:
+except (KeyError, ValueError):
     print("Paddle param not set")
     PADDLE_VENDOR_ID = -1
     PADDLE_MONTHLY_PRODUCT_ID = -1

@@ -36,7 +36,7 @@ def fido_setup():
     if fido_token_form.validate_on_submit():
         try:
             sk_assertion = json.loads(fido_token_form.sk_assertion.data)
-        except Exception as e:
+        except Exception:
             flash("Key registration failed. Error: Invalid Payload", "warning")
             return redirect(url_for("dashboard.index"))
 

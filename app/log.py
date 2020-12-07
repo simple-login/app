@@ -73,7 +73,7 @@ def _get_logger(name):
     return logger
 
 
-print(f">>> init logging <<<")
+print(">>> init logging <<<")
 
 # Disable flask logs such as 127.0.0.1 - - [15/Feb/2013 10:52:22] "GET /index.html HTTP/1.1" 200
 log = logging.getLogger("werkzeug")

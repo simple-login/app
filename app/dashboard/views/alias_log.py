@@ -49,12 +49,12 @@ def alias_log(alias_id, page_id):
     )
     total = base.count()
     email_forwarded = (
-        base.filter(EmailLog.is_reply == False)
-        .filter(EmailLog.blocked == False)
+        base.filter(EmailLog.is_reply.is_(False))
+        .filter(EmailLog.blocked.is_(False))
         .count()
     )
-    email_replied = base.filter(EmailLog.is_reply == True).count()
-    email_blocked = base.filter(EmailLog.blocked == True).count()
+    email_replied = base.filter(EmailLog.is_reply.is_(True)).count()
+    email_blocked = base.filter(EmailLog.blocked.is_(True)).count()
     last_page = (
         len(logs) < PAGE_LIMIT
     )  # lightweight pagination without counting all objects

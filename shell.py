@@ -4,14 +4,18 @@ import flask_migrate
 from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
-from app.config import (
-    DB_URI,
-    ALIAS_DOMAINS,
-    PREMIUM_ALIAS_DOMAINS,
-)
-from app.dns_utils import get_ns
+from app.config import DB_URI
 from app.email_utils import send_email, render, get_email_domain_part
-from app.models import *
+from app.log import LOG
+from app.extensions import db
+from app.models import (
+    User,
+    DeletedAlias,
+    SLDomain,
+    CustomDomain,
+    DomainDeletedAlias,
+    Mailbox,
+)
 from job_runner import (
     onboarding_pgp,
     onboarding_browser_extension,
@@ -129,7 +133,7 @@ def disable_mailbox(mailbox_id):
 
     email_msg = f"""Hi,
 
-    Your mailbox {mailbox.email} cannot receive emails. 
+    Your mailbox {mailbox.email} cannot receive emails.
     To avoid forwarding emails to an invalid mailbox, we have disabled this mailbox along with all of its aliases.
 
     If this is a mistake, please reply to this email.

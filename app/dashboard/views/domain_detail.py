@@ -114,7 +114,7 @@ def domain_detail_dns(custom_domain_id):
                 custom_domain.dmarc_verified = False
                 db.session.commit()
                 flash(
-                    f"DMARC: The TXT record is not correctly set",
+                    "DMARC: The TXT record is not correctly set",
                     "warning",
                 )
                 dmarc_ok = False
@@ -228,7 +228,7 @@ def delete_domain(custom_domain_id: CustomDomain):
             user.email,
             f"Your domain {domain_name} has been deleted",
             f"""Domain {domain_name} along with its aliases are deleted successfully.
-    
+
 Regards,
 SimpleLogin team.
         """,

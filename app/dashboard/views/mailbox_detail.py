@@ -16,7 +16,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
-from app.pgp_utils import PGPException, load_public_key, load_public_key_and_check
+from app.pgp_utils import PGPException, load_public_key_and_check
 
 
 class ChangeEmailForm(FlaskForm):
@@ -200,12 +200,12 @@ def verify_mailbox_change(user, mailbox, new_email):
     s = Signer(MAILBOX_SECRET)
     mailbox_id_signed = s.sign(str(mailbox.id)).decode()
     verification_url = (
-        URL + "/dashboard/mailbox/confirm_change" + f"?mailbox_id={mailbox_id_signed}"
+        f"{URL}/dashboard/mailbox/confirm_change?mailbox_id={mailbox_id_signed}"
     )
 
     send_email(
         new_email,
-        f"Confirm mailbox change on SimpleLogin",
+        "Confirm mailbox change on SimpleLogin",
         render(
             "transactional/verify-mailbox-change.txt",
             user=user,

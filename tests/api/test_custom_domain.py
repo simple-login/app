@@ -1,7 +1,5 @@
-import json
-
 from app.alias_utils import delete_alias
-from app.models import CustomDomain, DomainDeletedAlias, Alias
+from app.models import CustomDomain, Alias
 from tests.utils import login
 
 

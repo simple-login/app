@@ -41,7 +41,7 @@ def load_public_key_and_check(public_key: str) -> str:
     else:
         dummy_data = BytesIO(b"test")
         try:
-            r = encrypt_file(dummy_data, fingerprint)
+            encrypt_file(dummy_data, fingerprint)
         except Exception as e:
             LOG.exception("Cannot encrypt using the imported key")
             # remove the fingerprint

@@ -1,4 +1,4 @@
-from app.dns_utils import *
+from app.dns_utils import get_mx_domains, get_spf_domain, get_txt_record
 
 # use our own domain for test
 _DOMAIN = "simplelogin.io"
@@ -20,6 +20,5 @@ def test_get_spf_domain():
 
 
 def test_get_txt_record():
-
     r = get_txt_record(_DOMAIN)
     assert len(r) > 0

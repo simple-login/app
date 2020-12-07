@@ -9,7 +9,7 @@ from server import create_app
 
 def load_pgp_public_keys():
     """Load PGP public key to keyring"""
-    for mailbox in Mailbox.query.filter(Mailbox.pgp_public_key != None).all():
+    for mailbox in Mailbox.query.filter(Mailbox.pgp_public_key.isnot(None)).all():
         LOG.d("Load PGP key for mailbox %s", mailbox)
         fingerprint = load_public_key(mailbox.pgp_public_key)
 
@@ -21,7 +21,7 @@ def load_pgp_public_keys():
             mailbox.pgp_finger_print = fingerprint
     db.session.commit()
 
-    for contact in Contact.query.filter(Contact.pgp_public_key != None).all():
+    for contact in Contact.query.filter(Contact.pgp_public_key.insnot(None)).all():
         LOG.d("Load PGP key for %s", contact)
         fingerprint = load_public_key(contact.pgp_public_key)
 

@@ -159,7 +159,7 @@ def get_alias_infos_with_pagination_v2(
     if alias_filter == "enabled":
         q = q.filter(Alias.enabled)
     elif alias_filter == "disabled":
-        q = q.filter(Alias.enabled == False)
+        q = q.filter(Alias.enabled.is_(False))
 
     if sort == "old2new":
         q = q.order_by(Alias.created_at)
@@ -198,7 +198,7 @@ def get_alias_infos_with_pagination_v3(
             func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
             func.sum(
                 case(
-                    [(and_(EmailLog.is_reply == False, EmailLog.blocked), 1)],
+                    [(and_(EmailLog.is_reply.is_(False), EmailLog.blocked), 1)],
                     else_=0,
                 )
             ).label("nb_blocked"),
@@ -207,8 +207,8 @@ def get_alias_infos_with_pagination_v3(
                     [
                         (
                             and_(
-                                EmailLog.is_reply == False,
-                                EmailLog.blocked == False,
+                                EmailLog.is_reply.is_(False),
+                                EmailLog.blocked.is_(False),
                             ),
                             1,
                         )
@@ -273,7 +273,7 @@ def get_alias_infos_with_pagination_v3(
         .filter(
             or_(
                 EmailLog.created_at == sub.c.max_created_at,
-                sub.c.max_created_at == None,  # no email log yet for this alias
+                sub.c.max_created_at.is_(None),  # no email log yet for this alias
             )
         )
     )
@@ -292,7 +292,7 @@ def get_alias_infos_with_pagination_v3(
     if alias_filter == "enabled":
         q = q.filter(Alias.enabled)
     elif alias_filter == "disabled":
-        q = q.filter(Alias.enabled == False)
+        q = q.filter(Alias.enabled.is_(False))
 
     q = q.order_by(Alias.pinned.desc())
 

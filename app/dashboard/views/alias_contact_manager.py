@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from operator import or_
 
@@ -9,13 +8,12 @@ from flask_wtf import FlaskForm
 from sqlalchemy import and_, func, case
 from wtforms import StringField, validators, ValidationError
 
-from app.config import EMAIL_DOMAIN, PAGE_LIMIT
+from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.email_utils import parseaddr_unicode, is_valid_email, generate_reply_email
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
-from app.utils import random_string
 
 
 def email_validator():
@@ -68,8 +66,8 @@ def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
                     [
                         (
                             and_(
-                                EmailLog.is_reply == False,
-                                EmailLog.blocked == False,
+                                EmailLog.is_reply.is_(False),
+                                EmailLog.blocked.is_(False),
                             ),
                             1,
                         )
@@ -107,7 +105,7 @@ def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
             or_(
                 EmailLog.created_at == sub.c.max_email_log_created_at,
                 # no email log yet for this contact
-                sub.c.max_email_log_created_at == None,
+                sub.c.max_email_log_created_at.is_(None),
             )
         )
     )

@@ -70,7 +70,7 @@ def fido():
     if fido_token_form.validate_on_submit():
         try:
             sk_assertion = json.loads(fido_token_form.sk_assertion.data)
-        except Exception as e:
+        except Exception:
             flash("Key verification failed. Error: Invalid Payload", "warning")
             return redirect(url_for("auth.login"))
 

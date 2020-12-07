@@ -57,7 +57,7 @@ def onboarding_send_from_alias(user):
 
     send_email(
         to_email,
-        f"SimpleLogin Tip: Send emails from your alias",
+        "SimpleLogin Tip: Send emails from your alias",
         render("com/onboarding/send-from-alias.txt", user=user, to_email=to_email),
         render("com/onboarding/send-from-alias.html", user=user, to_email=to_email),
         unsubscribe_link,
@@ -72,7 +72,7 @@ def onboarding_pgp(user):
 
     send_email(
         to_email,
-        f"SimpleLogin Tip: Secure your emails with PGP",
+        "SimpleLogin Tip: Secure your emails with PGP",
         render("com/onboarding/pgp.txt", user=user, to_email=to_email),
         render("com/onboarding/pgp.html", user=user, to_email=to_email),
         unsubscribe_link,
@@ -87,7 +87,7 @@ def onboarding_browser_extension(user):
 
     send_email(
         to_email,
-        f"SimpleLogin Tip: Chrome/Firefox/Safari extensions and Android/iOS apps",
+        "SimpleLogin Tip: Chrome/Firefox/Safari extensions and Android/iOS apps",
         render("com/onboarding/browser-extension.txt", user=user, to_email=to_email),
         render("com/onboarding/browser-extension.html", user=user, to_email=to_email),
         unsubscribe_link,
@@ -102,7 +102,7 @@ def onboarding_mailbox(user):
 
     send_email(
         to_email,
-        f"SimpleLogin Tip: Multiple mailboxes",
+        "SimpleLogin Tip: Multiple mailboxes",
         render("com/onboarding/mailbox.txt", user=user, to_email=to_email),
         render("com/onboarding/mailbox.html", user=user, to_email=to_email),
         unsubscribe_link,
@@ -121,7 +121,7 @@ def handle_batch_import(batch_import: BatchImport):
 
     LOG.d("Download file %s from %s", batch_import.file, file_url)
     r = requests.get(file_url)
-    lines = [l.decode() for l in r.iter_lines()]
+    lines = [line.decode() for line in r.iter_lines()]
     reader = csv.DictReader(lines)
 
     for row in reader:
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
         with app.app_context():
             for job in Job.query.filter(
-                Job.taken == False, Job.run_at > min_dt, Job.run_at <= max_dt
+                Job.taken.is_(False), Job.run_at > min_dt, Job.run_at <= max_dt
             ).all():
                 LOG.d("Take job %s", job)
 
