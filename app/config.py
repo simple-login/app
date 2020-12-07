@@ -324,6 +324,9 @@ ALERT_MAILBOX_IS_ALIAS = "mailbox_is_alias"
 
 AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN = "custom_domain_mx_record_issue"
 
+# alert when a new alias is about to be created on a disabled directory
+ALERT_DIRECTORY_DISABLED_ALIAS_CREATION = "alert_directory_disabled_alias_creation"
+
 # <<<<< END ALERT EMAIL >>>>
 
 # Disable onboarding emails
