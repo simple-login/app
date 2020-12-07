@@ -272,6 +272,11 @@ class User(db.Model, ModelMixin, UserMixin):
         db.ForeignKey("alias.id", ondelete="SET NULL"), nullable=True, default=None
     )
 
+    # whether to include the sender address in reverse-alias
+    include_sender_in_reverse_alias = db.Column(
+        db.Boolean, default=False, nullable=True
+    )
+
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)

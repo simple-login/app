@@ -410,7 +410,7 @@ def create_contact_route(alias_id):
         alias_id=alias.id,
         website_email=contact_email,
         name=contact_name,
-        reply_email=generate_reply_email(contact_email),
+        reply_email=generate_reply_email(contact_email, user),
     )
 
     LOG.d("create reverse-alias for %s %s", contact_addr, alias)

@@ -802,7 +802,7 @@ def replace(msg: Message, old, new) -> Message:
     return msg
 
 
-def generate_reply_email(contact_email: str) -> str:
+def generate_reply_email(contact_email: str, user: User) -> str:
     """
     generate a reply_email (aka reverse-alias), make sure it isn't used by any contact
     """
@@ -811,7 +811,14 @@ def generate_reply_email(contact_email: str) -> str:
     # "The maximum total length of a user name or other local-part is 64
     #    octets."
 
-    if contact_email:
+    # todo: turns this to False after Dec 20 2020
+    include_sender_in_reverse_alias = True
+
+    # user has chosen an option explicitly
+    if user.include_sender_in_reverse_alias is not None:
+        include_sender_in_reverse_alias = user.include_sender_in_reverse_alias
+
+    if include_sender_in_reverse_alias and contact_email:
         # control char: 4 chars (ra+, +)
         # random suffix: max 10 chars
         # maximum: 64
@@ -825,13 +832,13 @@ def generate_reply_email(contact_email: str) -> str:
 
     # not use while to avoid infinite loop
     for _ in range(1000):
-        if contact_email:
+        if include_sender_in_reverse_alias and contact_email:
             random_length = random.randint(5, 10)
             reply_email = (
                 f"ra+{contact_email}+{random_string(random_length)}@{EMAIL_DOMAIN}"
             )
         else:
-            random_length = random.randint(10, 50)
+            random_length = random.randint(20, 50)
             reply_email = f"ra+{random_string(random_length)}@{EMAIL_DOMAIN}"
 
         if not Contact.get_by(reply_email=reply_email):

@@ -25,6 +25,7 @@ from app.email_utils import (
 )
 from app.extensions import db
 from app.models import User, CustomDomain
+from tests.utils import login
 
 
 def test_get_email_domain_part():
@@ -464,23 +465,50 @@ def test_to_bytes():
 
 
 def test_generate_reply_email(flask_client):
-    reply_email = generate_reply_email("test@example.org")
+    user = User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+    )
+    reply_email = generate_reply_email("test@example.org", user)
     # return something like
-    # ra+test.at.example.org+gjbnnddll@sl.local
-    assert reply_email.startswith("ra+test.at.example.org+")
+    # ra+<random>@sl.local
     assert reply_email.endswith(EMAIL_DOMAIN)
 
-    reply_email = generate_reply_email("")
+    reply_email = generate_reply_email("", user)
     # return something like
     # ra+qdrcxzppngmvtajklnhqvvuyyzgkyityrzjwikk@sl.local
     assert reply_email.startswith("ra+")
     assert reply_email.endswith(EMAIL_DOMAIN)
 
-    reply_email = generate_reply_email("👌汉字@example.org")
+
+def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
+    # user enables include_sender_in_reverse_alias
+    user = User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        include_sender_in_reverse_alias=True,
+    )
+    reply_email = generate_reply_email("test@example.org", user)
+    # return something like
+    # ra+test.at.example.org+gjbnnddll@sl.local
+    assert reply_email.startswith("ra+test.at.example.org+")
+    assert reply_email.endswith(EMAIL_DOMAIN)
+
+    reply_email = generate_reply_email("", user)
+    # return something like
+    # ra+qdrcxzppngmvtajklnhqvvuyyzgkyityrzjwikk@sl.local
+    assert reply_email.startswith("ra+")
+    assert reply_email.endswith(EMAIL_DOMAIN)
+
+    reply_email = generate_reply_email("👌汉字@example.org", user)
     assert reply_email.startswith("ra+yizi.at.example.org+")
 
     # make sure reply_email only contain lowercase
-    reply_email = generate_reply_email("TEST@example.org")
+    reply_email = generate_reply_email("TEST@example.org", user)
     assert reply_email.startswith("ra+test.at.example.org")
 
 

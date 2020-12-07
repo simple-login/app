@@ -255,6 +255,16 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
+        elif request.form.get("form-name") == "sender-in-ra":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.include_sender_in_reverse_alias = True
+            else:
+                current_user.include_sender_in_reverse_alias = False
+            db.session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "export-data":
             data = {
                 "email": current_user.email,
