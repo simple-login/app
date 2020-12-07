@@ -152,24 +152,26 @@ def send_test_email_alias(email, name):
     )
 
 
-def send_cannot_create_directory_alias(user, alias, directory):
+def send_cannot_create_directory_alias(user, alias_address, directory_name):
     """when user cancels their subscription, they cannot create alias on the fly.
     If this happens, send them an email to notify
     """
     send_email(
         user.email,
-        f"Alias {alias} cannot be created",
+        f"Alias {alias_address} cannot be created",
         render(
             "transactional/cannot-create-alias-directory.txt",
             name=user.name,
-            alias=alias,
-            directory=directory,
+            alias=alias_address,
+            directory=directory_name,
         ),
         render(
             "transactional/cannot-create-alias-directory.html",
             name=user.name,
-            alias=alias,
-            directory=directory,
+            alias=alias_address,
+            directory=directory_name,
+        ),
+    )
         ),
     )
 
