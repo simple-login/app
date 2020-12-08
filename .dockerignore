@@ -6,4 +6,4 @@ db.sqlite
 .vscode
 .DS_Store
 config
-adhoc_*
+adhoc
