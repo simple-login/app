@@ -129,7 +129,6 @@ _DIRECTION = "X-SimpleLogin-Type"
 
 _IP_HEADER = "X-SimpleLogin-Client-IP"
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
-_MESSAGE_ID = "Message-ID"
 _ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
 
 _MIME_HEADERS = [
@@ -617,7 +616,7 @@ def forward_email_to_mailbox(
 
     if SPAMASSASSIN_HOST:
         start = time.time()
-        spam_score = get_spam_score(msg)
+        spam_score = get_spam_score(msg, email_log)
         LOG.d(
             "%s -> %s - spam score %s in %s seconds",
             contact,
@@ -687,7 +686,12 @@ def forward_email_to_mailbox(
 
     delete_header(msg, _IP_HEADER)
     add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
-    add_or_replace_header(msg, _MESSAGE_ID, make_msgid(str(email_log.id), EMAIL_DOMAIN))
+
+    # fill up the message-id if ever it's absent. Should never happen for a normal email
+    if not msg["Message-ID"]:
+        LOG.exception("Set Message-ID before forwarding email")
+        msg["Message-ID"] = make_msgid(str(email_log.id), EMAIL_DOMAIN)
+
     add_or_replace_header(msg, _ENVELOPE_FROM, envelope.mail_from)
 
     if not msg["Date"]:
@@ -842,6 +846,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         is_reply=True,
         user_id=contact.user_id,
         mailbox_id=mailbox.id,
+        commit=True,
     )
 
     # Spam check
@@ -851,7 +856,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # do not use user.max_spam_score here
     if SPAMASSASSIN_HOST:
         start = time.time()
-        spam_score = get_spam_score(msg)
+        spam_score = get_spam_score(msg, email_log)
         LOG.d(
             "%s -> %s - spam score %s in %s seconds",
             alias,
@@ -888,6 +893,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             "To",
             "Cc",
             "Subject",
+            # References and In-Reply-To are used for keeping the email thread
+            "References",
+            "In-Reply-To",
         ]
         + _MIME_HEADERS,
     )
@@ -910,11 +918,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
             # to not save the email_log
-            db.session.rollback()
+            EmailLog.delete(email_log.id)
+            db.session.commit()
             # return 421 so the client can retry later
             return False, "421 SL E13 Retry later"
 
-    # save the email_log to DB
     db.session.commit()
 
     # make the email comes from alias
@@ -935,9 +943,10 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     replace_header_when_reply(msg, alias, "To")
     replace_header_when_reply(msg, alias, "Cc")
 
+    # Message-ID can reveal about the mailbox -> replace it
     add_or_replace_header(
         msg,
-        _MESSAGE_ID,
+        "Message-ID",
         make_msgid(str(email_log.id), get_email_domain_part(alias.email)),
     )
     date_header = formatdate()
@@ -1634,7 +1643,6 @@ def handle(envelope: Envelope) -> str:
 
 
 async def get_spam_score_async(message: Message) -> float:
-    LOG.debug("get spam score for %s", message[_MESSAGE_ID])
     sa_input = to_bytes(message)
 
     # Spamassassin requires to have an ending linebreak
@@ -1657,8 +1665,8 @@ async def get_spam_score_async(message: Message) -> float:
         return -999
 
 
-def get_spam_score(message: Message) -> float:
-    LOG.debug("get spam score for %s", message[_MESSAGE_ID])
+def get_spam_score(message: Message, email_log: EmailLog) -> float:
+    LOG.debug("get spam score for %s", email_log)
     sa_input = to_bytes(message)
 
     # Spamassassin requires to have an ending linebreak
