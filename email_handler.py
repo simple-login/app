@@ -686,7 +686,12 @@ def forward_email_to_mailbox(
 
     delete_header(msg, _IP_HEADER)
     add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
-    add_or_replace_header(msg, "Message-ID", make_msgid(str(email_log.id), EMAIL_DOMAIN))
+
+    # fill up the message-id if ever it's absent. Should never happen for a normal email
+    if not msg["Message-ID"]:
+        LOG.exception("Set Message-ID before forwarding email")
+        msg["Message-ID"] = make_msgid(str(email_log.id), EMAIL_DOMAIN)
+
     add_or_replace_header(msg, _ENVELOPE_FROM, envelope.mail_from)
 
     if not msg["Date"]:
