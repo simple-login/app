@@ -846,7 +846,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         is_reply=True,
         user_id=contact.user_id,
         mailbox_id=mailbox.id,
-        commit=True
+        commit=True,
     )
 
     # Spam check
@@ -893,6 +893,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             "To",
             "Cc",
             "Subject",
+            # References and In-Reply-To are used for keeping the email thread
+            "References",
+            "In-Reply-To",
         ]
         + _MIME_HEADERS,
     )
@@ -940,6 +943,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     replace_header_when_reply(msg, alias, "To")
     replace_header_when_reply(msg, alias, "Cc")
 
+    # Message-ID can reveal about the mailbox -> replace it
     add_or_replace_header(
         msg,
         "Message-ID",
@@ -1639,7 +1643,6 @@ def handle(envelope: Envelope) -> str:
 
 
 async def get_spam_score_async(message: Message) -> float:
-    LOG.debug("get spam score for %s", message["Message-ID"])
     sa_input = to_bytes(message)
 
     # Spamassassin requires to have an ending linebreak
