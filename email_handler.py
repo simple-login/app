@@ -129,7 +129,6 @@ _DIRECTION = "X-SimpleLogin-Type"
 
 _IP_HEADER = "X-SimpleLogin-Client-IP"
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
-_MESSAGE_ID = "Message-ID"
 _ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
 
 _MIME_HEADERS = [
@@ -687,7 +686,7 @@ def forward_email_to_mailbox(
 
     delete_header(msg, _IP_HEADER)
     add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
-    add_or_replace_header(msg, _MESSAGE_ID, make_msgid(str(email_log.id), EMAIL_DOMAIN))
+    add_or_replace_header(msg, "Message-ID", make_msgid(str(email_log.id), EMAIL_DOMAIN))
     add_or_replace_header(msg, _ENVELOPE_FROM, envelope.mail_from)
 
     if not msg["Date"]:
@@ -937,7 +936,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     add_or_replace_header(
         msg,
-        _MESSAGE_ID,
+        "Message-ID",
         make_msgid(str(email_log.id), get_email_domain_part(alias.email)),
     )
     date_header = formatdate()
@@ -1634,7 +1633,7 @@ def handle(envelope: Envelope) -> str:
 
 
 async def get_spam_score_async(message: Message) -> float:
-    LOG.debug("get spam score for %s", message[_MESSAGE_ID])
+    LOG.debug("get spam score for %s", message["Message-ID"])
     sa_input = to_bytes(message)
 
     # Spamassassin requires to have an ending linebreak
