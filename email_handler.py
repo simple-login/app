@@ -616,7 +616,7 @@ def forward_email_to_mailbox(
 
     if SPAMASSASSIN_HOST:
         start = time.time()
-        spam_score = get_spam_score(msg)
+        spam_score = get_spam_score(msg, email_log)
         LOG.d(
             "%s -> %s - spam score %s in %s seconds",
             contact,
@@ -851,7 +851,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # do not use user.max_spam_score here
     if SPAMASSASSIN_HOST:
         start = time.time()
-        spam_score = get_spam_score(msg)
+        spam_score = get_spam_score(msg, email_log)
         LOG.d(
             "%s -> %s - spam score %s in %s seconds",
             alias,
@@ -1657,8 +1657,8 @@ async def get_spam_score_async(message: Message) -> float:
         return -999
 
 
-def get_spam_score(message: Message) -> float:
-    LOG.debug("get spam score for %s", message[_MESSAGE_ID])
+def get_spam_score(message: Message, email_log: EmailLog) -> float:
+    LOG.debug("get spam score for %s", email_log)
     sa_input = to_bytes(message)
 
     # Spamassassin requires to have an ending linebreak
