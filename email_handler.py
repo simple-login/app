@@ -841,6 +841,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         is_reply=True,
         user_id=contact.user_id,
         mailbox_id=mailbox.id,
+        commit=True
     )
 
     # Spam check
@@ -909,11 +910,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
             # to not save the email_log
-            db.session.rollback()
+            EmailLog.delete(email_log.id)
+            db.session.commit()
             # return 421 so the client can retry later
             return False, "421 SL E13 Retry later"
 
-    # save the email_log to DB
     db.session.commit()
 
     # make the email comes from alias
