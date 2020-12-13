@@ -94,6 +94,19 @@
       </button>
 
       <hr>
+      Payment via <a href="https://commerce.coinbase.com/?lang=en" target="_blank">Coinbase Commerce</a>.
+      Only the yearly plan is supported.
+
+      <div>
+        <a class="buy-with-crypto" data-custom="{{ current_user.id }}"
+           href="{{ coinbase_url }}">
+          Yearly - $30/year - Crypto
+        </a>
+        <script src="https://commerce.coinbase.com/v1/checkout.js?version=201807">
+        </script>
+      </div>
+
+      <hr>
       For other payment options, please send us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a>
 
     </div>
