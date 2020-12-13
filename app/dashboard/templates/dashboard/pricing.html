@@ -64,7 +64,8 @@
     <div class="col-sm-6 col-lg-6">
       <div class="display-6 my-3">
         🔐 Secure payments by
-        <a href="https://paddle.com" target="_blank" rel="noopener">Paddle<i class="fe fe-external-link"></i></a></li>
+        <a href="https://paddle.com" target="_blank" rel="noopener">
+          Paddle<i class="fe fe-external-link"></i>
         </a>
       </div>
 
@@ -93,18 +94,23 @@
         $30/year
       </button>
 
-      <hr>
-      Payment via <a href="https://commerce.coinbase.com/?lang=en" target="_blank">Coinbase Commerce</a>.
-      Only the yearly plan is supported.
+      {% if current_user.can_use_coinbase %}
+        <hr>
+        Payment via
+        <a href="https://commerce.coinbase.com/?lang=en" target="_blank">
+          Coinbase Commerce<i class="fe fe-external-link"></i>
+        </a> <br>
+        Only the yearly plan is supported.
 
-      <div>
-        <a class="buy-with-crypto" data-custom="{{ current_user.id }}"
-           href="{{ coinbase_url }}">
-          Yearly - $30/year - Crypto
-        </a>
-        <script src="https://commerce.coinbase.com/v1/checkout.js?version=201807">
-        </script>
-      </div>
+        <div>
+          <a class="buy-with-crypto" data-custom="{{ current_user.id }}"
+             href="{{ coinbase_url }}">
+            Yearly - $30/year - Crypto
+          </a>
+          <script src="https://commerce.coinbase.com/v1/checkout.js?version=201807">
+          </script>
+        </div>
+      {% endif %}
 
       <hr>
       For other payment options, please send us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a>
