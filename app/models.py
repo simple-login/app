@@ -1434,6 +1434,26 @@ class ManualSubscription(db.Model, ModelMixin):
 
     user = db.relationship(User)
 
+class CoinbaseSubscription(db.Model, ModelMixin):
+    """
+    For subscriptions using Coinbase Commerce
+    """
+
+    user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    # an reminder is sent several days before the subscription ends
+    end_at = db.Column(ArrowType, nullable=False)
+
+    # the Coinbase code
+    code = db.Column(db.String(64), nullable=True)
+
+    user = db.relationship(User)
+
+    def is_active(self):
+        return self.end_at > arrow.now()
+
 
 # https://help.apple.com/app-store-connect/#/dev58bda3212
 _APPLE_GRACE_PERIOD_DAYS = 16
