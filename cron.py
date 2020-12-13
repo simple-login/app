@@ -153,7 +153,7 @@ def notify_manual_sub_end():
             )
             send_email(
                 user.email,
-                f"Your SimpleLogin subscription will end soon",
+                "Your SimpleLogin subscription will end soon",
                 render(
                     "transactional/coinbase/reminder-subscription.txt",
                     coinbase_subscription=coinbase_subscription,
