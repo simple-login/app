@@ -6,6 +6,7 @@ from app.config import (
     PADDLE_MONTHLY_PRODUCT_ID,
     PADDLE_YEARLY_PRODUCT_ID,
     URL,
+    COINBASE_CHECKOUT_ID,
 )
 from app.dashboard.base import dashboard_bp
 
@@ -17,12 +18,15 @@ def pricing():
         flash("You are already a premium user", "warning")
         return redirect(url_for("dashboard.index"))
 
+    coinbase_url = "https://commerce.coinbase.com/checkout/" + COINBASE_CHECKOUT_ID
+
     return render_template(
         "dashboard/pricing.html",
         PADDLE_VENDOR_ID=PADDLE_VENDOR_ID,
         PADDLE_MONTHLY_PRODUCT_ID=PADDLE_MONTHLY_PRODUCT_ID,
         PADDLE_YEARLY_PRODUCT_ID=PADDLE_YEARLY_PRODUCT_ID,
         success_url=URL + "/dashboard/subscription_success",
+        coinbase_url=coinbase_url,
     )
 
 
