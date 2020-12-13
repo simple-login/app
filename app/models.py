@@ -341,7 +341,13 @@ class User(db.Model, ModelMixin, UserMixin):
             return True
 
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
-        if manual_sub and manual_sub.end_at > arrow.now():
+        if manual_sub and manual_sub.is_active():
+            return True
+
+        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+            user_id=self.id
+        )
+        if coinbase_subscription and coinbase_subscription.is_active():
             return True
 
         return False
@@ -357,11 +363,13 @@ class User(db.Model, ModelMixin, UserMixin):
             return True
 
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
-        if (
-            manual_sub
-            and not manual_sub.is_giveaway
-            and manual_sub.end_at > arrow.now()
-        ):
+        if manual_sub and not manual_sub.is_giveaway and manual_sub.is_active():
+            return True
+
+        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+            user_id=self.id
+        )
+        if coinbase_subscription and coinbase_subscription.is_active():
             return True
 
         return False
@@ -387,8 +395,15 @@ class User(db.Model, ModelMixin, UserMixin):
 
         return True
 
-    def can_upgrade(self):
-        """User who has lifetime licence or giveaway manual subscriptions can decide to upgrade to a paid plan"""
+    def can_upgrade(self) -> bool:
+        """
+        The following users can upgrade:
+        - have giveaway lifetime licence
+        - have giveaway manual subscriptions
+        - have a cancelled Paddle subscription
+        - have a expired Apple subscription
+        - have a expired Coinbase subscription
+        """
         sub: Subscription = self.get_subscription()
         # user who has canceled can also re-subscribe
         if sub and not sub.cancelled:
@@ -400,11 +415,11 @@ class User(db.Model, ModelMixin, UserMixin):
 
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         # user who has giveaway premium can decide to upgrade
-        if (
-            manual_sub
-            and manual_sub.end_at > arrow.now()
-            and not manual_sub.is_giveaway
-        ):
+        if manual_sub and manual_sub.is_active() and not manual_sub.is_giveaway:
+            return False
+
+        coinbase_subscription = CoinbaseSubscription.get_by(user_id=self.id)
+        if coinbase_subscription and coinbase_subscription.is_active():
             return False
 
         return True
@@ -477,7 +492,8 @@ class User(db.Model, ModelMixin, UserMixin):
         return "".join([n[0].upper() for n in names if n])
 
     def get_subscription(self) -> Optional["Subscription"]:
-        """return *active* subscription
+        """return *active* Paddle subscription
+        Return None if the subscription is already expired
         TODO: support user unsubscribe and re-subscribe
         """
         sub = Subscription.get_by(user_id=self.id)
@@ -1433,6 +1449,10 @@ class ManualSubscription(db.Model, ModelMixin):
     )
 
     user = db.relationship(User)
+
+    def is_active(self):
+        return self.end_at > arrow.now()
+
 
 class CoinbaseSubscription(db.Model, ModelMixin):
     """
