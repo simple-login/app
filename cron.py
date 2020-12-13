@@ -42,6 +42,7 @@ from app.models import (
     Mailbox,
     Monitoring,
     Contact,
+    CoinbaseSubscription,
 )
 from server import create_app
 
@@ -114,7 +115,7 @@ def notify_manual_sub_end():
             LOG.debug("Remind user %s that their manual sub is ending soon", user)
             send_email(
                 user.email,
-                f"Your trial will end soon {user.name}",
+                f"Your subscription will end soon {user.name}",
                 render(
                     "transactional/manual-subscription-end.txt",
                     name=user.name,
@@ -126,6 +127,42 @@ def notify_manual_sub_end():
                     name=user.name,
                     user=user,
                     manual_sub=manual_sub,
+                ),
+            )
+
+    extend_subscription_url = URL + "/dashboard/extend_subscription"
+    for coinbase_subscription in CoinbaseSubscription.query.all():
+        need_reminder = False
+        if (
+            arrow.now().shift(days=14)
+            > coinbase_subscription.end_at
+            > arrow.now().shift(days=13)
+        ):
+            need_reminder = True
+        elif (
+            arrow.now().shift(days=4)
+            > coinbase_subscription.end_at
+            > arrow.now().shift(days=3)
+        ):
+            need_reminder = True
+
+        if need_reminder:
+            user = coinbase_subscription.user
+            LOG.debug(
+                "Remind user %s that their coinbase subscription is ending soon", user
+            )
+            send_email(
+                user.email,
+                f"Your SimpleLogin subscription will end soon",
+                render(
+                    "transactional/coinbase/reminder-subscription.txt",
+                    coinbase_subscription=coinbase_subscription,
+                    extend_subscription_url=extend_subscription_url,
+                ),
+                render(
+                    "transactional/coinbase/reminder-subscription.html",
+                    coinbase_subscription=coinbase_subscription,
+                    extend_subscription_url=extend_subscription_url,
                 ),
             )
 

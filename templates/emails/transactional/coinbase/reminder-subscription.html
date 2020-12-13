@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    <h1>
+      Your subscription is ending soon.
+    </h1>
+  {% endcall %}
+
+  {% call text() %}
+    Your subscription ends on
+    <b>{{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}</b>
+  {% endcall %}
+
+  {{ render_button("Extend your subscription", extend_subscription_url) }}
+
+  {{ render_text('Best, <br />SimpleLogin Team.') }}
+{% endblock %}
