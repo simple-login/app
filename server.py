@@ -6,6 +6,8 @@ from datetime import timedelta
 import arrow
 import flask_profiler
 import sentry_sdk
+from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
+from coinbase_commerce.webhook import Webhook
 from flask import (
     Flask,
     redirect,
@@ -53,6 +55,7 @@ from app.config import (
     PADDLE_MONTHLY_PRODUCT_IDS,
     PADDLE_YEARLY_PRODUCT_IDS,
     PGP_SIGNER,
+    COINBASE_WEBHOOK_SECRET,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -77,6 +80,7 @@ from app.models import (
     Referral,
     AliasMailbox,
     Notification,
+    CoinbaseSubscription,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -142,6 +146,7 @@ def create_app() -> Flask:
 
     init_admin(app)
     setup_paddle_callback(app)
+    setup_coinbase_commerce(app)
     setup_do_not_track(app)
 
     if FLASK_PROFILER_PATH:
@@ -198,20 +203,23 @@ def fake_data():
 
     user.trial_end = None
 
-    LifetimeCoupon.create(code="coupon", nb_used=10)
-    db.session.commit()
+    LifetimeCoupon.create(code="coupon", nb_used=10, commit=True)
 
     # Create a subscription for user
-    Subscription.create(
-        user_id=user.id,
-        cancel_url="https://checkout.paddle.com/subscription/cancel?user=1234",
-        update_url="https://checkout.paddle.com/subscription/update?user=1234",
-        subscription_id="123",
-        event_time=arrow.now(),
-        next_bill_date=arrow.now().shift(days=10).date(),
-        plan=PlanEnum.monthly,
+    # Subscription.create(
+    #     user_id=user.id,
+    #     cancel_url="https://checkout.paddle.com/subscription/cancel?user=1234",
+    #     update_url="https://checkout.paddle.com/subscription/update?user=1234",
+    #     subscription_id="123",
+    #     event_time=arrow.now(),
+    #     next_bill_date=arrow.now().shift(days=10).date(),
+    #     plan=PlanEnum.monthly,
+    # )
+    # db.session.commit()
+
+    CoinbaseSubscription.create(
+        user_id=user.id, end_at=arrow.now().shift(days=10), commit=True
     )
-    db.session.commit()
 
     api_key = ApiKey.create(user_id=user.id, name="Chrome")
     api_key.code = "code"
@@ -632,6 +640,91 @@ def setup_paddle_callback(app: Flask):
             else:
                 return "No such subscription", 400
         return "OK"
+
+
+def setup_coinbase_commerce(app):
+    @app.route("/coinbase", methods=["POST"])
+    def coinbase_webhook():
+        # event payload
+        request_data = request.data.decode("utf-8")
+        # webhook signature
+        request_sig = request.headers.get("X-CC-Webhook-Signature", None)
+
+        try:
+            # signature verification and event object construction
+            event = Webhook.construct_event(
+                request_data, request_sig, COINBASE_WEBHOOK_SECRET
+            )
+        except (WebhookInvalidPayload, SignatureVerificationError) as e:
+            LOG.exception("Invalid Coinbase webhook")
+            return str(e), 400
+
+        LOG.d("Coinbase event %s", event)
+
+        if event["type"] == "charge:confirmed":
+            if handle_coinbase_event(event):
+                return "success", 200
+            else:
+                return "error", 400
+
+        return "success", 200
+
+
+def handle_coinbase_event(event) -> bool:
+    user_id = int(event["data"]["metadata"]["custom"])
+    code = event["data"]["code"]
+    user = User.get(user_id)
+    if not user:
+        LOG.exception("User not found %s", user_id)
+        return False
+
+    coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+        user_id=user_id
+    )
+
+    if not coinbase_subscription:
+        LOG.d("Create a coinbase subscription for %s", user)
+        coinbase_subscription = CoinbaseSubscription.create(
+            user_id=user_id, end_at=arrow.now().shift(years=1), code=code, commit=True
+        )
+        send_email(
+            user.email,
+            "Your SimpleLogin account has been upgraded",
+            render(
+                "transactional/coinbase/new-subscription.txt",
+                coinbase_subscription=coinbase_subscription,
+            ),
+            render(
+                "transactional/coinbase/new-subscription.html",
+                coinbase_subscription=coinbase_subscription,
+            ),
+        )
+    else:
+        if coinbase_subscription.code != code:
+            LOG.d("Update code from %s to %s", coinbase_subscription.code, code)
+            coinbase_subscription.code = code
+
+        if coinbase_subscription.is_active():
+            coinbase_subscription.end_at = coinbase_subscription.end_at.shift(years=1)
+        else:  # already expired subscription
+            coinbase_subscription.end_at = arrow.now().shift(years=1)
+
+        db.session.commit()
+
+        send_email(
+            user.email,
+            "Your SimpleLogin account has been extended",
+            render(
+                "transactional/coinbase/extend-subscription.txt",
+                coinbase_subscription=coinbase_subscription,
+            ),
+            render(
+                "transactional/coinbase/extend-subscription.html",
+                coinbase_subscription=coinbase_subscription,
+            ),
+        )
+
+    return True
 
 
 def init_extensions(app: Flask):
