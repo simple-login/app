@@ -12,7 +12,7 @@ def test_notify_manual_sub_end(flask_client):
         activated=True,
     )
 
-    cb = CoinbaseSubscription.create(
+    CoinbaseSubscription.create(
         user_id=user.id, end_at=arrow.now().shift(days=13, hours=2), commit=True
     )
 
