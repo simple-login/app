@@ -52,9 +52,9 @@
           You are on the Premium plan which expires {{ coinbase_sub.end_at | dt }}
           ({{ coinbase_sub.end_at.format("YYYY-MM-DD") }}).
           <br>
-          You can extend your subscription on
-          <a href="{{ url_for('dashboard.coinbase_checkout_route') }}" class="btn btn-sm btn-outline-primary">
-            Extend Subscription
+          <a href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+             class="btn btn-sm btn-outline-primary" target="_blank">
+            Extend Subscription <i class="fe fe-external-link"></i>
           </a>
 
         {% elif current_user.in_trial() %}
