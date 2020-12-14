@@ -195,6 +195,8 @@ class Stats:
     nb_premium: int
     nb_apple_premium: int
     nb_cancelled_premium: int
+    nb_manual_premium: int
+    nb_coinbase_premium: int
 
     # nb users who have been referred
     nb_referred_user: int
@@ -277,6 +279,17 @@ def stats_before(moment: Arrow) -> Stats:
         Subscription.created_at < moment, Subscription.cancelled.is_(True)
     ).count()
 
+    now = arrow.now()
+    nb_manual_premium = ManualSubscription.query.filter(
+        ManualSubscription.created_at < moment,
+        ManualSubscription.end_at > now,
+        ManualSubscription.is_giveaway.is_(False),
+    ).count()
+
+    nb_coinbase_premium = CoinbaseSubscription.query.filter(
+        CoinbaseSubscription.created_at < moment, CoinbaseSubscription.end_at > now
+    ).count()
+
     nb_custom_domain = CustomDomain.query.filter(
         CustomDomain.created_at < moment
     ).count()
@@ -329,6 +342,8 @@ nb_user: {stats_today.nb_user} - {increase_percent(stats_yesterday.nb_user, stat
 nb_premium: {stats_today.nb_premium} - {increase_percent(stats_yesterday.nb_premium, stats_today.nb_premium)}  <br>
 nb_cancelled_premium: {stats_today.nb_cancelled_premium} - {increase_percent(stats_yesterday.nb_cancelled_premium, stats_today.nb_cancelled_premium)}  <br>
 nb_apple_premium: {stats_today.nb_apple_premium} - {increase_percent(stats_yesterday.nb_apple_premium, stats_today.nb_apple_premium)}  <br>
+nb_manual_premium: {stats_today.nb_manual_premium} - {increase_percent(stats_yesterday.nb_manual_premium, stats_today.nb_manual_premium)}  <br>
+nb_coinbase_premium: {stats_today.nb_coinbase_premium} - {increase_percent(stats_yesterday.nb_coinbase_premium, stats_today.nb_coinbase_premium)}  <br>
 nb_alias: {stats_today.nb_alias} - {increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)}  <br>
 
 nb_forward: {stats_today.nb_forward} - {increase_percent(stats_yesterday.nb_forward, stats_today.nb_forward)}  <br>
