@@ -1,0 +1,7 @@
+Your subscription ends on {{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}
+
+You can extend your subscription on
+{{ extend_subscription_url }}
+
+Best,
+SimpleLogin team.

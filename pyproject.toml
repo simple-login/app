@@ -75,6 +75,7 @@ aiospamc = "^0.6.1"
 email_validator = "^1.1.1"
 PGPy = "^0.5.3"
 py3-validate-email = "^0.2.10"
+coinbase-commerce = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"
@@ -83,10 +84,6 @@ pre-commit = "^2.7.1"
 pytest-cov = "^2.10.1"
 flake8 = "^3.8.4"
 
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
-
 [tool.pytest.ini_options]
 addopts = """
   --cov=.
@@ -94,3 +91,7 @@ addopts = """
   --cov-report=html:htmlcov
   --cov-fail-under=60
 """
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+

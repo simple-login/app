@@ -358,3 +358,11 @@ PGP_SIGNER = os.environ.get("PGP_SIGNER")
 
 # emails that have empty From address is sent from this special reverse-alias
 NOREPLY = os.environ.get("NOREPLY", f"noreply@{EMAIL_DOMAIN}")
+
+COINBASE_WEBHOOK_SECRET = os.environ.get("COINBASE_WEBHOOK_SECRET")
+COINBASE_CHECKOUT_ID = os.environ.get("COINBASE_CHECKOUT_ID")
+COINBASE_API_KEY = os.environ.get("COINBASE_API_KEY")
+try:
+    COINBASE_YEARLY_PRICE = float(os.environ["COINBASE_YEARLY_PRICE"])
+except Exception:
+    COINBASE_YEARLY_PRICE = 30.00

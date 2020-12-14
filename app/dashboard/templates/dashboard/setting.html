@@ -39,7 +39,7 @@
           {% if current_user.lifetime %}
             You have however lifetime access to the Premium plan now so make sure to cancel the previous plan :).
           {% endif %}
-        {% elif manual_sub %}
+        {% elif manual_sub and manual_sub.is_active() %}
           You are on the Premium plan which expires {{ manual_sub.end_at | dt }}
           ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
           {% if manual_sub.is_giveaway %}
@@ -47,6 +47,15 @@
             To gain additional features and support SimpleLogin you can upgrade to a Premium plan. <br>
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
+
+        {% elif coinbase_sub and coinbase_sub.is_active() %}
+          You are on the Premium plan which expires {{ coinbase_sub.end_at | dt }}
+          ({{ coinbase_sub.end_at.format("YYYY-MM-DD") }}).
+          <br>
+          <a href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+             class="btn btn-sm btn-outline-primary" target="_blank">
+            Extend Subscription <i class="fe fe-external-link"></i>
+          </a>
 
         {% elif current_user.in_trial() %}
           Your Premium trial expires {{ current_user.trial_end | dt }}.

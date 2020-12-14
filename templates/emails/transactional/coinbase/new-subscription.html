@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    <h1>
+      Your account has been upgraded!
+    </h1>
+  {% endcall %}
+
+  {% call text() %}
+    Your payment with cryptocurrency has been successfully processed. <br>
+    Your account has been upgraded to the premium plan until
+    <b>{{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}</b>
+  {% endcall %}
+
+  {% call text() %}
+    Thank you a lot for your support!
+  {% endcall %}
+
+
+  {{ render_text('Best, <br />SimpleLogin Team.') }}
+{% endblock %}

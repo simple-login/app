@@ -40,6 +40,7 @@ from app.models import (
     ManualSubscription,
     SenderFormatEnum,
     SLDomain,
+    CoinbaseSubscription,
 )
 from app.utils import random_string
 
@@ -304,6 +305,8 @@ def setting():
             return output
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
+    coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
+
     return render_template(
         "dashboard/setting.html",
         form=form,
@@ -314,6 +317,7 @@ def setting():
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
         manual_sub=manual_sub,
+        coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
     )
 
