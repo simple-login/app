@@ -27,7 +27,7 @@ def test_handle_coinbase_event_new_subscription(flask_client):
         commit=True,
     )
     handle_coinbase_event(
-        {"data": {"code": "AAAAAA", "metadata": {"custom": str(user.id)}}}
+        {"data": {"code": "AAAAAA", "metadata": {"user_id": str(user.id)}}}
     )
 
     assert user.is_paid()
@@ -55,7 +55,7 @@ def test_handle_coinbase_event_extend_subscription(flask_client):
     assert not user.is_premium()
 
     handle_coinbase_event(
-        {"data": {"code": "AAAAAA", "metadata": {"custom": str(user.id)}}}
+        {"data": {"code": "AAAAAA", "metadata": {"user_id": str(user.id)}}}
     )
 
     assert user.is_paid()
