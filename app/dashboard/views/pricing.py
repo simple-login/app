@@ -42,7 +42,7 @@ def subscription_success():
 def coinbase_checkout_route():
     client = Client(api_key=COINBASE_API_KEY)
     charge = client.charge.create(
-        name="1 Year Premium Subscription",
+        name="1 Year SimpleLogin Premium Subscription",
         local_price={"amount": str(COINBASE_YEARLY_PRICE), "currency": "USD"},
         pricing_type="fixed_price",
         metadata={"user_id": current_user.id},
