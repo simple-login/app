@@ -130,7 +130,7 @@ def notify_manual_sub_end():
                 ),
             )
 
-    extend_subscription_url = URL + "/dashboard/extend_subscription"
+    extend_subscription_url = URL + "/dashboard/coinbase_checkout"
     for coinbase_subscription in CoinbaseSubscription.query.all():
         need_reminder = False
         if (

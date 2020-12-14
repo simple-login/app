@@ -65,7 +65,7 @@
       <div class="display-6 my-3">
         🔐 Secure payments by
         <a href="https://paddle.com" target="_blank" rel="noopener">
-          Paddle<i class="fe fe-external-link"></i>
+          Paddle <i class="fe fe-external-link"></i>
         </a>
       </div>
 
@@ -100,16 +100,12 @@
         <a href="https://commerce.coinbase.com/?lang=en" target="_blank">
           Coinbase Commerce<i class="fe fe-external-link"></i>
         </a> <br>
-        Only the yearly plan is supported.
+        Only the yearly plan is supported. <br>
 
-        <div>
-          <a class="buy-with-crypto" data-custom="{{ current_user.id }}"
-             href="{{ coinbase_url }}">
-            Yearly - $30/year - Crypto
-          </a>
-          <script src="https://commerce.coinbase.com/v1/checkout.js?version=201807">
-          </script>
-        </div>
+        <a class="btn btn-primary" href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+           target="_blank">
+          $30/year - Crypto <i class="fe fe-external-link"></i>
+        </a>
       {% endif %}
 
       <hr>
