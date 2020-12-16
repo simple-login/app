@@ -1,24 +1,39 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + name) }}
-  {{ render_text("An email sent to your alias <b>" + alias.email + "</b> from <b>" + website_email + "</b> was <b>refused</b> (or bounced) by your mailbox " + mailbox_email + ".") }}
+  {% call text() %}
+    <h1>
+      An email sent to your alias {{ alias.email }} from {{ website_email }} was <b>bounced</b> by your mailbox
+      {{ mailbox_email }}
+    </h1>
+  {% endcall %}
 
-  {{ render_text('This is usually due to the email being considered as <b>spam</b> by your email provider.') }}
+  {% call text() %}
+    This is usually because your mailbox service thinks the email is a <b>spam</b>.
+  {% endcall %}
 
-  {{ render_button("View the refused email", refused_email_url) }}
+  {{ render_button("View the bounced email", refused_email_url) }}
 
   {{ render_text('The email is automatically deleted in 7 days.') }}
 
-  {{ render_text('To avoid spams forwarded by SimpleLogin server, please consider the following options:') }}
+  {% call text() %}
+    Please consider the following options: <br>
 
-  {{ render_text('1. If the email is not spam at all, it means your email provider has wrongly classified it as spam. In this case you can <b>create a filter to whitelist</b> it. The filter could be based on the sender, email subject, etc. As how to create the filter differs for each email provider, please check with your email provider on how to whitelist an email. Let us know if you need help to setup the filter by replying to this email.') }}
+    <ol>
+      <li>If the email is not spam at all, you can create a <b>filter</b> to explicitly allow this email
+        or simply all emails from SimpleLogin. <br>
+        How to create the filter depends on your mailbox service.
+      </li>
 
-  {{ render_text('2. If this email is indeed spam, it means your alias <b>' + alias.email + '</b> is now in the hands of a spammer. In this case, you should <b>disable</b> or delete the alias immediately. Or, do nothing and we\'ll <b>automatically</b> disable this alias the second time the email is refused. Don\'t worry, we\'ll send you another email when that happens.') }}
+      <li>
+        If this email is indeed a spam, it means your alias {{alias.email}} is now in the hands of a spammer. <br>
+        You should <b>disable</b> the alias immediately. <br>
+        We'll <b>automatically</b> disable this alias when too many emails sent to it are bounced.
+      </li>
+    </ol>
+  {% endcall %}
 
   {{ render_button("Disable alias", disable_alias_link) }}
-
-  {{ render_text('Please let us know if you have any question.') }}
 
   {{ render_text('Thanks, <br />SimpleLogin Team.') }}
   {{ raw_url(disable_alias_link) }}
