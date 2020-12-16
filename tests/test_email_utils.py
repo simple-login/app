@@ -22,9 +22,10 @@ from app.email_utils import (
     encode_text,
     EmailEncoding,
     replace,
+    should_disable,
 )
 from app.extensions import db
-from app.models import User, CustomDomain
+from app.models import User, CustomDomain, Alias, Contact, EmailLog
 from tests.utils import login
 
 # flake8: noqa: E101, W191
@@ -551,3 +552,37 @@ def test_encode_text():
     assert encode_text("mèo méo") == "mèo méo"
     assert encode_text("mèo méo", EmailEncoding.BASE64) == "bcOobyBtw6lv"
     assert encode_text("mèo méo", EmailEncoding.QUOTED) == "m=C3=A8o m=C3=A9o"
+
+
+def test_should_disable(flask_client):
+    user = User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        include_sender_in_reverse_alias=True,
+    )
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    assert not should_disable(alias)
+
+    # create a lot of bounce on this alias
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+    for _ in range(20):
+        EmailLog.create(
+            user_id=user.id, contact_id=contact.id, commit=True, bounced=True
+        )
+
+    assert should_disable(alias)
+
+    # should not affect another alias
+    alias2 = Alias.create_new_random(user)
+    db.session.commit()
+    assert not should_disable(alias2)

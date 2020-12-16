@@ -41,7 +41,16 @@ from app.config import (
 from app.dns_utils import get_mx_domains
 from app.extensions import db
 from app.log import LOG
-from app.models import Mailbox, User, SentAlert, CustomDomain, SLDomain, Contact
+from app.models import (
+    Mailbox,
+    User,
+    SentAlert,
+    CustomDomain,
+    SLDomain,
+    Contact,
+    Alias,
+    EmailLog,
+)
 from app.utils import random_string, convert_to_id, convert_to_alphanumeric
 
 
@@ -893,3 +902,22 @@ def normalize_reply_email(reply_email: str) -> str:
             ret.append(c)
 
     return "".join(ret)
+
+
+def should_disable(alias: Alias) -> bool:
+    """Disable an alias if it has more than 5 bounces in the last 24h"""
+    yesterday = arrow.now().shift(days=-1)
+    nb_bounced_last_24h = (
+        db.session.query(EmailLog)
+        .join(Contact, EmailLog.contact_id == Contact.id)
+        .filter(
+            EmailLog.bounced.is_(True),
+            EmailLog.is_reply.is_(False),
+            EmailLog.created_at > yesterday,
+        )
+        .filter(Contact.alias_id == alias.id)
+        .count()
+    )
+    if nb_bounced_last_24h > 5:
+        return True
+    return False

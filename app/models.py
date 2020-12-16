@@ -1384,6 +1384,7 @@ class EmailLog(db.Model, ModelMixin):
 
     contact = db.relationship(Contact, backref="email_logs")
     mailbox = db.relationship("Mailbox", lazy="joined", foreign_keys=[mailbox_id])
+    user = db.relationship(User)
 
     def bounced_mailbox(self) -> str:
         if self.bounced_mailbox_id:
