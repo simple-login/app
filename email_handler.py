@@ -1250,7 +1250,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox.email,
             ),
-            max_nb_alert=10
+            max_nb_alert=10,
         )
     else:
         LOG.warning(
@@ -1279,7 +1279,7 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox.email,
             ),
-            max_nb_alert=10
+            max_nb_alert=10,
         )
 
 
