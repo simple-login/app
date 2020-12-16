@@ -1236,7 +1236,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
             f"Email from {contact.website_email} to {alias.email} cannot be delivered to your inbox",
             render(
                 "transactional/bounced-email.txt",
-                name=user.name,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1245,7 +1244,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
             ),
             render(
                 "transactional/bounced-email.html",
-                name=user.name,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1268,7 +1266,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
             f"Alias {alias.email} has been disabled due to second undelivered email from {contact.website_email}",
             render(
                 "transactional/automatic-disable-alias.txt",
-                name=user.name,
                 alias=alias,
                 website_email=contact.website_email,
                 refused_email_url=refused_email_url,
@@ -1276,7 +1273,6 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
             ),
             render(
                 "transactional/automatic-disable-alias.html",
-                name=user.name,
                 alias=alias,
                 website_email=contact.website_email,
                 refused_email_url=refused_email_url,
