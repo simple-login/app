@@ -106,6 +106,7 @@ from app.email_utils import (
     normalize_reply_email,
     is_valid_email,
     replace,
+    should_disable,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -1220,12 +1221,12 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     if nb_bounced >= 2 and alias.cannot_be_disabled:
         LOG.warning("%s cannot be disabled", alias)
 
-    # inform user if this is the first bounced email
-    if nb_bounced == 1 or (nb_bounced >= 2 and alias.cannot_be_disabled):
+    # inform user of this bounce
+    if not should_disable(alias):
         LOG.d(
-            "Inform user %s about bounced email sent by %s to alias %s",
+            "Inform user %s about a bounce from contact %s to alias %s",
             user,
-            contact.website_email,
+            contact,
             alias,
         )
         send_email_with_rate_control(
@@ -1252,12 +1253,10 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
                 mailbox_email=mailbox.email,
             ),
         )
-    # disable the alias the second time email is bounced
-    elif nb_bounced >= 2:
-        LOG.d(
-            "Bounce happens again with alias %s from %s. Disable alias now ",
+    else:
+        LOG.warning(
+            "Disable alias %s now",
             alias,
-            contact.website_email,
         )
         alias.enabled = False
         db.session.commit()
