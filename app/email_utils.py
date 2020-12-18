@@ -809,6 +809,7 @@ def replace(msg: Message, old, new) -> Message:
         or content_type.startswith("audio/")
         or content_type == "multipart/signed"
         or content_type.startswith("application/")
+        or content_type == "text/calendar"
     ):
         LOG.d("not applicable for %s", content_type)
         return msg
