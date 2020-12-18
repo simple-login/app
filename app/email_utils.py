@@ -749,10 +749,10 @@ def encode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
 def decode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
     if encoding == EmailEncoding.QUOTED:
         decoded = quopri.decodestring(text.encode("utf-8"))
-        return str(decoded, "utf-8")
+        return decoded.decode(errors="ignore")
     elif encoding == EmailEncoding.BASE64:
         decoded = base64.b64decode(text.encode("utf-8"))
-        return str(decoded, "utf-8")
+        return decoded.decode(errors="ignore")
     else:  # 7bit - no encoding
         return text
 
