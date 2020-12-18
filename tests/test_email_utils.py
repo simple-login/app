@@ -50,7 +50,6 @@ def test_can_be_used_as_personal_email(flask_client):
     assert not email_can_be_used_as_mailbox("ab@sl.local")
     assert not email_can_be_used_as_mailbox("hey@d1.test")
 
-    assert email_can_be_used_as_mailbox("hey@ab.cd")
     # custom domain
     user = User.create(
         email="a@b.c",
