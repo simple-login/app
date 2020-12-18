@@ -23,6 +23,7 @@ from app.email_utils import (
     EmailEncoding,
     replace,
     should_disable,
+    decode_text,
 )
 from app.extensions import db
 from app.models import User, CustomDomain, Alias, Contact, EmailLog
@@ -552,6 +553,33 @@ def test_encode_text():
     assert encode_text("mèo méo") == "mèo méo"
     assert encode_text("mèo méo", EmailEncoding.BASE64) == "bcOobyBtw6lv"
     assert encode_text("mèo méo", EmailEncoding.QUOTED) == "m=C3=A8o m=C3=A9o"
+
+
+def test_decode_text():
+    assert decode_text("") == ""
+    assert decode_text("ascii") == "ascii"
+
+    assert (
+        decode_text(encode_text("ascii", EmailEncoding.BASE64), EmailEncoding.BASE64)
+        == "ascii"
+    )
+    assert (
+        decode_text(
+            encode_text("mèo méo 🇪🇺", EmailEncoding.BASE64), EmailEncoding.BASE64
+        )
+        == "mèo méo 🇪🇺"
+    )
+
+    assert (
+        decode_text(encode_text("ascii", EmailEncoding.QUOTED), EmailEncoding.QUOTED)
+        == "ascii"
+    )
+    assert (
+        decode_text(
+            encode_text("mèo méo 🇪🇺", EmailEncoding.QUOTED), EmailEncoding.QUOTED
+        )
+        == "mèo méo 🇪🇺"
+    )
 
 
 def test_should_disable(flask_client):

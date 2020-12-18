@@ -746,6 +746,17 @@ def encode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
         return text
 
 
+def decode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
+    if encoding == EmailEncoding.QUOTED:
+        decoded = quopri.decodestring(text.encode("utf-8"))
+        return str(decoded, "utf-8")
+    elif encoding == EmailEncoding.BASE64:
+        decoded = base64.b64decode(text.encode("utf-8"))
+        return str(decoded, "utf-8")
+    else:  # 7bit - no encoding
+        return text
+
+
 def add_header(msg: Message, text_header, html_header) -> Message:
     if msg.get_content_type() == "text/plain":
         encoding = get_encoding(msg)
