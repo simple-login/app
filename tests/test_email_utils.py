@@ -53,11 +53,13 @@ def test_can_be_used_as_personal_email(flask_client):
     assert email_can_be_used_as_mailbox("hey@ab.cd")
     # custom domain
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
-    db.session.commit()
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
     assert not email_can_be_used_as_mailbox("hey@ab.cd")
 
     # disposable domain
