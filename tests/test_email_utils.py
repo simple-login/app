@@ -27,7 +27,7 @@ from app.email_utils import (
 )
 from app.extensions import db
 from app.models import User, CustomDomain, Alias, Contact, EmailLog
-from tests.utils import login
+
 
 # flake8: noqa: E101, W191
 

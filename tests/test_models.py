@@ -1,5 +1,6 @@
-import pytest
 from uuid import UUID
+
+import pytest
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.email_utils import parseaddr_unicode
