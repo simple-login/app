@@ -746,42 +746,47 @@ def encode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
         return text
 
 
+def decode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
+    if encoding == EmailEncoding.QUOTED:
+        decoded = quopri.decodestring(text.encode("utf-8"))
+        return str(decoded, "utf-8")
+    elif encoding == EmailEncoding.BASE64:
+        decoded = base64.b64decode(text.encode("utf-8"))
+        return str(decoded, "utf-8")
+    else:  # 7bit - no encoding
+        return text
+
+
 def add_header(msg: Message, text_header, html_header) -> Message:
     if msg.get_content_type() == "text/plain":
         encoding = get_encoding(msg)
         payload = msg.get_payload()
         if type(payload) is str:
             clone_msg = copy(msg)
-            to_append = encode_text(f"{text_header}\n---\n", encoding)
-            payload = f"{to_append}{payload}"
-            clone_msg.set_payload(payload)
+            new_payload = f"""{text_header}
+---
+{decode_text(payload, encoding)}"""
+            clone_msg.set_payload(encode_text(new_payload, encoding))
             return clone_msg
     elif msg.get_content_type() == "text/html":
         encoding = get_encoding(msg)
         payload = msg.get_payload()
         if type(payload) is str:
-            new_payload = (
-                encode_text(
-                    f"""
-<table width="100%" style="width: 100%; -premailer-width: 100%; -premailer-cellpadding: 0; -premailer-cellspacing: 0; margin: 0; padding: 0;">
+            new_payload = f"""<table width="100%" style="width: 100%; -premailer-width: 100%; -premailer-cellpadding: 0;
+  -premailer-cellspacing: 0; margin: 0; padding: 0;">
     <tr>
         <td style="border-bottom:1px dashed #5675E2; padding: 10px 0px">{html_header}</td>
     </tr>
     <tr>
-        <td>""",
-                    encoding,
-                )
-                + payload
-                + encode_text(
-                    """</td>
+        <td>
+        {decode_text(payload, encoding)}
+        </td>
     </tr>
 </table>
-            """,
-                    encoding,
-                )
-            )
+"""
+
             clone_msg = copy(msg)
-            clone_msg.set_payload(new_payload)
+            clone_msg.set_payload(encode_text(new_payload, encoding))
             return clone_msg
     elif msg.get_content_type() in ("multipart/alternative", "multipart/related"):
         new_parts = []
