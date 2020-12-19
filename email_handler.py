@@ -343,18 +343,6 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
         delete_header(msg, header)
 
 
-def should_append_alias(msg: Message, address: str):
-    """whether an alias should be appended to TO header in message"""
-
-    # # force convert header to string, sometimes addrs is Header object
-    if msg["To"] and address.lower() in str(msg["To"]).lower():
-        return False
-    if msg["Cc"] and address.lower() in str(msg["Cc"]).lower():
-        return False
-
-    return True
-
-
 def prepare_pgp_message(
     orig_msg: Message, pgp_fingerprint: str, public_key: str, can_sign: bool = False
 ) -> Message:
@@ -710,16 +698,6 @@ def forward_email_to_mailbox(
     # replace CC & To emails by reverse-alias for all emails that are not alias
     replace_header_when_forward(msg, alias, "Cc")
     replace_header_when_forward(msg, alias, "To")
-
-    # append alias into the TO header if it's not present in To or CC
-    if should_append_alias(msg, alias.email):
-        LOG.d("append alias %s  to TO header %s", alias, msg["To"])
-        if msg["To"]:
-            to_header = msg["To"] + "," + alias.email
-        else:
-            to_header = alias.email
-
-        add_or_replace_header(msg, "To", to_header.strip())
 
     # add List-Unsubscribe header
     unsubscribe_link, via_email = alias.unsubscribe_link()
