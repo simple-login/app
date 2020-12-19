@@ -94,19 +94,17 @@
         $30/year
       </button>
 
-      {% if current_user.can_use_coinbase %}
-        <hr>
-        Payment via
-        <a href="https://commerce.coinbase.com/?lang=en" target="_blank">
-          Coinbase Commerce<i class="fe fe-external-link"></i>
-        </a> <br>
-        Only the yearly plan is supported. <br>
+      <hr>
+      Payment via
+      <a href="https://commerce.coinbase.com/?lang=en" target="_blank">
+        Coinbase Commerce<i class="fe fe-external-link"></i>
+      </a> <br>
+      Only the yearly plan is supported. <br>
 
-        <a class="btn btn-primary" href="{{ url_for('dashboard.coinbase_checkout_route') }}"
-           target="_blank">
-          $30/year - Crypto <i class="fe fe-external-link"></i>
-        </a>
-      {% endif %}
+      <a class="btn btn-primary" href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+         target="_blank">
+        $30/year - Crypto <i class="fe fe-external-link"></i>
+      </a>
 
       <hr>
       For other payment options, please send us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a>

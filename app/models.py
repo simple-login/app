@@ -277,11 +277,6 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, default=False, nullable=True
     )
 
-    # AB test the coinbase integration
-    can_use_coinbase = db.Column(
-        db.Boolean, default=False, nullable=False, server_default="0"
-    )
-
     @classmethod
     def create(cls, email, name, password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
