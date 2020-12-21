@@ -581,12 +581,14 @@ def forward_email_to_mailbox(
                 name=user.name or "",
                 mailbox=mailbox,
                 mailbox_url=mailbox_url,
+                alias=alias,
             ),
             render(
                 "transactional/mailbox-invalid.html",
                 name=user.name or "",
                 mailbox=mailbox,
                 mailbox_url=mailbox_url,
+                alias=alias,
             ),
             max_nb_alert=1,
         )
