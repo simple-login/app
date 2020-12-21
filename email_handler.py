@@ -564,7 +564,7 @@ def forward_email_to_mailbox(
 
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
-        LOG.exception(
+        LOG.warning(
             "Mailbox has the same domain as alias. %s -> %s -> %s",
             contact,
             alias,
@@ -575,7 +575,7 @@ def forward_email_to_mailbox(
             user,
             ALERT_MAILBOX_IS_ALIAS,
             user.email,
-            f"Your SimpleLogin mailbox {mailbox.email} cannot be an email alias",
+            f"Your mailbox {mailbox.email} and alias {alias.email} use the same domain",
             render(
                 "transactional/mailbox-invalid.txt",
                 name=user.name or "",
