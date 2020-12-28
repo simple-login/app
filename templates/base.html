@@ -207,24 +207,28 @@
   (function () {
     // only enable on prod
     if (!window.location.host.endsWith('simplelogin.io')) {
-      console.log("GoatCounter should only be enabled in prod");
+      console.log("Analytics should only be enabled in prod");
       return;
     }
 
-    if (store.get('goatcounter-ignore') === 't') {
-      console.log("GoatCounter is disabled");
+    if (store.get('analytics-ignore') === 't') {
+      console.log("Analytics is disabled");
       return;
     }
 
-    console.log("init GoatCounter");
+    console.log("init Analytics");
 
-    var script = document.createElement('script');
-    window.counter = 'https://app.goatcounter.com/count'
-    script.async = 1;
-    script.src = '//gc.zgo.at/count.js';
+    // Add Plausible script
+    // <script async defer data-domain="app.simplelogin.io" src="https://plausible.simplelogin.io/js/index.js"></script>
+    var plausibleScript = document.createElement('script');
+    plausibleScript.defer = 1;
+    plausibleScript.async = 1;
+    plausibleScript.dataset.domain = "app.simplelogin.io";
+    plausibleScript.src = 'https://plausible.simplelogin.io/js/index.js';
 
     var ins = document.getElementsByTagName('script')[0];
-    ins.parentNode.insertBefore(script, ins)
+    ins.parentNode.insertBefore(plausibleScript, ins)
+
   })();
 </script>
 

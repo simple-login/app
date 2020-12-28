@@ -750,11 +750,11 @@ def setup_do_not_track(app):
         <script src="/static/local-storage-polyfill.js"></script>
 
         <script>
-// Disable GoatCounter if this script is called
+// Disable Analytics if this script is called
 
-store.set('goatcounter-ignore', 't');
+store.set('analytics-ignore', 't');
 
-alert("GoatCounter disabled");
+alert("Analytics disabled");
 
 window.location.href = "/";
 
