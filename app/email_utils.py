@@ -850,8 +850,7 @@ def generate_reply_email(contact_email: str, user: User) -> str:
     # "The maximum total length of a user name or other local-part is 64
     #    octets."
 
-    # todo: turns this to False after Dec 20 2020
-    include_sender_in_reverse_alias = True
+    include_sender_in_reverse_alias = False
 
     # user has chosen an option explicitly
     if user.include_sender_in_reverse_alias is not None:
