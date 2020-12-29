@@ -1,6 +1,27 @@
 version: "3.7"
 services:
-  frontend:
-  worker:
-  postfix:
+  nginx:
+    image: nginx:1.19-alpine
+    ports:
+      - "80:80"
+  postfix: # temporary
+    image: arugifa/simplelogin-postfix:3.1.0-6
+    environment: 
+      POSTFIX_FQDN: sl.com
   postgres:
+    image: postgres:12.1
+    environment:
+      POSTGRES_USER:
+      POSTGRES_PASSWORD: 
+      POSTGRES_DB:
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  webapp:
+    build: .
+  email-handler:
+    build: .
+    command: python email_handler.py
+volumes: 
+  pgdata:
+networks:
+  sl-network:
