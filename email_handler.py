@@ -1655,7 +1655,7 @@ def get_spam_score(message: Message, email_log: EmailLog) -> float:
         # wait for at max 300s which is the default spamd timeout-child
         sa = SpamAssassin(sa_input, host=SPAMASSASSIN_HOST, timeout=300)
         score = sa.get_score()
-        LOG.d("SA report, score %s. %s", score, sa.get_report_json())
+        LOG.d("SA report for %s, score %s. %s", email_log, score, sa.get_report_json())
         return score
     except Exception:
         LOG.exception("SpamAssassin exception")

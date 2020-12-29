@@ -1398,6 +1398,9 @@ class EmailLog(db.Model, ModelMixin):
         else:
             return "forward"
 
+    def __repr__(self):
+        return f"<EmailLog {self.id}>"
+
 
 class Subscription(db.Model, ModelMixin):
     """Paddle subscription"""
