@@ -41,7 +41,7 @@ def available_suffixes(user: User) -> [bool, str, str]:
         suffix_info = (True, suffix, signer.sign(suffix).decode())
 
         # put the default domain to top
-        if user.default_random_alias_domain_id == alias_domain.id:
+        if user.default_alias_custom_domain_id == alias_domain.id:
             suffixes.insert(0, suffix_info)
         else:
             suffixes.append(suffix_info)
@@ -97,7 +97,7 @@ def available_suffixes_more_info(user: User) -> [SuffixInfo]:
             suffix = "." + random_word() + "@" + alias_domain.domain
             suffix_info = SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
             # put the default domain to top
-            if user.default_random_alias_domain_id == alias_domain.id:
+            if user.default_alias_custom_domain_id == alias_domain.id:
                 suffixes.insert(0, suffix_info)
             else:
                 suffixes.append(suffix_info)

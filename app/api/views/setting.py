@@ -78,7 +78,7 @@ def update_setting():
 
             # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
             user.default_random_alias_public_domain_id = sl_domain.id
-            user.default_random_alias_domain_id = None
+            user.default_alias_custom_domain_id = None
         else:
             custom_domain = CustomDomain.get_by(domain=default_domain)
             if not custom_domain:
@@ -91,7 +91,7 @@ def update_setting():
             else:
                 # make sure only default_random_alias_domain_id or
                 # default_random_alias_public_domain_id is set
-                user.default_random_alias_domain_id = custom_domain.id
+                user.default_alias_custom_domain_id = custom_domain.id
                 user.default_random_alias_public_domain_id = None
 
     db.session.commit()

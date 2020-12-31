@@ -205,7 +205,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
     # the default domain that's used when user creates a new random alias
     # default_random_alias_domain_id XOR default_random_alias_public_domain_id
-    default_random_alias_domain_id = db.Column(
+    default_alias_custom_domain_id = db.Column(
         db.ForeignKey("custom_domain.id", ondelete="SET NULL"),
         nullable=True,
         default=None,
@@ -546,8 +546,8 @@ class User(db.Model, ModelMixin, UserMixin):
 
     def default_random_alias_domain(self) -> str:
         """return the domain used for the random alias"""
-        if self.default_random_alias_domain_id:
-            custom_domain = CustomDomain.get(self.default_random_alias_domain_id)
+        if self.default_alias_custom_domain_id:
+            custom_domain = CustomDomain.get(self.default_alias_custom_domain_id)
             # sanity check
             if (
                 not custom_domain
@@ -572,7 +572,7 @@ class User(db.Model, ModelMixin, UserMixin):
                     self,
                     sl_domain,
                 )
-                self.default_random_alias_domain_id = None
+                self.default_alias_custom_domain_id = None
                 self.default_random_alias_public_domain_id = None
                 db.session.commit()
                 return FIRST_ALIAS_DOMAIN
@@ -1045,8 +1045,8 @@ class Alias(db.Model, ModelMixin):
 
         random_email = None
 
-        if user.default_random_alias_domain_id:
-            custom_domain = CustomDomain.get(user.default_random_alias_domain_id)
+        if user.default_alias_custom_domain_id:
+            custom_domain = CustomDomain.get(user.default_alias_custom_domain_id)
             random_email = generate_email(
                 scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
             )
