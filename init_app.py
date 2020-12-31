@@ -21,7 +21,7 @@ def load_pgp_public_keys():
             mailbox.pgp_finger_print = fingerprint
     db.session.commit()
 
-    for contact in Contact.query.filter(Contact.pgp_public_key.insnot(None)).all():
+    for contact in Contact.query.filter(Contact.pgp_public_key.isnot(None)).all():
         LOG.d("Load PGP key for %s", contact)
         fingerprint = load_public_key(contact.pgp_public_key)
 
