@@ -1667,15 +1667,15 @@ def sl_sendmail(
     from_addr, to_addr, msg: Message, mail_options, rcpt_options, can_retry=True
 ):
     """replace smtp.sendmail"""
-    if POSTFIX_SUBMISSION_TLS:
-        smtp = SMTP(POSTFIX_SERVER, 587)
-        smtp.starttls()
-    else:
-        smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
-
-    # smtp.send_message has UnicodeEncodeError
-    # encode message raw directly instead
     try:
+        if POSTFIX_SUBMISSION_TLS:
+            smtp = SMTP(POSTFIX_SERVER, 587)
+            smtp.starttls()
+        else:
+            smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
+
+        # smtp.send_message has UnicodeEncodeError
+        # encode message raw directly instead
         smtp.sendmail(
             from_addr,
             to_addr,
