@@ -826,6 +826,7 @@ def replace(msg: Message, old, new) -> Message:
         or content_type.startswith("application/")
         or content_type == "text/calendar"
         or content_type == "text/directory"
+        or content_type == "text/csv"
     ):
         LOG.d("not applicable for %s", content_type)
         return msg
