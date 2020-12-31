@@ -76,8 +76,7 @@ def update_setting():
             if sl_domain.premium_only and not user.is_premium():
                 return jsonify(error="You cannot use this domain"), 400
 
-            # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
-            user.default_random_alias_public_domain_id = sl_domain.id
+            user.default_alias_public_domain_id = sl_domain.id
             user.default_alias_custom_domain_id = None
         else:
             custom_domain = CustomDomain.get_by(domain=default_domain)
@@ -89,10 +88,8 @@ def update_setting():
                 LOG.exception("%s cannot use domain %s", user, default_domain)
                 return jsonify(error="invalid domain"), 400
             else:
-                # make sure only default_random_alias_domain_id or
-                # default_random_alias_public_domain_id is set
                 user.default_alias_custom_domain_id = custom_domain.id
-                user.default_random_alias_public_domain_id = None
+                user.default_alias_public_domain_id = None
 
     db.session.commit()
     return jsonify(setting_to_dict(user))

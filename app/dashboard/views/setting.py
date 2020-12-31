@@ -207,8 +207,7 @@ def setting():
                         flash("You cannot use this domain", "error")
                         return redirect(url_for("dashboard.setting"))
 
-                    # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
-                    current_user.default_random_alias_public_domain_id = sl_domain.id
+                    current_user.default_alias_public_domain_id = sl_domain.id
                     current_user.default_alias_custom_domain_id = None
                 else:
                     custom_domain = CustomDomain.get_by(domain=default_domain)
@@ -222,16 +221,14 @@ def setting():
                                 "%s cannot use domain %s", current_user, default_domain
                             )
                         else:
-                            # make sure only default_random_alias_domain_id or
-                            # default_random_alias_public_domain_id is set
                             current_user.default_alias_custom_domain_id = (
                                 custom_domain.id
                             )
-                            current_user.default_random_alias_public_domain_id = None
+                            current_user.default_alias_public_domain_id = None
 
             else:
                 current_user.default_alias_custom_domain_id = None
-                current_user.default_random_alias_public_domain_id = None
+                current_user.default_alias_public_domain_id = None
 
             db.session.commit()
             flash("Your preference has been updated", "success")

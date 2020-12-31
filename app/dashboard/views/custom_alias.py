@@ -58,7 +58,7 @@ def available_suffixes(user: User) -> [bool, str, str]:
         suffix_info = (False, suffix, signer.sign(suffix).decode())
 
         # put the default domain to top
-        if user.default_random_alias_public_domain_id == domain.id:
+        if user.default_alias_public_domain_id == domain.id:
             suffixes.insert(0, suffix_info)
         else:
             suffixes.append(suffix_info)
@@ -113,7 +113,7 @@ def available_suffixes_more_info(user: User) -> [SuffixInfo]:
             False, suffix, signer.sign(suffix).decode(), sl_domain.premium_only
         )
         # put the default domain to top
-        if user.default_random_alias_public_domain_id == sl_domain.id:
+        if user.default_alias_public_domain_id == sl_domain.id:
             suffixes.insert(0, suffix_info)
         else:
             suffixes.append(suffix_info)

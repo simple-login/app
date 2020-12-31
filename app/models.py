@@ -204,14 +204,14 @@ class User(db.Model, ModelMixin, UserMixin):
     fido_uuid = db.Column(db.String(), nullable=True, unique=True)
 
     # the default domain that's used when user creates a new random alias
-    # default_random_alias_domain_id XOR default_random_alias_public_domain_id
+    # default_alias_custom_domain_id XOR default_alias_public_domain_id
     default_alias_custom_domain_id = db.Column(
         db.ForeignKey("custom_domain.id", ondelete="SET NULL"),
         nullable=True,
         default=None,
     )
 
-    default_random_alias_public_domain_id = db.Column(
+    default_alias_public_domain_id = db.Column(
         db.ForeignKey("public_domain.id", ondelete="SET NULL"),
         nullable=True,
         default=None,
@@ -559,8 +559,8 @@ class User(db.Model, ModelMixin, UserMixin):
 
             return custom_domain.domain
 
-        if self.default_random_alias_public_domain_id:
-            sl_domain = SLDomain.get(self.default_random_alias_public_domain_id)
+        if self.default_alias_public_domain_id:
+            sl_domain = SLDomain.get(self.default_alias_public_domain_id)
             # sanity check
             if not sl_domain:
                 LOG.exception("Problem with %s public random alias domain", self)
@@ -573,7 +573,7 @@ class User(db.Model, ModelMixin, UserMixin):
                     sl_domain,
                 )
                 self.default_alias_custom_domain_id = None
-                self.default_random_alias_public_domain_id = None
+                self.default_alias_public_domain_id = None
                 db.session.commit()
                 return FIRST_ALIAS_DOMAIN
 
@@ -1050,10 +1050,8 @@ class Alias(db.Model, ModelMixin):
             random_email = generate_email(
                 scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
             )
-        elif user.default_random_alias_public_domain_id:
-            sl_domain: SLDomain = SLDomain.get(
-                user.default_random_alias_public_domain_id
-            )
+        elif user.default_alias_public_domain_id:
+            sl_domain: SLDomain = SLDomain.get(user.default_alias_public_domain_id)
             if sl_domain.premium_only and not user.is_premium():
                 LOG.warning("%s not premium, cannot use %s", user, sl_domain)
             else:
