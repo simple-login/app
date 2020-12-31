@@ -43,7 +43,9 @@ def load_public_key_and_check(public_key: str) -> str:
         try:
             encrypt_file(dummy_data, fingerprint)
         except Exception as e:
-            LOG.exception("Cannot encrypt using the imported key")
+            LOG.warning(
+                "Cannot encrypt using the imported key %s %s", fingerprint, public_key
+            )
             # remove the fingerprint
             gpg.delete_keys([fingerprint])
             raise PGPException("Encryption fails with the key") from e
