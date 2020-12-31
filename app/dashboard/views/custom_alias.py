@@ -27,45 +27,6 @@ from app.utils import convert_to_id, random_word, word_exist
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 
 
-def available_suffixes(user: User) -> [bool, str, str]:
-    """Return (is_custom_domain, alias-suffix, time-signed alias-suffix)"""
-    user_custom_domains = user.verified_custom_domains()
-
-    # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
-    suffixes = []
-
-    # put custom domain first
-    # for each user domain, generate both the domain and a random suffix version
-    for alias_domain in user_custom_domains:
-        suffix = "@" + alias_domain.domain
-        suffix_info = (True, suffix, signer.sign(suffix).decode())
-
-        # put the default domain to top
-        if user.default_alias_custom_domain_id == alias_domain.id:
-            suffixes.insert(0, suffix_info)
-        else:
-            suffixes.append(suffix_info)
-
-        if alias_domain.random_prefix_generation:
-            suffix = "." + random_word() + "@" + alias_domain.domain
-            suffixes.append((True, suffix, signer.sign(suffix).decode()))
-
-    # then SimpleLogin domain
-    for domain in user.get_sl_domains():
-        suffix = (
-            ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain.domain
-        )
-        suffix_info = (False, suffix, signer.sign(suffix).decode())
-
-        # put the default domain to top
-        if user.default_alias_public_domain_id == domain.id:
-            suffixes.insert(0, suffix_info)
-        else:
-            suffixes.append(suffix_info)
-
-    return suffixes
-
-
 @dataclass
 class SuffixInfo:
     """Alias suffix info"""
