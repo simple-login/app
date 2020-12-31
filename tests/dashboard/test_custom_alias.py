@@ -5,7 +5,7 @@ from app.config import EMAIL_DOMAIN
 from app.dashboard.views.custom_alias import (
     signer,
     verify_prefix_suffix,
-    available_suffixes_more_info,
+    get_available_suffixes,
 )
 from app.extensions import db
 from app.models import (
@@ -108,10 +108,10 @@ def test_available_suffixes(flask_client):
 
     CustomDomain.create(user_id=user.id, domain="test.com", verified=True)
 
-    assert len(available_suffixes_more_info(user)) > 0
+    assert len(get_available_suffixes(user)) > 0
 
     # first suffix is custom domain
-    first_suffix = available_suffixes_more_info(user)[0]
+    first_suffix = get_available_suffixes(user)[0]
     assert first_suffix.is_custom
     assert first_suffix.suffix == "@test.com"
     assert first_suffix.signed_suffix.startswith("@test.com")
@@ -126,12 +126,12 @@ def test_available_suffixes_default_domain(flask_client):
     user.default_alias_public_domain_id = sl_domain.id
 
     # first suffix is SL Domain
-    first_suffix = available_suffixes_more_info(user)[0]
+    first_suffix = get_available_suffixes(user)[0]
     assert first_suffix.suffix.endswith(f"@{sl_domain.domain}")
 
     user.default_alias_public_domain_id = None
     # first suffix is custom domain
-    first_suffix = available_suffixes_more_info(user)[0]
+    first_suffix = get_available_suffixes(user)[0]
     assert first_suffix.suffix == "@test.com"
 
 

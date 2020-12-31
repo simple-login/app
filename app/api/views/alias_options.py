@@ -4,7 +4,7 @@ from sqlalchemy import desc
 from app.api.base import api_bp, require_api_auth
 from app.config import ALIAS_DOMAINS, DISABLE_ALIAS_SUFFIX
 from app.dashboard.views.custom_alias import (
-    available_suffixes_more_info,
+    get_available_suffixes,
 )
 from app.extensions import db
 from app.log import LOG
@@ -301,7 +301,7 @@ def options_v4():
             domain_name = convert_to_id(domain_name)
         ret["prefix_suggestion"] = domain_name
 
-    suffixes = available_suffixes_more_info(user)
+    suffixes = get_available_suffixes(user)
 
     # custom domain should be put first
     ret["suffixes"] = list([suffix.suffix, suffix.signed_suffix] for suffix in suffixes)
@@ -372,7 +372,7 @@ def options_v5():
             domain_name = convert_to_id(domain_name)
         ret["prefix_suggestion"] = domain_name
 
-    suffixes = available_suffixes_more_info(user)
+    suffixes = get_available_suffixes(user)
 
     # custom domain should be put first
     ret["suffixes"] = [

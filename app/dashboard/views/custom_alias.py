@@ -40,7 +40,7 @@ class SuffixInfo:
     is_premium: bool
 
 
-def available_suffixes_more_info(user: User) -> [SuffixInfo]:
+def get_available_suffixes(user: User) -> [SuffixInfo]:
     """
     Similar to as available_suffixes() but also return whether the suffix comes from a premium domain
     Note that is-premium-domain is only relevant for SL domain
@@ -98,7 +98,7 @@ def custom_alias():
         return redirect(url_for("dashboard.index"))
 
     user_custom_domains = [cd.domain for cd in current_user.verified_custom_domains()]
-    suffixes = available_suffixes_more_info(current_user)
+    suffixes = get_available_suffixes(current_user)
     at_least_a_premium_domain = False
     for suffix in suffixes:
         if not suffix.is_custom and suffix.is_premium:
