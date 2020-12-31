@@ -853,7 +853,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         is_spam, spam_status = get_spam_info(msg, max_score=MAX_REPLY_PHASE_SPAM_SCORE)
 
     if is_spam:
-        LOG.exception(
+        LOG.warning(
             "Reply phase - email sent from %s to %s detected as spam. %s",
             alias,
             contact,
