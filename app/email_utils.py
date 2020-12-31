@@ -758,7 +758,8 @@ def decode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
 
 
 def add_header(msg: Message, text_header, html_header) -> Message:
-    if msg.get_content_type() == "text/plain":
+    content_type = msg.get_content_type().lower()
+    if content_type == "text/plain":
         encoding = get_encoding(msg)
         payload = msg.get_payload()
         if type(payload) is str:
@@ -768,7 +769,7 @@ def add_header(msg: Message, text_header, html_header) -> Message:
 {decode_text(payload, encoding)}"""
             clone_msg.set_payload(encode_text(new_payload, encoding))
             return clone_msg
-    elif msg.get_content_type() == "text/html":
+    elif content_type == "text/html":
         encoding = get_encoding(msg)
         payload = msg.get_payload()
         if type(payload) is str:
@@ -788,7 +789,7 @@ def add_header(msg: Message, text_header, html_header) -> Message:
             clone_msg = copy(msg)
             clone_msg.set_payload(encode_text(new_payload, encoding))
             return clone_msg
-    elif msg.get_content_type() in ("multipart/alternative", "multipart/related"):
+    elif content_type in ("multipart/alternative", "multipart/related"):
         new_parts = []
         for part in msg.get_payload():
             new_parts.append(add_header(part, text_header, html_header))
@@ -796,10 +797,10 @@ def add_header(msg: Message, text_header, html_header) -> Message:
         clone_msg.set_payload(new_parts)
         return clone_msg
 
-    elif msg.get_content_type() == "multipart/mixed":
+    elif content_type in ("multipart/mixed", "multipart/signed"):
         new_parts = []
         parts = list(msg.get_payload())
-        LOG.d("only add header for the first part")
+        LOG.d("only add header for the first part for %s", content_type)
         for ix, part in enumerate(parts):
             if ix == 0:
                 new_parts.append(add_header(part, text_header, html_header))
@@ -810,7 +811,7 @@ def add_header(msg: Message, text_header, html_header) -> Message:
         clone_msg.set_payload(new_parts)
         return clone_msg
 
-    LOG.d("No header added for %s", msg.get_content_type())
+    LOG.d("No header added for %s", content_type)
     return msg
 
 
