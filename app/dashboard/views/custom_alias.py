@@ -39,16 +39,29 @@ def available_suffixes(user: User) -> [bool, str, str]:
     for alias_domain in user_custom_domains:
         suffix = "@" + alias_domain.domain
         suffix_info = (True, suffix, signer.sign(suffix).decode())
-        suffixes.append(suffix_info)
+
+        # put the default domain to top
+        if user.default_random_alias_domain_id == alias_domain.id:
+            suffixes.insert(0, suffix_info)
+        else:
+            suffixes.append(suffix_info)
+
         if alias_domain.random_prefix_generation:
             suffix = "." + random_word() + "@" + alias_domain.domain
             suffixes.append((True, suffix, signer.sign(suffix).decode()))
 
     # then SimpleLogin domain
-    for domain in user.available_sl_domains():
-        suffix = ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain
+    for domain in user.get_sl_domains():
+        suffix = (
+            ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain.domain
+        )
         suffix_info = (False, suffix, signer.sign(suffix).decode())
-        suffixes.append(suffix_info)
+
+        # put the default domain to top
+        if user.default_random_alias_public_domain_id == domain.id:
+            suffixes.insert(0, suffix_info)
+        else:
+            suffixes.append(suffix_info)
 
     return suffixes
 
@@ -82,9 +95,12 @@ def available_suffixes_more_info(user: User) -> [SuffixInfo]:
         suffixes.append(SuffixInfo(True, suffix, signer.sign(suffix).decode(), False))
         if alias_domain.random_prefix_generation:
             suffix = "." + random_word() + "@" + alias_domain.domain
-            suffixes.append(
-                SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
-            )
+            suffix_info = SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
+            # put the default domain to top
+            if user.default_random_alias_domain_id == alias_domain.id:
+                suffixes.insert(0, suffix_info)
+            else:
+                suffixes.append(suffix_info)
 
     # then SimpleLogin domain
     for sl_domain in user.get_sl_domains():
@@ -93,11 +109,14 @@ def available_suffixes_more_info(user: User) -> [SuffixInfo]:
             + "@"
             + sl_domain.domain
         )
-        suffixes.append(
-            SuffixInfo(
-                False, suffix, signer.sign(suffix).decode(), sl_domain.premium_only
-            )
+        suffix_info = SuffixInfo(
+            False, suffix, signer.sign(suffix).decode(), sl_domain.premium_only
         )
+        # put the default domain to top
+        if user.default_random_alias_public_domain_id == sl_domain.id:
+            suffixes.insert(0, suffix_info)
+        else:
+            suffixes.append(suffix_info)
 
     return suffixes
 

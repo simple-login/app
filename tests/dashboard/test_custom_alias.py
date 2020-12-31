@@ -15,6 +15,7 @@ from app.models import (
     User,
     DomainDeletedAlias,
     DeletedAlias,
+    SLDomain,
 )
 from app.utils import random_word
 from tests.utils import login
@@ -104,7 +105,6 @@ def test_verify_prefix_suffix(flask_client):
 
 def test_available_suffixes(flask_client):
     user = login(flask_client)
-    db.session.commit()
 
     CustomDomain.create(user_id=user.id, domain="test.com", verified=True)
 
@@ -115,6 +115,26 @@ def test_available_suffixes(flask_client):
     assert first_suffix[0]
     assert first_suffix[1] == "@test.com"
     assert first_suffix[2].startswith("@test.com")
+
+
+def test_available_suffixes_default_domain(flask_client):
+    user = login(flask_client)
+
+    sl_domain = SLDomain.query.first()
+    CustomDomain.create(
+        user_id=user.id, domain="test.com", verified=True, commit=True
+    )
+
+    user.default_random_alias_public_domain_id = sl_domain.id
+
+    # first suffix is SL Domain
+    first_suffix = available_suffixes(user)[0]
+    assert first_suffix[1].endswith(f"@{sl_domain.domain}")
+
+    user.default_random_alias_public_domain_id = None
+    # first suffix is custom domain
+    first_suffix = available_suffixes(user)[0]
+    assert first_suffix[1] == "@test.com"
 
 
 def test_add_already_existed_alias(flask_client):
