@@ -90,14 +90,14 @@ def available_suffixes_more_info(user: User) -> [SuffixInfo]:
 
     # put custom domain first
     # for each user domain, generate both the domain and a random suffix version
-    for alias_domain in user_custom_domains:
-        suffix = "@" + alias_domain.domain
+    for custom_domain in user_custom_domains:
+        suffix = "@" + custom_domain.domain
         suffixes.append(SuffixInfo(True, suffix, signer.sign(suffix).decode(), False))
-        if alias_domain.random_prefix_generation:
-            suffix = "." + random_word() + "@" + alias_domain.domain
+        if custom_domain.random_prefix_generation:
+            suffix = "." + random_word() + "@" + custom_domain.domain
             suffix_info = SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
             # put the default domain to top
-            if user.default_alias_custom_domain_id == alias_domain.id:
+            if user.default_alias_custom_domain_id == custom_domain.id:
                 suffixes.insert(0, suffix_info)
             else:
                 suffixes.append(suffix_info)
