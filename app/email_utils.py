@@ -796,6 +796,20 @@ def add_header(msg: Message, text_header, html_header) -> Message:
         clone_msg.set_payload(new_parts)
         return clone_msg
 
+    elif msg.get_content_type() == "multipart/mixed":
+        new_parts = []
+        parts = list(msg.get_payload())
+        LOG.d("only add header for the first part")
+        for ix, part in enumerate(parts):
+            if ix == 0:
+                new_parts.append(add_header(part, text_header, html_header))
+            else:
+                new_parts.append(part)
+
+        clone_msg = copy(msg)
+        clone_msg.set_payload(new_parts)
+        return clone_msg
+
     LOG.d("No header added for %s", msg.get_content_type())
     return msg
 
