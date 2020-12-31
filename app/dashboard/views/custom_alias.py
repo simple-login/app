@@ -38,7 +38,8 @@ def available_suffixes(user: User) -> [bool, str, str]:
     # for each user domain, generate both the domain and a random suffix version
     for alias_domain in user_custom_domains:
         suffix = "@" + alias_domain.domain
-        suffixes.append((True, suffix, signer.sign(suffix).decode()))
+        suffix_info = (True, suffix, signer.sign(suffix).decode())
+        suffixes.append(suffix_info)
         if alias_domain.random_prefix_generation:
             suffix = "." + random_word() + "@" + alias_domain.domain
             suffixes.append((True, suffix, signer.sign(suffix).decode()))
@@ -46,16 +47,22 @@ def available_suffixes(user: User) -> [bool, str, str]:
     # then SimpleLogin domain
     for domain in user.available_sl_domains():
         suffix = ("" if DISABLE_ALIAS_SUFFIX else "." + random_word()) + "@" + domain
-        suffixes.append((False, suffix, signer.sign(suffix).decode()))
+        suffix_info = (False, suffix, signer.sign(suffix).decode())
+        suffixes.append(suffix_info)
 
     return suffixes
 
 
 @dataclass
 class SuffixInfo:
+    """Alias suffix info"""
+
+    # whether this is a custom domain
     is_custom: bool
     suffix: str
     signed_suffix: str
+
+    # whether this is a premium SL domain. Not apply to custom domain
     is_premium: bool
 
 

@@ -508,7 +508,7 @@ class User(db.Model, ModelMixin, UserMixin):
         else:
             return sub
 
-    def verified_custom_domains(self) -> ["CustomDomain"]:
+    def verified_custom_domains(self) -> List["CustomDomain"]:
         return CustomDomain.query.filter_by(user_id=self.id, verified=True).all()
 
     def mailboxes(self) -> List["Mailbox"]:
@@ -621,7 +621,7 @@ class User(db.Model, ModelMixin, UserMixin):
         """
         return [sl_domain.domain for sl_domain in self.get_sl_domains()]
 
-    def get_sl_domains(self) -> ["SLDomain"]:
+    def get_sl_domains(self) -> List["SLDomain"]:
         if self.is_premium():
             query = SLDomain.query
         else:
