@@ -2,7 +2,6 @@ import json
 
 from flask import url_for
 
-from app.extensions import db
 from app.models import User
 
 
