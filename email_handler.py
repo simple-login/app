@@ -1642,7 +1642,7 @@ async def get_spam_score_async(message: Message) -> float:
         return -999
 
 
-def get_spam_score(message: Message, email_log: EmailLog) -> float:
+def get_spam_score(message: Message, email_log: EmailLog, can_retry=True) -> float:
     LOG.debug("get spam score for %s", email_log)
     sa_input = to_bytes(message)
 
@@ -1658,9 +1658,14 @@ def get_spam_score(message: Message, email_log: EmailLog) -> float:
         LOG.d("SA report for %s, score %s. %s", email_log, score, sa.get_report_json())
         return score
     except Exception:
-        LOG.exception("SpamAssassin exception")
-        # return a negative score so the message is always considered as ham
-        return -999
+        if can_retry:
+            LOG.warning("SpamAssassin exception, retry")
+            time.sleep(3)
+            return get_spam_score(message, email_log, can_retry=False)
+        else:
+            # return a negative score so the message is always considered as ham
+            LOG.exception("SpamAssassin exception, ignore spam check")
+            return -999
 
 
 def sl_sendmail(
