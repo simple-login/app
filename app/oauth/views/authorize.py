@@ -7,7 +7,7 @@ from itsdangerous import SignatureExpired
 
 from app.alias_utils import check_alias_prefix
 from app.config import EMAIL_DOMAIN
-from app.dashboard.views.custom_alias import available_suffixes, signer
+from app.dashboard.views.custom_alias import signer, available_suffixes_more_info
 from app.extensions import db
 from app.jose_utils import make_id_token
 from app.log import LOG
@@ -112,8 +112,7 @@ def authorize():
                 user_custom_domains = [
                     cd.domain for cd in current_user.verified_custom_domains()
                 ]
-                # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
-                suffixes = available_suffixes(current_user)
+                suffixes = available_suffixes_more_info(current_user)
 
             return render_template(
                 "oauth/authorize.html",

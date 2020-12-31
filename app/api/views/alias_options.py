@@ -3,7 +3,9 @@ from sqlalchemy import desc
 
 from app.api.base import api_bp, require_api_auth
 from app.config import ALIAS_DOMAINS, DISABLE_ALIAS_SUFFIX
-from app.dashboard.views.custom_alias import available_suffixes
+from app.dashboard.views.custom_alias import (
+    available_suffixes_more_info,
+)
 from app.extensions import db
 from app.log import LOG
 from app.models import AliasUsedOn, Alias, User
@@ -299,11 +301,10 @@ def options_v4():
             domain_name = convert_to_id(domain_name)
         ret["prefix_suggestion"] = domain_name
 
-    # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
-    suffixes = available_suffixes(user)
+    suffixes = available_suffixes_more_info(user)
 
     # custom domain should be put first
-    ret["suffixes"] = list([suffix[1], suffix[2]] for suffix in suffixes)
+    ret["suffixes"] = list([suffix.suffix, suffix.signed_suffix] for suffix in suffixes)
 
     return jsonify(ret)
 
@@ -371,12 +372,12 @@ def options_v5():
             domain_name = convert_to_id(domain_name)
         ret["prefix_suggestion"] = domain_name
 
-    # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
-    suffixes = available_suffixes(user)
+    suffixes = available_suffixes_more_info(user)
 
     # custom domain should be put first
     ret["suffixes"] = [
-        {"suffix": suffix[1], "signed_suffix": suffix[2]} for suffix in suffixes
+        {"suffix": suffix.suffix, "signed_suffix": suffix.signed_suffix}
+        for suffix in suffixes
     ]
 
     return jsonify(ret)

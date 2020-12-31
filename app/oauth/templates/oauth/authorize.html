@@ -109,11 +109,11 @@
                      style="padding-left: 5px">
                   <select class="form-control" name="suffix">
                     {% for suffix in suffixes %}
-                      <option value="{{ suffix[2] }}">
-                        {% if suffix[0] %}
-                          {{ suffix[1] }} (your domain)
+                      <option value="{{ suffix.signed_suffix }}">
+                        {% if suffix.is_custom %}
+                          {{ suffix.suffix }} (your domain)
                         {% else %}
-                          {{ suffix[1] }}
+                          {{ suffix.suffix }}
                         {% endif %}
                       </option>
                     {% endfor %}
