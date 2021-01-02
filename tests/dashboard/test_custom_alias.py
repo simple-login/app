@@ -135,6 +135,27 @@ def test_available_suffixes_default_domain(flask_client):
     assert first_suffix.suffix == "@test.com"
 
 
+def test_available_suffixes_random_prefix_generation(flask_client):
+    user = login(flask_client)
+
+    CustomDomain.create(user_id=user.id, domain="test.com", verified=True, commit=True)
+    cd2 = CustomDomain.create(
+        user_id=user.id, domain="test2.com", verified=True, commit=True
+    )
+
+    user.default_alias_custom_domain_id = cd2.id
+
+    # first suffix is test2.com
+    first_suffix = get_available_suffixes(user)[0]
+    assert first_suffix.suffix == "@test2.com"
+
+    cd2.random_prefix_generation = True
+    # e.g. .meo@test2.com
+    first_suffix = get_available_suffixes(user)[0]
+    assert first_suffix.suffix.endswith("@test2.com")
+    assert first_suffix.suffix.startswith(".")
+
+
 def test_add_already_existed_alias(flask_client):
     user = login(flask_client)
     db.session.commit()

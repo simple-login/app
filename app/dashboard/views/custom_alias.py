@@ -52,18 +52,25 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
     # put custom domain first
     # for each user domain, generate both the domain and a random suffix version
     for custom_domain in user_custom_domains:
+        if custom_domain.random_prefix_generation:
+            suffix = "." + random_word() + "@" + custom_domain.domain
+            suffix_info = SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
+            if user.default_alias_custom_domain_id == custom_domain.id:
+                suffixes.insert(0, suffix_info)
+            else:
+                suffixes.append(suffix_info)
+
         suffix = "@" + custom_domain.domain
         suffix_info = SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
 
         # put the default domain to top
-        if user.default_alias_custom_domain_id == custom_domain.id:
+        # only if random_prefix_generation isn't enabled
+        if (
+            user.default_alias_custom_domain_id == custom_domain.id
+            and not custom_domain.random_prefix_generation
+        ):
             suffixes.insert(0, suffix_info)
         else:
-            suffixes.append(suffix_info)
-
-        if custom_domain.random_prefix_generation:
-            suffix = "." + random_word() + "@" + custom_domain.domain
-            suffix_info = SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
             suffixes.append(suffix_info)
 
     # then SimpleLogin domain
