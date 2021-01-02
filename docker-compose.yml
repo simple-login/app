@@ -4,11 +4,13 @@ services:
     image: nginx:1.19-alpine
     ports:
       - "80:80"
+    volumes:
+      - ./configurations/30-sl-nginx.entrypoint.sh:/docker-entrypoint.d/30-sl-nginx.entrypoint.sh:ro
   postfix: # temporary
     image: arugifa/simplelogin-postfix:3.1.0-6
-    environment: 
+    environment:
       POSTFIX_FQDN: sl.com
-  postgres:
+  postgres:  # Must be identical to the .env POSTGRES_HOST variable
     image: postgres:12.1
     environment:
       POSTGRES_USER:
@@ -18,8 +20,14 @@ services:
       - pgdata:/var/lib/postgresql/data
   webapp:
     build: .
+    env_file:
+      - .env
+    environment:
+      DB_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
   email-handler:
     build: .
+    env_file: 
+      - .env
     command: python email_handler.py
 volumes: 
   pgdata:
