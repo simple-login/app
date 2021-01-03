@@ -10,6 +10,13 @@ services:
     image: arugifa/simplelogin-postfix:3.1.0-6
     environment:
       POSTFIX_FQDN: sl.com
+      ALIASES_DEFAULT_DOMAIN: sl.com
+      DB_NAME: ${POSTGRES_DB}
+      DB_HOST: ${POSTGRES_HOST}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      LETSENCRYPT_EMAIL: admin@sl.com
+      EMAIL_HANDLER_HOST: email-handler  # Must be identical to the service name
   postgres:  # Must be identical to the .env POSTGRES_HOST variable
     image: postgres:12.1
     environment:
@@ -28,6 +35,9 @@ services:
     build: .
     env_file: 
       - .env
+    environment:
+      DB_URI: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}"
+      LOCAL_FILE_UPLOAD: "1"
     command: python email_handler.py
 volumes: 
   pgdata:
