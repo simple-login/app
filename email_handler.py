@@ -598,13 +598,14 @@ def forward_email_to_mailbox(
 
     if SPAMASSASSIN_HOST:
         start = time.time()
-        spam_score = get_spam_score(msg, email_log)
+        spam_score, spam_report = get_spam_score(msg, email_log)
         LOG.d(
-            "%s -> %s - spam score %s in %s seconds",
+            "%s -> %s - spam score %s in %s seconds. Spam report %s",
             contact,
             alias,
             spam_score,
             time.time() - start,
+            spam_report,
         )
         email_log.spam_score = spam_score
         db.session.commit()
@@ -613,12 +614,19 @@ def forward_email_to_mailbox(
             not user.max_spam_score and spam_score > MAX_SPAM_SCORE
         ):
             is_spam = True
-            spam_status = "Spam detected by SpamAssassin server"
+            # only set the spam report for spam
+            email_log.spam_report = spam_report
     else:
         is_spam, spam_status = get_spam_info(msg, max_score=user.max_spam_score)
 
     if is_spam:
-        LOG.warning("Email detected as spam. Alias: %s, from: %s", alias, contact)
+        LOG.warning(
+            "Email detected as spam. %s -> %s. Spam Score: %s, Spam Report: %s",
+            contact,
+            alias,
+            email_log.spam_score,
+            email_log.spam_report,
+        )
         email_log.is_spam = True
         email_log.spam_status = spam_status
         db.session.commit()
@@ -828,27 +836,30 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # do not use user.max_spam_score here
     if SPAMASSASSIN_HOST:
         start = time.time()
-        spam_score = get_spam_score(msg, email_log)
+        spam_score, spam_report = get_spam_score(msg, email_log)
         LOG.d(
-            "%s -> %s - spam score %s in %s seconds",
+            "%s -> %s - spam score %s in %s seconds. Spam report %s",
             alias,
             contact,
             spam_score,
             time.time() - start,
+            spam_report,
         )
         email_log.spam_score = spam_score
         if spam_score > MAX_REPLY_PHASE_SPAM_SCORE:
             is_spam = True
-            spam_status = "Spam detected by SpamAssassin server"
+            # only set the spam report for spam
+            email_log.spam_report = spam_report
     else:
         is_spam, spam_status = get_spam_info(msg, max_score=MAX_REPLY_PHASE_SPAM_SCORE)
 
     if is_spam:
         LOG.warning(
-            "Reply phase - email sent from %s to %s detected as spam. %s",
+            "Email detected as spam. Reply phase. %s -> %s. Spam Score: %s, Spam Report: %s",
             alias,
             contact,
-            user,
+            email_log.spam_score,
+            email_log.spam_report,
         )
 
         email_log.is_spam = True
@@ -1651,7 +1662,12 @@ async def get_spam_score_async(message: Message) -> float:
         return -999
 
 
-def get_spam_score(message: Message, email_log: EmailLog, can_retry=True) -> float:
+def get_spam_score(
+    message: Message, email_log: EmailLog, can_retry=True
+) -> (float, dict):
+    """
+    Return the spam score and spam report
+    """
     LOG.debug("get spam score for %s", email_log)
     sa_input = to_bytes(message)
 
@@ -1663,9 +1679,7 @@ def get_spam_score(message: Message, email_log: EmailLog, can_retry=True) -> flo
     try:
         # wait for at max 300s which is the default spamd timeout-child
         sa = SpamAssassin(sa_input, host=SPAMASSASSIN_HOST, timeout=300)
-        score = sa.get_score()
-        LOG.d("SA report for %s, score %s. %s", email_log, score, sa.get_report_json())
-        return score
+        return sa.get_score(), sa.get_report_json()
     except Exception:
         if can_retry:
             LOG.warning("SpamAssassin exception, retry")
@@ -1674,7 +1688,7 @@ def get_spam_score(message: Message, email_log: EmailLog, can_retry=True) -> flo
         else:
             # return a negative score so the message is always considered as ham
             LOG.exception("SpamAssassin exception, ignore spam check")
-            return -999
+            return -999, None
 
 
 def sl_sendmail(
