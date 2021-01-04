@@ -111,7 +111,6 @@
               {% if log.bounced %}
                 ⚠️
               {% else %}
-
                 {% if log.is_reply %}
                   <i class="fa fa-reply"></i>
                 {% elif log.blocked %}
@@ -123,13 +122,21 @@
             </div>
           </div>
 
-          {% if log.bounced %}
+          {% if log.bounced and not log.is_reply %}
             <div>
               <span class="mr-2">{{ log.website_email }}</span>
               <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
               <span class="ml-2">{{ log.alias }}</span>
               <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
               <span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
+            </div>
+          {% elif log.bounced and log.is_reply %}
+            <div>
+              <span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
+              <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
+              <span class="ml-2">{{ log.alias }}</span>
+              <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
+              <span class="mr-2">{{ log.website_email }}</span>
             </div>
           {% else %}
             <div>
