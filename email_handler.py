@@ -491,15 +491,6 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             handle_email_sent_to_ourself(alias, mb, msg, user)
             return [(True, "250 Message accepted for delivery")]
 
-    # bounce email initiated by Postfix
-    # can happen in case an email cannot be sent from an alias to a contact
-    # in this case Postfix will send a bounce report to original sender, which is the alias
-    # if mail_from == "<>":
-    #     LOG.warning("Bounce email sent to %s", alias)
-    #
-    #     handle_bounce_reply_phase(alias, msg, user)
-    #     return [(False, "550 SL E24 Email cannot be sent to contact")]
-
     LOG.d("Create or get contact for %s %s", msg["From"], msg["Reply-To"])
     # prefer using Reply-To when creating contact
     if msg["Reply-To"]:
@@ -1130,7 +1121,7 @@ def handle_unknown_mailbox(
 def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
     """
     Handle bounce that is sent to the reverse-alias
-    Happens when  an email cannot be to a mailbox
+    Happens when  an email cannot be forwarded to a mailbox
     """
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
@@ -1263,15 +1254,19 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         )
 
 
-def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
+def handle_bounce_reply_phase(msg: Message, rcpt_to: str):
     """
     Handle bounce that is sent to alias
     Happens when  an email cannot be sent from an alias to a contact
     """
+    alias = Alias.get_by(email=rcpt_to)
+    user = alias.user
+
     try:
         email_log_id = int(get_header_from_bounce(msg, _EMAIL_LOG_ID_HEADER))
     except Exception:
         # save the data for debugging
+        # todo: remove.
         file_path = f"/tmp/{random_string(10)}.eml"
         with open(file_path, "wb") as f:
             f.write(to_bytes(msg))
@@ -1286,6 +1281,8 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
 
     email_log = EmailLog.get(email_log_id)
     contact = email_log.contact
+
+    LOG.debug("Handle bounce during reply phase for %s", email_log)
 
     # Store the bounced email
     # generate a name for the email
@@ -1329,13 +1326,13 @@ def handle_bounce_reply_phase(alias: Alias, msg: Message, user: User):
         mailbox.email,
         f"Email cannot be sent to { contact.email } from your alias { alias.email }",
         render(
-            "transactional/bounce-email-reply-phase.txt",
+            "transactional/bounce/bounce-email-reply-phase.txt",
             alias=alias,
             contact=contact,
             refused_email_url=refused_email_url,
         ),
         render(
-            "transactional/bounce-email-reply-phase.html",
+            "transactional/bounce/bounce-email-reply-phase.html",
             alias=alias,
             contact=contact,
             refused_email_url=refused_email_url,
@@ -1600,6 +1597,18 @@ def handle(envelope: Envelope) -> str:
             LOG.debug("Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
             is_delivered, smtp_status = handle_reply(envelope, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
+
+        # bounce email initiated by Postfix
+        # can happen in case an email cannot be sent from an alias to a contact
+        # in this case Postfix will send a bounce report to original sender, which is the alias
+        elif mail_from == "<>":
+            LOG.warning(
+                "Handle bounce sent to alias %s",
+                rcpt_to,
+            )
+
+            handle_bounce_reply_phase(msg, rcpt_to)
+            return "550 SL E24 Email cannot be sent to contact"
         else:  # Forward case
             LOG.debug(
                 "Forward phase %s(%s) -> %s",
