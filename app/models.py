@@ -10,6 +10,7 @@ from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text, desc, CheckConstraint
+from sqlalchemy.orm import deferred
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -1354,6 +1355,8 @@ class EmailLog(db.Model, ModelMixin):
     is_spam = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
     spam_score = db.Column(db.Float, nullable=True)
     spam_status = db.Column(db.Text, nullable=True, default=None)
+    # do not load this column
+    spam_report = deferred(db.Column(db.JSON, nullable=True))
 
     # Point to the email that has been refused
     refused_email_id = db.Column(
