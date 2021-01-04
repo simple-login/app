@@ -1271,6 +1271,11 @@ def handle_bounce_reply_phase(msg: Message, rcpt_to: str):
     Happens when  an email cannot be sent from an alias to a contact
     """
     alias = Alias.get_by(email=rcpt_to)
+    # the alias has been deleted in the meantime
+    if not alias:
+        LOG.warning("No such alias for %s", rcpt_to)
+        return
+
     user = alias.user
 
     try:
