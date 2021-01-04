@@ -255,7 +255,7 @@ def send_email(
         smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
     msg = MIMEMultipart("alternative")
-    msg.attach(MIMEText(plaintext, "text"))
+    msg.attach(MIMEText(plaintext))
 
     if not html:
         LOG.d("Use plaintext as html")
