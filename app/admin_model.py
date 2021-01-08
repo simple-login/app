@@ -1,10 +1,21 @@
-from flask import redirect, url_for, request
+import arrow
+from flask import redirect, url_for, request, flash
 from flask_admin import expose, AdminIndexView
+from flask_admin.actions import action
 from flask_admin.contrib import sqla
 from flask_login import current_user
 
+from app.models import User, ManualSubscription
+
 
 class SLModelView(sqla.ModelView):
+    column_default_sort = ("id", True)
+
+    can_edit = False
+    can_create = False
+    can_delete = False
+    edit_modal = True
+
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin
 
@@ -20,3 +31,54 @@ class SLAdminIndexView(AdminIndexView):
             return redirect(url_for("auth.login", next=request.url))
 
         return super(SLAdminIndexView, self).index()
+
+
+class UserAdmin(SLModelView):
+    column_searchable_list = ["email", "id"]
+    column_exclude_list = [
+        "salt",
+        "password",
+        "otp_secret",
+        "last_otp",
+        "fido_uuid",
+        "profile_picture",
+    ]
+    can_edit = True
+
+    def scaffold_list_columns(self):
+        ret = super().scaffold_list_columns()
+        ret.insert(0, "upgrade_channel")
+        return ret
+
+    @action(
+        "education_upgrade",
+        "Education upgrade",
+        "Are you sure you want to edu-upgrade selected users?",
+    )
+    def action_edu_upgrade(self, ids):
+        query = User.query.filter(User.id.in_(ids))
+
+        for user in query.all():
+            if user.is_premium() and not user.in_trial():
+                continue
+
+            ManualSubscription.create(
+                user_id=user.id,
+                end_at=arrow.now().shift(years=1, days=1),
+                comment="Edu",
+                is_giveaway=True,
+                commit=True,
+            )
+
+            flash(f"{user} is edu upgraded")
+
+
+class EmailLogAdmin(SLModelView):
+    column_searchable_list = ["id", "user.email", "contact.website_email"]
+
+    can_edit = False
+    can_create = False
+
+
+class AliasAdmin(SLModelView):
+    column_searchable_list = ["id", "user.email", "email", "mailbox.email"]

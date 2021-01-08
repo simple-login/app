@@ -27,7 +27,13 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app import paddle_utils
-from app.admin_model import SLModelView, SLAdminIndexView
+from app.admin_model import (
+    SLModelView,
+    SLAdminIndexView,
+    UserAdmin,
+    EmailLogAdmin,
+    AliasAdmin,
+)
 from app.api.base import api_bp
 from app.auth.base import auth_bp
 from app.config import (
@@ -81,6 +87,7 @@ from app.models import (
     AliasMailbox,
     Notification,
     CoinbaseSubscription,
+    EmailLog,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -737,10 +744,9 @@ def init_admin(app):
     admin = Admin(name="SimpleLogin", template_mode="bootstrap3")
 
     admin.init_app(app, index_view=SLAdminIndexView())
-    admin.add_view(SLModelView(User, db.session))
-    admin.add_view(SLModelView(Client, db.session))
-    admin.add_view(SLModelView(Alias, db.session))
-    admin.add_view(SLModelView(ClientUser, db.session))
+    admin.add_view(UserAdmin(User, db.session))
+    admin.add_view(AliasAdmin(Alias, db.session))
+    admin.add_view(EmailLogAdmin(EmailLog, db.session))
 
 
 def setup_do_not_track(app):
