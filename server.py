@@ -28,7 +28,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app import paddle_utils
 from app.admin_model import (
-    SLModelView,
     SLAdminIndexView,
     UserAdmin,
     EmailLogAdmin,
