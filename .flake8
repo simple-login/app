@@ -4,7 +4,9 @@ ignore =
     E501,
     # W503 & E203 are not PEP 8 compliant and conflicts with black
     W503,
-    E203
+    E203,
+    # Ignore "f-string is missing placeholders"
+    F541
 exclude = 
     .git,
     __pycache__,
