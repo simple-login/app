@@ -438,12 +438,16 @@ def sanity_check():
             db.session.commit()
             LOG.exception("Alias %s name contains linebreak %s", alias, alias.name)
 
+    contact_email_sanity_date = arrow.get("2021-01-12")
     for contact in Contact.query.all():
         if sanitize_email(contact.reply_email) != contact.reply_email:
             LOG.exception("Contact %s reply-email not sanitized", contact)
 
-        if sanitize_email(contact.website_email) != contact.website_email:
-            LOG.exception("Contact %s reply-email not sanitized", contact)
+        if (
+            sanitize_email(contact.website_email) != contact.website_email
+            and contact.created_at > contact_email_sanity_date
+        ):
+            LOG.exception("Contact %s website-email not sanitized", contact)
 
         if not contact.invalid_email and not is_valid_email(contact.website_email):
             LOG.exception("%s invalid email", contact)
