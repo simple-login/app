@@ -57,7 +57,7 @@ ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
 
 # VERP: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
 BOUNCE_PREFIX = os.environ.get("BOUNCE_PREFIX") or "bounce+"
-BOUNCE_SUFFIX = os.environ.get("BOUNCE_SUFFIX") or f"+{EMAIL_DOMAIN}"
+BOUNCE_SUFFIX = os.environ.get("BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
 BOUNCE_EMAIL = BOUNCE_PREFIX + "{}" + BOUNCE_SUFFIX
 
 try:
