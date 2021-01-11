@@ -7,7 +7,7 @@ from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
 from app.extensions import db
 from app.log import LOG
 from app.models import User, SocialAuth
-from app.utils import encode_url
+from app.utils import encode_url, sanitize_email
 
 _authorization_base_url = "https://github.com/login/oauth/authorize"
 _token_url = "https://github.com/login/oauth/access_token"
@@ -82,7 +82,7 @@ def github_callback():
         )
         return redirect(url_for("auth.login"))
 
-    email = email.strip().lower()
+    email = sanitize_email(email)
     user = User.get_by(email=email)
 
     if not user:

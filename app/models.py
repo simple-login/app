@@ -30,7 +30,13 @@ from app.errors import AliasInTrashError
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
-from app.utils import convert_to_id, random_string, random_words, random_word
+from app.utils import (
+    convert_to_id,
+    random_string,
+    random_words,
+    random_word,
+    sanitize_email,
+)
 
 
 class ModelMixin(object):
@@ -1022,7 +1028,7 @@ class Alias(db.Model, ModelMixin):
 
         email = kw["email"]
         # make sure email is lowercase and doesn't have any whitespace
-        email = email.lower().strip().replace(" ", "")
+        email = sanitize_email(email)
 
         # make sure alias is not in global trash, i.e. DeletedAlias table
         if DeletedAlias.get_by(email=email):

@@ -10,7 +10,12 @@ from wtforms import StringField, validators, ValidationError
 
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
-from app.email_utils import parseaddr_unicode, is_valid_email, generate_reply_email
+from app.email_utils import (
+    parseaddr_unicode,
+    is_valid_email,
+    generate_reply_email,
+)
+from app.utils import sanitize_email
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
@@ -166,6 +171,7 @@ def alias_contact_manager(alias_id):
 
                 try:
                     contact_name, contact_email = parseaddr_unicode(contact_addr)
+                    contact_email = sanitize_email(contact_email)
                 except Exception:
                     flash(f"{contact_addr} is invalid", "error")
                     return redirect(

@@ -7,7 +7,7 @@ from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from app.extensions import db
 from app.log import LOG
 from app.models import User, File, SocialAuth
-from app.utils import random_string
+from app.utils import random_string, sanitize_email
 from .login_utils import after_login
 
 _authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -79,7 +79,7 @@ def google_callback():
         "https://www.googleapis.com/oauth2/v1/userinfo"
     ).json()
 
-    email = google_user_data["email"].strip().lower()
+    email = sanitize_email(google_user_data["email"])
     user = User.get_by(email=email)
 
     picture_url = google_user_data.get("picture")

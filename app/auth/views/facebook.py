@@ -13,6 +13,7 @@ from app.extensions import db
 from app.log import LOG
 from app.models import User, SocialAuth
 from .login_utils import after_login
+from ...utils import sanitize_email
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"
@@ -91,7 +92,7 @@ def facebook_callback():
         )
         return redirect(url_for("auth.register"))
 
-    email = email.strip().lower()
+    email = sanitize_email(email)
     user = User.get_by(email=email)
 
     picture_url = facebook_user_data.get("picture", {}).get("data", {}).get("url")

@@ -4,6 +4,7 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.dashboard.views.setting import send_reset_password_email
+from app.utils import sanitize_email
 from app.extensions import limiter
 from app.models import User
 
@@ -20,7 +21,7 @@ def forgot_password():
     form = ForgotPasswordForm(request.form)
 
     if form.validate_on_submit():
-        email = form.email.data.strip().lower()
+        email = sanitize_email(form.email.data)
         flash(
             "If your email is correct, you are going to receive an email to reset your password",
             "success",

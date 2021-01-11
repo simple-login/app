@@ -27,6 +27,7 @@ from app.email_utils import (
     normalize_reply_email,
     is_valid_email,
 )
+from app.utils import sanitize_email
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -425,11 +426,11 @@ def sanity_check():
         db.session.commit()
 
     for user in User.filter_by(activated=True).all():
-        if user.email.lower().strip().replace(" ", "") != user.email:
+        if sanitize_email(user.email) != user.email:
             LOG.exception("%s does not have sanitized email", user)
 
     for alias in Alias.query.all():
-        if alias.email.lower().strip().replace(" ", "") != alias.email:
+        if sanitize_email(alias.email) != alias.email:
             LOG.exception("Alias %s email not sanitized", alias)
 
         if alias.name and "\n" in alias.name:
@@ -438,7 +439,10 @@ def sanity_check():
             LOG.exception("Alias %s name contains linebreak %s", alias, alias.name)
 
     for contact in Contact.query.all():
-        if contact.reply_email.lower().strip().replace(" ", "") != contact.reply_email:
+        if sanitize_email(contact.reply_email) != contact.reply_email:
+            LOG.exception("Contact %s reply-email not sanitized", contact)
+
+        if sanitize_email(contact.website_email) != contact.website_email:
             LOG.exception("Contact %s reply-email not sanitized", contact)
 
         if not contact.invalid_email and not is_valid_email(contact.website_email):
@@ -447,7 +451,7 @@ def sanity_check():
             db.session.commit()
 
     for mailbox in Mailbox.query.all():
-        if mailbox.email.lower().strip().replace(" ", "") != mailbox.email:
+        if sanitize_email(mailbox.email) != mailbox.email:
             LOG.exception("Mailbox %s address not sanitized", mailbox)
 
     for contact in Contact.query.all():

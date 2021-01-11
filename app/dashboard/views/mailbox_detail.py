@@ -11,6 +11,7 @@ from app.config import ENFORCE_SPF, MAILBOX_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import email_can_be_used_as_mailbox
+from app.utils import sanitize_email
 from app.email_utils import mailbox_already_used, render, send_email
 from app.extensions import db
 from app.log import LOG
@@ -45,7 +46,7 @@ def mailbox_detail_route(mailbox_id):
             request.form.get("form-name") == "update-email"
             and change_email_form.validate_on_submit()
         ):
-            new_email = change_email_form.email.data.lower().strip()
+            new_email = sanitize_email(change_email_form.email.data)
             if new_email != mailbox.email and not pending_email:
                 # check if this email is not already used
                 if mailbox_already_used(new_email, current_user) or Alias.get_by(
@@ -92,7 +93,7 @@ def mailbox_detail_route(mailbox_id):
                 url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
             )
         elif request.form.get("form-name") == "add-authorized-address":
-            address = request.form.get("email").lower().strip().replace(" ", "")
+            address = sanitize_email(request.form.get("email"))
             if AuthorizedAddress.get_by(mailbox_id=mailbox.id, email=address):
                 flash(f"{address} already added", "error")
             else:

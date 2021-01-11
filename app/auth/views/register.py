@@ -15,7 +15,7 @@ from app.email_utils import (
 from app.extensions import db
 from app.log import LOG
 from app.models import User, ActivationCode
-from app.utils import random_string, encode_url
+from app.utils import random_string, encode_url, sanitize_email
 
 
 class RegisterForm(FlaskForm):
@@ -66,7 +66,7 @@ def register():
                     HCAPTCHA_SITEKEY=HCAPTCHA_SITEKEY,
                 )
 
-        email = form.email.data.strip().lower()
+        email = sanitize_email(form.email.data)
         if not email_can_be_used_as_mailbox(email):
             flash("You cannot use this email address as your personal inbox.", "error")
 

@@ -12,6 +12,7 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
     is_valid_email,
 )
+from app.utils import sanitize_email
 from app.extensions import db
 from app.models import Mailbox
 
@@ -38,7 +39,7 @@ def create_mailbox():
         the new mailbox dict
     """
     user = g.user
-    mailbox_email = request.get_json().get("email").lower().strip().replace(" ", "")
+    mailbox_email = sanitize_email(request.get_json().get("email"))
 
     if not is_valid_email(mailbox_email):
         return jsonify(error=f"{mailbox_email} invalid"), 400
@@ -126,7 +127,7 @@ def update_mailbox(mailbox_id):
             changed = True
 
     if "email" in data:
-        new_email = data.get("email").lower().strip()
+        new_email = sanitize_email(data.get("email"))
 
         if mailbox_already_used(new_email, user):
             return jsonify(error=f"{new_email} already used"), 400

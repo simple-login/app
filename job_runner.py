@@ -20,6 +20,7 @@ from app.email_utils import (
     render,
     get_email_domain_part,
 )
+from app.utils import sanitize_email
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -126,7 +127,7 @@ def handle_batch_import(batch_import: BatchImport):
 
     for row in reader:
         try:
-            full_alias = row["alias"].lower().strip().replace(" ", "")
+            full_alias = sanitize_email(row["alias"])
             note = row["note"]
         except KeyError:
             LOG.warning("Cannot parse row %s", row)

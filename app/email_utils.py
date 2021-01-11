@@ -51,7 +51,12 @@ from app.models import (
     Alias,
     EmailLog,
 )
-from app.utils import random_string, convert_to_id, convert_to_alphanumeric
+from app.utils import (
+    random_string,
+    convert_to_id,
+    convert_to_alphanumeric,
+    sanitize_email,
+)
 
 
 def render(template_name, **kwargs) -> str:
@@ -293,7 +298,7 @@ def send_email_with_rate_control(
 
     Return true if the email is sent, otherwise False
     """
-    to_email = to_email.lower().strip()
+    to_email = sanitize_email(to_email)
     min_dt = arrow.now().shift(days=-1 * nb_day)
     nb_alert = (
         SentAlert.query.filter_by(alert_type=alert_type, to_email=to_email)
@@ -332,7 +337,7 @@ def send_email_at_most_times(
 
     Return true if the email is sent, otherwise False
     """
-    to_email = to_email.lower().strip()
+    to_email = sanitize_email(to_email)
     nb_alert = SentAlert.query.filter_by(
         alert_type=alert_type, to_email=to_email
     ).count()
@@ -365,7 +370,8 @@ def get_email_domain_part(address):
     Get the domain part from email
     ab@cd.com -> cd.com
     """
-    return address[address.find("@") + 1 :].strip().lower()
+    address = sanitize_email(address)
+    return address[address.find("@") + 1 :]
 
 
 def add_dkim_signature(msg: Message, email_domain: str):

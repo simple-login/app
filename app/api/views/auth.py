@@ -17,6 +17,7 @@ from app.email_utils import (
     send_email,
     render,
 )
+from app.utils import sanitize_email
 from app.extensions import db, limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
@@ -47,7 +48,7 @@ def auth_login():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
     password = data.get("password")
     device = data.get("device")
 
@@ -84,7 +85,7 @@ def auth_register():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
     password = data.get("password")
 
     if DISABLE_REGISTRATION:
@@ -134,7 +135,7 @@ def auth_activate():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
     code = data.get("code")
 
     user = User.get_by(email=email)
@@ -187,7 +188,7 @@ def auth_reactivate():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
     user = User.get_by(email=email)
 
     # do not use a different message to avoid exposing existing email
@@ -240,7 +241,7 @@ def auth_facebook():
 
     graph = facebook.GraphAPI(access_token=facebook_token)
     user_info = graph.get_object("me", fields="email,name")
-    email = user_info.get("email").strip().lower()
+    email = sanitize_email(user_info.get("email"))
 
     user = User.get_by(email=email)
 
@@ -253,7 +254,7 @@ def auth_facebook():
             return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
         LOG.d("create facebook user with %s", user_info)
-        user = User.create(email=email.lower(), name=user_info["name"], activated=True)
+        user = User.create(email=email, name=user_info["name"], activated=True)
         db.session.commit()
         email_utils.send_welcome_email(user)
 
@@ -293,7 +294,7 @@ def auth_google():
     build = googleapiclient.discovery.build("oauth2", "v2", credentials=cred)
 
     user_info = build.userinfo().get().execute()
-    email = user_info.get("email").strip().lower()
+    email = sanitize_email(user_info.get("email"))
 
     user = User.get_by(email=email)
 
@@ -306,7 +307,7 @@ def auth_google():
             return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
         LOG.d("create Google user with %s", user_info)
-        user = User.create(email=email.lower(), name="", activated=True)
+        user = User.create(email=email, name="", activated=True)
         db.session.commit()
         email_utils.send_welcome_email(user)
 
@@ -355,7 +356,7 @@ def forgot_password():
     if not data or not data.get("email"):
         return jsonify(error="request body must contain email"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
 
     user = User.get_by(email=email)
 

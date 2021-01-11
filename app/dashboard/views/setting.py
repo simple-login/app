@@ -42,7 +42,7 @@ from app.models import (
     SLDomain,
     CoinbaseSubscription,
 )
-from app.utils import random_string
+from app.utils import random_string, sanitize_email
 
 
 class SettingForm(FlaskForm):
@@ -79,10 +79,10 @@ def setting():
                 # whether user can proceed with the email update
                 new_email_valid = True
                 if (
-                    change_email_form.email.data.lower().strip() != current_user.email
+                    sanitize_email(change_email_form.email.data) != current_user.email
                     and not pending_email
                 ):
-                    new_email = change_email_form.email.data.strip().lower()
+                    new_email = sanitize_email(change_email_form.email.data)
 
                     # check if this email is not already used
                     if personal_email_already_used(new_email) or Alias.get_by(

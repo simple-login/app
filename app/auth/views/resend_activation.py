@@ -4,6 +4,7 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.register import send_activation_email
+from app.utils import sanitize_email
 from app.log import LOG
 from app.models import User
 
@@ -17,7 +18,7 @@ def resend_activation():
     form = ResendActivationForm(request.form)
 
     if form.validate_on_submit():
-        user = User.filter_by(email=form.email.data.strip().lower()).first()
+        user = User.filter_by(email=sanitize_email(form.email.data)).first()
 
         if not user:
             flash("There is no such email", "warning")
