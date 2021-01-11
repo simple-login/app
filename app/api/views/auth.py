@@ -318,7 +318,7 @@ def auth_google():
 
 
 def auth_payload(user, device) -> dict:
-    ret = {"name": user.name, "email": user.email, "mfa_enabled": user.enable_otp}
+    ret = {"name": user.name or "", "email": user.email, "mfa_enabled": user.enable_otp}
 
     # do not give api_key, user can only obtain api_key after OTP verification
     if user.enable_otp:

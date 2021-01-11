@@ -1,5 +1,3 @@
-Hi {{name}}
-
 Your trial will end {{ user.trial_end.humanize() }}.
 
 When the trial ends:

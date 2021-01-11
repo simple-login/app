@@ -447,14 +447,12 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
         f"Email sent to {alias.email} from its own mailbox {mailbox.email}",
         render(
             "transactional/cycle-email.txt",
-            name=user.name or "",
             alias=alias,
             mailbox=mailbox,
             refused_email_url=refused_email_url,
         ),
         render(
             "transactional/cycle-email.html",
-            name=user.name or "",
             alias=alias,
             mailbox=mailbox,
             refused_email_url=refused_email_url,
@@ -569,14 +567,12 @@ def forward_email_to_mailbox(
             f"Your mailbox {mailbox.email} and alias {alias.email} use the same domain",
             render(
                 "transactional/mailbox-invalid.txt",
-                name=user.name or "",
                 mailbox=mailbox,
                 mailbox_url=mailbox_url,
                 alias=alias,
             ),
             render(
                 "transactional/mailbox-invalid.html",
-                name=user.name or "",
                 mailbox=mailbox,
                 mailbox_url=mailbox_url,
                 alias=alias,
@@ -1037,7 +1033,6 @@ def spf_pass(
                     f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
                     render(
                         "transactional/spf-fail.txt",
-                        name=user.name,
                         alias=alias.email,
                         ip=ip,
                         mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
@@ -1047,8 +1042,6 @@ def spf_pass(
                     ),
                     render(
                         "transactional/spf-fail.html",
-                        name=user.name,
-                        alias=alias.email,
                         ip=ip,
                         mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
                         to_email=contact_email,
@@ -1094,7 +1087,6 @@ def handle_unknown_mailbox(
         f"Attempt to use your alias {alias.email} from {envelope.mail_from}",
         render(
             "transactional/reply-must-use-personal-email.txt",
-            name=user.name,
             alias=alias,
             sender=envelope.mail_from,
             authorize_address_link=authorize_address_link,
@@ -1102,7 +1094,6 @@ def handle_unknown_mailbox(
         ),
         render(
             "transactional/reply-must-use-personal-email.html",
-            name=user.name,
             alias=alias,
             sender=envelope.mail_from,
             authorize_address_link=authorize_address_link,
@@ -1409,7 +1400,6 @@ def handle_spam(
             f"Email from {alias.email} to {contact.website_email} is detected as spam",
             render(
                 "transactional/spam-email-reply-phase.txt",
-                name=user.name,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1417,7 +1407,6 @@ def handle_spam(
             ),
             render(
                 "transactional/spam-email-reply-phase.html",
-                name=user.name,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1440,7 +1429,6 @@ def handle_spam(
             f"Email from {contact.website_email} to {alias.email} is detected as spam",
             render(
                 "transactional/spam-email.txt",
-                name=user.name,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1448,7 +1436,6 @@ def handle_spam(
             ),
             render(
                 "transactional/spam-email.html",
-                name=user.name,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,

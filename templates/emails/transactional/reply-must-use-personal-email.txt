@@ -1,5 +1,3 @@
-Hi {{name}}
-
 We have recorded an attempt to send an email from your alias {{ alias.email }} using {{ sender }}.
 
 Please note that sending from this alias only works from alias's owning mailboxes, that are

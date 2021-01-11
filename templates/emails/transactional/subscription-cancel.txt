@@ -1,4 +1,4 @@
-Hi {{name}}
+Hi,
 
 This is Son, SimpleLogin founder. I saw that you have canceled your subscription.
 

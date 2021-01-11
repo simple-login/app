@@ -2,12 +2,10 @@
 
 {% block content %}
   {% call text() %}
-    Hi {{ name }}
-  {% endcall %}
-
-  {% call text() %}
-    An email was sent to your alias <b>{{ alias.email }}</b> from its own mailbox
-    <b>{{ mailbox.email }}</b>.
+    <h1>
+      An email was sent to your alias <b>{{ alias.email }}</b> from its own mailbox
+      <b>{{ mailbox.email }}</b>.
+    </h1>
   {% endcall %}
 
   {% call text() %}

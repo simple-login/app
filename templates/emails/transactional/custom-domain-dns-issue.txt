@@ -1,5 +1,3 @@
-Hi {{name}}
-
 We have detected that your domain {{ custom_domain.domain }} does not have the DNS set up correctly.
 
 Please make sure to set up your domain following the instructions on your domain DNS page at:

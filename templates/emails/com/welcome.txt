@@ -1,4 +1,4 @@
-Hi {{name}}
+Hi!
 
 {% if alias %}
   This is the first email you receive via your first alias {{ alias }}.

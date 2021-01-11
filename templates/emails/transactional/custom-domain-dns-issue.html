@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + name) }}
-
   {% call text() %}
-    We have detected that your domain <b>{{ custom_domain.domain }}</b> does not have the DNS set up correctly.
+    <h1>
+      <b>{{ custom_domain.domain }}</b> does not have the DNS set up correctly
+    </h1>
   {% endcall %}
 
   {% call text() %}

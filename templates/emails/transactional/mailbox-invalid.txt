@@ -1,6 +1,4 @@
-Hi {{name}}
-
-Your mailbox {{ mailbox.email }} and alias {{alias.email}} cannot use the same domain.
+Your mailbox {{ mailbox.email }} and alias {{alias.email}} cannot have the same domain.
 
 The alias domain should point to SimpleLogin servers so emails sent to it are forwarded by SimpleLogin.
 

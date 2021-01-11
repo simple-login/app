@@ -1182,9 +1182,9 @@ class ClientUser(db.Model, ModelMixin):
         for scope in self.client.get_scopes():
             if scope == Scope.NAME:
                 if self.name:
-                    res[Scope.NAME.value] = self.name
+                    res[Scope.NAME.value] = self.name or ""
                 else:
-                    res[Scope.NAME.value] = self.user.name
+                    res[Scope.NAME.value] = self.user.name or ""
             elif scope == Scope.AVATAR_URL:
                 if self.user.profile_picture_id:
                     if self.default_avatar:

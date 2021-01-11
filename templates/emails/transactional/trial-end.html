@@ -1,13 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {% if name %}
-    {{ render_text("Hi " + name + ",") }}
-  {% else %}
-    {{ render_text("Hi,") }}
-  {% endif %}
 
-  {{ render_text("Your trial will end " + user.trial_end.humanize() + ".") }}
+  {% call text() %}
+    <h1>
+      Your trial will end {{ user.trial_end.humanize() }}
+    </h1>
+  {% endcall %}
 
   {{ render_text("When the trial ends:") }}
 

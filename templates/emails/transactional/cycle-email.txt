@@ -1,5 +1,3 @@
-Hi {{name}}
-
 An email was sent to your alias {{ alias.email }} from its own mailbox {{ mailbox.email }}.
 
 SimpleLogin doesn't send this email back to your mailbox as it would be refused or hidden anyway by your email service.

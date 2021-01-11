@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + name) }}
+  {% call text() %}
+    <h1>
+      Cannot create {{ alias }} on-the-fly
+    </h1>
+  {% endcall %}
 
   {% call text() %}
     An email has been sent to the alias <b>{{ alias }}</b> that would be created automatically as you own the directory <b>{{ directory }}</b>

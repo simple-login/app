@@ -1,5 +1,3 @@
-Hi {{name}}
-
 An email has been sent to the alias {{alias}} that would be created automatically as you own the domain {{domain}}. However as your plan is no longer premium, this creation cannot happen.
 
 Please upgrade to premium plan in order to use this feature.

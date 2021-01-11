@@ -1,5 +1,3 @@
-Hi {{name}}
-
 An email sent to your alias {{alias.email}} from {{website_email}} is detected as spam by our Spam Detection Engine (SpamAssassin).
 
 In most of the cases, the email will be refused by your email provider.

@@ -14,7 +14,7 @@ from app.utils import random_string
 
 def user_to_dict(user: User) -> dict:
     ret = {
-        "name": user.name,
+        "name": user.name or "",
         "is_premium": user.is_premium(),
         "email": user.email,
         "in_trial": user.in_trial(),

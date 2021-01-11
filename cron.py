@@ -88,7 +88,7 @@ def notify_premium_end():
 
             send_email(
                 user.email,
-                f"Your subscription will end soon {user.name}",
+                f"Your subscription will end soon",
                 render(
                     "transactional/subscription-end.txt",
                     user=user,
@@ -115,16 +115,14 @@ def notify_manual_sub_end():
             LOG.debug("Remind user %s that their manual sub is ending soon", user)
             send_email(
                 user.email,
-                f"Your subscription will end soon {user.name}",
+                f"Your subscription will end soon",
                 render(
                     "transactional/manual-subscription-end.txt",
-                    name=user.name,
                     user=user,
                     manual_sub=manual_sub,
                 ),
                 render(
                     "transactional/manual-subscription-end.html",
-                    name=user.name,
                     user=user,
                     manual_sub=manual_sub,
                 ),
@@ -498,13 +496,11 @@ def check_custom_domain():
                     render(
                         "transactional/custom-domain-dns-issue.txt",
                         custom_domain=custom_domain,
-                        name=user.name or "",
                         domain_dns_url=domain_dns_url,
                     ),
                     render(
                         "transactional/custom-domain-dns-issue.html",
                         custom_domain=custom_domain,
-                        name=user.name or "",
                         domain_dns_url=domain_dns_url,
                     ),
                     max_nb_alert=1,

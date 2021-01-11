@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + name) }}
+  {% call text() %}
+    <h1>
+      An attempt to send an email from your alias <b>{{ alias.email }}</b> using <b>{{ sender }}</b> is blocked.
+    </h1>
+  {% endcall %}
 
   {% call text() %}
     As a measure to protect against <b>email spoofing</b>, we have blocked an attempt to send an email from your alias <b>{{ alias.email }}</b> using <b>{{ sender }}</b>.

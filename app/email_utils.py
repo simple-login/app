@@ -78,9 +78,9 @@ def send_welcome_email(user):
 
     send_email(
         to_email,
-        f"Welcome to SimpleLogin {user.name}",
-        render("com/welcome.txt", name=user.name, user=user, alias=alias),
-        render("com/welcome.html", name=user.name, user=user, alias=alias),
+        f"Welcome to SimpleLogin",
+        render("com/welcome.txt", user=user, alias=alias),
+        render("com/welcome.html", user=user, alias=alias),
         unsubscribe_link,
         via_email,
     )
@@ -89,62 +89,56 @@ def send_welcome_email(user):
 def send_trial_end_soon_email(user):
     send_email(
         user.email,
-        f"Your trial will end soon {user.name}",
-        render("transactional/trial-end.txt", name=user.name, user=user),
-        render("transactional/trial-end.html", name=user.name, user=user),
+        f"Your trial will end soon",
+        render("transactional/trial-end.txt", user=user),
+        render("transactional/trial-end.html", user=user),
     )
 
 
-def send_activation_email(email, name, activation_link):
+def send_activation_email(email, activation_link):
     send_email(
         email,
-        f"Just one more step to join SimpleLogin {name}",
+        f"Just one more step to join SimpleLogin",
         render(
             "transactional/activation.txt",
-            name=name,
             activation_link=activation_link,
             email=email,
         ),
         render(
             "transactional/activation.html",
-            name=name,
             activation_link=activation_link,
             email=email,
         ),
     )
 
 
-def send_reset_password_email(email, name, reset_password_link):
+def send_reset_password_email(email, reset_password_link):
     send_email(
         email,
         "Reset your password on SimpleLogin",
         render(
             "transactional/reset-password.txt",
-            name=name,
             reset_password_link=reset_password_link,
         ),
         render(
             "transactional/reset-password.html",
-            name=name,
             reset_password_link=reset_password_link,
         ),
     )
 
 
-def send_change_email(new_email, current_email, name, link):
+def send_change_email(new_email, current_email, link):
     send_email(
         new_email,
         "Confirm email update on SimpleLogin",
         render(
             "transactional/change-email.txt",
-            name=name,
             link=link,
             new_email=new_email,
             current_email=current_email,
         ),
         render(
             "transactional/change-email.html",
-            name=name,
             link=link,
             new_email=new_email,
             current_email=current_email,
@@ -170,13 +164,11 @@ def send_cannot_create_directory_alias(user, alias_address, directory_name):
         f"Alias {alias_address} cannot be created",
         render(
             "transactional/cannot-create-alias-directory.txt",
-            name=user.name,
             alias=alias_address,
             directory=directory_name,
         ),
         render(
             "transactional/cannot-create-alias-directory.html",
-            name=user.name,
             alias=alias_address,
             directory=directory_name,
         ),
@@ -194,13 +186,11 @@ def send_cannot_create_directory_alias_disabled(user, alias_address, directory_n
         f"Alias {alias_address} cannot be created",
         render(
             "transactional/cannot-create-alias-directory-disabled.txt",
-            name=user.name,
             alias=alias_address,
             directory=directory_name,
         ),
         render(
             "transactional/cannot-create-alias-directory-disabled.html",
-            name=user.name,
             alias=alias_address,
             directory=directory_name,
         ),
@@ -216,13 +206,11 @@ def send_cannot_create_domain_alias(user, alias, domain):
         f"Alias {alias} cannot be created",
         render(
             "transactional/cannot-create-alias-domain.txt",
-            name=user.name,
             alias=alias,
             domain=domain,
         ),
         render(
             "transactional/cannot-create-alias-domain.html",
-            name=user.name,
             alias=alias,
             domain=domain,
         ),

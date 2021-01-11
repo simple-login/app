@@ -604,7 +604,6 @@ def setup_paddle_callback(app: Flask):
                     "SimpleLogin - what can we do to improve the product?",
                     render(
                         "transactional/subscription-cancel.txt",
-                        name=user.name or "",
                         end_date=request.form.get("cancellation_effective_date"),
                     ),
                 )
