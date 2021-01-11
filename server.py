@@ -317,7 +317,6 @@ def fake_data():
 
     User.create(
         email="winston@continental.com",
-        name="Winston",
         password="password",
         activated=True,
         referral_id=referral.id,

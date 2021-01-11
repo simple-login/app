@@ -279,7 +279,7 @@ class User(db.Model, ModelMixin, UserMixin):
     )
 
     @classmethod
-    def create(cls, email, name, password=None, **kwargs):
+    def create(cls, email, name="", password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
 
         if password:
