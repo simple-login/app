@@ -73,6 +73,50 @@ class UserAdmin(SLModelView):
 
             flash(f"{user} is edu upgraded")
 
+    @action(
+        "cash_upgrade",
+        "Cash upgrade",
+        "Are you sure you want to cash-upgrade selected users?",
+    )
+    def action_cash_upgrade(self, ids):
+        query = User.query.filter(User.id.in_(ids))
+
+        for user in query.all():
+            if user.is_premium() and not user.in_trial():
+                continue
+
+            ManualSubscription.create(
+                user_id=user.id,
+                end_at=arrow.now().shift(years=1, days=1),
+                comment="Cash",
+                is_giveaway=False,
+                commit=True,
+            )
+
+            flash(f"{user} is cash upgraded")
+
+    @action(
+        "monero_upgrade",
+        "Monero upgrade",
+        "Are you sure you want to monero-upgrade selected users?",
+    )
+    def action_monero_upgrade(self, ids):
+        query = User.query.filter(User.id.in_(ids))
+
+        for user in query.all():
+            if user.is_premium() and not user.in_trial():
+                continue
+
+            ManualSubscription.create(
+                user_id=user.id,
+                end_at=arrow.now().shift(years=1, days=1),
+                comment="Monero",
+                is_giveaway=False,
+                commit=True,
+            )
+
+            flash(f"{user} is Monero upgraded")
+
 
 class EmailLogAdmin(SLModelView):
     column_searchable_list = ["id"]
