@@ -1271,11 +1271,19 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     Handle forward phase bounce
     Happens when an email cannot be sent to a mailbox
     """
-    LOG.debug("Handle bounce during forward phase for %s", email_log)
-
     contact = email_log.contact
     alias = contact.alias
     user = alias.user
+    mailbox = email_log.mailbox
+
+    # email_log.mailbox should be set during the forward phase
+    if not mailbox:
+        LOG.exception("Use %s default mailbox %s", alias, alias.mailbox)
+        mailbox = alias.mailbox
+
+    LOG.debug(
+        "Handle forward bounce %s -> %s -> %s. %s", contact, alias, mailbox, email_log
+    )
 
     # Store the bounced email, generate a name for the email
     random_name = str(uuid.uuid4())
@@ -1309,13 +1317,6 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     )
     db.session.flush()
     LOG.d("Create refused email %s", refused_email)
-
-    mailbox = email_log.mailbox
-
-    # email_log.mailbox should be set during the forward phase
-    if not mailbox:
-        LOG.exception("Use %s default mailbox %s", alias, refused_email)
-        mailbox = alias.mailbox
 
     email_log.bounced = True
     email_log.refused_email_id = refused_email.id
@@ -1396,11 +1397,14 @@ def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
     Handle reply phase bounce
     Happens when  an email cannot be sent from an alias to a contact
     """
-    LOG.debug("Handle bounce during reply phase for %s", email_log)
-
     contact = email_log.contact
     alias = contact.alias
     user = alias.user
+    mailbox = email_log.mailbox or alias.mailbox
+
+    LOG.debug(
+        "Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log
+    )
 
     # Store the bounced email
     # generate a name for the email
@@ -1425,7 +1429,6 @@ def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
     email_log.bounced = True
     email_log.refused_email_id = refused_email.id
 
-    mailbox = email_log.mailbox or alias.mailbox
     email_log.bounced_mailbox_id = mailbox.id
 
     db.session.commit()
