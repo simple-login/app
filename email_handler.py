@@ -79,6 +79,9 @@ from app.config import (
     PGP_SENDER_PRIVATE_KEY,
     ALERT_BOUNCE_EMAIL_REPLY_PHASE,
     NOREPLY,
+    BOUNCE_EMAIL,
+    BOUNCE_PREFIX,
+    BOUNCE_SUFFIX,
 )
 from app.email_utils import (
     send_email,
@@ -95,7 +98,6 @@ from app.email_utils import (
     get_email_domain_part,
     copy,
     to_bytes,
-    get_header_from_bounce,
     send_email_at_most_times,
     is_valid_alias_address_domain,
     should_add_dkim_signature,
@@ -107,6 +109,7 @@ from app.email_utils import (
     is_valid_email,
     replace,
     should_disable,
+    get_header_from_bounce,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -720,7 +723,8 @@ def forward_email_to_mailbox(
 
     try:
         sl_sendmail(
-            contact.reply_email,
+            # use a different envelope sender for each forward (aka VERP)
+            BOUNCE_EMAIL.format(email_log.id),
             mailbox.email,
             msg,
             envelope.mail_options,
@@ -795,7 +799,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             user,
         )
 
-        handle_bounce(contact, alias, msg, user)
+        handle_bounce_deprecated(contact, alias, msg, user)
         return False, "550 SL E6"
 
     # Anti-spoofing
@@ -951,7 +955,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     try:
         sl_sendmail(
-            alias.email,
+            # VERP
+            BOUNCE_EMAIL.format(email_log.id),
             contact.website_email,
             msg,
             envelope.mail_options,
@@ -1124,7 +1129,7 @@ def handle_unknown_mailbox(
     )
 
 
-def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
+def handle_bounce_deprecated(contact: Contact, alias: Alias, msg: Message, user: User):
     """
     Handle bounce that is sent to the reverse-alias
     Happens when  an email cannot be forwarded to a mailbox
@@ -1260,40 +1265,137 @@ def handle_bounce(contact: Contact, alias: Alias, msg: Message, user: User):
         )
 
 
-def handle_bounce_reply_phase(msg: Message, rcpt_to: str):
+def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     """
-    Handle bounce that is sent to alias
-    Happens when  an email cannot be sent from an alias to a contact
+    Handle forward phase bounce
+    Happens when an email cannot be sent to a mailbox
     """
-    alias = Alias.get_by(email=rcpt_to)
-    # the alias has been deleted in the meantime
-    if not alias:
-        LOG.warning("No such alias for %s", rcpt_to)
-        return
+    LOG.debug("Handle bounce during forward phase for %s", email_log)
 
+    contact = email_log.contact
+    alias = contact.alias
     user = alias.user
 
-    try:
-        email_log_id = int(get_header_from_bounce(msg, _EMAIL_LOG_ID_HEADER))
-    except Exception:
-        # save the data for debugging
-        # todo: remove.
-        file_path = f"/tmp/{random_string(10)}.eml"
-        with open(file_path, "wb") as f:
-            f.write(to_bytes(msg))
+    # Store the bounced email, generate a name for the email
+    random_name = str(uuid.uuid4())
 
-        LOG.exception(
-            "Cannot get email-log-id from bounced report, %s %s %s",
+    full_report_path = f"refused-emails/full-{random_name}.eml"
+    s3.upload_email_from_bytesio(full_report_path, BytesIO(to_bytes(msg)), random_name)
+
+    file_path = None
+
+    orig_msg = get_orig_message_from_bounce(msg)
+    if not orig_msg:
+        # Some MTA does not return the original message in bounce message
+        # nothing we can do here
+        LOG.warning(
+            "Cannot parse original message from bounce message %s %s %s %s",
             alias,
             user,
-            file_path,
+            contact,
+            full_report_path,
         )
-        return
+    else:
+        file_path = f"refused-emails/{random_name}.eml"
+        s3.upload_email_from_bytesio(file_path, BytesIO(to_bytes(msg)), random_name)
 
-    email_log = EmailLog.get(email_log_id)
-    contact = email_log.contact
+    refused_email = RefusedEmail.create(
+        path=file_path, full_report_path=full_report_path, user_id=user.id
+    )
+    db.session.flush()
+    LOG.d("Create refused email %s", refused_email)
 
+    mailbox = email_log.mailbox
+
+    # email_log.mailbox should be set during the forward phase
+    if not mailbox:
+        LOG.exception("Use %s default mailbox %s", alias, refused_email)
+        mailbox = alias.mailbox
+
+    email_log.bounced = True
+    email_log.refused_email_id = refused_email.id
+    email_log.bounced_mailbox_id = mailbox.id
+    db.session.commit()
+
+    refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
+
+    nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
+    if nb_bounced >= 2 and alias.cannot_be_disabled:
+        LOG.warning("%s cannot be disabled", alias)
+
+    # inform user of this bounce
+    if not should_disable(alias):
+        LOG.d(
+            "Inform user %s about a bounce from contact %s to alias %s",
+            user,
+            contact,
+            alias,
+        )
+        disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
+        send_email_with_rate_control(
+            user,
+            ALERT_BOUNCE_EMAIL,
+            user.email,
+            f"Email from {contact.website_email} to {alias.email} cannot be delivered to your mailbox",
+            render(
+                "transactional/bounce/bounced-email.txt",
+                alias=alias,
+                website_email=contact.website_email,
+                disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email_url,
+                mailbox_email=mailbox.email,
+            ),
+            render(
+                "transactional/bounce/bounced-email.html",
+                alias=alias,
+                website_email=contact.website_email,
+                disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email_url,
+                mailbox_email=mailbox.email,
+            ),
+            max_nb_alert=10,
+        )
+    else:
+        LOG.warning(
+            "Disable alias %s now",
+            alias,
+        )
+        alias.enabled = False
+        db.session.commit()
+
+        send_email_with_rate_control(
+            user,
+            ALERT_BOUNCE_EMAIL,
+            user.email,
+            f"Alias {alias.email} has been disabled due to second undelivered email from {contact.website_email}",
+            render(
+                "transactional/bounce/automatic-disable-alias.txt",
+                alias=alias,
+                website_email=contact.website_email,
+                refused_email_url=refused_email_url,
+                mailbox_email=mailbox.email,
+            ),
+            render(
+                "transactional/bounce/automatic-disable-alias.html",
+                alias=alias,
+                website_email=contact.website_email,
+                refused_email_url=refused_email_url,
+                mailbox_email=mailbox.email,
+            ),
+            max_nb_alert=10,
+        )
+
+
+def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
+    """
+    Handle reply phase bounce
+    Happens when  an email cannot be sent from an alias to a contact
+    """
     LOG.debug("Handle bounce during reply phase for %s", email_log)
+
+    contact = email_log.contact
+    alias = contact.alias
+    user = alias.user
 
     # Store the bounced email
     # generate a name for the email
@@ -1580,6 +1682,13 @@ def handle(envelope: Envelope) -> str:
         LOG.d("Handle email sent to sender from %s", mail_from)
         return handle_sender_email(envelope)
 
+    if (
+        len(rcpt_tos) == 1
+        and rcpt_tos[0].startswith(BOUNCE_PREFIX)
+        and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
+    ):
+        return handle_bounce(envelope, rcpt_tos[0])
+
     # Whether it's necessary to apply greylisting
     if greylisting_needed(mail_from, rcpt_tos):
         LOG.warning("Grey listing applied for %s %s", mail_from, rcpt_tos)
@@ -1602,18 +1711,6 @@ def handle(envelope: Envelope) -> str:
             LOG.debug("Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
             is_delivered, smtp_status = handle_reply(envelope, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
-
-        # bounce email initiated by Postfix
-        # can happen in case an email cannot be sent from an alias to a contact
-        # in this case Postfix will send a bounce report to original sender, which is the alias
-        elif mail_from == "<>":
-            LOG.warning(
-                "Handle bounce sent to alias %s",
-                rcpt_to,
-            )
-
-            handle_bounce_reply_phase(msg, rcpt_to)
-            return "550 SL E24 Email cannot be sent to contact"
         else:  # Forward case
             LOG.debug(
                 "Forward phase %s(%s) -> %s",
@@ -1631,6 +1728,27 @@ def handle(envelope: Envelope) -> str:
 
     # Failed delivery for all, return the first failure
     return res[0][1]
+
+
+def handle_bounce(envelope, rcpt_to) -> str:
+    """
+    Return SMTP status, e.g. "500 Error"
+    """
+    LOG.d("handle bounce sent to %s", rcpt_to)
+    msg = email.message_from_bytes(envelope.original_content)
+
+    # parse the EmailLog
+    email_log_id = rcpt_to[len("bounces+") : rcpt_to.find("@")]
+    email_log_id = int(email_log_id)
+
+    email_log = EmailLog.get(email_log_id)
+
+    if email_log.is_reply:
+        handle_bounce_reply_phase(msg, email_log)
+        return "550 SL E24 Email cannot be sent to contact"
+    else:  # forward phase
+        handle_bounce_forward_phase(msg, email_log)
+        return "550 SL E26 Email cannot be forwarded to mailbox"
 
 
 async def get_spam_score_async(message: Message) -> float:
