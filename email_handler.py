@@ -121,7 +121,7 @@ from app.models import (
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.spamassassin_utils import SpamAssassin
-from app.utils import random_string
+from app.utils import random_string, sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_app, create_light_app
 
@@ -181,6 +181,8 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
         )
         # either reuse a contact with empty email or create a new contact with empty email
         contact_email = ""
+
+    contact_email = sanitize_email(contact_email)
 
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
@@ -255,7 +257,9 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
     for contact_name, contact_email in getaddresses(headers):
         # convert back to original then parse again to make sure contact_name is unicode
         addr = formataddr((contact_name, contact_email))
-        contact_name, contact = parseaddr_unicode(addr)
+        contact_name, _ = parseaddr_unicode(addr)
+
+        contact_email = sanitize_email(contact_email)
 
         # no transformation when alias is already in the header
         if contact_email == alias.email:
@@ -1561,10 +1565,8 @@ def handle(envelope: Envelope) -> str:
     """Return SMTP status"""
 
     # sanitize mail_from, rcpt_tos
-    mail_from = envelope.mail_from.lower().strip().replace(" ", "")
-    rcpt_tos = [
-        rcpt_to.lower().strip().replace(" ", "") for rcpt_to in envelope.rcpt_tos
-    ]
+    mail_from = sanitize_email(envelope.mail_from)
+    rcpt_tos = [sanitize_email(rcpt_to) for rcpt_to in envelope.rcpt_tos]
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
 

@@ -59,3 +59,9 @@ def convert_to_alphanumeric(s: str) -> str:
 
 def encode_url(url):
     return urllib.parse.quote(url, safe="")
+
+
+def sanitize_email(email_address: str) -> str:
+    if email_address:
+        return email_address.lower().strip().replace(" ", "")
+    return email_address

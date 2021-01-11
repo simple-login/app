@@ -868,7 +868,7 @@ def generate_reply_email(contact_email: str, user: User) -> str:
 
         # make sure contact_email can be ascii-encoded
         contact_email = convert_to_id(contact_email)
-        contact_email = contact_email.lower().strip().replace(" ", "")
+        contact_email = sanitize_email(contact_email)
         contact_email = contact_email[:45]
         contact_email = contact_email.replace("@", ".at.")
         contact_email = convert_to_alphanumeric(contact_email)
