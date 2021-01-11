@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, DataError
 
 from app.email_utils import (
     get_email_domain_part,
@@ -161,6 +161,10 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         db.session.rollback()
         alias = Alias.get_by(email=address)
         return alias
+    except DataError:
+        LOG.warning("Cannot create alias %s", address)
+        db.session.rollback()
+        return None
 
 
 def delete_alias(alias: Alias, user: User):
