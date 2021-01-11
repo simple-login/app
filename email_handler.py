@@ -110,6 +110,7 @@ from app.email_utils import (
     replace,
     should_disable,
     get_header_from_bounce,
+    parse_email_log_id_from_bounce,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -1738,9 +1739,7 @@ def handle_bounce(envelope, rcpt_to) -> str:
     msg = email.message_from_bytes(envelope.original_content)
 
     # parse the EmailLog
-    email_log_id = rcpt_to[len("bounces+") : rcpt_to.find("@")]
-    email_log_id = int(email_log_id)
-
+    email_log_id = parse_email_log_id_from_bounce(rcpt_to)
     email_log = EmailLog.get(email_log_id)
 
     if email_log.is_reply:
