@@ -176,7 +176,7 @@ class User(db.Model, ModelMixin, UserMixin):
     salt = db.Column(db.String(128), nullable=True)
     password = db.Column(db.String(128), nullable=True)
 
-    name = db.Column(db.String(128), nullable=False)
+    name = db.Column(db.String(128), nullable=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     alias_generator = db.Column(
         db.Integer,
