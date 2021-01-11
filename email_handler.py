@@ -1281,7 +1281,9 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     random_name = str(uuid.uuid4())
 
     full_report_path = f"refused-emails/full-{random_name}.eml"
-    s3.upload_email_from_bytesio(full_report_path, BytesIO(to_bytes(msg)), random_name)
+    s3.upload_email_from_bytesio(
+        full_report_path, BytesIO(to_bytes(msg)), f"full-{random_name}"
+    )
 
     file_path = None
 
@@ -1298,7 +1300,9 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         )
     else:
         file_path = f"refused-emails/{random_name}.eml"
-        s3.upload_email_from_bytesio(file_path, BytesIO(to_bytes(msg)), random_name)
+        s3.upload_email_from_bytesio(
+            file_path, BytesIO(to_bytes(orig_msg)), random_name
+        )
 
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id
