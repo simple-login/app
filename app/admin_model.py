@@ -10,6 +10,7 @@ from app.models import User, ManualSubscription
 
 class SLModelView(sqla.ModelView):
     column_default_sort = ("id", True)
+    column_display_pk = True
 
     can_edit = False
     can_create = False
@@ -74,7 +75,7 @@ class UserAdmin(SLModelView):
 
 
 class EmailLogAdmin(SLModelView):
-    column_searchable_list = ["id", "user.email", "contact.website_email"]
+    column_searchable_list = ["id"]
 
     can_edit = False
     can_create = False
