@@ -54,6 +54,12 @@ EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"].lower()
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
 SUPPORT_NAME = os.environ.get("SUPPORT_NAME", "Son from SimpleLogin")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+
+# VERP: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
+BOUNCE_PREFIX = os.environ.get("BOUNCE_PREFIX") or "bounce+"
+BOUNCE_SUFFIX = os.environ.get("BOUNCE_SUFFIX") or f"+{EMAIL_DOMAIN}"
+BOUNCE_EMAIL = BOUNCE_PREFIX + "{}" + BOUNCE_SUFFIX
+
 try:
     MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
 except Exception:

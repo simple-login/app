@@ -1,7 +1,7 @@
 import email
 from email.message import EmailMessage
 
-from app.config import MAX_ALERT_24H, EMAIL_DOMAIN
+from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, BOUNCE_EMAIL
 from app.email_utils import (
     get_email_domain_part,
     can_create_directory_for_address,
@@ -24,6 +24,7 @@ from app.email_utils import (
     replace,
     should_disable,
     decode_text,
+    parse_email_log_id_from_bounce,
 )
 from app.extensions import db
 from app.models import User, CustomDomain, Alias, Contact, EmailLog
@@ -615,3 +616,8 @@ def test_should_disable(flask_client):
     alias2 = Alias.create_new_random(user)
     db.session.commit()
     assert not should_disable(alias2)
+
+
+def test_parse_email_log_id_from_bounce():
+    assert parse_email_log_id_from_bounce("bounces+1234+@local") == 1234
+    assert parse_email_log_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234

@@ -937,3 +937,7 @@ def should_disable(alias: Alias) -> bool:
     if nb_bounced_last_24h > 5:
         return True
     return False
+
+
+def parse_email_log_id_from_bounce(email_address: str) -> int:
+    return int(email_address[email_address.find("+") : email_address.rfind("+")])
