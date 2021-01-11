@@ -401,10 +401,11 @@ def create_contact_route(alias_id):
         return jsonify(error="Contact cannot be empty"), 400
 
     contact_name, contact_email = parseaddr_unicode(contact_addr)
-    contact_email = sanitize_email(contact_email)
 
     if not is_valid_email(contact_email):
         return jsonify(error=f"invalid contact email {contact_email}"), 400
+
+    contact_email = sanitize_email(contact_email)
 
     # already been added
     if Contact.get_by(alias_id=alias.id, website_email=contact_email):
