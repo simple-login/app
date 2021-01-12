@@ -32,6 +32,7 @@ from app.admin_model import (
     UserAdmin,
     EmailLogAdmin,
     AliasAdmin,
+    MailboxAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -743,6 +744,7 @@ def init_admin(app):
     admin.init_app(app, index_view=SLAdminIndexView())
     admin.add_view(UserAdmin(User, db.session))
     admin.add_view(AliasAdmin(Alias, db.session))
+    admin.add_view(MailboxAdmin(Mailbox, db.session))
     admin.add_view(EmailLogAdmin(EmailLog, db.session))
 
 
