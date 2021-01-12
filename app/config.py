@@ -163,7 +163,7 @@ MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
 
 # AWS
-AWS_REGION = "eu-west-3"
+AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"
 BUCKET = os.environ.get("BUCKET")
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
