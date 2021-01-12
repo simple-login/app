@@ -31,7 +31,7 @@ class SLAdminIndexView(AdminIndexView):
         if not current_user.is_authenticated or not current_user.is_admin:
             return redirect(url_for("auth.login", next=request.url))
 
-        return super(SLAdminIndexView, self).index()
+        return redirect("/admin/user")
 
 
 class UserAdmin(SLModelView):
