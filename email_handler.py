@@ -1135,6 +1135,7 @@ def handle_bounce_deprecated(contact: Contact, alias: Alias, msg: Message, user:
     Handle bounce that is sent to the reverse-alias
     Happens when  an email cannot be forwarded to a mailbox
     """
+    LOG.exception("handle_bounce_deprecated shouldn't be called %s %s", contact, alias)
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
     # Store the bounced email
