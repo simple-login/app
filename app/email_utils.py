@@ -922,6 +922,11 @@ def normalize_reply_email(reply_email: str) -> str:
 
 def should_disable(alias: Alias) -> bool:
     """Disable an alias if it has more than 5 bounces in the last 24h"""
+    # Bypass the bounce rule
+    if alias.cannot_be_disabled:
+        LOG.warning("%s cannot be disabled", alias)
+        return False
+
     yesterday = arrow.now().shift(days=-1)
     nb_bounced_last_24h = (
         db.session.query(EmailLog)

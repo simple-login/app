@@ -1325,10 +1325,6 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
 
     refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
 
-    nb_bounced = EmailLog.filter_by(contact_id=contact.id, bounced=True).count()
-    if nb_bounced >= 2 and alias.cannot_be_disabled:
-        LOG.warning("%s cannot be disabled", alias)
-
     # inform user of this bounce
     if not should_disable(alias):
         LOG.d(
