@@ -258,6 +258,8 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
     """
     new_addrs: [str] = []
     headers = msg.get_all(header, [])
+    # headers can be an array of Header, convert it to string here
+    headers = [str(h) for h in headers]
     for contact_name, contact_email in getaddresses(headers):
         # convert back to original then parse again to make sure contact_name is unicode
         addr = formataddr((contact_name, contact_email))
@@ -326,8 +328,11 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     Replace CC or To Reply emails by original emails
     """
     new_addrs: [str] = []
+    headers = msg.get_all(header, [])
+    # headers can be an array of Header, convert it to string here
+    headers = [str(h) for h in headers]
 
-    for _, reply_email in getaddresses(msg.get_all(header, [])):
+    for _, reply_email in getaddresses(headers):
         # no transformation when alias is already in the header
         if reply_email == alias.email:
             continue
