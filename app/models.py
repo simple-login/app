@@ -524,6 +524,8 @@ class User(db.Model, ModelMixin, UserMixin):
         return self.name, [other_name, "Anonymous", "whoami"]
 
     def get_name_initial(self) -> str:
+        if not self.name:
+            return ""
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
 
