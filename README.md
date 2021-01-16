@@ -559,7 +559,7 @@ At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot
 
 ### Enjoy!
 
-If all of the above steps are successful, open http://app.mydomain.com/ and create your first account!
+If all the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
 By default, new accounts are not premium so don't have unlimited alias. To make your account premium,
 please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
@@ -594,6 +594,12 @@ Feel free to use `virtualenv` or similar tools to isolate development environmen
 
 ```bash
 poetry install
+```
+
+On Mac, sometimes you might need to install some other packages like
+
+```bash
+brew install pkg-config libffi openssl postgresql
 ```
 
 You also need to install `gpg`, on Mac it can be done with:
