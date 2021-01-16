@@ -840,7 +840,7 @@ def replace(msg: Message, old, new) -> Message:
         "multipart/alternative",
         "multipart/related",
         "multipart/mixed",
-        "message/rfc822"
+        "message/rfc822",
     ):
         new_parts = []
         for part in msg.get_payload():
