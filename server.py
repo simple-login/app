@@ -26,7 +26,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app import paddle_utils
+from app import paddle_utils, s3
 from app.admin_model import (
     SLAdminIndexView,
     UserAdmin,
@@ -62,6 +62,7 @@ from app.config import (
     PADDLE_YEARLY_PRODUCT_IDS,
     PGP_SIGNER,
     COINBASE_WEBHOOK_SECRET,
+    ROOT_DIR,
 )
 from app.dashboard.base import dashboard_bp
 from app.developer.base import developer_bp
@@ -88,6 +89,7 @@ from app.models import (
     Notification,
     CoinbaseSubscription,
     EmailLog,
+    File,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -206,6 +208,16 @@ def fake_data():
         fido_uuid=None,
     )
     user.include_sender_in_reverse_alias = None
+    db.session.commit()
+
+    file_path = "profile_pic.svg"
+    s3.upload_from_bytesio(
+        file_path,
+        open(os.path.join(ROOT_DIR, "static", "default-icon.svg"), "rb"),
+        content_type="image/svg",
+    )
+    file = File.create(user_id=user.id, path=file_path, commit=True)
+    user.profile_picture_id = file.id
     db.session.commit()
 
     user.trial_end = None
