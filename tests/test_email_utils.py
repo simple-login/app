@@ -1,6 +1,8 @@
 import email
 from email.message import EmailMessage
 
+import arrow
+
 from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, BOUNCE_EMAIL
 from app.email_utils import (
     get_email_domain_part,
@@ -28,9 +30,8 @@ from app.email_utils import (
 )
 from app.extensions import db
 from app.models import User, CustomDomain, Alias, Contact, EmailLog
-
-
 # flake8: noqa: E101, W191
+from tests.utils import login
 
 
 def test_get_email_domain_part():
@@ -616,6 +617,38 @@ def test_should_disable(flask_client):
     alias2 = Alias.create_new_random(user)
     db.session.commit()
     assert not should_disable(alias2)
+
+
+def test_should_disable_bounce_consecutive_days(flask_client):
+    user = login(flask_client)
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+
+    # create 6 bounce on this alias in the last 24h: alias is not disabled
+    for _ in range(6):
+        EmailLog.create(
+            user_id=user.id, contact_id=contact.id, commit=True, bounced=True
+        )
+    assert not should_disable(alias)
+
+    # create 2 bounces in the last 7 days: alias should be disabled
+    for _ in range(2):
+        EmailLog.create(
+            user_id=user.id,
+            contact_id=contact.id,
+            commit=True,
+            bounced=True,
+            created_at=arrow.now().shift(days=-3),
+        )
+    assert should_disable(alias)
 
 
 def test_parse_email_log_id_from_bounce():

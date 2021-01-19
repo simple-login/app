@@ -940,8 +940,33 @@ def should_disable(alias: Alias) -> bool:
         .filter(Contact.alias_id == alias.id)
         .count()
     )
-    if nb_bounced_last_24h > 5:
+    # if more than 10 bounces in 24h -> disable alias
+    if nb_bounced_last_24h > 10:
+        LOG.debug("more than 10 bounces in the last 24h on %s", alias)
         return True
+
+    # if between 5-10 bounces but has bounces last week -> disable alias
+    elif nb_bounced_last_24h > 5:
+        one_week_ago = arrow.now().shift(days=-8)
+        nb_bounced_7d_1d = (
+            db.session.query(EmailLog)
+            .join(Contact, EmailLog.contact_id == Contact.id)
+            .filter(
+                EmailLog.bounced.is_(True),
+                EmailLog.is_reply.is_(False),
+                EmailLog.created_at > one_week_ago,
+                EmailLog.created_at < yesterday,
+            )
+            .filter(Contact.alias_id == alias.id)
+            .count()
+        )
+        if nb_bounced_7d_1d > 1:
+            LOG.debug(
+                "more than 5 bounces in the last 24h and more than 1 bounces in the last 7 days on %s",
+                alias,
+            )
+            return True
+
     return False
 
 
