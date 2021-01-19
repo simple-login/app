@@ -109,7 +109,6 @@ from app.email_utils import (
     is_valid_email,
     replace,
     should_disable,
-    get_header_from_bounce,
     parse_email_log_id_from_bounce,
 )
 from app.extensions import db
