@@ -350,13 +350,13 @@ HOST = socket.gethostname()
 SPAMASSASSIN_HOST = os.environ.get("SPAMASSASSIN_HOST")
 # by default use a tolerant score
 if "MAX_SPAM_SCORE" in os.environ:
-    MAX_SPAM_SCORE = int(os.environ["MAX_SPAM_SCORE"])
+    MAX_SPAM_SCORE = float(os.environ["MAX_SPAM_SCORE"])
 else:
     MAX_SPAM_SCORE = 5.5
 
 # use a more restrictive score when replying
 if "MAX_REPLY_PHASE_SPAM_SCORE" in os.environ:
-    MAX_REPLY_PHASE_SPAM_SCORE = int(os.environ["MAX_REPLY_PHASE_SPAM_SCORE"])
+    MAX_REPLY_PHASE_SPAM_SCORE = float(os.environ["MAX_REPLY_PHASE_SPAM_SCORE"])
 else:
     MAX_REPLY_PHASE_SPAM_SCORE = 5
 
