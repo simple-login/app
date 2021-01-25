@@ -485,7 +485,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         alias = try_auto_create(address)
         if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
-            return [(False, "550 SL E3 Email not exist")]
+            return [(False, "550 5.1.1 SL E3 Email not exist")]
 
     user = alias.user
 
