@@ -1,4 +1,4 @@
-Hi {{user.name}}
+Hi
 
 Your alias {{alias}} has been disabled successfully.
 

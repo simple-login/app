@@ -2,7 +2,7 @@ This email is sent to {{ user.email }}.
 Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
-Hi {{user.name}}
+Hi
 
 If you use Safari on a MacBook or iMac, you should check out our new Safari extension.
 

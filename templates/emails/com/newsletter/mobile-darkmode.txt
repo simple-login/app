@@ -2,7 +2,7 @@ This email is sent to {{ user.email }}.
 Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
-Hi {{user.name}}
+Hi
 
 Son from SimpleLogin here. I hope you are doing well and are staying at home in this difficult time.
 By the way I'm writing this newsletter from my couch with my cats proofreading the text :).

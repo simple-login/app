@@ -1,4 +1,4 @@
-Hi {{user.name}}
+Hi
 
 You have added {{mailbox_email}} as an additional mailbox.
 

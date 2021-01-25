@@ -1,4 +1,4 @@
-Hi {{user.name}}
+Hi
 
 You recently requested to change mailbox {{mailbox_email}} to {{mailbox_new_email}}
 

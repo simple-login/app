@@ -1,4 +1,4 @@
-Hi {{user.name}}
+Hi
 
 Your subscription will end on {{ next_bill_date }}.
 

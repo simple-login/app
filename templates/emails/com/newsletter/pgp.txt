@@ -2,7 +2,7 @@ This email is sent to {{ user.email }}.
 Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
-Hi {{user.name}}
+Hi
 
 If you happen to use Gmail, Yahoo, Outlook, etc, do you know these services can read your emails?
 

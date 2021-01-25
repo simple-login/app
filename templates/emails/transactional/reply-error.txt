@@ -1,4 +1,4 @@
-Hi {{user.name or ""}}
+Hi
 
 Your email cannot be sent to {{contact.email}} from your alias {{alias.email}}.
 

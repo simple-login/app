@@ -2,7 +2,7 @@ This email is sent to {{ to_email }} and is part of our onboarding series.
 Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
-Hi {{user.name}}
+Hi
 
 Do you know you can send an email to anyone from your alias?
 This below Youtube video walks you quickly through the steps:
