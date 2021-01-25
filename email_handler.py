@@ -1596,6 +1596,9 @@ def handle_bounce(envelope, rcpt_to) -> str:
     email_log_id = parse_email_log_id_from_bounce(rcpt_to)
     email_log = EmailLog.get(email_log_id)
 
+    if not email_log:
+        return "550 SL E27 No such email log"
+
     if email_log.is_reply:
         handle_bounce_reply_phase(msg, email_log)
         return "550 SL E24 Email cannot be sent to contact"
