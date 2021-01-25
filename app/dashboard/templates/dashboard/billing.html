@@ -52,12 +52,12 @@
           To change the plan you can also cancel the current one and subscribe a new one <b>by the end</b> of this plan.
 
           {% if sub.plan == PlanEnum.yearly %}
-            <form method="post">
+            <form method="post" onsubmit="return confirm('This will change your current subscription plan, please confirm');">
               <input type="hidden" name="form-name" value="change-monthly">
               <button class="btn btn-outline-primary mt-2">Change to Monthly Plan</button>
             </form>
           {% else %}
-            <form method="post">
+            <form method="post" onsubmit="return confirm('This will change your current subscription plan, please confirm');">
               <input type="hidden" name="form-name" value="change-yearly">
               <button class="btn btn-outline-primary mt-2">Change to Yearly Plan</button>
             </form>
