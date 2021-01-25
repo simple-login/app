@@ -2078,3 +2078,36 @@ class AuthorizedAddress(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<AuthorizedAddress {self.id} {self.email} {self.mailbox_id}>"
+
+
+class Metric(db.Model, ModelMixin):
+    """For storing different metrics like number of users, etc"""
+
+    date = db.Column(ArrowType, default=arrow.utcnow, nullable=False)
+    name = db.Column(db.String(256), nullable=False)
+    value = db.Column(db.Float, nullable=False)
+
+    NB_USER = "nb_user"
+    NB_ACTIVATED_USER = "nb_activated_user"
+
+    NB_PREMIUM = "nb_premium"
+    NB_APPLE_PREMIUM = "nb_apple_premium"
+    NB_CANCELLED_PREMIUM = "nb_cancelled_premium"
+    NB_MANUAL_PREMIUM = "nb_manual_premium"
+    NB_COINBASE_PREMIUM = "nb_coinbase_premium"
+
+    # nb users who have been referred
+    NB_REFERRED_USER = "nb_referred_user"
+    NB_REFERRED_USER_PAID = "nb_referred_user_paid"
+
+    NB_ALIAS = "nb_alias"
+
+    NB_FORWARD = "nb_forward"
+    NB_BLOCK = "nb_block"
+    NB_REPLY = "nb_reply"
+    NB_BOUNCED = "nb_bounced"
+    NB_SPAM = "nb_spam"
+
+    NB_VERIFIED_CUSTOM_DOMAIN = "nb_verified_custom_domain"
+
+    NB_APP = "nb_app"
