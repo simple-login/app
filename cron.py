@@ -216,7 +216,7 @@ def stats_before(moment: Arrow) -> Stats:
     nb_referred_user = q.filter(User.referral_id.isnot(None)).count()
     nb_referred_user_upgrade = 0
     for user in q.filter(User.referral_id.isnot(None)):
-        if user.is_premium():
+        if user.is_paid():
             nb_referred_user_upgrade += 1
 
     LOG.d(
