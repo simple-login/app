@@ -33,7 +33,6 @@ It should contain the following info:
 import argparse
 import asyncio
 import email
-import os
 import time
 import uuid
 from email import encoders
@@ -121,10 +120,12 @@ from app.models import (
     User,
     RefusedEmail,
     Mailbox,
+    Bounce,
+    TransactionalEmail,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.spamassassin_utils import SpamAssassin
-from app.utils import random_string, sanitize_email
+from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_app, create_light_app
 
@@ -1134,6 +1135,8 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         LOG.exception("Use %s default mailbox %s", alias, alias.mailbox)
         mailbox = alias.mailbox
 
+    Bounce.create(email=mailbox.email, commit=True)
+
     LOG.debug(
         "Handle forward bounce %s -> %s -> %s. %s", contact, alias, mailbox, email_log
     )
@@ -1244,7 +1247,7 @@ def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
     Handle reply phase bounce
     Happens when  an email cannot be sent from an alias to a contact
     """
-    contact = email_log.contact
+    contact: Contact = email_log.contact
     alias = contact.alias
     user = alias.user
     mailbox = email_log.mailbox or alias.mailbox
@@ -1252,6 +1255,8 @@ def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
     LOG.debug(
         "Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log
     )
+
+    Bounce.create(email=contact.website_email, commit=True)
 
     # Store the bounced email
     # generate a name for the email
