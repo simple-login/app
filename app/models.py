@@ -248,10 +248,10 @@ class User(db.Model, ModelMixin, UserMixin):
     # Specify the format for sender address
     # John Wick - john at wick.com  -> 0
     # john@wick.com via SimpleLogin -> 1
-    # John Wick - john@wick.com     -> 2
+    # John Wick - john(a)wick.com     -> 2
     # John Wick - john@wick.com     -> 3
     sender_format = db.Column(
-        db.Integer, default="1", nullable=False, server_default="1"
+        db.Integer, default="0", nullable=False, server_default="0"
     )
 
     replace_reverse_alias = db.Column(
