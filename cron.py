@@ -309,14 +309,16 @@ def stats_before(moment: Arrow) -> Stats:
 def compute_metrics():
     now = arrow.now()
 
-    Metric.create(name=Metric.NB_USER, value=User.query.count(), commit=True)
+    Metric.create(date=now, name=Metric.NB_USER, value=User.query.count(), commit=True)
     Metric.create(
+        date=now,
         name=Metric.NB_ACTIVATED_USER,
         value=User.query.filter_by(activated=True).count(),
         commit=True,
     )
 
     Metric.create(
+        date=now,
         name=Metric.NB_REFERRED_USER,
         value=User.query.filter(User.referral_id.isnot(None)).count(),
         commit=True,
@@ -328,34 +330,42 @@ def compute_metrics():
             nb_referred_user_paid += 1
 
     Metric.create(
+        date=now,
         name=Metric.NB_REFERRED_USER_PAID,
         value=nb_referred_user_paid,
         commit=True,
     )
 
-    Metric.create(name=Metric.NB_ALIAS, value=Alias.query.count(), commit=True)
+    Metric.create(
+        date=now, name=Metric.NB_ALIAS, value=Alias.query.count(), commit=True
+    )
 
     Metric.create(
+        date=now,
         name=Metric.NB_BOUNCED,
         value=EmailLog.query.filter_by(bounced=True).count(),
         commit=True,
     )
     Metric.create(
+        date=now,
         name=Metric.NB_SPAM,
         value=EmailLog.query.filter_by(is_spam=True).count(),
         commit=True,
     )
     Metric.create(
+        date=now,
         name=Metric.NB_REPLY,
         value=EmailLog.query.filter_by(is_reply=True).count(),
         commit=True,
     )
     Metric.create(
+        date=now,
         name=Metric.NB_BLOCK,
         value=EmailLog.query.filter_by(blocked=True).count(),
         commit=True,
     )
     Metric.create(
+        date=now,
         name=Metric.NB_FORWARD,
         value=EmailLog.query.filter_by(
             bounced=False, is_spam=False, is_reply=False, blocked=False
@@ -364,24 +374,28 @@ def compute_metrics():
     )
 
     Metric.create(
+        date=now,
         name=Metric.NB_PREMIUM,
         value=Subscription.query.filter(Subscription.cancelled.is_(False)).count(),
         commit=True,
     )
 
     Metric.create(
+        date=now,
         name=Metric.NB_CANCELLED_PREMIUM,
         value=Subscription.query.filter(Subscription.cancelled.is_(True)).count(),
         commit=True,
     )
 
     Metric.create(
+        date=now,
         name=Metric.NB_APPLE_PREMIUM,
         value=AppleSubscription.query.count(),
         commit=True,
     )
 
     Metric.create(
+        date=now,
         name=Metric.NB_MANUAL_PREMIUM,
         value=ManualSubscription.query.filter(
             ManualSubscription.end_at > now,
@@ -391,6 +405,7 @@ def compute_metrics():
     )
 
     Metric.create(
+        date=now,
         name=Metric.NB_COINBASE_PREMIUM,
         value=CoinbaseSubscription.query.filter(
             CoinbaseSubscription.end_at > now
@@ -399,12 +414,14 @@ def compute_metrics():
     )
 
     Metric.create(
+        date=now,
         name=Metric.NB_VERIFIED_CUSTOM_DOMAIN,
         value=CustomDomain.query.filter_by(verified=True).count(),
         commit=True,
     )
 
     Metric.create(
+        date=now,
         name=Metric.NB_APP,
         value=Client.query.count(),
         commit=True,
