@@ -118,6 +118,7 @@ def test_new_addr(flask_client):
         name="Test User",
         activated=True,
         commit=True,
+        sender_format=1,
     )
 
     alias = Alias.create_new_random(user)

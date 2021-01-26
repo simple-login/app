@@ -11,7 +11,7 @@ def test_get_setting(flask_client):
         "alias_generator": "word",
         "notification": True,
         "random_alias_default_domain": "sl.local",
-        "sender_format": "VIA",
+        "sender_format": "AT",
     }
 
 
@@ -54,14 +54,14 @@ def test_update_settings_random_alias_default_domain(flask_client):
 
 def test_update_settings_sender_format(flask_client):
     user = login(flask_client)
-    assert user.sender_format == SenderFormatEnum.VIA.value
+    assert user.sender_format == SenderFormatEnum.AT.value
 
     r = flask_client.patch("/api/setting", json={"sender_format": "invalid"})
     assert r.status_code == 400
 
-    r = flask_client.patch("/api/setting", json={"sender_format": "AT"})
+    r = flask_client.patch("/api/setting", json={"sender_format": "VIA"})
     assert r.status_code == 200
-    assert user.sender_format == SenderFormatEnum.AT.value
+    assert user.sender_format == SenderFormatEnum.VIA.value
 
 
 def test_get_setting_domains(flask_client):
