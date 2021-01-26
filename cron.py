@@ -45,6 +45,8 @@ from app.models import (
     Contact,
     CoinbaseSubscription,
     Metric,
+    TransactionalEmail,
+    Bounce,
 )
 from server import create_app
 
@@ -58,6 +60,22 @@ def notify_trial_end():
         ) > user.trial_end >= arrow.now().shift(days=2):
             LOG.d("Send trial end email to user %s", user)
             send_trial_end_soon_email(user)
+
+
+def delete_logs():
+    """delete everything that are considered logs"""
+    delete_refused_emails()
+    delete_old_monitoring()
+
+    for t in TransactionalEmail.query.filter(
+        TransactionalEmail.created_at < arrow.now().shift(days=-7)
+    ):
+        TransactionalEmail.delete(t.id)
+
+    for b in Bounce.query.filter(Bounce.created_at < arrow.now().shift(days=-7)):
+        Bounce.delete(b.id)
+
+    db.session.commit()
 
 
 def delete_refused_emails():
@@ -671,7 +689,7 @@ if __name__ == "__main__":
             "notify_trial_end",
             "notify_manual_subscription_end",
             "notify_premium_end",
-            "delete_refused_emails",
+            "delete_logs",
             "poll_apple_subscription",
             "sanity_check",
             "delete_old_monitoring",
@@ -695,9 +713,9 @@ if __name__ == "__main__":
         elif args.job == "notify_premium_end":
             LOG.d("Notify users with premium ending soon")
             notify_premium_end()
-        elif args.job == "delete_refused_emails":
-            LOG.d("Deleted refused emails")
-            delete_refused_emails()
+        elif args.job == "delete_logs":
+            LOG.d("Deleted Logs")
+            delete_logs()
         elif args.job == "poll_apple_subscription":
             LOG.d("Poll Apple Subscriptions")
             poll_apple_subscription()
