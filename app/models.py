@@ -253,6 +253,9 @@ class User(db.Model, ModelMixin, UserMixin):
     sender_format = db.Column(
         db.Integer, default="0", nullable=False, server_default="0"
     )
+    # to know whether user has explicitly chosen a sender format as opposed to those who use the default ones.
+    # users who haven't chosen a sender format and are using 1 or 3 format, their sender format will be set to 0
+    sender_format_updated_at = db.Column(ArrowType, default=None)
 
     replace_reverse_alias = db.Column(
         db.Boolean, default=False, nullable=False, server_default="0"
