@@ -238,6 +238,7 @@ def setting():
             sender_format = int(request.form.get("sender-format"))
             if SenderFormatEnum.has_value(sender_format):
                 current_user.sender_format = sender_format
+                current_user.sender_format_updated_at = arrow.now()
                 db.session.commit()
                 flash("Your sender format preference has been updated", "success")
             db.session.commit()

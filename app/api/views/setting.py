@@ -1,3 +1,4 @@
+import arrow
 from flask import jsonify, g, request
 
 from app.api.base import api_bp, require_api_auth
@@ -68,6 +69,7 @@ def update_setting():
             return jsonify(error="Invalid sender_format"), 400
 
         user.sender_format = SenderFormatEnum.get_value(sender_format)
+        user.sender_format_updated_at = arrow.now()
 
     if "random_alias_default_domain" in data:
         default_domain = data["random_alias_default_domain"]
