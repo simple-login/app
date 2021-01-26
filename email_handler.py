@@ -1256,7 +1256,7 @@ def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
         "Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log
     )
 
-    Bounce.create(email=contact.website_email, commit=True)
+    Bounce.create(email=sanitize_email(contact.website_email), commit=True)
 
     # Store the bounced email
     # generate a name for the email
