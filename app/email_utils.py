@@ -970,5 +970,5 @@ def should_disable(alias: Alias) -> bool:
     return False
 
 
-def parse_email_log_id_from_bounce(email_address: str) -> int:
+def parse_id_from_bounce(email_address: str) -> int:
     return int(email_address[email_address.find("+") : email_address.rfind("+")])

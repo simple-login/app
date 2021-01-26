@@ -109,7 +109,7 @@ from app.email_utils import (
     is_valid_email,
     replace,
     should_disable,
-    parse_email_log_id_from_bounce,
+    parse_id_from_bounce,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -1593,7 +1593,7 @@ def handle_bounce(envelope, rcpt_to) -> str:
     msg = email.message_from_bytes(envelope.original_content)
 
     # parse the EmailLog
-    email_log_id = parse_email_log_id_from_bounce(rcpt_to)
+    email_log_id = parse_id_from_bounce(rcpt_to)
     email_log = EmailLog.get(email_log_id)
 
     if not email_log:

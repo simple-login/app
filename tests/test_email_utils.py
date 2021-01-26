@@ -26,7 +26,7 @@ from app.email_utils import (
     replace,
     should_disable,
     decode_text,
-    parse_email_log_id_from_bounce,
+    parse_id_from_bounce,
 )
 from app.extensions import db
 from app.models import User, CustomDomain, Alias, Contact, EmailLog
@@ -652,6 +652,6 @@ def test_should_disable_bounce_consecutive_days(flask_client):
     assert should_disable(alias)
 
 
-def test_parse_email_log_id_from_bounce():
-    assert parse_email_log_id_from_bounce("bounces+1234+@local") == 1234
-    assert parse_email_log_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234
+def test_parse_id_from_bounce():
+    assert parse_id_from_bounce("bounces+1234+@local") == 1234
+    assert parse_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234
