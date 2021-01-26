@@ -68,8 +68,6 @@ from app.config import (
     ALERT_SPAM_EMAIL,
     ALERT_SPF,
     POSTFIX_PORT,
-    SENDER,
-    SENDER_DIR,
     SPAMASSASSIN_HOST,
     MAX_SPAM_SCORE,
     MAX_REPLY_PHASE_SPAM_SCORE,
@@ -81,6 +79,8 @@ from app.config import (
     BOUNCE_EMAIL,
     BOUNCE_PREFIX,
     BOUNCE_SUFFIX,
+    TRANSACTIONAL_BOUNCE_PREFIX,
+    TRANSACTIONAL_BOUNCE_SUFFIX,
 )
 from app.email_utils import (
     send_email,
@@ -1502,25 +1502,20 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
     return "250 Unsubscribe request accepted"
 
 
-def handle_sender_email(envelope: Envelope):
-    filename = (
-        arrow.now().format("YYYY-MM-DD_HH-mm-ss") + "_" + random_string(10) + ".eml"
-    )
-    filepath = os.path.join(SENDER_DIR, filename)
+def handle_transactional_bounce(envelope: Envelope, rcpt_to):
+    LOG.d("handle transactional bounce sent to %s", rcpt_to)
 
-    with open(filepath, "wb") as f:
-        f.write(envelope.original_content)
+    # parse the TransactionalEmail
+    transactional_id = parse_id_from_bounce(rcpt_to)
+    transactional = TransactionalEmail.get(transactional_id)
 
-    LOG.d("Write email to sender at %s", filepath)
-
-    msg = email.message_from_bytes(envelope.original_content)
-    orig = get_orig_message_from_bounce(msg)
-    if orig:
-        LOG.warning(
-            "Original message %s -> %s saved at %s", orig["From"], orig["To"], filepath
+    if transactional:
+        LOG.info("Create bounce for %s", transactional.email)
+        Bounce.create(email=transactional.email, commit=True)
+    else:
+        LOG.exception(
+            "Cannot find transactional email for %s %s", transactional_id, rcpt_to
         )
-
-    return "250 email to sender accepted"
 
 
 def handle(envelope: Envelope) -> str:
@@ -1538,9 +1533,14 @@ def handle(envelope: Envelope) -> str:
         return handle_unsubscribe(envelope)
 
     # emails sent to sender. Probably bounce emails
-    if SENDER and rcpt_tos == [SENDER]:
+    if (
+        len(rcpt_tos) == 1
+        and rcpt_tos[0].startswith(TRANSACTIONAL_BOUNCE_PREFIX)
+        and rcpt_tos[0].endswith(TRANSACTIONAL_BOUNCE_SUFFIX)
+    ):
         LOG.d("Handle email sent to sender from %s", mail_from)
-        return handle_sender_email(envelope)
+        handle_transactional_bounce(envelope, rcpt_tos[0])
+        return "250 bounce handled"
 
     if (
         len(rcpt_tos) == 1

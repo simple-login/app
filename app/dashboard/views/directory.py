@@ -120,7 +120,13 @@ def directory():
 
                 if Directory.get_by(name=new_dir_name):
                     flash(f"{new_dir_name} already added", "warning")
-                elif new_dir_name in ("reply", "ra", "bounces", "bounce"):
+                elif new_dir_name in (
+                    "reply",
+                    "ra",
+                    "bounces",
+                    "bounce",
+                    "transactional",
+                ):
                     flash(
                         "this directory name is reserved, please choose another name",
                         "warning",

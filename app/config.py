@@ -60,6 +60,17 @@ BOUNCE_PREFIX = os.environ.get("BOUNCE_PREFIX") or "bounce+"
 BOUNCE_SUFFIX = os.environ.get("BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
 BOUNCE_EMAIL = BOUNCE_PREFIX + "{}" + BOUNCE_SUFFIX
 
+# VERP for transactional email: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
+TRANSACTIONAL_BOUNCE_PREFIX = (
+    os.environ.get("TRANSACTIONAL_BOUNCE_PREFIX") or "transactional+"
+)
+TRANSACTIONAL_BOUNCE_SUFFIX = (
+    os.environ.get("TRANSACTIONAL_BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
+)
+TRANSACTIONAL_BOUNCE_EMAIL = (
+    TRANSACTIONAL_BOUNCE_PREFIX + "{}" + TRANSACTIONAL_BOUNCE_SUFFIX
+)
+
 try:
     MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
 except Exception:
@@ -68,12 +79,6 @@ except Exception:
 
 # maximum number of directory a premium user can create
 MAX_NB_DIRECTORY = 50
-
-# transactional email sender
-SENDER = os.environ.get("SENDER")
-
-# the directory to store bounce emails
-SENDER_DIR = os.environ.get("SENDER_DIR")
 
 ENFORCE_SPF = "ENFORCE_SPF" in os.environ
 

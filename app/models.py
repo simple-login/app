@@ -2114,8 +2114,7 @@ class Metric(db.Model, ModelMixin):
 
 
 class Bounce(db.Model, ModelMixin):
-    """Record all bounces. Deleted after 7 days
-    """
+    """Record all bounces. Deleted after 7 days"""
 
     email = db.Column(db.String(256), nullable=False, index=True)
 

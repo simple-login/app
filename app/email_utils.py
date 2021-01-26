@@ -32,11 +32,11 @@ from app.config import (
     DISPOSABLE_EMAIL_DOMAINS,
     MAX_ALERT_24H,
     POSTFIX_PORT,
-    SENDER,
     URL,
     LANDING_PAGE_URL,
     EMAIL_DOMAIN,
     ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
+    TRANSACTIONAL_BOUNCE_EMAIL,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -50,6 +50,7 @@ from app.models import (
     Contact,
     Alias,
     EmailLog,
+    TransactionalEmail,
 )
 from app.utils import (
     random_string,
@@ -230,6 +231,7 @@ def send_email(
     unsubscribe_link=None,
     unsubscribe_via_email=False,
 ):
+    to_email = sanitize_email(to_email)
     if NOT_SEND_EMAIL:
         LOG.d(
             "send email with subject '%s' to '%s', plaintext: %s",
@@ -277,10 +279,13 @@ def send_email(
     add_dkim_signature(msg, email_domain)
 
     msg_raw = to_bytes(msg)
-    if SENDER:
-        smtp.sendmail(SENDER, to_email, msg_raw)
-    else:
-        smtp.sendmail(SUPPORT_EMAIL, to_email, msg_raw)
+
+    transaction = TransactionalEmail.get_by(email=to_email)
+    if not transaction:
+        transaction = TransactionalEmail.create(email=to_email, commit=True)
+
+    # use a different envelope sender for each transactional email (aka VERP)
+    smtp.sendmail(TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id), to_email, msg_raw)
 
 
 def send_email_with_rate_control(
