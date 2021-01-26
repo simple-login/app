@@ -2111,3 +2111,18 @@ class Metric(db.Model, ModelMixin):
     NB_VERIFIED_CUSTOM_DOMAIN = "nb_verified_custom_domain"
 
     NB_APP = "nb_app"
+
+
+class Bounce(db.Model, ModelMixin):
+    """Record all bounces. Deleted after 7 days
+    """
+
+    email = db.Column(db.String(256), nullable=False, index=True)
+
+
+class TransactionalEmail(db.Model, ModelMixin):
+    """Storing all email addresses that receive transactional emails, including account email and mailboxes.
+    Deleted after 7 days
+    """
+
+    email = db.Column(db.String(256), nullable=False, unique=True)
