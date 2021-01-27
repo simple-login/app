@@ -91,6 +91,8 @@ from app.models import (
     CoinbaseSubscription,
     EmailLog,
     File,
+    Contact,
+    RefusedEmail,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -209,8 +211,10 @@ def fake_data():
         fido_uuid=None,
     )
     user.include_sender_in_reverse_alias = None
+    user.trial_end = None
     db.session.commit()
 
+    # add a profile picture
     file_path = "profile_pic.svg"
     s3.upload_from_bytesio(
         file_path,
@@ -221,21 +225,51 @@ def fake_data():
     user.profile_picture_id = file.id
     db.session.commit()
 
-    user.trial_end = None
+    # create a bounced email
+    alias = Alias.create_new_random(user)
+    db.session.commit()
+
+    bounce_email_file_path = "bounce.eml"
+    s3.upload_email_from_bytesio(
+        bounce_email_file_path,
+        open(os.path.join(ROOT_DIR, "local_data", "email_tests", "2.eml"), "rb"),
+        "download.eml",
+    )
+    refused_email = RefusedEmail.create(
+        path=bounce_email_file_path,
+        full_report_path=bounce_email_file_path,
+        user_id=user.id,
+        commit=True,
+    )
+
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="hey@google.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+    EmailLog.create(
+        user_id=user.id,
+        contact_id=contact.id,
+        refused_email_id=refused_email.id,
+        bounced=True,
+        commit=True,
+    )
 
     LifetimeCoupon.create(code="coupon", nb_used=10, commit=True)
 
     # Create a subscription for user
-    # Subscription.create(
-    #     user_id=user.id,
-    #     cancel_url="https://checkout.paddle.com/subscription/cancel?user=1234",
-    #     update_url="https://checkout.paddle.com/subscription/update?user=1234",
-    #     subscription_id="123",
-    #     event_time=arrow.now(),
-    #     next_bill_date=arrow.now().shift(days=10).date(),
-    #     plan=PlanEnum.monthly,
-    # )
-    # db.session.commit()
+    Subscription.create(
+        user_id=user.id,
+        cancel_url="https://checkout.paddle.com/subscription/cancel?user=1234",
+        update_url="https://checkout.paddle.com/subscription/update?user=1234",
+        subscription_id="123",
+        event_time=arrow.now(),
+        next_bill_date=arrow.now().shift(days=10).date(),
+        plan=PlanEnum.monthly,
+        commit=True,
+    )
 
     CoinbaseSubscription.create(
         user_id=user.id, end_at=arrow.now().shift(days=10), commit=True
