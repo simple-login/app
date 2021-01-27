@@ -131,3 +131,8 @@ class AliasAdmin(SLModelView):
 
 class MailboxAdmin(SLModelView):
     column_searchable_list = ["id", "user.email", "email"]
+
+
+class LifetimeCouponAdmin(SLModelView):
+    can_edit = True
+    can_create = True

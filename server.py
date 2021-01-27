@@ -33,6 +33,7 @@ from app.admin_model import (
     EmailLogAdmin,
     AliasAdmin,
     MailboxAdmin,
+    LifetimeCouponAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -758,6 +759,7 @@ def init_admin(app):
     admin.add_view(AliasAdmin(Alias, db.session))
     admin.add_view(MailboxAdmin(Mailbox, db.session))
     admin.add_view(EmailLogAdmin(EmailLog, db.session))
+    admin.add_view(LifetimeCouponAdmin(LifetimeCoupon, db.session))
 
 
 def setup_do_not_track(app):
