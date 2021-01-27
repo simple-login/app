@@ -21,12 +21,18 @@ class LoginForm(FlaskForm):
     "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
 )
 def login():
+    next_url = request.args.get("next")
+
     if current_user.is_authenticated:
-        LOG.d("user is already authenticated, redirect to dashboard")
-        return redirect(url_for("dashboard.index"))
+        if next_url:
+            LOG.debug("user is already authenticated, redirect to %s", next_url)
+            return redirect(next_url)
+        else:
+            LOG.d("user is already authenticated, redirect to dashboard")
+            return redirect(url_for("dashboard.index"))
 
     form = LoginForm(request.form)
-    next_url = request.args.get("next")
+
     show_resend_activation = False
 
     if form.validate_on_submit():
