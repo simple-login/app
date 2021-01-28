@@ -88,9 +88,14 @@ POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 DISABLE_REGISTRATION = "DISABLE_REGISTRATION" in os.environ
 
 # allow using a different postfix port, useful when developing locally
-POSTFIX_PORT = None
+POSTFIX_PORT = 25
 if "POSTFIX_PORT" in os.environ:
     POSTFIX_PORT = int(os.environ["POSTFIX_PORT"])
+
+# postfix port to use during the forward phase
+POSTFIX_PORT_FORWARD = POSTFIX_PORT
+if "POSTFIX_PORT_FORWARD" in os.environ:
+    POSTFIX_PORT_FORWARD = int(os.environ["POSTFIX_PORT_FORWARD"])
 
 # Use port 587 instead of 25 when sending emails through Postfix
 # Useful when calling Postfix from an external network
