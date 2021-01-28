@@ -694,8 +694,8 @@ def forward_email_to_mailbox(
     # add custom header
     add_or_replace_header(msg, _DIRECTION, "Forward")
 
-    msg[_EMAIL_LOG_ID_HEADER] =str(email_log.id)
-    msg[_ENVELOPE_FROM] =envelope.mail_from
+    msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
+    msg[_ENVELOPE_FROM] = envelope.mail_from
     msg["Message-ID"] = make_msgid(str(email_log.id), EMAIL_DOMAIN)
     msg["Date"] = formatdate()
 
