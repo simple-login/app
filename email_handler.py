@@ -652,6 +652,20 @@ def forward_email_to_mailbox(
             f"""Email sent to {alias.email} from an invalid address and cannot be replied""",
         )
 
+    delete_all_headers_except(
+        msg,
+        [
+            "From",
+            "To",
+            "Cc",
+            "Subject",
+            # References and In-Reply-To are used for keeping the email thread
+            "References",
+            "In-Reply-To",
+        ]
+        + _MIME_HEADERS,
+    )
+
     # create PGP email if needed
     if mailbox.pgp_enabled() and user.is_premium() and not alias.disable_pgp:
         LOG.d("Encrypt message using mailbox %s", mailbox)
@@ -680,23 +694,10 @@ def forward_email_to_mailbox(
     # add custom header
     add_or_replace_header(msg, _DIRECTION, "Forward")
 
-    # remove reply-to & sender header if present
-    delete_header(msg, "Reply-To")
-    delete_header(msg, "Sender")
-
-    delete_header(msg, _IP_HEADER)
-    add_or_replace_header(msg, _EMAIL_LOG_ID_HEADER, str(email_log.id))
-
-    # fill up the message-id if ever it's absent. Should never happen for a normal email
-    if not msg["Message-ID"]:
-        LOG.info("Set Message-ID before forwarding email")
-        msg["Message-ID"] = make_msgid(str(email_log.id), EMAIL_DOMAIN)
-
-    add_or_replace_header(msg, _ENVELOPE_FROM, envelope.mail_from)
-
-    if not msg["Date"]:
-        date_header = formatdate()
-        msg["Date"] = date_header
+    msg[_EMAIL_LOG_ID_HEADER] =str(email_log.id)
+    msg[_ENVELOPE_FROM] =envelope.mail_from
+    msg["Message-ID"] = make_msgid(str(email_log.id), EMAIL_DOMAIN)
+    msg["Date"] = formatdate()
 
     # change the from header so the sender comes from a reverse-alias
     # so it can pass DMARC check
@@ -746,7 +747,6 @@ def forward_email_to_mailbox(
             alias,
             mailbox,
         )
-        # return 421 so Postfix can retry later
         return False, "421 SL E17 Retry later"
     else:
         db.session.commit()
@@ -755,7 +755,7 @@ def forward_email_to_mailbox(
 
 def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     """
-    return whether an email has been delivered and
+    Return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
     """
     reply_email = rcpt_to
