@@ -81,6 +81,7 @@ from app.config import (
     BOUNCE_SUFFIX,
     TRANSACTIONAL_BOUNCE_PREFIX,
     TRANSACTIONAL_BOUNCE_SUFFIX,
+    POSTFIX_PORT_FORWARD,
 )
 from app.email_utils import (
     send_email,
@@ -735,6 +736,7 @@ def forward_email_to_mailbox(
             msg,
             envelope.mail_options,
             envelope.rcpt_options,
+            is_forward=True,
         )
     except SMTPRecipientsRefused:
         # that means the mailbox is maybe invalid
@@ -952,6 +954,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             msg,
             envelope.mail_options,
             envelope.rcpt_options,
+            is_forward=False,
         )
     except Exception:
         # to not save the email_log
@@ -1665,7 +1668,13 @@ def get_spam_score(
 
 
 def sl_sendmail(
-    from_addr, to_addr, msg: Message, mail_options, rcpt_options, can_retry=True
+    from_addr,
+    to_addr,
+    msg: Message,
+    mail_options,
+    rcpt_options,
+    is_forward: bool,
+    can_retry=True,
 ):
     """replace smtp.sendmail"""
     try:
@@ -1673,7 +1682,10 @@ def sl_sendmail(
             smtp = SMTP(POSTFIX_SERVER, 587)
             smtp.starttls()
         else:
-            smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
+            if is_forward:
+                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT_FORWARD)
+            else:
+                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT)
 
         # smtp.send_message has UnicodeEncodeError
         # encode message raw directly instead
@@ -1689,7 +1701,13 @@ def sl_sendmail(
             LOG.warning("SMTPServerDisconnected error, retry")
             time.sleep(3)
             sl_sendmail(
-                from_addr, to_addr, msg, mail_options, rcpt_options, can_retry=False
+                from_addr,
+                to_addr,
+                msg,
+                mail_options,
+                rcpt_options,
+                is_forward,
+                can_retry=False,
             )
         else:
             raise
