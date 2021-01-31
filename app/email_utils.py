@@ -613,7 +613,10 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
     return spamassassin_answer.lower() == "yes", spam_status_header
 
 
-def get_header_unicode(header: str):
+def get_header_unicode(header: str) -> str:
+    if header is None:
+        return ""
+
     decoded_string, charset = decode_header(header)[0]
     if charset is not None:
         try:
