@@ -732,6 +732,10 @@ def get_encoding(msg: Message) -> EmailEncoding:
     if cte == "quoted-printable":
         return EmailEncoding.QUOTED
 
+    # some email services use unknown encoding
+    if cte in ("amazonses.com",):
+        return EmailEncoding.NO
+
     LOG.exception("Unknown encoding %s", cte)
 
     return EmailEncoding.NO
