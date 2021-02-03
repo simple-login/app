@@ -74,6 +74,28 @@ class UserAdmin(SLModelView):
             flash(f"{user} is edu upgraded")
 
     @action(
+        "charity_org_upgrade",
+        "Charity Organization upgrade",
+        "Are you sure you want to upgrade selected users using the Charity organization program?",
+    )
+    def action_charity_org_upgrade(self, ids):
+        query = User.query.filter(User.id.in_(ids))
+
+        for user in query.all():
+            if user.is_premium() and not user.in_trial():
+                continue
+
+            ManualSubscription.create(
+                user_id=user.id,
+                end_at=arrow.now().shift(years=1, days=1),
+                comment="Charity Organization",
+                is_giveaway=True,
+                commit=True,
+            )
+
+            flash(f"{user} is chariry organization upgraded")
+
+    @action(
         "cash_upgrade",
         "Cash upgrade",
         "Are you sure you want to cash-upgrade selected users?",
