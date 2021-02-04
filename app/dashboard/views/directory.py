@@ -119,7 +119,7 @@ def directory():
                 new_dir_name = new_dir_form.name.data.lower()
 
                 if Directory.get_by(name=new_dir_name):
-                    flash(f"{new_dir_name} already added", "warning")
+                    flash(f"{new_dir_name} already used", "warning")
                 elif new_dir_name in (
                     "reply",
                     "ra",

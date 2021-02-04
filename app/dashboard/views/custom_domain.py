@@ -43,7 +43,7 @@ def custom_domain():
                 if SLDomain.get_by(domain=new_domain):
                     flash("A custom domain cannot be a built-in domain.", "error")
                 elif CustomDomain.get_by(domain=new_domain):
-                    flash(f"{new_domain} already added", "warning")
+                    flash(f"{new_domain} already used", "warning")
                 elif get_email_domain_part(current_user.email) == new_domain:
                     flash(
                         "You cannot add a domain that you are currently using for your personal email. "
