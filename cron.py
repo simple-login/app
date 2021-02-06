@@ -638,7 +638,9 @@ def check_custom_domain():
             # send alert if fail for 5 consecutive days
             if custom_domain.nb_failed_checks > 5:
                 domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
-                LOG.warning("Alert %s about %s", user, custom_domain)
+                LOG.warning(
+                    "Alert domain MX check fails %s about %s", user, custom_domain
+                )
                 send_email_with_rate_control(
                     user,
                     AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
