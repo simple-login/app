@@ -2,6 +2,8 @@ version: "3.7"
 services:
   nginx:
     image: nginx:1.19-alpine
+    environment:
+      URL:
     ports:
       - "80:80"
     volumes:
@@ -13,35 +15,42 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Required}
       POSTGRES_DB: ${POSTGRES_DB:?Required}
       DB_HOST: ${POSTGRES_HOST:?Required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
   postfix: # temporary
     image: arugifa/simplelogin-postfix:3.1.0-6
     ports:
       - "25:25"
     environment:
-      POSTFIX_FQDN: sl.com
-      ALIASES_DEFAULT_DOMAIN: sl.com
+      POSTFIX_FQDN: ${EMAIL_DOMAIN}
+      ALIASES_DEFAULT_DOMAIN: ${EMAIL_DOMAIN}
       DB_NAME: ${POSTGRES_DB}
       DB_HOST: ${POSTGRES_HOST}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       LETSENCRYPT_EMAIL: admin@sl.com
       EMAIL_HANDLER_HOST: email-handler # Must be identical to the service name
-    volumes:
-      - pgdata:/var/lib/postgresql/data
   webapp:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     env_file:
       - .env
     environment:
       URL: localhost
       DB_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
   email-handler:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: email-handler
+    env_file:
+      - .env
+    depends_on:
+      - webapp
+      - postgres
     environment:
       DB_URI: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}"
       LOCAL_FILE_UPLOAD: "1"
-    command: python email_handler.py
 volumes:
   pgdata:
-networks:
-  sl-network:

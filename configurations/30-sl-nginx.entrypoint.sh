@@ -7,11 +7,15 @@ if [ -f $DEFAULT_CONF_FILE ]; then
     exit 0
 fi
 echo "$ME: info: No configuration found. Going to create one."
+
+HOSTNAME="$(echo $URL | sed -E 's~https?://(www\.)?([^:]+).*~\2~')"
+echo "$ME: info: Adding host $HOSTNAME"
+
 cat <<EOT > $DEFAULT_CONF_FILE
 server {
     listen       80;
     listen  [::]:80;
-    server_name  sl.doanguyen.com;
+    server_name  $HOSTNAME;
 
     location / {
         root   /usr/share/nginx/html;
