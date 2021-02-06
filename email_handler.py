@@ -1512,13 +1512,10 @@ def handle_transactional_bounce(envelope: Envelope, rcpt_to):
     transactional_id = parse_id_from_bounce(rcpt_to)
     transactional = TransactionalEmail.get(transactional_id)
 
+    # a transaction might have been deleted in delete_logs()
     if transactional:
         LOG.info("Create bounce for %s", transactional.email)
         Bounce.create(email=transactional.email, commit=True)
-    else:
-        LOG.exception(
-            "Cannot find transactional email for %s %s", transactional_id, rcpt_to
-        )
 
 
 def handle(envelope: Envelope) -> str:
