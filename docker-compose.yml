@@ -1,13 +1,13 @@
 version: "3.7"
 services:
-  nginx:
-    image: nginx:1.19-alpine
+  front:
+    image: caddy:2.2.1-alpine
     environment:
       URL:
     ports:
       - "80:80"
     volumes:
-      - ./configurations/30-sl-nginx.entrypoint.sh:/docker-entrypoint.d/30-sl-nginx.entrypoint.sh:ro
+      - ./configurations/Caddyfile:/etc/caddy/Caddyfile:ro
   postgres: # Must be identical to the .env POSTGRES_HOST variable
     image: postgres:12.1
     environment:

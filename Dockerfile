@@ -6,6 +6,7 @@ RUN cd /code/static && npm install
 
 # Base build
 FROM python:3.7 as base
+RUN addgroup -g 10001 -S simplelogin && adduser -u 10000 -S -G simplelogin -h /home/simplelogin simplelogin
 
 RUN pip3 install poetry==1.0.10
 
@@ -23,11 +24,12 @@ COPY . .
 
 # Email client image
 FROM base as email-handler
+USER simplelogin
 CMD ["./entrypoints/email-handler-entrypoint.sh"]
 
 # Main image
 FROM base
 EXPOSE 7777
 
-#gunicorn wsgi:app -b 0.0.0.0:7777 -w 2 --timeout 15 --log-level DEBUG
+USER simplelogin
 CMD ["./entrypoints/webapp-entrypoint.sh"]
