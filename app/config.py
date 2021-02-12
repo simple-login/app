@@ -389,3 +389,5 @@ try:
     COINBASE_YEARLY_PRICE = float(os.environ["COINBASE_YEARLY_PRICE"])
 except Exception:
     COINBASE_YEARLY_PRICE = 30.00
+
+REDDIT_URL = "https://www.reddit.com/r/Simplelogin/"

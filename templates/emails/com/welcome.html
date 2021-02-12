@@ -13,9 +13,9 @@
     {% endcall %}
 
     {% call text() %}
-      This alias is automatically created for receiving SimpleLogin news and tips -
-      feel free to <a href="{{ URL + '/dashboard/setting#notification' }}">disable</a> it if you don't need any of
-      these.
+      This alias is automatically created for receiving SimpleLogin news and tips. <br>
+      In the next coming days, we'll send you 3 emails to help you get the best out of SimpleLogin. <br>
+      Please <a href="{{ URL + '/dashboard/setting#notification' }}">disable</a> it if you don't need this.
     {% endcall %}
   {% endif %}
 
@@ -28,7 +28,7 @@
     If you are using Firefox or a Chromium-browser like Chrome, Edge, Brave, you can
     install our <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">Firefox add-on</a>
     or <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">Chrome extension</a>
-    to create aliases in one click (literally).
+    to create aliases in one click (like in the below gif 👇).
   {% endcall %}
 
   {% call text() %}
@@ -39,7 +39,7 @@
     SimpleLogin is also available on
     <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android</a> and
     <a href="https://apps.apple.com/app/id1494359858">iOS</a>
-    so you can create new aliases on the fly.
+    so you can easily create new aliases on the go.
   {% endcall %}
 
   {% if user.in_trial() and user.trial_end %}
@@ -53,13 +53,11 @@
   {% endif %}
 
   {% call text() %}
-    At any time, you can reach out to us by: <br>
-    <ul>
-      <li>Simply replying to this email </li>
-      <li>On <a href="https://twitter.com/simple_login">Twitter</a> </li>
-      <li>On <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a></li>
-    </ul>
+    Feel free to join our Reddit to ask any question or to have updates about our latest features. <br>
+    If you don't have a Reddit account, this is an occasion to create a new alias 😉.
   {% endcall %}
+
+  {{ render_button("Join SimpleLogin on Reddit", reddit_url) }}
 
   {% call text() %}
     SimpleLogin Team.
