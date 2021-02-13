@@ -6,7 +6,7 @@ RUN cd /code/static && npm install
 
 # Base build
 FROM python:3.7 as base
-RUN addgroup -g 10001 -S simplelogin && adduser -u 10000 -S -G simplelogin -h /home/simplelogin simplelogin
+RUN addgroup -gid 10001 --system simplelogin && adduser --uid 10000 --system --ingroup simplelogin --home /home/simplelogin simplelogin
 
 RUN pip3 install poetry==1.0.10
 
