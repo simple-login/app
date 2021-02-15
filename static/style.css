@@ -76,6 +76,10 @@ em {
     border-left: 5px #467fcf solid;
 }
 
+.alert-info {
+    border-left: 5px cadetblue solid;
+}
+
 .alert-danger {
     border-left: 5px #6b1110 solid;
 }
