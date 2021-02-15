@@ -76,12 +76,12 @@ class UserAdmin(SLModelView):
         upgrade("Cash", ids, is_giveaway=False)
 
     @action(
-        "monero_upgrade",
-        "Monero upgrade",
-        "Are you sure you want to monero-upgrade selected users?",
+        "crypto_upgrade",
+        "Crypto upgrade",
+        "Are you sure you want to crypto-upgrade selected users?",
     )
     def action_monero_upgrade(self, ids):
-        upgrade("Monero", ids, is_giveaway=False)
+        upgrade("Crypto", ids, is_giveaway=False)
 
 
 def upgrade(way: str, ids: [int], is_giveaway: bool):
