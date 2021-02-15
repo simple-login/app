@@ -57,21 +57,7 @@ class UserAdmin(SLModelView):
         "Are you sure you want to edu-upgrade selected users?",
     )
     def action_edu_upgrade(self, ids):
-        query = User.query.filter(User.id.in_(ids))
-
-        for user in query.all():
-            if user.is_premium() and not user.in_trial():
-                continue
-
-            ManualSubscription.create(
-                user_id=user.id,
-                end_at=arrow.now().shift(years=1, days=1),
-                comment="Edu",
-                is_giveaway=True,
-                commit=True,
-            )
-
-            flash(f"{user} is edu upgraded")
+        upgrade("Edu", ids, is_giveaway=True)
 
     @action(
         "charity_org_upgrade",
@@ -79,21 +65,7 @@ class UserAdmin(SLModelView):
         "Are you sure you want to upgrade selected users using the Charity organization program?",
     )
     def action_charity_org_upgrade(self, ids):
-        query = User.query.filter(User.id.in_(ids))
-
-        for user in query.all():
-            if user.is_premium() and not user.in_trial():
-                continue
-
-            ManualSubscription.create(
-                user_id=user.id,
-                end_at=arrow.now().shift(years=1, days=1),
-                comment="Charity Organization",
-                is_giveaway=True,
-                commit=True,
-            )
-
-            flash(f"{user} is chariry organization upgraded")
+        upgrade("Charity Organization", ids, is_giveaway=True)
 
     @action(
         "cash_upgrade",
@@ -101,21 +73,7 @@ class UserAdmin(SLModelView):
         "Are you sure you want to cash-upgrade selected users?",
     )
     def action_cash_upgrade(self, ids):
-        query = User.query.filter(User.id.in_(ids))
-
-        for user in query.all():
-            if user.is_premium() and not user.in_trial():
-                continue
-
-            ManualSubscription.create(
-                user_id=user.id,
-                end_at=arrow.now().shift(years=1, days=1),
-                comment="Cash",
-                is_giveaway=False,
-                commit=True,
-            )
-
-            flash(f"{user} is cash upgraded")
+        upgrade("Cash", ids, is_giveaway=False)
 
     @action(
         "monero_upgrade",
@@ -123,21 +81,25 @@ class UserAdmin(SLModelView):
         "Are you sure you want to monero-upgrade selected users?",
     )
     def action_monero_upgrade(self, ids):
-        query = User.query.filter(User.id.in_(ids))
+        upgrade("Monero", ids, is_giveaway=False)
 
-        for user in query.all():
-            if user.is_premium() and not user.in_trial():
-                continue
 
-            ManualSubscription.create(
-                user_id=user.id,
-                end_at=arrow.now().shift(years=1, days=1),
-                comment="Monero",
-                is_giveaway=False,
-                commit=True,
-            )
+def upgrade(way: str, ids: [int], is_giveaway: bool):
+    query = User.query.filter(User.id.in_(ids))
 
-            flash(f"{user} is Monero upgraded")
+    for user in query.all():
+        if user.is_premium() and not user.in_trial():
+            continue
+
+        ManualSubscription.create(
+            user_id=user.id,
+            end_at=arrow.now().shift(years=1, days=1),
+            comment=way,
+            is_giveaway=is_giveaway,
+            commit=True,
+        )
+
+        flash(f"{user} is {way} upgraded")
 
 
 class EmailLogAdmin(SLModelView):
