@@ -25,4 +25,5 @@ from .views import (
     contact_detail,
     setup_done,
     batch_import,
+    alias_transfer,
 )

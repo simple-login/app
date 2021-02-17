@@ -1,0 +1,43 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Send {{ alias.email }}
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">Transfer {{ alias.email }}</h1>
+
+      <p>
+        This page allows you to transfer {{ alias.email }} to another person so they can use it to receive and send
+        emails.
+      </p>
+
+      <p>
+        In order to transfer ownership,
+        please send the following URL 👇 to the other person.
+      </p>
+
+      <em data-toggle="tooltip"
+          title="Click to copy"
+          class="clipboard"
+          data-clipboard-text="{{ alias_transfer_url }}">
+        {{ alias_transfer_url }}
+      </em>
+
+      <p class="mt-5">
+        This person can then confirm the reception and become the owner of the alias.
+      </p>
+      <div class="alert alert-danger">
+        After the confirmation, you can no longer use this alias.
+      </div>
+
+
+    </div>
+  </div>
+
+{% endblock %}
+
