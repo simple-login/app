@@ -363,12 +363,13 @@ def fake_data():
         Notification.create(user_id=user.id, message=f"""Hey hey <b>{i}</b> """ * 10)
     db.session.commit()
 
-    User.create(
+    user2 = User.create(
         email="winston@continental.com",
         password="password",
         activated=True,
         referral_id=referral.id,
     )
+    Mailbox.create(user_id=user2.id, email="winston2@high.table", verified=True)
     db.session.commit()
 
 
