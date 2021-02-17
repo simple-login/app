@@ -1,10 +1,7 @@
-from flask import url_for
-
 from app.dashboard.views import alias_transfer
 from app.extensions import db
 from app.models import (
     Alias,
-    Contact,
     Mailbox,
     User,
     AliasMailbox,
