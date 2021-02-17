@@ -51,6 +51,10 @@ def transfer(alias, new_user, new_mailboxes: [Mailbox]):
     # now the alias belongs to the new user
     alias.user_id = new_user.id
 
+    # set some fields back to default
+    alias.disable_pgp = False
+    alias.pinned = False
+
     db.session.commit()
 
 
