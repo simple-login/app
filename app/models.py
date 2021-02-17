@@ -995,6 +995,11 @@ class Alias(db.Model, ModelMixin):
         default=None,
     )
 
+    # set in case of alias transfer.
+    original_owner_id = db.Column(
+        db.ForeignKey(User.id, ondelete="SET NULL"), nullable=True
+    )
+
     # alias is pinned on top
     pinned = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
