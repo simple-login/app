@@ -7,6 +7,7 @@ services:
       URL:
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./configurations/Caddyfile:/etc/caddy/Caddyfile:ro
   postgres: # Must be identical to the .env POSTGRES_HOST variable

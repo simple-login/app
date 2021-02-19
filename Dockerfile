@@ -6,7 +6,6 @@ RUN cd /code/static && npm install
 
 # Base build
 FROM python:3.7 as base
-RUN addgroup -gid 10001 --system simplelogin && adduser --uid 10000 --system --ingroup simplelogin --home /home/simplelogin simplelogin
 
 RUN pip3 install poetry==1.0.10
 
@@ -24,12 +23,10 @@ COPY . .
 
 # Email client image
 FROM base as email-handler
-USER simplelogin
 CMD ["./entrypoints/email-handler-entrypoint.sh"]
 
 # Main image
 FROM base
 EXPOSE 7777
 
-USER simplelogin
 CMD ["./entrypoints/webapp-entrypoint.sh"]
