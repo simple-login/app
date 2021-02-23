@@ -41,6 +41,7 @@ from app.models import (
     SenderFormatEnum,
     SLDomain,
     CoinbaseSubscription,
+    AppleSubscription,
 )
 from app.utils import random_string, sanitize_email
 
@@ -303,6 +304,7 @@ def setting():
             return output
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
+    apple_sub = AppleSubscription.get_by(user_id=current_user.id)
     coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
 
     return render_template(
@@ -315,6 +317,7 @@ def setting():
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
         manual_sub=manual_sub,
+        apple_sub=apple_sub,
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
     )

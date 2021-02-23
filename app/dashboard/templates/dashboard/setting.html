@@ -48,6 +48,9 @@
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           {% endif %}
 
+        {% elif apple_sub and apple_sub.is_valid() %}
+          You are on the Premium plan which expires {{ apple_sub.expires_date | dt }}
+          ({{ apple_sub.expires_date.format("YYYY-MM-DD") }}).
         {% elif coinbase_sub and coinbase_sub.is_active() %}
           You are on the Premium plan which expires {{ coinbase_sub.end_at | dt }}
           ({{ coinbase_sub.end_at.format("YYYY-MM-DD") }}).
