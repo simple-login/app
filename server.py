@@ -787,7 +787,7 @@ def init_extensions(app: Flask):
 
 
 def init_admin(app):
-    admin = Admin(name="SimpleLogin", template_mode="bootstrap3")
+    admin = Admin(name="SimpleLogin", template_mode="bootstrap4")
 
     admin.init_app(app, index_view=SLAdminIndexView())
     admin.add_view(UserAdmin(User, db.session))
