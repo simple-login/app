@@ -5,6 +5,7 @@ from flask_admin.actions import action
 from flask_admin.contrib import sqla
 from flask_login import current_user
 
+from app.extensions import db
 from app.models import User, ManualSubscription
 
 
@@ -120,3 +121,19 @@ class MailboxAdmin(SLModelView):
 class LifetimeCouponAdmin(SLModelView):
     can_edit = True
     can_create = True
+
+
+class ManualSubscriptionAdmin(SLModelView):
+    can_edit = True
+
+    @action(
+        "extend_1y",
+        "Extend for 1 year",
+        "Extend 1 year more?",
+    )
+    def extend_1y(self, ids):
+        for ms in ManualSubscription.query.filter(ManualSubscription.id.in_(ids)):
+            ms.end_at = ms.end_at.shift(years=1)
+            flash(f"Extend subscription for {ms.user}", "success")
+
+        db.session.commit()

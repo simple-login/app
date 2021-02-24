@@ -34,6 +34,7 @@ from app.admin_model import (
     AliasAdmin,
     MailboxAdmin,
     LifetimeCouponAdmin,
+    ManualSubscriptionAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -93,6 +94,7 @@ from app.models import (
     File,
     Contact,
     RefusedEmail,
+    ManualSubscription,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -205,7 +207,7 @@ def fake_data():
         password="password",
         activated=True,
         is_admin=True,
-        enable_otp=False,
+        # enable_otp=True,
         otp_secret="base32secret3232",
         intro_shown=True,
         fido_uuid=None,
@@ -371,6 +373,10 @@ def fake_data():
     )
     Mailbox.create(user_id=user2.id, email="winston2@high.table", verified=True)
     db.session.commit()
+
+    ManualSubscription.create(
+        user_id=user2.id, end_at=arrow.now().shift(years=1, days=1), commit=True
+    )
 
 
 @login_manager.user_loader
@@ -795,6 +801,7 @@ def init_admin(app):
     admin.add_view(MailboxAdmin(Mailbox, db.session))
     admin.add_view(EmailLogAdmin(EmailLog, db.session))
     admin.add_view(LifetimeCouponAdmin(LifetimeCoupon, db.session))
+    admin.add_view(ManualSubscriptionAdmin(ManualSubscription, db.session))
 
 
 def setup_do_not_track(app):
