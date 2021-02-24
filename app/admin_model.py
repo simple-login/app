@@ -125,6 +125,7 @@ class LifetimeCouponAdmin(SLModelView):
 
 class ManualSubscriptionAdmin(SLModelView):
     can_edit = True
+    column_searchable_list = ["id", "user.email"]
 
     @action(
         "extend_1y",
