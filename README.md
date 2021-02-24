@@ -8,7 +8,7 @@
 ---
 <p>
 <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">
-    <img src="https://img.shields.io/chrome-web-store/rating/dphilobhebphkdjbpfohgikllaljmgbn?label=Chrome%20Extension">
+    <img src="https://img.shields.io/chrome-web-store/v/dphilobhebphkdjbpfohgikllaljmgbn">
 </a>
 
 <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">
@@ -299,6 +299,33 @@ sudo docker run -d \
     postgres:12.1
 ```
 
+if you want to use docker-compose you can paste this inside your `docker-compose.yml` file
+
+```
+version: "3"
+#connecting to the pre made sl-network.
+networks:
+    default:
+        external:
+            name: sl-network
+
+# all file paths are relative to the docker-compose file
+
+services:
+    postgres:
+        image: postgres:12.1
+        container_name: sl-db
+        ports:
+            - "5432:5432"
+        volumes:
+            - ./sl/db:/var/lib/postgresql/data
+        environment:
+            - POSTGRES_PASSWORD=mypassword
+            - POSTGRES_USER=myuser
+            - POSTGRES_DB=simplelogin
+        restart: unless-stopped
+```
+
 To test whether the database operates correctly or not, run the following command:
 
 ```bash
@@ -316,6 +343,8 @@ sudo apt-get install -y postfix postfix-pgsql -y
 ```
 
 Choose "Internet Site" in Postfix installation window then keep using the proposed value as *System mail name* in the next window.
+
+to make sure pgsql is working correctly, run `postconf -m` and make sure `pgsql` is listed.
 
 Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain.
 
@@ -335,6 +364,10 @@ readme_directory = no
 # See http://www.postfix.org/COMPATIBILITY_README.html -- default to 2 on
 # fresh installs.
 compatibility_level = 2
+
+# if you have an issue local recipient tables uncomment the nextline to 
+# remove the table completely
+# local_recipient_maps = 
 
 # TLS parameters
 smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
@@ -497,7 +530,41 @@ sudo docker run --rm \
     simplelogin/app:3.2.2 python init_app.py
 ```
 
-Now, it's time to run the `webapp` container!
+now it time to setup the `webapp` and `email handler` containers
+
+for docker-compose add this to your file:
+
+```
+    sl-app:
+        image: simplelogin/app:3.2.2
+        ports:
+            - "7777:7777"
+        restart: unless-stopped
+        volumes:
+        - ./sl:/sl
+        - ./sl/upload:/code/static/upload
+        - ./simplelogin.env:/code/.env
+        - ./dkim.key:/dkim.key
+        - ./dkim.pub.key:/dkim.pub.key
+
+    sl-email:
+        image: simplelogin/app:3.2.2
+        command: python email_handler.py
+        ports:
+            - "20381:20381"
+        restart: unless-stopped
+        volumes:
+        - ./sl:/sl
+        - ./sl/upload:/code/static/upload
+        - ./simplelogin.env:/code/.env
+        - ./dkim.key:/dkim.key
+        - ./dkim.pub.key:/dkim.pub.key
+
+```
+
+for docker-cli:
+
+`webapp` container:
 
 ```bash
 sudo docker run -d \
@@ -513,7 +580,7 @@ sudo docker run -d \
     simplelogin/app:3.2.2
 ```
 
-Next run the `email handler`
+Next run the `email handler`:
 
 ```bash
 sudo docker run -d \
@@ -555,14 +622,69 @@ Reload Nginx with the command below
 sudo systemctl reload nginx
 ```
 
-At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
+### Apache
+
+Install Apache and make sure to replace `mydomain.com` by your domain
+
+```bash
+sudo apt-get install -y apache2
+```
+```
+<IfModule mod_ssl.c>
+  <VirtualHost _default_:443>
+    ServerName mydomain.com
+    DocumentRoot /var/www/html
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    SSLEngine on
+    SSLCertificateFile      /etc/ssl/certs/ssl-cert-snakeoil.pem
+    SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:7777/
+    ProxyPassReverse / http://127.0.0.1:7777/
+    <FilesMatch "\.(cgi|shtml|phtml|php)$">
+      SSLOptions +StdEnvVars
+    </FilesMatch>
+    <Directory /usr/lib/cgi-bin>
+      SSLOptions +StdEnvVars
+    </Directory>
+  </VirtualHost>
+</IfModule>
+```
+
+this will use the default self-signed cert.
 
 ### Enjoy!
 
 If all the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
-By default, new accounts are not premium so don't have unlimited alias. To make your account premium,
-please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
+By default, new accounts are **not premium** so don't have unlimited alias. To make all accounts premium by default,
+use the following commands:
+
+`sudo docker exec -it sl-db psql -U myuser simplelogin`
+
+then
+
+`ALTER TABLE users ALTER COLUMN lifetime SET DEFAULT TRUE;`
+
+make sure to create your account **after** the changes.
+
+in case this doesnt work try:
+```
+update users
+set lifetime=true;
+```
+this will work on **existing** accounts too.
+
+you can set your self as the admin of the instance by using this:
+
+make sure to replace `{your_email}` with the account email:
+
+```
+update users
+set is_admin=true
+where email='{your_email}'
+```
 
 You don't have to pay anything to SimpleLogin to use all its features.
 You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though.
