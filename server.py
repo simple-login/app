@@ -212,7 +212,6 @@ def fake_data():
         intro_shown=True,
         fido_uuid=None,
     )
-    user.include_sender_in_reverse_alias = None
     user.trial_end = None
     db.session.commit()
 

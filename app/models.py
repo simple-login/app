@@ -284,7 +284,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
     # whether to include the sender address in reverse-alias
     include_sender_in_reverse_alias = db.Column(
-        db.Boolean, default=False, nullable=True
+        db.Boolean, default=False, nullable=False, server_default="0"
     )
 
     @classmethod

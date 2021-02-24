@@ -877,7 +877,7 @@ def generate_reply_email(contact_email: str, user: User) -> str:
 
     include_sender_in_reverse_alias = False
 
-    # user has chosen an option explicitly
+    # user has set this option explicitly
     if user.include_sender_in_reverse_alias is not None:
         include_sender_in_reverse_alias = user.include_sender_in_reverse_alias
 
