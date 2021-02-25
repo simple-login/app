@@ -84,6 +84,22 @@ class UserAdmin(SLModelView):
     def action_monero_upgrade(self, ids):
         upgrade("Crypto", ids, is_giveaway=False)
 
+    @action(
+        "extend_trial_1w",
+        "Extend trial for 1 week more",
+        "Extend trial for 1 week more?",
+    )
+    def extend_trial_1w(self, ids):
+        for user in User.query.filter(User.id.in_(ids)):
+            if user.trial_end and user.trial_end > arrow.now():
+                user.trial_end = user.trial_end.shift(weeks=1)
+            else:
+                user.trial_end = arrow.now().shift(weeks=1)
+
+            flash(f"Extend trial for {user} to {user.trial_end}", "success")
+
+        db.session.commit()
+
 
 def upgrade(way: str, ids: [int], is_giveaway: bool):
     query = User.query.filter(User.id.in_(ids))
