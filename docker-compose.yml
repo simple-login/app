@@ -1,7 +1,7 @@
 version: "3.7"
 
 services:
-  front:
+  caddy:
     image: caddy:2.2.1-alpine
     environment:
       URL:

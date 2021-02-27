@@ -83,7 +83,7 @@ MAX_NB_DIRECTORY = 50
 ENFORCE_SPF = "ENFORCE_SPF" in os.environ
 
 # allow to override postfix server locally
-POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
+POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "postfix")
 
 DISABLE_REGISTRATION = "DISABLE_REGISTRATION" in os.environ
 
