@@ -192,7 +192,8 @@ def get_alias_infos_with_pagination_v2(
 def get_alias_infos_with_pagination_v3(
     user, page_id=0, query=None, sort=None, alias_filter=None
 ) -> [AliasInfo]:
-    sub = (
+    # subquery on alias annotated with nb_reply, nb_blocked, nb_forward, max_created_at, latest_email_log_created_at
+    alias_activity_subquery = (
         db.session.query(
             Alias.id,
             func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
@@ -216,7 +217,7 @@ def get_alias_infos_with_pagination_v3(
                     else_=0,
                 )
             ).label("nb_forward"),
-            func.max(EmailLog.created_at).label("max_created_at"),
+            func.max(EmailLog.created_at).label("latest_email_log_created_at"),
         )
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
@@ -263,17 +264,25 @@ def get_alias_infos_with_pagination_v3(
 
     q = (
         db.session.query(
-            Alias, Contact, EmailLog, sub.c.nb_reply, sub.c.nb_blocked, sub.c.nb_forward
+            Alias,
+            Contact,
+            EmailLog,
+            alias_activity_subquery.c.nb_reply,
+            alias_activity_subquery.c.nb_blocked,
+            alias_activity_subquery.c.nb_forward,
         )
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
         .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
-        .filter(Alias.id == sub.c.id)
+        .filter(Alias.id == alias_activity_subquery.c.id)
         .filter(Alias.id == mailboxes_sub.c.id)
         .filter(
             or_(
-                EmailLog.created_at == sub.c.max_created_at,
-                sub.c.max_created_at.is_(None),  # no email log yet for this alias
+                EmailLog.created_at
+                == alias_activity_subquery.c.latest_email_log_created_at,
+                alias_activity_subquery.c.latest_email_log_created_at.is_(
+                    None
+                ),  # no email log yet for this alias
             )
         )
     )
