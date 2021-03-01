@@ -2,7 +2,7 @@ from app.api.serializer import get_alias_infos_with_pagination_v3
 from app.config import PAGE_LIMIT
 from app.extensions import db
 from app.models import User, Alias, Mailbox, Contact
-from tests.utils import login, create_user
+from tests.utils import create_user
 
 
 def test_get_alias_infos_with_pagination_v3(flask_client):
