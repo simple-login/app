@@ -1,7 +1,8 @@
 from app.api.serializer import get_alias_infos_with_pagination_v3
 from app.config import PAGE_LIMIT
 from app.extensions import db
-from app.models import User, Alias, Mailbox
+from app.models import User, Alias, Mailbox, Contact
+from tests.utils import login, create_user
 
 
 def test_get_alias_infos_with_pagination_v3(flask_client):
@@ -18,7 +19,7 @@ def test_get_alias_infos_with_pagination_v3(flask_client):
     assert len(alias_infos) == 1
     alias_info = alias_infos[0]
 
-    alias = Alias.query.first()
+    alias = Alias.first()
     assert alias_info.alias == alias
     assert alias_info.mailbox == user.default_mailbox
     assert alias_info.mailboxes == [user.default_mailbox]
@@ -39,7 +40,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_email(flask_client):
         commit=True,
     )
 
-    alias = Alias.query.first()
+    alias = Alias.first()
 
     alias_infos = get_alias_infos_with_pagination_v3(user, query=alias.email)
     assert len(alias_infos) == 1
@@ -57,7 +58,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_mailbox(flask_client):
         activated=True,
         commit=True,
     )
-    alias = Alias.query.first()
+    alias = Alias.first()
     alias_infos = get_alias_infos_with_pagination_v3(user, query=alias.mailbox.email)
     assert len(alias_infos) == 1
 
@@ -71,7 +72,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_mailboxes(flask_client):
         activated=True,
         commit=True,
     )
-    alias = Alias.query.first()
+    alias = Alias.first()
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
     alias._mailboxes.append(mb)
     db.session.commit()
@@ -93,7 +94,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_note(flask_client):
         commit=True,
     )
 
-    alias = Alias.query.first()
+    alias = Alias.first()
     alias.note = "test note"
     db.session.commit()
 
@@ -111,7 +112,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_name(flask_client):
         commit=True,
     )
 
-    alias = Alias.query.first()
+    alias = Alias.first()
     alias.name = "Test Name"
     db.session.commit()
 
@@ -131,10 +132,37 @@ def test_get_alias_infos_with_pagination_v3_no_duplicate(flask_client):
         commit=True,
     )
 
-    alias = Alias.query.first()
+    alias = Alias.first()
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
     alias._mailboxes.append(mb)
     db.session.commit()
+
+    alias_infos = get_alias_infos_with_pagination_v3(user)
+    assert len(alias_infos) == 1
+
+
+def test_get_alias_infos_with_pagination_v3_no_duplicate_when_empty_contact(
+    flask_client,
+):
+    """
+    Make sure an alias is returned once when it has 2 contacts that have no email log activity
+    """
+    user = create_user(flask_client)
+    alias = Alias.first()
+
+    Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+    )
+
+    Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact2@example.com",
+        reply_email="rep2@sl.local",
+    )
 
     alias_infos = get_alias_infos_with_pagination_v3(user)
     assert len(alias_infos) == 1

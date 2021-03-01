@@ -27,6 +27,17 @@ def login(flask_client) -> User:
     return user
 
 
+def create_user(flask_client) -> User:
+    # create user, user is activated
+    return User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
+    )
+
+
 def pretty(d):
     """pretty print as json"""
     print(json.dumps(d, indent=2))

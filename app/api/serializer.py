@@ -226,6 +226,14 @@ def get_alias_infos_with_pagination_v3(
         .subquery()
     )
 
+    alias_contact_subquery = (
+        db.session.query(Alias.id, func.max(Contact.id).label("max_contact_id"))
+        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
+        .filter(Alias.user_id == user.id)
+        .group_by(Alias.id)
+        .subquery()
+    )
+
     if query:
         mailboxes_sub = (
             db.session.query(
@@ -275,14 +283,21 @@ def get_alias_infos_with_pagination_v3(
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
         .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
         .filter(Alias.id == alias_activity_subquery.c.id)
+        .filter(Alias.id == alias_contact_subquery.c.id)
         .filter(Alias.id == mailboxes_sub.c.id)
         .filter(
             or_(
                 EmailLog.created_at
                 == alias_activity_subquery.c.latest_email_log_created_at,
-                alias_activity_subquery.c.latest_email_log_created_at.is_(
-                    None
-                ),  # no email log yet for this alias
+                and_(
+                    # no email log yet for this alias
+                    alias_activity_subquery.c.latest_email_log_created_at.is_(None),
+                    # to make sure only 1 contact is returned in this case
+                    or_(
+                        Contact.id == alias_contact_subquery.c.max_contact_id,
+                        alias_contact_subquery.c.max_contact_id.is_(None),
+                    ),
+                ),
             )
         )
     )
