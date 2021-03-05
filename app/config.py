@@ -34,8 +34,6 @@ COLOR_LOG = "COLOR_LOG" in os.environ
 # Allow user to have 1 year of premium: set the expiration_date to 1 year more
 PROMO_CODE = "SIMPLEISBETTER"
 
-# Debug mode
-DEBUG = os.environ["DEBUG"] if "DEBUG" in os.environ else False
 # Server url
 URL = os.environ["URL"]
 print(">>> URL:", URL)
