@@ -3,6 +3,8 @@ import random
 import socket
 import string
 import subprocess
+from ast import literal_eval
+from typing import Callable
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -18,6 +20,21 @@ def get_abs_path(file_path: str):
         return file_path
     else:
         return os.path.join(ROOT_DIR, file_path)
+
+
+def sl_getenv(env_var: str, default_factory: Callable = None):
+    """
+    Get env value, convert into Python object
+    Args:
+        env_var (str): env var, example: SL_DB
+        default_factory: returns value if this env var is not set.
+
+    """
+    value = os.getenv(env_var)
+    if value is None:
+        return default_factory()
+
+    return literal_eval(value)
 
 
 config_file = os.environ.get("CONFIG")
@@ -99,43 +116,30 @@ if "POSTFIX_PORT_FORWARD" in os.environ:
 # Useful when calling Postfix from an external network
 POSTFIX_SUBMISSION_TLS = "POSTFIX_SUBMISSION_TLS" in os.environ
 
-if "OTHER_ALIAS_DOMAINS" in os.environ:
-    OTHER_ALIAS_DOMAINS = eval(
-        os.environ["OTHER_ALIAS_DOMAINS"]
-    )  # ["domain1.com", "domain2.com"]
-else:
-    OTHER_ALIAS_DOMAINS = []
+# ["domain1.com", "domain2.com"]
+OTHER_ALIAS_DOMAINS = sl_getenv("OTHER_ALIAS_DOMAINS", list)
+OTHER_ALIAS_DOMAINS = [d.lower().strip() for d in OTHER_ALIAS_DOMAINS]
 
 # List of domains user can use to create alias
 if "ALIAS_DOMAINS" in os.environ:
-    ALIAS_DOMAINS = eval(os.environ["ALIAS_DOMAINS"])  # ["domain1.com", "domain2.com"]
+    ALIAS_DOMAINS = sl_getenv("ALIAS_DOMAINS")  # ["domain1.com", "domain2.com"]
 else:
     ALIAS_DOMAINS = OTHER_ALIAS_DOMAINS + [EMAIL_DOMAIN]
-
 ALIAS_DOMAINS = [d.lower().strip() for d in ALIAS_DOMAINS]
 
-if "PREMIUM_ALIAS_DOMAINS" in os.environ:
-    PREMIUM_ALIAS_DOMAINS = eval(
-        os.environ["PREMIUM_ALIAS_DOMAINS"]
-    )  # ["domain1.com", "domain2.com"]
-else:
-    PREMIUM_ALIAS_DOMAINS = []
-
+# ["domain1.com", "domain2.com"]
+PREMIUM_ALIAS_DOMAINS = sl_getenv("PREMIUM_ALIAS_DOMAINS", list)
 PREMIUM_ALIAS_DOMAINS = [d.lower().strip() for d in PREMIUM_ALIAS_DOMAINS]
 
 # the alias domain used when creating the first alias for user
 FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN
 
 # list of (priority, email server)
-EMAIL_SERVERS_WITH_PRIORITY = eval(
-    os.environ["EMAIL_SERVERS_WITH_PRIORITY"]
-)  # [(10, "email.hostname.")]
+# e.g. [(10, "mx1.hostname."), (10, "mx2.hostname.")]
+EMAIL_SERVERS_WITH_PRIORITY = sl_getenv("EMAIL_SERVERS_WITH_PRIORITY")
 
 # these emails are ignored when computing stats
-if os.environ.get("IGNORED_EMAILS"):
-    IGNORED_EMAILS = eval(os.environ.get("IGNORED_EMAILS"))
-else:
-    IGNORED_EMAILS = []
+IGNORED_EMAILS = sl_getenv("IGNORED_EMAILS", list)
 
 # disable the alias suffix, i.e. the ".random_word" part
 DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
@@ -197,18 +201,10 @@ except (KeyError, ValueError):
     PADDLE_YEARLY_PRODUCT_ID = -1
 
 # Other Paddle product IDS
-if "PADDLE_MONTHLY_PRODUCT_IDS" in os.environ:
-    PADDLE_MONTHLY_PRODUCT_IDS = eval(os.environ["PADDLE_MONTHLY_PRODUCT_IDS"])
-else:
-    PADDLE_MONTHLY_PRODUCT_IDS = []
-
+PADDLE_MONTHLY_PRODUCT_IDS = sl_getenv("PADDLE_MONTHLY_PRODUCT_IDS", list)
 PADDLE_MONTHLY_PRODUCT_IDS.append(PADDLE_MONTHLY_PRODUCT_ID)
 
-if "PADDLE_YEARLY_PRODUCT_IDS" in os.environ:
-    PADDLE_YEARLY_PRODUCT_IDS = eval(os.environ["PADDLE_YEARLY_PRODUCT_IDS"])
-else:
-    PADDLE_YEARLY_PRODUCT_IDS = []
-
+PADDLE_YEARLY_PRODUCT_IDS = sl_getenv("PADDLE_YEARLY_PRODUCT_IDS", list)
 PADDLE_YEARLY_PRODUCT_IDS.append(PADDLE_YEARLY_PRODUCT_ID)
 
 PADDLE_PUBLIC_KEY_PATH = get_abs_path(
