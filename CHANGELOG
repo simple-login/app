@@ -6,7 +6,36 @@ The version corresponds to SimpleLogin Docker `image tag`.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.3.0] - 2021-03-05
+Notify user when reply cannot be sent
+User can choose default domain for random alias
+enable LOCAL_FILE_UPLOAD by default
+fix user has to login again after quitting the browser
+login user in api auth endpoints
+Create POST /api/api_key
+Add GET /api/logout
+Add setup-done page
+Add PublicDomain
+User can choose a random alias domain in a list of public domains
+User can choose mailboxes for a domain
+Return support_pgp in GET /api/v2/aliases
+Self hosting improvements
+Improve Search
+Use poetry instead of pip
+Add PATCH /api/user_info
+Add GET /api/setting
+Add GET /api/setting/domains
+Add PATCH /api/setting
+Add "Generic Subject" option
+Add /v2/setting/domains
+Add /api/v5/alias/options
+Add GET /api/custom_domains
+Add GET /api/custom_domains/:custom_domain_id/trash
+Able to disable a directory
+Use VERP: send email from bounce address
+Use VERP for transactional email: remove SENDER, SENDER_DIR
+Use "John Wick - john at wick.com" as default sender format
+Able to transfer an alias
 
 ## [3.2.2] - 2020-06-15
 Fix POST /v2/alias/custom/new when DISABLE_ALIAS_SUFFIX is set

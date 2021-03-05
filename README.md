@@ -71,7 +71,7 @@ docker run --name sl -it --rm \
     -e RESET_DB=true \
     -e CONFIG=/code/example.env \
     -p 7777:7777 \
-    simplelogin/app:3.2.2 python server.py
+    simplelogin/app:3.3.0 python server.py
 ```
 
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
@@ -106,7 +106,7 @@ Except for the DNS setup that is usually done on your domain registrar interface
 These packages are used to verify the setup. Install them by:
 
 ```bash
-sudo apt install -y dnsutils
+sudo apt update && sudo apt install -y dnsutils
 ```
 
 Create a directory to store SimpleLogin data:
@@ -160,7 +160,9 @@ mydomain.com.	3600	IN	MX	10 app.mydomain.com.
 ```
 
 #### A record
-An **A record** that points `app.mydomain.com.` to your server IP. To verify, the following command
+An **A record** that points `app.mydomain.com.` to your server IP.
+If you are using CloudFlare, we recommend to disable the "Proxy" option.
+To verify, the following command
 
 ```bash
 dig @1.1.1.1 app.mydomain.com a
@@ -195,7 +197,7 @@ then the `PUBLIC_KEY` would be `abcdefgh`.
 You can get the `PUBLIC_KEY` by running this command:
 
 ```bash
-sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n'
+sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n' | awk 1
 ```
 
 To verify, the following command
@@ -259,11 +261,11 @@ Now the boring DNS stuffs are done, let's do something more fun!
 
 If you don't already have Docker installed on your server, please follow the steps on [Docker CE for Ubuntu](https://docs.docker.com/v17.12/install/linux/docker-ce/ubuntu/) to install Docker.
 
-Tips: if you are not using `root` user and you want to run Docker without the `sudo` prefix, add your account to `docker` group with the following command.
-You might need to exit and ssh again to your server for this to be taken into account.
+You can also install Docker using the [docker-install](https://github.com/docker/docker-install) script which is
 
 ```bash
-sudo usermod -a -G docker $USER
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
 ```
 
 ### Prepare the Docker network
@@ -316,6 +318,9 @@ sudo apt-get install -y postfix postfix-pgsql -y
 ```
 
 Choose "Internet Site" in Postfix installation window then keep using the proposed value as *System mail name* in the next window.
+
+![](./docs/postfix-installation.png)
+![](./docs/postfix-installation2.png)
 
 Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain.
 
@@ -424,11 +429,14 @@ sudo systemctl restart postfix
 
 ### Run SimpleLogin Docker containers
 
-To run the server, you need a config file. Please have a look at [config example](example.env) for an example to create one. Some parameters are optional and are commented out by default. Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
+To run SimpleLogin, you need a config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to
 
-Let's put your config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to replace `mydomain.com` by your domain, set `FLASK_SECRET` to a secret string, update 'myuser' and 'mypassword' with your postgres credentials.
+- replace `mydomain.com` by your domain,
+- set `FLASK_SECRET` to a secret string, 
+- update 'myuser' and 'mypassword' with your database credentials used in previous step.
 
-Make sure to update the following variables and replace these values by yours.
+All possible parameters can be found in [config example](example.env). Some are optional and are commented out by default. 
+Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
 ```.env
 # WebApp URL
@@ -446,10 +454,6 @@ EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
 # By default, new aliases must end with ".{random_word}". This is to avoid a person taking all "nice" aliases.
 # this option doesn't make sense in self-hosted. Set this variable to disable this option.
 DISABLE_ALIAS_SUFFIX=1
-
-# If you want to use another MTA to send email, you could set the address of your MTA here
-# By default, emails are sent using the the same Postfix server that receives emails
-# POSTFIX_SERVER=my-postfix.com
 
 # the DKIM private key used to compute DKIM-Signature
 DKIM_PRIVATE_KEY_PATH=/dkim.key
@@ -479,7 +483,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:3.2.2 flask db upgrade
+    simplelogin/app:3.3.0 flask db upgrade
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
@@ -494,7 +498,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
-    simplelogin/app:3.2.2 python init_app.py
+    simplelogin/app:3.3.0 python init_app.py
 ```
 
 Now, it's time to run the `webapp` container!
@@ -510,7 +514,7 @@ sudo docker run -d \
     -p 7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.2.2
+    simplelogin/app:3.3.0
 ```
 
 Next run the `email handler`
@@ -526,7 +530,7 @@ sudo docker run -d \
     -p 20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.2.2 python email_handler.py
+    simplelogin/app:3.3.0 python email_handler.py
 ```
 
 ### Nginx
@@ -555,7 +559,8 @@ Reload Nginx with the command below
 sudo systemctl reload nginx
 ```
 
-At this step, you should also setup the SSL for Nginx. [Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
+At this step, you should also setup the SSL for Nginx. 
+[Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
 
 ### Enjoy!
 
@@ -565,7 +570,7 @@ By default, new accounts are not premium so don't have unlimited alias. To make 
 please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
 
 You don't have to pay anything to SimpleLogin to use all its features.
-You could make a donation to SimpleLogin on our Patreon page at https://www.patreon.com/simplelogin if you wish though.
+If you like the project, you can make a donation on our Patreon page at https://www.patreon.com/simplelogin
 
 ### Misc
 
