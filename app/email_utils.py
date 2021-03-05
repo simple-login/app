@@ -626,7 +626,11 @@ def get_header_unicode(header: str) -> str:
             LOG.warning("Cannot decode header %s", header)
         except LookupError:  # charset is unknown
             LOG.warning("Cannot decode %s with %s, use utf-8", decoded_string, charset)
-            return decoded_string.decode("utf-8")
+            try:
+                return decoded_string.decode("utf-8")
+            except UnicodeDecodeError:
+                LOG.warning("Cannot UTF-8 decode %s", decoded_string)
+                return decoded_string.decode("utf-8", errors="replace")
 
     return header
 
