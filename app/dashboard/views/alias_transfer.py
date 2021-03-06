@@ -1,12 +1,12 @@
+from uuid import uuid4
+
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from itsdangerous import Signer
 
-from app.config import ALIAS_TRANSFER_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import send_email, render
-from app.extensions import db
+from app.extensions import db, limiter
 from app.log import LOG
 from app.models import (
     Alias,
@@ -89,12 +89,30 @@ def alias_transfer_send_route(alias_id):
         )
         return redirect(url_for("dashboard.index"))
 
-    s = Signer(ALIAS_TRANSFER_SECRET)
-    alias_id_signed = s.sign(str(alias.id)).decode()
+    if alias.transfer_token:
+        alias_transfer_url = (
+                URL + "/dashboard/alias_transfer/receive" + f"?token={alias.transfer_token}"
+        )
+    else:
+        alias_transfer_url = None
 
-    alias_transfer_url = (
-        URL + "/dashboard/alias_transfer/receive" + f"?alias_id={alias_id_signed}"
-    )
+    # generate a new transfer_token
+    if request.method == "POST":
+        if request.form.get("form-name") == "create":
+            alias.transfer_token = str(uuid4())
+            db.session.commit()
+            alias_transfer_url = (
+                    URL + "/dashboard/alias_transfer/receive" + f"?token={alias.transfer_token}"
+            )
+            flash("Share URL created", "success")
+            return redirect(request.url)
+        # request.form.get("form-name") == "remove"
+        else:
+            alias.transfer_token = None
+            db.session.commit()
+            alias_transfer_url = None
+            flash("Share URL deleted", "success")
+            return redirect(request.url)
 
     return render_template(
         "dashboard/alias_transfer_send.html",
@@ -104,21 +122,18 @@ def alias_transfer_send_route(alias_id):
 
 
 @dashboard_bp.route("/alias_transfer/receive", methods=["GET", "POST"])
+@limiter.limit("5/minute")
 @login_required
 def alias_transfer_receive_route():
     """
     URL has ?alias_id=signed_alias_id
     """
-    s = Signer(ALIAS_TRANSFER_SECRET)
-    signed_alias_id = request.args.get("alias_id")
+    token = request.args.get("token")
+    alias = Alias.get_by(transfer_token=token)
 
-    try:
-        alias_id = int(s.unsign(signed_alias_id))
-    except Exception:
+    if not alias:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.index"))
-    else:
-        alias = Alias.get(alias_id)
 
     # alias already belongs to this user
     if alias.user_id == current_user.id:

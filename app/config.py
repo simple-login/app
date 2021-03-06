@@ -173,9 +173,6 @@ FLASK_SECRET = os.environ["FLASK_SECRET"]
 SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
-ALIAS_TRANSFER_SECRET = os.environ.get("ALIAS_TRANSFER_SECRET") or (
-    FLASK_SECRET + "alias_transfer"
-)
 
 # AWS
 AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"
