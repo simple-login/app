@@ -82,6 +82,7 @@ from app.config import (
     TRANSACTIONAL_BOUNCE_PREFIX,
     TRANSACTIONAL_BOUNCE_SUFFIX,
     POSTFIX_PORT_FORWARD,
+    NOT_SEND_EMAIL,
 )
 from app.email_utils import (
     send_email,
@@ -1674,6 +1675,15 @@ def sl_sendmail(
     can_retry=True,
 ):
     """replace smtp.sendmail"""
+    if NOT_SEND_EMAIL:
+        LOG.d(
+            "send email with subject '%s', from '%s' to '%s'",
+            msg["Subject"],
+            msg["From"],
+            msg["To"],
+        )
+        return
+
     try:
         if POSTFIX_SUBMISSION_TLS:
             smtp = SMTP(POSTFIX_SERVER, 587)
