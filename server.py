@@ -20,7 +20,7 @@ from flask import (
 )
 from flask_admin import Admin
 from flask_cors import cross_origin, CORS
-from flask_debugtoolbar import DebugToolbarExtension
+
 from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
@@ -826,6 +826,7 @@ def local_main():
     app = create_app()
 
     # enable flask toolbar
+    # from flask_debugtoolbar import DebugToolbarExtension
     # app.config["DEBUG_TB_PROFILER_ENABLED"] = True
     # app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
     # app.debug = True
