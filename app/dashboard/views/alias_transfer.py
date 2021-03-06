@@ -91,7 +91,7 @@ def alias_transfer_send_route(alias_id):
 
     if alias.transfer_token:
         alias_transfer_url = (
-                URL + "/dashboard/alias_transfer/receive" + f"?token={alias.transfer_token}"
+            URL + "/dashboard/alias_transfer/receive" + f"?token={alias.transfer_token}"
         )
     else:
         alias_transfer_url = None
@@ -102,7 +102,9 @@ def alias_transfer_send_route(alias_id):
             alias.transfer_token = str(uuid4())
             db.session.commit()
             alias_transfer_url = (
-                    URL + "/dashboard/alias_transfer/receive" + f"?token={alias.transfer_token}"
+                URL
+                + "/dashboard/alias_transfer/receive"
+                + f"?token={alias.transfer_token}"
             )
             flash("Share URL created", "success")
             return redirect(request.url)
