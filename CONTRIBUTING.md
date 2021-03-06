@@ -1,4 +1,6 @@
-All work on SimpleLogin happens directly on GitHub.
+Thanks for taking the time to contribute! 🎉👍
+
+The project uses Flask and requires Python3.7+.
 
 ### Run code locally
 
@@ -43,12 +45,7 @@ To run the code locally, please create a local setting file based on `example.en
 cp example.env .env
 ```
 
-Make sure to uncomment the `RESET_DB=true` to create the database locally.
-
-Feel free to custom your `.env` file, it would be your default setting when developing locally. This file is ignored by git.
-
-You don't need all the parameters, for example, if you don't update images to s3, then
-`BUCKET`, `AWS_ACCESS_KEY_ID` can be empty or if you don't use login with Github locally, `GITHUB_CLIENT_ID` doesn't have to be filled. The `example.env` file contains minimal requirement so that if you run:
+To run the server:
 
 ```
 python3 server.py
@@ -59,6 +56,8 @@ then open http://localhost:7777, you should be able to login with the following 
 ```
 john@wick.com / password
 ```
+
+You might need to change the `.env` file for developing certain features. This file is ignored by git.
 
 ### Database migration
 
@@ -106,11 +105,11 @@ black .
 
 [swaks](http://www.jetmore.org/john/code/swaks/) is used for sending test emails to the `email_handler`.
 
-[mailcatcher](https://github.com/sj26/mailcatcher) is used to receive forwarded emails.
+[mailcatcher](https://github.com/sj26/mailcatcher) or [MailHog](https://github.com/mailhog/MailHog) can be used as a MTA to receive emails.
 
-There are several steps to set up the email handler
+Here's how set up the email handler:
 
-1) run mailcatcher
+1) run mailcatcher or MailHog
 
 ```bash
 mailcatcher
@@ -119,7 +118,10 @@ mailcatcher
 2) Make sure to set the following variables in the `.env` file
 
 ```
-NOT_SEND_EMAIL=true
+# comment out this variable
+# NOT_SEND_EMAIL=true
+
+# So the emails will be sent to mailcatcher/MailHog
 POSTFIX_SERVER=localhost
 POSTFIX_PORT=1025
 ```
@@ -133,7 +135,7 @@ python email_handler.py
 4) Send a test email
 
 ```bash
-swaks --to e1@d1.localhost --from hey@google.com --server 127.0.0.1:20381
+swaks --to e1@sl.local --from hey@google.com --server 127.0.0.1:20381
 ```
 
 Now open http://localhost:1080/, you should see the test email.
