@@ -11,4 +11,5 @@ from .views import (
     mailbox,
     notification,
     setting,
+    export,
 )
