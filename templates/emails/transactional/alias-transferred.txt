@@ -1,0 +1,6 @@
+{{ alias.email }} has been transferred.
+
+Your (previously) alias {{  alias.email }} has been received by another user.
+
+Best,
+SimpleLogin Team.

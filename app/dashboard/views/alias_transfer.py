@@ -5,6 +5,7 @@ from itsdangerous import Signer
 from app.config import ALIAS_TRANSFER_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
+from app.email_utils import send_email, render
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -47,6 +48,21 @@ def transfer(alias, new_user, new_mailboxes: [Mailbox]):
     # alias has never been transferred before
     if not alias.original_owner_id:
         alias.original_owner_id = alias.user_id
+
+    # inform previous owner
+    old_user = alias.user
+    send_email(
+        old_user.email,
+        f"Alias {alias.email} has been received",
+        render(
+            "transactional/alias-transferred.txt",
+            alias=alias,
+        ),
+        render(
+            "transactional/alias-transferred.html",
+            alias=alias,
+        ),
+    )
 
     # now the alias belongs to the new user
     alias.user_id = new_user.id
