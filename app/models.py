@@ -1003,6 +1003,9 @@ class Alias(db.Model, ModelMixin):
     # alias is pinned on top
     pinned = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
+    # used to transfer an alias to another user
+    transfer_token = db.Column(db.String(64), default=None, unique=True, nullable=True)
+
     user = db.relationship(User, foreign_keys=[user_id])
     mailbox = db.relationship("Mailbox", lazy="joined")
 
