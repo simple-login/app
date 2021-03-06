@@ -1246,7 +1246,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         )
 
 
-def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
+def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
     """
     Handle reply phase bounce
     Happens when  an email cannot be sent from an alias to a contact
@@ -1259,6 +1259,33 @@ def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
     LOG.debug(
         "Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log
     )
+
+    content_type = msg.get_content_type().lower()
+
+    # region: handle the auto responder email
+    if content_type != "multipart/report" or envelope.mail_from != "<>":
+        # forward the email again to the alias
+        # todo: remove logging
+        LOG.exception(
+            "Handle auto responder %s %s %s", content_type, envelope.mail_from, msg
+        )
+
+        # replace the BOUNCE_EMAIL by alias in To field
+        add_or_replace_header(msg, "To", alias.email)
+
+        email_log.auto_replied = True
+        db.session.commit()
+
+        sl_sendmail(
+            envelope.mail_from,
+            alias.email,  # resend the email to alias
+            msg,
+            envelope.mail_options,
+            envelope.rcpt_options,
+            is_forward=True,
+        )
+        return "250 Message accepted for delivery"
+    # endregion
 
     Bounce.create(email=sanitize_email(contact.website_email), commit=True)
 
@@ -1315,6 +1342,7 @@ def handle_bounce_reply_phase(msg: Message, email_log: EmailLog):
             refused_email_url=refused_email_url,
         ),
     )
+    return "550 SL E24 Email cannot be sent to contact"
 
 
 def handle_spam(
@@ -1606,8 +1634,7 @@ def handle_bounce(envelope, rcpt_to) -> str:
         return "550 SL E27 No such email log"
 
     if email_log.is_reply:
-        handle_bounce_reply_phase(msg, email_log)
-        return "550 SL E24 Email cannot be sent to contact"
+        return handle_bounce_reply_phase(envelope, msg, email_log)
     else:  # forward phase
         handle_bounce_forward_phase(msg, email_log)
         return "550 SL E26 Email cannot be forwarded to mailbox"
