@@ -16,12 +16,18 @@ def test_get_custom_domains(flask_client):
     )
 
     assert r.status_code == 200
-    assert r.json == {
-        "custom_domains": [
-            {"domain": "test1.org", "id": 1, "nb_alias": 0, "verified": True},
-            {"domain": "test2.org", "id": 2, "nb_alias": 0, "verified": False},
-        ]
-    }
+    assert len(r.json["custom_domains"]) == 2
+    for domain in r.json["custom_domains"]:
+        assert domain["domain_name"]
+        assert domain["id"]
+        assert domain["nb_alias"] == 0
+        assert "is_verified" in domain
+        assert "catch_all" in domain
+        assert "name" in domain
+        assert "random_prefix_generation" in domain
+        assert domain["creation_date"]
+        assert domain["creation_timestamp"]
+
 
 
 def test_get_custom_domain_trash(flask_client):

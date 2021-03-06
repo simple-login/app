@@ -633,16 +633,26 @@ List of custom domains.
 {
   "custom_domains": [
     {
-      "domain": "test1.org",
+      "catch_all": false,
+      "creation_date": "2021-03-06 19:42:33+00:00",
+      "creation_timestamp": 1615059753,
+      "domain_name": "test1.org",
       "id": 1,
+      "is_verified": true,
+      "name": null,
       "nb_alias": 0,
-      "verified": true
+      "random_prefix_generation": false
     },
     {
-      "domain": "test2.org",
+      "catch_all": false,
+      "creation_date": "2021-03-06 19:42:33+00:00",
+      "creation_timestamp": 1615059753,
+      "domain_name": "test2.org",
       "id": 2,
+      "is_verified": false,
+      "name": null,
       "nb_alias": 0,
-      "verified": false
+      "random_prefix_generation": false
     }
   ]
 }

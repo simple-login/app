@@ -8,9 +8,14 @@ from app.models import CustomDomain, DomainDeletedAlias
 def custom_domain_to_dict(custom_domain: CustomDomain):
     return {
         "id": custom_domain.id,
-        "domain": custom_domain.domain,
-        "verified": custom_domain.verified,
+        "domain_name": custom_domain.domain,
+        "is_verified": custom_domain.verified,
         "nb_alias": custom_domain.nb_alias(),
+        "creation_date": custom_domain.created_at.format(),
+        "creation_timestamp": custom_domain.created_at.timestamp,
+        "catch_all": custom_domain.catch_all,
+        "name": custom_domain.name,
+        "random_prefix_generation": custom_domain.random_prefix_generation,
     }
 
 
