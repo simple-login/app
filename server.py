@@ -826,10 +826,10 @@ def local_main():
     app = create_app()
 
     # enable flask toolbar
-    app.config["DEBUG_TB_PROFILER_ENABLED"] = True
-    app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
-    app.debug = True
-    DebugToolbarExtension(app)
+    # app.config["DEBUG_TB_PROFILER_ENABLED"] = True
+    # app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
+    # app.debug = True
+    # DebugToolbarExtension(app)
 
     # warning: only used in local
     if RESET_DB:
