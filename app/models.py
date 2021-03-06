@@ -1396,6 +1396,9 @@ class EmailLog(db.Model, ModelMixin):
     # usually because the forwarded email is too spammy
     bounced = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
+    # happen when an email with auto (holiday) reply
+    auto_replied = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     # SpamAssassin result
     is_spam = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
     spam_score = db.Column(db.Float, nullable=True)
