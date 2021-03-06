@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 51bd435bd5cc
-Revises: e831a883153a
-Create Date: 2021-03-06 18:05:34.252719
+Revision ID: 94f14eb0fe5b
+Revises: d1236c4dff71
+Create Date: 2021-03-06 18:10:10.450794
 
 """
 import sqlalchemy_utils
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '51bd435bd5cc'
-down_revision = 'e831a883153a'
+revision = '94f14eb0fe5b'
+down_revision = 'd1236c4dff71'
 branch_labels = None
 depends_on = None
 
