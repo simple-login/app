@@ -385,18 +385,19 @@ def add_dkim_signature(msg: Message, email_domain: str):
 
     # Specify headers in "byte" form
     # Generate message signature
-    sig = dkim.sign(
-        to_bytes(msg),
-        DKIM_SELECTOR,
-        email_domain.encode(),
-        DKIM_PRIVATE_KEY.encode(),
-        include_headers=DKIM_HEADERS,
-    )
-    sig = sig.decode()
+    if DKIM_PRIVATE_KEY:
+        sig = dkim.sign(
+            to_bytes(msg),
+            DKIM_SELECTOR,
+            email_domain.encode(),
+            DKIM_PRIVATE_KEY.encode(),
+            include_headers=DKIM_HEADERS,
+        )
+        sig = sig.decode()
 
-    # remove linebreaks from sig
-    sig = sig.replace("\n", " ").replace("\r", "")
-    msg["DKIM-Signature"] = sig[len("DKIM-Signature: ") :]
+        # remove linebreaks from sig
+        sig = sig.replace("\n", " ").replace("\r", "")
+        msg["DKIM-Signature"] = sig[len("DKIM-Signature: ") :]
 
 
 def add_or_replace_header(msg: Message, header: str, value: str):

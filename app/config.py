@@ -147,14 +147,15 @@ DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 # the email address that receives all unsubscription request
 UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
 
-DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
 DKIM_SELECTOR = b"dkim"
-
-with open(DKIM_PRIVATE_KEY_PATH) as f:
-    DKIM_PRIVATE_KEY = f.read()
-
-
 DKIM_HEADERS = [b"from", b"to"]
+DKIM_PRIVATE_KEY = None
+
+if "DKIM_PRIVATE_KEY_PATH" in os.environ:
+    DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
+    with open(DKIM_PRIVATE_KEY_PATH) as f:
+        DKIM_PRIVATE_KEY = f.read()
+
 
 # Database
 DB_URI = os.environ["DB_URI"]
