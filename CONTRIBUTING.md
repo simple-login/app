@@ -2,6 +2,33 @@ Thanks for taking the time to contribute! 🎉👍
 
 The project uses Flask and requires Python3.7+.
 
+## Quick start
+
+If you have Docker installed, run the following command to start SimpleLogin local server:
+
+
+```bash
+docker run --name sl -it --rm \
+    -e RESET_DB=true \
+    -e CONFIG=/code/example.env \
+    -p 7777:7777 \
+    simplelogin/app:3.3.0 python server.py
+```
+
+Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account.
+
+## General Architecture
+
+<p align="center">
+    <img src="./docs/archi.png" height="450px">
+</p>
+
+SimpleLogin backend consists of 2 main components:
+
+- the `webapp` used by several clients: web UI (the dashboard), browser extension (Chrome & Firefox for now), OAuth clients (apps that integrate "Login with SimpleLogin" button) and mobile app (work in progress).
+
+- the `email handler`: implements the email forwarding (i.e. alias receiving email) and email sending (i.e. alias sending email).
+
 ## Run code locally
 
 The project uses

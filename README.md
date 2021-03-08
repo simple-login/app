@@ -1,8 +1,4 @@
-<p align="center">
-    <a href="https://simplelogin.io">
-        <img src="./docs/hero.png" height="600px">
-    </a>
-</p>
+
 
 [SimpleLogin](https://simplelogin.io) | Protect your online identity with email alias
 ---
@@ -29,69 +25,22 @@
 
 </p>
 
-[1. Quick start](#quick-start)
-
-[2. General Architecture](#general-architecture)
-
-[3. Self Hosting](#self-hosting)
-
-[4. Contributing Guide](CONTRIBUTING.md)
-
-[5. API](docs/api.md)
-
-[6. OAuth2/OpenID Connect](docs/oauth.md)
+<p align="center">
+    <a href="https://simplelogin.io">
+        <img src="./docs/hero.png" height="600px">
+    </a>
+</p>
 
 ---
 
-Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked and lose your privacy. In addition, you become an easy target for spammers and phishing attempts.
+Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked. 
+More information on https://simplelogin.io 
 
-SimpleLogin allows you to create a different email address (alias) for each website.
+This README contains instructions on how to self host SimpleLogin.
 
-<p align="center">
-    <img src="./docs/one-click-alias.gif" height="150px">
-</p>
+Once you have your own SimpleLogin instance running, you can change the `API URL` in SimpleLogin's Chrome/Firefox extension, Android/iOS app to your server. 
 
-At the heart of SimpleLogin is `email alias`: an alias is an email address but all emails sent to an alias are **forwarded** to your mailbox. You can also **send** emails from your alias: for your contact, your alias is just a normal email address. Use alias whenever you need to give out your email address to protect your online identity. More info on https://simplelogin.io
-
-All components in SimpleLogin, including the web app, Chrome/Firefox extension, Android/iOS app are open-source and available on https://github.com/simple-login
-
-SimpleLogin server can be self-hosted. The self-hosting instructions are mostly based on Docker.
-
-SimpleLogin roadmap is at https://trello.com/b/4d6A69I4/open-roadmap, feel free to submit new ideas or vote on features you want to happen :).
-
-
-
-# Quick start
-
-If you have Docker installed, run the following command to start SimpleLogin local server:
-
-
-```bash
-docker run --name sl -it --rm \
-    -e RESET_DB=true \
-    -e CONFIG=/code/example.env \
-    -p 7777:7777 \
-    simplelogin/app:3.3.0 python server.py
-```
-
-Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account!
-
-To use SimpleLogin aliases, you need to deploy it on your server with some DNS setup though,
-the following section will show a step-by-step guide on how to get your own email forwarder service!
-
-## General Architecture
-
-<p align="center">
-    <img src="./docs/archi.png" height="450px">
-</p>
-
-SimpleLogin backend consists of 2 main components:
-
-- the `webapp` used by several clients: web UI (the dashboard), browser extension (Chrome & Firefox for now), OAuth clients (apps that integrate "Login with SimpleLogin" button) and mobile app (work in progress).
-
-- the `email handler`: implements the email forwarding (i.e. alias receiving email) and email sending (i.e. alias sending email).
-
-## Self hosting
+SimpleLogin roadmap is at https://trello.com/b/4d6A69I4/open-roadmap, feel free to submit new ideas or vote on features.
 
 ### Prerequisites
 
@@ -117,8 +66,6 @@ mkdir sl/pgp # to store PGP key
 mkdir sl/db # to store database
 mkdir sl/upload # to store quarantine emails
 ```
-
-
 
 ### DKIM
 
