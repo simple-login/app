@@ -1,4 +1,3 @@
-import json
 from io import BytesIO
 
 import arrow
@@ -8,7 +7,6 @@ from flask import (
     redirect,
     url_for,
     flash,
-    Response,
 )
 from flask_login import login_required, current_user, logout_user
 from flask_wtf import FlaskForm
@@ -33,7 +31,6 @@ from app.models import (
     User,
     Alias,
     CustomDomain,
-    Client,
     AliasGeneratorEnum,
     ManualSubscription,
     SenderFormatEnum,

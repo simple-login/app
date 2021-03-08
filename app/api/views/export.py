@@ -4,7 +4,6 @@ from io import StringIO
 from flask import g
 from flask import jsonify
 from flask import make_response
-from flask import request
 
 from app.api.base import api_bp, require_api_auth
 from app.models import Alias, Client, CustomDomain
