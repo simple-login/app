@@ -1612,8 +1612,8 @@ def handle_bounce(envelope, rcpt_to) -> str:
         if content_type != "multipart/report" or envelope.mail_from != "<>":
             # forward the email again to the alias
             # todo: remove logging
-            LOG.exception(
-                "Handle auto responder %s %s. Msg:\n%s",
+            LOG.warning(
+                "Handle autoreply %s %s. Msg:\n%s",
                 content_type,
                 envelope.mail_from,
                 msg,

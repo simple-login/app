@@ -29,7 +29,6 @@ def test_get_custom_domains(flask_client):
         assert domain["creation_timestamp"]
 
 
-
 def test_get_custom_domain_trash(flask_client):
     user = login(flask_client)
 
