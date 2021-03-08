@@ -1260,33 +1260,6 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
         "Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log
     )
 
-    content_type = msg.get_content_type().lower()
-
-    # region: handle the auto responder email
-    if content_type != "multipart/report" or envelope.mail_from != "<>":
-        # forward the email again to the alias
-        # todo: remove logging
-        LOG.exception(
-            "Handle auto responder %s %s %s", content_type, envelope.mail_from, msg
-        )
-
-        # replace the BOUNCE_EMAIL by alias in To field
-        add_or_replace_header(msg, "To", alias.email)
-
-        email_log.auto_replied = True
-        db.session.commit()
-
-        sl_sendmail(
-            envelope.mail_from,
-            alias.email,  # resend the email to alias
-            msg,
-            envelope.mail_options,
-            envelope.rcpt_options,
-            is_forward=True,
-        )
-        return "250 Message accepted for delivery"
-    # endregion
-
     Bounce.create(email=sanitize_email(contact.website_email), commit=True)
 
     # Store the bounced email
@@ -1634,6 +1607,44 @@ def handle_bounce(envelope, rcpt_to) -> str:
         return "550 SL E27 No such email log"
 
     if email_log.is_reply:
+        content_type = msg.get_content_type().lower()
+
+        if content_type != "multipart/report" or envelope.mail_from != "<>":
+            # forward the email again to the alias
+            # todo: remove logging
+            LOG.exception(
+                "Handle auto responder %s %s. Msg:\n%s",
+                content_type,
+                envelope.mail_from,
+                msg,
+            )
+
+            contact: Contact = email_log.contact
+            alias = contact.alias
+
+            email_log.auto_replied = True
+            db.session.commit()
+
+            # replace the BOUNCE_EMAIL by alias in To field
+            add_or_replace_header(msg, "To", alias.email)
+            envelope.rcpt_tos = [alias.email]
+
+            # same as handle()
+            # result of all deliveries
+            # each element is a couple of whether the delivery is successful and the smtp status
+            res: [(bool, str)] = []
+
+            for is_delivered, smtp_status in handle_forward(envelope, msg, alias.email):
+                res.append((is_delivered, smtp_status))
+
+            for (is_success, smtp_status) in res:
+                # Consider all deliveries successful if 1 delivery is successful
+                if is_success:
+                    return smtp_status
+
+            # Failed delivery for all, return the first failure
+            return res[0][1]
+
         return handle_bounce_reply_phase(envelope, msg, email_log)
     else:  # forward phase
         handle_bounce_forward_phase(msg, email_log)
