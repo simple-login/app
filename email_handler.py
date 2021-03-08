@@ -706,7 +706,7 @@ def forward_email_to_mailbox(
     contact_from_header = msg["From"]
     new_from_header = contact.new_addr()
     add_or_replace_header(msg, "From", new_from_header)
-    LOG.d("new_from_header:%s, old header %s", new_from_header, contact_from_header)
+    LOG.d("From header, new %s, old %s", new_from_header, contact_from_header)
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
     replace_header_when_forward(msg, alias, "Cc")
@@ -1014,7 +1014,7 @@ def spf_pass(
     msg: Message,
 ) -> bool:
     if ip:
-        LOG.d("Enforce SPF")
+        LOG.d("Enforce SPF on %s %s", ip, envelope.mail_from)
         try:
             r = spf.check2(i=ip, s=envelope.mail_from, h=None)
         except Exception:
