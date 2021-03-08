@@ -2,7 +2,7 @@ Thanks for taking the time to contribute! 🎉👍
 
 The project uses Flask and requires Python3.7+.
 
-### Run code locally
+## Run code locally
 
 The project uses
 - Python 3.7+ and [poetry](https://python-poetry.org/) to manage dependencies
@@ -59,7 +59,7 @@ john@wick.com / password
 
 You might need to change the `.env` file for developing certain features. This file is ignored by git.
 
-### Database migration
+## Database migration
 
 The database migration is handled by `alembic`
 
@@ -78,7 +78,7 @@ We cannot use the local database to generate migration script as the local datab
 It is created via `db.create_all()` (cf `fake_data()` method). This is convenient for development and
 unit tests as we don't have to wait for the migration.
 
-### Code structure
+## Code structure
 
 The repo consists of the three following entry points:
 
@@ -95,13 +95,23 @@ Here are the small sum-ups of the directory structures and their roles:
 - templates/: contains both html and email templates.
 - tests/: tests. We don't really distinguish unit, functional or integration test. A test is simply here to make sure a feature works correctly.
 
+## Pull request
+
+Please contact us if you want to work on a new feature.  
+
 The code is formatted using https://github.com/psf/black, to format the code, simply run
 
 ```
-black .
+poetry run black .
 ```
 
-### Test sending email
+The code is also checked with `flake8`, make sure to run `flake8` before creating the pull request by
+
+```bash
+poetry run flake8
+```
+
+## Test sending email
 
 [swaks](http://www.jetmore.org/john/code/swaks/) is used for sending test emails to the `email_handler`.
 
