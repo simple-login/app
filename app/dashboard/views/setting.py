@@ -1,6 +1,5 @@
-import csv
 import json
-from io import BytesIO, StringIO
+from io import BytesIO
 
 import arrow
 from flask import (
@@ -10,7 +9,6 @@ from flask import (
     url_for,
     flash,
     Response,
-    make_response,
 )
 from flask_login import login_required, current_user, logout_user
 from flask_wtf import FlaskForm
@@ -266,42 +264,9 @@ def setting():
             return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "export-data":
-            data = {
-                "email": current_user.email,
-                "name": current_user.name,
-                "aliases": [],
-                "apps": [],
-                "custom_domains": [],
-            }
-
-            for alias in Alias.filter_by(user_id=current_user.id).all():  # type: Alias
-                data["aliases"].append(dict(email=alias.email, enabled=alias.enabled))
-
-            for custom_domain in CustomDomain.filter_by(user_id=current_user.id).all():
-                data["custom_domains"].append(custom_domain.domain)
-
-            for app in Client.filter_by(user_id=current_user.id):  # type: Client
-                data["apps"].append(
-                    dict(name=app.name, home_url=app.home_url, published=app.published)
-                )
-
-            return Response(
-                json.dumps(data),
-                mimetype="text/json",
-                headers={"Content-Disposition": "attachment;filename=data.json"},
-            )
+            return redirect(url_for("api.export_data"))
         elif request.form.get("form-name") == "export-alias":
-            data = [["alias", "note", "enabled"]]
-            for alias in Alias.filter_by(user_id=current_user.id).all():  # type: Alias
-                data.append([alias.email, alias.note, alias.enabled])
-
-            si = StringIO()
-            cw = csv.writer(si)
-            cw.writerows(data)
-            output = make_response(si.getvalue())
-            output.headers["Content-Disposition"] = "attachment; filename=aliases.csv"
-            output.headers["Content-type"] = "text/csv"
-            return output
+            return redirect(url_for("api.export_aliases"))
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)

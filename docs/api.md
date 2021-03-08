@@ -14,6 +14,8 @@
 
 [Settings endpoints](#settings-endpoints)
 
+[Import and export endpoints](#import-and-export-endpoints)
+
 [MISC endpoints](#misc-endpoints)
 
 ---
@@ -796,7 +798,27 @@ Return domains that user can use to create random alias
   }
 ]
 ```
-  
+
+### Import and export endpoints
+#### GET /api/export/data
+
+Export user data
+
+Input:
+- `Authentication` in header: the api key
+
+Output:
+Alias, custom domain and app info  
+
+#### GET /api/export/aliases
+
+Export user aliases in an importable CSV format
+
+Input:
+- `Authentication` in header: the api key
+
+Output:
+A CSV file with alias information that can be imported in the settings screen
 
 ### Misc endpoints
 #### POST /api/apple/process_payment
