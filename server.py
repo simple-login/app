@@ -26,7 +26,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app import paddle_utils, s3
+from app import paddle_utils, s3, config
 from app.admin_model import (
     SLAdminIndexView,
     UserAdmin,
@@ -823,6 +823,7 @@ window.location.href = "/";
 
 
 def local_main():
+    config.COLOR_LOG = True
     app = create_app()
 
     # enable flask toolbar
