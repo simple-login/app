@@ -405,9 +405,6 @@ DISABLE_ALIAS_SUFFIX=1
 # the DKIM private key used to compute DKIM-Signature
 DKIM_PRIVATE_KEY_PATH=/dkim.key
 
-# the DKIM public key used to setup custom domain DKIM
-DKIM_PUBLIC_KEY_PATH=/dkim.pub.key
-
 # DB Connection
 DB_URI=postgresql://myuser:mypassword@sl-db:5432/simplelogin
 
