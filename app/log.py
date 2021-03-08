@@ -8,7 +8,8 @@ from app.config import (
     COLOR_LOG,
 )
 
-_log_format = "%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(module)s:%(lineno)d - %(funcName)s - %(message)s"
+# this format allows clickable link to code source in PyCharm
+_log_format = '%(asctime)s - %(name)s - %(levelname)s - "%(pathname)s:%(lineno)d" - %(funcName)s() - %(message)s'
 _log_formatter = logging.Formatter(_log_format)
 
 
@@ -47,4 +48,4 @@ log.disabled = True
 logging.Logger.d = logging.Logger.debug
 logging.Logger.i = logging.Logger.info
 
-LOG = _get_logger("sl")
+LOG = _get_logger("SL")
