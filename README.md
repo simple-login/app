@@ -597,5 +597,6 @@ Thanks go to these wonderful people:
     <td align="center"><a href="https://www.linkedin.com/in/nguyenkims/"><img src="https://simplelogin.io/about/me.jpeg" width="100px;" alt="Son Nguyen Kim"/><br /><sub><b>Son Nguyen Kim</b></sub></a><br /></td>
     <td align="center"><a href="https://github.com/developStorm"><img src="https://avatars1.githubusercontent.com/u/59678453?s=460&u=3813d29a125b3edeb44019234672b704f7b9b76a&v=4" width="100px;" alt="Raymond Nook"/><br /><sub><b>Raymond Nook</b></sub></a><br /></td>
     <td align="center"><a href="https://github.com/SibrenVasse"><img src="https://avatars1.githubusercontent.com/u/5833571?s=460&u=78aea62ffc215885a0319437fc629a7596ddea31&v=4" width="100px;" alt="Sibren Vasse"/><br /><sub><b>Sibren Vasse</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/TheLastProject"><img src="https://avatars.githubusercontent.com/u/1885159?s=460&u=ebeeb346c4083c0d493a134f4774f925d3437f98&v=4" width="100px;" alt="Sylvia van Os"/><br /><sub><b>Sylvia van Os</b></sub></a><br /></td>
 </tr>
 </table>
