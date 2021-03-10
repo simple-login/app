@@ -16,6 +16,9 @@ def custom_domain_to_dict(custom_domain: CustomDomain):
         "catch_all": custom_domain.catch_all,
         "name": custom_domain.name,
         "random_prefix_generation": custom_domain.random_prefix_generation,
+        "mailboxes": [
+            {"id": mb.id, "email": mb.email} for mb in custom_domain.mailboxes
+        ],
     }
 
 

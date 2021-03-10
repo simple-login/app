@@ -632,32 +632,42 @@ Output:
 List of custom domains.
 
 ```json
-{
-  "custom_domains": [
-    {
-      "catch_all": false,
-      "creation_date": "2021-03-06 19:42:33+00:00",
-      "creation_timestamp": 1615059753,
-      "domain_name": "test1.org",
-      "id": 1,
-      "is_verified": true,
-      "name": null,
-      "nb_alias": 0,
-      "random_prefix_generation": false
-    },
-    {
-      "catch_all": false,
-      "creation_date": "2021-03-06 19:42:33+00:00",
-      "creation_timestamp": 1615059753,
-      "domain_name": "test2.org",
-      "id": 2,
-      "is_verified": false,
-      "name": null,
-      "nb_alias": 0,
-      "random_prefix_generation": false
-    }
-  ]
-}
+[
+  {
+    "catch_all": false,
+    "creation_date": "2021-03-10 21:36:08+00:00",
+    "creation_timestamp": 1615412168,
+    "domain_name": "test1.org",
+    "id": 1,
+    "is_verified": true,
+    "mailboxes": [
+      {
+        "email": "a@b.c",
+        "id": 1
+      }
+    ],
+    "name": null,
+    "nb_alias": 0,
+    "random_prefix_generation": false
+  },
+  {
+    "catch_all": false,
+    "creation_date": "2021-03-10 21:36:08+00:00",
+    "creation_timestamp": 1615412168,
+    "domain_name": "test2.org",
+    "id": 2,
+    "is_verified": false,
+    "mailboxes": [
+      {
+        "email": "a@b.c",
+        "id": 1
+      }
+    ],
+    "name": null,
+    "nb_alias": 0,
+    "random_prefix_generation": false
+  }
+]
 ```
 
 #### GET /api/custom_domains/:custom_domain_id/trash

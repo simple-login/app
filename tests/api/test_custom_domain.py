@@ -28,6 +28,11 @@ def test_get_custom_domains(flask_client):
         assert domain["creation_date"]
         assert domain["creation_timestamp"]
 
+        assert domain["mailboxes"]
+        for mailbox in domain["mailboxes"]:
+            assert "id" in mailbox
+            assert "email" in mailbox
+
 
 def test_get_custom_domain_trash(flask_client):
     user = login(flask_client)
