@@ -47,7 +47,7 @@ def get_custom_domain_trash(custom_domain_id: int):
         aliases=[
             {
                 "alias": dda.email,
-                "creation_timestamp": dda.created_at.timestamp,
+                "deletion_timestamp": dda.created_at.timestamp,
             }
             for dda in domain_deleted_aliases
         ]

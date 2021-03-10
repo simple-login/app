@@ -57,4 +57,4 @@ def test_get_custom_domain_trash(flask_client):
 
     for deleted_alias in r.json["aliases"]:
         assert deleted_alias["alias"]
-        assert deleted_alias["creation_timestamp"] > 0
+        assert deleted_alias["deletion_timestamp"] > 0

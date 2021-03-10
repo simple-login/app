@@ -685,7 +685,7 @@ List of deleted alias.
   "aliases": [
     {
       "alias": "first@test1.org",
-      "creation_timestamp": 1605464595
+      "deletion_timestamp": 1605464595
     }
   ]
 }
