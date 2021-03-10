@@ -53,9 +53,10 @@ def export_aliases():
     """
     user = g.user
 
-    data = [["alias", "note", "enabled"]]
+    data = [["alias", "note", "enabled", "mailboxes"]]
     for alias in Alias.filter_by(user_id=user.id).all():  # type: Alias
-        data.append([alias.email, alias.note, alias.enabled])
+        mailboxes = " ".join([mailbox.email for mailbox in alias.mailboxes])
+        data.append([alias.email, alias.note, alias.enabled, mailboxes])
 
     si = StringIO()
     cw = csv.writer(si)

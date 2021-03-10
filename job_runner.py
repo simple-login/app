@@ -31,6 +31,8 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     CustomDomain,
+    Mailbox,
+    AliasMailbox,
 )
 from server import create_app
 
@@ -152,16 +154,41 @@ def handle_batch_import(batch_import: BatchImport):
             LOG.d("alias already used %s", full_alias)
             continue
 
+        mailboxes = []
+
+        if "mailboxes" in row:
+            for mailbox_email in row["mailboxes"].split():
+                mailbox_email = sanitize_email(mailbox_email)
+                mailbox = Mailbox.get_by(email=mailbox_email)
+
+                if not mailbox or not mailbox.verified or mailbox.user_id != user.id:
+                    LOG.d("mailbox %s can't be used %s", mailbox, user)
+                    continue
+
+                mailboxes.append(mailbox.id)
+
+        if len(mailboxes) == 0:
+            mailboxes = [user.default_mailbox_id]
+
         alias = Alias.create(
             user_id=user.id,
             email=full_alias,
             note=note,
-            mailbox_id=user.default_mailbox_id,
+            mailbox_id=mailboxes[0],
             custom_domain_id=custom_domain.id,
             batch_import_id=batch_import.id,
         )
         db.session.commit()
+        db.session.flush()
         LOG.d("Create %s", alias)
+
+        for i in range(1, len(mailboxes)):
+            alias_mailbox = AliasMailbox.create(
+                alias_id=alias.id,
+                mailbox_id=mailboxes[i],
+            )
+            db.session.commit()
+            LOG.d("Create %s", alias_mailbox)
 
 
 if __name__ == "__main__":
