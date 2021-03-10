@@ -1,5 +1,5 @@
 from app.alias_utils import delete_alias
-from app.models import CustomDomain, Alias
+from app.models import CustomDomain, Alias, Mailbox
 from tests.utils import login
 
 
@@ -32,6 +32,45 @@ def test_get_custom_domains(flask_client):
         for mailbox in domain["mailboxes"]:
             assert "id" in mailbox
             assert "email" in mailbox
+
+
+def test_update_custom_domains(flask_client):
+    user = login(flask_client)
+
+    d1 = CustomDomain.create(
+        user_id=user.id, domain="test1.org", verified=True, commit=True
+    )
+
+    # test update catch all
+    assert d1.catch_all is False
+    r = flask_client.patch(f"/api/custom_domains/{d1.id}", json={"catch_all": True})
+    assert r.status_code == 200
+    assert d1.catch_all is True
+
+    # test update random_prefix_generation
+    assert d1.random_prefix_generation is False
+    r = flask_client.patch(
+        f"/api/custom_domains/{d1.id}", json={"random_prefix_generation": True}
+    )
+    assert r.status_code == 200
+    assert d1.random_prefix_generation is True
+
+    # test update name
+    assert d1.name is None
+    r = flask_client.patch(f"/api/custom_domains/{d1.id}", json={"name": "test name"})
+    assert r.status_code == 200
+    assert d1.name == "test name"
+
+    # test update mailboxes
+    assert d1.mailboxes == [user.default_mailbox]
+    mb = Mailbox.create(
+        user_id=user.id, email="test@example.org", verified=True, commit=True
+    )
+    r = flask_client.patch(
+        f"/api/custom_domains/{d1.id}", json={"mailbox_ids": [mb.id]}
+    )
+    assert r.status_code == 200
+    assert d1.mailboxes == [mb]
 
 
 def test_get_custom_domain_trash(flask_client):

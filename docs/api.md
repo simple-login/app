@@ -670,6 +670,21 @@ List of custom domains.
 ]
 ```
 
+#### PATCH /api/custom_domains/:custom_domain_id
+
+Update alias info.
+
+Input:
+- `Authentication` header that contains the api key
+- `custom_domain_id` in url.
+- (optional) `catch_all`: boolean, in request body
+- (optional) `random_prefix_generation`: boolean, in request body
+- (optional) `name`: text, in request body
+- (optional) `mailbox_ids`: array of mailbox id, in request body
+
+Output:
+If success, return 200
+
 #### GET /api/custom_domains/:custom_domain_id/trash
 
 Get deleted alias for a custom domain
