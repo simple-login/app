@@ -1,8 +1,13 @@
+from io import BytesIO
+from os import path
+
 from flask import url_for
 
-from app import alias_utils
+from app import alias_utils, s3
 from app.extensions import db
-from app.models import User, CustomDomain, Mailbox, Alias, AliasMailbox, ApiKey
+from app.models import User, CustomDomain, Mailbox, Alias, AliasMailbox, ApiKey, File, BatchImport
+from app.import_utils import handle_batch_import
+from app.utils import random_string
 
 def test_export(flask_client):
     # Create users
@@ -101,3 +106,31 @@ def test_export(flask_client):
 ebay@my-domain.com,Used on eBay,True,destination@my-destination-domain.com
 facebook@my-domain.com,"Used on Facebook, Instagram.",True,destination@my-destination-domain.com destination2@my-destination-domain.com
 """.replace("\n", "\r\n").encode()
+
+def test_import_no_mailboxes(flask_client):
+    # Create user
+    user = User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True
+    )
+    db.session.commit()
+
+    alias_file = BytesIO(b"""alias,note,enabled
+ebay@my-domain.com,Used on eBay,True
+facebook@my-domain.com,"Used on Facebook, Instagram.",True
+""")
+
+    file_path = random_string(20) + ".csv"
+    file = File.create(user_id=user.id, path=file_path)
+    s3.upload_from_bytesio(file_path, alias_file)
+    db.session.flush()
+
+    batch_import = BatchImport.create(
+        user_id=user.id,
+        file_id=file.id
+    )
+    db.session.commit()
+
+    handle_batch_import(batch_import)
