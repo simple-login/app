@@ -1,10 +1,13 @@
 from .log import LOG
 
+import csv
 import requests
 
 from app import s3
+from app.email_utils import get_email_domain_part
 from app.extensions import db
-from app.models import BatchImport
+from app.models import Alias, BatchImport, CustomDomain, DeletedAlias, DomainDeletedAlias, User
+from app.utils import sanitize_email
 
 def handle_batch_import(batch_import: BatchImport):
     user = batch_import.user
@@ -18,6 +21,10 @@ def handle_batch_import(batch_import: BatchImport):
     LOG.d("Download file %s from %s", batch_import.file, file_url)
     r = requests.get(file_url)
     lines = [line.decode() for line in r.iter_lines()]
+
+    import_from_csv(user, lines)
+
+def import_from_csv(batch_import: BatchImport, user: User, lines):
     reader = csv.DictReader(lines)
 
     for row in reader:

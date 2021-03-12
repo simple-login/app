@@ -1,22 +1,15 @@
-from io import BytesIO
-from os import path
-
 from flask import url_for
 
-from app import alias_utils, s3
+from app import alias_utils
 from app.extensions import db
 from app.models import User, CustomDomain, Mailbox, Alias, AliasMailbox, ApiKey, File, BatchImport
-from app.import_utils import handle_batch_import
+from app.import_utils import import_from_csv
 from app.utils import random_string
+from tests.utils import login
 
 def test_export(flask_client):
     # Create users
-    user1 = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True
-    )
+    user1 = login(flask_client)
     user2 = User.create(
         email="x@y.z",
         password="password",
@@ -92,13 +85,8 @@ def test_export(flask_client):
     db.session.commit()
 
     # Export
-    # Create api_key
-    api_key = ApiKey.create(user1.id, "for test")
-    db.session.commit()
-
-    # <<< without hostname >>>
     r = flask_client.get(
-        url_for("api.export_aliases"), headers={"Authentication": api_key.code}
+        url_for("api.export_aliases")
     )
     assert r.status_code == 200
     assert r.mimetype == "text/csv"
@@ -107,30 +95,55 @@ ebay@my-domain.com,Used on eBay,True,destination@my-destination-domain.com
 facebook@my-domain.com,"Used on Facebook, Instagram.",True,destination@my-destination-domain.com destination2@my-destination-domain.com
 """.replace("\n", "\r\n").encode()
 
-def test_import_no_mailboxes(flask_client):
+def test_import_no_mailboxes_no_domains(flask_client):
     # Create user
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True
-    )
-    db.session.commit()
+    user = login(flask_client)
 
-    alias_file = BytesIO(b"""alias,note,enabled
-ebay@my-domain.com,Used on eBay,True
-facebook@my-domain.com,"Used on Facebook, Instagram.",True
-""")
+    # Check start state
+    assert(len(Alias.filter_by(user_id=user.id).all()) == 1)  # Onboarding alias
 
-    file_path = random_string(20) + ".csv"
-    file = File.create(user_id=user.id, path=file_path)
-    s3.upload_from_bytesio(file_path, alias_file)
-    db.session.flush()
+    alias_data = [
+        'alias,note,enabled',
+        'ebay@my-domain.com,Used on eBay,True',
+        'facebook@my-domain.com,"Used on Facebook, Instagram.",True'
+    ]
 
     batch_import = BatchImport.create(
         user_id=user.id,
-        file_id=file.id
+        file_id=0
+    )
+
+    import_from_csv(batch_import, user, alias_data)
+
+    # Should have failed to import anything new because my-domain.com isn't registered
+    assert(len(Alias.filter_by(user_id=user.id).all()) == 1)  # +0
+
+def test_import_no_mailboxes(flask_client):
+    # Create user
+    user = login(flask_client)
+
+    # Check start state
+    assert(len(Alias.filter_by(user_id=user.id).all()) == 1)  # Onboarding alias
+
+    # Create domain
+    CustomDomain.create(
+        user_id=user.id,
+        domain="my-domain.com",
+        verified=True
     )
     db.session.commit()
 
-    handle_batch_import(batch_import)
+    alias_data = [
+        'alias,note,enabled',
+        'ebay@my-domain.com,Used on eBay,True',
+        'facebook@my-domain.com,"Used on Facebook, Instagram.",True'
+    ]
+
+    batch_import = BatchImport.create(
+        user_id=user.id,
+        file_id=0
+    )
+
+    import_from_csv(batch_import, user, alias_data)
+
+    assert(len(Alias.filter_by(user_id=user.id).all()) == 3)  # +2
