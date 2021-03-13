@@ -58,7 +58,9 @@ def export_aliases():
         # Always put the main mailbox first
         # It is seen a primary while importing
         alias_mailboxes = alias.mailboxes
-        alias_mailboxes.insert(0, alias_mailboxes.pop(alias_mailboxes.index(alias.mailbox)))
+        alias_mailboxes.insert(
+            0, alias_mailboxes.pop(alias_mailboxes.index(alias.mailbox))
+        )
 
         mailboxes = " ".join([mailbox.email for mailbox in alias_mailboxes])
         data.append([alias.email, alias.note, alias.enabled, mailboxes])
