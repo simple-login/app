@@ -103,9 +103,9 @@ def test_import_no_mailboxes_no_domains(flask_client):
     assert(len(Alias.filter_by(user_id=user.id).all()) == 1)  # Onboarding alias
 
     alias_data = [
-        'alias,note,enabled',
-        'ebay@my-domain.com,Used on eBay,True',
-        'facebook@my-domain.com,"Used on Facebook, Instagram.",True'
+        'alias,note',
+        'ebay@my-domain.com,Used on eBay',
+        'facebook@my-domain.com,"Used on Facebook, Instagram."'
     ]
 
     batch_import = BatchImport.create(
@@ -134,9 +134,9 @@ def test_import_no_mailboxes(flask_client):
     db.session.commit()
 
     alias_data = [
-        'alias,note,enabled',
-        'ebay@my-domain.com,Used on eBay,True',
-        'facebook@my-domain.com,"Used on Facebook, Instagram.",True'
+        'alias,note',
+        'ebay@my-domain.com,Used on eBay',
+        'facebook@my-domain.com,"Used on Facebook, Instagram."'
     ]
 
     batch_import = BatchImport.create(
@@ -147,3 +147,94 @@ def test_import_no_mailboxes(flask_client):
     import_from_csv(batch_import, user, alias_data)
 
     assert(len(Alias.filter_by(user_id=user.id).all()) == 3)  # +2
+
+def test_import_no_domains(flask_client):
+    # Create user
+    user = login(flask_client)
+
+    # Check start state
+    assert(len(Alias.filter_by(user_id=user.id).all()) == 1)  # Onboarding alias
+
+    alias_data = [
+        'alias,note,mailboxes',
+        'ebay@my-domain.com,Used on eBay,destination@my-destination-domain.com',
+        'facebook@my-domain.com,"Used on Facebook, Instagram.",destination1@my-destination-domain.com destination2@my-destination-domain.com'
+    ]
+
+    batch_import = BatchImport.create(
+        user_id=user.id,
+        file_id=0
+    )
+
+    import_from_csv(batch_import, user, alias_data)
+
+    # Should have failed to import anything new because my-domain.com isn't registered
+    assert(len(Alias.filter_by(user_id=user.id).all()) == 1)  # +0
+
+def test_import(flask_client):
+    # Create user
+    user = login(flask_client)
+
+    # Check start state
+    assert(len(Alias.filter_by(user_id=user.id).all()) == 1)  # Onboarding alias
+
+    # Create domains
+    domain1 = CustomDomain.create(
+        user_id=user.id,
+        domain="my-domain.com",
+        verified=True
+    )
+    domain2 = CustomDomain.create(
+        user_id=user.id,
+        domain="my-destination-domain.com",
+        verified=True
+    )
+    db.session.commit()
+
+    # Create mailboxes
+    mailbox1 = Mailbox.create(
+        user_id=user.id,
+        email="destination@my-destination-domain.com",
+        verified=True
+    )
+    mailbox2 = Mailbox.create(
+        user_id=user.id,
+        email="destination2@my-destination-domain.com",
+        verified=True
+    )
+    db.session.commit()
+
+    alias_data = [
+        'alias,note,mailboxes',
+        'ebay@my-domain.com,Used on eBay,destination@my-destination-domain.com',
+        'facebook@my-domain.com,"Used on Facebook, Instagram.",destination@my-destination-domain.com destination2@my-destination-domain.com'
+    ]
+
+    batch_import = BatchImport.create(
+        user_id=user.id,
+        file_id=0
+    )
+
+    import_from_csv(batch_import, user, alias_data)
+
+    aliases = Alias.filter_by(user_id=user.id).all()
+    assert(len(aliases) == 3)  # +2
+
+    # aliases[0] is the onboarding alias, skip it
+
+    # eBay alias
+    assert(aliases[1].email == "ebay@my-domain.com")
+    assert(len(aliases[1].mailboxes) == 1)
+    # First one should be primary
+    assert(aliases[1].mailbox_id == mailbox1.id)
+    # Others are sorted
+    assert(aliases[1].mailboxes[0] == mailbox1)
+
+    # Facebook alias
+    assert(aliases[2].email == "facebook@my-domain.com")
+    assert(len(aliases[2].mailboxes) == 2)
+    # First one should be primary
+    assert(aliases[2].mailbox_id == mailbox1.id)
+    # Others are sorted
+    assert(aliases[2].mailboxes[0] == mailbox2)
+    assert(aliases[2].mailboxes[1] == mailbox1)

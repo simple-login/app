@@ -6,7 +6,7 @@ import requests
 from app import s3
 from app.email_utils import get_email_domain_part
 from app.extensions import db
-from app.models import Alias, BatchImport, CustomDomain, DeletedAlias, DomainDeletedAlias, User
+from app.models import Alias, AliasMailbox, BatchImport, CustomDomain, DeletedAlias, DomainDeletedAlias, Mailbox, User
 from app.utils import sanitize_email
 
 def handle_batch_import(batch_import: BatchImport):
