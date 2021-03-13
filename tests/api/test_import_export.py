@@ -8,12 +8,9 @@ from app.models import (
     Mailbox,
     Alias,
     AliasMailbox,
-    ApiKey,
-    File,
     BatchImport,
 )
 from app.import_utils import import_from_csv
-from app.utils import random_string
 from tests.utils import login
 
 
@@ -56,7 +53,7 @@ def test_export(flask_client):
     db.session.commit()
 
     # Create aliases
-    alias1 = Alias.create(
+    Alias.create(
         user_id=user1.id,
         email="ebay@my-domain.com",
         note="Used on eBay",
@@ -68,7 +65,7 @@ def test_export(flask_client):
         note="Used on Facebook, Instagram.",
         mailbox_id=mailbox1.id,
     )
-    alias3 = Alias.create(
+    Alias.create(
         user_id=user2.id,
         email="notmine@my-domain.com",
         note="Should not appear",
@@ -77,7 +74,7 @@ def test_export(flask_client):
     db.session.commit()
 
     # Add second mailbox to an alias
-    alias_mailbox = AliasMailbox.create(
+    AliasMailbox.create(
         alias_id=alias2.id,
         mailbox_id=mailbox2.id,
     )
@@ -172,10 +169,8 @@ def test_import(flask_client):
     assert len(Alias.filter_by(user_id=user.id).all()) == 1  # Onboarding alias
 
     # Create domains
-    domain1 = CustomDomain.create(
-        user_id=user.id, domain="my-domain.com", verified=True
-    )
-    domain2 = CustomDomain.create(
+    CustomDomain.create(user_id=user.id, domain="my-domain.com", verified=True)
+    CustomDomain.create(
         user_id=user.id, domain="my-destination-domain.com", verified=True
     )
     db.session.commit()

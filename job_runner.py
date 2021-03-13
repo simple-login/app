@@ -2,13 +2,10 @@
 Run scheduled jobs.
 Not meant for running job at precise time (+- 1h)
 """
-import csv
 import time
 
 import arrow
-import requests
 
-from app import s3
 from app.config import (
     JOB_ONBOARDING_1,
     JOB_ONBOARDING_2,
@@ -18,23 +15,11 @@ from app.config import (
 from app.email_utils import (
     send_email,
     render,
-    get_email_domain_part,
 )
 from app.import_utils import handle_batch_import
-from app.utils import sanitize_email
 from app.extensions import db
 from app.log import LOG
-from app.models import (
-    User,
-    Job,
-    BatchImport,
-    Alias,
-    DeletedAlias,
-    DomainDeletedAlias,
-    CustomDomain,
-    Mailbox,
-    AliasMailbox,
-)
+from app.models import User, Job, BatchImport
 from server import create_app
 
 
