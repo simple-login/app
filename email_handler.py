@@ -114,7 +114,7 @@ from app.email_utils import (
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
-from app.log import LOG
+from app.log import LOG, set_message_id
 from app.models import (
     Alias,
     Contact,
@@ -1778,6 +1778,9 @@ class MailHandler:
             envelope.mail_from,
             envelope.rcpt_tos,
         )
+
+        # generate a different message_id to keep track of an email lifecycle
+        set_message_id(str(uuid.uuid4()))
 
         app = new_app()
         with app.app_context():
