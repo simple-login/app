@@ -1806,40 +1806,6 @@ def main(port: int):
         time.sleep(2)
 
 
-def asyncio_main(port: int):
-    """
-    Main entrypoint using asyncio directly without passing by aiosmtpd Controller
-    """
-    if LOAD_PGP_EMAIL_HANDLER:
-        LOG.warning("LOAD PGP keys")
-        app = create_app()
-        with app.app_context():
-            load_pgp_public_keys()
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    lock = asyncio.Lock()
-    handler = MailHandler(lock)
-
-    def factory():
-        return aiosmtpd.smtp.SMTP(handler, enable_SMTPUTF8=True)
-
-    server = loop.run_until_complete(
-        loop.create_server(factory, host="0.0.0.0", port=port)
-    )
-
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        pass
-
-    # Close the server
-    LOG.info("Close SMTP server")
-    server.close()
-    loop.run_until_complete(server.wait_closed())
-    loop.close()
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
