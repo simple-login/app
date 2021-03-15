@@ -45,7 +45,6 @@ from io import BytesIO
 from smtplib import SMTP, SMTPRecipientsRefused, SMTPServerDisconnected
 from typing import List, Tuple, Optional
 
-import aiosmtpd
 import aiospamc
 import arrow
 import spf
