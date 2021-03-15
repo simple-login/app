@@ -63,5 +63,5 @@ def encode_url(url):
 
 def sanitize_email(email_address: str) -> str:
     if email_address:
-        return email_address.lower().strip().replace(" ", "")
+        return email_address.lower().strip().replace(" ", "").replace("\n", " ")
     return email_address
