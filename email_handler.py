@@ -1529,6 +1529,15 @@ def handle(envelope: Envelope) -> str:
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
 
+    contact = Contact.get_by(reply_email=mail_from)
+    if contact:
+        LOG.exception(
+            "email can't be sent from a reverse-alias alias:%s, contact email:%s",
+            contact.alias,
+            contact.website_email,
+        )
+        return "250 email can't be sent from a reverse-alias"
+
     # unsubscribe request
     if UNSUBSCRIBER and rcpt_tos == [UNSUBSCRIBER]:
         LOG.d("Handle unsubscribe request from %s", mail_from)
