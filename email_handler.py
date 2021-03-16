@@ -1788,7 +1788,8 @@ class MailHandler:
         )
 
         # generate a different message_id to keep track of an email lifecycle
-        set_message_id(str(uuid.uuid4()))
+        message_id = str(uuid.uuid4())
+        set_message_id(message_id)
 
         app = new_app()
         with app.app_context():

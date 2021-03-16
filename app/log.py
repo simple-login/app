@@ -13,7 +13,7 @@ _log_format = '%(asctime)s - %(name)s - %(levelname)s - "%(pathname)s:%(lineno)d
 _log_formatter = logging.Formatter(_log_format)
 
 # used to keep track of an email lifecycle
-_MESSAGE_ID = None
+_MESSAGE_ID = ""
 
 
 def set_message_id(message_id):
