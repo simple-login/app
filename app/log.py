@@ -70,5 +70,7 @@ log.disabled = True
 # Set some shortcuts
 logging.Logger.d = logging.Logger.debug
 logging.Logger.i = logging.Logger.info
+logging.Logger.w = logging.Logger.warning
+logging.Logger.e = logging.Logger.exception
 
 LOG = _get_logger("SL")

@@ -170,7 +170,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
     if not is_valid_email(contact_email):
         # From header is wrongly formatted, try with mail_from
         if mail_from and mail_from != "<>":
-            LOG.warning(
+            LOG.w(
                 "Cannot parse email from from_header %s, parse from mail_from %s",
                 from_header,
                 mail_from,
@@ -178,7 +178,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             _, contact_email = parseaddr_unicode(mail_from)
 
     if not is_valid_email(contact_email):
-        LOG.warning(
+        LOG.w(
             "invalid contact email %s. Parse from %s %s",
             contact_email,
             from_header,
@@ -246,7 +246,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
 
             db.session.commit()
         except IntegrityError:
-            LOG.warning("Contact %s %s already exist", alias, contact_email)
+            LOG.w("Contact %s %s already exist", alias, contact_email)
             db.session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
 
@@ -274,7 +274,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             continue
 
         if not is_valid_email(contact_email):
-            LOG.warning("invalid contact email %s. %s. Skip", contact_email, headers)
+            LOG.w("invalid contact email %s. %s. Skip", contact_email, headers)
             continue
 
         contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
@@ -309,7 +309,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                 )
                 db.session.commit()
             except IntegrityError:
-                LOG.warning("Contact %s %s already exist", alias, contact_email)
+                LOG.w("Contact %s %s already exist", alias, contact_email)
                 db.session.rollback()
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
 
@@ -340,7 +340,7 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
 
         contact = Contact.get_by(reply_email=reply_email)
         if not contact:
-            LOG.warning(
+            LOG.w(
                 "%s email in reply phase %s must be reply emails", header, reply_email
             )
             # still keep this email in header
@@ -408,7 +408,7 @@ def prepare_pgp_message(
         encrypted_data = pgp_utils.encrypt_file(BytesIO(msg_bytes), pgp_fingerprint)
         second.set_payload(encrypted_data)
     except PGPException:
-        LOG.warning("Cannot encrypt using python-gnupg, use pgpy")
+        LOG.w("Cannot encrypt using python-gnupg, use pgpy")
         encrypted = pgp_utils.encrypt_file_with_pgpy(msg_bytes, public_key)
         second.set_payload(str(encrypted))
 
@@ -492,22 +492,21 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     user = alias.user
 
     if user.disabled:
-        LOG.warning("User %s disabled, disable forwarding emails for %s", user, alias)
+        LOG.w("User %s disabled, disable forwarding emails for %s", user, alias)
         return [(False, "550 SL E20 Account disabled")]
 
     mail_from = envelope.mail_from
     for mb in alias.mailboxes:
         # email send from a mailbox to alias
         if mb.email == mail_from:
-            LOG.warning("cycle email sent from %s to %s", mb, alias)
+            LOG.w("cycle email sent from %s to %s", mb, alias)
             handle_email_sent_to_ourself(alias, mb, msg, user)
             return [(True, "250 Message accepted for delivery")]
 
-    LOG.d("Create or get contact for %s %s", msg["From"], msg["Reply-To"])
+    LOG.d("Create or get contact for from:%s reply-to:%s", msg["From"], msg["Reply-To"])
     # prefer using Reply-To when creating contact
     if msg["Reply-To"]:
         # force convert header to string, sometimes contact_from_header is Header object
-        LOG.d("Use Reply-To header")
         from_header = str(msg["Reply-To"])
     else:
         from_header = str(msg["From"])
@@ -533,7 +532,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     # no need to create a copy of message
     for mailbox in mailboxes:
         if not mailbox.verified:
-            LOG.debug("Mailbox %s unverified, do not forward", mailbox)
+            LOG.d("%s unverified, do not forward", mailbox)
             ret.append((False, "550 SL E19 unverified mailbox"))
         else:
             # create a copy of message for each forward
@@ -567,7 +566,7 @@ def forward_email_to_mailbox(
 
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
-        LOG.warning(
+        LOG.w(
             "Mailbox has the same domain as alias. %s -> %s -> %s",
             contact,
             alias,
@@ -610,7 +609,7 @@ def forward_email_to_mailbox(
         start = time.time()
         spam_score, spam_report = get_spam_score(msg, email_log)
         LOG.d(
-            "%s -> %s - spam score %s in %s seconds. Spam report %s",
+            "%s -> %s - spam score:%s in %s seconds. Spam report %s",
             contact,
             alias,
             spam_score,
@@ -630,7 +629,7 @@ def forward_email_to_mailbox(
         is_spam, spam_status = get_spam_info(msg, max_score=user.max_spam_score)
 
     if is_spam:
-        LOG.warning(
+        LOG.w(
             "Email detected as spam. %s -> %s. Spam Score: %s, Spam Report: %s",
             contact,
             alias,
@@ -705,7 +704,7 @@ def forward_email_to_mailbox(
     contact_from_header = msg["From"]
     new_from_header = contact.new_addr()
     add_or_replace_header(msg, "From", new_from_header)
-    LOG.d("From header, new %s, old %s", new_from_header, contact_from_header)
+    LOG.d("From header, new:%s, old:%s", new_from_header, contact_from_header)
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
     replace_header_when_forward(msg, alias, "Cc")
@@ -722,7 +721,7 @@ def forward_email_to_mailbox(
     add_dkim_signature(msg, EMAIL_DOMAIN)
 
     LOG.d(
-        "Forward mail from %s to %s, mail_options %s, rcpt_options %s ",
+        "Forward mail from %s to %s, mail_options:%s, rcpt_options:%s ",
         contact.website_email,
         mailbox.email,
         envelope.mail_options,
@@ -741,7 +740,7 @@ def forward_email_to_mailbox(
         )
     except SMTPRecipientsRefused:
         # that means the mailbox is maybe invalid
-        LOG.warning(
+        LOG.w(
             "SMTPRecipientsRefused forward phase %s -> %s -> %s",
             contact,
             alias,
@@ -762,7 +761,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     # reply_email must end with EMAIL_DOMAIN
     if not reply_email.endswith(EMAIL_DOMAIN):
-        LOG.warning(f"Reply email {reply_email} has wrong domain")
+        LOG.w(f"Reply email {reply_email} has wrong domain")
         return False, "550 SL E2"
 
     # handle case where reply email is generated with non-allowed char
@@ -770,7 +769,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
-        LOG.warning(f"No such forward-email with {reply_email} as reply-email")
+        LOG.w(f"No such forward-email with {reply_email} as reply-email")
         return False, "550 SL E4 Email not exist"
 
     alias = contact.alias
@@ -800,7 +799,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     if not mailbox:
         if alias.disable_email_spoofing_check:
             # ignore this error, use default alias mailbox
-            LOG.warning(
+            LOG.w(
                 "ignore unknown sender to reverse-alias %s: %s -> %s",
                 mail_from,
                 alias,
@@ -851,7 +850,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         is_spam, spam_status = get_spam_info(msg, max_score=MAX_REPLY_PHASE_SPAM_SCORE)
 
     if is_spam:
-        LOG.warning(
+        LOG.w(
             "Email detected as spam. Reply phase. %s -> %s. Spam Score: %s, Spam Report: %s",
             alias,
             contact,
@@ -960,7 +959,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         # to not save the email_log
         db.session.rollback()
 
-        LOG.warning("Cannot send email from %s to %s", alias, contact)
+        LOG.w("Cannot send email from %s to %s", alias, contact)
         send_email(
             mailbox.email,
             f"Email cannot be sent to {contact.email} from {alias.email}",
@@ -1022,7 +1021,7 @@ def spf_pass(
             # TODO: Handle temperr case (e.g. dns timeout)
             # only an absolute pass, or no SPF policy at all is 'valid'
             if r[0] not in ["pass", "none"]:
-                LOG.warning(
+                LOG.w(
                     "SPF fail for mailbox %s, reason %s, failed IP %s",
                     mailbox.email,
                     r[0],
@@ -1055,7 +1054,7 @@ def spf_pass(
                 return False
 
     else:
-        LOG.warning(
+        LOG.w(
             "Could not find %s header %s -> %s",
             _IP_HEADER,
             mailbox.email,
@@ -1068,7 +1067,7 @@ def spf_pass(
 def handle_unknown_mailbox(
     envelope, msg, reply_email: str, user: User, alias: Alias, contact: Contact
 ):
-    LOG.warning(
+    LOG.w(
         "Reply email can only be used by mailbox. "
         "Actual mail_from: %s. msg from header: %s, reverse-alias %s, %s %s %s",
         envelope.mail_from,
@@ -1158,7 +1157,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     if not orig_msg:
         # Some MTA does not return the original message in bounce message
         # nothing we can do here
-        LOG.warning(
+        LOG.w(
             "Cannot parse original message from bounce message %s %s %s %s",
             alias,
             user,
@@ -1217,7 +1216,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             max_nb_alert=10,
         )
     else:
-        LOG.warning(
+        LOG.w(
             "Disable alias %s now",
             alias,
         )
@@ -1434,11 +1433,11 @@ def handle_unsubscribe(envelope: Envelope) -> str:
 
         alias = Alias.get(alias_id)
     except Exception:
-        LOG.warning("Cannot parse alias from subject %s", msg["Subject"])
+        LOG.w("Cannot parse alias from subject %s", msg["Subject"])
         return "550 SL E8 Wrongly formatted subject"
 
     if not alias:
-        LOG.warning("No such alias %s", alias_id)
+        LOG.w("No such alias %s", alias_id)
         return "550 SL E9 Email not exist"
 
     # This sender cannot unsubscribe
@@ -1515,7 +1514,7 @@ def handle_transactional_bounce(envelope: Envelope, rcpt_to):
 
     # a transaction might have been deleted in delete_logs()
     if transactional:
-        LOG.info("Create bounce for %s", transactional.email)
+        LOG.i("Create bounce for %s", transactional.email)
         Bounce.create(email=transactional.email, commit=True)
 
 
@@ -1528,9 +1527,23 @@ def handle(envelope: Envelope) -> str:
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
 
+    msg = email.message_from_bytes(envelope.original_content)
+    LOG.d(
+        "==>> Handle mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, "
+        "cc:%s, reply-to:%s, mail_options:%s, rcpt_options:%s",
+        mail_from,
+        rcpt_tos,
+        msg["From"],
+        msg["To"],
+        msg["Cc"],
+        msg["Reply-To"],
+        envelope.mail_options,
+        envelope.rcpt_options,
+    )
+
     contact = Contact.get_by(reply_email=mail_from)
     if contact:
-        LOG.exception(
+        LOG.e(
             "email can't be sent from a reverse-alias alias:%s, contact email:%s",
             contact.alias,
             contact.website_email,
@@ -1561,7 +1574,7 @@ def handle(envelope: Envelope) -> str:
 
     # Whether it's necessary to apply greylisting
     if greylisting_needed(mail_from, rcpt_tos):
-        LOG.warning("Grey listing applied for %s %s", mail_from, rcpt_tos)
+        LOG.w("Grey listing applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
         return "421 SL Retry later"
 
     # result of all deliveries
@@ -1570,7 +1583,7 @@ def handle(envelope: Envelope) -> str:
 
     for rcpt_to in rcpt_tos:
         if rcpt_to == NOREPLY:
-            LOG.exception("email sent to noreply address from %s", mail_from)
+            LOG.e("email sent to noreply address from %s", mail_from)
             return "550 SL E25 Email sent to noreply address"
 
         msg = email.message_from_bytes(envelope.original_content)
@@ -1578,11 +1591,11 @@ def handle(envelope: Envelope) -> str:
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if is_reply_email(rcpt_to):
-            LOG.debug("Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
+            LOG.d("Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
             is_delivered, smtp_status = handle_reply(envelope, msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
-            LOG.debug(
+            LOG.d(
                 "Forward phase %s(%s) -> %s",
                 mail_from,
                 msg["From"],
@@ -1620,8 +1633,8 @@ def handle_bounce(envelope, rcpt_to) -> str:
         if content_type != "multipart/report" or envelope.mail_from != "<>":
             # forward the email again to the alias
             # todo: remove logging
-            LOG.warning(
-                "Handle autoreply %s %s. Msg:\n%s",
+            LOG.w(
+                "Handle auto reply %s %s. Msg:\n%s",
                 content_type,
                 envelope.mail_from,
                 msg,
@@ -1674,11 +1687,11 @@ async def get_spam_score_async(message: Message) -> float:
         )
         return response.headers["Spam"].score
     except asyncio.TimeoutError:
-        LOG.exception("SpamAssassin timeout")
+        LOG.e("SpamAssassin timeout")
         # return a negative score so the message is always considered as ham
         return -999
     except Exception:
-        LOG.exception("SpamAssassin exception")
+        LOG.e("SpamAssassin exception")
         return -999
 
 
@@ -1688,7 +1701,7 @@ def get_spam_score(
     """
     Return the spam score and spam report
     """
-    LOG.debug("get spam score for %s", email_log)
+    LOG.d("get spam score for %s", email_log)
     sa_input = to_bytes(message)
 
     # Spamassassin requires to have an ending linebreak
@@ -1702,7 +1715,7 @@ def get_spam_score(
         return sa.get_score(), sa.get_report_json()
     except Exception:
         if can_retry:
-            LOG.warning("SpamAssassin exception, retry")
+            LOG.w("SpamAssassin exception, retry")
             time.sleep(3)
             return get_spam_score(message, email_log, can_retry=False)
         else:
@@ -1751,7 +1764,7 @@ def sl_sendmail(
         )
     except SMTPServerDisconnected:
         if can_retry:
-            LOG.warning("SMTPServerDisconnected error, retry")
+            LOG.w("SMTPServerDisconnected error, retry")
             time.sleep(3)
             sl_sendmail(
                 from_addr,
@@ -1781,7 +1794,7 @@ class MailHandler:
 
     def _handle(self, envelope: Envelope):
         start = time.time()
-        LOG.info(
+        LOG.i(
             "===>> New message, mail from %s, rctp tos %s ",
             envelope.mail_from,
             envelope.rcpt_tos,
@@ -1794,7 +1807,7 @@ class MailHandler:
         app = new_app()
         with app.app_context():
             ret = handle(envelope)
-            LOG.info("takes %s seconds <<===", time.time() - start)
+            LOG.i("takes %s seconds <<===", time.time() - start)
             return ret
 
 
@@ -1806,7 +1819,7 @@ def main(port: int):
     LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
 
     if LOAD_PGP_EMAIL_HANDLER:
-        LOG.warning("LOAD PGP keys")
+        LOG.w("LOAD PGP keys")
         app = create_app()
         with app.app_context():
             load_pgp_public_keys()
@@ -1822,5 +1835,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    LOG.info("Listen for port %s", args.port)
+    LOG.i("Listen for port %s", args.port)
     main(port=args.port)
