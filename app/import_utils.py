@@ -32,7 +32,7 @@ def handle_batch_import(batch_import: BatchImport):
     r = requests.get(file_url)
     lines = [line.decode() for line in r.iter_lines()]
 
-    import_from_csv(user, lines)
+    import_from_csv(batch_import, user, lines)
 
 
 def import_from_csv(batch_import: BatchImport, user: User, lines):
