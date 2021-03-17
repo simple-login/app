@@ -525,7 +525,8 @@ Input:
 - `contact` in request body
 
 Output:
-If success, return 201
+If success, return 201.
+
 Return 200 and `existed=true` if contact is already added.
 
 ```json
