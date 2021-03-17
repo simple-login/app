@@ -421,6 +421,19 @@ def delete_header(msg: Message, header: str):
             del msg._headers[i]
 
 
+def sanitize_header(msg: Message, header: str):
+    """remove trailing space and remove linebreak from a header"""
+    for i in reversed(range(len(msg._headers))):
+        header_name = msg._headers[i][0].lower()
+        if header_name == header.lower():
+            # msg._headers[i] is a tuple like ('From', 'hey@google.com')
+            if msg._headers[i][1]:
+                msg._headers[i] = (
+                    msg._headers[i][0],
+                    msg._headers[i][1].strip().replace("\n", " "),
+                )
+
+
 def delete_all_headers_except(msg: Message, headers: [str]):
     headers = [h.lower() for h in headers]
 
