@@ -13,6 +13,11 @@
       <div class="form-group">
         <label class="form-label">Email address</label>
         {{ form.email(class="form-control", type="email") }}
+        <div class="small-text alert alert-info">
+          For receiving forwarded emails.
+          This email address needs to be a <b>final</b> email address and can't be an email alias, a disposable or a
+          forwarding email address.
+        </div>
         {{ render_field_errors(form.email) }}
       </div>
 

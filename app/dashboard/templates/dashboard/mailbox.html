@@ -114,7 +114,7 @@
         {{ new_mailbox_form.email(class="form-control", placeholder="email@example.com") }}
         {{ render_field_errors(new_mailbox_form.email) }}
         <div class="small-text alert alert-info">
-          A mailbox needs to be a <b>final</b> email address and can't be an email alias or a disposable email address.
+          A mailbox needs to be a <b>final</b> email address and can't be an email alias, a disposable or a forwarding email address.
         </div>
 
         <button class="btn btn-lg btn-success mt-2">Create</button>
