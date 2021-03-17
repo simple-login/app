@@ -523,14 +523,16 @@ def test_create_contact_route(flask_client):
     assert r.json["last_email_sent_timestamp"] is None
     assert r.json["reverse_alias"]
     assert r.json["reverse_alias_address"]
+    assert r.json["existed"] is False
 
-    # re-add a contact, should return 409
+    # re-add a contact, should return 200
     r = flask_client.post(
         url_for("api.create_contact_route", alias_id=alias.id),
         headers={"Authentication": api_key.code},
         json={"contact": "First2 Last2 <first@example.com>"},
     )
-    assert r.status_code == 409
+    assert r.status_code == 200
+    assert r.json["existed"]
 
 
 def test_create_contact_route_empty_contact_address(flask_client):

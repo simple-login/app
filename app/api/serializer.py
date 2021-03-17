@@ -83,7 +83,7 @@ def serialize_alias_info_v2(alias_info: AliasInfo) -> dict:
     return res
 
 
-def serialize_contact(contact: Contact) -> dict:
+def serialize_contact(contact: Contact, existed=False) -> dict:
     res = {
         "id": contact.id,
         "creation_date": contact.created_at.format(),
@@ -93,6 +93,7 @@ def serialize_contact(contact: Contact) -> dict:
         "contact": contact.website_email,
         "reverse_alias": contact.website_send_to(),
         "reverse_alias_address": contact.reply_email,
+        "existed": existed,
     }
 
     email_log: EmailLog = contact.last_reply()

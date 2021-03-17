@@ -408,8 +408,9 @@ def create_contact_route(alias_id):
     contact_email = sanitize_email(contact_email)
 
     # already been added
-    if Contact.get_by(alias_id=alias.id, website_email=contact_email):
-        return jsonify(error="Contact already added"), 409
+    contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+    if contact:
+        return jsonify(**serialize_contact(contact, existed=True)), 200
 
     contact = Contact.create(
         user_id=alias.user_id,

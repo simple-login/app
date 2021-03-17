@@ -526,7 +526,7 @@ Input:
 
 Output:
 If success, return 201
-Return 409 if contact is already added.
+Return 200 and `existed=true` if contact is already added.
 
 ```json
 {
@@ -537,7 +537,8 @@ Return 409 if contact is already added.
   "last_email_sent_date": null,
   "last_email_sent_timestamp": null,
   "reverse_alias": "First Last first@example.com <ra+qytyzjhrumrreuszrbjxqjlkh@sl.local>",
-  "reverse_alias_address": "reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co"
+  "reverse_alias_address": "reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co",
+  "existed": false
 }
 ```
 
