@@ -125,7 +125,7 @@ from server import create_app, create_light_app
 # forward or reply
 _DIRECTION = "X-SimpleLogin-Type"
 
-_IP_HEADER = "X-SimpleLogin-Client-IP"
+
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
 _ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
 
@@ -804,8 +804,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             return False, "550 SL E7"
 
     if ENFORCE_SPF and mailbox.force_spf and not alias.disable_email_spoofing_check:
-        ip = msg[_IP_HEADER]
-        if not spf_pass(ip, envelope, mailbox, user, alias, contact.website_email, msg):
+        if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
             # cannot use 4** here as sender will retry. 5** because that generates bounce report
             return True, "250 SL E11"
 

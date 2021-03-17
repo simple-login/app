@@ -63,7 +63,6 @@ from app.utils import (
     convert_to_alphanumeric,
     sanitize_email,
 )
-from email_handler import _IP_HEADER
 
 
 def render(template_name, **kwargs) -> str:
@@ -997,8 +996,10 @@ def parse_id_from_bounce(email_address: str) -> int:
     return int(email_address[email_address.find("+") : email_address.rfind("+")])
 
 
+_IP_HEADER = "X-SimpleLogin-Client-IP"
+
+
 def spf_pass(
-    ip: str,
     envelope,
     mailbox: Mailbox,
     user: User,
@@ -1006,6 +1007,7 @@ def spf_pass(
     contact_email: str,
     msg: Message,
 ) -> bool:
+    ip = msg[_IP_HEADER]
     if ip:
         LOG.d("Enforce SPF on %s %s", ip, envelope.mail_from)
         try:
