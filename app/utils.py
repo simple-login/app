@@ -1,6 +1,7 @@
 import random
 import string
 import urllib.parse
+from typing import Optional
 
 from unidecode import unidecode
 
@@ -65,3 +66,9 @@ def sanitize_email(email_address: str) -> str:
     if email_address:
         return email_address.lower().strip().replace(" ", "").replace("\n", " ")
     return email_address
+
+
+def sanitize_header(header: Optional[str]) -> Optional[str]:
+    if header:
+        return header.strip().replace("\n", " ")
+    return header

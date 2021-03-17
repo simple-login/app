@@ -118,7 +118,7 @@ from app.models import (
     TransactionalEmail,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
-from app.utils import sanitize_email
+from app.utils import sanitize_email, sanitize_header
 from init_app import load_pgp_public_keys
 from server import create_app, create_light_app
 
@@ -1516,6 +1516,13 @@ def handle(envelope: Envelope) -> str:
     envelope.rcpt_tos = rcpt_tos
 
     msg = email.message_from_bytes(envelope.original_content)
+
+    # sanitize email headers
+    msg["from"] = sanitize_header(msg["from"])
+    msg["to"] = sanitize_header(msg["to"])
+    msg["cc"] = sanitize_header(msg["cc"])
+    msg["reply-to"] = sanitize_header(msg["reply-to"])
+
     LOG.d(
         "==>> Handle mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, "
         "cc:%s, reply-to:%s, mail_options:%s, rcpt_options:%s",
