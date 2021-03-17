@@ -1448,6 +1448,65 @@ def handle_transactional_bounce(envelope: Envelope, rcpt_to):
         Bounce.create(email=transactional.email, commit=True)
 
 
+def handle_bounce(envelope, rcpt_to) -> str:
+    """
+    Return SMTP status, e.g. "500 Error"
+    """
+    LOG.d("handle bounce sent to %s", rcpt_to)
+    msg = email.message_from_bytes(envelope.original_content)
+
+    # parse the EmailLog
+    email_log_id = parse_id_from_bounce(rcpt_to)
+    email_log = EmailLog.get(email_log_id)
+
+    if not email_log:
+        return "550 SL E27 No such email log"
+
+    if email_log.is_reply:
+        content_type = msg.get_content_type().lower()
+
+        if content_type != "multipart/report" or envelope.mail_from != "<>":
+            # forward the email again to the alias
+            # todo: remove logging
+            LOG.w(
+                "Handle auto reply %s %s. Msg:\n%s",
+                content_type,
+                envelope.mail_from,
+                msg,
+            )
+
+            contact: Contact = email_log.contact
+            alias = contact.alias
+
+            email_log.auto_replied = True
+            db.session.commit()
+
+            # replace the BOUNCE_EMAIL by alias in To field
+            add_or_replace_header(msg, "To", alias.email)
+            envelope.rcpt_tos = [alias.email]
+
+            # same as handle()
+            # result of all deliveries
+            # each element is a couple of whether the delivery is successful and the smtp status
+            res: [(bool, str)] = []
+
+            for is_delivered, smtp_status in handle_forward(envelope, msg, alias.email):
+                res.append((is_delivered, smtp_status))
+
+            for (is_success, smtp_status) in res:
+                # Consider all deliveries successful if 1 delivery is successful
+                if is_success:
+                    return smtp_status
+
+            # Failed delivery for all, return the first failure
+            return res[0][1]
+
+        return handle_bounce_reply_phase(envelope, msg, email_log)
+    else:  # forward phase
+        handle_bounce_forward_phase(msg, email_log)
+        return "550 SL E26 Email cannot be forwarded to mailbox"
+
+
 def handle(envelope: Envelope) -> str:
     """Return SMTP status"""
 
@@ -1541,65 +1600,6 @@ def handle(envelope: Envelope) -> str:
 
     # Failed delivery for all, return the first failure
     return res[0][1]
-
-
-def handle_bounce(envelope, rcpt_to) -> str:
-    """
-    Return SMTP status, e.g. "500 Error"
-    """
-    LOG.d("handle bounce sent to %s", rcpt_to)
-    msg = email.message_from_bytes(envelope.original_content)
-
-    # parse the EmailLog
-    email_log_id = parse_id_from_bounce(rcpt_to)
-    email_log = EmailLog.get(email_log_id)
-
-    if not email_log:
-        return "550 SL E27 No such email log"
-
-    if email_log.is_reply:
-        content_type = msg.get_content_type().lower()
-
-        if content_type != "multipart/report" or envelope.mail_from != "<>":
-            # forward the email again to the alias
-            # todo: remove logging
-            LOG.w(
-                "Handle auto reply %s %s. Msg:\n%s",
-                content_type,
-                envelope.mail_from,
-                msg,
-            )
-
-            contact: Contact = email_log.contact
-            alias = contact.alias
-
-            email_log.auto_replied = True
-            db.session.commit()
-
-            # replace the BOUNCE_EMAIL by alias in To field
-            add_or_replace_header(msg, "To", alias.email)
-            envelope.rcpt_tos = [alias.email]
-
-            # same as handle()
-            # result of all deliveries
-            # each element is a couple of whether the delivery is successful and the smtp status
-            res: [(bool, str)] = []
-
-            for is_delivered, smtp_status in handle_forward(envelope, msg, alias.email):
-                res.append((is_delivered, smtp_status))
-
-            for (is_success, smtp_status) in res:
-                # Consider all deliveries successful if 1 delivery is successful
-                if is_success:
-                    return smtp_status
-
-            # Failed delivery for all, return the first failure
-            return res[0][1]
-
-        return handle_bounce_reply_phase(envelope, msg, email_log)
-    else:  # forward phase
-        handle_bounce_forward_phase(msg, email_log)
-        return "550 SL E26 Email cannot be forwarded to mailbox"
 
 
 class MailHandler:
