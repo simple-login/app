@@ -5,15 +5,17 @@ import os
 import quopri
 import random
 import re
+import time
 from email.header import decode_header
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
-from smtplib import SMTP
+from smtplib import SMTP, SMTPServerDisconnected
 
 import arrow
 import dkim
+import spf
 from jinja2 import Environment, FileSystemLoader
 from validate_email import validate_email
 
@@ -38,6 +40,8 @@ from app.config import (
     ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
     TRANSACTIONAL_BOUNCE_EMAIL,
     REDDIT_URL,
+    ALERT_SPF,
+    POSTFIX_PORT_FORWARD,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -59,6 +63,7 @@ from app.utils import (
     convert_to_alphanumeric,
     sanitize_email,
 )
+from email_handler import _IP_HEADER
 
 
 def render(template_name, **kwargs) -> str:
@@ -990,3 +995,120 @@ def should_disable(alias: Alias) -> bool:
 
 def parse_id_from_bounce(email_address: str) -> int:
     return int(email_address[email_address.find("+") : email_address.rfind("+")])
+
+
+def spf_pass(
+    ip: str,
+    envelope,
+    mailbox: Mailbox,
+    user: User,
+    alias: Alias,
+    contact_email: str,
+    msg: Message,
+) -> bool:
+    if ip:
+        LOG.d("Enforce SPF on %s %s", ip, envelope.mail_from)
+        try:
+            r = spf.check2(i=ip, s=envelope.mail_from, h=None)
+        except Exception:
+            LOG.exception("SPF error, mailbox %s, ip %s", mailbox.email, ip)
+        else:
+            # TODO: Handle temperr case (e.g. dns timeout)
+            # only an absolute pass, or no SPF policy at all is 'valid'
+            if r[0] not in ["pass", "none"]:
+                LOG.w(
+                    "SPF fail for mailbox %s, reason %s, failed IP %s",
+                    mailbox.email,
+                    r[0],
+                    ip,
+                )
+                subject = get_header_unicode(msg["Subject"])
+                send_email_with_rate_control(
+                    user,
+                    ALERT_SPF,
+                    mailbox.email,
+                    f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
+                    render(
+                        "transactional/spf-fail.txt",
+                        alias=alias.email,
+                        ip=ip,
+                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                        to_email=contact_email,
+                        subject=subject,
+                        time=arrow.now(),
+                    ),
+                    render(
+                        "transactional/spf-fail.html",
+                        ip=ip,
+                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                        to_email=contact_email,
+                        subject=subject,
+                        time=arrow.now(),
+                    ),
+                )
+                return False
+
+    else:
+        LOG.w(
+            "Could not find %s header %s -> %s",
+            _IP_HEADER,
+            mailbox.email,
+            contact_email,
+        )
+
+    return True
+
+
+def sl_sendmail(
+    from_addr,
+    to_addr,
+    msg: Message,
+    mail_options,
+    rcpt_options,
+    is_forward: bool,
+    can_retry=True,
+):
+    """replace smtp.sendmail"""
+    if NOT_SEND_EMAIL:
+        LOG.d(
+            "send email with subject '%s', from '%s' to '%s'",
+            msg["Subject"],
+            msg["From"],
+            msg["To"],
+        )
+        return
+
+    try:
+        if POSTFIX_SUBMISSION_TLS:
+            smtp = SMTP(POSTFIX_SERVER, 587)
+            smtp.starttls()
+        else:
+            if is_forward:
+                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT_FORWARD)
+            else:
+                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT)
+
+        # smtp.send_message has UnicodeEncodeError
+        # encode message raw directly instead
+        smtp.sendmail(
+            from_addr,
+            to_addr,
+            to_bytes(msg),
+            mail_options,
+            rcpt_options,
+        )
+    except SMTPServerDisconnected:
+        if can_retry:
+            LOG.w("SMTPServerDisconnected error, retry")
+            time.sleep(3)
+            sl_sendmail(
+                from_addr,
+                to_addr,
+                msg,
+                mail_options,
+                rcpt_options,
+                is_forward,
+                can_retry=False,
+            )
+        else:
+            raise

@@ -41,11 +41,9 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr, make_msgid, formatdate, getaddresses
 from io import BytesIO
-from smtplib import SMTP, SMTPRecipientsRefused, SMTPServerDisconnected
+from smtplib import SMTPRecipientsRefused
 from typing import List, Tuple, Optional
 
-import arrow
-import spf
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
 from sqlalchemy.exc import IntegrityError
@@ -54,17 +52,13 @@ from app import pgp_utils, s3
 from app.alias_utils import try_auto_create
 from app.config import (
     EMAIL_DOMAIN,
-    POSTFIX_SERVER,
     URL,
-    POSTFIX_SUBMISSION_TLS,
     UNSUBSCRIBER,
     LOAD_PGP_EMAIL_HANDLER,
     ENFORCE_SPF,
     ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
     ALERT_BOUNCE_EMAIL,
     ALERT_SPAM_EMAIL,
-    ALERT_SPF,
-    POSTFIX_PORT,
     SPAMASSASSIN_HOST,
     MAX_SPAM_SCORE,
     MAX_REPLY_PHASE_SPAM_SCORE,
@@ -78,8 +72,6 @@ from app.config import (
     BOUNCE_SUFFIX,
     TRANSACTIONAL_BOUNCE_PREFIX,
     TRANSACTIONAL_BOUNCE_SUFFIX,
-    POSTFIX_PORT_FORWARD,
-    NOT_SEND_EMAIL,
 )
 from app.email.spam import get_spam_score
 from app.email_utils import (
@@ -109,6 +101,8 @@ from app.email_utils import (
     replace,
     should_disable,
     parse_id_from_bounce,
+    spf_pass,
+    sl_sendmail,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -1000,68 +994,6 @@ def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
     return None
 
 
-def spf_pass(
-    ip: str,
-    envelope,
-    mailbox: Mailbox,
-    user: User,
-    alias: Alias,
-    contact_email: str,
-    msg: Message,
-) -> bool:
-    if ip:
-        LOG.d("Enforce SPF on %s %s", ip, envelope.mail_from)
-        try:
-            r = spf.check2(i=ip, s=envelope.mail_from, h=None)
-        except Exception:
-            LOG.exception("SPF error, mailbox %s, ip %s", mailbox.email, ip)
-        else:
-            # TODO: Handle temperr case (e.g. dns timeout)
-            # only an absolute pass, or no SPF policy at all is 'valid'
-            if r[0] not in ["pass", "none"]:
-                LOG.w(
-                    "SPF fail for mailbox %s, reason %s, failed IP %s",
-                    mailbox.email,
-                    r[0],
-                    ip,
-                )
-                subject = get_header_unicode(msg["Subject"])
-                send_email_with_rate_control(
-                    user,
-                    ALERT_SPF,
-                    mailbox.email,
-                    f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
-                    render(
-                        "transactional/spf-fail.txt",
-                        alias=alias.email,
-                        ip=ip,
-                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
-                        to_email=contact_email,
-                        subject=subject,
-                        time=arrow.now(),
-                    ),
-                    render(
-                        "transactional/spf-fail.html",
-                        ip=ip,
-                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
-                        to_email=contact_email,
-                        subject=subject,
-                        time=arrow.now(),
-                    ),
-                )
-                return False
-
-    else:
-        LOG.w(
-            "Could not find %s header %s -> %s",
-            _IP_HEADER,
-            mailbox.email,
-            contact_email,
-        )
-
-    return True
-
-
 def handle_unknown_mailbox(
     envelope, msg, reply_email: str, user: User, alias: Alias, contact: Contact
 ):
@@ -1668,61 +1600,6 @@ def handle_bounce(envelope, rcpt_to) -> str:
     else:  # forward phase
         handle_bounce_forward_phase(msg, email_log)
         return "550 SL E26 Email cannot be forwarded to mailbox"
-
-
-def sl_sendmail(
-    from_addr,
-    to_addr,
-    msg: Message,
-    mail_options,
-    rcpt_options,
-    is_forward: bool,
-    can_retry=True,
-):
-    """replace smtp.sendmail"""
-    if NOT_SEND_EMAIL:
-        LOG.d(
-            "send email with subject '%s', from '%s' to '%s'",
-            msg["Subject"],
-            msg["From"],
-            msg["To"],
-        )
-        return
-
-    try:
-        if POSTFIX_SUBMISSION_TLS:
-            smtp = SMTP(POSTFIX_SERVER, 587)
-            smtp.starttls()
-        else:
-            if is_forward:
-                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT_FORWARD)
-            else:
-                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT)
-
-        # smtp.send_message has UnicodeEncodeError
-        # encode message raw directly instead
-        smtp.sendmail(
-            from_addr,
-            to_addr,
-            to_bytes(msg),
-            mail_options,
-            rcpt_options,
-        )
-    except SMTPServerDisconnected:
-        if can_retry:
-            LOG.w("SMTPServerDisconnected error, retry")
-            time.sleep(3)
-            sl_sendmail(
-                from_addr,
-                to_addr,
-                msg,
-                mail_options,
-                rcpt_options,
-                is_forward,
-                can_retry=False,
-            )
-        else:
-            raise
 
 
 class MailHandler:
