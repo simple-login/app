@@ -1,7 +1,6 @@
 import random
 import string
 import urllib.parse
-from typing import Optional
 
 from unidecode import unidecode
 
