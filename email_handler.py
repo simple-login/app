@@ -1342,10 +1342,8 @@ def handle_spam(
         )
 
 
-def handle_unsubscribe(envelope: Envelope) -> str:
+def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
     """return the SMTP status"""
-    msg = email.message_from_bytes(envelope.original_content)
-
     # format: alias_id:
     subject = msg["Subject"]
     try:
@@ -1447,12 +1445,11 @@ def handle_transactional_bounce(envelope: Envelope, rcpt_to):
         Bounce.create(email=transactional.email, commit=True)
 
 
-def handle_bounce(envelope, rcpt_to) -> str:
+def handle_bounce(envelope, rcpt_to, msg: Message) -> str:
     """
     Return SMTP status, e.g. "500 Error"
     """
     LOG.d("handle bounce sent to %s", rcpt_to)
-    msg = email.message_from_bytes(envelope.original_content)
 
     # parse the EmailLog
     email_log_id = parse_id_from_bounce(rcpt_to)
@@ -1548,7 +1545,7 @@ def handle(envelope: Envelope) -> str:
     # unsubscribe request
     if UNSUBSCRIBER and rcpt_tos == [UNSUBSCRIBER]:
         LOG.d("Handle unsubscribe request from %s", mail_from)
-        return handle_unsubscribe(envelope)
+        return handle_unsubscribe(envelope, msg)
 
     # emails sent to sender. Probably bounce emails
     if (
@@ -1565,7 +1562,7 @@ def handle(envelope: Envelope) -> str:
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
     ):
-        return handle_bounce(envelope, rcpt_tos[0])
+        return handle_bounce(envelope, rcpt_tos[0], msg)
 
     # Whether it's necessary to apply greylisting
     if greylisting_needed(mail_from, rcpt_tos):
@@ -1580,8 +1577,6 @@ def handle(envelope: Envelope) -> str:
         if rcpt_to == NOREPLY:
             LOG.e("email sent to noreply address from %s", mail_from)
             return "550 SL E25 Email sent to noreply address"
-
-        msg = email.message_from_bytes(envelope.original_content)
 
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
