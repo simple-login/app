@@ -330,11 +330,27 @@ def fake_data():
             a.enabled = False
             db.session.commit()
 
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
-    CustomDomain.create(
+    custom_domain1 = CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
+    custom_domain2 = CustomDomain.create(
         user_id=user.id, domain="very-long-domain.com.net.org", verified=True
     )
     db.session.commit()
+
+    Alias.create(
+        user_id=user.id,
+        email="first@ab.cd",
+        mailbox_id=user.default_mailbox_id,
+        custom_domain_id=custom_domain1.id,
+        commit=True,
+    )
+
+    Alias.create(
+        user_id=user.id,
+        email="second@ab.cd",
+        mailbox_id=user.default_mailbox_id,
+        custom_domain_id=custom_domain1.id,
+        commit=True,
+    )
 
     Directory.create(user_id=user.id, name="abcd")
     Directory.create(user_id=user.id, name="xyzt")
