@@ -1,33 +1,41 @@
 $('.mailbox-select').multipleSelect();
 
-$(".delete-email").on("click", function () {
-  let alias = $(this).parent().find(".alias").val();
-  let message = `Once <b>${alias}</b> is deleted, people/apps ` +
-    "who used to contact you via this alias cannot reach you any more," +
-    " please confirm.";
+function confirmDeleteAlias() {
   let that = $(this);
+  let alias = that.data("alias-email");
 
-  bootbox.confirm({
-    message: message,
+  bootbox.dialog({
+    title: `Delete ${alias}`,
+    message: `Maybe you want to disable the alias instead? Please note once deleted, it <b>can't</b> be restored.`,
+    size: 'large',
+    onEscape: true,
+    backdrop: true,
     buttons: {
-      confirm: {
-        label: 'Yes, delete it',
-        className: 'btn-danger'
+      disable: {
+        label: 'Disable it',
+        className: 'btn-primary',
+        callback: function () {
+          that.closest("form").find('input[name="form-name"]').val("disable-alias");
+          that.closest("form").submit();
+        }
       },
+
+      delete: {
+        label: "Yes, I don't need it anymore",
+        className: 'btn-outline-danger',
+        callback: function () {
+          that.closest("form").submit();
+        }
+      },
+
       cancel: {
         label: 'Cancel',
         className: 'btn-outline-primary'
-      }
-    },
-    callback: function (result) {
-      if (result) {
-        that.closest("form").submit();
-      }
+      },
+
     }
   })
-
-
-});
+}
 
 $(".enable-disable-alias").change(async function () {
   let aliasId = $(this).data("alias");

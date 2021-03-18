@@ -418,18 +418,23 @@
 
             <div>
               <div class="btn-group float-right" role="group" aria-label="Basic example">
-                <a href="{{ url_for('dashboard.alias_transfer_send_route', alias_id=alias.id) }}" class="btn btn-sm btn-link">
+                <a href="{{ url_for('dashboard.alias_transfer_send_route', alias_id=alias.id) }}"
+                   class="btn btn-sm btn-link">
                   Transfer
                   <i class="ml-0 dropdown-icon fe fe-share-2 text-primary"></i>
                 </a>
 
 
                 <form method="post">
-                  <input type="hidden" name="form-name" value="delete-email">
+                  <input type="hidden" name="form-name" value="delete-alias">
                   <input type="hidden" name="alias-id" value="{{ alias.id }}">
                   <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
 
-                  <span class="delete-email btn btn-link btn-sm float-right text-danger">
+                  <span class="btn btn-link btn-sm float-right text-danger"
+                        onclick="confirmDeleteAlias.call(this)"
+                        data-alias="{{ alias.id }}"
+                        data-alias-email="{{ alias.email }}"
+                  >
                     Delete&nbsp; &nbsp;<i class="dropdown-icon fe fe-trash-2 text-danger"></i>
                   </span>
                 </form>

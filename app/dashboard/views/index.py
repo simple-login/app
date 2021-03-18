@@ -106,10 +106,10 @@ def index():
             else:
                 flash("You need to upgrade your plan to create new alias.", "warning")
 
-        elif request.form.get("form-name") == "delete-email":
+        elif request.form.get("form-name") in ("delete-alias", "disable-alias"):
             alias_id = request.form.get("alias-id")
             alias: Alias = Alias.get(alias_id)
-            if not alias:
+            if not alias or alias.user_id != current_user.id:
                 flash("Unknown error, sorry for the inconvenience", "error")
                 return redirect(
                     url_for(
@@ -120,10 +120,15 @@ def index():
                     )
                 )
 
-            LOG.d("delete alias %s", alias)
-            email = alias.email
-            alias_utils.delete_alias(alias, current_user)
-            flash(f"Alias {email} has been deleted", "success")
+            if request.form.get("form-name") == "delete-alias":
+                LOG.d("delete alias %s", alias)
+                email = alias.email
+                alias_utils.delete_alias(alias, current_user)
+                flash(f"Alias {email} has been deleted", "success")
+            elif request.form.get("form-name") == "disable-alias":
+                alias.enabled = False
+                db.session.commit()
+                flash(f"Alias {alias.email} has been disabled", "success")
 
         return redirect(
             url_for("dashboard.index", query=query, sort=sort, filter=alias_filter)
