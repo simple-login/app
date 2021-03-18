@@ -30,6 +30,7 @@ $(".delete-email").on("click", function (e) {
 });
 
 $(".enable-disable-alias").change(async function (e) {
+  let oldValue;
   let aliasId = $(this).data("alias");
   let alias = $(this).data("alias-email");
 
@@ -54,13 +55,13 @@ $(".enable-disable-alias").change(async function (e) {
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
       // reset to the original value
-      var oldValue = !$(this).prop("checked");
+      oldValue = !$(this).prop("checked");
       $(this).prop("checked", oldValue);
     }
   } catch (e) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
     // reset to the original value
-    var oldValue = !$(this).prop("checked");
+    oldValue = !$(this).prop("checked");
     $(this).prop("checked", oldValue);
   }
 })
@@ -68,7 +69,7 @@ $(".enable-disable-alias").change(async function (e) {
 $(".enable-disable-pgp").change(async function (e) {
   let aliasId = $(this).data("alias");
   let alias = $(this).data("alias-email");
-  var oldValue = !$(this).prop("checked");
+  const oldValue = !$(this).prop("checked");
   let newValue = !oldValue;
 
   try {
@@ -103,7 +104,7 @@ $(".enable-disable-pgp").change(async function (e) {
 $(".pin-alias").change(async function (e) {
   let aliasId = $(this).data("alias");
   let alias = $(this).data("alias-email");
-  var oldValue = !$(this).prop("checked");
+  const oldValue = !$(this).prop("checked");
   let newValue = !oldValue;
 
   try {
@@ -136,6 +137,7 @@ $(".pin-alias").change(async function (e) {
 })
 
 $(".save-note").on("click", async function () {
+  let oldValue;
   let aliasId = $(this).data("alias");
   let note = $(`#note-${aliasId}`).val();
 
@@ -155,23 +157,24 @@ $(".save-note").on("click", async function () {
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
       // reset to the original value
-      var oldValue = !$(this).prop("checked");
+      oldValue = !$(this).prop("checked");
       $(this).prop("checked", oldValue);
     }
   } catch (e) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
     // reset to the original value
-    var oldValue = !$(this).prop("checked");
+    oldValue = !$(this).prop("checked");
     $(this).prop("checked", oldValue);
   }
 
 })
 
 $(".save-mailbox").on("click", async function () {
+  let oldValue;
   let aliasId = $(this).data("alias");
   let mailbox_ids = $(`#mailbox-${aliasId}`).val();
 
-  if (mailbox_ids.length == 0) {
+  if (mailbox_ids.length === 0) {
     toastr.error("You must select at least a mailbox", "Error");
     return;
   }
@@ -192,13 +195,13 @@ $(".save-mailbox").on("click", async function () {
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
       // reset to the original value
-      var oldValue = !$(this).prop("checked");
+      oldValue = !$(this).prop("checked");
       $(this).prop("checked", oldValue);
     }
   } catch (e) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
     // reset to the original value
-    var oldValue = !$(this).prop("checked");
+    oldValue = !$(this).prop("checked");
     $(this).prop("checked", oldValue);
   }
 
@@ -231,7 +234,7 @@ $(".save-alias-name").on("click", async function () {
 })
 
 
-var app = new Vue({
+new Vue({
   el: '#filter-app',
   delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
   data: {
@@ -248,4 +251,4 @@ var app = new Vue({
     if (store.get("showFilter"))
       this.showFilter = true;
   }
-})
+});
