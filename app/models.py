@@ -1684,6 +1684,9 @@ class CustomDomain(db.Model, ModelMixin):
     def nb_alias(self):
         return Alias.filter_by(custom_domain_id=self.id).count()
 
+    def get_trash_url(self):
+        return URL + f"/dashboard/domains/{self.id}/trash"
+
     def __repr__(self):
         return f"<Custom Domain {self.domain}>"
 

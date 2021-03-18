@@ -432,6 +432,9 @@
 
                   <span class="btn btn-link btn-sm float-right text-danger"
                         onclick="confirmDeleteAlias.call(this)"
+                        {% if alias.custom_domain %}
+                          data-custom-domain-trash-url="{{ alias.custom_domain.get_trash_url() }}"
+                        {% endif %}
                         data-alias="{{ alias.id }}"
                         data-alias-email="{{ alias.email }}"
                   >
