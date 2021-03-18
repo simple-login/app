@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from arrow import Arrow
 from sqlalchemy import or_, func, case, and_
@@ -6,7 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from app.config import PAGE_LIMIT
 from app.extensions import db
-from app.models import Alias, Contact, EmailLog, Mailbox, AliasMailbox
+from app.models import Alias, Contact, EmailLog, Mailbox, AliasMailbox, CustomDomain
 
 
 @dataclass
@@ -21,6 +22,7 @@ class AliasInfo:
 
     latest_email_log: EmailLog = None
     latest_contact: Contact = None
+    custom_domain: Optional[CustomDomain] = None
 
     def contain_mailbox(self, mailbox_id: int) -> bool:
         return mailbox_id in [m.id for m in self.mailboxes]
@@ -276,11 +278,13 @@ def get_alias_infos_with_pagination_v3(
             Alias,
             Contact,
             EmailLog,
+            CustomDomain,
             alias_activity_subquery.c.nb_reply,
             alias_activity_subquery.c.nb_blocked,
             alias_activity_subquery.c.nb_forward,
         )
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
+        .join(CustomDomain, Alias.custom_domain_id == CustomDomain.id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
         .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
         .filter(Alias.id == alias_activity_subquery.c.id)
@@ -336,7 +340,7 @@ def get_alias_infos_with_pagination_v3(
     q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
 
     ret = []
-    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in q:
+    for alias, contact, email_log, custom_domain, nb_reply, nb_blocked, nb_forward in q:
         ret.append(
             AliasInfo(
                 alias=alias,
@@ -347,6 +351,7 @@ def get_alias_infos_with_pagination_v3(
                 nb_reply=nb_reply,
                 latest_email_log=email_log,
                 latest_contact=contact,
+                custom_domain=custom_domain,
             )
         )
 
