@@ -30,10 +30,14 @@ $(".delete-email").on("click", function (e) {
 });
 
 $(".enable-disable-alias").change(async function (e) {
-  let oldValue;
   let aliasId = $(this).data("alias");
   let alias = $(this).data("alias-email");
 
+  await disableAlias(aliasId, alias);
+})
+
+async function disableAlias(aliasId, alias) {
+  let oldValue;
   try {
     let res = await fetch(`/api/aliases/${aliasId}/toggle`, {
       method: "POST",
@@ -64,7 +68,7 @@ $(".enable-disable-alias").change(async function (e) {
     oldValue = !$(this).prop("checked");
     $(this).prop("checked", oldValue);
   }
-})
+}
 
 $(".enable-disable-pgp").change(async function (e) {
   let aliasId = $(this).data("alias");
