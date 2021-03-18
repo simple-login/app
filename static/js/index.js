@@ -1,6 +1,6 @@
 $('.mailbox-select').multipleSelect();
 
-$(".delete-email").on("click", function (e) {
+$(".delete-email").on("click", function () {
   let alias = $(this).parent().find(".alias").val();
   let message = `Once <b>${alias}</b> is deleted, people/apps ` +
     "who used to contact you via this alias cannot reach you any more," +
@@ -29,7 +29,7 @@ $(".delete-email").on("click", function (e) {
 
 });
 
-$(".enable-disable-alias").change(async function (e) {
+$(".enable-disable-alias").change(async function () {
   let aliasId = $(this).data("alias");
   let alias = $(this).data("alias-email");
 
@@ -105,7 +105,7 @@ $(".enable-disable-pgp").change(async function (e) {
   }
 })
 
-$(".pin-alias").change(async function (e) {
+$(".pin-alias").change(async function () {
   let aliasId = $(this).data("alias");
   let alias = $(this).data("alias-email");
   const oldValue = !$(this).prop("checked");
