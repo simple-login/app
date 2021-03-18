@@ -331,9 +331,6 @@ def fake_data():
             db.session.commit()
 
     custom_domain1 = CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
-    custom_domain2 = CustomDomain.create(
-        user_id=user.id, domain="very-long-domain.com.net.org", verified=True
-    )
     db.session.commit()
 
     Alias.create(
