@@ -4,8 +4,7 @@ We have detected that your mailbox cannot reliably receive emails from SimpleLog
 The mailbox has been therefore disabled.
 You can re-enable it by going to the mailbox page.
 
-Please note that a mailbox must be a "final" email address and cannot be
-another email alias or a disposable email address.
+Please note that a mailbox can't be a disposable or forwarding email address.
 
 If you have any question, you can reach out to us by replying to this email.
 
