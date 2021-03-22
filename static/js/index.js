@@ -28,7 +28,7 @@ function confirmDeleteAlias() {
       },
 
       delete: {
-        label: "Yes, I don't need it anymore",
+        label: "Delete it, I don't need it anymore",
         className: 'btn-outline-danger',
         callback: function () {
           that.closest("form").submit();
