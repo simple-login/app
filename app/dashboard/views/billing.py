@@ -38,7 +38,9 @@ def billing():
             return redirect(url_for("dashboard.billing"))
         elif request.form.get("form-name") == "change-monthly":
             LOG.debug(f"User {current_user} changes to monthly plan")
-            success, msg = change_plan(sub.subscription_id, PADDLE_MONTHLY_PRODUCT_ID)
+            success, msg = change_plan(
+                current_user, sub.subscription_id, PADDLE_MONTHLY_PRODUCT_ID
+            )
 
             if success:
                 sub.plan = PlanEnum.monthly
@@ -57,7 +59,9 @@ def billing():
             return redirect(url_for("dashboard.billing"))
         elif request.form.get("form-name") == "change-yearly":
             LOG.debug(f"User {current_user} changes to yearly plan")
-            success, msg = change_plan(sub.subscription_id, PADDLE_YEARLY_PRODUCT_ID)
+            success, msg = change_plan(
+                current_user, sub.subscription_id, PADDLE_YEARLY_PRODUCT_ID
+            )
 
             if success:
                 sub.plan = PlanEnum.yearly
