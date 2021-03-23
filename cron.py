@@ -321,6 +321,49 @@ def compute_metrics():
     )
 
 
+def compute_metric2(now) -> Metric2:
+    nb_referred_user_paid = 0
+    for user in User.query.filter(User.referral_id.isnot(None)):
+        if user.is_paid():
+            nb_referred_user_paid += 1
+
+    return Metric2.create(
+        date=now,
+        # user stats
+        nb_user=User.query.count(),
+        nb_activated_user=User.query.filter_by(activated=True).count(),
+        # subscription stats
+        nb_premium=Subscription.query.filter(Subscription.cancelled.is_(False)).count(),
+        nb_cancelled_premium=Subscription.query.filter(
+            Subscription.cancelled.is_(True)
+        ).count(),
+        # todo: filter by expires_date > now
+        nb_apple_premium=AppleSubscription.query.count(),
+        nb_manual_premium=ManualSubscription.query.filter(
+            ManualSubscription.end_at > now,
+            ManualSubscription.is_giveaway.is_(False),
+        ).count(),
+        nb_coinbase_premium=CoinbaseSubscription.query.filter(
+            CoinbaseSubscription.end_at > now
+        ).count(),
+        # referral stats
+        nb_referred_user=User.query.filter(User.referral_id.isnot(None)).count(),
+        nb_referred_user_paid=nb_referred_user_paid,
+        nb_alias=Alias.query.count(),
+        # email log stats
+        nb_bounced=EmailLog.query.filter_by(bounced=True).count(),
+        nb_spam=EmailLog.query.filter_by(is_spam=True).count(),
+        nb_reply=EmailLog.query.filter_by(is_reply=True).count(),
+        nb_forward=EmailLog.query.filter_by(
+            bounced=False, is_spam=False, is_reply=False, blocked=False
+        ).count(),
+        nb_block=EmailLog.query.filter_by(blocked=True).count(),
+        nb_verified_custom_domain=CustomDomain.query.filter_by(verified=True).count(),
+        nb_app=Client.query.count(),
+        commit=True,
+    )
+
+
 def increase_percent(old, new) -> str:
     if old == 0:
         return "N/A"
@@ -377,10 +420,11 @@ def stats():
         # nothing to do
         return
 
+    # todo: remove metrics1
     compute_metrics()
 
-    stats_today = stats_before(arrow.now())
-    stats_yesterday = stats_before(arrow.now().shift(days=-1))
+    stats_today = compute_metric2(arrow.now())
+    stats_yesterday = compute_metric2(arrow.now().shift(days=-1))
 
     nb_user_increase = increase_percent(stats_yesterday.nb_user, stats_today.nb_user)
     nb_alias_increase = increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)
@@ -407,10 +451,10 @@ nb_block: {stats_today.nb_block} - {increase_percent(stats_yesterday.nb_block, s
 nb_bounced: {stats_today.nb_bounced} - {increase_percent(stats_yesterday.nb_bounced, stats_today.nb_bounced)}  <br>
 nb_spam: {stats_today.nb_spam} - {increase_percent(stats_yesterday.nb_spam, stats_today.nb_spam)}  <br>
 
-nb_custom_domain: {stats_today.nb_custom_domain} - {increase_percent(stats_yesterday.nb_custom_domain, stats_today.nb_custom_domain)}  <br>
+nb_custom_domain: {stats_today.nb_verified_custom_domain} - {increase_percent(stats_yesterday.nb_verified_custom_domain, stats_today.nb_verified_custom_domain)}  <br>
 nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_today.nb_app)}  <br>
 nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yesterday.nb_referred_user, stats_today.nb_referred_user)}  <br>
-nb_referred_user_upgrade: {stats_today.nb_referred_user_upgrade} - {increase_percent(stats_yesterday.nb_referred_user_upgrade, stats_today.nb_referred_user_upgrade)}  <br>
+nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percent(stats_yesterday.nb_referred_user_paid, stats_today.nb_referred_user_paid)}  <br>
     """
 
     html += f"""<br>
@@ -419,6 +463,8 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_upgrade} - {increase_per
 
     for email, bounces in bounce_report():
         html += f"{email}: {bounces} <br>"
+
+    LOG.d("report email: %s", html)
 
     send_email(
         ADMIN_EMAIL,
