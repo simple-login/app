@@ -2139,7 +2139,6 @@ class Metric2(db.Model, ModelMixin):
     """
 
     date = db.Column(ArrowType, default=arrow.utcnow, nullable=False)
-    name = db.Column(db.String(256), nullable=False)
 
     nb_user = db.Column(db.Float, nullable=True)
     nb_activated_user = db.Column(db.Float, nullable=True)
