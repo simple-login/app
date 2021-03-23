@@ -1,9 +1,11 @@
 import argparse
 from dataclasses import dataclass
 from time import sleep
+from typing import List, Tuple
 
 import arrow
 from arrow import Arrow
+from sqlalchemy import func, desc
 
 from app import s3
 from app.alias_utils import nb_email_log_for_mailbox
@@ -454,6 +456,48 @@ def increase_percent(old, new) -> str:
     return f"{increase:.1f}%. Delta: {new-old}"
 
 
+def bounce_report() -> List[Tuple[str, int]]:
+    """return the accounts that have most bounces, e.g.
+    (email1, 30)
+    (email2, 20)
+
+    Produce this query
+
+    ```
+    SELECT
+        count(*) AS c,
+        users.email
+    FROM
+        email_log,
+        users
+    WHERE
+        email_log.user_id = users.id
+        AND email_log.created_at > '2021-3-20'
+        and email_log.bounced = true
+    GROUP BY
+        users.email
+    ORDER BY
+        c DESC;
+    ```
+
+    """
+    min_dt = arrow.now().shift(days=-1)
+    query = (
+        db.session.query(User.email, func.count(EmailLog.id).label("count"))
+        .join(EmailLog, EmailLog.user_id == User.id)
+        .filter(EmailLog.bounced, EmailLog.created_at > min_dt)
+        .group_by(User.email)
+        .having(func.count(EmailLog.id) > 5)
+        .order_by(desc("count"))
+    )
+
+    res = []
+    for email, count in query:
+        res.append((email, count))
+
+    return res
+
+
 def stats():
     """send admin stats everyday"""
     if not ADMIN_EMAIL:
@@ -495,6 +539,13 @@ nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_t
 nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yesterday.nb_referred_user, stats_today.nb_referred_user)}  <br>
 nb_referred_user_upgrade: {stats_today.nb_referred_user_upgrade} - {increase_percent(stats_yesterday.nb_referred_user_upgrade, stats_today.nb_referred_user_upgrade)}  <br>
     """
+
+    html += f"""<br>
+    Bounce report: <br>
+    """
+
+    for email, bounces in bounce_report():
+        html += f"{email}: {bounces} <br>"
 
     send_email(
         ADMIN_EMAIL,
