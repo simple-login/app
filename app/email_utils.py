@@ -39,7 +39,6 @@ from app.config import (
     EMAIL_DOMAIN,
     ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
     TRANSACTIONAL_BOUNCE_EMAIL,
-    REDDIT_URL,
     ALERT_SPF,
     POSTFIX_PORT_FORWARD,
 )
@@ -90,8 +89,8 @@ def send_welcome_email(user):
     send_email(
         to_email,
         f"Welcome to SimpleLogin",
-        render("com/welcome.txt", user=user, alias=alias, reddit_url=REDDIT_URL),
-        render("com/welcome.html", user=user, alias=alias, reddit_url=REDDIT_URL),
+        render("com/welcome.txt", user=user, alias=alias),
+        render("com/welcome.html", user=user, alias=alias),
         unsubscribe_link,
         via_email,
     )

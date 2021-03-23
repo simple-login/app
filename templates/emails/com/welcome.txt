@@ -24,9 +24,8 @@ without any limit during 7 days (the "trial period").
 No worries: all aliases you create during this period will continue to work normally even if you don't upgrade.
 {% endif %}
 
-At any time, you can reach out to us by:
-- Simply replying to this email
-- On Twitter at https://twitter.com/simple_login
-- On Reddit at https://www.reddit.com/r/Simplelogin/
+At any time, you can reach out to us by simply replying to this email.
 
-SimpleLogin Team.
+For any question, feedback or feature request, please join our GitHub forum at https://github.com/simple-login/app/discussions
+
+You can also join our Reddit at https://www.reddit.com/r/Simplelogin/ follow our Twitter at https://twitter.com/simple_login
