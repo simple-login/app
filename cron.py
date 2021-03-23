@@ -473,11 +473,7 @@ def stats():
 
     today = arrow.now().format()
 
-    send_email(
-        ADMIN_EMAIL,
-        subject=f"SimpleLogin Stats for {today}, {nb_user_increase} users, {nb_alias_increase} aliases, {nb_forward_increase} forwards",
-        plaintext="",
-        html=f"""
+    html = f"""
 Stats for {today} <br>
 
 nb_user: {stats_today.nb_user} - {increase_percent(stats_yesterday.nb_user, stats_today.nb_user)}  <br>
@@ -498,7 +494,13 @@ nb_custom_domain: {stats_today.nb_custom_domain} - {increase_percent(stats_yeste
 nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_today.nb_app)}  <br>
 nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yesterday.nb_referred_user, stats_today.nb_referred_user)}  <br>
 nb_referred_user_upgrade: {stats_today.nb_referred_user_upgrade} - {increase_percent(stats_yesterday.nb_referred_user_upgrade, stats_today.nb_referred_user_upgrade)}  <br>
-    """,
+    """
+
+    send_email(
+        ADMIN_EMAIL,
+        subject=f"SimpleLogin Stats for {today}, {nb_user_increase} users, {nb_alias_increase} aliases, {nb_forward_increase} forwards",
+        plaintext="",
+        html=html,
     )
 
 
