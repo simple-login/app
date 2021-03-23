@@ -2132,6 +2132,41 @@ class Metric(db.Model, ModelMixin):
     NB_APP = "nb_app"
 
 
+class Metric2(db.Model, ModelMixin):
+    """
+    For storing different metrics like number of users, etc
+    Store each metric as a column as opposed to having different rows as in Metric
+    """
+
+    date = db.Column(ArrowType, default=arrow.utcnow, nullable=False)
+    name = db.Column(db.String(256), nullable=False)
+
+    nb_user = db.Column(db.Float, nullable=True)
+    nb_activated_user = db.Column(db.Float, nullable=True)
+
+    nb_premium = db.Column(db.Float, nullable=True)
+    nb_apple_premium = db.Column(db.Float, nullable=True)
+    nb_cancelled_premium = db.Column(db.Float, nullable=True)
+    nb_manual_premium = db.Column(db.Float, nullable=True)
+    nb_coinbase_premium = db.Column(db.Float, nullable=True)
+
+    # nb users who have been referred
+    nb_referred_user = db.Column(db.Float, nullable=True)
+    nb_referred_user_paid = db.Column(db.Float, nullable=True)
+
+    nb_alias = db.Column(db.Float, nullable=True)
+
+    nb_forward = db.Column(db.Float, nullable=True)
+    nb_block = db.Column(db.Float, nullable=True)
+    nb_reply = db.Column(db.Float, nullable=True)
+    nb_bounced = db.Column(db.Float, nullable=True)
+    nb_spam = db.Column(db.Float, nullable=True)
+
+    nb_verified_custom_domain = db.Column(db.Float, nullable=True)
+
+    nb_app = db.Column(db.Float, nullable=True)
+
+
 class Bounce(db.Model, ModelMixin):
     """Record all bounces. Deleted after 7 days"""
 

@@ -49,6 +49,7 @@ from app.models import (
     Metric,
     TransactionalEmail,
     Bounce,
+    Metric2,
 )
 from server import create_app
 
@@ -196,134 +197,6 @@ def poll_apple_subscription():
         verify_receipt(apple_sub.receipt_data, user, MACAPP_APPLE_API_SECRET)
 
     LOG.d("Finish poll_apple_subscription")
-
-
-@dataclass
-class Stats:
-    nb_user: int
-    nb_alias: int
-
-    nb_forward: int
-    nb_block: int
-    nb_reply: int
-    nb_bounced: int
-    nb_spam: int
-
-    nb_custom_domain: int
-    nb_app: int
-
-    nb_premium: int
-    nb_apple_premium: int
-    nb_cancelled_premium: int
-    nb_manual_premium: int
-    nb_coinbase_premium: int
-
-    # nb users who have been referred
-    nb_referred_user: int
-    nb_referred_user_upgrade: int
-
-
-def stats_before(moment: Arrow) -> Stats:
-    """return the stats before a specific moment, ignoring all stats come from users in IGNORED_EMAILS"""
-    # nb user
-    q = User.query
-    for ie in IGNORED_EMAILS:
-        q = q.filter(~User.email.contains(ie), User.created_at < moment)
-
-    nb_user = q.count()
-    LOG.d("total number user %s", nb_user)
-
-    nb_referred_user = q.filter(User.referral_id.isnot(None)).count()
-    nb_referred_user_upgrade = 0
-    for user in q.filter(User.referral_id.isnot(None)):
-        if user.is_paid():
-            nb_referred_user_upgrade += 1
-
-    LOG.d(
-        "%s nb_referred_user:%s nb_referred_user_upgrade:%s",
-        moment,
-        nb_referred_user,
-        nb_referred_user_upgrade,
-    )
-
-    # nb alias
-    q = db.session.query(Alias, User).filter(
-        Alias.user_id == User.id, Alias.created_at < moment
-    )
-    for ie in IGNORED_EMAILS:
-        q = q.filter(~User.email.contains(ie))
-
-    nb_alias = q.count()
-    LOG.d("total number alias %s", nb_alias)
-
-    # email log stats
-    q = (
-        db.session.query(EmailLog)
-        .join(User, EmailLog.user_id == User.id)
-        .filter(
-            EmailLog.created_at < moment,
-        )
-    )
-    for ie in IGNORED_EMAILS:
-        q = q.filter(~User.email.contains(ie))
-
-    nb_spam = nb_bounced = nb_forward = nb_block = nb_reply = 0
-    for email_log in q.yield_per(500):
-        if email_log.bounced:
-            nb_bounced += 1
-        elif email_log.is_spam:
-            nb_spam += 1
-        elif email_log.is_reply:
-            nb_reply += 1
-        elif email_log.blocked:
-            nb_block += 1
-        else:
-            nb_forward += 1
-
-    LOG.d(
-        "nb_forward %s, nb_block %s, nb_reply %s, nb_bounced %s, nb_spam %s",
-        nb_forward,
-        nb_block,
-        nb_reply,
-        nb_bounced,
-        nb_spam,
-    )
-
-    nb_premium = Subscription.query.filter(
-        Subscription.created_at < moment, Subscription.cancelled.is_(False)
-    ).count()
-    nb_apple_premium = AppleSubscription.query.filter(
-        AppleSubscription.created_at < moment
-    ).count()
-    nb_cancelled_premium = Subscription.query.filter(
-        Subscription.created_at < moment, Subscription.cancelled.is_(True)
-    ).count()
-
-    now = arrow.now()
-    nb_manual_premium = ManualSubscription.query.filter(
-        ManualSubscription.created_at < moment,
-        ManualSubscription.end_at > now,
-        ManualSubscription.is_giveaway.is_(False),
-    ).count()
-
-    nb_coinbase_premium = CoinbaseSubscription.query.filter(
-        CoinbaseSubscription.created_at < moment, CoinbaseSubscription.end_at > now
-    ).count()
-
-    nb_custom_domain = CustomDomain.query.filter(
-        CustomDomain.created_at < moment
-    ).count()
-
-    nb_app = Client.query.filter(Client.created_at < moment).count()
-
-    data = locals()
-    # to keep only Stats field
-    data = {
-        k: v
-        for (k, v) in data.items()
-        if k in vars(Stats)["__dataclass_fields__"].keys()
-    }
-    return Stats(**data)
 
 
 def compute_metrics():
