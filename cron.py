@@ -1,17 +1,14 @@
 import argparse
-from dataclasses import dataclass
 from time import sleep
 from typing import List, Tuple
 
 import arrow
-from arrow import Arrow
 from sqlalchemy import func, desc
 
 from app import s3
 from app.alias_utils import nb_email_log_for_mailbox
 from app.api.views.apple import verify_receipt
 from app.config import (
-    IGNORED_EMAILS,
     ADMIN_EMAIL,
     MACAPP_APPLE_API_SECRET,
     APPLE_API_SECRET,
@@ -29,7 +26,6 @@ from app.email_utils import (
     normalize_reply_email,
     is_valid_email,
 )
-from app.utils import sanitize_email
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -51,6 +47,7 @@ from app.models import (
     Bounce,
     Metric2,
 )
+from app.utils import sanitize_email
 from server import create_app
 
 
