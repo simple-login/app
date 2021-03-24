@@ -3,6 +3,7 @@ import uuid
 from flask import url_for, g
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
+from app.extensions import db
 from app.models import Alias
 from tests.utils import login
 
@@ -58,6 +59,8 @@ def test_custom_mode(flask_client):
 
 def test_out_of_quota(flask_client):
     user = login(flask_client)
+    user.trial_end = None
+    db.session.commit()
 
     # create MAX_NB_EMAIL_FREE_PLAN random alias to run out of quota
     for _ in range(MAX_NB_EMAIL_FREE_PLAN):
