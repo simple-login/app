@@ -421,7 +421,11 @@ def stats():
     compute_metrics()
 
     stats_today = compute_metric2(arrow.now())
-    stats_yesterday = compute_metric2(arrow.now().shift(days=-1))
+    stats_yesterday = (
+        Metric2.query.filter(Metric2.date < stats_today.date)
+        .order_by(Metric2.date.desc())
+        .first()
+    )
 
     nb_user_increase = increase_percent(stats_yesterday.nb_user, stats_today.nb_user)
     nb_alias_increase = increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)
