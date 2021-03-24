@@ -710,7 +710,12 @@ def to_bytes(msg: Message):
                 LOG.warning(
                     "as_bytes fails with SMTPUTF8 policy, try converting to string"
                 )
-                return msg.as_string().encode()
+                msg_string = msg.as_string()
+                try:
+                    return msg_string.encode()
+                except UnicodeEncodeError as e:
+                    LOG.w("can't encode msg, err:%s", e)
+                    return msg_string.encode(errors="replace")
 
 
 def should_add_dkim_signature(domain: str) -> bool:
