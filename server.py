@@ -475,6 +475,13 @@ def setup_openid_metadata(app):
         return jsonify(res)
 
 
+def get_current_user():
+    try:
+        return g.user
+    except AttributeError:
+        return current_user
+
+
 def setup_error_page(app):
     @app.errorhandler(400)
     def bad_request(e):
@@ -503,7 +510,7 @@ def setup_error_page(app):
         LOG.warning(
             "Client hit rate limit on path %s, user:%s",
             request.path,
-            g.user or current_user,
+            get_current_user(),
         )
         if request.path.startswith("/api/"):
             return jsonify(error="Rate limit exceeded"), 429

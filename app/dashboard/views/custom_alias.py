@@ -9,9 +9,10 @@ from app.alias_utils import check_alias_prefix
 from app.config import (
     DISABLE_ALIAS_SUFFIX,
     CUSTOM_ALIAS_SECRET,
+    ALIAS_LIMIT,
 )
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.extensions import db, limiter
 from app.log import LOG
 from app.models import (
     Alias,
@@ -93,6 +94,7 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
 
 
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
+@limiter.limit(ALIAS_LIMIT, methods=["POST"])
 @login_required
 def custom_alias():
     # check if user has not exceeded the alias quota
@@ -254,8 +256,6 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
         return False
 
     user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
-    alias_prefix = alias_prefix.strip()
-    alias_prefix = convert_to_id(alias_prefix)
 
     # make sure alias_suffix is either .random_word@simplelogin.co or @my-domain.com
     alias_suffix = alias_suffix.strip()
