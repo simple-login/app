@@ -3,23 +3,15 @@ import uuid
 from flask import url_for
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
-from app.extensions import db
-from app.models import User, ApiKey, Alias
+from app.models import Alias
+from tests.utils import login
 
 
 def test_success(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    login(flask_client)
 
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 201
@@ -39,19 +31,11 @@ def test_success(flask_client):
 
 
 def test_custom_mode(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    login(flask_client)
 
     # without note
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
-        headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 201
@@ -63,7 +47,6 @@ def test_custom_mode(flask_client):
     # with note
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
-        headers={"Authentication": api_key.code},
         json={"note": "test note"},
     )
 
@@ -74,15 +57,7 @@ def test_custom_mode(flask_client):
 
 
 def test_out_of_quota(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    user.trial_end = None
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     # create MAX_NB_EMAIL_FREE_PLAN random alias to run out of quota
     for _ in range(MAX_NB_EMAIL_FREE_PLAN):
@@ -90,7 +65,6 @@ def test_out_of_quota(flask_client):
 
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 400
