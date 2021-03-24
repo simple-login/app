@@ -6,23 +6,16 @@ from app.dashboard.views.custom_alias import signer
 from app.extensions import db
 from app.models import User, ApiKey, Alias, CustomDomain, Mailbox
 from app.utils import random_word
+from tests.utils import login
 
 
 def test_success(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    login(flask_client)
 
     # create new alias with note
     word = random_word()
     r = flask_client.post(
         url_for("api.new_custom_alias", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
         json={
             "alias_prefix": "prefix",
             "alias_suffix": f".{word}@{EMAIL_DOMAIN}",
@@ -50,20 +43,12 @@ def test_success(flask_client):
 
 
 def test_create_custom_alias_without_note(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    login(flask_client)
 
     # create alias without note
     word = random_word()
     r = flask_client.post(
         url_for("api.new_custom_alias", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
         json={"alias_prefix": "prefix", "alias_suffix": f".{word}@{EMAIL_DOMAIN}"},
     )
 
@@ -75,14 +60,8 @@ def test_create_custom_alias_without_note(flask_client):
 
 
 def test_out_of_quota(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
+    user = login(flask_client)
     user.trial_end = None
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
     db.session.commit()
 
     # create MAX_NB_EMAIL_FREE_PLAN custom alias to run out of quota
@@ -92,13 +71,13 @@ def test_out_of_quota(flask_client):
     word = random_word()
     r = flask_client.post(
         url_for("api.new_custom_alias", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
         json={"alias_prefix": "prefix", "alias_suffix": f".{word}@{EMAIL_DOMAIN}"},
     )
 
     assert r.status_code == 400
     assert r.json == {
-        "error": "You have reached the limitation of a free account with the maximum of 3 aliases, please upgrade your plan to create more aliases"
+        "error": "You have reached the limitation of a "
+        "free account with the maximum of 3 aliases, please upgrade your plan to create more aliases"
     }
 
 
@@ -147,14 +126,7 @@ def test_success_v2(flask_client):
 
 
 def test_cannot_create_alias_in_trash(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     # create a custom domain
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
@@ -166,7 +138,6 @@ def test_cannot_create_alias_in_trash(flask_client):
 
     r = flask_client.post(
         url_for("api.new_custom_alias_v2", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
         json={
             "alias_prefix": "prefix",
             "signed_suffix": suffix,
@@ -186,7 +157,6 @@ def test_cannot_create_alias_in_trash(flask_client):
     # try to create the same alias, will fail as the alias is in trash
     r = flask_client.post(
         url_for("api.new_custom_alias_v2", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
         json={
             "alias_prefix": "prefix",
             "signed_suffix": suffix,
@@ -197,17 +167,7 @@ def test_cannot_create_alias_in_trash(flask_client):
 
 
 def test_success_v3(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    user = login(flask_client)
 
     # create another mailbox
     mb = Mailbox.create(user_id=user.id, email="abcd@gmail.com", verified=True)
@@ -220,7 +180,6 @@ def test_success_v3(flask_client):
 
     r = flask_client.post(
         url_for("api.new_custom_alias_v3", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
         json={
             "alias_prefix": "prefix",
             "signed_suffix": suffix,
