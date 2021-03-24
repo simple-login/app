@@ -23,7 +23,7 @@ from app.models import (
     AliasMailbox,
     DomainDeletedAlias,
 )
-from app.utils import convert_to_id, random_word, word_exist
+from app.utils import random_word, word_exist
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 

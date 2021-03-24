@@ -6,9 +6,9 @@ from sqlalchemy.orm import joinedload
 
 from app import alias_utils
 from app.api.serializer import get_alias_infos_with_pagination_v3
-from app.config import PAGE_LIMIT
+from app.config import PAGE_LIMIT, ALIAS_LIMIT
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.extensions import db, limiter
 from app.log import LOG
 from app.models import (
     Alias,
@@ -51,6 +51,11 @@ def get_stats(user: User) -> Stats:
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
+@limiter.limit(
+    ALIAS_LIMIT,
+    methods=["POST"],
+    exempt_when=lambda: request.form.get("form-name") != "create-random-email",
+)
 @login_required
 def index():
     query = request.args.get("query") or ""
@@ -91,7 +96,7 @@ def index():
 
                 db.session.commit()
 
-                LOG.d("generate new email %s for user %s", alias, current_user)
+                LOG.d("create new random alias %s for user %s", alias, current_user)
                 flash(f"Alias {alias.email} has been created", "success")
 
                 return redirect(
