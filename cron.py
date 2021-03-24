@@ -318,7 +318,8 @@ def compute_metrics():
     )
 
 
-def compute_metric2(now) -> Metric2:
+def compute_metric2() -> Metric2:
+    now = arrow.now()
     nb_referred_user_paid = 0
     for user in User.query.filter(User.referral_id.isnot(None)):
         if user.is_paid():
@@ -420,7 +421,7 @@ def stats():
     # todo: remove metrics1
     compute_metrics()
 
-    stats_today = compute_metric2(arrow.now())
+    stats_today = compute_metric2()
     stats_yesterday = (
         Metric2.query.filter(Metric2.date < stats_today.date)
         .order_by(Metric2.date.desc())
