@@ -39,7 +39,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          pytest
+          pytest --cov=. --cov-report=term:skip-covered --cov-report=html:htmlcov --cov-fail-under=60
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v2

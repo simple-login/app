@@ -84,13 +84,6 @@ pre-commit = "^2.7.1"
 pytest-cov = "^2.10.1"
 flake8 = "^3.8.4"
 
-[tool.pytest.ini_options]
-addopts = """
-  --cov=.
-  --cov-report=term:skip-covered
-  --cov-report=html:htmlcov
-  --cov-fail-under=60
-"""
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
