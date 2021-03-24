@@ -1,4 +1,4 @@
-from flask import url_for
+from flask import url_for, g
 
 from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
@@ -208,3 +208,52 @@ def test_success_v3(flask_client):
     new_alias: Alias = Alias.get_by(email=r.json["alias"])
     assert new_alias.note == "test note"
     assert len(new_alias.mailboxes) == 2
+
+
+def test_custom_domain_alias(flask_client):
+    user = login(flask_client)
+
+    # create a custom domain
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+
+    signed_suffix = signer.sign("@ab.cd").decode()
+
+    r = flask_client.post(
+        "/api/v3/alias/custom/new",
+        json={
+            "alias_prefix": "prefix",
+            "signed_suffix": signed_suffix,
+            "mailbox_ids": [user.default_mailbox_id],
+        },
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"] == f"prefix@ab.cd"
+
+
+def test_too_many_requests(flask_client):
+    user = login(flask_client)
+
+    # create a custom domain
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+
+    # can't create more than 5 aliases in 1 minute
+    for i in range(7):
+        signed_suffix = signer.sign("@ab.cd").decode()
+
+        r = flask_client.post(
+            "/api/v3/alias/custom/new",
+            json={
+                "alias_prefix": f"prefix{i}",
+                "signed_suffix": signed_suffix,
+                "mailbox_ids": [user.default_mailbox_id],
+            },
+        )
+
+        # to make flask-limiter work with unit test
+        # https://github.com/alisaifee/flask-limiter/issues/147#issuecomment-642683820
+        g._rate_limiting_complete = False
+    else:
+        # last request
+        assert r.status_code == 429
+        assert r.json == {"error": "Rate limit exceeded"}

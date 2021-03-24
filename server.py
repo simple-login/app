@@ -17,6 +17,7 @@ from flask import (
     jsonify,
     flash,
     session,
+    g,
 )
 from flask_admin import Admin
 from flask_cors import cross_origin, CORS
@@ -499,7 +500,11 @@ def setup_error_page(app):
 
     @app.errorhandler(429)
     def rate_limited(e):
-        LOG.warning("Client hit rate limit on path %s", request.path)
+        LOG.warning(
+            "Client hit rate limit on path %s, user:%s",
+            request.path,
+            g.user or current_user,
+        )
         if request.path.startswith("/api/"):
             return jsonify(error="Rate limit exceeded"), 429
         else:

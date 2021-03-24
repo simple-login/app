@@ -369,3 +369,5 @@ try:
     COINBASE_YEARLY_PRICE = float(os.environ["COINBASE_YEARLY_PRICE"])
 except Exception:
     COINBASE_YEARLY_PRICE = 30.00
+
+ALIAS_LIMIT = "100/day;50/hour;5/minute"

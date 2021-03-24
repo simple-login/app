@@ -10,7 +10,7 @@ from app.api.serializer import (
     serialize_alias_info_v2,
     get_alias_info_v2,
 )
-from app.config import MAX_NB_EMAIL_FREE_PLAN
+from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
 from app.dashboard.views.custom_alias import verify_prefix_suffix, signer
 from app.extensions import db, limiter
 from app.log import LOG
@@ -28,7 +28,7 @@ from app.utils import convert_to_id
 
 
 @api_bp.route("/alias/custom/new", methods=["POST"])
-@limiter.limit("5/minute")
+@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
 def new_custom_alias():
     """
@@ -99,7 +99,7 @@ def new_custom_alias():
 
 
 @api_bp.route("/v2/alias/custom/new", methods=["POST"])
-@limiter.limit("5/minute")
+@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
 def new_custom_alias_v2():
     """
@@ -194,7 +194,7 @@ def new_custom_alias_v2():
 
 
 @api_bp.route("/v3/alias/custom/new", methods=["POST"])
-@limiter.limit("5/minute")
+@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
 def new_custom_alias_v3():
     """

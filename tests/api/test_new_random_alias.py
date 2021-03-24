@@ -1,6 +1,6 @@
 import uuid
 
-from flask import url_for
+from flask import url_for, g
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.models import Alias
@@ -69,9 +69,26 @@ def test_out_of_quota(flask_client):
 
     assert r.status_code == 400
     assert (
-        r.json["error"]
-        == "You have reached the limitation of a free account with the maximum of 3 aliases, please upgrade your plan to create more aliases"
+        r.json["error"] == "You have reached the limitation of a free account with "
+        "the maximum of 3 aliases, please upgrade your plan to create more aliases"
     )
+
+
+def test_too_many_requests(flask_client):
+    login(flask_client)
+
+    # can't create more than 5 aliases in 1 minute
+    for _ in range(7):
+        r = flask_client.post(
+            url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
+        )
+        # to make flask-limiter work with unit test
+        # https://github.com/alisaifee/flask-limiter/issues/147#issuecomment-642683820
+        g._rate_limiting_complete = False
+    else:
+        # last request
+        assert r.status_code == 429
+        assert r.json == {"error": "Rate limit exceeded"}
 
 
 def is_valid_uuid(val):

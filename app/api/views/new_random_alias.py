@@ -6,14 +6,14 @@ from app.api.serializer import (
     get_alias_info_v2,
     serialize_alias_info_v2,
 )
-from app.config import MAX_NB_EMAIL_FREE_PLAN
+from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
 from app.extensions import db, limiter
 from app.log import LOG
 from app.models import Alias, AliasUsedOn, AliasGeneratorEnum
 
 
 @api_bp.route("/alias/random/new", methods=["POST"])
-@limiter.limit("5/minute")
+@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
 def new_random_alias():
     """
