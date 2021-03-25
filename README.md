@@ -40,7 +40,7 @@ This README contains instructions on how to self host SimpleLogin.
 
 Once you have your own SimpleLogin instance running, you can change the `API URL` in SimpleLogin's Chrome/Firefox extension, Android/iOS app to your server. 
 
-SimpleLogin roadmap is at https://trello.com/b/4d6A69I4/open-roadmap, feel free to submit new ideas or vote on features.
+SimpleLogin roadmap is at https://github.com/simple-login/app/projects/1 and our forum at https://github.com/simple-login/app/discussions, feel free to submit new ideas or vote on features.
 
 ### Prerequisites
 
