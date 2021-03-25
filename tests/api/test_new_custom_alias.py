@@ -9,6 +9,38 @@ from app.utils import random_word
 from tests.utils import login
 
 
+def test_v2(flask_client):
+    login(flask_client)
+
+    word = random_word()
+    suffix = f".{word}@{EMAIL_DOMAIN}"
+    signed_suffix = signer.sign(suffix).decode()
+
+    r = flask_client.post(
+        "/api/v2/alias/custom/new",
+        json={
+            "alias_prefix": "prefix",
+            "signed_suffix": signed_suffix,
+        },
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"] == f"prefix.{word}@{EMAIL_DOMAIN}"
+
+    res = r.json
+    assert "id" in res
+    assert "email" in res
+    assert "creation_date" in res
+    assert "creation_timestamp" in res
+    assert "nb_forward" in res
+    assert "nb_block" in res
+    assert "nb_reply" in res
+    assert "enabled" in res
+
+    new_alias: Alias = Alias.get_by(email=r.json["alias"])
+    assert len(new_alias.mailboxes) == 1
+
+
 def test_minimal_payload(flask_client):
     user = login(flask_client)
 
