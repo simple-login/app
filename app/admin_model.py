@@ -58,7 +58,7 @@ class UserAdmin(SLModelView):
         "Are you sure you want to edu-upgrade selected users?",
     )
     def action_edu_upgrade(self, ids):
-        upgrade("Edu", ids, is_giveaway=True)
+        manual_upgrade("Edu", ids, is_giveaway=True)
 
     @action(
         "charity_org_upgrade",
@@ -66,7 +66,7 @@ class UserAdmin(SLModelView):
         "Are you sure you want to upgrade selected users using the Charity organization program?",
     )
     def action_charity_org_upgrade(self, ids):
-        upgrade("Charity Organization", ids, is_giveaway=True)
+        manual_upgrade("Charity Organization", ids, is_giveaway=True)
 
     @action(
         "cash_upgrade",
@@ -74,7 +74,7 @@ class UserAdmin(SLModelView):
         "Are you sure you want to cash-upgrade selected users?",
     )
     def action_cash_upgrade(self, ids):
-        upgrade("Cash", ids, is_giveaway=False)
+        manual_upgrade("Cash", ids, is_giveaway=False)
 
     @action(
         "crypto_upgrade",
@@ -82,7 +82,7 @@ class UserAdmin(SLModelView):
         "Are you sure you want to crypto-upgrade selected users?",
     )
     def action_monero_upgrade(self, ids):
-        upgrade("Crypto", ids, is_giveaway=False)
+        manual_upgrade("Crypto", ids, is_giveaway=False)
 
     @action(
         "extend_trial_1w",
@@ -101,11 +101,23 @@ class UserAdmin(SLModelView):
         db.session.commit()
 
 
-def upgrade(way: str, ids: [int], is_giveaway: bool):
+def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
     query = User.query.filter(User.id.in_(ids))
 
     for user in query.all():
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=user.id)
+        if manual_sub:
+            # renew existing subscription
+            if manual_sub.end_at > arrow.now():
+                manual_sub.end_at = manual_sub.end_at.shift(years=1)
+            else:
+                manual_sub.end_at = arrow.now().shift(years=1, days=1)
+            db.session.commit()
+            flash(f"Subscription extended to {manual_sub.end_at.humanize()}", "success")
+            continue
+
         if user.is_premium() and not user.in_trial():
+            flash(f"User {user} is already premium", "warning")
             continue
 
         ManualSubscription.create(
@@ -116,7 +128,7 @@ def upgrade(way: str, ids: [int], is_giveaway: bool):
             commit=True,
         )
 
-        flash(f"{user} is {way} upgraded")
+        flash(f"New {way} manual subscription for {user} is created", "success")
 
 
 class EmailLogAdmin(SLModelView):
