@@ -72,6 +72,7 @@ from app.config import (
     BOUNCE_SUFFIX,
     TRANSACTIONAL_BOUNCE_PREFIX,
     TRANSACTIONAL_BOUNCE_SUFFIX,
+    ENABLE_SPAM_ASSASSIN,
 )
 from app.email.spam import get_spam_score
 from app.email_utils import (
@@ -594,47 +595,48 @@ def forward_email_to_mailbox(
         contact_id=contact.id, user_id=user.id, mailbox_id=mailbox.id, commit=True
     )
 
-    # Spam check
-    spam_status = ""
-    is_spam = False
+    if ENABLE_SPAM_ASSASSIN:
+        # Spam check
+        spam_status = ""
+        is_spam = False
 
-    if SPAMASSASSIN_HOST:
-        start = time.time()
-        spam_score, spam_report = get_spam_score(msg, email_log)
-        LOG.d(
-            "%s -> %s - spam score:%s in %s seconds. Spam report %s",
-            contact,
-            alias,
-            spam_score,
-            time.time() - start,
-            spam_report,
-        )
-        email_log.spam_score = spam_score
-        db.session.commit()
+        if SPAMASSASSIN_HOST:
+            start = time.time()
+            spam_score, spam_report = get_spam_score(msg, email_log)
+            LOG.d(
+                "%s -> %s - spam score:%s in %s seconds. Spam report %s",
+                contact,
+                alias,
+                spam_score,
+                time.time() - start,
+                spam_report,
+            )
+            email_log.spam_score = spam_score
+            db.session.commit()
 
-        if (user.max_spam_score and spam_score > user.max_spam_score) or (
-            not user.max_spam_score and spam_score > MAX_SPAM_SCORE
-        ):
-            is_spam = True
-            # only set the spam report for spam
-            email_log.spam_report = spam_report
-    else:
-        is_spam, spam_status = get_spam_info(msg, max_score=user.max_spam_score)
+            if (user.max_spam_score and spam_score > user.max_spam_score) or (
+                not user.max_spam_score and spam_score > MAX_SPAM_SCORE
+            ):
+                is_spam = True
+                # only set the spam report for spam
+                email_log.spam_report = spam_report
+        else:
+            is_spam, spam_status = get_spam_info(msg, max_score=user.max_spam_score)
 
-    if is_spam:
-        LOG.w(
-            "Email detected as spam. %s -> %s. Spam Score: %s, Spam Report: %s",
-            contact,
-            alias,
-            email_log.spam_score,
-            email_log.spam_report,
-        )
-        email_log.is_spam = True
-        email_log.spam_status = spam_status
-        db.session.commit()
+        if is_spam:
+            LOG.w(
+                "Email detected as spam. %s -> %s. Spam Score: %s, Spam Report: %s",
+                contact,
+                alias,
+                email_log.spam_score,
+                email_log.spam_report,
+            )
+            email_log.is_spam = True
+            email_log.spam_status = spam_status
+            db.session.commit()
 
-        handle_spam(contact, alias, msg, user, mailbox, email_log)
-        return False, "550 SL E1 Email detected as spam"
+            handle_spam(contact, alias, msg, user, mailbox, email_log)
+            return False, "550 SL E1 Email detected as spam"
 
     if contact.invalid_email:
         LOG.d("add noreply information %s %s", alias, mailbox)
@@ -818,44 +820,47 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     )
 
     # Spam check
-    spam_status = ""
-    is_spam = False
+    if ENABLE_SPAM_ASSASSIN:
+        spam_status = ""
+        is_spam = False
 
-    # do not use user.max_spam_score here
-    if SPAMASSASSIN_HOST:
-        start = time.time()
-        spam_score, spam_report = get_spam_score(msg, email_log)
-        LOG.d(
-            "%s -> %s - spam score %s in %s seconds. Spam report %s",
-            alias,
-            contact,
-            spam_score,
-            time.time() - start,
-            spam_report,
-        )
-        email_log.spam_score = spam_score
-        if spam_score > MAX_REPLY_PHASE_SPAM_SCORE:
-            is_spam = True
-            # only set the spam report for spam
-            email_log.spam_report = spam_report
-    else:
-        is_spam, spam_status = get_spam_info(msg, max_score=MAX_REPLY_PHASE_SPAM_SCORE)
+        # do not use user.max_spam_score here
+        if SPAMASSASSIN_HOST:
+            start = time.time()
+            spam_score, spam_report = get_spam_score(msg, email_log)
+            LOG.d(
+                "%s -> %s - spam score %s in %s seconds. Spam report %s",
+                alias,
+                contact,
+                spam_score,
+                time.time() - start,
+                spam_report,
+            )
+            email_log.spam_score = spam_score
+            if spam_score > MAX_REPLY_PHASE_SPAM_SCORE:
+                is_spam = True
+                # only set the spam report for spam
+                email_log.spam_report = spam_report
+        else:
+            is_spam, spam_status = get_spam_info(
+                msg, max_score=MAX_REPLY_PHASE_SPAM_SCORE
+            )
 
-    if is_spam:
-        LOG.w(
-            "Email detected as spam. Reply phase. %s -> %s. Spam Score: %s, Spam Report: %s",
-            alias,
-            contact,
-            email_log.spam_score,
-            email_log.spam_report,
-        )
+        if is_spam:
+            LOG.w(
+                "Email detected as spam. Reply phase. %s -> %s. Spam Score: %s, Spam Report: %s",
+                alias,
+                contact,
+                email_log.spam_score,
+                email_log.spam_report,
+            )
 
-        email_log.is_spam = True
-        email_log.spam_status = spam_status
-        db.session.commit()
+            email_log.is_spam = True
+            email_log.spam_status = spam_status
+            db.session.commit()
 
-        handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
-        return False, "550 SL E15 Email detected as spam"
+            handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
+            return False, "550 SL E15 Email detected as spam"
 
     delete_all_headers_except(
         msg,
