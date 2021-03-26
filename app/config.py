@@ -371,3 +371,5 @@ except Exception:
     COINBASE_YEARLY_PRICE = 30.00
 
 ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"
+
+ENABLE_SPAM_ASSASSIN = "ENABLE_SPAM_ASSASSIN" in os.environ
