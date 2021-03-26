@@ -388,7 +388,10 @@ def fake_data():
     db.session.commit()
 
     ManualSubscription.create(
-        user_id=user2.id, end_at=arrow.now().shift(years=1, days=1), commit=True
+        user_id=user2.id,
+        end_at=arrow.now().shift(years=1, days=1),
+        comment="Local manual",
+        commit=True,
     )
 
 
