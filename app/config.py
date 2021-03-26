@@ -370,4 +370,4 @@ try:
 except Exception:
     COINBASE_YEARLY_PRICE = 30.00
 
-ALIAS_LIMIT = "100/day;50/hour;5/minute"
+ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"
