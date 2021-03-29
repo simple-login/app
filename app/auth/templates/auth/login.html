@@ -6,7 +6,6 @@
 
 {% block single_content %}
 
-
   {% if show_resend_activation %}
     <div class="text-center text-muted small mb-4">
       You haven't received the activation email?
@@ -48,11 +47,5 @@
   <div class="text-center text-muted mt-2">
     Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
   </div>
-
-  {% if GITHUB_CLIENT_ID or GOOGLE_CLIENT_ID or FACEBOOK_CLIENT_ID %}
-  <div class="text-center text-muted mt-5">
-    <a href="{{ url_for('auth.social') }}">Social Login</a> is now deprecated
-  </div>
-  {% endif %}
 
 {% endblock %}
