@@ -412,6 +412,55 @@ def bounce_report() -> List[Tuple[str, int]]:
     return res
 
 
+def alias_creation_report() -> List[Tuple[str, int]]:
+    """return the accounts that have created most aliases in the last 7 days, e.g.
+    (email1, 2021-3-21, 30)
+    (email2, 2021-3-20, 20)
+
+    Produce this query
+
+    ```
+    SELECT
+        count(*) AS c,
+        users.email,
+        date(alias.created_at) AS d
+    FROM
+        alias,
+        users
+    WHERE
+        alias.user_id = users.id
+        AND alias.created_at > '2021-3-22'
+    GROUP BY
+        users.email,
+        d
+    HAVING
+        count(*) > 50
+    ORDER BY
+        c DESC;
+    ```
+
+    """
+    min_dt = arrow.now().shift(days=-7)
+    query = (
+        db.session.query(
+            User.email,
+            func.count(Alias.id).label("count"),
+            func.date(Alias.created_at).label("date"),
+        )
+        .join(Alias, Alias.user_id == User.id)
+        .filter(Alias.created_at > min_dt)
+        .group_by(User.email, "date")
+        .having(func.count(Alias.id) > 50)
+        .order_by(desc("count"))
+    )
+
+    res = []
+    for email, count, date in query:
+        res.append((email, count, date))
+
+    return res
+
+
 def stats():
     """send admin stats everyday"""
     if not ADMIN_EMAIL:
@@ -465,6 +514,13 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
 
     for email, bounces in bounce_report():
         html += f"{email}: {bounces} <br>"
+
+    html += f"""<br><br>
+    Alias creation report: <br>
+    """
+
+    for email, nb_alias, date in alias_creation_report():
+        html += f"{email}, {date}: {nb_alias} <br>"
 
     LOG.d("report email: %s", html)
 
