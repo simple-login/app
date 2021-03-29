@@ -690,7 +690,9 @@ def forward_email_to_mailbox(
 
     msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
     msg[_ENVELOPE_FROM] = envelope.mail_from
-    msg["Message-ID"] = make_msgid(str(email_log.id), EMAIL_DOMAIN)
+    message_id = make_msgid(str(email_log.id), EMAIL_DOMAIN)
+    LOG.d("message id %s", message_id)
+    msg["Message-ID"] = message_id
     msg["Date"] = formatdate()
 
     # change the from header so the sender comes from a reverse-alias
@@ -920,10 +922,12 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     replace_header_when_reply(msg, alias, "Cc")
 
     # Message-ID can reveal about the mailbox -> replace it
+    message_id = make_msgid(str(email_log.id), get_email_domain_part(alias.email))
+    LOG.d("make message id %s", message_id)
     add_or_replace_header(
         msg,
         "Message-ID",
-        make_msgid(str(email_log.id), get_email_domain_part(alias.email)),
+        message_id,
     )
     date_header = formatdate()
     msg["Date"] = date_header
