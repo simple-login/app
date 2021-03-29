@@ -16,17 +16,17 @@ from app.email_utils import (
     send_email,
     render,
 )
-from app.import_utils import handle_batch_import
 from app.extensions import db
+from app.import_utils import handle_batch_import
 from app.log import LOG
 from app.models import User, Job, BatchImport
-from server import create_app
+from server import create_light_app
 
 
 # fix the database connection leak issue
 # use this method instead of create_app
 def new_app():
-    app = create_app()
+    app = create_light_app()
 
     @app.teardown_appcontext
     def shutdown_session(response_or_exc):
