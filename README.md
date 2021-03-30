@@ -402,7 +402,8 @@ EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
 # this option doesn't make sense in self-hosted. Set this variable to disable this option.
 DISABLE_ALIAS_SUFFIX=1
 
-# the DKIM private key used to compute DKIM-Signature
+# the DKIM public/private keys used to compute DKIM-Signature
+DKIM_PUBLIC_KEY_PATH=/dkim.pub.key
 DKIM_PRIVATE_KEY_PATH=/dkim.key
 
 # DB Connection
