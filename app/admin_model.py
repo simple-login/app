@@ -134,6 +134,7 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
 
 class EmailLogAdmin(SLModelView):
     column_searchable_list = ["id"]
+    column_filters = ["id", "user.email", "mailbox.email", "contact.website_email"]
 
     can_edit = False
     can_create = False

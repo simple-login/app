@@ -143,6 +143,9 @@ def create_app() -> Flask:
 
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
+    # to have a "fluid" layout for admin
+    app.config["FLASK_ADMIN_FLUID_LAYOUT"] = True
+
     # to avoid conflict with other cookie
     app.config["SESSION_COOKIE_NAME"] = SESSION_COOKIE_NAME
     if URL.startswith("https"):
