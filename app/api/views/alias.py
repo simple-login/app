@@ -20,10 +20,10 @@ from app.email_utils import (
     is_valid_email,
     generate_reply_email,
 )
-from app.utils import sanitize_email
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, Mailbox, AliasMailbox
+from app.utils import sanitize_email
 
 
 @api_bp.route("/aliases", methods=["GET", "POST"])

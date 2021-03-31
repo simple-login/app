@@ -17,10 +17,10 @@ from app.email_utils import (
     send_email,
     render,
 )
-from app.utils import sanitize_email
 from app.extensions import db, limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
+from app.utils import sanitize_email
 
 
 @api_bp.route("/auth/login", methods=["POST"])

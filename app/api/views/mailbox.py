@@ -12,9 +12,9 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
     is_valid_email,
 )
-from app.utils import sanitize_email
 from app.extensions import db
 from app.models import Mailbox
+from app.utils import sanitize_email
 
 
 def mailbox_to_dict(mailbox: Mailbox):
