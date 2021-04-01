@@ -20,10 +20,15 @@
   {% endif %}
 
   <div class="row">
-    <div class="col-4">
-      <a href="{{ url_for('developer.new_client') }}" class="btn btn-success">Create new app</a>
+    <div class="col">
+      <div class="btn-group" role="group" aria-label="Basic example">
+        <a href="{{ url_for('developer.new_client') }}" class="btn btn-primary">Create new app</a>
+        <a href="https://docs.simplelogin.io" target="_blank" class="ml-2 btn btn-secondary">Docs <i class="fe fe-external-link"></i></a>
+      </div>
     </div>
   </div>
+
+
 
   <div class="row row-cards row-deck mt-4">
     {% for client in clients %}

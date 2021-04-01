@@ -9,9 +9,7 @@
 {% block default_content %}
   <div class="row">
     <div class="col-lg-3 order-lg-1 mb-4">
-      <a href="https://docs.simplelogin.io" class="btn btn-block btn-primary mb-6">
-        <i class="fe fe-github mr-2"></i>Browse Documentation
-      </a>
+
 
       <div class="list-group list-group-transparent mb-0">
         <a href="{{ url_for('developer.client_detail', client_id=client.id) }}"
@@ -35,6 +33,12 @@
         </a>
 
       </div>
+
+      <a href="https://docs.simplelogin.io" target="_blank"
+         class="btn btn-block btn-secondary mt-4">
+        Documentation <i class="fe fe-external-link"></i>
+      </a>
+
     </div>
     <div class="col-lg-9">
       <div class="card">
