@@ -902,6 +902,8 @@ class AuthorizationCode(db.Model, ModelMixin):
     # what is the input response_type, e.g. "code", "code,id_token", ...
     response_type = db.Column(db.String(128))
 
+    nonce = db.Column(db.Text, nullable=True, default=None, server_default=text("NULL"))
+
     user = db.relationship(User, lazy=False)
     client = db.relationship(Client, lazy=False)
 
@@ -1187,9 +1189,7 @@ class ClientUser(db.Model, ModelMixin):
         db.String(128), nullable=True, default=None, server_default=text("NULL")
     )
 
-    nonce = db.Column(
-        db.Text, nullable=True, default=None, server_default=text("NULL")
-    )
+    nonce = db.Column(db.Text, nullable=True, default=None, server_default=text("NULL"))
 
     # user can decide to send to client a default avatar
     default_avatar = db.Column(

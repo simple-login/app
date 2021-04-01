@@ -271,6 +271,7 @@ def authorize():
                 scope=scope,
                 redirect_uri=redirect_uri,
                 response_type=response_types_to_str(response_types),
+                nonce=nonce
             )
             db.session.add(auth_code)
             redirect_args["code"] = auth_code.code
