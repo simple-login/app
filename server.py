@@ -1,6 +1,5 @@
 import json
 import os
-import ssl
 from datetime import timedelta
 
 import arrow
@@ -21,7 +20,6 @@ from flask import (
 )
 from flask_admin import Admin
 from flask_cors import cross_origin, CORS
-
 from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
@@ -873,14 +871,14 @@ def local_main():
             fake_data()
             add_sl_domains()
 
-    if URL.startswith("https"):
-        LOG.d("enable https")
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        context.load_cert_chain("local_data/cert.pem", "local_data/key.pem")
+    app.run(debug=True, port=7777)
 
-        app.run(debug=True, port=7777, ssl_context=context)
-    else:
-        app.run(debug=True, port=7777)
+    # uncomment to run https locally
+    # LOG.d("enable https")
+    # import ssl
+    # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    # context.load_cert_chain("local_data/cert.pem", "local_data/key.pem")
+    # app.run(debug=True, port=7777, ssl_context=context)
 
 
 if __name__ == "__main__":
