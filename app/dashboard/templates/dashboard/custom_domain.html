@@ -34,10 +34,10 @@
                     <span class="cursor" data-toggle="tooltip" data-original-title="Domain Verified">✅</span>
                   {% else %}
                     <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup Needed">
-                  <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
-                     class="text-decoration-none">🚫
-                  </a>
-                </span>
+                      <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
+                         class="text-decoration-none">🚫
+                      </a>
+                    </span>
                   {% endif %}
                 </h5>
 
