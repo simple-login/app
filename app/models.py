@@ -838,6 +838,10 @@ class Client(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     icon_id = db.Column(db.ForeignKey(File.id), nullable=True)
 
+    # an app needs to be approved by SimpleLogin team
+    approved = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+    description = db.Column(db.Text, nullable=True)
+
     icon = db.relationship(File)
 
     def nb_user(self):
