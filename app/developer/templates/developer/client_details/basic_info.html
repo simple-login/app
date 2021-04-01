@@ -26,7 +26,8 @@
     </div>
   {% endif %}
 
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" enctype="multipart/form-data"
+        action="{{ url_for('developer.client_detail', client_id=client.id, action="edit") }}">
     {{ form.csrf_token }}
 
     <h3>App Info</h3>
@@ -34,13 +35,6 @@
       <label class="form-label">Display Name</label>
       {{ form.name(class="form-control", value=client.name) }}
       {{ render_field_errors(form.name) }}
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Website URL</label>
-      {{ form.home_url(class="form-control", type="url", value=client.home_url or "",
-              placeholder="https://mywebsite.com") }}
-      {{ render_field_errors(form.home_url) }}
     </div>
 
     <div class="form-group">
@@ -55,6 +49,27 @@
         <img src="{{ client.icon.get_url() }}" class="client-icon">
       {% endif %}
     </div>
+
     <button type="submit" class="btn btn-primary">Update</button>
+  </form>
+
+  <hr>
+  <h3>Submit for approval</h3>
+  <p>Before your app can be used by all SimpleLogin users, it needs to go through an approval process.</p>
+
+  <form method="post" enctype="multipart/form-data"
+        action="{{ url_for('developer.client_detail', client_id=client.id, action="submit") }}">
+    {{ approval_form.csrf_token }}
+
+    <div class="form-group">
+      <label class="form-label">Tell us about your app</label>
+      {{ approval_form.description(
+          class="form-control", rows="10",
+          placeholder="This information is used for approving your application. Please give us as much info as you can, for example where you plan to use SimpleLogin, for which community, etc."
+          ) }}
+      {{ render_field_errors(approval_form.description) }}
+    </div>
+
+    <button type="submit" class="btn btn-success">Submit</button>
   </form>
 {% endblock %}

@@ -238,10 +238,11 @@ def send_email(
     to_email = sanitize_email(to_email)
     if NOT_SEND_EMAIL:
         LOG.d(
-            "send email with subject '%s' to '%s', plaintext: %s",
+            "send email with subject '%s' to '%s', plaintext: %s, html: %s",
             subject,
             to_email,
             plaintext,
+            html,
         )
         return
 

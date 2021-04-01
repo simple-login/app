@@ -22,8 +22,12 @@
   <div class="row">
     <div class="col">
       <div class="btn-group" role="group" aria-label="Basic example">
-        <a href="{{ url_for('developer.new_client') }}" class="btn btn-primary">Create new app</a>
-        <a href="https://docs.simplelogin.io" target="_blank" class="ml-2 btn btn-secondary">Docs <i class="fe fe-external-link"></i></a>
+        <a href="{{ url_for('developer.new_client') }}" class="btn btn-primary">
+          Create new website/app
+        </a>
+        <a href="https://docs.simplelogin.io" target="_blank" class="ml-2 btn btn-secondary">
+          Docs <i class="fe fe-external-link"></i>
+        </a>
       </div>
     </div>
   </div>
@@ -37,12 +41,21 @@
           <div class="card-header">
             <div class="card-title d-flex align-items-center">
               {% if client.icon_id %}
-                <span class="avatar" style="background-image: url({{ client.icon.get_url() }})"></span>
+                <span class="avatar mr-2" style="background-image: url({{ client.icon.get_url() }})"></span>
               {% endif %}
               <span class="">
                 <a href="{{ url_for('developer.client_detail', client_id=client.id) }}">
                   {{ client.name }}
                 </a>
+                {% if client.approved %}
+                  <span class="cursor" data-toggle="tooltip" data-original-title="Approved">✅</span>
+                {% else %}
+                  <span class="cursor" data-toggle="tooltip" data-original-title="In Dev mode">
+                    <a href="{{ url_for('developer.client_detail', client_id=client.id) }}"
+                      class="text-decoration-none">🚫
+                    </a>
+                  </span>
+                {% endif %}
               </span>
             </div>
 

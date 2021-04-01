@@ -4,10 +4,12 @@ from flask import request, render_template, redirect, url_for, flash
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
-from wtforms import StringField, validators
+from wtforms import StringField, validators, TextAreaField
 
 from app import s3
+from app.config import ADMIN_EMAIL
 from app.developer.base import developer_bp
+from app.email_utils import send_email
 from app.extensions import db
 from app.log import LOG
 from app.models import Client, RedirectUri, File
@@ -17,7 +19,10 @@ from app.utils import random_string
 class EditClientForm(FlaskForm):
     name = StringField("Name", validators=[validators.DataRequired()])
     icon = FileField("Icon")
-    home_url = StringField("Home Url")
+
+
+class ApprovalClientForm(FlaskForm):
+    description = TextAreaField("Description", validators=[validators.DataRequired()])
 
 
 # basic info
@@ -25,21 +30,22 @@ class EditClientForm(FlaskForm):
 @login_required
 def client_detail(client_id):
     form = EditClientForm()
+    approval_form = ApprovalClientForm()
 
     is_new = "is_new" in request.args
+    action = request.args.get("action")
 
     client = Client.get(client_id)
-    if not client:
-        flash("no such client", "warning")
-        return redirect(url_for("developer.index"))
-
-    if client.user_id != current_user.id:
+    if not client or client.user_id != current_user.id:
         flash("you cannot see this app", "warning")
         return redirect(url_for("developer.index"))
 
-    if form.validate_on_submit():
+    # can't set value for a textarea field in jinja
+    if request.method == "GET":
+        approval_form.description.data = client.description
+
+    if action == "edit" and form.validate_on_submit():
         client.name = form.name.data
-        client.home_url = form.home_url.data
 
         if form.icon.data:
             # todo: remove current icon if any
@@ -61,9 +67,34 @@ def client_detail(client_id):
 
         return redirect(url_for("developer.client_detail", client_id=client.id))
 
+    if action == "submit" and approval_form.validate_on_submit():
+        client.description = approval_form.description.data
+        db.session.commit()
+
+        send_email(
+            ADMIN_EMAIL,
+            subject=f"{client.name} {client.id} submits for approval",
+            plaintext="",
+            html=f"""
+            name: {client.name} <br>
+            created: {client.created_at} <br>
+            user: {current_user.email} <br>
+            <br>
+            {client.description}
+            """,
+        )
+
+        flash(
+            f"Thanks for submitting, we are informed and will come back to you asap!",
+            "success",
+        )
+
+        return redirect(url_for("developer.client_detail", client_id=client.id))
+
     return render_template(
         "developer/client_details/basic_info.html",
         form=form,
+        approval_form=approval_form,
         client=client,
         is_new=is_new,
     )
