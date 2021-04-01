@@ -1187,6 +1187,10 @@ class ClientUser(db.Model, ModelMixin):
         db.String(128), nullable=True, default=None, server_default=text("NULL")
     )
 
+    nonce = db.Column(
+        db.Text, nullable=True, default=None, server_default=text("NULL")
+    )
+
     # user can decide to send to client a default avatar
     default_avatar = db.Column(
         db.Boolean, nullable=False, default=False, server_default="0"
