@@ -710,6 +710,16 @@ class User(db.Model, ModelMixin, UserMixin):
         # can have duplicate where a "root" user has a domain that's also listed in SL domains
         return list(set(domains))
 
+    def should_show_app_page(self) -> bool:
+        """whether to show the app page"""
+        return (
+            # when user has used the "Sign in with SL" button before
+            ClientUser.query.filter(ClientUser.user_id == self.id).count()
+            # or when user has created an app
+            + Client.query.filter(Client.user_id == self.id).count()
+            > 0
+        )
+
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
 

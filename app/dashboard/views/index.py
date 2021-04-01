@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from sqlalchemy.orm import joinedload
 
 from app import alias_utils
 from app.api.serializer import get_alias_infos_with_pagination_v3
@@ -12,7 +11,6 @@ from app.extensions import db, limiter
 from app.log import LOG
 from app.models import (
     Alias,
-    ClientUser,
     AliasGeneratorEnum,
     User,
     EmailLog,
@@ -139,15 +137,6 @@ def index():
             url_for("dashboard.index", query=query, sort=sort, filter=alias_filter)
         )
 
-    client_users = (
-        ClientUser.filter_by(user_id=current_user.id)
-        .options(joinedload(ClientUser.client))
-        .options(joinedload(ClientUser.alias))
-        .all()
-    )
-
-    sorted(client_users, key=lambda cu: cu.client.name)
-
     mailboxes = current_user.mailboxes()
 
     show_intro = False
@@ -168,7 +157,6 @@ def index():
 
     return render_template(
         "dashboard/index.html",
-        client_users=client_users,
         alias_infos=alias_infos,
         highlight_alias_id=highlight_alias_id,
         query=query,

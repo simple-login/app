@@ -26,4 +26,5 @@ from .views import (
     setup_done,
     batch_import,
     alias_transfer,
+    app,
 )
