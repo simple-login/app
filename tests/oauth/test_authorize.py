@@ -647,6 +647,7 @@ def test_authorize_page_http_not_allowed(flask_client):
     """make sure to redirect user to redirect_url?error=http_not_allowed"""
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
+    client.approved = True
 
     db.session.commit()
 
@@ -668,6 +669,7 @@ def test_authorize_page_unknown_redirect_uri(flask_client):
     """make sure to redirect user to redirect_url?error=unknown_redirect_uri"""
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
+    client.approved = True
 
     db.session.commit()
 
