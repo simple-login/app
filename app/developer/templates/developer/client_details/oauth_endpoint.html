@@ -6,6 +6,21 @@
   <h3>OAuth2 endpoints</h3>
 
   <div class="form-group">
+    <label class="form-label">OpenID Connect Discovery Document</label>
+
+    <div class="input-group mt-2">
+      <input type="text" disabled value="{{ URL + "/.well-known/openid-configuration" }}" class="form-control">
+      <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ URL + "/.well-known/openid-configuration" }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+    </div>
+  </div>
+
+  <div class="form-group">
     <label class="form-label">Authorization endpoint</label>
 
     <div class="input-group mt-2">
