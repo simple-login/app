@@ -36,7 +36,7 @@
   <form class="card" method="post" style="max-width: 40rem; margin: auto">
     {% if not client.approved %}
       <div class="alert alert-warning" style="border-bottom: 3px solid;">
-        {{ client.name }} is in Test Mode.
+        <b>{{ client.name }}</b> is in Dev Mode and isn't approved (yet) by SimpleLogin.
       </div>
     {% endif %}
 
