@@ -32,7 +32,14 @@
 {% endblock %}
 
 {% block default_content %}
+
   <form class="card" method="post" style="max-width: 40rem; margin: auto">
+    {% if not client.approved %}
+      <div class="alert alert-warning" style="border-bottom: 3px solid;">
+        {{ client.name }} is in Test Mode.
+      </div>
+    {% endif %}
+
     <div class="card-body p-6">
       <!-- User has already authorized this client -->
       {% if client_user %}
