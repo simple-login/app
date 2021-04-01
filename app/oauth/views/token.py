@@ -69,12 +69,6 @@ def token():
         access_token=generate_access_token(),
         response_type=auth_code.response_type,
     )
-    db.session.add(oauth_token)
-
-    # Auth code can be used only once
-    AuthorizationCode.delete(auth_code.id)
-
-    db.session.commit()
 
     client_user: ClientUser = ClientUser.get_by(
         client_id=auth_code.client_id, user_id=auth_code.user_id
@@ -96,7 +90,12 @@ def token():
     # Also return id_token if the initial flow is "code,id_token"
     # cf https://medium.com/@darutk/diagrams-of-all-the-openid-connect-flows-6968e3990660
     response_types = get_response_types_from_str(auth_code.response_type)
-    if ResponseType.ID_TOKEN in response_types:
-        res["id_token"] = make_id_token(client_user)
+    if ResponseType.ID_TOKEN in response_types or auth_code.scope == "openid":
+        res["id_token"] = make_id_token(client_user, nonce=auth_code.nonce)
+
+    # Auth code can be used only once
+    AuthorizationCode.delete(auth_code.id)
+
+    db.session.commit()
 
     return jsonify(res)

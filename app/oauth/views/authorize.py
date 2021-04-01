@@ -263,7 +263,6 @@ def authorize():
 
         auth_code = None
         if ResponseType.CODE in response_types:
-            # Create authorization code
             auth_code = AuthorizationCode.create(
                 client_id=client.id,
                 user_id=current_user.id,
@@ -271,9 +270,8 @@ def authorize():
                 scope=scope,
                 redirect_uri=redirect_uri,
                 response_type=response_types_to_str(response_types),
-                nonce=nonce
+                nonce=nonce,
             )
-            db.session.add(auth_code)
             redirect_args["code"] = auth_code.code
 
         oauth_token = None
