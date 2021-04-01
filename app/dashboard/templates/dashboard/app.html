@@ -11,7 +11,7 @@
     <div class="col">
       <h1 class="h3"> Apps </h1>
       <div class="small-text">
-        List of websites/apps that you have used <b>Sign in with SimpleLogin</b> on
+        List of websites/apps that you have used <b>Sign in with SimpleLogin</b>
       </div>
     </div>
   </div>
@@ -29,12 +29,15 @@
               <th>
                 Info
                 <i class="fe fe-help-circle" data-toggle="tooltip"
-                   title="Info sent to this app/website"></i>
+                   title="Info this app/website receives"></i>
               </th>
-              <th class="text-center">
+              <th>
                 First used
                 <i class="fe fe-help-circle" data-toggle="tooltip"
-                   title="The first time you have used the SimpleLogin on this app/website"></i>
+                   title="The first time you have used the 'Sign in with SimpleLogin' button on this app/website"></i>
+              </th>
+              <th>
+                Actions
               </th>
               <!--<th class="text-center">Last used</th>-->
             </tr>
@@ -58,10 +61,18 @@
                   {% endfor %}
                 </td>
 
-                <td class="text-center">
+                <td>
                   {{ client_user.created_at | dt }}
                 </td>
 
+                <td>
+                  <form method="post">
+                    <input type="hidden" name="client-user-id" value="{{ client_user.id }}">
+                    <button class="btn btn-warning">
+                      Remove
+                    </button>
+                  </form>
+                </td>
               </tr>
             {% endfor %}
 
