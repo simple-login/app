@@ -68,7 +68,6 @@
           </div>
 
           <div class="card-body">
-            App ID: <em>{{ client.oauth_client_id }} </em><br>
             <span class="h1 m-0">{{ client.nb_user() }}</span> Users <br>
             Created {{ client.created_at |dt }} <br>
             {% if client.last_user_login() %}
