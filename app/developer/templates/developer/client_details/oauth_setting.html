@@ -39,14 +39,11 @@
 
     <hr>
     <div class="form-group">
-      <div class="row">
-        <label class="form-label col">Authorized Redirect URIs</label>
-        <p class="col text-right">
-          <small class="text-muted">
-            <b>redirect_uri</b> must be <b>HTTPS</b> for security reason.
-          </small>
-        </p>
-      </div>
+      <label class="form-label">Authorized Redirect URIs</label>
+      <small class="text-muted">
+        By default <b>localhost</b> is whitelisted. <br>
+        A <b>redirect_uri</b> must be <b>HTTPS</b> for security reason.
+      </small>
 
       {% if not client.redirect_uris %}
         <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
@@ -93,7 +90,7 @@
       <button type="button" id="create-new-uri" class="mt-2 btn btn-secondary">Add new uri</button>
     </div>
 
-    <button type="submit" class="btn btn-primary btn-lg">Update</button>
+    <button type="submit" class="btn btn-primary">Update</button>
   </form>
 
   <!-- template for new uri -->
