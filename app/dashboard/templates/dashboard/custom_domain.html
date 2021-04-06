@@ -12,6 +12,10 @@
   <div class="row">
     <div class="col">
       <h1 class="h3"> Custom Domains
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
       </h1>
 
       {% if not current_user.is_premium() %}
@@ -22,6 +26,14 @@
           </a>
         </div>
       {% endif %}
+
+      <div class="alert alert-primary collapse {% if not custom_domains %} show {% endif %}" id="howtouse" role="alert">
+        By adding your domain, you can create aliases like <b>hi@my-domain.com</b> <br>
+
+        You can also enable <b>catch-all</b> to create aliases on-the-fly:
+        simply use <b>anything@my-domain.com</b> and it'll be created when
+        it receives an email.
+      </div>
 
       <div class="row">
         {% for custom_domain in custom_domains %}

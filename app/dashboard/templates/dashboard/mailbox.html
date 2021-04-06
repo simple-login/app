@@ -21,7 +21,7 @@
         </div>
       {% endif %}
 
-      <div class="alert alert-primary collapse" id="howtouse" role="alert">
+      <div class="alert alert-primary collapse {% if mailboxes|length == 1 %} show {% endif %}" id="howtouse" role="alert">
         A <em>mailbox</em> is just another personal email address. When creating a new alias, you could choose the
         mailbox that <em>owns</em> this alias, i.e: <br>
         - all emails sent to this alias will be forwarded to this mailbox <br>

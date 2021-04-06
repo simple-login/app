@@ -22,7 +22,7 @@
         </div>
       {% endif %}
 
-      <div class="alert alert-primary collapse" id="howtouse" role="alert">
+      <div class="alert alert-primary collapse {% if not dirs %} show {% endif %}" id="howtouse" role="alert">
         <div>
           Directory allows you to create aliases <b>on the fly</b>.
         </div>
