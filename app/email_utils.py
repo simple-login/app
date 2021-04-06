@@ -17,6 +17,7 @@ import arrow
 import dkim
 import spf
 from jinja2 import Environment, FileSystemLoader
+from sqlalchemy import func
 from validate_email import validate_email
 
 from app.config import (
@@ -962,7 +963,7 @@ def normalize_reply_email(reply_email: str) -> str:
 
 
 def should_disable(alias: Alias) -> bool:
-    """Disable an alias if it has more than 5 bounces in the last 24h"""
+    """Disable an alias if it has too many bounces recently"""
     # Bypass the bounce rule
     if alias.cannot_be_disabled:
         LOG.warning("%s cannot be disabled", alias)
@@ -980,12 +981,12 @@ def should_disable(alias: Alias) -> bool:
         .filter(Contact.alias_id == alias.id)
         .count()
     )
-    # if more than 10 bounces in 24h -> disable alias
-    if nb_bounced_last_24h > 10:
-        LOG.debug("more than 10 bounces in the last 24h on %s", alias)
+    # if more than 12 bounces in 24h -> disable alias
+    if nb_bounced_last_24h > 12:
+        LOG.d("more than 12 bounces in the last 24h, disable alias %s", alias)
         return True
 
-    # if between 5-10 bounces but has bounces last week -> disable alias
+    # if more than 5 bounces but has bounces last week -> disable alias
     elif nb_bounced_last_24h > 5:
         one_week_ago = arrow.now().shift(days=-8)
         nb_bounced_7d_1d = (
@@ -1002,7 +1003,31 @@ def should_disable(alias: Alias) -> bool:
         )
         if nb_bounced_7d_1d > 1:
             LOG.debug(
-                "more than 5 bounces in the last 24h and more than 1 bounces in the last 7 days on %s",
+                "more than 5 bounces in the last 24h and more than 1 bounces in the last 7 days, "
+                "disable alias %s",
+                alias,
+            )
+            return True
+    else:
+        # if bounces at least 9 days in the last 10 days -> disable alias
+        query = (
+            db.session.query(
+                func.date(EmailLog.created_at).label("date"),
+                func.count(EmailLog.id).label("count"),
+            )
+            .join(Contact, EmailLog.contact_id == Contact.id)
+            .filter(Contact.alias_id == alias.id)
+            .filter(
+                EmailLog.created_at > arrow.now().shift(days=-10),
+                EmailLog.bounced.is_(True),
+                EmailLog.is_reply.is_(False),
+            )
+            .group_by("date")
+        )
+
+        if query.count() >= 9:
+            LOG.d(
+                "Bounces every day for at least 9 days in the last 10 days, disable alias %s",
                 alias,
             )
             return True
