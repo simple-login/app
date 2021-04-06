@@ -168,3 +168,9 @@ class ManualSubscriptionAdmin(SLModelView):
             flash(f"Extend subscription for {ms.user}", "success")
 
         db.session.commit()
+
+
+class ClientAdmin(SLModelView):
+    column_searchable_list = ["name", "description", "user.email"]
+    column_exclude_list = ["oauth_client_secret", "home_url"]
+    can_edit = True
