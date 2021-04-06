@@ -17,9 +17,9 @@
         {{ form.csrf_token }}
 
         <div class="form-group">
-          <label class="form-label">Display Name</label>
+          <label class="form-label">Name</label>
           {{ form.name(class="form-control",
-      placeholder="Usually your product name, e.g. my-super-app.com") }}
+      placeholder="Your app/website name, e.g. my-super-app.com") }}
           {{ render_field_errors(form.name) }}
         </div>
 

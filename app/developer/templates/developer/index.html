@@ -3,21 +3,42 @@
 {% set active_page = "developer" %}
 
 {% block title %}
-  Developer
+  Sign in with SimpleLogin
 {% endblock %}
 
 {% block default_content %}
-  {% if not clients %}
-    <div class="alert alert-primary" role="alert">
-      <strong>If you have a website or a mobile application and want to add SimpleLogin to it, this page is for
-        you!</strong>
-      <p>Have a look at our extensive doc to have an idea 👉
-        <a href="https://docs.simplelogin.io" target="_blank" rel="noopener">Docs <i class="fe fe-external-link"></i>
+  <div class="row">
+    <div class="col">
+      <h1 class="h3">Sign in with SimpleLogin (SIWSL)
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
         </a>
-      </p>
-      <p>Create your first SimpleLogin App here 👇</p>
+      </h1>
+
+      <div class="alert alert-primary collapse {% if not clients %} show {% endif %}" id="howtouse" role="alert">
+        If you have a website or a mobile app and want to integrate SIWSL,
+        this page is for you.
+        <br><br>
+
+        If you are using a CMS or any system that supports plugin, you can install the OpenID Connect plugin and point
+        it to SimpleLogin OpenID Configuration endpoint 👇
+
+        <div class="input-group mt-2">
+          <input type="text" disabled value="{{ URL + "/.well-known/openid-configuration" }}" class="form-control">
+          <span class="input-group-append">
+            <button
+                data-clipboard-text="{{ URL + "/.well-known/openid-configuration" }}"
+                class="clipboard btn btn-primary" type="button">
+              <i class="fe fe-clipboard"></i>
+            </button>
+          </span>
+        </div>
+
+      </div>
+
     </div>
-  {% endif %}
+  </div>
 
   <div class="row">
     <div class="col">
