@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-single">
+    <div class="container">
+      <div class="row">
+        <div class="col mx-auto" style="max-width: 48rem">
+          <div class="text-center mb-6">
+            <a href="{{LANDING_PAGE_URL}}">
+              <img src="/static/siwsl.svg" style="background-color: transparent; height: 80px">
+            </a>
+          </div>
+
+          {% block single_content %}
+          {% endblock %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

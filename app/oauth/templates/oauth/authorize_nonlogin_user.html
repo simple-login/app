@@ -1,15 +1,10 @@
-{% extends "base.html" %}
+{% extends "sign_in_with_sl_base.html" %}
 
-{% block content %}
-  <div class="card mx-auto" style="max-width: 600px">
+{% block single_content %}
+  <div class="card" style="border-radius: 2%">
+
     <div class="card-body">
-      <div class="text-center mb-6">
-        <a href="{{LANDING_PAGE_URL}}">
-          <img src="/static/logo.svg" style="background-color: transparent; height: 24px">
-        </a>
-      </div>
-
-      <div>
+      <div class="mt-4">
         <b>{{ client.name }}</b> would like to have access to your following data:
       </div>
 
@@ -28,7 +23,7 @@
       </div>
 
       <div>
-        In order to accept the request, you need to sign in.
+        Sign in to accept sharing data with <b>{{ client.name }}</b>
       </div>
 
       <div class="mt-4">

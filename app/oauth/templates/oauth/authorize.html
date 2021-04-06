@@ -1,7 +1,7 @@
-{% extends 'default.html' %}
+{% extends "sign_in_with_sl_base.html" %}
 
 {% block title %}
-  Authorization
+  Authorize {{ client.name }} - Sign in with SimpleLogin
 {% endblock %}
 
 {% block head %}
@@ -31,9 +31,9 @@
   </style>
 {% endblock %}
 
-{% block default_content %}
+{% block single_content %}
 
-  <form class="card" method="post" style="max-width: 40rem; margin: auto">
+  <form class="card" method="post" style="max-width: 40rem; margin: auto; border-radius: 2%">
     {% if not client.approved %}
       <div class="alert alert-warning" style="border-bottom: 3px solid;">
         <b>{{ client.name }}</b> is in Dev Mode and isn't approved (yet) by SimpleLogin.
@@ -75,11 +75,8 @@
           </div>
         {% endif %}
 
-        <div class="text-center mt-4">
+        <div class="text-center" style="font-size: larger">
           <b>{{ client.name }}</b> will receive the following info
-          <div>
-            <small class="font-weight-lighter">You can customize the info sent to this app.</small>
-          </div>
         </div>
 
         <hr>
