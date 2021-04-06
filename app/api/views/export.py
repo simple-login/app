@@ -35,9 +35,7 @@ def export_data():
         data["custom_domains"].append(custom_domain.domain)
 
     for app in Client.filter_by(user_id=user.id):  # type: Client
-        data["apps"].append(
-            dict(name=app.name, home_url=app.home_url, published=app.published)
-        )
+        data["apps"].append(dict(name=app.name, home_url=app.home_url))
 
     return jsonify(data)
 

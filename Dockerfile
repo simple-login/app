@@ -7,13 +7,17 @@ RUN cd /code/static && npm install
 # Main image
 FROM python:3.7
 
-RUN pip3 install poetry==1.0.10
+# install poetry, "pip3 install poetry==1.1.5" doesn't work
+# poetry will be available at /root/.poetry/bin/poetry
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+
+WORKDIR /code
 
 # install dependencies
-WORKDIR /code
 COPY poetry.lock pyproject.toml ./
-RUN poetry config virtualenvs.create false \
-  && poetry install --no-root
+
+RUN /root/.poetry/bin/poetry config virtualenvs.create false \
+  && /root/.poetry/bin/poetry install --no-root
 
 # copy npm packages
 COPY --from=npm /code /code

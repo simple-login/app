@@ -359,15 +359,15 @@ def fake_data():
     client1 = Client.create_new(name="Demo", user_id=user.id)
     client1.oauth_client_id = "client-id"
     client1.oauth_client_secret = "client-secret"
-    client1.published = True
     db.session.commit()
 
-    RedirectUri.create(client_id=client1.id, uri="https://ab.com")
+    RedirectUri.create(
+        client_id=client1.id, uri="https://your-website.com/oauth-callback"
+    )
 
     client2 = Client.create_new(name="Demo 2", user_id=user.id)
     client2.oauth_client_id = "client-id2"
     client2.oauth_client_secret = "client-secret2"
-    client2.published = True
     db.session.commit()
 
     ClientUser.create(user_id=user.id, client_id=client1.id, name="Fake Name")

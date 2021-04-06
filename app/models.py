@@ -842,7 +842,6 @@ class Client(db.Model, ModelMixin):
 
     name = db.Column(db.String(128), nullable=False)
     home_url = db.Column(db.String(1024))
-    published = db.Column(db.Boolean, default=False, nullable=False)
 
     # user who created this client
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
@@ -853,6 +852,7 @@ class Client(db.Model, ModelMixin):
     description = db.Column(db.Text, nullable=True)
 
     icon = db.relationship(File)
+    user = db.relationship(User)
 
     def nb_user(self):
         return ClientUser.filter_by(client_id=self.id).count()
