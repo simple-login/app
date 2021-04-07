@@ -6,6 +6,19 @@ The version corresponds to SimpleLogin Docker `image tag`.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2021-04-06
+Support ARM arch
+Remove unused config like DEBUG, CLOUDWATCH, DKIM_PUBLIC_KEY_PATH, DKIM_DNS_VALUE
+Handle auto responder email
+Inform user when their alias has been transferred to another user
+Use alias transfer_token
+Improve logging
+Add /api/export/data, /api/export/aliases endpoints
+Take into account mailbox when importing/exporting aliases
+Multiple bug fixes
+Code refactoring
+Add ENABLE_SPAM_ASSASSIN config
+
 ## [3.3.0] - 2021-03-05
 Notify user when reply cannot be sent
 User can choose default domain for random alias
