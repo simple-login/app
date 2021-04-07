@@ -12,7 +12,7 @@ docker run --name sl -it --rm \
     -e RESET_DB=true \
     -e CONFIG=/code/example.env \
     -p 7777:7777 \
-    simplelogin/app:3.3.0 python server.py
+    simplelogin/app:3.4.0 python server.py
 ```
 
 Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account.

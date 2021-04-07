@@ -427,7 +427,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:3.3.0 flask db upgrade
+    simplelogin/app:3.4.0 flask db upgrade
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
@@ -442,7 +442,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
-    simplelogin/app:3.3.0 python init_app.py
+    simplelogin/app:3.4.0 python init_app.py
 ```
 
 Now, it's time to run the `webapp` container!
@@ -458,7 +458,7 @@ sudo docker run -d \
     -p 7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.3.0
+    simplelogin/app:3.4.0
 ```
 
 Next run the `email handler`
@@ -474,7 +474,7 @@ sudo docker run -d \
     -p 20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.3.0 python email_handler.py
+    simplelogin/app:3.4.0 python email_handler.py
 ```
 
 ### Nginx
