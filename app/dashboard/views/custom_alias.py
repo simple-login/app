@@ -99,7 +99,7 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
 def custom_alias():
     # check if user has not exceeded the alias quota
     if not current_user.can_create_new_alias():
-        LOG.warning("user %s tries to create custom alias", current_user)
+        LOG.d("%s can't create new alias", current_user)
         flash(
             "You have reached free plan limit, please upgrade to create new aliases",
             "warning",

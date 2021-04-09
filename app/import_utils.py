@@ -81,22 +81,21 @@ def import_from_csv(batch_import: BatchImport, user: User, lines):
         if len(mailboxes) == 0:
             mailboxes = [user.default_mailbox_id]
 
-        alias = Alias.create(
-            user_id=user.id,
-            email=full_alias,
-            note=note,
-            mailbox_id=mailboxes[0],
-            custom_domain_id=custom_domain.id,
-            batch_import_id=batch_import.id,
-        )
-        db.session.commit()
-        db.session.flush()
-        LOG.d("Create %s", alias)
-
-        for i in range(1, len(mailboxes)):
-            alias_mailbox = AliasMailbox.create(
-                alias_id=alias.id,
-                mailbox_id=mailboxes[i],
+        if user.can_create_new_alias():
+            alias = Alias.create(
+                user_id=user.id,
+                email=full_alias,
+                note=note,
+                mailbox_id=mailboxes[0],
+                custom_domain_id=custom_domain.id,
+                batch_import_id=batch_import.id,
+                commit=True,
             )
-            db.session.commit()
-            LOG.d("Create %s", alias_mailbox)
+            LOG.d("Create %s", alias)
+
+            for i in range(1, len(mailboxes)):
+                AliasMailbox.create(
+                    alias_id=alias.id, mailbox_id=mailboxes[i], commit=True
+                )
+                db.session.commit()
+                LOG.d("Add %s to mailbox %s", alias, mailboxes[i])

@@ -25,6 +25,7 @@ from app.config import (
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
     UNSUBSCRIBER,
+    MAX_ALIAS_PER_HOUR,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -504,10 +505,14 @@ class User(db.Model, ModelMixin, UserMixin):
         return "N/A"
 
     def can_create_new_alias(self) -> bool:
-        if self.is_premium():
+        """
+        Whether user can create a new alias. User can't create a new alias if
+        - has more than 15 aliases in the free plan, *even in the free trial*
+        """
+        if self._lifetime_or_active_subscription():
             return True
-
-        return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
+        else:
+            return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
 
     def set_password(self, password):
         salt = bcrypt.gensalt()
