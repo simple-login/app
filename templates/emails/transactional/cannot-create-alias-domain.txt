@@ -1,5 +1,8 @@
-An email has been sent to the alias {{alias}} that would be created automatically as you own the domain {{domain}}. However as your plan is no longer premium, this creation cannot happen.
+An email has been sent to the alias {{alias}} that would be created automatically as you own the domain {{domain}}.
+
+However you have reached the alias limit in your current plan, this creation cannot happen.
 
 Please upgrade to premium plan in order to use this feature.
+
 Best,
 SimpleLogin team.
