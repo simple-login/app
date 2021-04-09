@@ -25,7 +25,6 @@ from app.config import (
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
     UNSUBSCRIBER,
-    MAX_ALIAS_PER_HOUR,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
