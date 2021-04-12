@@ -61,7 +61,7 @@ def verify_incoming_request(form_data: dict) -> bool:
     return False
 
 
-def cancel_subscription(subscription_id: int) -> bool:
+def cancel_subscription(subscription_id: str) -> bool:
     r = requests.post(
         "https://vendors.paddle.com/api/2.0/subscription/users_cancel",
         data={
