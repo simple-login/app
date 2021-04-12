@@ -101,27 +101,6 @@ def send_mobile_newsletter():
                 sleep(1)
 
 
-def migrate_domain_trash():
-    """Move aliases from global trash to domain trash if applicable"""
-    for deleted_alias in DeletedAlias.query.all():
-        alias_domain = get_email_domain_part(deleted_alias.email)
-        if not SLDomain.get_by(domain=alias_domain):
-            custom_domain = CustomDomain.get_by(domain=alias_domain)
-            if custom_domain:
-                LOG.d("move %s to domain %s trash", deleted_alias, custom_domain)
-                db.session.add(
-                    DomainDeletedAlias(
-                        user_id=custom_domain.user_id,
-                        email=deleted_alias.email,
-                        domain_id=custom_domain.id,
-                        created_at=deleted_alias.created_at,
-                    )
-                )
-                DeletedAlias.delete(deleted_alias.id)
-
-    db.session.commit()
-
-
 def disable_mailbox(mailbox_id):
     """disable a mailbox and all of its aliases"""
     mailbox = Mailbox.get(mailbox_id)

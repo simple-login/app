@@ -25,6 +25,7 @@ from app.email_utils import (
     send_email_with_rate_control,
     normalize_reply_email,
     is_valid_email,
+    get_email_domain_part,
 )
 from app.extensions import db
 from app.log import LOG
@@ -46,6 +47,9 @@ from app.models import (
     TransactionalEmail,
     Bounce,
     Metric2,
+    SLDomain,
+    DeletedAlias,
+    DomainDeletedAlias,
 )
 from app.utils import sanitize_email
 from server import create_app
@@ -532,6 +536,48 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
     )
 
 
+def migrate_domain_trash():
+    """Move aliases from global trash to domain trash if applicable"""
+    for deleted_alias in DeletedAlias.query.all():
+        alias_domain = get_email_domain_part(deleted_alias.email)
+        if not SLDomain.get_by(domain=alias_domain):
+            custom_domain = CustomDomain.get_by(domain=alias_domain)
+            if custom_domain:
+                LOG.exception(
+                    "move %s to domain %s trash", deleted_alias, custom_domain
+                )
+                db.session.add(
+                    DomainDeletedAlias(
+                        user_id=custom_domain.user_id,
+                        email=deleted_alias.email,
+                        domain_id=custom_domain.id,
+                        created_at=deleted_alias.created_at,
+                    )
+                )
+                DeletedAlias.delete(deleted_alias.id)
+
+    db.session.commit()
+
+
+def set_custom_domain_for_alias():
+    """Go through all aliases and make sure custom_domain is correctly set"""
+    sl_domains = [sl_domain.domain for sl_domain in SLDomain.query.all()]
+    for alias in Alias.query.filter(Alias.custom_domain_id.is_(None)):
+        if (
+            not any(alias.email.endswith(f"@{sl_domain}") for sl_domain in sl_domains)
+            and not alias.custom_domain_id
+        ):
+            alias_domain = get_email_domain_part(alias.email)
+            custom_domain = CustomDomain.get_by(domain=alias_domain)
+            if custom_domain:
+                LOG.exception("set %s for %s", custom_domain, alias)
+                alias.custom_domain_id = custom_domain.id
+            else:  # phantom domain
+                LOG.d("phantom domain %s %s %s", alias.user, alias, alias.enabled)
+
+    db.session.commit()
+
+
 def sanity_check():
     """
     #TODO: investigate why DNS sometimes not working
@@ -642,6 +688,9 @@ def sanity_check():
     for domain in CustomDomain.query.all():
         if domain.name and "\n" in domain.name:
             LOG.exception("Domain %s name contain linebreak %s", domain, domain.name)
+
+    migrate_domain_trash()
+    set_custom_domain_for_alias()
 
     LOG.d("Finish sanity check")
 
