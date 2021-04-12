@@ -5,15 +5,11 @@ from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from app.config import DB_URI
-from app.email_utils import send_email, render, get_email_domain_part
-from app.log import LOG
+from app.email_utils import send_email, render
 from app.extensions import db
+from app.log import LOG
 from app.models import (
     User,
-    DeletedAlias,
-    SLDomain,
-    CustomDomain,
-    DomainDeletedAlias,
     Mailbox,
 )
 from job_runner import (
