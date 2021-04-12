@@ -142,10 +142,12 @@ class EmailLogAdmin(SLModelView):
 
 class AliasAdmin(SLModelView):
     column_searchable_list = ["id", "user.email", "email", "mailbox.email"]
+    column_filters = ["id", "user.email", "email", "mailbox.email"]
 
 
 class MailboxAdmin(SLModelView):
     column_searchable_list = ["id", "user.email", "email"]
+    column_filters = ["id", "user.email", "email"]
 
 
 class LifetimeCouponAdmin(SLModelView):
