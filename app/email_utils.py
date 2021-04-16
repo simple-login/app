@@ -12,6 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP, SMTPServerDisconnected
+from typing import Tuple, List
 
 import arrow
 import dkim
@@ -1009,6 +1010,7 @@ def should_disable(alias: Alias) -> bool:
             )
             return True
     else:
+        # alias level
         # if bounces at least 9 days in the last 10 days -> disable alias
         query = (
             db.session.query(
@@ -1030,6 +1032,32 @@ def should_disable(alias: Alias) -> bool:
                 "Bounces every day for at least 9 days in the last 10 days, disable alias %s",
                 alias,
             )
+            return True
+
+        # account level
+        query = (
+            db.session.query(
+                func.date(EmailLog.created_at).label("date"),
+                func.count(EmailLog.id).label("count"),
+            )
+            .filter(EmailLog.user_id == alias.user_id)
+            .filter(
+                EmailLog.created_at > arrow.now().shift(days=-10),
+                EmailLog.bounced.is_(True),
+                EmailLog.is_reply.is_(False),
+            )
+            .group_by("date")
+        )
+
+        # if an account has more than 10 bounces every day for at least 4 days in the last 10 days, disable alias
+        date_bounces: List[Tuple[arrow.Arrow, int]] = list(query)
+        if len(date_bounces) > 4:
+            if all([v > 10 for _, v in date_bounces]):
+                LOG.d(
+                    "+10 bounces for +4 days in the last 10 days on %s, disable alias %s",
+                    alias.user,
+                    alias,
+                )
             return True
 
     return False

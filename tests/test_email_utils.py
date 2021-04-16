@@ -648,6 +648,36 @@ def test_should_disable_bounces_every_day(flask_client):
     assert should_disable(alias)
 
 
+def test_should_disable_bounces_account(flask_client):
+    """if an account has more than 10 bounces every day for at least 5 days in the last 10 days, disable alias"""
+    user = login(flask_client)
+    alias = Alias.create_new_random(user)
+
+    db.session.commit()
+
+    # create a lot of bounces on alias
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+
+    for day in range(6):
+        for _ in range(10):
+            EmailLog.create(
+                user_id=user.id,
+                contact_id=contact.id,
+                commit=True,
+                bounced=True,
+                created_at=arrow.now().shift(days=-day),
+            )
+
+    alias2 = Alias.create_new_random(user)
+    assert should_disable(alias2)
+
+
 def test_should_disable_bounce_consecutive_days(flask_client):
     user = login(flask_client)
     alias = Alias.create_new_random(user)
