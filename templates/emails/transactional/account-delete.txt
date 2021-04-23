@@ -1,0 +1,6 @@
+Your SimpleLogin account has been deleted successfully.
+
+Thank you for having used SimpleLogin.
+
+Best,
+SimpleLogin team.

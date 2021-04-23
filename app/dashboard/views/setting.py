@@ -15,7 +15,7 @@ from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
 from app import s3, email_utils
-from app.config import URL, FIRST_ALIAS_DOMAIN
+from app.config import URL, FIRST_ALIAS_DOMAIN, JOB_DELETE_ACCOUNT
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
     email_can_be_used_as_mailbox,
@@ -37,6 +37,7 @@ from app.models import (
     SLDomain,
     CoinbaseSubscription,
     AppleSubscription,
+    Job,
 )
 from app.utils import random_string, sanitize_email
 
@@ -178,12 +179,21 @@ def setting():
             return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "delete-account":
-            LOG.warning("Delete account %s", current_user)
-            User.delete(current_user.id)
-            db.session.commit()
-            flash("Your account has been deleted", "success")
-            logout_user()
-            return redirect(url_for("auth.register"))
+            # Schedule delete account job
+            LOG.warning("schedule delete account job for %s", current_user)
+            Job.create(
+                name=JOB_DELETE_ACCOUNT,
+                payload={"user_id": current_user.id},
+                run_at=arrow.now(),
+                commit=True,
+            )
+
+            flash(
+                "Your account deletion has been scheduled. "
+                "You'll receive an email when the deletion is finished",
+                "success",
+            )
+            return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "change-alias-generator":
             scheme = int(request.form.get("alias-generator-scheme"))

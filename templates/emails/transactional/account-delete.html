@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    <h1>
+      Your SimpleLogin account has been deleted successfully.
+    </h1>
+  {% endcall %}
+
+  {% call text() %}
+    Thank you for having used SimpleLogin.
+  {% endcall %}
+
+  {{ render_text('Best, <br />SimpleLogin Team.') }}
+{% endblock %}

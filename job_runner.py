@@ -11,6 +11,7 @@ from app.config import (
     JOB_ONBOARDING_2,
     JOB_ONBOARDING_4,
     JOB_BATCH_IMPORT,
+    JOB_DELETE_ACCOUNT,
 )
 from app.email_utils import (
     send_email,
@@ -149,7 +150,25 @@ if __name__ == "__main__":
                     batch_import_id = job.payload.get("batch_import_id")
                     batch_import = BatchImport.get(batch_import_id)
                     handle_batch_import(batch_import)
+                elif job.name == JOB_DELETE_ACCOUNT:
+                    user_id = job.payload.get("user_id")
+                    user = User.get(user_id)
 
+                    if not user:
+                        LOG.exception("No user found for %s", user_id)
+                        continue
+
+                    user_email = user.email
+                    LOG.warning("Delete user %s", user)
+                    User.delete(user.id)
+                    db.session.commit()
+
+                    send_email(
+                        user_email,
+                        "Your SimpleLogin account has been deleted",
+                        render("transactional/account-delete.txt"),
+                        render("transactional/account-delete.html"),
+                    )
                 else:
                     LOG.exception("Unknown job name %s", job.name)
 
