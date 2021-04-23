@@ -90,15 +90,21 @@
         (Mastercard, Visa, American Express, etc) and PayPal.
       </div>
 
-      <button class="btn btn-success" onclick="upgrade({{ PADDLE_MONTHLY_PRODUCT_ID }})">
-        Monthly <br>
-        $3/month
+      <button class="btn btn-primary" onclick="upgrade({{ PADDLE_YEARLY_PRODUCT_ID }})">
+        Yearly billing
+        <span class="badge badge-success">Save $18</span>
+        <br>
+        <span style="font-size: 18px">
+          $30/year
+        </span>
       </button>
 
-      <button class="btn btn-primary" onclick="upgrade({{ PADDLE_YEARLY_PRODUCT_ID }})">
-        Yearly <br>
-        $30/year
-      </button>
+        <button class="btn btn-secondary" onclick="upgrade({{ PADDLE_MONTHLY_PRODUCT_ID }})">
+          Monthly billing <br>
+          <b>
+            $4/month
+          </b>
+        </button>
 
       <hr>
       <i class="fa fa-bitcoin"></i>
@@ -108,9 +114,11 @@
       </a> <br>
       Currently Bitcoin, Bitcoin Cash, Dai, Ethereum, Litecoin and USD Coin are supported. <br>
 
-      <a class="btn btn-primary" href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+      <a class="btn btn-outline-primary" href="{{ url_for('dashboard.coinbase_checkout_route') }}"
          target="_blank">
-        $30/year - Crypto <i class="fe fe-external-link"></i>
+        Yearly billing - Crypto <br>
+        $30/year
+        <i class="fe fe-external-link"></i>
       </a>
 
       <hr>

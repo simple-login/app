@@ -1523,7 +1523,7 @@ class Subscription(db.Model, ModelMixin):
 
     def plan_name(self):
         if self.plan == PlanEnum.monthly:
-            return "Monthly ($3/month)"
+            return "Monthly ($4/month)"
         else:
             return "Yearly ($30/year)"
 
