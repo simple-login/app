@@ -8,7 +8,7 @@ from flask import (
     url_for,
     flash,
 )
-from flask_login import login_required, current_user, logout_user
+from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from wtforms import StringField, validators
