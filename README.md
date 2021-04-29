@@ -280,7 +280,7 @@ Choose "Internet Site" in Postfix installation window then keep using the propos
 ![](./docs/postfix-installation.png)
 ![](./docs/postfix-installation2.png)
 
-Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain. If your docker network uses a different subnet, make sure to change `240.0.0.0/24` to your subnet in the `mynetworks` variable.
+Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain. If your Docker network uses a different subnet, make sure to change `240.0.0.0/24` to your subnet in the `mynetworks` variable.
 
 ```
 # POSTFIX config file, adapted for SimpleLogin
@@ -396,7 +396,7 @@ To run SimpleLogin, you need a config file at `~/simplelogin.env`. Below is an e
 All possible parameters can be found in [config example](example.env). Some are optional and are commented out by default. 
 Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
-If your Docker network has a different subnet than the one used above, you need to set `POSTFIX_SERVER` to the gateway of your Docker network. 
+If you used a different subnet for your Docker network, you need to set `POSTFIX_SERVER` to the gateway IP address of your Docker network. 
 Otherwise SimpleLogin will not be able to send or recive emails.
 
 ```.env
