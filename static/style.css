@@ -91,3 +91,16 @@ em {
 .dns-record {
     border: 1px dotted #E3156A;
 }
+
+/**
+ * Form Validation Errors
+ */
+.error {
+    border-color: red;
+}
+
+.error-message {
+    color: red;
+    font-style: italic;
+    margin-bottom: 1em;
+}

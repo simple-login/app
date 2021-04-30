@@ -104,6 +104,9 @@
 
 {% block script %}
   <script>
+    // init bouncer
+    new Bouncer('form');
+
     $('.mailbox-select').multipleSelect();
     
     // Ctrl-enter submit the form

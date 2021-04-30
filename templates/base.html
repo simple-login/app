@@ -18,12 +18,13 @@
   <meta name="referrer" content="no-referrer">
 
   <!-- Bing -->
-  <meta name="msvalidate.01" content="2A313A69CBFD1A378C3B91734DC221A8" />
+  <meta name="msvalidate.01" content="2A313A69CBFD1A378C3B91734DC221A8"/>
 
   <!-- Yandex -->
-  <meta name="yandex-verification" content="c9e5d4d68bc983a1" />
+  <meta name="yandex-verification" content="c9e5d4d68bc983a1"/>
 
-  <meta name="description" content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, spams.">
+  <meta name="description"
+        content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, spams.">
 
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
   <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
@@ -76,10 +77,13 @@
   <script
       src="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.js') }}"></script>
 
+  <!-- bouncer library -->
+  <script src="{{ url_for('static', filename='node_modules/formbouncerjs/dist/bouncer.js') }}"></script>
+
 
   {% if PLAUSIBLE_HOST and PLAUSIBLE_DOMAIN %}
-  <!-- Plausible Analytics library -->
-  <script async defer data-domain=”{{PLAUSIBLE_DOMAIN}}” src=”{{PLAUSIBLE_HOST}}/js/plausible.js”></script>
+    <!-- Plausible Analytics library -->
+    <script async defer data-domain=”{{ PLAUSIBLE_DOMAIN }}” src=”{{ PLAUSIBLE_HOST }}/js/plausible.js”></script>
   {% endif %}
 
   <link rel="stylesheet" href="{{ url_for('static', filename='darkmode.css') }}?v={{ VERSION }}">
