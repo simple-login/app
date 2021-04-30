@@ -19,6 +19,7 @@
     "@sentry/browser": "^5.30.0",
     "bootbox": "^5.5.2",
     "font-awesome": "^4.7.0",
+    "formbouncerjs": "^1.4.6",
     "intro.js": "^2.9.3",
     "multiple-select": "^1.5.2",
     "qrious": "^4.0.2",
