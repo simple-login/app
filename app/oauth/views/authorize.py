@@ -157,7 +157,7 @@ def authorize():
 
                 if not check_alias_prefix(alias_prefix):
                     flash(
-                        "Only lowercase letters, numbers, dashes (-) and underscores (_) "
+                        "Only lowercase letters, numbers, dashes (-), dots (.) and underscores (_) "
                         "are currently supported for alias prefix. Cannot be more than 40 letters",
                         "error",
                     )

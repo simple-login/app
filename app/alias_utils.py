@@ -221,8 +221,8 @@ def nb_email_log_for_mailbox(mailbox: Mailbox):
     )
 
 
-# Only lowercase letters, numbers, dashes (-) and underscores (_) are currently supported
-_ALIAS_PREFIX_PATTERN = r"[0-9a-z-_]{1,}"
+# Only lowercase letters, numbers, dots (.), dashes (-) and underscores (_) are currently supported
+_ALIAS_PREFIX_PATTERN = r"[0-9a-z-_.]{1,}"
 
 
 def check_alias_prefix(alias_prefix) -> bool:
