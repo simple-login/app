@@ -222,19 +222,8 @@ Later, we will setup Postfix to authorize this network.
 
 ```bash
 sudo docker network create -d bridge \
-    --subnet=240.0.0.0/24 \
-    --gateway=240.0.0.1 \
-    sl-network
-```
-#### Custom Docker networks
-
-You may want to use a different subnet. Some spam filters, like Apache SpamAssassin, might flag emails that were send from an IP within the 240.0.0.0/8 range.
-Make sure to choose a subnet that isn't used already. For example, we could use `10.0.30.0/24` as our network.
-
-```bash
-sudo docker network create -d bridge \
-    --subnet=10.0.30.0/24 \
-    --gateway=10.0.30.1 \
+    --subnet=10.0.0.0/24 \
+    --gateway=10.0.0.1 \
     sl-network
 ```
 
@@ -280,7 +269,7 @@ Choose "Internet Site" in Postfix installation window then keep using the propos
 ![](./docs/postfix-installation.png)
 ![](./docs/postfix-installation2.png)
 
-Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain. If your Docker network uses a different subnet, make sure to change `240.0.0.0/24` to your subnet in the `mynetworks` variable.
+Replace `/etc/postfix/main.cf` with the following content. Make sure to replace `mydomain.com` by your domain.
 
 ```
 # POSTFIX config file, adapted for SimpleLogin
@@ -311,7 +300,7 @@ smtpd_tls_security_level = may
 # information on enabling SSL in the smtp client.
 
 alias_maps = hash:/etc/aliases
-mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 240.0.0.0/24
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 10.0.0.0/24
 
 # Set your domain here
 mydestination =
@@ -396,9 +385,6 @@ To run SimpleLogin, you need a config file at `~/simplelogin.env`. Below is an e
 All possible parameters can be found in [config example](example.env). Some are optional and are commented out by default. 
 Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
-If you used a different subnet for your Docker network, you need to set `POSTFIX_SERVER` to the gateway IP address of your Docker network. 
-Otherwise SimpleLogin will not be able to send or recive emails.
-
 ```.env
 # WebApp URL
 URL=http://app.mydomain.com
@@ -415,6 +401,9 @@ EMAIL_SERVERS_WITH_PRIORITY=[(10, "app.mydomain.com.")]
 # By default, new aliases must end with ".{random_word}". This is to avoid a person taking all "nice" aliases.
 # this option doesn't make sense in self-hosted. Set this variable to disable this option.
 DISABLE_ALIAS_SUFFIX=1
+
+# By default, SimpleLogin uses 240.0.0.1 as the Postfix server. Therefore, the IP of the sl-network gateway must be set as the Postfix server.
+POSTFIX_SERVER=10.0.0.1
 
 # the DKIM private key used to compute DKIM-Signature
 DKIM_PRIVATE_KEY_PATH=/dkim.key
