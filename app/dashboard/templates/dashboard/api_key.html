@@ -12,26 +12,14 @@
 {% block default_content %}
   <div class="row">
     <div class="col">
-      <h1 class="h3"> API Key
-        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
-           aria-expanded="false" aria-controls="collapseExample">
-          What is this? <i class="fe fe-chevrons-down"></i>
-        </a>
-      </h1>
+      <h1 class="h3"> API Keys </h1>
+      <div class="small-text">
+        API keys are used by the SimpleLogin browser extensions or mobile apps.
+      </div>
 
-      <div class="alert alert-primary collapse" id="howtouse" role="alert">
-        An API key is used by the SimpleLogin browser extensions.
-        <br><br>You can install the official SimpleLogin browser extensions through the following links:
-        <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn"
-           target="_blank" rel="noopener">Chrome<i class="fe fe-external-link"></i></a>,
-        <a href="https://addons.mozilla.org/firefox/addon/simplelogin/"
-           target="_blank" rel="noopener">Firefox<i class="fe fe-external-link"></i></a> &
-        <a href="https://apps.apple.com/app/id1494051017"
-            target="_blank" rel="noopener">Safari<i class="fe fe-external-link"></i></a>
-        <br>
-        <span class="text-danger">
-          ⚠️API Keys should be kept secret and treated like passwords, they can be used to gain access to your account.
-        </span>
+
+      <div class="alert alert-danger">
+        ️API Keys should be kept secret and treated like passwords, they can be used to gain access to your account.
       </div>
 
       <div class="row">
@@ -96,7 +84,7 @@
         {{ render_field_errors(new_api_key_form.name) }}
         <div class="small-text">Name of the api key, e.g. where it will be used.</div>
 
-        <button class="btn btn-lg btn-success mt-2">Create</button>
+        <button class="btn btn-success mt-2">Create</button>
       </form>
 
 

@@ -63,4 +63,14 @@
       Settings
     </a>
   </li>
+
+  <li class="nav-item">
+    <a href="{{ url_for('dashboard.api_key') }}"
+       class="nav-link {{ 'active' if active_page == 'api_key' }}">
+      <i class="fa fa-key"></i>
+      API Keys
+    </a>
+  </li>
+
+
 </ul>
