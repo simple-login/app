@@ -1583,25 +1583,36 @@ def handle(envelope: Envelope) -> str:
     # each element is a couple of whether the delivery is successful and the smtp status
     res: [(bool, str)] = []
 
-    for rcpt_to in rcpt_tos:
+    nb_rcpt_tos = len(rcpt_tos)
+    for rcpt_index, rcpt_to in enumerate(rcpt_tos):
         if rcpt_to == NOREPLY:
             LOG.e("email sent to noreply address from %s", mail_from)
             return "550 SL E25 Email sent to noreply address"
 
+        # create a copy of msg for each recipient except the last one
+        # as copy() is a slow function
+        if rcpt_index < nb_rcpt_tos - 1:
+            LOG.d("copy message for rcpt %s", rcpt_to)
+            copy_msg = copy(msg)
+        else:
+            copy_msg = msg
+
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if is_reply_email(rcpt_to):
-            LOG.d("Reply phase %s(%s) -> %s", mail_from, msg["From"], rcpt_to)
-            is_delivered, smtp_status = handle_reply(envelope, msg, rcpt_to)
+            LOG.d("Reply phase %s(%s) -> %s", mail_from, copy_msg["From"], rcpt_to)
+            is_delivered, smtp_status = handle_reply(envelope, copy_msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
             LOG.d(
                 "Forward phase %s(%s) -> %s",
                 mail_from,
-                msg["From"],
+                copy_msg["From"],
                 rcpt_to,
             )
-            for is_delivered, smtp_status in handle_forward(envelope, msg, rcpt_to):
+            for is_delivered, smtp_status in handle_forward(
+                envelope, copy_msg, rcpt_to
+            ):
                 res.append((is_delivered, smtp_status))
 
     for (is_success, smtp_status) in res:
