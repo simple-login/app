@@ -1639,15 +1639,16 @@ class MailHandler:
 
     def _handle(self, envelope: Envelope):
         start = time.time()
+
+        # generate a different message_id to keep track of an email lifecycle
+        message_id = str(uuid.uuid4())
+        set_message_id(message_id)
+
         LOG.i(
             "===>> New message, mail from %s, rctp tos %s ",
             envelope.mail_from,
             envelope.rcpt_tos,
         )
-
-        # generate a different message_id to keep track of an email lifecycle
-        message_id = str(uuid.uuid4())
-        set_message_id(message_id)
 
         app = new_app()
         with app.app_context():
