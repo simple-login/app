@@ -1,0 +1,7 @@
+{
+    # REMOVE this in production
+    acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+sl.doanguyen.com {
+    reverse_proxy webapp:7777
+}
