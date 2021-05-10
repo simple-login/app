@@ -102,11 +102,7 @@
       </div>
     {% endfor %}
 
-    {% if referrals|length > 0 %}
-      <hr>
-    {% endif %}
-
-    <form method="post" class="mt-6">
+    <form method="post" class="mt-6 card p-4 shadow">
       <input type="hidden" name="form-name" value="create">
 
       <div class="form-group">
@@ -122,11 +118,40 @@
 
       <div class="form-group">
         <input name="name" class="form-control"
-             placeholder="Referral name, something to help you remember why you create it :)">
+               placeholder="Referral name, something to help you remember why you create it :)">
       </div>
 
       <button class="btn btn-success mb-5">Create</button>
     </form>
+
+    {% if payouts|length > 0 %}
+      <div class="mt-6 card p-4 shadow">
+        <h3 class="h4">Payouts</h3>
+        <table class="table">
+          <thead>
+          <tr>
+            <th>Sent at</th>
+            <th>Amount</th>
+            <th>Payment Method</th>
+            <th>Number of upgraded accounts</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          {% for payout in payouts %}
+            <tr>
+              <td>{{ payout.created_at | dt }}</td>
+              <td>${{ payout.amount }}</td>
+              <td>{{ payout.payment_method }}</td>
+              <td>{{ payout.number_upgraded_account }}</td>
+
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
   </div>
 {% endblock %}
 

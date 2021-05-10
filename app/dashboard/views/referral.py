@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
-from app.models import Referral
+from app.models import Referral, Payout
 
 _REFERRAL_PATTERN = r"[0-9a-z-_]{3,}"
 
@@ -69,5 +69,7 @@ def referral_route():
 
     if highlight_index:
         referrals.insert(0, referrals.pop(highlight_index))
+
+    payouts = Payout.query.filter_by(user_id=current_user.id).all()
 
     return render_template("dashboard/referral.html", **locals())
