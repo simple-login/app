@@ -35,6 +35,8 @@ from app.admin_model import (
     LifetimeCouponAdmin,
     ManualSubscriptionAdmin,
     ClientAdmin,
+    ReferralAdmin,
+    PayoutAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -843,6 +845,8 @@ def init_admin(app):
     admin.add_view(LifetimeCouponAdmin(LifetimeCoupon, db.session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, db.session))
     admin.add_view(ClientAdmin(Client, db.session))
+    admin.add_view(ReferralAdmin(Referral, db.session))
+    admin.add_view(PayoutAdmin(Payout, db.session))
 
 
 def setup_do_not_track(app):

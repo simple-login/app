@@ -176,3 +176,22 @@ class ClientAdmin(SLModelView):
     column_searchable_list = ["name", "description", "user.email"]
     column_exclude_list = ["oauth_client_secret", "home_url"]
     can_edit = True
+
+
+class ReferralAdmin(SLModelView):
+    column_searchable_list = ["id", "user.email", "code", "name"]
+    column_filters = ["id", "user.email", "code", "name"]
+
+    def scaffold_list_columns(self):
+        ret = super().scaffold_list_columns()
+        ret.insert(0, "nb_user")
+        ret.insert(0, "nb_paid_user")
+        return ret
+
+
+class PayoutAdmin(SLModelView):
+    column_searchable_list = ["id", "user.email"]
+    column_filters = ["id", "user.email"]
+    can_edit = True
+    can_create = True
+    can_delete = True

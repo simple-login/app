@@ -1954,9 +1954,11 @@ class Referral(db.Model, ModelMixin):
 
     user = db.relationship(User, foreign_keys=[user_id])
 
+    @property
     def nb_user(self) -> int:
         return User.filter_by(referral_id=self.id, activated=True).count()
 
+    @property
     def nb_paid_user(self) -> int:
         res = 0
         for user in User.filter_by(referral_id=self.id, activated=True):
@@ -2240,3 +2242,5 @@ class Payout(db.Model, ModelMixin):
     number_upgraded_account = db.Column(db.Integer, nullable=False)
 
     comment = db.Column(db.Text)
+
+    user = db.relationship(User)

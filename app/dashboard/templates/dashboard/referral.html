@@ -46,8 +46,8 @@
           </div>
         </form>
 
-        {% set nb_user = referral.nb_user() %}
-        {% set nb_paid_user = referral.nb_paid_user() %}
+        {% set nb_user = referral.nb_user %}
+        {% set nb_paid_user = referral.nb_paid_user %}
         {% if nb_user > 0 %}
           <div class="mb-3">
             <b class="h1">{{ nb_user }}</b>
