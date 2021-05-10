@@ -2223,3 +2223,20 @@ class TransactionalEmail(db.Model, ModelMixin):
     """
 
     email = db.Column(db.String(256), nullable=False, unique=True)
+
+
+class Payout(db.Model, ModelMixin):
+    """Referral payouts"""
+
+    user_id = db.Column(db.ForeignKey("users.id", ondelete="cascade"), nullable=False)
+
+    # in USD
+    amount = db.Column(db.Float, nullable=False)
+
+    # BTC, PayPal, etc
+    payment_method = db.Column(db.String(256), nullable=False)
+
+    # number of upgraded user included in this payout
+    number_upgraded_account = db.Column(db.Integer, nullable=False)
+
+    comment = db.Column(db.Text)
