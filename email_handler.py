@@ -130,6 +130,7 @@ _DIRECTION = "X-SimpleLogin-Type"
 
 _EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
 _ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
+_ENVELOPE_TO = "X-SimpleLogin-Envelope-To"
 
 _MIME_HEADERS = [
     "MIME-Version",
@@ -690,6 +691,8 @@ def forward_email_to_mailbox(
 
     msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
     msg[_ENVELOPE_FROM] = envelope.mail_from
+    # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
+    msg[_ENVELOPE_TO] = alias.email
     message_id = make_msgid(str(email_log.id), EMAIL_DOMAIN)
     LOG.d("message id %s", message_id)
     msg["Message-ID"] = message_id
