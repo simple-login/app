@@ -23,6 +23,7 @@ from app.models import (
     User,
     AliasMailbox,
     DomainDeletedAlias,
+    AliasSuffixEnum,
 )
 from app.utils import random_word, word_exist, random_string
 
@@ -259,7 +260,7 @@ def get_suffix(user: User) -> str:
     Returns:
         str: the random suffix generated
     """
-    if user.random_alias_suffix:
+    if user.random_alias_suffix == AliasSuffixEnum.rnd_string.value:
         return random_string(ALIAS_RAND_SUFFIX_LENGTH, include_digits = True)
     return random_word()
 
