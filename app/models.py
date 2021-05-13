@@ -25,6 +25,7 @@ from app.config import (
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
     UNSUBSCRIBER,
+    HIBP_SCAN_INTERVAL_DAYS
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -160,6 +161,12 @@ class SenderFormatEnum(EnumE):
 class AliasGeneratorEnum(EnumE):
     word = 1  # aliases are generated based on random words
     uuid = 2  # aliases are generated based on uuid
+
+
+class Hibp(db.Model, ModelMixin):
+    __tablename__ = "hibp"
+    id = db.Column(db.String(), primary_key=True)
+    breached_aliases = db.relationship("Alias", secondary="alias_hibp")
 
 
 class Fido(db.Model, ModelMixin):
@@ -1051,6 +1058,10 @@ class Alias(db.Model, ModelMixin):
     # used to transfer an alias to another user
     transfer_token = db.Column(db.String(64), default=None, unique=True, nullable=True)
 
+    # have I been pwned
+    hibp_last_check = db.Column(ArrowType, default=None)
+    hibp_breaches = db.relationship("Hibp", secondary="alias_hibp")
+
     user = db.relationship(User, foreign_keys=[user_id])
     mailbox = db.relationship("Mailbox", lazy="joined")
 
@@ -1076,6 +1087,9 @@ class Alias(db.Model, ModelMixin):
         if self.mailbox_support_pgp() and not self.disable_pgp:
             return True
         return False
+
+    def needs_hibp_scan(self):
+        return self.hibp_last_check is None or (self.hibp_last_check < arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS))
 
     @classmethod
     def create(cls, **kw):
@@ -2002,6 +2016,20 @@ class AliasMailbox(db.Model, ModelMixin):
     )
 
     alias = db.relationship(Alias)
+
+
+class AliasHibp(db.Model, ModelMixin):
+    __tablename__ = "alias_hibp"
+
+    __table_args__ = (
+        db.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),
+    )
+
+    alias_id = db.Column(db.Integer(), db.ForeignKey("alias.id"))
+    hibp_id = db.Column(db.String(), db.ForeignKey("hibp.id"))
+
+    alias = db.relationship("Alias", backref=db.backref("alias_hibp", cascade="all, delete-orphan"))
+    hibp = db.relationship("Hibp", backref=db.backref("alias_hibp", cascade="all, delete-orphan"))
 
 
 class DirectoryMailbox(db.Model, ModelMixin):

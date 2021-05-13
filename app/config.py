@@ -374,3 +374,6 @@ except Exception:
 ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"
 
 ENABLE_SPAM_ASSASSIN = "ENABLE_SPAM_ASSASSIN" in os.environ
+
+HIBP_SCAN_INTERVAL_DAYS = os.environ.get("HIBP_SCAN_INTERVAL_DAYS") or 7
+HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []

@@ -1,8 +1,10 @@
 import argparse
+import urllib.parse
 from time import sleep
 from typing import List, Tuple
 
 import arrow
+import requests
 from sqlalchemy import func, desc
 
 from app import s3
@@ -15,6 +17,7 @@ from app.config import (
     EMAIL_SERVERS_WITH_PRIORITY,
     URL,
     AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
+    HIBP_API_KEYS
 )
 from app.dns_utils import get_mx_domains
 from app.email_utils import (
@@ -50,6 +53,7 @@ from app.models import (
     SLDomain,
     DeletedAlias,
     DomainDeletedAlias,
+    Hibp
 )
 from app.utils import sanitize_email
 from server import create_app
@@ -757,6 +761,63 @@ def delete_old_monitoring():
     LOG.d("delete monitoring records older than %s, nb row %s", max_time, nb_row)
 
 
+def check_hibp():
+    """
+    Check all aliases on the HIBP (Have I Been Pwned) API
+    """
+    LOG.d("Checking HIBP API for aliases in breaches")
+
+    if len(HIBP_API_KEYS) == 0:
+        LOG.exception("No HIBP API keys")
+        return
+
+    api_key_index = 0
+
+    LOG.d("Updating list of known breaches")
+    r = requests.get("https://haveibeenpwned.com/api/v3/breaches")
+    for entry in r.json():
+        Hibp.get_or_create(id=entry['Name'])
+
+    db.session.commit()
+
+    for alias in Alias.query.order_by(Alias.hibp_last_check.asc().nullsfirst()).all():
+        LOG.d("Checking %s on HIBP", alias)
+        if not alias.needs_hibp_scan():
+            LOG.d("Skipping %s, HIBP-checked too recently...", alias)
+            continue
+
+        # Only one request per API key per 1.5 seconds
+        if (api_key_index >= len(HIBP_API_KEYS)):
+            api_key_index = 0
+            sleep(1.5)
+
+        request_headers = {
+            "user-agent": "SimpleLogin",
+            "hibp-api-key": HIBP_API_KEYS[api_key_index]
+        }
+        r = requests.get(f"https://haveibeenpwned.com/api/v3/breachedaccount/{urllib.parse.quote(alias.email)}", headers=request_headers)
+
+        api_key_index += 1
+
+        if r.status_code == 200:
+            # Breaches found
+            alias.hibp_breaches = [Hibp.get_by(id=entry['Name']) for entry in r.json()]
+        elif r.status_code == 404:
+            # No breaches found
+            alias.hibp_breaches = []
+        else:
+            LOG.error("An error occured while checking alias %s: %s - %s", alias, r.status_code, r.text)
+            continue
+
+        alias.hibp_last_check = arrow.utcnow()
+
+        db.session.commit()
+
+        LOG.d("Updated breaches info for %s", alias)
+
+    LOG.d("Done checking HIBP API for aliases in breaches")
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -775,6 +836,7 @@ if __name__ == "__main__":
             "sanity_check",
             "delete_old_monitoring",
             "check_custom_domain",
+            "check_hibp"
         ],
     )
     args = parser.parse_args()
@@ -809,3 +871,6 @@ if __name__ == "__main__":
         elif args.job == "check_custom_domain":
             LOG.d("Check custom domain")
             check_custom_domain()
+        elif args.job == "check_hibp":
+            LOG.d("Check HIBP")
+            check_hibp()

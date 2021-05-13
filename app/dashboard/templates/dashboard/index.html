@@ -202,6 +202,13 @@
                 <span class="fa fa-heart" data-toggle="tooltip"
                       title="This alias added to favorite"></span>
               {% endif %}
+
+              {% if alias.hibp_breaches | length > 0 %}
+                <a href="https://haveibeenpwned.com/">
+                  <span class="fa fa-warning text-danger" data-toggle="tooltip"
+                        title="This alias was found in {{ alias.hibp_breaches | length }} data breaches. Check haveibeenpwned.com for more information."></span>
+                </a>
+              {% endif %}
             </div>
             <div class="col text-right">
               <label class="custom-switch cursor"
