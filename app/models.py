@@ -287,6 +287,11 @@ class User(db.Model, ModelMixin, UserMixin):
         db.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # whether to use random string or random word as suffix
+    random_alias_suffix = db.Column(
+        db.Boolean, default=True, nullable=False, server_default="1"
+    )
+
     @classmethod
     def create(cls, email, name="", password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
