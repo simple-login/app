@@ -295,14 +295,6 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
             LOG.exception("User %s submits a wrong alias suffix %s", user, alias_suffix)
             return False
 
-        random_word_part = alias_domain_prefix[1:]
-        if not word_exist(random_word_part):
-            LOG.exception(
-                "alias suffix %s needs to start with a random word, user %s",
-                alias_suffix,
-                user,
-            )
-            return False
     else:
         if alias_domain not in user_custom_domains:
             if not DISABLE_ALIAS_SUFFIX:
