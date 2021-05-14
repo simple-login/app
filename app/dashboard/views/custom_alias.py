@@ -25,7 +25,7 @@ from app.models import (
     DomainDeletedAlias,
     AliasSuffixEnum,
 )
-from app.utils import random_word, word_exist, random_string
+from app.utils import random_word, random_string
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 
@@ -251,6 +251,7 @@ def custom_alias():
         mailboxes=mailboxes,
     )
 
+
 def get_suffix(user: User) -> str:
     """Get random suffix for an alias based on user's preference.
 
@@ -261,8 +262,9 @@ def get_suffix(user: User) -> str:
         str: the random suffix generated
     """
     if user.random_alias_suffix == AliasSuffixEnum.rnd_string.value:
-        return random_string(ALIAS_RAND_SUFFIX_LENGTH, include_digits = True)
+        return random_string(ALIAS_RAND_SUFFIX_LENGTH, include_digits=True)
     return random_word()
+
 
 def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
     """verify if user could create an alias with the given prefix and suffix"""

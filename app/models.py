@@ -161,9 +161,11 @@ class AliasGeneratorEnum(EnumE):
     word = 1  # aliases are generated based on random words
     uuid = 2  # aliases are generated based on uuid
 
+
 class AliasSuffixEnum(EnumE):
     word = 0  # Random word from dictionary file
     rnd_string = 1  # Completely random string
+
 
 class Fido(db.Model, ModelMixin):
     __tablename__ = "fido"
@@ -294,7 +296,8 @@ class User(db.Model, ModelMixin, UserMixin):
     # Random word from dictionary file -> 0
     # Completely random string -> 1
     random_alias_suffix = db.Column(
-        db.Integer, nullable=False,
+        db.Integer,
+        nullable=False,
         default=AliasSuffixEnum.rnd_string.value,
         server_default=str(AliasSuffixEnum.rnd_string.value),
     )

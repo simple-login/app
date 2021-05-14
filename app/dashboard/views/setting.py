@@ -15,7 +15,12 @@ from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
 from app import s3, email_utils
-from app.config import URL, FIRST_ALIAS_DOMAIN, JOB_DELETE_ACCOUNT, ALIAS_RAND_SUFFIX_LENGTH
+from app.config import (
+    URL,
+    FIRST_ALIAS_DOMAIN,
+    JOB_DELETE_ACCOUNT,
+    ALIAS_RAND_SUFFIX_LENGTH,
+)
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
     email_can_be_used_as_mailbox,

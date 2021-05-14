@@ -32,7 +32,7 @@ def random_string(length=10, include_digits=False):
     letters = string.ascii_lowercase
     if include_digits:
         letters += string.digits
-        
+
     return "".join(random.choice(letters) for _ in range(length))
 
 
