@@ -10,7 +10,7 @@ from app.config import (
     DISABLE_ALIAS_SUFFIX,
     CUSTOM_ALIAS_SECRET,
     ALIAS_LIMIT,
-    ALIAS_RAND_SUFFIX_LENGTH,
+    ALIAS_RANDOM_SUFFIX_LENGTH,
 )
 from app.dashboard.base import dashboard_bp
 from app.extensions import db, limiter
@@ -261,8 +261,8 @@ def get_suffix(user: User) -> str:
     Returns:
         str: the random suffix generated
     """
-    if user.random_alias_suffix == AliasSuffixEnum.rnd_string.value:
-        return random_string(ALIAS_RAND_SUFFIX_LENGTH, include_digits=True)
+    if user.random_alias_suffix == AliasSuffixEnum.random_string.value:
+        return random_string(ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
     return random_word()
 
 

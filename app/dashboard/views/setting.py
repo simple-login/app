@@ -19,7 +19,7 @@ from app.config import (
     URL,
     FIRST_ALIAS_DOMAIN,
     JOB_DELETE_ACCOUNT,
-    ALIAS_RAND_SUFFIX_LENGTH,
+    ALIAS_RANDOM_SUFFIX_LENGTH,
 )
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
@@ -306,7 +306,7 @@ def setting():
         apple_sub=apple_sub,
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
-        ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RAND_SUFFIX_LENGTH,
+        ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
     )
 
 

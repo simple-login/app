@@ -164,7 +164,7 @@ class AliasGeneratorEnum(EnumE):
 
 class AliasSuffixEnum(EnumE):
     word = 0  # Random word from dictionary file
-    rnd_string = 1  # Completely random string
+    random_string = 1  # Completely random string
 
 
 class Fido(db.Model, ModelMixin):
@@ -298,8 +298,8 @@ class User(db.Model, ModelMixin, UserMixin):
     random_alias_suffix = db.Column(
         db.Integer,
         nullable=False,
-        default=AliasSuffixEnum.rnd_string.value,
-        server_default=str(AliasSuffixEnum.rnd_string.value),
+        default=AliasSuffixEnum.random_string.value,
+        server_default=str(AliasSuffixEnum.random_string.value),
     )
 
     @classmethod
