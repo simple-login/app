@@ -17,7 +17,7 @@ from app.config import (
     EMAIL_SERVERS_WITH_PRIORITY,
     URL,
     AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
-    HIBP_API_KEYS
+    HIBP_API_KEYS,
 )
 from app.dns_utils import get_mx_domains
 from app.email_utils import (
@@ -53,7 +53,7 @@ from app.models import (
     SLDomain,
     DeletedAlias,
     DomainDeletedAlias,
-    Hibp
+    Hibp,
 )
 from app.utils import sanitize_email
 from server import create_app
@@ -776,7 +776,7 @@ def check_hibp():
     LOG.d("Updating list of known breaches")
     r = requests.get("https://haveibeenpwned.com/api/v3/breaches")
     for entry in r.json():
-        Hibp.get_or_create(id=entry['Name'])
+        Hibp.get_or_create(id=entry["Name"])
 
     db.session.commit()
 
@@ -787,26 +787,34 @@ def check_hibp():
             continue
 
         # Only one request per API key per 1.5 seconds
-        if (api_key_index >= len(HIBP_API_KEYS)):
+        if api_key_index >= len(HIBP_API_KEYS):
             api_key_index = 0
             sleep(1.5)
 
         request_headers = {
             "user-agent": "SimpleLogin",
-            "hibp-api-key": HIBP_API_KEYS[api_key_index]
+            "hibp-api-key": HIBP_API_KEYS[api_key_index],
         }
-        r = requests.get(f"https://haveibeenpwned.com/api/v3/breachedaccount/{urllib.parse.quote(alias.email)}", headers=request_headers)
+        r = requests.get(
+            f"https://haveibeenpwned.com/api/v3/breachedaccount/{urllib.parse.quote(alias.email)}",
+            headers=request_headers,
+        )
 
         api_key_index += 1
 
         if r.status_code == 200:
             # Breaches found
-            alias.hibp_breaches = [Hibp.get_by(id=entry['Name']) for entry in r.json()]
+            alias.hibp_breaches = [Hibp.get_by(id=entry["Name"]) for entry in r.json()]
         elif r.status_code == 404:
             # No breaches found
             alias.hibp_breaches = []
         else:
-            LOG.error("An error occured while checking alias %s: %s - %s", alias, r.status_code, r.text)
+            LOG.error(
+                "An error occured while checking alias %s: %s - %s",
+                alias,
+                r.status_code,
+                r.text,
+            )
             continue
 
         alias.hibp_last_check = arrow.utcnow()
@@ -836,7 +844,7 @@ if __name__ == "__main__":
             "sanity_check",
             "delete_old_monitoring",
             "check_custom_domain",
-            "check_hibp"
+            "check_hibp",
         ],
     )
     args = parser.parse_args()

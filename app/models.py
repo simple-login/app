@@ -25,7 +25,7 @@ from app.config import (
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
     UNSUBSCRIBER,
-    HIBP_SCAN_INTERVAL_DAYS
+    HIBP_SCAN_INTERVAL_DAYS,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -1089,7 +1089,9 @@ class Alias(db.Model, ModelMixin):
         return False
 
     def needs_hibp_scan(self):
-        return self.hibp_last_check is None or (self.hibp_last_check < arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS))
+        return self.hibp_last_check is None or (
+            self.hibp_last_check < arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS)
+        )
 
     @classmethod
     def create(cls, **kw):
@@ -2021,15 +2023,17 @@ class AliasMailbox(db.Model, ModelMixin):
 class AliasHibp(db.Model, ModelMixin):
     __tablename__ = "alias_hibp"
 
-    __table_args__ = (
-        db.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),
-    )
+    __table_args__ = (db.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),)
 
     alias_id = db.Column(db.Integer(), db.ForeignKey("alias.id"))
     hibp_id = db.Column(db.String(), db.ForeignKey("hibp.id"))
 
-    alias = db.relationship("Alias", backref=db.backref("alias_hibp", cascade="all, delete-orphan"))
-    hibp = db.relationship("Hibp", backref=db.backref("alias_hibp", cascade="all, delete-orphan"))
+    alias = db.relationship(
+        "Alias", backref=db.backref("alias_hibp", cascade="all, delete-orphan")
+    )
+    hibp = db.relationship(
+        "Hibp", backref=db.backref("alias_hibp", cascade="all, delete-orphan")
+    )
 
 
 class DirectoryMailbox(db.Model, ModelMixin):

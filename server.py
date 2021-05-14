@@ -299,9 +299,7 @@ def fake_data():
     db.session.commit()
 
     # example@example.com is in a LOT of data breaches
-    Alias.create(
-        email="example@example.com", user_id=user.id, mailbox_id=m1.id
-    )
+    Alias.create(email="example@example.com", user_id=user.id, mailbox_id=m1.id)
 
     for i in range(3):
         if i % 2 == 0:
