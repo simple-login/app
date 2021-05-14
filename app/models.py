@@ -456,7 +456,7 @@ class User(db.Model, ModelMixin, UserMixin):
 
         sub: Subscription = self.get_subscription()
         if sub:
-            return "Paddle Subscription"
+            return f"Paddle Subscription {sub.subscription_id}"
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
         if apple_sub and apple_sub.is_valid():
