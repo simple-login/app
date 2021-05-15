@@ -831,7 +831,7 @@ def check_hibp():
     LOG.d("Preparing list of aliases to check")
     queue = multiprocessing.Queue()
     for alias in Alias.query.order_by(Alias.hibp_last_check.asc().nullsfirst()).all():
-        if not alias.needs_hibp_scan():
+        if alias.needs_hibp_scan():
             queue.put(alias.id)
     LOG.d("Need to check about %s aliases", queue.qsize())
 
