@@ -487,7 +487,7 @@ sudo apt-get install -y nginx
 
 Then, create `/etc/nginx/sites-enabled/simplelogin` with the following lines:
 
-```
+```nginx
 server {
     server_name  app.mydomain.com;
 
