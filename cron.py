@@ -790,7 +790,9 @@ def _hibp_check(api_key, queue):
 
         if r.status_code == 200:
             # Breaches found
-            alias.hibp_breaches = [Hibp.get_by(id=entry["Name"]) for entry in r.json()]
+            alias.hibp_breaches = [
+                Hibp.get_by(name=entry["Name"]) for entry in r.json()
+            ]
         elif r.status_code == 404:
             # No breaches found
             alias.hibp_breaches = []
@@ -824,7 +826,7 @@ def check_hibp():
     LOG.d("Updating list of known breaches")
     r = requests.get("https://haveibeenpwned.com/api/v3/breaches")
     for entry in r.json():
-        Hibp.get_or_create(id=entry["Name"])
+        Hibp.get_or_create(name=entry["Name"])
 
     db.session.commit()
     LOG.d("Updated list of known breaches")

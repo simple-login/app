@@ -164,7 +164,7 @@ class AliasGeneratorEnum(EnumE):
 
 class Hibp(db.Model, ModelMixin):
     __tablename__ = "hibp"
-    id = db.Column(db.String(), primary_key=True)
+    name = db.Column(db.String(), nullable=False, unique=True, index=True)
     breached_aliases = db.relationship("Alias", secondary="alias_hibp")
 
 
@@ -2020,7 +2020,7 @@ class AliasHibp(db.Model, ModelMixin):
     __table_args__ = (db.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),)
 
     alias_id = db.Column(db.Integer(), db.ForeignKey("alias.id"))
-    hibp_id = db.Column(db.String(), db.ForeignKey("hibp.id"))
+    hibp_id = db.Column(db.Integer(), db.ForeignKey("hibp.id"))
 
     alias = db.relationship(
         "Alias", backref=db.backref("alias_hibp", cascade="all, delete-orphan")
