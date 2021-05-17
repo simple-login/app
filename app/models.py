@@ -25,7 +25,6 @@ from app.config import (
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
     UNSUBSCRIBER,
-    HIBP_SCAN_INTERVAL_DAYS,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -1087,11 +1086,6 @@ class Alias(db.Model, ModelMixin):
         if self.mailbox_support_pgp() and not self.disable_pgp:
             return True
         return False
-
-    def needs_hibp_scan(self):
-        return self.hibp_last_check is None or (
-            self.hibp_last_check < arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS)
-        )
 
     @classmethod
     def create(cls, **kw):

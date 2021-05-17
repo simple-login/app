@@ -7,7 +7,7 @@ from typing import List, Tuple
 
 import arrow
 import requests
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, or_
 
 from app import s3
 from app.alias_utils import nb_email_log_for_mailbox
@@ -20,6 +20,7 @@ from app.config import (
     URL,
     AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
     HIBP_API_KEYS,
+    HIBP_SCAN_INTERVAL_DAYS,
 )
 from app.dns_utils import get_mx_domains
 from app.email_utils import (
@@ -830,9 +831,16 @@ def check_hibp():
 
     LOG.d("Preparing list of aliases to check")
     queue = multiprocessing.Queue()
-    for alias in Alias.query.order_by(Alias.hibp_last_check.asc().nullsfirst()).all():
-        if alias.needs_hibp_scan():
-            queue.put(alias.id)
+    max_date = arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS)
+    for alias in (
+        Alias.query.filter(
+            or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date)
+        )
+        .order_by(Alias.hibp_last_check.asc().nullsfirst())
+        .all()
+    ):
+        queue.put(alias.id)
+
     LOG.d("Need to check about %s aliases", queue.qsize())
 
     # Start one checking process per API key
