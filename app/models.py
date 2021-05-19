@@ -162,6 +162,12 @@ class AliasGeneratorEnum(EnumE):
     uuid = 2  # aliases are generated based on uuid
 
 
+class Hibp(db.Model, ModelMixin):
+    __tablename__ = "hibp"
+    name = db.Column(db.String(), nullable=False, unique=True, index=True)
+    breached_aliases = db.relationship("Alias", secondary="alias_hibp")
+
+
 class Fido(db.Model, ModelMixin):
     __tablename__ = "fido"
     credential_id = db.Column(db.String(), nullable=False, unique=True, index=True)
@@ -1050,6 +1056,10 @@ class Alias(db.Model, ModelMixin):
 
     # used to transfer an alias to another user
     transfer_token = db.Column(db.String(64), default=None, unique=True, nullable=True)
+
+    # have I been pwned
+    hibp_last_check = db.Column(ArrowType, default=None)
+    hibp_breaches = db.relationship("Hibp", secondary="alias_hibp")
 
     user = db.relationship(User, foreign_keys=[user_id])
     mailbox = db.relationship("Mailbox", lazy="joined")
@@ -2002,6 +2012,22 @@ class AliasMailbox(db.Model, ModelMixin):
     )
 
     alias = db.relationship(Alias)
+
+
+class AliasHibp(db.Model, ModelMixin):
+    __tablename__ = "alias_hibp"
+
+    __table_args__ = (db.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),)
+
+    alias_id = db.Column(db.Integer(), db.ForeignKey("alias.id"))
+    hibp_id = db.Column(db.Integer(), db.ForeignKey("hibp.id"))
+
+    alias = db.relationship(
+        "Alias", backref=db.backref("alias_hibp", cascade="all, delete-orphan")
+    )
+    hibp = db.relationship(
+        "Hibp", backref=db.backref("alias_hibp", cascade="all, delete-orphan")
+    )
 
 
 class DirectoryMailbox(db.Model, ModelMixin):

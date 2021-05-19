@@ -76,6 +76,7 @@ email_validator = "^1.1.1"
 PGPy = "^0.5.3"
 py3-validate-email = "^0.2.10"
 coinbase-commerce = "^1.0.1"
+requests = "^2.25.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"
