@@ -839,6 +839,7 @@ async def check_hibp():
         Alias.query.filter(
             or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date)
         )
+        .filter(Alias.enabled)
         .order_by(Alias.id)
         .all()
     ):
