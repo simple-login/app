@@ -792,6 +792,8 @@ async def _hibp_check(api_key, queue):
             alias.hibp_breaches = [
                 Hibp.get_by(name=entry["Name"]) for entry in r.json()
             ]
+            if len(alias.hibp_breaches) > 0:
+                LOG.w("%s appears in HIBP breaches %s", alias, alias.hibp_breaches)
         elif r.status_code == 404:
             # No breaches found
             alias.hibp_breaches = []
@@ -837,7 +839,7 @@ async def check_hibp():
         Alias.query.filter(
             or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date)
         )
-        .order_by(Alias.hibp_last_check.asc().nullsfirst())
+        .order_by(Alias.id)
         .all()
     ):
         await queue.put(alias.id)

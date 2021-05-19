@@ -167,6 +167,9 @@ class Hibp(db.Model, ModelMixin):
     name = db.Column(db.String(), nullable=False, unique=True, index=True)
     breached_aliases = db.relationship("Alias", secondary="alias_hibp")
 
+    def __repr__(self):
+        return f"<HIBP Breach {self.id} {self.name}>"
+
 
 class Fido(db.Model, ModelMixin):
     __tablename__ = "fido"
