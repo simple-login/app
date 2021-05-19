@@ -58,4 +58,4 @@ jobs:
     shell: /bin/bash
     schedule: "0 18 * * *"
     captureStderr: true
-    concurrencyPolicy: "forbid"
+    concurrencyPolicy: Forbid
