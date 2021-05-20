@@ -806,6 +806,7 @@ async def _hibp_check(api_key, queue):
             )
             return
 
+        alias.hibp_last_check = arrow.utcnow()
         db.session.add(alias)
         db.session.commit()
 
@@ -840,7 +841,7 @@ async def check_hibp():
             or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date)
         )
         .filter(Alias.enabled)
-        .order_by(Alias.id)
+        .order_by(Alias.hibp_last_check.asc())
         .all()
     ):
         await queue.put(alias.id)
