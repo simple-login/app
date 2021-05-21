@@ -204,7 +204,7 @@
               {% endif %}
 
               {% if alias.hibp_breaches | length > 0 %}
-                <a href="https://haveibeenpwned.com/">
+                <a href="https://haveibeenpwned.com/account/{{ alias.email }}">
                   <span class="fa fa-warning text-danger" data-toggle="tooltip"
                         title="This alias was found in {{ alias.hibp_breaches | length }} data breaches. Check haveibeenpwned.com for more information."></span>
                 </a>
