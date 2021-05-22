@@ -776,6 +776,10 @@ async def _hibp_check(api_key, queue):
             return
 
         alias = Alias.get(alias_id)
+        # an alias can be deleted in the meantime
+        if not alias:
+            return
+
         LOG.d("Checking HIBP for %s", alias)
 
         request_headers = {
