@@ -1604,6 +1604,14 @@ def handle(envelope: Envelope) -> str:
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if is_reply_email(rcpt_to):
             LOG.d("Reply phase %s(%s) -> %s", mail_from, copy_msg["From"], rcpt_to)
+
+            # for debugging. A reverse alias should never receive a bounce report from MTA
+            # as emails are sent with VERP
+            # but it's possible that some MTA don't send the bounce report correctly
+            # todo: to remove once this issue is understood
+            if mail_from == "<>":
+                LOG.exception("email from <> to reverse alias %s. \n%s", rcpt_to, msg)
+
             is_delivered, smtp_status = handle_reply(envelope, copy_msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
