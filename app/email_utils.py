@@ -6,6 +6,7 @@ import quopri
 import random
 import re
 import time
+from email.errors import HeaderParseError
 from email.header import decode_header
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
@@ -667,20 +668,24 @@ def parseaddr_unicode(addr) -> (str, str):
     email = email.strip().lower()
     if name:
         name = name.strip()
-        decoded_string, charset = decode_header(name)[0]
-        if charset is not None:
-            try:
-                name = decoded_string.decode(charset)
-            except UnicodeDecodeError:
-                LOG.warning("Cannot decode addr name %s", name)
-                name = ""
-            except LookupError:  # charset is unknown
-                LOG.warning(
-                    "Cannot decode %s with %s, use utf-8", decoded_string, charset
-                )
-                name = decoded_string.decode("utf-8")
+        try:
+            decoded_string, charset = decode_header(name)[0]
+        except HeaderParseError:  # fail in case
+            LOG.warning("Can't decode name %s", name)
         else:
-            name = decoded_string
+            if charset is not None:
+                try:
+                    name = decoded_string.decode(charset)
+                except UnicodeDecodeError:
+                    LOG.warning("Cannot decode addr name %s", name)
+                    name = ""
+                except LookupError:  # charset is unknown
+                    LOG.warning(
+                        "Cannot decode %s with %s, use utf-8", decoded_string, charset
+                    )
+                    name = decoded_string.decode("utf-8")
+            else:
+                name = decoded_string
 
     if type(name) == bytes:
         name = name.decode()
