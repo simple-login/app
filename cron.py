@@ -56,6 +56,7 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     Hibp,
+    HibpDataClass
 )
 from app.utils import sanitize_email
 from server import create_app
@@ -793,14 +794,14 @@ async def _hibp_check(api_key, queue):
 
         if r.status_code == 200:
             # Breaches found
-            alias.hibp_breaches = [
+            breaches = [
                 Hibp.get_by(name=entry["Name"]) for entry in r.json()
             ]
             if len(alias.hibp_breaches) > 0:
                 LOG.w("%s appears in HIBP breaches %s", alias, alias.hibp_breaches)
         elif r.status_code == 404:
             # No breaches found
-            alias.hibp_breaches = []
+            breaches = []
         else:
             LOG.error(
                 "An error occured while checking alias %s: %s - %s",
@@ -809,6 +810,9 @@ async def _hibp_check(api_key, queue):
                 r.text,
             )
             return
+
+        alias.hibp_breaches_not_notified_user = [breach for breach in breaches if breach not in alias.hibp_breaches_notified_user]
+        alias.hibp_breaches_notified_user = [breach for breach in breaches if breach not in alias.hibp_breaches_not_notified_user]
 
         alias.hibp_last_check = arrow.utcnow()
         db.session.add(alias)
@@ -829,10 +833,22 @@ async def check_hibp():
         LOG.exception("No HIBP API keys")
         return
 
+    LOG.d("Updating list of known breach types")
+    r = requests.get("https://haveibeenpwned.com/api/v3/dataclasses")
+    for entry in r.json():
+        HibpDataClass.get_or_create(description=entry)
+
+    db.session.commit()
+
     LOG.d("Updating list of known breaches")
     r = requests.get("https://haveibeenpwned.com/api/v3/breaches")
     for entry in r.json():
-        Hibp.get_or_create(name=entry["Name"])
+        hibp_entry = Hibp.get_or_create(name=entry["Name"])
+        hibp_entry.date = arrow.get(entry["BreachDate"])
+        hibp_entry.description = entry["Description"]
+        hibp_entry.data_classes = [
+            HibpDataClass.get_by(description=description) for description in entry["DataClasses"]
+        ]
 
     db.session.commit()
     LOG.d("Updated list of known breaches")
@@ -872,6 +888,41 @@ async def check_hibp():
     LOG.d("Done checking HIBP API for aliases in breaches")
 
 
+def notify_hibp():
+    """
+    Send aggregated email reports for HIBP breaches
+    """
+    for user in User.query.all():
+        new_breaches = Alias.query.filter(Alias.user_id == user.id).filter(Alias.hibp_breaches_not_notified_user).all()
+
+        if len(new_breaches) == 0:
+            return
+
+        LOG.d(f"Send new breaches found email to user {user}")
+
+        send_email(
+            user.email,
+            f"You were in a data breach",
+            render(
+                "transactional/hibp-new-breaches.txt",
+                user=user,
+                breached_aliases=new_breaches
+            ),
+            render(
+                "transactional/hibp-new-breaches.html",
+                user=user,
+                breached_aliases=new_breaches
+            ),
+        )
+
+        for alias in new_breaches:
+            alias.hibp_breaches_notified_user = alias.hibp_breaches_notified_user + alias.hibp_breaches_not_notified_user
+            alias.hibp_breaches_not_notified_user = []
+            db.session.add(alias)
+
+        db.session.commit()
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -891,6 +942,7 @@ if __name__ == "__main__":
             "delete_old_monitoring",
             "check_custom_domain",
             "check_hibp",
+            "notify_hibp"
         ],
     )
     args = parser.parse_args()
@@ -928,3 +980,6 @@ if __name__ == "__main__":
         elif args.job == "check_hibp":
             LOG.d("Check HIBP")
             asyncio.run(check_hibp())
+        elif args.job == "notify_hibp":
+            LOG.d("Notify users with new HIBP breaches")
+            notify_hibp()

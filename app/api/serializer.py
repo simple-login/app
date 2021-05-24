@@ -323,7 +323,7 @@ def get_alias_infos_with_pagination_v3(
     elif alias_filter == "disabled":
         q = q.filter(Alias.enabled.is_(False))
     elif alias_filter == "hibp":
-        q = q.filter(Alias.hibp_breaches)
+        q = q.filter(or_(Alias.hibp_breaches_notified_user, Alias.hibp_breaches_not_notified_user))
 
     q = q.order_by(Alias.pinned.desc())
 

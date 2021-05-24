@@ -162,9 +162,23 @@ class AliasGeneratorEnum(EnumE):
     uuid = 2  # aliases are generated based on uuid
 
 
+class HibpDataClass(db.Model, ModelMixin):
+    __tablename__ = "hibpdataclass"
+    description = db.Column(db.Text, nullable=False, unique=True, index=True)
+
+    breaches = db.relationship("Hibp", secondary="hibp_hibpdataclass")
+
+    def __repr__(self):
+        return f"<HIBP Data Class {self.id} {self.description}>"
+
+
 class Hibp(db.Model, ModelMixin):
     __tablename__ = "hibp"
     name = db.Column(db.String(), nullable=False, unique=True, index=True)
+    description = db.Column(db.Text)
+    date = db.Column(ArrowType, nullable=True)
+    data_classes = db.relationship("HibpDataClass", secondary="hibp_hibpdataclass")
+
     breached_aliases = db.relationship("Alias", secondary="alias_hibp")
 
     def __repr__(self):
@@ -1062,10 +1076,15 @@ class Alias(db.Model, ModelMixin):
 
     # have I been pwned
     hibp_last_check = db.Column(ArrowType, default=None)
-    hibp_breaches = db.relationship("Hibp", secondary="alias_hibp")
+    hibp_breaches_notified_user = db.relationship("Hibp", secondary="alias_hibp")
+    hibp_breaches_not_notified_user = db.relationship("Hibp", secondary="alias_hibp")
 
     user = db.relationship(User, foreign_keys=[user_id])
     mailbox = db.relationship("Mailbox", lazy="joined")
+
+    @property
+    def hibp_breaches(self):
+        return self.hibp_breaches_notified_user + self.hibp_breaches_not_notified_user
 
     @property
     def mailboxes(self):
@@ -2058,6 +2077,22 @@ class DomainMailbox(db.Model, ModelMixin):
     )
     mailbox_id = db.Column(
         db.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
+    )
+
+
+class HibpHibpDataClass(db.Model, ModelMixin):
+    __tablename__ = "hibp_hibpdataclass"
+
+    __table_args__ = (db.UniqueConstraint("hibp_id", "hibp_dataclass_id", name="uq_hibp_hibpdataclass"),)
+
+    hibp_id = db.Column(db.Integer(), db.ForeignKey("hibp.id"))
+    hibp_dataclass_id = db.Column(db.Integer(), db.ForeignKey("hibpdataclass.id"))
+
+    hibp = db.relationship(
+        "Hibp", backref=db.backref("hibp_hibpdataclass", cascade="all, delete-orphan")
+    )
+    hibpdataclass = db.relationship(
+        "HibpDataClass", backref=db.backref("hibp_hibpdataclass", cascade="all, delete-orphan")
     )
 
 

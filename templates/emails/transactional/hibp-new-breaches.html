@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("Hi") }}
+
+  {%- for alias in breached_aliases %}
+  {%- if loop.index == 11 and loop.length > 10 %}
+  And {{ breached_aliases|length - 10 }} more aliases...
+  {%- elif loop.index > 11 %}
+  {%- else %}
+  {{ render_text("Your alias " + alias.email + " was found in one or more data breaches:") }}
+
+  {%- for breach in alias.hibp_breaches_not_notified_user|sort(attribute='date', reverse=True) %}
+  {%- if loop.index == 4 and loop.length > 4 %}
+  {{ render_text("And " + ((alias.hibp_breaches_not_notified_user|length) - 3)|string + " more data breaches...") }}
+  {%- elif loop.index > 4 %}
+  {%- else %}
+  {{ render_text(breach.name + " (" + breach.date.format('YYYY-MM-DD') + ")") }}
+  {{ render_text(breach.description) }}
+
+  {{ render_text("Breached data: " + breach.data_classes|join(', ', attribute='description')) }}
+  {%- endif %}
+  {%- endfor %}
+  {%- endif %}
+  {%- endfor %}
+
+  {{ render_text("For more information, check <a href='https://haveibeenpwned.com/'>HaveIBeenPwned.com</a>.") }}
+
+  {{ render_text('Best, <br />SimpleLogin Team.') }}
+{% endblock %}
