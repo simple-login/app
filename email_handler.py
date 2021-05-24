@@ -595,6 +595,7 @@ def forward_email_to_mailbox(
     email_log = EmailLog.create(
         contact_id=contact.id, user_id=user.id, mailbox_id=mailbox.id, commit=True
     )
+    LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
     if ENABLE_SPAM_ASSASSIN:
         # Spam check
@@ -823,6 +824,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         mailbox_id=mailbox.id,
         commit=True,
     )
+    LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
     # Spam check
     if ENABLE_SPAM_ASSASSIN:
