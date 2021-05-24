@@ -155,7 +155,7 @@ if __name__ == "__main__":
                     user = User.get(user_id)
 
                     if not user:
-                        LOG.exception("No user found for %s", user_id)
+                        LOG.i("No user found for %s", user_id)
                         continue
 
                     user_email = user.email
