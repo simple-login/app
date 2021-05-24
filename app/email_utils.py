@@ -1168,6 +1168,14 @@ def sl_sendmail(
 
         # smtp.send_message has UnicodeEncodeError
         # encode message raw directly instead
+        LOG.d(
+            "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
+            from_addr,
+            to_addr,
+            msg["From"],
+            msg["To"],
+            msg["Cc"],
+        )
         smtp.sendmail(
             from_addr,
             to_addr,
