@@ -56,7 +56,7 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     Hibp,
-    HibpDataClass
+    HibpDataClass,
 )
 from app.utils import sanitize_email
 from server import create_app
@@ -794,9 +794,7 @@ async def _hibp_check(api_key, queue):
 
         if r.status_code == 200:
             # Breaches found
-            breaches = [
-                Hibp.get_by(name=entry["Name"]) for entry in r.json()
-            ]
+            breaches = [Hibp.get_by(name=entry["Name"]) for entry in r.json()]
             if len(alias.hibp_breaches) > 0:
                 LOG.w("%s appears in HIBP breaches %s", alias, alias.hibp_breaches)
         elif r.status_code == 404:
@@ -811,8 +809,16 @@ async def _hibp_check(api_key, queue):
             )
             return
 
-        alias.hibp_breaches_not_notified_user = [breach for breach in breaches if breach not in alias.hibp_breaches_notified_user]
-        alias.hibp_breaches_notified_user = [breach for breach in breaches if breach not in alias.hibp_breaches_not_notified_user]
+        alias.hibp_breaches_not_notified_user = [
+            breach
+            for breach in breaches
+            if breach not in alias.hibp_breaches_notified_user
+        ]
+        alias.hibp_breaches_notified_user = [
+            breach
+            for breach in breaches
+            if breach not in alias.hibp_breaches_not_notified_user
+        ]
 
         alias.hibp_last_check = arrow.utcnow()
         db.session.add(alias)
@@ -847,7 +853,8 @@ async def check_hibp():
         hibp_entry.date = arrow.get(entry["BreachDate"])
         hibp_entry.description = entry["Description"]
         hibp_entry.data_classes = [
-            HibpDataClass.get_by(description=description) for description in entry["DataClasses"]
+            HibpDataClass.get_by(description=description)
+            for description in entry["DataClasses"]
         ]
 
     db.session.commit()
@@ -893,7 +900,11 @@ def notify_hibp():
     Send aggregated email reports for HIBP breaches
     """
     for user in User.query.all():
-        new_breaches = Alias.query.filter(Alias.user_id == user.id).filter(Alias.hibp_breaches_not_notified_user).all()
+        new_breaches = (
+            Alias.query.filter(Alias.user_id == user.id)
+            .filter(Alias.hibp_breaches_not_notified_user)
+            .all()
+        )
 
         if len(new_breaches) == 0:
             return
@@ -906,17 +917,20 @@ def notify_hibp():
             render(
                 "transactional/hibp-new-breaches.txt",
                 user=user,
-                breached_aliases=new_breaches
+                breached_aliases=new_breaches,
             ),
             render(
                 "transactional/hibp-new-breaches.html",
                 user=user,
-                breached_aliases=new_breaches
+                breached_aliases=new_breaches,
             ),
         )
 
         for alias in new_breaches:
-            alias.hibp_breaches_notified_user = alias.hibp_breaches_notified_user + alias.hibp_breaches_not_notified_user
+            alias.hibp_breaches_notified_user = (
+                alias.hibp_breaches_notified_user
+                + alias.hibp_breaches_not_notified_user
+            )
             alias.hibp_breaches_not_notified_user = []
             db.session.add(alias)
 
@@ -942,7 +956,7 @@ if __name__ == "__main__":
             "delete_old_monitoring",
             "check_custom_domain",
             "check_hibp",
-            "notify_hibp"
+            "notify_hibp",
         ],
     )
     args = parser.parse_args()

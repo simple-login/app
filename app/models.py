@@ -2083,7 +2083,11 @@ class DomainMailbox(db.Model, ModelMixin):
 class HibpHibpDataClass(db.Model, ModelMixin):
     __tablename__ = "hibp_hibpdataclass"
 
-    __table_args__ = (db.UniqueConstraint("hibp_id", "hibp_dataclass_id", name="uq_hibp_hibpdataclass"),)
+    __table_args__ = (
+        db.UniqueConstraint(
+            "hibp_id", "hibp_dataclass_id", name="uq_hibp_hibpdataclass"
+        ),
+    )
 
     hibp_id = db.Column(db.Integer(), db.ForeignKey("hibp.id"))
     hibp_dataclass_id = db.Column(db.Integer(), db.ForeignKey("hibpdataclass.id"))
@@ -2092,7 +2096,8 @@ class HibpHibpDataClass(db.Model, ModelMixin):
         "Hibp", backref=db.backref("hibp_hibpdataclass", cascade="all, delete-orphan")
     )
     hibpdataclass = db.relationship(
-        "HibpDataClass", backref=db.backref("hibp_hibpdataclass", cascade="all, delete-orphan")
+        "HibpDataClass",
+        backref=db.backref("hibp_hibpdataclass", cascade="all, delete-orphan"),
     )
 
 
