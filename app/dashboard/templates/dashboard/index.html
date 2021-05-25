@@ -460,17 +460,19 @@
     {% endfor %}
   </div>
 
+  <!-- Only show pagination control if there are previous/next page -->
+  {% if page > 0 or not last_page %}
   <div class="row">
     <div class="col">
       <nav aria-label="Alias navigation">
         <ul class="pagination">
           <li class="page-item">
-            <a class="btn btn-outline-secondary {% if page == 0 %}disabled{% endif %}"
+            <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}"
                href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort, filter=filter) }}">
               Previous</a>
           </li>
           <li class="page-item">
-            <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}"
+            <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}"
                href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort, filter=filter) }}">
               Next</a>
           </li>
@@ -478,6 +480,7 @@
       </nav>
     </div>
   </div>
+  {% endif %}
 
 {% endblock %}
 
