@@ -1575,11 +1575,22 @@ def handle(envelope: Envelope) -> str:
         handle_transactional_bounce(envelope, rcpt_tos[0])
         return "250 bounce handled"
 
+    # whether this is a bounce report
+    is_bounce = False
+
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
     ):
+        is_bounce = True
+
+    if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
+        f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
+    ):
+        is_bounce = True
+
+    if is_bounce:
         return handle_bounce(envelope, rcpt_tos[0], msg)
 
     # Whether it's necessary to apply greylisting
