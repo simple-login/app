@@ -370,7 +370,7 @@ def send_email_at_most_times(
     return True
 
 
-def get_email_local_part(address):
+def get_email_local_part(address) -> str:
     """
     Get the local part from email
     ab@cd.com -> ab
