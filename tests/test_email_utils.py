@@ -718,4 +718,5 @@ def test_should_disable_bounce_consecutive_days(flask_client):
 
 def test_parse_id_from_bounce():
     assert parse_id_from_bounce("bounces+1234+@local") == 1234
+    assert parse_id_from_bounce("anything+1234+@local") == 1234
     assert parse_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234

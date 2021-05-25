@@ -73,6 +73,7 @@ from app.config import (
     TRANSACTIONAL_BOUNCE_PREFIX,
     TRANSACTIONAL_BOUNCE_SUFFIX,
     ENABLE_SPAM_ASSASSIN,
+    BOUNCE_PREFIX_FOR_REPLY_PHASE,
 )
 from app.email.spam import get_spam_score
 from app.email_utils import (
@@ -951,10 +952,12 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     if should_add_dkim_signature(alias_domain):
         add_dkim_signature(msg, alias_domain)
 
+    # generate a mail_from for VERP
+    verp_mail_from = f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+{email_log.id}+@{alias_domain}"
+
     try:
         sl_sendmail(
-            # VERP
-            BOUNCE_EMAIL.format(email_log.id),
+            verp_mail_from,
             contact.website_email,
             msg,
             envelope.mail_options,
