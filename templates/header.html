@@ -9,11 +9,23 @@
         <div class="nav-item" data-toggle="dark-mode" title='Toggle bright/dark mode'>
           <i class="fe fe-moon"></i>
         </div>
+
         {% if current_user.should_show_upgrade_button() %}
           <div class="nav-item">
             <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
           </div>
         {% endif %}
+
+        <div class="nav-item">
+
+          <a onclick="startIntro()"
+             data-intro="Welcome to SimpleLogin! <br><br>
+  It seems that this is the first time you are here,
+  let's walk through some SimpleLogin features together! <br><br>
+             You can always show this tutorial again any time by clicking on this <i class='fe fe-help-circle'></i> icon above 👆"
+             data-step="1"
+          ><i class="fe fe-help-circle"></i></a>
+        </div>
 
 
         <div id="notification-app" class="dropdown d-none d-md-flex" v-if="showNotification">
