@@ -52,3 +52,10 @@ jobs:
     shell: /bin/bash
     schedule: "0 15 * * *"
     captureStderr: true
+
+  - name: SimpleLogin HIBP check
+    command: python /code/cron.py -j check_hibp
+    shell: /bin/bash
+    schedule: "0 18 * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid

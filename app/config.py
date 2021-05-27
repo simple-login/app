@@ -75,6 +75,16 @@ BOUNCE_PREFIX = os.environ.get("BOUNCE_PREFIX") or "bounce+"
 BOUNCE_SUFFIX = os.environ.get("BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
 BOUNCE_EMAIL = BOUNCE_PREFIX + "{}" + BOUNCE_SUFFIX
 
+# Used for VERP during reply phase. It's similar to BOUNCE_PREFIX.
+# It's needed when sending emails from custom domain to respect DMARC.
+# BOUNCE_PREFIX_FOR_REPLY_PHASE should never be used in any existing alias
+# and can't be used for creating a new alias on custom domain
+# Note BOUNCE_PREFIX_FOR_REPLY_PHASE doesn't have the trailing plus sign (+) as BOUNCE_PREFIX
+BOUNCE_PREFIX_FOR_REPLY_PHASE = (
+    os.environ.get("BOUNCE_PREFIX_FOR_REPLY_PHASE") or "bounce_reply"
+)
+
+
 # VERP for transactional email: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
 TRANSACTIONAL_BOUNCE_PREFIX = (
     os.environ.get("TRANSACTIONAL_BOUNCE_PREFIX") or "transactional+"
@@ -376,3 +386,9 @@ ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"
 ENABLE_SPAM_ASSASSIN = "ENABLE_SPAM_ASSASSIN" in os.environ
 
 ALIAS_RANDOM_SUFFIX_LENGTH = int(os.environ.get("ALIAS_RAND_SUFFIX_LENGTH", 5))
+
+try:
+    HIBP_SCAN_INTERVAL_DAYS = int(os.environ.get("HIBP_SCAN_INTERVAL_DAYS"))
+except Exception:
+    HIBP_SCAN_INTERVAL_DAYS = 7
+HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []

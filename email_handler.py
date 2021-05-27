@@ -73,6 +73,7 @@ from app.config import (
     TRANSACTIONAL_BOUNCE_PREFIX,
     TRANSACTIONAL_BOUNCE_SUFFIX,
     ENABLE_SPAM_ASSASSIN,
+    BOUNCE_PREFIX_FOR_REPLY_PHASE,
 )
 from app.email.spam import get_spam_score
 from app.email_utils import (
@@ -595,6 +596,7 @@ def forward_email_to_mailbox(
     email_log = EmailLog.create(
         contact_id=contact.id, user_id=user.id, mailbox_id=mailbox.id, commit=True
     )
+    LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
     if ENABLE_SPAM_ASSASSIN:
         # Spam check
@@ -823,6 +825,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         mailbox_id=mailbox.id,
         commit=True,
     )
+    LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
     # Spam check
     if ENABLE_SPAM_ASSASSIN:
@@ -949,10 +952,12 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     if should_add_dkim_signature(alias_domain):
         add_dkim_signature(msg, alias_domain)
 
+    # generate a mail_from for VERP
+    verp_mail_from = f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+{email_log.id}+@{alias_domain}"
+
     try:
         sl_sendmail(
-            # VERP
-            BOUNCE_EMAIL.format(email_log.id),
+            verp_mail_from,
             contact.website_email,
             msg,
             envelope.mail_options,
@@ -1570,11 +1575,22 @@ def handle(envelope: Envelope) -> str:
         handle_transactional_bounce(envelope, rcpt_tos[0])
         return "250 bounce handled"
 
+    # whether this is a bounce report
+    is_bounce = False
+
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
     ):
+        is_bounce = True
+
+    if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
+        f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
+    ):
+        is_bounce = True
+
+    if is_bounce:
         return handle_bounce(envelope, rcpt_tos[0], msg)
 
     # Whether it's necessary to apply greylisting
@@ -1604,6 +1620,14 @@ def handle(envelope: Envelope) -> str:
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if is_reply_email(rcpt_to):
             LOG.d("Reply phase %s(%s) -> %s", mail_from, copy_msg["From"], rcpt_to)
+
+            # for debugging. A reverse alias should never receive a bounce report from MTA
+            # as emails are sent with VERP
+            # but it's possible that some MTA don't send the bounce report correctly
+            # todo: to remove once this issue is understood
+            if mail_from == "<>":
+                LOG.exception("email from <> to reverse alias %s. \n%s", rcpt_to, msg)
+
             is_delivered, smtp_status = handle_reply(envelope, copy_msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case

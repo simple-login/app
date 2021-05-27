@@ -3,7 +3,12 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, MAX_NB_DIRECTORY
+from app.config import (
+    EMAIL_DOMAIN,
+    ALIAS_DOMAINS,
+    MAX_NB_DIRECTORY,
+    BOUNCE_PREFIX_FOR_REPLY_PHASE,
+)
 from app.dashboard.base import dashboard_bp
 from app.extensions import db
 from app.models import Directory, Mailbox, DirectoryMailbox
@@ -126,6 +131,7 @@ def directory():
                     "bounces",
                     "bounce",
                     "transactional",
+                    BOUNCE_PREFIX_FOR_REPLY_PHASE,
                 ):
                     flash(
                         "this directory name is reserved, please choose another name",

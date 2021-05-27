@@ -1,9 +1,12 @@
 import argparse
+import asyncio
+import urllib.parse
 from time import sleep
 from typing import List, Tuple
 
 import arrow
-from sqlalchemy import func, desc
+import requests
+from sqlalchemy import func, desc, or_
 
 from app import s3
 from app.alias_utils import nb_email_log_for_mailbox
@@ -15,6 +18,8 @@ from app.config import (
     EMAIL_SERVERS_WITH_PRIORITY,
     URL,
     AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
+    HIBP_API_KEYS,
+    HIBP_SCAN_INTERVAL_DAYS,
 )
 from app.dns_utils import get_mx_domains
 from app.email_utils import (
@@ -50,6 +55,7 @@ from app.models import (
     SLDomain,
     DeletedAlias,
     DomainDeletedAlias,
+    Hibp,
 )
 from app.utils import sanitize_email
 from server import create_app
@@ -757,6 +763,115 @@ def delete_old_monitoring():
     LOG.d("delete monitoring records older than %s, nb row %s", max_time, nb_row)
 
 
+async def _hibp_check(api_key, queue):
+    """
+    Uses a single API key to check the queue as fast as possible.
+
+    This function to be ran simultaneously (multiple _hibp_check functions with different keys on the same queue) to make maximum use of multiple API keys.
+    """
+    while True:
+        try:
+            alias_id = queue.get_nowait()
+        except asyncio.QueueEmpty:
+            return
+
+        alias = Alias.get(alias_id)
+        # an alias can be deleted in the meantime
+        if not alias:
+            return
+
+        LOG.d("Checking HIBP for %s", alias)
+
+        request_headers = {
+            "user-agent": "SimpleLogin",
+            "hibp-api-key": api_key,
+        }
+        r = requests.get(
+            f"https://haveibeenpwned.com/api/v3/breachedaccount/{urllib.parse.quote(alias.email)}",
+            headers=request_headers,
+        )
+
+        if r.status_code == 200:
+            # Breaches found
+            alias.hibp_breaches = [
+                Hibp.get_by(name=entry["Name"]) for entry in r.json()
+            ]
+            if len(alias.hibp_breaches) > 0:
+                LOG.w("%s appears in HIBP breaches %s", alias, alias.hibp_breaches)
+        elif r.status_code == 404:
+            # No breaches found
+            alias.hibp_breaches = []
+        else:
+            LOG.error(
+                "An error occured while checking alias %s: %s - %s",
+                alias,
+                r.status_code,
+                r.text,
+            )
+            return
+
+        alias.hibp_last_check = arrow.utcnow()
+        db.session.add(alias)
+        db.session.commit()
+
+        LOG.d("Updated breaches info for %s", alias)
+
+        await asyncio.sleep(1.5)
+
+
+async def check_hibp():
+    """
+    Check all aliases on the HIBP (Have I Been Pwned) API
+    """
+    LOG.d("Checking HIBP API for aliases in breaches")
+
+    if len(HIBP_API_KEYS) == 0:
+        LOG.exception("No HIBP API keys")
+        return
+
+    LOG.d("Updating list of known breaches")
+    r = requests.get("https://haveibeenpwned.com/api/v3/breaches")
+    for entry in r.json():
+        Hibp.get_or_create(name=entry["Name"])
+
+    db.session.commit()
+    LOG.d("Updated list of known breaches")
+
+    LOG.d("Preparing list of aliases to check")
+    queue = asyncio.Queue()
+    max_date = arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS)
+    for alias in (
+        Alias.query.filter(
+            or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date)
+        )
+        .filter(Alias.enabled)
+        .order_by(Alias.hibp_last_check.asc())
+        .all()
+    ):
+        await queue.put(alias.id)
+
+    LOG.d("Need to check about %s aliases", queue.qsize())
+
+    # Start one checking process per API key
+    # Each checking process will take one alias from the queue, get the info
+    # and then sleep for 1.5 seconds (due to HIBP API request limits)
+    checkers = []
+    for i in range(len(HIBP_API_KEYS)):
+        checker = asyncio.create_task(
+            _hibp_check(
+                HIBP_API_KEYS[i],
+                queue,
+            )
+        )
+        checkers.append(checker)
+
+    # Wait until all checking processes are done
+    for checker in checkers:
+        await checker
+
+    LOG.d("Done checking HIBP API for aliases in breaches")
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -775,6 +890,7 @@ if __name__ == "__main__":
             "sanity_check",
             "delete_old_monitoring",
             "check_custom_domain",
+            "check_hibp",
         ],
     )
     args = parser.parse_args()
@@ -809,3 +925,6 @@ if __name__ == "__main__":
         elif args.job == "check_custom_domain":
             LOG.d("Check custom domain")
             check_custom_domain()
+        elif args.job == "check_hibp":
+            LOG.d("Check HIBP")
+            asyncio.run(check_hibp())

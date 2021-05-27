@@ -3,6 +3,7 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, DataError
 
+from app.config import BOUNCE_PREFIX_FOR_REPLY_PHASE
 from app.email_utils import (
     get_email_domain_part,
     send_cannot_create_directory_alias,
@@ -29,6 +30,12 @@ from app.models import (
 
 def try_auto_create(address: str) -> Optional[Alias]:
     """Try to auto-create the alias using directory or catch-all domain"""
+    if address.startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"):
+        LOG.exception(
+            "alias %s can't start with %s", address, BOUNCE_PREFIX_FOR_REPLY_PHASE
+        )
+        return None
+
     alias = try_auto_create_catch_all_domain(address)
     if not alias:
         alias = try_auto_create_directory(address)

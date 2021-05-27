@@ -298,6 +298,9 @@ def fake_data():
     m1.pgp_finger_print = load_public_key(pgp_public_key)
     db.session.commit()
 
+    # example@example.com is in a LOT of data breaches
+    Alias.create(email="example@example.com", user_id=user.id, mailbox_id=m1.id)
+
     for i in range(3):
         if i % 2 == 0:
             a = Alias.create(

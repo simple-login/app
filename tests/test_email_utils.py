@@ -128,6 +128,12 @@ def test_parseaddr_unicode():
         "abcd@gmail.com",
     )
 
+    # when a name can't be decoded, return an empty string
+    assert parseaddr_unicode("=?UTF-8?B?Cec���?= <test@example.com>") == (
+        "",
+        "test@example.com",
+    )
+
 
 def test_send_email_with_rate_control(flask_client):
     user = User.create(
@@ -712,4 +718,5 @@ def test_should_disable_bounce_consecutive_days(flask_client):
 
 def test_parse_id_from_bounce():
     assert parse_id_from_bounce("bounces+1234+@local") == 1234
+    assert parse_id_from_bounce("anything+1234+@local") == 1234
     assert parse_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234
