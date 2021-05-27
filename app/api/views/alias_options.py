@@ -9,7 +9,7 @@ from app.dashboard.views.custom_alias import (
 from app.extensions import db
 from app.log import LOG
 from app.models import AliasUsedOn, Alias, User
-from app.utils import convert_to_id, random_word
+from app.utils import convert_to_id, random_word, get_suffix
 
 
 @api_bp.route("/alias/options")
@@ -76,7 +76,7 @@ def options():
         if DISABLE_ALIAS_SUFFIX:
             ret["custom"]["suffixes"].append(f"@{domain}")
         else:
-            ret["custom"]["suffixes"].append(f".{random_word()}@{domain}")
+            ret["custom"]["suffixes"].append(f".{get_suffix(user)}@{domain}")
 
     for custom_domain in user.verified_custom_domains():
         ret["custom"]["suffixes"].append("@" + custom_domain.domain)
@@ -156,7 +156,7 @@ def options_v2():
         if DISABLE_ALIAS_SUFFIX:
             ret["suffixes"].append(f"@{domain}")
         else:
-            ret["suffixes"].append(f".{random_word()}@{domain}")
+            ret["suffixes"].append(f".{get_suffix(user)}@{domain}")
 
     for custom_domain in user.verified_custom_domains():
         ret["suffixes"].append("@" + custom_domain.domain)
@@ -232,7 +232,7 @@ def options_v3():
         if DISABLE_ALIAS_SUFFIX:
             ret["suffixes"].append(f"@{domain}")
         else:
-            ret["suffixes"].append(f".{random_word()}@{domain}")
+            ret["suffixes"].append(f".{get_suffix(user)}@{domain}")
 
     for custom_domain in user.verified_custom_domains():
         ret["suffixes"].append("@" + custom_domain.domain)

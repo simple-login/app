@@ -10,7 +10,6 @@ from app.config import (
     DISABLE_ALIAS_SUFFIX,
     CUSTOM_ALIAS_SECRET,
     ALIAS_LIMIT,
-    ALIAS_RANDOM_SUFFIX_LENGTH,
 )
 from app.dashboard.base import dashboard_bp
 from app.extensions import db, limiter
@@ -23,9 +22,8 @@ from app.models import (
     User,
     AliasMailbox,
     DomainDeletedAlias,
-    AliasSuffixEnum,
 )
-from app.utils import random_word, random_string
+from app.utils import get_suffix
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 
@@ -250,20 +248,6 @@ def custom_alias():
         at_least_a_premium_domain=at_least_a_premium_domain,
         mailboxes=mailboxes,
     )
-
-
-def get_suffix(user: User) -> str:
-    """Get random suffix for an alias based on user's preference.
-
-    Args:
-        user (User): the user who is trying to create an alias
-
-    Returns:
-        str: the random suffix generated
-    """
-    if user.random_alias_suffix == AliasSuffixEnum.random_string.value:
-        return random_string(ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
-    return random_word()
 
 
 def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:

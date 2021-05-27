@@ -36,6 +36,7 @@ from app.utils import (
     random_words,
     random_word,
     sanitize_email,
+    get_suffix,
 )
 
 
@@ -1124,7 +1125,7 @@ class Alias(db.Model, ModelMixin):
 
         # find the right suffix - avoid infinite loop by running this at max 1000 times
         for i in range(1000):
-            suffix = random_word()
+            suffix = get_suffix(user)
             email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
 
             if not cls.get_by(email=email) and not DeletedAlias.get_by(email=email):
