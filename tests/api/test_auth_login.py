@@ -1,15 +1,21 @@
+import unicodedata
+
 import pytest
 from flask import url_for
 
 from app.extensions import db
 from app.models import User, AccountActivation
 
+PASSWORD_1 = "Aurélie"
+PASSWORD_2 = unicodedata.normalize('NFKD', PASSWORD_1)
+assert PASSWORD_1 != PASSWORD_2
+
 
 @pytest.mark.parametrize("mfa", (True, False), ids=("MFA", "no MFA"))
 def test_auth_login_success(flask_client, mfa: bool):
     User.create(
         email="abcd@gmail.com",
-        password="password",
+        password=PASSWORD_1,
         name="Test User",
         activated=True,
         enable_otp=mfa,
@@ -20,7 +26,7 @@ def test_auth_login_success(flask_client, mfa: bool):
         url_for("api.auth_login"),
         json={
             "email": "abcd@gmail.com",
-            "password": "password",
+            "password": PASSWORD_2,
             "device": "Test Device",
         },
     )
