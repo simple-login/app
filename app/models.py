@@ -163,10 +163,10 @@ class AliasGeneratorEnum(EnumE):
     uuid = 2  # aliases are generated based on uuid
 
 
-
 class AliasSuffixEnum(EnumE):
     word = 0  # Random word from dictionary file
     random_string = 1  # Completely random string
+
 
 class Hibp(db.Model, ModelMixin):
     __tablename__ = "hibp"
@@ -175,7 +175,6 @@ class Hibp(db.Model, ModelMixin):
 
     def __repr__(self):
         return f"<HIBP Breach {self.id} {self.name}>"
-
 
 
 class Fido(db.Model, ModelMixin):
