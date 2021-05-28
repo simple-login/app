@@ -7,7 +7,16 @@ from sqlalchemy.orm import joinedload
 
 from app.config import PAGE_LIMIT
 from app.extensions import db
-from app.models import Alias, Contact, EmailLog, Mailbox, AliasMailbox, CustomDomain
+from app.models import (
+    Alias,
+    Contact,
+    EmailLog,
+    Mailbox,
+    AliasMailbox,
+    CustomDomain,
+    AliasHibp,
+)
+from app.utils import query2str
 
 
 @dataclass
@@ -237,6 +246,14 @@ def get_alias_infos_with_pagination_v3(
         .subquery()
     )
 
+    alias_breach_subquery = (
+        db.session.query(Alias.id, func.count(AliasHibp.id).label("nb_breach"))
+        .join(AliasHibp, Alias.id == AliasHibp.alias_id, isouter=True)
+        .filter(Alias.user_id == user.id)
+        .group_by(Alias.id)
+        .subquery()
+    )
+
     if query:
         mailboxes_sub = (
             db.session.query(
@@ -282,6 +299,7 @@ def get_alias_infos_with_pagination_v3(
             alias_activity_subquery.c.nb_reply,
             alias_activity_subquery.c.nb_blocked,
             alias_activity_subquery.c.nb_forward,
+            alias_breach_subquery.c.nb_breach,
         )
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(CustomDomain, Alias.custom_domain_id == CustomDomain.id, isouter=True)
@@ -289,6 +307,7 @@ def get_alias_infos_with_pagination_v3(
         .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
         .filter(Alias.id == alias_activity_subquery.c.id)
         .filter(Alias.id == alias_contact_subquery.c.id)
+        .filter(Alias.id == alias_breach_subquery.c.id)
         .filter(Alias.id == mailboxes_sub.c.id)
         .filter(
             or_(
@@ -322,6 +341,8 @@ def get_alias_infos_with_pagination_v3(
         q = q.filter(Alias.enabled)
     elif alias_filter == "disabled":
         q = q.filter(Alias.enabled.is_(False))
+    elif alias_filter == "hibp":
+        q = q.filter(alias_breach_subquery.c.nb_breach > 0)
 
     q = q.order_by(Alias.pinned.desc())
 
@@ -340,7 +361,16 @@ def get_alias_infos_with_pagination_v3(
     q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
 
     ret = []
-    for alias, contact, email_log, custom_domain, nb_reply, nb_blocked, nb_forward in q:
+    for (
+        alias,
+        contact,
+        email_log,
+        custom_domain,
+        nb_reply,
+        nb_blocked,
+        nb_forward,
+        nb_breach,
+    ) in q:
         ret.append(
             AliasInfo(
                 alias=alias,
