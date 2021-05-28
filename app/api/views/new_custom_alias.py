@@ -44,7 +44,7 @@ def new_custom_alias():
         409 if the alias already exists
 
     """
-    LOG.e("/alias/custom/new is obsolete")
+    LOG.w("/alias/custom/new is obsolete. User-Agent:%s", request.headers["User-Agent"])
     user: User = g.user
     if not user.can_create_new_alias():
         LOG.d("user %s cannot create any custom alias", user)

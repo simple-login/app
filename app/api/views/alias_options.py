@@ -27,7 +27,7 @@ def options():
         existing: array of existing aliases
 
     """
-    LOG.e("/alias/options is obsolete")
+    LOG.w("/alias/options is obsolete. User-Agent:%s", request.headers["User-Agent"])
     user = g.user
     hostname = request.args.get("hostname")
 
@@ -106,7 +106,7 @@ def options_v2():
 
 
     """
-    LOG.e("/v2/alias/options is obsolete")
+    LOG.w("/v2/alias/options is obsolete. User-Agent:%s", request.headers["User-Agent"])
 
     user = g.user
     hostname = request.args.get("hostname")
@@ -186,7 +186,7 @@ def options_v3():
 
 
     """
-    LOG.e("/v3/alias/options is obsolete")
+    LOG.w("/v2/alias/options is obsolete. User-Agent:%s", request.headers["User-Agent"])
     user = g.user
     hostname = request.args.get("hostname")
 
