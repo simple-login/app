@@ -1626,7 +1626,9 @@ def handle(envelope: Envelope) -> str:
             # but it's possible that some MTA don't send the bounce report correctly
             # todo: to remove once this issue is understood
             if mail_from == "<>":
-                LOG.exception("email from <> to reverse alias %s. \n%s", rcpt_to, msg)
+                LOG.e(
+                    "email from <> to reverse alias %s. \n%s", rcpt_to, msg.as_string()
+                )
 
             is_delivered, smtp_status = handle_reply(envelope, copy_msg, rcpt_to)
             res.append((is_delivered, smtp_status))
