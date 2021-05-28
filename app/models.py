@@ -2022,8 +2022,12 @@ class AliasHibp(db.Model, ModelMixin):
 
     __table_args__ = (db.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),)
 
-    alias_id = db.Column(db.Integer(), db.ForeignKey("alias.id", ondelete="cascade"))
-    hibp_id = db.Column(db.Integer(), db.ForeignKey("hibp.id", ondelete="cascade"))
+    alias_id = db.Column(
+        db.Integer(), db.ForeignKey("alias.id", ondelete="cascade"), index=True
+    )
+    hibp_id = db.Column(
+        db.Integer(), db.ForeignKey("hibp.id", ondelete="cascade"), index=True
+    )
 
     alias = db.relationship(
         "Alias", backref=db.backref("alias_hibp", cascade="all, delete-orphan")
