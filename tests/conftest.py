@@ -1,4 +1,5 @@
 import os
+import secrets
 
 # use the tests/test.env config fle
 # flake8: noqa: E402
@@ -6,6 +7,9 @@ os.environ["CONFIG"] = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests/test.env")
 )
 
+# set before importing any other module as environment is read at import time
+## use a throwaway site key
+os.environ["PW_SITE_KEY"] = secrets.token_hex(32)
 
 import pytest
 
