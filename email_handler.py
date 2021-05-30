@@ -1598,6 +1598,12 @@ def handle(envelope: Envelope) -> str:
         LOG.w("Grey listing applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
         return "421 SL Retry later"
 
+    # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
+    # todo: remove logging
+    if len(rcpt_tos) == 1 and is_reply_email(rcpt_tos[0]) and mail_from == "<>":
+        LOG.w("out-of-office email to reverse alias %s. %s", rcpt_tos[0], msg.as_string())
+        return "250 SL E28"
+
     # result of all deliveries
     # each element is a couple of whether the delivery is successful and the smtp status
     res: [(bool, str)] = []
@@ -1620,16 +1626,6 @@ def handle(envelope: Envelope) -> str:
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if is_reply_email(rcpt_to):
             LOG.d("Reply phase %s(%s) -> %s", mail_from, copy_msg["From"], rcpt_to)
-
-            # for debugging. A reverse alias should never receive a bounce report from MTA
-            # as emails are sent with VERP
-            # but it's possible that some MTA don't send the bounce report correctly
-            # todo: to remove once this issue is understood
-            if mail_from == "<>":
-                LOG.e(
-                    "email from <> to reverse alias %s. \n%s", rcpt_to, msg.as_string()
-                )
-
             is_delivered, smtp_status = handle_reply(envelope, copy_msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
