@@ -1481,12 +1481,10 @@ def handle_bounce(envelope, rcpt_to, msg: Message) -> str:
 
         if content_type != "multipart/report" or envelope.mail_from != "<>":
             # forward the email again to the alias
-            # todo: remove logging
-            LOG.w(
-                "Handle auto reply %s %s. Msg:\n%s",
+            LOG.i(
+                "Handle auto reply %s %s",
                 content_type,
                 envelope.mail_from,
-                msg,
             )
 
             contact: Contact = email_log.contact
@@ -1601,7 +1599,9 @@ def handle(envelope: Envelope) -> str:
     # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
     # todo: remove logging
     if len(rcpt_tos) == 1 and is_reply_email(rcpt_tos[0]) and mail_from == "<>":
-        LOG.w("out-of-office email to reverse alias %s. %s", rcpt_tos[0], msg.as_string())
+        LOG.w(
+            "out-of-office email to reverse alias %s. %s", rcpt_tos[0], msg.as_string()
+        )
         return "250 SL E28"
 
     # result of all deliveries
