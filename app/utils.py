@@ -65,3 +65,8 @@ def sanitize_email(email_address: str) -> str:
     if email_address:
         return email_address.lower().strip().replace(" ", "").replace("\n", " ")
     return email_address
+
+
+def query2str(query):
+    """Useful utility method to print out a SQLAlchemy query"""
+    return query.statement.compile(compile_kwargs={"literal_binds": True})
