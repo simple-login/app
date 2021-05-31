@@ -1,5 +1,6 @@
 import enum
 import random
+import unicodedata
 import uuid
 from email.utils import formataddr
 from typing import List, Tuple, Optional
@@ -183,6 +184,7 @@ class Fido(db.Model, ModelMixin):
     sign_count = db.Column(db.Integer(), nullable=False)
     name = db.Column(db.String(128), nullable=False, unique=False)
 
+_NORMALIZATION_FORM = "NFKC"
 
 class User(db.Model, ModelMixin, UserMixin):
     __tablename__ = "users"
@@ -523,6 +525,7 @@ class User(db.Model, ModelMixin, UserMixin):
             return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
 
     def set_password(self, password):
+        password = unicodedata.normalize(_NORMALIZATION_FORM, password)
         salt = bcrypt.gensalt()
         password_hash = bcrypt.hashpw(password.encode(), salt).decode()
         self.salt = salt.decode()
@@ -531,6 +534,8 @@ class User(db.Model, ModelMixin, UserMixin):
     def check_password(self, password) -> bool:
         if not self.password:
             return False
+
+        password = unicodedata.normalize(_NORMALIZATION_FORM, password)
         password_hash = bcrypt.hashpw(password.encode(), self.salt.encode())
         return self.password.encode() == password_hash
 
