@@ -18,7 +18,7 @@
   {{ render_text(breach.name + " (" + breach.date.format('YYYY-MM-DD') + ")") }}
   {{ render_text(breach.description) }}
 
-  {{ render_text("Breached data: " + breach.data_classes|join(', ', attribute='description')) }}
+  {{ render_text("Breached data: " + breach.data_classes|join(', ', attribute='attribute')) }}
   {%- endif %}
   {%- endfor %}
   {%- endif %}

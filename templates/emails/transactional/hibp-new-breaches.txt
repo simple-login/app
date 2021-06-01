@@ -18,7 +18,7 @@ And {{ (alias.hibp_breaches_not_notified_user|length) - 3 }} more data breaches.
 {{ breach.name }} ({{ breach.date.format('YYYY-MM-DD') }})
 {{ breach.description|striptags }}
 
-Breached data: {{ breach.data_classes|join(', ', attribute='description') }}
+Breached data: {{ breach.data_classes|join(', ', attribute='attribute') }}
 {%- endif %}
 {%- endfor %}
 {%- endif %}

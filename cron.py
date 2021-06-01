@@ -842,7 +842,7 @@ async def check_hibp():
     LOG.d("Updating list of known breach types")
     r = requests.get("https://haveibeenpwned.com/api/v3/dataclasses")
     for entry in r.json():
-        HibpDataClass.get_or_create(description=entry)
+        HibpDataClass.get_or_create(attribute=entry)
 
     db.session.commit()
 
@@ -853,8 +853,8 @@ async def check_hibp():
         hibp_entry.date = arrow.get(entry["BreachDate"])
         hibp_entry.description = entry["Description"]
         hibp_entry.data_classes = [
-            HibpDataClass.get_by(description=description)
-            for description in entry["DataClasses"]
+            HibpDataClass.get_by(attribute=attribute)
+            for attribute in entry["DataClasses"]
         ]
 
     db.session.commit()

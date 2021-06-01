@@ -164,7 +164,7 @@ class AliasGeneratorEnum(EnumE):
 
 class HibpDataClass(db.Model, ModelMixin):
     __tablename__ = "hibpdataclass"
-    description = db.Column(db.Text, nullable=False, unique=True, index=True)
+    attribute = db.Column(db.Text, nullable=False, unique=True, index=True)
 
     breaches = db.relationship("Hibp", secondary="hibp_hibpdataclass")
 
@@ -2089,7 +2089,7 @@ class HibpHibpDataClass(db.Model, ModelMixin):
         ),
     )
 
-    hibp_id = db.Column(db.Integer(), db.ForeignKey("hibp.id"))
+    hibp_id = db.Column(db.Integer(), db.ForeignKey("hibp.id"), index=True)
     hibp_dataclass_id = db.Column(db.Integer(), db.ForeignKey("hibpdataclass.id"))
 
     hibp = db.relationship(
