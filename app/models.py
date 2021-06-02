@@ -5,7 +5,6 @@ from email.utils import formataddr
 from typing import List, Tuple, Optional
 
 import arrow
-import bcrypt
 from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
