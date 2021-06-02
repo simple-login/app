@@ -1596,6 +1596,19 @@ def handle(envelope: Envelope) -> str:
         email_log = EmailLog.get(email_log_id)
         return handle_bounce(envelope, email_log, msg)
 
+    # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
+    if len(rcpt_tos) == 1 and mail_from.startswith(BOUNCE_PREFIX):
+        email_log_id = parse_id_from_bounce(mail_from)
+        email_log = EmailLog.get(email_log_id)
+        alias = Alias.get_by(email=rcpt_tos[0])
+        LOG.e(
+            "iCloud bounces %s %s msg=%s",
+            email_log,
+            alias,
+            msg.as_string(),
+        )
+        return handle_bounce(envelope, email_log, msg)
+
     # Whether it's necessary to apply greylisting
     if greylisting_needed(mail_from, rcpt_tos):
         LOG.w("Grey listing applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
