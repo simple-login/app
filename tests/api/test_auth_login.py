@@ -7,7 +7,7 @@ from app.extensions import db
 from app.models import User, AccountActivation
 
 PASSWORD_1 = "Aurélie"
-PASSWORD_2 = unicodedata.normalize('NFKD', PASSWORD_1)
+PASSWORD_2 = unicodedata.normalize("NFKD", PASSWORD_1)
 assert PASSWORD_1 != PASSWORD_2
 
 

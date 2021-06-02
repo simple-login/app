@@ -184,6 +184,7 @@ class Fido(db.Model, ModelMixin):
     sign_count = db.Column(db.Integer(), nullable=False)
     name = db.Column(db.String(128), nullable=False, unique=False)
 
+
 class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
     __tablename__ = "users"
     email = db.Column(db.String(256), unique=True, nullable=False)
