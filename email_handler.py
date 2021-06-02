@@ -1597,7 +1597,11 @@ def handle(envelope: Envelope) -> str:
         return handle_bounce(envelope, email_log, msg)
 
     # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
-    if len(rcpt_tos) == 1 and mail_from.startswith(BOUNCE_PREFIX):
+    if (
+        len(rcpt_tos) == 1
+        and mail_from.startswith(BOUNCE_PREFIX)
+        and mail_from.endswith(BOUNCE_SUFFIX)
+    ):
         email_log_id = parse_id_from_bounce(mail_from)
         email_log = EmailLog.get(email_log_id)
         alias = Alias.get_by(email=rcpt_tos[0])
