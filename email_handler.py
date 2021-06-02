@@ -1463,18 +1463,24 @@ def handle_transactional_bounce(envelope: Envelope, rcpt_to):
         Bounce.create(email=transactional.email, commit=True)
 
 
-def handle_bounce(envelope, rcpt_to, msg: Message) -> str:
+def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
     """
     Return SMTP status, e.g. "500 Error"
     """
-    LOG.d("handle bounce sent to %s", rcpt_to)
-
-    # parse the EmailLog
-    email_log_id = parse_id_from_bounce(rcpt_to)
-    email_log = EmailLog.get(email_log_id)
 
     if not email_log:
+        LOG.w("No such email log")
         return "550 SL E27 No such email log"
+
+    contact: Contact = email_log.contact
+    alias = contact.alias
+    LOG.d(
+        "handle bounce for %s, phase=%s, contact=%s, alias=%s",
+        email_log,
+        email_log.get_phase(),
+        contact,
+        alias,
+    )
 
     if email_log.is_reply:
         content_type = msg.get_content_type().lower()
@@ -1573,23 +1579,22 @@ def handle(envelope: Envelope) -> str:
         handle_transactional_bounce(envelope, rcpt_tos[0])
         return "250 bounce handled"
 
-    # whether this is a bounce report
-    is_bounce = False
-
+    # Handle bounce
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
     ):
-        is_bounce = True
+        email_log_id = parse_id_from_bounce(rcpt_tos[0])
+        email_log = EmailLog.get(email_log_id)
+        return handle_bounce(envelope, email_log, msg)
 
     if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
         f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
     ):
-        is_bounce = True
-
-    if is_bounce:
-        return handle_bounce(envelope, rcpt_tos[0], msg)
+        email_log_id = parse_id_from_bounce(rcpt_tos[0])
+        email_log = EmailLog.get(email_log_id)
+        return handle_bounce(envelope, email_log, msg)
 
     # Whether it's necessary to apply greylisting
     if greylisting_needed(mail_from, rcpt_tos):

@@ -1510,6 +1510,12 @@ class EmailLog(db.Model, ModelMixin):
         else:
             return "forward"
 
+    def get_phase(self) -> str:
+        if self.is_reply:
+            return "reply"
+        else:
+            return "forward"
+
     def __repr__(self):
         return f"<EmailLog {self.id}>"
 
