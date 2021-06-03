@@ -6,12 +6,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from app.config import DB_URI
 from app.email_utils import send_email, render
-from app.extensions import db
-from app.log import LOG
-from app.models import (
-    User,
-    Mailbox,
-)
+from app.models import *
 from job_runner import (
     onboarding_pgp,
     onboarding_browser_extension,
