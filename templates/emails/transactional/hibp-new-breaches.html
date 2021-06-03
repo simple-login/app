@@ -1,30 +1,44 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi") }}
+  {% call text() %}
+    <h1>
+      {{ breached_aliases|count }} of your aliases are found in data breaches.
+    </h1>
+  {% endcall %}
 
-  {%- for alias in breached_aliases %}
-  {%- if loop.index == 11 and loop.length > 10 %}
-  And {{ breached_aliases|length - 10 }} more aliases...
-  {%- elif loop.index > 11 %}
-  {%- else %}
-  {{ render_text("Your alias " + alias.email + " was found in one or more data breaches:") }}
+  <ol>
+    {%- for alias in breached_aliases[:10] %}
+      <li>{% call text() %}
+        <b>{{ alias.email }}</b> was found in {{ alias.hibp_breaches_not_notified_user|count }} data breaches. <br>
 
-  {%- for breach in alias.hibp_breaches_not_notified_user|sort(attribute='date', reverse=True) %}
-  {%- if loop.index == 4 and loop.length > 4 %}
-  {{ render_text("And " + ((alias.hibp_breaches_not_notified_user|length) - 3)|string + " more data breaches...") }}
-  {%- elif loop.index > 4 %}
-  {%- else %}
-  {{ render_text(breach.name + " (" + breach.date.format('YYYY-MM-DD') + ")") }}
-  {{ render_text(breach.description) }}
+        <ul>
+          {% set breaches = alias.hibp_breaches_not_notified_user|sort(attribute='date', reverse=True) %}
+          {%- for breach in breaches[:4] %}
+            <li>
+              <b>{{ breach.name }}</b> ({{ breach.date.format('YYYY-MM-DD') }}).
+              {{ breach.description }}
+              Breached data includes {{ breach.data_classes|join(', ', attribute='attribute') }}.
+            </li>
+          {%- endfor %}
+        </ul>
 
-  {{ render_text("Breached data: " + breach.data_classes|join(', ', attribute='attribute')) }}
-  {%- endif %}
-  {%- endfor %}
-  {%- endif %}
-  {%- endfor %}
+        {% if  breaches|length > 4 %}
+          And {{ breaches|length - 4 }} more data breaches...
+        {% endif %}
 
-  {{ render_text("For more information, check <a href='https://haveibeenpwned.com/'>HaveIBeenPwned.com</a>.") }}
+      {% endcall %}</li>
+    {%- endfor %}
+
+  </ol>
+
+  {% if  breached_aliases|length > 10 %}
+    {% call text() %}
+      And {{ breached_aliases|length - 10 }} more aliases...
+    {% endcall %}
+  {% endif %}
+
+  {{ render_text("For more information, please check <a href='https://haveibeenpwned.com/'>HaveIBeenPwned.com</a>.") }}
 
   {{ render_text('Best, <br />SimpleLogin Team.') }}
 {% endblock %}

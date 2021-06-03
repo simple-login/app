@@ -915,7 +915,7 @@ def notify_hibp():
             user.email,
             f"You were in a data breach",
             render(
-                "transactional/hibp-new-breaches.txt",
+                "transactional/hibp-new-breaches.txt.jinja2",
                 user=user,
                 breached_aliases=new_breaches,
             ),
