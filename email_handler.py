@@ -1605,7 +1605,7 @@ def handle(envelope: Envelope) -> str:
         email_log_id = parse_id_from_bounce(mail_from)
         email_log = EmailLog.get(email_log_id)
         alias = Alias.get_by(email=rcpt_tos[0])
-        LOG.e(
+        LOG.w(
             "iCloud bounces %s %s msg=%s",
             email_log,
             alias,
