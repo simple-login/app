@@ -106,6 +106,7 @@ from app.email_utils import (
     spf_pass,
     sl_sendmail,
     sanitize_header,
+    get_queue_id,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -1535,6 +1536,9 @@ def handle(envelope: Envelope) -> str:
     envelope.rcpt_tos = rcpt_tos
 
     msg = email.message_from_bytes(envelope.original_content)
+    postfix_queue_id = get_queue_id(msg)
+    if postfix_queue_id:
+        set_message_id(postfix_queue_id)
 
     # sanitize email headers
     sanitize_header(msg, "from")
