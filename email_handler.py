@@ -492,13 +492,13 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         LOG.w("User %s disabled, disable forwarding emails for %s", user, alias)
         return [(False, "550 SL E20 Account disabled")]
 
-    mail_from = envelope.mail_from
-    for mb in alias.mailboxes:
-        # email send from a mailbox to alias
-        if mb.email == mail_from:
-            LOG.w("cycle email sent from %s to %s", mb, alias)
-            handle_email_sent_to_ourself(alias, mb, msg, user)
-            return [(True, "250 Message accepted for delivery")]
+    # mail_from = envelope.mail_from
+    # for mb in alias.mailboxes:
+    #     # email send from a mailbox to alias
+    #     if mb.email == mail_from:
+    #         LOG.w("cycle email sent from %s to %s", mb, alias)
+    #         handle_email_sent_to_ourself(alias, mb, msg, user)
+    #         return [(True, "250 Message accepted for delivery")]
 
     LOG.d("Create or get contact for from:%s reply-to:%s", msg["From"], msg["Reply-To"])
     # prefer using Reply-To when creating contact
