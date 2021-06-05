@@ -462,7 +462,10 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
 
         sub: Subscription = self.get_subscription()
         if sub:
-            return f"Paddle Subscription {sub.subscription_id}"
+            if sub.cancelled:
+                return f"Cancelled Paddle Subscription {sub.subscription_id}"
+            else:
+                return f"Active Paddle Subscription {sub.subscription_id}"
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
         if apple_sub and apple_sub.is_valid():
