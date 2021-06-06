@@ -34,7 +34,6 @@ from app.utils import (
     convert_to_id,
     random_string,
     random_words,
-    random_word,
     sanitize_email,
     get_suffix,
 )

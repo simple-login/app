@@ -9,7 +9,7 @@ from app.dashboard.views.custom_alias import (
 from app.extensions import db
 from app.log import LOG
 from app.models import AliasUsedOn, Alias, User
-from app.utils import convert_to_id, random_word, get_suffix
+from app.utils import convert_to_id, get_suffix
 
 
 @api_bp.route("/alias/options")
