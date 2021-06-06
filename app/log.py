@@ -18,7 +18,7 @@ _MESSAGE_ID = ""
 
 def set_message_id(message_id):
     global _MESSAGE_ID
-    print("set message_id", message_id)
+    LOG.d("set message_id %s", message_id)
     _MESSAGE_ID = message_id
 
 

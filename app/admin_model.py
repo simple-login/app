@@ -117,7 +117,12 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
             flash(f"Subscription extended to {manual_sub.end_at.humanize()}", "success")
             continue
 
-        if user.is_premium() and not user.in_trial():
+        # user can have manual subscription applied if their current subscription is canceled
+        if (
+            user.is_premium()
+            and not user.in_trial()
+            and not user.subscription_cancelled
+        ):
             flash(f"User {user} is already premium", "warning")
             continue
 

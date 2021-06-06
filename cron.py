@@ -816,7 +816,7 @@ async def _hibp_check(api_key, queue):
 
         LOG.d("Updated breaches info for %s", alias)
 
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(1.6)
 
 
 async def check_hibp():

@@ -27,6 +27,7 @@ from app.email_utils import (
     should_disable,
     decode_text,
     parse_id_from_bounce,
+    get_queue_id,
 )
 from app.extensions import db
 from app.models import User, CustomDomain, Alias, Contact, EmailLog
@@ -720,3 +721,11 @@ def test_parse_id_from_bounce():
     assert parse_id_from_bounce("bounces+1234+@local") == 1234
     assert parse_id_from_bounce("anything+1234+@local") == 1234
     assert parse_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234
+
+
+def test_get_queue_id():
+    msg = email.message_from_string(
+        "Received: from mail-wr1-x434.google.com (mail-wr1-x434.google.com [IPv6:2a00:1450:4864:20::434])\r\n\t(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))\r\n\t(No client certificate requested)\r\n\tby mx1.simplelogin.co (Postfix) with ESMTPS id 4FxQmw1DXdz2vK2\r\n\tfor <jglfdjgld@alias.com>; Fri,  4 Jun 2021 14:55:43 +0000 (UTC)"
+    )
+
+    assert get_queue_id(msg) == "4FxQmw1DXdz2vK2"

@@ -106,6 +106,7 @@ from app.email_utils import (
     spf_pass,
     sl_sendmail,
     sanitize_header,
+    get_queue_id,
 )
 from app.extensions import db
 from app.greylisting import greylisting_needed
@@ -491,13 +492,13 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         LOG.w("User %s disabled, disable forwarding emails for %s", user, alias)
         return [(False, "550 SL E20 Account disabled")]
 
-    mail_from = envelope.mail_from
-    for mb in alias.mailboxes:
-        # email send from a mailbox to alias
-        if mb.email == mail_from:
-            LOG.w("cycle email sent from %s to %s", mb, alias)
-            handle_email_sent_to_ourself(alias, mb, msg, user)
-            return [(True, "250 Message accepted for delivery")]
+    # mail_from = envelope.mail_from
+    # for mb in alias.mailboxes:
+    #     # email send from a mailbox to alias
+    #     if mb.email == mail_from:
+    #         LOG.w("cycle email sent from %s to %s", mb, alias)
+    #         handle_email_sent_to_ourself(alias, mb, msg, user)
+    #         return [(True, "250 Message accepted for delivery")]
 
     LOG.d("Create or get contact for from:%s reply-to:%s", msg["From"], msg["Reply-To"])
     # prefer using Reply-To when creating contact
@@ -1463,30 +1464,34 @@ def handle_transactional_bounce(envelope: Envelope, rcpt_to):
         Bounce.create(email=transactional.email, commit=True)
 
 
-def handle_bounce(envelope, rcpt_to, msg: Message) -> str:
+def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
     """
     Return SMTP status, e.g. "500 Error"
     """
-    LOG.d("handle bounce sent to %s", rcpt_to)
-
-    # parse the EmailLog
-    email_log_id = parse_id_from_bounce(rcpt_to)
-    email_log = EmailLog.get(email_log_id)
 
     if not email_log:
+        LOG.w("No such email log")
         return "550 SL E27 No such email log"
+
+    contact: Contact = email_log.contact
+    alias = contact.alias
+    LOG.d(
+        "handle bounce for %s, phase=%s, contact=%s, alias=%s",
+        email_log,
+        email_log.get_phase(),
+        contact,
+        alias,
+    )
 
     if email_log.is_reply:
         content_type = msg.get_content_type().lower()
 
         if content_type != "multipart/report" or envelope.mail_from != "<>":
             # forward the email again to the alias
-            # todo: remove logging
-            LOG.w(
-                "Handle auto reply %s %s. Msg:\n%s",
+            LOG.i(
+                "Handle auto reply %s %s",
                 content_type,
                 envelope.mail_from,
-                msg,
             )
 
             contact: Contact = email_log.contact
@@ -1531,6 +1536,9 @@ def handle(envelope: Envelope) -> str:
     envelope.rcpt_tos = rcpt_tos
 
     msg = email.message_from_bytes(envelope.original_content)
+    postfix_queue_id = get_queue_id(msg)
+    if postfix_queue_id:
+        set_message_id(postfix_queue_id)
 
     # sanitize email headers
     sanitize_header(msg, "from")
@@ -1575,28 +1583,52 @@ def handle(envelope: Envelope) -> str:
         handle_transactional_bounce(envelope, rcpt_tos[0])
         return "250 bounce handled"
 
-    # whether this is a bounce report
-    is_bounce = False
-
+    # Handle bounce
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
     ):
-        is_bounce = True
+        email_log_id = parse_id_from_bounce(rcpt_tos[0])
+        email_log = EmailLog.get(email_log_id)
+        return handle_bounce(envelope, email_log, msg)
 
     if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
         f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
     ):
-        is_bounce = True
+        email_log_id = parse_id_from_bounce(rcpt_tos[0])
+        email_log = EmailLog.get(email_log_id)
+        return handle_bounce(envelope, email_log, msg)
 
-    if is_bounce:
-        return handle_bounce(envelope, rcpt_tos[0], msg)
+    # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
+    if (
+        len(rcpt_tos) == 1
+        and mail_from.startswith(BOUNCE_PREFIX)
+        and mail_from.endswith(BOUNCE_SUFFIX)
+    ):
+        email_log_id = parse_id_from_bounce(mail_from)
+        email_log = EmailLog.get(email_log_id)
+        alias = Alias.get_by(email=rcpt_tos[0])
+        LOG.w(
+            "iCloud bounces %s %s msg=%s",
+            email_log,
+            alias,
+            msg.as_string(),
+        )
+        return handle_bounce(envelope, email_log, msg)
 
     # Whether it's necessary to apply greylisting
     if greylisting_needed(mail_from, rcpt_tos):
         LOG.w("Grey listing applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
         return "421 SL Retry later"
+
+    # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
+    # todo: remove logging
+    if len(rcpt_tos) == 1 and is_reply_email(rcpt_tos[0]) and mail_from == "<>":
+        LOG.w(
+            "out-of-office email to reverse alias %s. %s", rcpt_tos[0], msg.as_string()
+        )
+        return "250 SL E28"
 
     # result of all deliveries
     # each element is a couple of whether the delivery is successful and the smtp status
@@ -1620,14 +1652,6 @@ def handle(envelope: Envelope) -> str:
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if is_reply_email(rcpt_to):
             LOG.d("Reply phase %s(%s) -> %s", mail_from, copy_msg["From"], rcpt_to)
-
-            # for debugging. A reverse alias should never receive a bounce report from MTA
-            # as emails are sent with VERP
-            # but it's possible that some MTA don't send the bounce report correctly
-            # todo: to remove once this issue is understood
-            if mail_from == "<>":
-                LOG.exception("email from <> to reverse alias %s. \n%s", rcpt_to, msg)
-
             is_delivered, smtp_status = handle_reply(envelope, copy_msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
