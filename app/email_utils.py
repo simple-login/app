@@ -1202,7 +1202,7 @@ def sl_sendmail(
 
 def get_queue_id(msg: Message) -> Optional[str]:
     """Get the Postfix queue-id from a message"""
-    received_header = msg["Received"]
+    received_header = str(msg["Received"])
     if not received_header:
         return
 
