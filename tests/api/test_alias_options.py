@@ -51,7 +51,7 @@ def test_different_scenarios_v4(flask_client):
     assert r.json["recommendation"]["hostname"] == "www.test.com"
 
 
-def test_different_scenarios_v4(flask_client):
+def test_different_scenarios_v4_2(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
