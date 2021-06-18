@@ -29,7 +29,7 @@ def test_different_scenarios_v4(flask_client):
 
     # <<< with hostname >>>
     r = flask_client.get(
-        url_for("api.options_v3", hostname="www.test.com"),
+        url_for("api.options_v4", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
     )
 
@@ -44,14 +44,14 @@ def test_different_scenarios_v4(flask_client):
     db.session.commit()
 
     r = flask_client.get(
-        url_for("api.options_v3", hostname="www.test.com"),
+        url_for("api.options_v4", hostname="www.test.com"),
         headers={"Authentication": api_key.code},
     )
     assert r.json["recommendation"]["alias"] == alias.email
     assert r.json["recommendation"]["hostname"] == "www.test.com"
 
 
-def test_different_scenarios_v4(flask_client):
+def test_different_scenarios_v4_2(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
