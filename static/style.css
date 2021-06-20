@@ -104,3 +104,13 @@ em {
     font-style: italic;
     margin-bottom: 1em;
 }
+
+.footer-item {
+    padding-left: 0 !important;
+    font-size: 14px;
+}
+
+.footer-list-group {
+    list-style: none;
+    padding-left: 0;
+}

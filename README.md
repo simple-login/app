@@ -236,7 +236,7 @@ If you already have a Postgres database in use, you can skip this section and ju
 Run a Postgres Docker container as your Postgres database server. Make sure to replace `myuser` and `mypassword` with something more secret.
 
 ```bash
-sudo docker run -d \
+docker run -d \
     --name sl-db \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
@@ -251,7 +251,7 @@ sudo docker run -d \
 To test whether the database operates correctly or not, run the following command:
 
 ```bash
-sudo docker exec -it sl-db psql -U myuser simplelogin
+docker exec -it sl-db psql -U myuser simplelogin
 ```
 
 you should be logged in the postgres console. Type `exit` to exit postgres console.
@@ -419,7 +419,7 @@ LOCAL_FILE_UPLOAD=1
 Before running the webapp, you need to prepare the database by running the migration:
 
 ```bash
-sudo docker run --rm \
+docker run --rm \
     --name sl-migration \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/sl/upload:/code/static/upload \
@@ -435,7 +435,7 @@ This command could take a while to download the `simplelogin/app` docker image.
 Init data
 
 ```bash
-sudo docker run --rm \
+docker run --rm \
     --name sl-init \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/simplelogin.env:/code/.env \
@@ -448,7 +448,7 @@ sudo docker run --rm \
 Now, it's time to run the `webapp` container!
 
 ```bash
-sudo docker run -d \
+docker run -d \
     --name sl-app \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/sl/upload:/code/static/upload \
@@ -464,7 +464,7 @@ sudo docker run -d \
 Next run the `email handler`
 
 ```bash
-sudo docker run -d \
+docker run -d \
     --name sl-email \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/sl/upload:/code/static/upload \

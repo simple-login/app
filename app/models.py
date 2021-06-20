@@ -5,7 +5,6 @@ from email.utils import formataddr
 from typing import List, Tuple, Optional
 
 import arrow
-import bcrypt
 from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
@@ -30,6 +29,7 @@ from app.errors import AliasInTrashError
 from app.extensions import db
 from app.log import LOG
 from app.oauth_models import Scope
+from app.pw_models import PasswordOracle
 from app.utils import (
     convert_to_id,
     random_string,
@@ -198,12 +198,9 @@ class Fido(db.Model, ModelMixin):
     name = db.Column(db.String(128), nullable=False, unique=False)
 
 
-class User(db.Model, ModelMixin, UserMixin):
+class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
     __tablename__ = "users"
     email = db.Column(db.String(256), unique=True, nullable=False)
-
-    salt = db.Column(db.String(128), nullable=True)
-    password = db.Column(db.String(128), nullable=True)
 
     name = db.Column(db.String(128), nullable=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
@@ -479,7 +476,10 @@ class User(db.Model, ModelMixin, UserMixin):
 
         sub: Subscription = self.get_subscription()
         if sub:
-            return f"Paddle Subscription {sub.subscription_id}"
+            if sub.cancelled:
+                return f"Cancelled Paddle Subscription {sub.subscription_id}"
+            else:
+                return f"Active Paddle Subscription {sub.subscription_id}"
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
         if apple_sub and apple_sub.is_valid():
@@ -500,6 +500,28 @@ class User(db.Model, ModelMixin, UserMixin):
             return "In Trial"
 
         return "N/A"
+
+    @property
+    def subscription_cancelled(self) -> bool:
+        sub: Subscription = self.get_subscription()
+        if sub and sub.cancelled:
+            return True
+
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and not apple_sub.is_valid():
+            return True
+
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
+        if manual_sub and not manual_sub.is_active():
+            return True
+
+        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+            user_id=self.id
+        )
+        if coinbase_subscription and not coinbase_subscription.is_active():
+            return True
+
+        return False
 
     @property
     def premium_end(self) -> str:
@@ -535,18 +557,6 @@ class User(db.Model, ModelMixin, UserMixin):
             return True
         else:
             return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
-
-    def set_password(self, password):
-        salt = bcrypt.gensalt()
-        password_hash = bcrypt.hashpw(password.encode(), salt).decode()
-        self.salt = salt.decode()
-        self.password = password_hash
-
-    def check_password(self, password) -> bool:
-        if not self.password:
-            return False
-        password_hash = bcrypt.hashpw(password.encode(), self.salt.encode())
-        return self.password.encode() == password_hash
 
     def profile_picture_url(self):
         if self.profile_picture_id:
@@ -1529,6 +1539,12 @@ class EmailLog(db.Model, ModelMixin):
         else:
             return "forward"
 
+    def get_phase(self) -> str:
+        if self.is_reply:
+            return "reply"
+        else:
+            return "forward"
+
     def __repr__(self):
         return f"<EmailLog {self.id}>"
 
@@ -2041,8 +2057,12 @@ class AliasHibp(db.Model, ModelMixin):
 
     __table_args__ = (db.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),)
 
-    alias_id = db.Column(db.Integer(), db.ForeignKey("alias.id"))
-    hibp_id = db.Column(db.Integer(), db.ForeignKey("hibp.id"))
+    alias_id = db.Column(
+        db.Integer(), db.ForeignKey("alias.id", ondelete="cascade"), index=True
+    )
+    hibp_id = db.Column(
+        db.Integer(), db.ForeignKey("hibp.id", ondelete="cascade"), index=True
+    )
 
     alias = db.relationship(
         "Alias", backref=db.backref("alias_hibp", cascade="all, delete-orphan")

@@ -800,6 +800,14 @@ async def _hibp_check(api_key, queue):
         elif r.status_code == 404:
             # No breaches found
             breaches = []
+        elif r.status_code == 429:
+            # rate limited
+            LOG.w("HIBP rate limited, check alias %s in the next run", alias)
+            await asyncio.sleep(1.6)
+            return
+        elif r.status_code > 500:
+            LOG.w("HIBP server 5** error %s", r.status_code)
+            return
         else:
             LOG.error(
                 "An error occured while checking alias %s: %s - %s",
@@ -809,11 +817,21 @@ async def _hibp_check(api_key, queue):
             )
             return
 
+        print([
+            breach
+            for breach in breaches
+            if breach not in alias.hibp_breaches_notified_user
+        ])
         alias.hibp_breaches_not_notified_user = [
             breach
             for breach in breaches
             if breach not in alias.hibp_breaches_notified_user
         ]
+        print([
+            breach
+            for breach in breaches
+            if breach not in alias.hibp_breaches_not_notified_user
+        ])
         alias.hibp_breaches_notified_user = [
             breach
             for breach in breaches
@@ -826,7 +844,7 @@ async def _hibp_check(api_key, queue):
 
         LOG.d("Updated breaches info for %s", alias)
 
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(1.6)
 
 
 async def check_hibp():

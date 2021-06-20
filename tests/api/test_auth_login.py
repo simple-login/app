@@ -1,39 +1,24 @@
+import unicodedata
+
+import pytest
 from flask import url_for
 
 from app.extensions import db
 from app.models import User, AccountActivation
 
-
-def test_auth_login_success_mfa_disabled(flask_client):
-    User.create(
-        email="abcd@gmail.com", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    r = flask_client.post(
-        url_for("api.auth_login"),
-        json={
-            "email": "abcd@gmail.com",
-            "password": "password",
-            "device": "Test Device",
-        },
-    )
-
-    assert r.status_code == 200
-    assert r.json["api_key"]
-    assert r.json["email"]
-    assert not r.json["mfa_enabled"]
-    assert r.json["mfa_key"] is None
-    assert r.json["name"] == "Test User"
+PASSWORD_1 = "Aurélie"
+PASSWORD_2 = unicodedata.normalize("NFKD", PASSWORD_1)
+assert PASSWORD_1 != PASSWORD_2
 
 
-def test_auth_login_success_mfa_enabled(flask_client):
+@pytest.mark.parametrize("mfa", (True, False), ids=("MFA", "no MFA"))
+def test_auth_login_success(flask_client, mfa: bool):
     User.create(
         email="abcd@gmail.com",
-        password="password",
+        password=PASSWORD_1,
         name="Test User",
         activated=True,
-        enable_otp=True,
+        enable_otp=mfa,
     )
     db.session.commit()
 
@@ -41,16 +26,23 @@ def test_auth_login_success_mfa_enabled(flask_client):
         url_for("api.auth_login"),
         json={
             "email": "abcd@gmail.com",
-            "password": "password",
+            "password": PASSWORD_2,
             "device": "Test Device",
         },
     )
 
     assert r.status_code == 200
-    assert r.json["api_key"] is None
-    assert r.json["mfa_enabled"]
-    assert r.json["mfa_key"]
     assert r.json["name"] == "Test User"
+    assert r.json["email"]
+
+    if mfa:
+        assert r.json["api_key"] is None
+        assert r.json["mfa_enabled"]
+        assert r.json["mfa_key"]
+    else:
+        assert r.json["api_key"]
+        assert not r.json["mfa_enabled"]
+        assert r.json["mfa_key"] is None
 
 
 def test_auth_login_device_exist(flask_client):
