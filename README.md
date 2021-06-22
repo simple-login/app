@@ -11,10 +11,6 @@
 <img src="https://img.shields.io/amo/rating/simplelogin?label=Firefox%20Add-On&logo=SimpleLogin">
 </a>
 
-<a href="https://stats.uptimerobot.com/APkzziNWoM">
-<img src="https://img.shields.io/uptimerobot/ratio/7/m782965045-15d8e413b20b5376f58db050">
-</a>
-
 <a href="./LICENSE">
 <img src="https://img.shields.io/github/license/simple-login/app">
 </a>
