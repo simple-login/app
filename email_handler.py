@@ -120,6 +120,7 @@ from app.models import (
     Mailbox,
     Bounce,
     TransactionalEmail,
+    IgnoredEmail,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -1526,6 +1527,17 @@ def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
         return "550 SL E26 Email cannot be forwarded to mailbox"
 
 
+def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:
+    if len(rcpt_tos) != 1:
+        return False
+
+    rcpt_to = rcpt_tos[0]
+    if IgnoredEmail.get_by(mail_from=mail_from, rcpt_to=rcpt_to):
+        return True
+
+    return False
+
+
 def handle(envelope: Envelope) -> str:
     """Return SMTP status"""
 
@@ -1534,6 +1546,10 @@ def handle(envelope: Envelope) -> str:
     rcpt_tos = [sanitize_email(rcpt_to) for rcpt_to in envelope.rcpt_tos]
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
+
+    if should_ignore(mail_from, rcpt_tos):
+        LOG.e("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
+        return "250 email can't be sent from a reverse-alias"
 
     msg = email.message_from_bytes(envelope.original_content)
     postfix_queue_id = get_queue_id(msg)

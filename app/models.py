@@ -2293,3 +2293,10 @@ class Payout(db.Model, ModelMixin):
     comment = db.Column(db.Text)
 
     user = db.relationship(User)
+
+
+class IgnoredEmail(db.Model, ModelMixin):
+    """If an email has mail_from and rcpt_to present in this table, discard it by returning 250 status."""
+
+    mail_from = db.Column(db.String(512), nullable=False)
+    rcpt_to = db.Column(db.String(512), nullable=False)
