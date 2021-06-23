@@ -1700,7 +1700,7 @@ class MailHandler:
             ret = self._handle(envelope)
             return ret
         except Exception:
-            LOG.exception(
+            LOG.e(
                 "email handling fail %s -> %s",
                 envelope.mail_from,
                 envelope.rcpt_tos,
