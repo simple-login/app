@@ -1556,7 +1556,7 @@ def handle(envelope: Envelope) -> str:
         LOG.w("Cannot parse Postfix queue ID from %s", msg["Received"])
 
     if should_ignore(mail_from, rcpt_tos):
-        LOG.e("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
+        LOG.w("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
         return status.E204
 
     # sanitize email headers
