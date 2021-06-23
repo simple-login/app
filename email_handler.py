@@ -1547,14 +1547,16 @@ def handle(envelope: Envelope) -> str:
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
 
-    if should_ignore(mail_from, rcpt_tos):
-        LOG.e("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
-        return "250 email can't be sent from a reverse-alias"
-
     msg = email.message_from_bytes(envelope.original_content)
     postfix_queue_id = get_queue_id(msg)
     if postfix_queue_id:
         set_message_id(postfix_queue_id)
+    else:
+        LOG.w("Cannot parse Postfix queue ID from %s", msg["Received"])
+
+    if should_ignore(mail_from, rcpt_tos):
+        LOG.e("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
+        return "250 email can't be sent from a reverse-alias"
 
     # sanitize email headers
     sanitize_header(msg, "from")
