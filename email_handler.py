@@ -751,7 +751,7 @@ def forward_email_to_mailbox(
             alias,
             mailbox,
         )
-        return False, status.E401
+        return False, status.E521
     else:
         db.session.commit()
         return True, status.E200
