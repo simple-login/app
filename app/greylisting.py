@@ -27,7 +27,7 @@ def greylisting_needed_for_alias(alias: Alias) -> bool:
     )
 
     if nb_activity > MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS:
-        LOG.d(
+        LOG.w(
             "Too much forward on alias %s. Nb Activity %s",
             alias,
             nb_activity,
@@ -54,7 +54,7 @@ def greylisting_needed_for_mailbox(alias: Alias) -> bool:
     )
 
     if nb_activity > MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX:
-        LOG.d(
+        LOG.w(
             "Too much forward on mailbox %s, alias %s. Nb Activity %s",
             alias.mailbox,
             alias,

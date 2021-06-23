@@ -902,7 +902,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
                 msg, contact.pgp_finger_print, contact.pgp_public_key
             )
         except PGPException:
-            LOG.exception(
+            LOG.e(
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
             # to not save the email_log
