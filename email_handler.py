@@ -110,7 +110,7 @@ from app.email_utils import (
     get_queue_id,
 )
 from app.extensions import db
-from app.greylisting import greylisting_needed
+from app.email.rate_limit import rate_limited
 from app.log import LOG, set_message_id
 from app.models import (
     Alias,
@@ -1636,10 +1636,9 @@ def handle(envelope: Envelope) -> str:
         )
         return handle_bounce(envelope, email_log, msg)
 
-    # Whether it's necessary to apply greylisting
-    if greylisting_needed(mail_from, rcpt_tos):
-        LOG.w("Grey listing applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
-        return status.E403
+    if rate_limited(mail_from, rcpt_tos):
+        LOG.w("Rate Limiting applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
+        return status.E522
 
     # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
     # todo: remove logging

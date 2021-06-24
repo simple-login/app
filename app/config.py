@@ -265,7 +265,7 @@ PAGE_LIMIT = 20
 LOCAL_FILE_UPLOAD = "LOCAL_FILE_UPLOAD" in os.environ
 UPLOAD_DIR = None
 
-# Greylisting features
+# Rate Limiting
 # nb max of activity (forward/reply) an alias can have during 1 min
 MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS = 10
 

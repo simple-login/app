@@ -10,10 +10,10 @@ E206 = "250 SL E206 Out of office"
 
 # 4** errors
 # E401 = "421 SL E401 Retry later"
-E402 = "421 SL E402 Retry later"
-E403 = "421 SL E403 Retry later"
-E404 = "421 SL E404 Retry later"
-E405 = "421 SL E405 Retry later"
+E402 = "421 SL E402 Encryption failed - Retry later"
+# E403 = "421 SL E403 Retry later"
+E404 = "421 SL E404 Unexpected error - Retry later"
+E405 = "421 SL E405 Mailbox domain problem - Retry later"
 E406 = "421 SL E406 Retry later"
 
 # 5** errors
@@ -38,3 +38,7 @@ E518 = "550 SL E518 Disabled mailbox"
 E519 = "550 SL E519 Email detected as spam"
 E520 = "550 SL E520 Email cannot be sent to contact"
 E521 = "550 SL E521 Cannot reach mailbox"
+E522 = (
+    "550 SL E522 The user you are trying to contact is receiving mail "
+    "at a rate that prevents additional messages from being delivered."
+)
