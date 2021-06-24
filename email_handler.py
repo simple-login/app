@@ -75,6 +75,7 @@ from app.config import (
     ENABLE_SPAM_ASSASSIN,
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
 )
+from app.email import status
 from app.email.spam import get_spam_score
 from app.email_utils import (
     send_email,
@@ -109,7 +110,7 @@ from app.email_utils import (
     get_queue_id,
 )
 from app.extensions import db
-from app.greylisting import greylisting_needed
+from app.email.rate_limit import rate_limited
 from app.log import LOG, set_message_id
 from app.models import (
     Alias,
@@ -120,6 +121,7 @@ from app.models import (
     Mailbox,
     Bounce,
     TransactionalEmail,
+    IgnoredEmail,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -484,13 +486,13 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         alias = try_auto_create(address)
         if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
-            return [(False, "550 SL E3 Email not exist")]
+            return [(False, status.E515)]
 
     user = alias.user
 
     if user.disabled:
         LOG.w("User %s disabled, disable forwarding emails for %s", user, alias)
-        return [(False, "550 SL E20 Account disabled")]
+        return [(False, status.E504)]
 
     # mail_from = envelope.mail_from
     # for mb in alias.mailboxes:
@@ -517,20 +519,20 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         )
         db.session.commit()
         # do not return 5** to allow user to receive emails later when alias is enabled
-        return [(True, "250 Message accepted for delivery")]
+        return [(True, status.E200)]
 
     ret = []
     mailboxes = alias.mailboxes
 
     # no valid mailbox
     if not mailboxes:
-        return [(False, "550 SL E16 invalid mailbox")]
+        return [(False, status.E516)]
 
     # no need to create a copy of message
     for mailbox in mailboxes:
         if not mailbox.verified:
             LOG.d("%s unverified, do not forward", mailbox)
-            ret.append((False, "550 SL E19 unverified mailbox"))
+            ret.append((False, status.E517))
         else:
             # create a copy of message for each forward
             ret.append(
@@ -559,7 +561,7 @@ def forward_email_to_mailbox(
 
     if mailbox.disabled:
         LOG.debug("%s disabled, do not forward")
-        return False, "550 SL E21 Disabled mailbox"
+        return False, status.E518
 
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
@@ -592,7 +594,7 @@ def forward_email_to_mailbox(
 
         # retry later
         # so when user fixes the mailbox, the email can be delivered
-        return False, "421 SL E14"
+        return False, status.E405
 
     email_log = EmailLog.create(
         contact_id=contact.id, user_id=user.id, mailbox_id=mailbox.id, commit=True
@@ -640,7 +642,7 @@ def forward_email_to_mailbox(
             db.session.commit()
 
             handle_spam(contact, alias, msg, user, mailbox, email_log)
-            return False, "550 SL E1 Email detected as spam"
+            return False, status.E519
 
     if contact.invalid_email:
         LOG.d("add noreply information %s %s", alias, mailbox)
@@ -683,11 +685,11 @@ def forward_email_to_mailbox(
                 msg, mailbox.pgp_finger_print, mailbox.pgp_public_key, can_sign=True
             )
         except PGPException:
-            LOG.exception(
+            LOG.e(
                 "Cannot encrypt message %s -> %s. %s %s", contact, alias, mailbox, user
             )
             # so the client can retry later
-            return False, "421 SL E12 Retry later"
+            return False, status.E406
 
     # add custom header
     add_or_replace_header(msg, _DIRECTION, "Forward")
@@ -749,10 +751,10 @@ def forward_email_to_mailbox(
             alias,
             mailbox,
         )
-        return False, "421 SL E17 Retry later"
+        return False, status.E521
     else:
         db.session.commit()
-        return True, "250 Message accepted for delivery"
+        return True, status.E200
 
 
 def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
@@ -765,7 +767,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # reply_email must end with EMAIL_DOMAIN
     if not reply_email.endswith(EMAIL_DOMAIN):
         LOG.w(f"Reply email {reply_email} has wrong domain")
-        return False, "550 SL E2"
+        return False, status.E501
 
     # handle case where reply email is generated with non-allowed char
     reply_email = normalize_reply_email(reply_email)
@@ -773,7 +775,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
         LOG.w(f"No such forward-email with {reply_email} as reply-email")
-        return False, "550 SL E4 Email not exist"
+        return False, status.E502
 
     alias = contact.alias
     address: str = contact.alias.email
@@ -783,7 +785,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # scenario: a user have removed a domain but due to a bug, the aliases are still there
     if not is_valid_alias_address_domain(alias.email):
         LOG.exception("%s domain isn't known", alias)
-        return False, "550 SL E5"
+        return False, status.E503
 
     user = alias.user
     mail_from = envelope.mail_from
@@ -795,7 +797,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             alias,
             contact,
         )
-        return [(False, "550 SL E20 Account disabled")]
+        return [(False, status.E504)]
 
     # Anti-spoofing
     mailbox = get_mailbox_from_mail_from(mail_from, alias)
@@ -812,12 +814,13 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         else:
             # only mailbox can send email to the reply-email
             handle_unknown_mailbox(envelope, msg, reply_email, user, alias, contact)
-            return False, "550 SL E7"
+            return False, status.E505
 
     if ENFORCE_SPF and mailbox.force_spf and not alias.disable_email_spoofing_check:
         if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
-            # cannot use 4** here as sender will retry. 5** because that generates bounce report
-            return True, "250 SL E11"
+            # cannot use 4** here as sender will retry.
+            # cannot use 5** because that generates bounce report
+            return True, status.E201
 
     email_log = EmailLog.create(
         contact_id=contact.id,
@@ -869,7 +872,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             db.session.commit()
 
             handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
-            return False, "550 SL E15 Email detected as spam"
+            return False, status.E506
 
     delete_all_headers_except(
         msg,
@@ -899,14 +902,14 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
                 msg, contact.pgp_finger_print, contact.pgp_public_key
             )
         except PGPException:
-            LOG.exception(
+            LOG.e(
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
             # to not save the email_log
             EmailLog.delete(email_log.id)
             db.session.commit()
             # return 421 so the client can retry later
-            return False, "421 SL E13 Retry later"
+            return False, status.E402
 
     db.session.commit()
 
@@ -990,8 +993,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         )
 
     # return 250 even if error as user is already informed of the incident and can retry sending the email
-
-    return True, "250 Message accepted for delivery"
+    return True, status.E200
 
 
 def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
@@ -1261,7 +1263,7 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
             refused_email_url=refused_email_url,
         ),
     )
-    return "550 SL E24 Email cannot be sent to contact"
+    return status.E520
 
 
 def handle_spam(
@@ -1380,11 +1382,11 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
         alias = Alias.get(alias_id)
     except Exception:
         LOG.w("Cannot parse alias from subject %s", msg["Subject"])
-        return "550 SL E8 Wrongly formatted subject"
+        return status.E507
 
     if not alias:
         LOG.w("No such alias %s", alias_id)
-        return "550 SL E9 Email not exist"
+        return status.E508
 
     # This sender cannot unsubscribe
     mail_from = envelope.mail_from
@@ -1392,7 +1394,7 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
     mailbox = get_mailbox_from_mail_from(mail_from, alias)
     if not mailbox:
         LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
-        return "550 SL E10 unauthorized"
+        return status.E509
 
     # Sender is owner of this alias
     alias.enabled = False
@@ -1418,7 +1420,7 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
             ),
         )
 
-    return "250 Unsubscribe request accepted"
+    return status.E202
 
 
 def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
@@ -1426,11 +1428,11 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
     user = User.get(user_id)
     if not user:
         LOG.exception("No such user %s %s", user_id, mail_from)
-        return "550 SL E22 so such user"
+        return status.E510
 
     if mail_from != user.email:
         LOG.exception("Unauthorized mail_from %s %s", user, mail_from)
-        return "550 SL E23 unsubscribe error"
+        return status.E511
 
     user.notification = False
     db.session.commit()
@@ -1448,7 +1450,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
         ),
     )
 
-    return "250 Unsubscribe request accepted"
+    return status.E202
 
 
 def handle_transactional_bounce(envelope: Envelope, rcpt_to):
@@ -1471,7 +1473,7 @@ def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
 
     if not email_log:
         LOG.w("No such email log")
-        return "550 SL E27 No such email log"
+        return status.E512
 
     contact: Contact = email_log.contact
     alias = contact.alias
@@ -1523,7 +1525,18 @@ def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
         return handle_bounce_reply_phase(envelope, msg, email_log)
     else:  # forward phase
         handle_bounce_forward_phase(msg, email_log)
-        return "550 SL E26 Email cannot be forwarded to mailbox"
+        return status.E513
+
+
+def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:
+    if len(rcpt_tos) != 1:
+        return False
+
+    rcpt_to = rcpt_tos[0]
+    if IgnoredEmail.get_by(mail_from=mail_from, rcpt_to=rcpt_to):
+        return True
+
+    return False
 
 
 def handle(envelope: Envelope) -> str:
@@ -1539,6 +1552,12 @@ def handle(envelope: Envelope) -> str:
     postfix_queue_id = get_queue_id(msg)
     if postfix_queue_id:
         set_message_id(postfix_queue_id)
+    else:
+        LOG.w("Cannot parse Postfix queue ID from %s", msg["Received"])
+
+    if should_ignore(mail_from, rcpt_tos):
+        LOG.w("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
+        return status.E204
 
     # sanitize email headers
     sanitize_header(msg, "from")
@@ -1566,7 +1585,7 @@ def handle(envelope: Envelope) -> str:
             contact.alias,
             contact.website_email,
         )
-        return "250 email can't be sent from a reverse-alias"
+        return status.E203
 
     # unsubscribe request
     if UNSUBSCRIBER and rcpt_tos == [UNSUBSCRIBER]:
@@ -1581,7 +1600,7 @@ def handle(envelope: Envelope) -> str:
     ):
         LOG.d("Handle email sent to sender from %s", mail_from)
         handle_transactional_bounce(envelope, rcpt_tos[0])
-        return "250 bounce handled"
+        return status.E205
 
     # Handle bounce
     if (
@@ -1617,10 +1636,9 @@ def handle(envelope: Envelope) -> str:
         )
         return handle_bounce(envelope, email_log, msg)
 
-    # Whether it's necessary to apply greylisting
-    if greylisting_needed(mail_from, rcpt_tos):
-        LOG.w("Grey listing applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
-        return "421 SL Retry later"
+    if rate_limited(mail_from, rcpt_tos):
+        LOG.w("Rate Limiting applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
+        return status.E522
 
     # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
     # todo: remove logging
@@ -1628,7 +1646,7 @@ def handle(envelope: Envelope) -> str:
         LOG.w(
             "out-of-office email to reverse alias %s. %s", rcpt_tos[0], msg.as_string()
         )
-        return "250 SL E28"
+        return status.E206
 
     # result of all deliveries
     # each element is a couple of whether the delivery is successful and the smtp status
@@ -1638,7 +1656,7 @@ def handle(envelope: Envelope) -> str:
     for rcpt_index, rcpt_to in enumerate(rcpt_tos):
         if rcpt_to == NOREPLY:
             LOG.e("email sent to noreply address from %s", mail_from)
-            return "550 SL E25 Email sent to noreply address"
+            return status.E514
 
         # create a copy of msg for each recipient except the last one
         # as copy() is a slow function
@@ -1681,12 +1699,12 @@ class MailHandler:
             ret = self._handle(envelope)
             return ret
         except Exception:
-            LOG.exception(
+            LOG.e(
                 "email handling fail %s -> %s",
                 envelope.mail_from,
                 envelope.rcpt_tos,
             )
-            return "421 SL Retry later"
+            return status.E404
 
     def _handle(self, envelope: Envelope):
         start = time.time()

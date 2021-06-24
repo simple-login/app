@@ -11,7 +11,7 @@ from app.log import LOG
 from app.models import Alias, EmailLog, Contact
 
 
-def greylisting_needed_for_alias(alias: Alias) -> bool:
+def rate_limited_for_alias(alias: Alias) -> bool:
     min_time = arrow.now().shift(minutes=-1)
 
     # get the nb of activity on this alias
@@ -27,7 +27,7 @@ def greylisting_needed_for_alias(alias: Alias) -> bool:
     )
 
     if nb_activity > MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS:
-        LOG.d(
+        LOG.w(
             "Too much forward on alias %s. Nb Activity %s",
             alias,
             nb_activity,
@@ -37,7 +37,7 @@ def greylisting_needed_for_alias(alias: Alias) -> bool:
     return False
 
 
-def greylisting_needed_for_mailbox(alias: Alias) -> bool:
+def rate_limited_for_mailbox(alias: Alias) -> bool:
     min_time = arrow.now().shift(minutes=-1)
 
     # get nb of activity on this mailbox
@@ -54,7 +54,7 @@ def greylisting_needed_for_mailbox(alias: Alias) -> bool:
     )
 
     if nb_activity > MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX:
-        LOG.d(
+        LOG.w(
             "Too much forward on mailbox %s, alias %s. Nb Activity %s",
             alias.mailbox,
             alias,
@@ -65,13 +65,11 @@ def greylisting_needed_for_mailbox(alias: Alias) -> bool:
     return False
 
 
-def greylisting_needed_forward_phase(alias_address: str) -> bool:
+def rate_limited_forward_phase(alias_address: str) -> bool:
     alias = Alias.get_by(email=alias_address)
 
     if alias:
-        return greylisting_needed_for_alias(alias) or greylisting_needed_for_mailbox(
-            alias
-        )
+        return rate_limited_for_alias(alias) or rate_limited_for_mailbox(alias)
 
     else:
         LOG.d(
@@ -80,29 +78,29 @@ def greylisting_needed_forward_phase(alias_address: str) -> bool:
         )
         alias = try_auto_create(alias_address)
         if alias:
-            return greylisting_needed_for_mailbox(alias)
+            return rate_limited_for_mailbox(alias)
 
     return False
 
 
-def greylisting_needed_reply_phase(reply_email: str) -> bool:
+def rate_limited_reply_phase(reply_email: str) -> bool:
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
         return False
 
     alias = contact.alias
-    return greylisting_needed_for_alias(alias) or greylisting_needed_for_mailbox(alias)
+    return rate_limited_for_alias(alias) or rate_limited_for_mailbox(alias)
 
 
-def greylisting_needed(mail_from: str, rcpt_tos: [str]) -> bool:
+def rate_limited(mail_from: str, rcpt_tos: [str]) -> bool:
     for rcpt_to in rcpt_tos:
         if is_reply_email(rcpt_to):
-            if greylisting_needed_reply_phase(rcpt_to):
+            if rate_limited_reply_phase(rcpt_to):
                 return True
         else:
             # Forward phase
             address = rcpt_to  # alias@SL
-            if greylisting_needed_forward_phase(address):
+            if rate_limited_forward_phase(address):
                 return True
 
     return False

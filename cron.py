@@ -801,6 +801,11 @@ async def _hibp_check(api_key, queue):
         elif r.status_code == 404:
             # No breaches found
             alias.hibp_breaches = []
+        elif r.status_code == 429:
+            # rate limited
+            LOG.w("HIBP rate limited, check alias %s in the next run", alias)
+            await asyncio.sleep(1.6)
+            return
         elif r.status_code > 500:
             LOG.w("HIBP server 5** error %s", r.status_code)
             return
