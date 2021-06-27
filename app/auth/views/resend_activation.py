@@ -4,9 +4,9 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.register import send_activation_email
-from app.utils import sanitize_email
 from app.log import LOG
 from app.models import User
+from app.utils import sanitize_email
 
 
 class ResendActivationForm(FlaskForm):

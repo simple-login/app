@@ -4,7 +4,6 @@ import bcrypt
 
 from app.extensions import db
 
-
 _NORMALIZATION_FORM = "NFKC"
 
 

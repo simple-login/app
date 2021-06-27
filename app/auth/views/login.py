@@ -5,10 +5,10 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
-from app.utils import sanitize_email
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
+from app.utils import sanitize_email
 
 
 class LoginForm(FlaskForm):

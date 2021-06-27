@@ -1,6 +1,5 @@
-from .log import LOG
-
 import csv
+
 import requests
 
 from app import s3
@@ -17,6 +16,7 @@ from app.models import (
     User,
 )
 from app.utils import sanitize_email
+from .log import LOG
 
 
 def handle_batch_import(batch_import: BatchImport):
