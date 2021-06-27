@@ -24,6 +24,7 @@ from app.config import (
     FIRST_ALIAS_DOMAIN,
     DISABLE_ONBOARDING,
     UNSUBSCRIBER,
+    ALIAS_RANDOM_SUFFIX_LENGTH,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -35,7 +36,7 @@ from app.utils import (
     random_string,
     random_words,
     sanitize_email,
-    get_suffix,
+    random_word,
 )
 
 
@@ -758,6 +759,17 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
             > 0
         )
 
+    def get_random_alias_suffix(self):
+        """Get random suffix for an alias based on user's preference.
+
+
+        Returns:
+            str: the random suffix generated
+        """
+        if self.random_alias_suffix == AliasSuffixEnum.random_string.value:
+            return random_string(ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
+        return random_word()
+
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
 
@@ -1147,7 +1159,7 @@ class Alias(db.Model, ModelMixin):
 
         # find the right suffix - avoid infinite loop by running this at max 1000 times
         for i in range(1000):
-            suffix = get_suffix(user)
+            suffix = user.get_random_alias_suffix()
             email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
 
             if not cls.get_by(email=email) and not DeletedAlias.get_by(email=email):

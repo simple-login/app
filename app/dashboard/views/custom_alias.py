@@ -23,7 +23,6 @@ from app.models import (
     AliasMailbox,
     DomainDeletedAlias,
 )
-from app.utils import get_suffix
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 
@@ -54,7 +53,7 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
     # for each user domain, generate both the domain and a random suffix version
     for custom_domain in user_custom_domains:
         if custom_domain.random_prefix_generation:
-            suffix = "." + get_suffix(user) + "@" + custom_domain.domain
+            suffix = "." + user.get_random_alias_suffix() + "@" + custom_domain.domain
             suffix_info = SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
             if user.default_alias_custom_domain_id == custom_domain.id:
                 suffixes.insert(0, suffix_info)
@@ -77,7 +76,7 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
     # then SimpleLogin domain
     for sl_domain in user.get_sl_domains():
         suffix = (
-            ("" if DISABLE_ALIAS_SUFFIX else "." + get_suffix(user))
+            ("" if DISABLE_ALIAS_SUFFIX else "." + user.get_random_alias_suffix())
             + "@"
             + sl_domain.domain
         )

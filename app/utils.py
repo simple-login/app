@@ -4,9 +4,8 @@ import urllib.parse
 
 from unidecode import unidecode
 
-from .config import WORDS_FILE_PATH, ALIAS_RANDOM_SUFFIX_LENGTH
+from .config import WORDS_FILE_PATH
 from .log import LOG
-from .models import User, AliasSuffixEnum
 
 with open(WORDS_FILE_PATH) as f:
     LOG.d("load words file: %s", WORDS_FILE_PATH)
@@ -15,20 +14,6 @@ with open(WORDS_FILE_PATH) as f:
 
 def random_word():
     return random.choice(_words)
-
-
-def get_suffix(user: User) -> str:
-    """Get random suffix for an alias based on user's preference.
-
-    Args:
-        user (User): the user who is trying to create an alias
-
-    Returns:
-        str: the random suffix generated
-    """
-    if user.random_alias_suffix == AliasSuffixEnum.random_string.value:
-        return random_string(ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
-    return random_word()
 
 
 def word_exist(word):
