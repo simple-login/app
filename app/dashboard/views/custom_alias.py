@@ -23,7 +23,7 @@ from app.models import (
     AliasMailbox,
     DomainDeletedAlias,
 )
-from app.utils import random_word, word_exist
+from app.utils import get_suffix
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 
@@ -54,7 +54,7 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
     # for each user domain, generate both the domain and a random suffix version
     for custom_domain in user_custom_domains:
         if custom_domain.random_prefix_generation:
-            suffix = "." + random_word() + "@" + custom_domain.domain
+            suffix = "." + get_suffix(user) + "@" + custom_domain.domain
             suffix_info = SuffixInfo(True, suffix, signer.sign(suffix).decode(), False)
             if user.default_alias_custom_domain_id == custom_domain.id:
                 suffixes.insert(0, suffix_info)
@@ -77,7 +77,7 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
     # then SimpleLogin domain
     for sl_domain in user.get_sl_domains():
         suffix = (
-            ("" if DISABLE_ALIAS_SUFFIX else "." + random_word())
+            ("" if DISABLE_ALIAS_SUFFIX else "." + get_suffix(user))
             + "@"
             + sl_domain.domain
         )
@@ -281,14 +281,6 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
             LOG.exception("User %s submits a wrong alias suffix %s", user, alias_suffix)
             return False
 
-        random_word_part = alias_domain_prefix[1:]
-        if not word_exist(random_word_part):
-            LOG.exception(
-                "alias suffix %s needs to start with a random word, user %s",
-                alias_suffix,
-                user,
-            )
-            return False
     else:
         if alias_domain not in user_custom_domains:
             if not DISABLE_ALIAS_SUFFIX:

@@ -247,6 +247,22 @@
           </select>
           <button class="btn btn-outline-primary">Update</button>
         </form>
+
+        <div id="random-alias-suffix" class="mt-3 mb-1">Select the default suffix generator for aliases.</div>
+        <form method="post" action="#random-alias-suffix" class="form-inline">
+          <input type="hidden" name="form-name" value="random-alias-suffix">
+          <select class="form-control mr-sm-2" name="random-alias-suffix-generator">
+  
+            <option value="0" {% if current_user.random_alias_suffix==0 %} selected {% endif %}>
+              Random word from our dictionary
+            </option>
+            <option value="1" {% if current_user.random_alias_suffix==1 %} selected {% endif %}>
+              Random combination of {{ ALIAS_RAND_SUFFIX_LENGTH }} letter and digits
+            </option>
+          </select>
+          <button class="btn btn-outline-primary">Update</button>
+        </form>
+
       </div>
     </div>
     <!-- END Random alias -->

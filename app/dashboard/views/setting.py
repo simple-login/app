@@ -15,7 +15,12 @@ from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
 from app import s3, email_utils
-from app.config import URL, FIRST_ALIAS_DOMAIN, JOB_DELETE_ACCOUNT
+from app.config import (
+    URL,
+    FIRST_ALIAS_DOMAIN,
+    JOB_DELETE_ACCOUNT,
+    ALIAS_RANDOM_SUFFIX_LENGTH,
+)
 from app.dashboard.base import dashboard_bp
 from app.email_utils import (
     email_can_be_used_as_mailbox,
@@ -32,6 +37,7 @@ from app.models import (
     Alias,
     CustomDomain,
     AliasGeneratorEnum,
+    AliasSuffixEnum,
     ManualSubscription,
     SenderFormatEnum,
     SLDomain,
@@ -240,6 +246,14 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
+        elif request.form.get("form-name") == "random-alias-suffix":
+            scheme = int(request.form.get("random-alias-suffix-generator"))
+            if AliasSuffixEnum.has_value(scheme):
+                current_user.random_alias_suffix = scheme
+                db.session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "change-sender-format":
             sender_format = int(request.form.get("sender-format"))
             if SenderFormatEnum.has_value(sender_format):
@@ -292,6 +306,7 @@ def setting():
         apple_sub=apple_sub,
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
+        ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
     )
 
 
