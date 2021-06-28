@@ -1,6 +1,7 @@
 import random
 import string
 import urllib.parse
+import tldextract
 
 from unidecode import unidecode
 
@@ -75,14 +76,5 @@ def query2str(query):
     return query.statement.compile(compile_kwargs={"literal_binds": True})
 
 def suggest_prefix(hostname: str) -> str:
-    suggested_prefix = hostname
-    if "." in hostname:
-        parts = hostname.split(".")
-        # useful when country uses "co.jp" or "co.uk" instead of ccTLD
-        if (len(parts) > 2 and parts[-2] == "co"):
-            suggested_prefix = parts[-3]
-        else:
-            suggested_prefix = parts[-2]
-        suggested_prefix = convert_to_id(suggested_prefix)
-
-    return suggested_prefix
+    extract = tldextract.extract(hostname)
+    return extract.domain
