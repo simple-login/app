@@ -2,6 +2,10 @@ Hi
 
 Your alias {{alias}} has been disabled successfully.
 
+It has been disabled thanks to the "One-click unsubscribe” provided by your mailbox service.
+
+When you click on this button on a forwarded email, the alias will be disabled automatically.
+
 If this is a mistake, you can re-enable the alias on the dashboard via
 
 {{ enable_alias_url }}
