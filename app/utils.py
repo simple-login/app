@@ -73,3 +73,16 @@ def sanitize_email(email_address: str) -> str:
 def query2str(query):
     """Useful utility method to print out a SQLAlchemy query"""
     return query.statement.compile(compile_kwargs={"literal_binds": True})
+
+def suggest_prefix(hostname: str) -> str:
+    suggested_prefix = hostname
+    if "." in hostname:
+        parts = hostname.split(".")
+        # useful when country uses "co.jp" or "co.uk" instead of ccTLD
+        if parts[-2] == "co":
+            suggested_prefix = parts[-3]
+        else:
+            suggested_prefix = parts[-2]
+        suggested_prefix = convert_to_id(suggested_prefix)
+
+    return suggested_prefix
