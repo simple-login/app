@@ -142,6 +142,15 @@ def alias_transfer_receive_route():
         flash("You already own this alias", "warning")
         return redirect(url_for("dashboard.index"))
 
+    # check if user has not exceeded the alias quota
+    if not current_user.can_create_new_alias():
+        LOG.d("%s can't receive new alias", current_user)
+        flash(
+            "You have reached free plan limit, please upgrade to create new aliases",
+            "warning",
+        )
+        return redirect(url_for("dashboard.index"))
+
     mailboxes = current_user.mailboxes()
 
     if request.method == "POST":
