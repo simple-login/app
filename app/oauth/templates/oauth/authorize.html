@@ -103,7 +103,7 @@
                          type="text"
                          pattern="[0-9a-z-_]{1,}"
                          maxlength="40"
-                         title="Only lowercase letters, dots, numbers, dashes (-) and underscores (_) are currently supported."
+                         data-bouncer-message="Only lowercase letters, dots, numbers, dashes (-) and underscores (_) are currently supported."
                          placeholder="email alias"
                          autofocus>
                 </div>
@@ -201,4 +201,11 @@
 
     </div>
   </form>
+{% endblock %}
+
+{% block script %}
+  <script>
+    // init bouncer
+    new Bouncer('form');
+  </script>
 {% endblock %}
