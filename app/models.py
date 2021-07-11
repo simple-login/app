@@ -1483,6 +1483,9 @@ class EmailLog(db.Model, ModelMixin):
     contact_id = db.Column(
         db.ForeignKey(Contact.id, ondelete="cascade"), nullable=False, index=True
     )
+    alias_id = db.Column(
+        db.ForeignKey(Alias.id, ondelete="cascade"), nullable=True, index=True
+    )
 
     # whether this is a reply
     is_reply = db.Column(db.Boolean, nullable=False, default=False)
