@@ -519,7 +519,11 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     if not alias.enabled:
         LOG.d("%s is disabled, do not forward", alias)
         EmailLog.create(
-            contact_id=contact.id, user_id=contact.user_id, blocked=True, commit=True
+            contact_id=contact.id,
+            user_id=contact.user_id,
+            blocked=True,
+            alias_id=contact.alias_id,
+            commit=True,
         )
         db.session.commit()
         # do not return 5** to allow user to receive emails later when alias is enabled
@@ -601,7 +605,11 @@ def forward_email_to_mailbox(
         return False, status.E405
 
     email_log = EmailLog.create(
-        contact_id=contact.id, user_id=user.id, mailbox_id=mailbox.id, commit=True
+        contact_id=contact.id,
+        user_id=user.id,
+        mailbox_id=mailbox.id,
+        alias_id=contact.alias_id,
+        commit=True,
     )
     LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
@@ -828,6 +836,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     email_log = EmailLog.create(
         contact_id=contact.id,
+        alias_id=contact.alias_id,
         is_reply=True,
         user_id=contact.user_id,
         mailbox_id=mailbox.id,

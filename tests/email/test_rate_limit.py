@@ -32,7 +32,11 @@ def test_rate_limited_forward_phase_for_alias(flask_client):
     )
     db.session.commit()
     for _ in range(MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS + 1):
-        EmailLog.create(user_id=user.id, contact_id=contact.id)
+        EmailLog.create(
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+        )
         db.session.commit()
 
     assert rate_limited_for_alias(alias)
@@ -55,10 +59,18 @@ def test_rate_limited_forward_phase_for_mailbox(flask_client):
     )
     db.session.commit()
     for _ in range(MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX + 1):
-        EmailLog.create(user_id=user.id, contact_id=contact.id)
+        EmailLog.create(
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+        )
         db.session.commit()
 
-    EmailLog.create(user_id=user.id, contact_id=contact.id)
+    EmailLog.create(
+        user_id=user.id,
+        contact_id=contact.id,
+        alias_id=contact.alias_id,
+    )
 
     # Create another alias with the same mailbox
     # will be rate limited as there's a previous activity on mailbox
@@ -92,7 +104,11 @@ def test_rate_limited_reply_phase(flask_client):
     )
     db.session.commit()
     for _ in range(MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS + 1):
-        EmailLog.create(user_id=user.id, contact_id=contact.id)
+        EmailLog.create(
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+        )
         db.session.commit()
 
     assert rate_limited_reply_phase("rep@sl.local")

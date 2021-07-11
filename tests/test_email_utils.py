@@ -616,7 +616,11 @@ def test_should_disable(flask_client):
     )
     for _ in range(20):
         EmailLog.create(
-            user_id=user.id, contact_id=contact.id, commit=True, bounced=True
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+            commit=True,
+            bounced=True,
         )
 
     assert should_disable(alias)
@@ -647,6 +651,7 @@ def test_should_disable_bounces_every_day(flask_client):
         EmailLog.create(
             user_id=user.id,
             contact_id=contact.id,
+            alias_id=contact.alias_id,
             commit=True,
             bounced=True,
             created_at=arrow.now().shift(days=-i),
@@ -676,6 +681,7 @@ def test_should_disable_bounces_account(flask_client):
             EmailLog.create(
                 user_id=user.id,
                 contact_id=contact.id,
+                alias_id=contact.alias_id,
                 commit=True,
                 bounced=True,
                 created_at=arrow.now().shift(days=-day),
@@ -701,7 +707,11 @@ def test_should_disable_bounce_consecutive_days(flask_client):
     # create 6 bounce on this alias in the last 24h: alias is not disabled
     for _ in range(6):
         EmailLog.create(
-            user_id=user.id, contact_id=contact.id, commit=True, bounced=True
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+            commit=True,
+            bounced=True,
         )
     assert not should_disable(alias)
 
@@ -710,6 +720,7 @@ def test_should_disable_bounce_consecutive_days(flask_client):
         EmailLog.create(
             user_id=user.id,
             contact_id=contact.id,
+            alias_id=contact.alias_id,
             commit=True,
             bounced=True,
             created_at=arrow.now().shift(days=-3),

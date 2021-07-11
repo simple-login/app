@@ -259,6 +259,7 @@ def fake_data():
     EmailLog.create(
         user_id=user.id,
         contact_id=contact.id,
+        alias_id=contact.alias_id,
         refused_email_id=refused_email.id,
         bounced=True,
         commit=True,
@@ -331,7 +332,7 @@ def fake_data():
         #     )
         #     db.session.commit()
         #     for _ in range(3):
-        #         EmailLog.create(user_id=user.id, contact_id=contact.id)
+        #         EmailLog.create(user_id=user.id, contact_id=contact.id, alias_id=contact.alias_id)
         #         db.session.commit()
 
         # have some disabled alias
