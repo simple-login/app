@@ -158,7 +158,7 @@ def test_get_aliases_v2(flask_client):
     EmailLog.create(
         contact_id=c0.id,
         user_id=user.id,
-        alias_id=contact.alias_id,
+        alias_id=c0.alias_id,
     )
     db.session.commit()
 
