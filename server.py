@@ -3,7 +3,6 @@ import os
 from datetime import timedelta
 
 import arrow
-import click
 import flask_profiler
 import sentry_sdk
 from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
