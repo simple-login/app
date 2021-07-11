@@ -3,6 +3,7 @@ import os
 from datetime import timedelta
 
 import arrow
+import click
 import flask_profiler
 import sentry_sdk
 from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
@@ -168,6 +169,7 @@ def create_app() -> Flask:
     setup_paddle_callback(app)
     setup_coinbase_commerce(app)
     setup_do_not_track(app)
+    register_custom_commands(app)
 
     if FLASK_PROFILER_PATH:
         LOG.d("Enable flask-profiler")
@@ -851,6 +853,26 @@ def init_admin(app):
     admin.add_view(ClientAdmin(Client, db.session))
     admin.add_view(ReferralAdmin(Referral, db.session))
     admin.add_view(PayoutAdmin(Payout, db.session))
+
+
+def register_custom_commands(app):
+    """
+    Adhoc commands run during data migration.
+    Registered as flask command, so it can run as:
+
+    > flask {task-name}
+    """
+
+    @app.cli.command("fill-up-email-log-alias")
+    def fill_up_email_log_alias():
+        """Fill up email_log.alias_id column"""
+        for email_log, contact in db.session.query(EmailLog, Contact).filter(
+            EmailLog.contact_id == Contact.id
+        ):
+            LOG.d("fill up alias for %s", email_log)
+            email_log.alias_id = contact.alias_id
+
+        db.session.commit()
 
 
 def setup_do_not_track(app):
