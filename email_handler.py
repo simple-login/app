@@ -507,6 +507,10 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     if msg["Reply-To"]:
         # force convert header to string, sometimes contact_from_header is Header object
         from_header = str(msg["Reply-To"])
+
+        # alert phishing attempt when reply-to = alias
+        if from_header == alias.email:
+            LOG.e("Reply-to same as alias %s", alias)
     else:
         from_header = str(msg["From"])
 
