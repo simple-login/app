@@ -316,30 +316,30 @@
     </div>
     <!-- END Sender Format -->
 
-    <!-- Reverse-alias -->
-    {% if current_user.replace_reverse_alias %}
-      <div class="card">
-        <div class="card-body">
-          <div class="card-title">Reverse Alias Replacement</div>
-          <div class="mb-3">
-            When replying to a forwarded email, the <b>reverse-alias</b> can be automatically included
-            in the attached message by your email client. <br>
-            Turning on this option will <b>replace</b> the reverse-alias by your contact email. <br>
-            Please note this option doesn't work well with Gmail UI
-            as Gmail automatically enriches the message which breaks the reverse-alias format.
-          </div>
-          <form method="post">
-            <input type="hidden" name="form-name" value="replace-ra">
-            <div class="form-check">
-              <input type="checkbox" id="replace-ra" name="replace-ra"
-                  {% if current_user.replace_reverse_alias %} checked {% endif %} class="form-check-input">
-              <label for="replace-ra">Enable replacing reverse alias</label>
-            </div>
-            <button type="submit" class="btn btn-outline-primary">Update</button>
-          </form>
+    <!-- Reverse-alias replacement -->
+    <div class="card" id="reverse-alias-replacement-section">
+      <div class="card-body">
+        <div class="card-title">Reverse Alias Replacement
+          <div class="badge badge-warning">Experimental</div>
         </div>
+        <div class="mb-3">
+          When replying to a forwarded email, the <b>reverse-alias</b> can be automatically included
+          in the attached message by your email client. <br>
+          Turning on this option will <b>replace</b> the reverse-alias by your contact email. <br>
+          Please note this option doesn't work with some email clients. For example, on Gmail web version,
+          Gmail automatically modifies the quoted message which breaks the reverse-alias format.
+        </div>
+        <form method="post" action="#reverse-alias-replacement-section">
+          <input type="hidden" name="form-name" value="replace-ra">
+          <div class="form-check">
+            <input type="checkbox" id="replace-ra" name="replace-ra"
+                {% if current_user.replace_reverse_alias %} checked {% endif %} class="form-check-input">
+            <label for="replace-ra">Enable replacing reverse alias</label>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Update</button>
+        </form>
       </div>
-    {% endif %}
+    </div>
     <!-- END Reverse-alias -->
 
     <!-- Sender included in reverse-alias -->
