@@ -1824,6 +1824,22 @@ class LifetimeCoupon(db.Model, ModelMixin):
     paid = db.Column(db.Boolean, default=False, server_default="0", nullable=False)
 
 
+class Coupon(db.Model, ModelMixin):
+    code = db.Column(db.String(128), nullable=False, unique=True)
+
+    # by default a coupon is for 1 year
+    nb_year = db.Column(db.Integer, nullable=False, server_default="1", default=1)
+
+    # whether the coupon has been used
+    used = db.Column(db.Boolean, default=False, server_default="0", nullable=False)
+
+    # the user who uses the code
+    # non-null when the coupon is used
+    used_by_user_id = db.Column(
+        db.ForeignKey(User.id, ondelete="cascade"), nullable=True
+    )
+
+
 class Directory(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     name = db.Column(db.String(128), unique=True, nullable=False)
