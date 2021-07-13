@@ -881,13 +881,23 @@ def register_custom_commands(app):
     @app.cli.command("fill-up-email-log-alias")
     def fill_up_email_log_alias():
         """Fill up email_log.alias_id column"""
-        for email_log, contact in db.session.query(EmailLog, Contact).filter(
-            EmailLog.contact_id == Contact.id
-        ):
-            LOG.d("fill up alias for %s", email_log)
-            email_log.alias_id = contact.alias_id
+        # split all emails logs into 1000-size trunks
+        nb_email_log = EmailLog.query.count()
+        LOG.d("total trunks %s", nb_email_log // 1000 + 2)
+        for trunk in reversed(range(1, nb_email_log // 1000 + 2)):
+            nb_update = 0
+            for email_log, contact in (
+                db.session.query(EmailLog, Contact)
+                .filter(EmailLog.contact_id == Contact.id)
+                .filter(EmailLog.id <= trunk * 1000)
+                .filter(EmailLog.id > (trunk - 1) * 1000)
+                .filter(EmailLog.alias_id.is_(None))
+            ):
+                email_log.alias_id = contact.alias_id
+                nb_update += 1
 
-        db.session.commit()
+            LOG.d("finish trunk %s, update %s email logs", trunk, nb_update)
+            db.session.commit()
 
 
 def setup_do_not_track(app):
