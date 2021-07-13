@@ -148,7 +148,7 @@ def index():
         current_user.intro_shown = True
         db.session.commit()
 
-    stats = get_stats(current_user)
+    # stats = get_stats(current_user)
 
     alias_infos = get_alias_infos_with_pagination_v3(
         current_user, page, query, sort, alias_filter
@@ -167,5 +167,5 @@ def index():
         last_page=last_page,
         sort=sort,
         filter=alias_filter,
-        stats=stats,
+        # stats=stats,
     )
