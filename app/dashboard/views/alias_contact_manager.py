@@ -63,7 +63,7 @@ class ContactInfo(object):
 def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
     q = db.session.query(
         Contact,
-    )
+    ).filter(Contact.alias_id == alias.id)
 
     if contact_id:
         q = q.filter(Contact.id == contact_id)
