@@ -13,6 +13,7 @@ from .views import (
     mfa_setup,
     mfa_cancel,
     fido_setup,
+    coupon,
     fido_manage,
     domain_detail,
     lifetime_licence,
