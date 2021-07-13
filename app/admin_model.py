@@ -160,6 +160,11 @@ class LifetimeCouponAdmin(SLModelView):
     can_create = True
 
 
+class CouponAdmin(SLModelView):
+    can_edit = True
+    can_create = True
+
+
 class ManualSubscriptionAdmin(SLModelView):
     can_edit = True
     column_searchable_list = ["id", "user.email"]

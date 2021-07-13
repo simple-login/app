@@ -37,6 +37,7 @@ from app.admin_model import (
     ClientAdmin,
     ReferralAdmin,
     PayoutAdmin,
+    CouponAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -98,6 +99,7 @@ from app.models import (
     RefusedEmail,
     ManualSubscription,
     Payout,
+    Coupon,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -266,7 +268,8 @@ def fake_data():
         commit=True,
     )
 
-    LifetimeCoupon.create(code="coupon", nb_used=10, commit=True)
+    LifetimeCoupon.create(code="lifetime-coupon", nb_used=10, commit=True)
+    Coupon.create(code="coupon", commit=True)
 
     # Create a subscription for user
     Subscription.create(
@@ -848,6 +851,7 @@ def init_admin(app):
     admin.add_view(MailboxAdmin(Mailbox, db.session))
     admin.add_view(EmailLogAdmin(EmailLog, db.session))
     admin.add_view(LifetimeCouponAdmin(LifetimeCoupon, db.session))
+    admin.add_view(CouponAdmin(Coupon, db.session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, db.session))
     admin.add_view(ClientAdmin(Client, db.session))
     admin.add_view(ReferralAdmin(Referral, db.session))
