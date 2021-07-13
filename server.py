@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from datetime import timedelta
 
 import arrow
@@ -448,6 +449,16 @@ def set_index_page(app):
         else:
             return redirect(url_for("auth.login"))
 
+    @app.before_request
+    def before_request():
+        # not logging /static call
+        if (
+            not request.path.startswith("/static")
+            and not request.path.startswith("/admin/static")
+            and not request.path.startswith("/_debug_toolbar")
+        ):
+            g.start_time = time.time()
+
     @app.after_request
     def after_request(res):
         # not logging /static call
@@ -457,12 +468,13 @@ def set_index_page(app):
             and not request.path.startswith("/_debug_toolbar")
         ):
             LOG.debug(
-                "%s %s %s %s %s",
+                "%s %s %s %s %s, takes %s",
                 request.remote_addr,
                 request.method,
                 request.path,
                 request.args,
                 res.status_code,
+                time.time() - g.start_time,
             )
 
         return res
