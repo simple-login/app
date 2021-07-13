@@ -1735,7 +1735,12 @@ class MailHandler:
         app = new_app()
         with app.app_context():
             ret = handle(envelope)
-            LOG.i("takes %s seconds <<===", time.time() - start)
+            LOG.i(
+                "Finish mail from %s, rctp tos %s, takes %s seconds <<===",
+                envelope.mail_from,
+                envelope.rcpt_tos,
+                time.time() - start,
+            )
             return ret
 
 
