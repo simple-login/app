@@ -1,6 +1,7 @@
 import random
 import string
 import urllib.parse
+import tldextract
 
 from unidecode import unidecode
 
@@ -73,3 +74,7 @@ def sanitize_email(email_address: str) -> str:
 def query2str(query):
     """Useful utility method to print out a SQLAlchemy query"""
     return query.statement.compile(compile_kwargs={"literal_binds": True})
+
+def suggest_prefix(hostname: str) -> str:
+    extract = tldextract.extract(hostname)
+    return extract.domain

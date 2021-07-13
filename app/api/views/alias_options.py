@@ -8,7 +8,7 @@ from app.dashboard.views.custom_alias import (
 from app.extensions import db
 from app.log import LOG
 from app.models import AliasUsedOn, Alias, User
-from app.utils import convert_to_id
+from app.utils import convert_to_id, suggest_prefix
 
 
 @api_bp.route("/v4/alias/options")
@@ -133,12 +133,7 @@ def options_v5():
     if hostname:
         # keep only the domain name of hostname, ignore TLD and subdomain
         # for ex www.groupon.com -> groupon
-        domain_name = hostname
-        if "." in hostname:
-            parts = hostname.split(".")
-            domain_name = parts[-2]
-            domain_name = convert_to_id(domain_name)
-        ret["prefix_suggestion"] = domain_name
+        ret["prefix_suggestion"] = suggest_prefix(hostname)
 
     suffixes = get_available_suffixes(user)
 
