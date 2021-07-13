@@ -61,6 +61,26 @@ class ContactInfo(object):
 
 
 def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
+    q = db.session.query(
+        Contact,
+    )
+
+    if contact_id:
+        q = q.filter(Contact.id == contact_id)
+
+    q = q.order_by(Contact.id.desc()).limit(PAGE_LIMIT).offset(page * PAGE_LIMIT)
+
+    ret = []
+    for contact in q:
+        contact_info = ContactInfo(
+            contact=contact, nb_forward=0, nb_reply=0, latest_email_log=None
+        )
+        ret.append(contact_info)
+
+    return ret
+
+
+def get_contact_infos2(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
     """if contact_id is set, only return the contact info for this contact"""
     sub = (
         db.session.query(
