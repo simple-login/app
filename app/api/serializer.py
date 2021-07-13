@@ -222,8 +222,7 @@ def get_alias_infos_with_pagination_v3(
             ).label("nb_forward"),
             func.max(EmailLog.created_at).label("latest_email_log_created_at"),
         )
-        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
-        .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
+        .join(EmailLog, Alias.id == EmailLog.alias_id, isouter=True)
         .filter(Alias.user_id == user.id)
         .group_by(Alias.id)
         .subquery()
