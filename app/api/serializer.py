@@ -282,6 +282,7 @@ def get_alias_infos_with_pagination_v3(
             alias_activity_subquery.c.nb_blocked,
             alias_activity_subquery.c.nb_forward,
         )
+        .options(joinedload(Alias.hibp_breaches))
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(CustomDomain, Alias.custom_domain_id == CustomDomain.id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
