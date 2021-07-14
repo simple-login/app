@@ -114,3 +114,14 @@ em {
     list-style: none;
     padding-left: 0;
 }
+
+.subheader{
+    font-size: .625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    line-height: 1.6;
+    color: #656d77;
+}
+
+

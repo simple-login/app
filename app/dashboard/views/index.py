@@ -28,17 +28,17 @@ class Stats:
 def get_stats(user: User) -> Stats:
     nb_alias = Alias.query.filter_by(user_id=user.id).count()
     nb_forward = (
-        db.session.query(EmailLog.id)
+        db.session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=False, blocked=False, bounced=False)
         .count()
     )
     nb_reply = (
-        db.session.query(EmailLog.id)
+        db.session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=True, blocked=False, bounced=False)
         .count()
     )
     nb_block = (
-        db.session.query(EmailLog.id)
+        db.session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=False, blocked=True, bounced=False)
         .count()
     )
