@@ -51,19 +51,47 @@
         </p>
       </div>
     </div>
-
   </div>
 
-  <form method="post">
-    <input type="hidden" name="form-name" value="create">
-    {{ new_contact_form.csrf_token }}
+  <div class="row mb-5">
+    <div class="col-12 col-lg-6 pt-1">
 
-    <label class="form-label">Where do you want to send the email?</label>
+      <form method="post">
+        <input type="hidden" name="form-name" value="create">
+        {{ new_contact_form.csrf_token }}
+        {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>", autofocus=True) }}
+        {{ render_field_errors(new_contact_form.email) }}
+        <div class="small-text">
+          Where do you want to send the email?
+        </div>
+        <button class="btn btn-primary mt-2">Create reverse-alias</button>
+      </form>
+    </div>
 
-    {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>", autofocus=True) }}
-    {{ render_field_errors(new_contact_form.email) }}
-    <button class="btn btn-primary mt-2">Create reverse-alias</button>
-  </form>
+    <div class="col-12 col-lg-6 pt-1">
+      <div class="float-right d-flex">
+        <form method="post">
+          <input type="hidden" name="form-name" value="search">
+
+          <input type="search" name="query" value="{{ query }}"
+                 placeholder="Enter to search for contacts"
+                 class="form-control shadow mr-2"
+                 style="max-width: 20em"
+          >
+        </form>
+
+        {% if query %}
+          {% if highlight_contact_id %}
+            <a href="{{ url_for("dashboard.alias_contact_manager", alias_id=alias.id, highlight_contact_id=highlight_contact_id) }}"
+               class="btn btn-light">Reset</a>
+          {% else %}
+            <a href="{{ url_for("dashboard.alias_contact_manager", alias_id=alias.id) }}"
+               class="btn btn-light">Reset</a>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
 
   <div class="row">
     {% for contact_info in contact_infos %}

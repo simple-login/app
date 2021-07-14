@@ -60,7 +60,9 @@ class ContactInfo(object):
     latest_email_log: EmailLog
 
 
-def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
+def get_contact_infos(
+    alias: Alias, page=0, contact_id=None, query: str = ""
+) -> [ContactInfo]:
     """if contact_id is set, only return the contact info for this contact"""
     sub = (
         db.session.query(
@@ -115,6 +117,14 @@ def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
         )
     )
 
+    if query:
+        q = q.filter(
+            or_(
+                Contact.website_email.ilike(f"%{query}%"),
+                Contact.name.ilike(f"%{query}%"),
+            )
+        )
+
     if contact_id:
         q = q.filter(Contact.id == contact_id)
 
@@ -152,6 +162,8 @@ def alias_contact_manager(alias_id):
     page = 0
     if request.args.get("page"):
         page = int(request.args.get("page"))
+
+    query = request.args.get("query") or ""
 
     # sanity check
     if not alias:
@@ -248,7 +260,18 @@ def alias_contact_manager(alias_id):
                 url_for("dashboard.alias_contact_manager", alias_id=alias_id)
             )
 
-    contact_infos = get_contact_infos(alias, page)
+        elif request.form.get("form-name") == "search":
+            query = request.form.get("query")
+            return redirect(
+                url_for(
+                    "dashboard.alias_contact_manager",
+                    alias_id=alias_id,
+                    query=query,
+                    highlight_contact_id=highlight_contact_id,
+                )
+            )
+
+    contact_infos = get_contact_infos(alias, page, query=query)
     last_page = len(contact_infos) < PAGE_LIMIT
 
     # if highlighted contact isn't included, fetch it
@@ -256,7 +279,8 @@ def alias_contact_manager(alias_id):
     contact_ids = [contact_info.contact.id for contact_info in contact_infos]
     if highlight_contact_id and highlight_contact_id not in contact_ids:
         contact_infos = (
-            get_contact_infos(alias, contact_id=highlight_contact_id) + contact_infos
+            get_contact_infos(alias, contact_id=highlight_contact_id, query=query)
+            + contact_infos
         )
 
     return render_template(
@@ -267,4 +291,5 @@ def alias_contact_manager(alias_id):
         highlight_contact_id=highlight_contact_id,
         page=page,
         last_page=last_page,
+        query=query,
     )
