@@ -87,6 +87,14 @@ def delete_logs():
 
     db.session.commit()
 
+    LOG.d("Delete EmailLog older than 2 weeks")
+
+    max_dt = arrow.now().shift(weeks=-2)
+    nb_deleted = EmailLog.query.filter(EmailLog.created_at < max_dt).delete()
+    db.session.commit()
+
+    LOG.i("Delete %s email logs", nb_deleted)
+
 
 def delete_refused_emails():
     for refused_email in RefusedEmail.query.filter_by(deleted=False).all():
