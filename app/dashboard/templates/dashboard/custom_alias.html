@@ -41,22 +41,23 @@
 
 
           <div class="col-sm-6 p-1">
-            <select class="form-control" name="suffix">
-              {% for suffix_info in suffixes %}
-                <option value="{{ suffix_info.signed_suffix }}"
-                    {% if suffix_info.is_premium %}
+            <select class="form-control" name="signed-alias-suffix">
+              {% for suffix_info in alias_suffixes_with_signature %}
+                {% set alias_suffix = suffix_info[0] %}
+                <option value="{{ suffix_info[1] }}"
+                    {% if alias_suffix.is_premium %}
                       title="Only available to Premium accounts"
-                    {% elif not suffix_info.is_custom and at_least_a_premium_domain %}
+                    {% elif not alias_suffix.is_custom and at_least_a_premium_domain %}
                       title="Available to all accounts"
                     {% endif %}
                 >
-                  {% if suffix_info.is_custom %}
-                    {{ suffix_info.suffix }} (your domain)
+                  {% if alias_suffix.is_custom %}
+                    {{ alias_suffix.suffix }} (your domain)
                   {% else %}
-                    {% if suffix_info.is_premium %}
-                      {{ suffix_info.suffix }} (Premium domain)
+                    {% if alias_suffix.is_premium %}
+                      {{ alias_suffix.suffix }} (Premium domain)
                     {% else %}
-                      {{ suffix_info.suffix }} (Public domain)
+                      {{ alias_suffix.suffix }} (Public domain)
                     {% endif %}
                   {% endif %}
                 </option>

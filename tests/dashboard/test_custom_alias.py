@@ -6,6 +6,7 @@ from app.dashboard.views.custom_alias import (
     signer,
     verify_prefix_suffix,
     get_available_suffixes,
+    AliasSuffix,
 )
 from app.extensions import db
 from app.models import (
@@ -24,22 +25,26 @@ from tests.utils import login
 def test_add_alias_success(flask_client):
     user = login(flask_client)
 
-    word = random_word()
-    suffix = f".{word}@{EMAIL_DOMAIN}"
-    suffix = signer.sign(suffix).decode()
+    alias_suffix = AliasSuffix(
+        is_custom=False,
+        suffix=f".12345@{EMAIL_DOMAIN}",
+        is_premium=False,
+        domain=EMAIL_DOMAIN,
+    )
+    signed_alias_suffix = signer.sign(alias_suffix.serialize()).decode()
 
     # create with a single mailbox
     r = flask_client.post(
         url_for("dashboard.custom_alias"),
         data={
             "prefix": "prefix",
-            "suffix": suffix,
+            "signed-alias-suffix": signed_alias_suffix,
             "mailboxes": [user.default_mailbox_id],
         },
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert f"Alias prefix.{word}@{EMAIL_DOMAIN} has been created" in str(r.data)
+    assert f"Alias prefix.12345@{EMAIL_DOMAIN} has been created" in str(r.data)
 
     alias = Alias.query.order_by(Alias.created_at.desc()).first()
     assert not alias._mailboxes
@@ -49,9 +54,13 @@ def test_add_alias_multiple_mailboxes(flask_client):
     user = login(flask_client)
     db.session.commit()
 
-    word = random_word()
-    suffix = f".{word}@{EMAIL_DOMAIN}"
-    suffix = signer.sign(suffix).decode()
+    alias_suffix = AliasSuffix(
+        is_custom=False,
+        suffix=f".12345@{EMAIL_DOMAIN}",
+        is_premium=False,
+        domain=EMAIL_DOMAIN,
+    )
+    signed_alias_suffix = signer.sign(alias_suffix.serialize()).decode()
 
     # create with a multiple mailboxes
     mb1 = Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
@@ -61,13 +70,13 @@ def test_add_alias_multiple_mailboxes(flask_client):
         url_for("dashboard.custom_alias"),
         data={
             "prefix": "prefix",
-            "suffix": suffix,
+            "signed-alias-suffix": signed_alias_suffix,
             "mailboxes": [user.default_mailbox_id, mb1.id],
         },
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert f"Alias prefix.{word}@{EMAIL_DOMAIN} has been created" in str(r.data)
+    assert f"Alias prefix.12345@{EMAIL_DOMAIN} has been created" in str(r.data)
 
     alias = Alias.query.order_by(Alias.created_at.desc()).first()
     assert alias._mailboxes
@@ -169,7 +178,11 @@ def test_add_already_existed_alias(flask_client):
 
     word = random_word()
     suffix = f".{word}@{EMAIL_DOMAIN}"
-    signed_suffix = signer.sign(suffix).decode()
+
+    alias_suffix = AliasSuffix(
+        is_custom=False, suffix=suffix, is_premium=False, domain=EMAIL_DOMAIN
+    )
+    signed_alias_suffix = signer.sign(alias_suffix.serialize()).decode()
 
     # alias already exist
     Alias.create(
@@ -184,7 +197,7 @@ def test_add_already_existed_alias(flask_client):
         url_for("dashboard.custom_alias"),
         data={
             "prefix": "prefix",
-            "suffix": signed_suffix,
+            "signed-alias-suffix": signed_alias_suffix,
             "mailboxes": [user.default_mailbox_id],
         },
         follow_redirects=True,
@@ -207,7 +220,10 @@ def test_add_alias_in_global_trash(flask_client):
 
     word = random_word()
     suffix = f".{word}@{EMAIL_DOMAIN}"
-    signed_suffix = signer.sign(suffix).decode()
+    alias_suffix = AliasSuffix(
+        is_custom=False, suffix=suffix, is_premium=False, domain=EMAIL_DOMAIN
+    )
+    signed_alias_suffix = signer.sign(alias_suffix.serialize()).decode()
 
     # delete an alias: alias should go the DeletedAlias
     alias = Alias.create(
@@ -226,7 +242,7 @@ def test_add_alias_in_global_trash(flask_client):
         url_for("dashboard.custom_alias"),
         data={
             "prefix": "prefix",
-            "suffix": signed_suffix,
+            "signed-alias-suffix": signed_alias_suffix,
             "mailboxes": [user.default_mailbox_id],
         },
         follow_redirects=True,
@@ -257,12 +273,17 @@ def test_add_alias_in_custom_domain_trash(flask_client):
 
     # create the same alias, should return error
     suffix = "@ab.cd"
-    signed_suffix = signer.sign(suffix).decode()
+
+    alias_suffix = AliasSuffix(
+        is_custom=False, suffix=suffix, is_premium=False, domain=EMAIL_DOMAIN
+    )
+    signed_alias_suffix = signer.sign(alias_suffix.serialize()).decode()
+
     r = flask_client.post(
         url_for("dashboard.custom_alias"),
         data={
             "prefix": "prefix",
-            "suffix": signed_suffix,
+            "signed-alias-suffix": signed_alias_suffix,
             "mailboxes": [user.default_mailbox_id],
         },
         follow_redirects=True,

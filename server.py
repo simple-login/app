@@ -101,6 +101,7 @@ from app.models import (
     ManualSubscription,
     Payout,
     Coupon,
+    SLDomain,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -417,6 +418,8 @@ def fake_data():
         comment="Local manual",
         commit=True,
     )
+
+    SLDomain.create(domain="premium.com", premium_only=True, commit=True)
 
 
 @login_manager.user_loader

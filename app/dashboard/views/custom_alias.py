@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, asdict
 
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
@@ -29,7 +30,10 @@ signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 
 @dataclass
 class SuffixInfo:
-    """Alias suffix info"""
+    """
+    Alias suffix info
+    WARNING: should use AliasSuffix instead
+    """
 
     # whether this is a custom domain
     is_custom: bool
@@ -44,6 +48,8 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
     """
     Similar to as available_suffixes() but also return whether the suffix comes from a premium domain
     Note that is-premium-domain is only relevant for SL domain
+
+    WARNING: should use get_alias_suffixes() instead
     """
     user_custom_domains = user.verified_custom_domains()
 
@@ -92,6 +98,89 @@ def get_available_suffixes(user: User) -> [SuffixInfo]:
     return suffixes
 
 
+@dataclass
+class AliasSuffix:
+    # whether this is a custom domain
+    is_custom: bool
+    suffix: str
+
+    # whether this is a premium SL domain. Not apply to custom domain
+    is_premium: bool
+
+    # can be either Custom or SL domain
+    domain: str
+
+    def serialize(self):
+        return json.dumps(asdict(self))
+
+    @classmethod
+    def deserialize(cls, data: str) -> "AliasSuffix":
+        return AliasSuffix(**json.loads(data))
+
+
+def get_alias_suffixes(user: User) -> [AliasSuffix]:
+    """
+    Similar to as available_suffixes() but also return whether the suffix comes from a premium domain
+    Note that is-premium-domain is only relevant for SL domain
+    """
+    user_custom_domains = user.verified_custom_domains()
+
+    alias_suffixes: [AliasSuffix] = []
+
+    # put custom domain first
+    # for each user domain, generate both the domain and a random suffix version
+    for custom_domain in user_custom_domains:
+        if custom_domain.random_prefix_generation:
+            suffix = "." + user.get_random_alias_suffix() + "@" + custom_domain.domain
+            alias_suffix = AliasSuffix(
+                is_custom=True,
+                suffix=suffix,
+                is_premium=False,
+                domain=custom_domain.domain,
+            )
+            if user.default_alias_custom_domain_id == custom_domain.id:
+                alias_suffixes.insert(0, alias_suffix)
+            else:
+                alias_suffixes.append(alias_suffix)
+
+        suffix = "@" + custom_domain.domain
+        alias_suffix = AliasSuffix(
+            is_custom=True, suffix=suffix, is_premium=False, domain=custom_domain.domain
+        )
+
+        # put the default domain to top
+        # only if random_prefix_generation isn't enabled
+        if (
+            user.default_alias_custom_domain_id == custom_domain.id
+            and not custom_domain.random_prefix_generation
+        ):
+            alias_suffixes.insert(0, alias_suffix)
+        else:
+            alias_suffixes.append(alias_suffix)
+
+    # then SimpleLogin domain
+    for sl_domain in user.get_sl_domains():
+        suffix = (
+            ("" if DISABLE_ALIAS_SUFFIX else "." + user.get_random_alias_suffix())
+            + "@"
+            + sl_domain.domain
+        )
+        alias_suffix = AliasSuffix(
+            is_custom=False,
+            suffix=suffix,
+            is_premium=sl_domain.premium_only,
+            domain=sl_domain.domain,
+        )
+
+        # put the default domain to top
+        if user.default_alias_public_domain_id == sl_domain.id:
+            alias_suffixes.insert(0, alias_suffix)
+        else:
+            alias_suffixes.append(alias_suffix)
+
+    return alias_suffixes
+
+
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
 @limiter.limit(ALIAS_LIMIT, methods=["POST"])
 @login_required
@@ -106,18 +195,23 @@ def custom_alias():
         return redirect(url_for("dashboard.index"))
 
     user_custom_domains = [cd.domain for cd in current_user.verified_custom_domains()]
-    suffixes = get_available_suffixes(current_user)
+    alias_suffixes = get_alias_suffixes(current_user)
     at_least_a_premium_domain = False
-    for suffix in suffixes:
-        if not suffix.is_custom and suffix.is_premium:
+    for alias_suffix in alias_suffixes:
+        if not alias_suffix.is_custom and alias_suffix.is_premium:
             at_least_a_premium_domain = True
             break
+
+    alias_suffixes_with_signature = [
+        (alias_suffix, signer.sign(alias_suffix.serialize()).decode())
+        for alias_suffix in alias_suffixes
+    ]
 
     mailboxes = current_user.mailboxes()
 
     if request.method == "POST":
         alias_prefix = request.form.get("prefix").strip().lower().replace(" ", "")
-        signed_suffix = request.form.get("suffix")
+        signed_alias_suffix = request.form.get("signed-alias-suffix")
         mailbox_ids = request.form.getlist("mailboxes")
         alias_note = request.form.get("note")
 
@@ -148,7 +242,12 @@ def custom_alias():
 
         # hypothesis: user will click on the button in the 600 secs
         try:
-            alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
+            signed_alias_suffix_decoded = signer.unsign(
+                signed_alias_suffix, max_age=600
+            ).decode()
+            alias_suffix: AliasSuffix = AliasSuffix.deserialize(
+                signed_alias_suffix_decoded
+            )
         except SignatureExpired:
             LOG.warning("Alias creation time expired for %s", current_user)
             flash("Alias creation time is expired, please retry", "warning")
@@ -158,8 +257,8 @@ def custom_alias():
             flash("Unknown error, refresh the page", "error")
             return redirect(url_for("dashboard.custom_alias"))
 
-        if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
-            full_alias = alias_prefix + alias_suffix
+        if verify_prefix_suffix(current_user, alias_prefix, alias_suffix.suffix):
+            full_alias = alias_prefix + alias_suffix.suffix
 
             general_error_msg = f"{full_alias} cannot be used"
 
@@ -193,8 +292,8 @@ def custom_alias():
             else:
                 custom_domain_id = None
                 # get the custom_domain_id if alias is created with a custom domain
-                if alias_suffix.startswith("@"):
-                    alias_domain = alias_suffix[1:]
+                if alias_suffix.is_custom:
+                    alias_domain = alias_suffix.domain
                     domain = CustomDomain.get_by(domain=alias_domain)
 
                     if domain:
@@ -232,7 +331,7 @@ def custom_alias():
     return render_template(
         "dashboard/custom_alias.html",
         user_custom_domains=user_custom_domains,
-        suffixes=suffixes,
+        alias_suffixes_with_signature=alias_suffixes_with_signature,
         at_least_a_premium_domain=at_least_a_premium_domain,
         mailboxes=mailboxes,
     )
