@@ -197,17 +197,6 @@ def custom_alias():
                     alias_domain = alias_suffix[1:]
                     domain = CustomDomain.get_by(domain=alias_domain)
 
-                    # check if the alias is currently in the domain trash
-                    if domain and DomainDeletedAlias.get_by(
-                        domain_id=domain.id, email=full_alias
-                    ):
-                        flash(
-                            f"Alias {full_alias} is currently in the {domain.domain} trash. "
-                            f"Please remove it from the trash in order to re-create it.",
-                            "warning",
-                        )
-                        return redirect(url_for("dashboard.custom_alias"))
-
                     if domain:
                         custom_domain_id = domain.id
 
