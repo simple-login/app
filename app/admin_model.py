@@ -70,6 +70,14 @@ class UserAdmin(SLModelView):
         manual_upgrade("Charity Organization", ids, is_giveaway=True)
 
     @action(
+        "journalist_upgrade",
+        "Journalist upgrade",
+        "Are you sure you want to upgrade selected users using the Journalist program?",
+    )
+    def action_journalist_upgrade(self, ids):
+        manual_upgrade("Journalist", ids, is_giveaway=True)
+
+    @action(
         "cash_upgrade",
         "Cash upgrade",
         "Are you sure you want to cash-upgrade selected users?",
