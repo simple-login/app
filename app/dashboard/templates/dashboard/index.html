@@ -322,17 +322,19 @@
                 Send Email&nbsp; &nbsp;<i class="fe fe-send"></i>
               </a>
             </div>
+            {% if not current_user.expand_alias_info %}
             <div class="col text-right">
               <a class="btn btn-sm" data-toggle="collapse" href="#alias-{{ alias.id }}" role="button"
                  aria-expanded="false">
                 More <i class="fe fe-chevron-down"></i>
               </a>
             </div>
+            {% endif %}
           </div>
           <!-- END Send Email && More button -->
 
           <!-- Collapse section -->
-          <div class="collapse mt-2" id="alias-{{ alias.id }}">
+          <div class="{% if not current_user.expand_alias_info %} collapse {% endif %} mt-2" id="alias-{{ alias.id }}">
 
             {% if alias_info.latest_email_log != None %}
               <div style="font-size: 12px">
