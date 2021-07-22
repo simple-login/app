@@ -109,6 +109,19 @@ class UserAdmin(SLModelView):
 
         db.session.commit()
 
+    @action(
+        "disable_otp",
+        "Disable OTP",
+        "Disable OTP?",
+    )
+    def disable_otp(self, ids):
+        for user in User.query.filter(User.id.in_(ids)):
+            if user.enable_otp:
+                user.enable_otp = False
+                flash(f"Disable OTP for {user}", "info")
+
+        db.session.commit()
+
 
 def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
     query = User.query.filter(User.id.in_(ids))
