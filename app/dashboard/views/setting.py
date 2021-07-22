@@ -284,6 +284,16 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
+        elif request.form.get("form-name") == "expand-alias-info":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.expand_alias_info = True
+            else:
+                current_user.expand_alias_info = False
+            db.session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "export-data":
             return redirect(url_for("api.export_data"))
         elif request.form.get("form-name") == "export-alias":

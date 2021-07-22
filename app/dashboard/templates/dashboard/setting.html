@@ -368,6 +368,27 @@
     </div>
     <!-- END Reverse-alias -->
 
+    <!-- Always expand alias info -->
+    <div class="card" id="expand-alias-info-section">
+      <div class="card-body">
+        <div class="card-title">Always expand alias info</div>
+        <div class="mb-3">
+          By default, additional alias info is shown after clicking on the "More" button. <br>
+          When this option is enabled, alias additional info will always be shown. <br>
+        </div>
+        <form method="post" action="#expand-alias-info-section">
+          <input type="hidden" name="form-name" value="expand-alias-info">
+          <div class="form-check">
+            <input type="checkbox" id="expand-alias-info" name="enable"
+                {% if current_user.expand_alias_info %} checked {% endif %} class="form-check-input">
+            <label for="expand-alias-info">Automatically expand alias info</label>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Update</button>
+        </form>
+      </div>
+    </div>
+    <!-- END Always expand alias info -->
+
     <div class="card">
       <div class="card-body">
         <div class="card-title">Quarantine</div>
