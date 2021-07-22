@@ -309,6 +309,11 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         server_default=str(AliasSuffixEnum.random_string.value),
     )
 
+    # always expand the alias info, i.e. without needing to press "More"
+    expand_alias_info = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     @classmethod
     def create(cls, email, name="", password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
