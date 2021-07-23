@@ -44,6 +44,7 @@ from io import BytesIO
 from smtplib import SMTPRecipientsRefused
 from typing import List, Tuple, Optional
 
+import newrelic.agent
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
 from sqlalchemy.exc import IntegrityError
@@ -74,8 +75,10 @@ from app.config import (
     TRANSACTIONAL_BOUNCE_SUFFIX,
     ENABLE_SPAM_ASSASSIN,
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
+    NEWRELIC_CONFIG_PATH,
 )
 from app.email import status
+from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
 from app.email_utils import (
     send_email,
@@ -110,7 +113,6 @@ from app.email_utils import (
     get_queue_id,
 )
 from app.extensions import db
-from app.email.rate_limit import rate_limited
 from app.log import LOG, set_message_id
 from app.models import (
     Alias,
@@ -143,6 +145,12 @@ _MIME_HEADERS = [
     "Content-Transfer-Encoding",
 ]
 _MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
+
+newrelic_app = None
+if NEWRELIC_CONFIG_PATH:
+    newrelic.agent.initialize(NEWRELIC_CONFIG_PATH)
+
+    newrelic_app = newrelic.agent.register_application()
 
 
 # fix the database connection leak issue
@@ -1719,6 +1727,7 @@ class MailHandler:
             )
             return status.E404
 
+    @newrelic.agent.background_task(application=newrelic_app)
     def _handle(self, envelope: Envelope):
         start = time.time()
 
@@ -1735,11 +1744,15 @@ class MailHandler:
         app = new_app()
         with app.app_context():
             ret = handle(envelope)
+            elapsed = time.time() - start
             LOG.i(
                 "Finish mail from %s, rctp tos %s, takes %s seconds <<===",
                 envelope.mail_from,
                 envelope.rcpt_tos,
-                time.time() - start,
+                elapsed,
+            )
+            newrelic.agent.record_custom_metric(
+                "Custom/email_handler_time", elapsed, newrelic_app
             )
             return ret
 
