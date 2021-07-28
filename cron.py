@@ -215,6 +215,8 @@ def poll_apple_subscription():
 
 def compute_metric2() -> Metric2:
     now = arrow.now()
+    _24h_ago = now.shift(days=-1)
+
     nb_referred_user_paid = 0
     for user in User.query.filter(User.referral_id.isnot(None)):
         if user.is_paid():
@@ -244,13 +246,19 @@ def compute_metric2() -> Metric2:
         nb_referred_user_paid=nb_referred_user_paid,
         nb_alias=Alias.query.count(),
         # email log stats
-        nb_bounced=EmailLog.query.filter_by(bounced=True).count(),
-        nb_spam=EmailLog.query.filter_by(is_spam=True).count(),
-        nb_reply=EmailLog.query.filter_by(is_reply=True).count(),
-        nb_forward=EmailLog.query.filter_by(
-            bounced=False, is_spam=False, is_reply=False, blocked=False
-        ).count(),
-        nb_block=EmailLog.query.filter_by(blocked=True).count(),
+        nb_forward_last_24h=EmailLog.query.filter(EmailLog.created_at > _24h_ago)
+        .filter_by(bounced=False, is_spam=False, is_reply=False, blocked=False)
+        .count(),
+        nb_bounced_last_24h=EmailLog.query.filter(EmailLog.created_at > _24h_ago)
+        .filter_by(bounced=True)
+        .count(),
+        nb_reply_last_24h=EmailLog.query.filter(EmailLog.created_at > _24h_ago)
+        .filter_by(is_reply=True)
+        .count(),
+        nb_block_last_24h=EmailLog.query.filter(EmailLog.created_at > _24h_ago)
+        .filter_by(blocked=True)
+        .count(),
+        # other stats
         nb_verified_custom_domain=CustomDomain.query.filter_by(verified=True).count(),
         nb_app=Client.query.count(),
         commit=True,
@@ -388,11 +396,10 @@ nb_manual_premium: {stats_today.nb_manual_premium} - {increase_percent(stats_yes
 nb_coinbase_premium: {stats_today.nb_coinbase_premium} - {increase_percent(stats_yesterday.nb_coinbase_premium, stats_today.nb_coinbase_premium)}  <br>
 nb_alias: {stats_today.nb_alias} - {increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)}  <br>
 
-nb_forward: {stats_today.nb_forward} - {increase_percent(stats_yesterday.nb_forward, stats_today.nb_forward)}  <br>
-nb_reply: {stats_today.nb_reply} - {increase_percent(stats_yesterday.nb_reply, stats_today.nb_reply)}  <br>
-nb_block: {stats_today.nb_block} - {increase_percent(stats_yesterday.nb_block, stats_today.nb_block)}  <br>
-nb_bounced: {stats_today.nb_bounced} - {increase_percent(stats_yesterday.nb_bounced, stats_today.nb_bounced)}  <br>
-nb_spam: {stats_today.nb_spam} - {increase_percent(stats_yesterday.nb_spam, stats_today.nb_spam)}  <br>
+nb_forward_last_24h: {stats_today.nb_forward_last_24h} - {increase_percent(stats_yesterday.nb_forward_last_24h, stats_today.nb_forward_last_24h)}  <br>
+nb_reply_last_24h: {stats_today.nb_reply_last_24h} - {increase_percent(stats_yesterday.nb_reply_last_24h, stats_today.nb_reply_last_24h)}  <br>
+nb_block_last_24h: {stats_today.nb_block_last_24h} - {increase_percent(stats_yesterday.nb_block_last_24h, stats_today.nb_block_last_24h)}  <br>
+nb_bounced_last_24h: {stats_today.nb_bounced_last_24h} - {increase_percent(stats_yesterday.nb_bounced_last_24h, stats_today.nb_bounced_last_24h)}  <br>
 
 nb_custom_domain: {stats_today.nb_verified_custom_domain} - {increase_percent(stats_yesterday.nb_verified_custom_domain, stats_today.nb_verified_custom_domain)}  <br>
 nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_today.nb_app)}  <br>

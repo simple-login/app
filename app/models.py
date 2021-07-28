@@ -2269,11 +2269,18 @@ class Metric2(db.Model, ModelMixin):
 
     nb_alias = db.Column(db.Float, nullable=True)
 
+    # Obsolete as only for the last 14 days
     nb_forward = db.Column(db.Float, nullable=True)
     nb_block = db.Column(db.Float, nullable=True)
     nb_reply = db.Column(db.Float, nullable=True)
     nb_bounced = db.Column(db.Float, nullable=True)
     nb_spam = db.Column(db.Float, nullable=True)
+
+    # should be used instead
+    nb_forward_last_24h = db.Column(db.Float, nullable=True)
+    nb_block_last_24h = db.Column(db.Float, nullable=True)
+    nb_reply_last_24h = db.Column(db.Float, nullable=True)
+    nb_bounced_last_24h = db.Column(db.Float, nullable=True)
 
     nb_verified_custom_domain = db.Column(db.Float, nullable=True)
 
