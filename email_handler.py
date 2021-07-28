@@ -260,6 +260,52 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
     return contact
 
 
+def get_or_create_reply_to_contact(
+    reply_to_header: str, alias: Alias
+) -> Optional[Contact]:
+    """
+    Get or create the contact for the Reply-To header
+    """
+    name, address = parseaddr_unicode(reply_to_header)
+
+    if not is_valid_email(address):
+        LOG.w(
+            "invalid reply-to address %s. Parse from %s",
+            address,
+            reply_to_header,
+        )
+        return None
+
+    address = sanitize_email(address)
+
+    contact = Contact.get_by(alias_id=alias.id, website_email=address)
+    if contact:
+        return contact
+    else:
+        LOG.d(
+            "create contact %s for alias %s via reply-to header",
+            address,
+            alias,
+            reply_to_header,
+        )
+
+        try:
+            contact = Contact.create(
+                user_id=alias.user_id,
+                alias_id=alias.id,
+                website_email=address,
+                name=name,
+                reply_email=generate_reply_email(address, alias.user),
+            )
+            db.session.commit()
+        except IntegrityError:
+            LOG.w("Contact %s %s already exist", alias, address)
+            db.session.rollback()
+            contact = Contact.get_by(alias_id=alias.id, website_email=address)
+
+    return contact
+
+
 def replace_header_when_forward(msg: Message, alias: Alias, header: str):
     """
     Replace CC or To header by Reply emails in forward phase
@@ -510,19 +556,19 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     #         handle_email_sent_to_ourself(alias, mb, msg, user)
     #         return [(True, "250 Message accepted for delivery")]
 
-    LOG.d("Create or get contact for from:%s reply-to:%s", msg["From"], msg["Reply-To"])
-    # prefer using Reply-To when creating contact
-    if msg["Reply-To"]:
-        # force convert header to string, sometimes contact_from_header is Header object
-        from_header = str(msg["Reply-To"])
-
-        # alert phishing attempt when reply-to = alias
-        if from_header == alias.email:
-            LOG.e("Reply-to same as alias %s", alias)
-    else:
-        from_header = str(msg["From"])
-
+    from_header = str(msg["From"])
+    LOG.d("Create or get contact for from_header:%s", from_header)
     contact = get_or_create_contact(from_header, envelope.mail_from, alias)
+
+    reply_to_contact = None
+    if msg["Reply-To"]:
+        reply_to = str(msg["Reply-To"])
+        LOG.d("Create or get contact for from_header:%s", reply_to)
+        # ignore when reply-to = alias
+        if reply_to == alias.email:
+            LOG.i("Reply-to same as alias %s", alias)
+        else:
+            reply_to_contact = get_or_create_reply_to_contact(reply_to, alias)
 
     if not alias.enabled:
         LOG.d("%s is disabled, do not forward", alias)
@@ -553,12 +599,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             # create a copy of message for each forward
             ret.append(
                 forward_email_to_mailbox(
-                    alias,
-                    copy(msg),
-                    contact,
-                    envelope,
-                    mailbox,
-                    user,
+                    alias, copy(msg), contact, envelope, mailbox, user, reply_to_contact
                 )
             )
 
@@ -572,6 +613,7 @@ def forward_email_to_mailbox(
     envelope,
     mailbox,
     user,
+    reply_to_contact: Optional[Contact],
 ) -> (bool, str):
     LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
 
@@ -730,6 +772,12 @@ def forward_email_to_mailbox(
     new_from_header = contact.new_addr()
     add_or_replace_header(msg, "From", new_from_header)
     LOG.d("From header, new:%s, old:%s", new_from_header, contact_from_header)
+
+    if reply_to_contact:
+        reply_to_header = msg["Reply-To"]
+        new_reply_to_header = reply_to_contact.new_addr()
+        add_or_replace_header(msg, "Reply-To", new_reply_to_header)
+        LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header)
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
     replace_header_when_forward(msg, alias, "Cc")
