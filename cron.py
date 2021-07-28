@@ -48,7 +48,6 @@ from app.models import (
     Monitoring,
     Contact,
     CoinbaseSubscription,
-    Metric,
     TransactionalEmail,
     Bounce,
     Metric2,
@@ -214,128 +213,6 @@ def poll_apple_subscription():
     LOG.d("Finish poll_apple_subscription")
 
 
-def compute_metrics():
-    now = arrow.now()
-
-    Metric.create(date=now, name=Metric.NB_USER, value=User.query.count(), commit=True)
-    Metric.create(
-        date=now,
-        name=Metric.NB_ACTIVATED_USER,
-        value=User.query.filter_by(activated=True).count(),
-        commit=True,
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_REFERRED_USER,
-        value=User.query.filter(User.referral_id.isnot(None)).count(),
-        commit=True,
-    )
-
-    nb_referred_user_paid = 0
-    for user in User.query.filter(User.referral_id.isnot(None)):
-        if user.is_paid():
-            nb_referred_user_paid += 1
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_REFERRED_USER_PAID,
-        value=nb_referred_user_paid,
-        commit=True,
-    )
-
-    Metric.create(
-        date=now, name=Metric.NB_ALIAS, value=Alias.query.count(), commit=True
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_BOUNCED,
-        value=EmailLog.query.filter_by(bounced=True).count(),
-        commit=True,
-    )
-    Metric.create(
-        date=now,
-        name=Metric.NB_SPAM,
-        value=EmailLog.query.filter_by(is_spam=True).count(),
-        commit=True,
-    )
-    Metric.create(
-        date=now,
-        name=Metric.NB_REPLY,
-        value=EmailLog.query.filter_by(is_reply=True).count(),
-        commit=True,
-    )
-    Metric.create(
-        date=now,
-        name=Metric.NB_BLOCK,
-        value=EmailLog.query.filter_by(blocked=True).count(),
-        commit=True,
-    )
-    Metric.create(
-        date=now,
-        name=Metric.NB_FORWARD,
-        value=EmailLog.query.filter_by(
-            bounced=False, is_spam=False, is_reply=False, blocked=False
-        ).count(),
-        commit=True,
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_PREMIUM,
-        value=Subscription.query.filter(Subscription.cancelled.is_(False)).count(),
-        commit=True,
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_CANCELLED_PREMIUM,
-        value=Subscription.query.filter(Subscription.cancelled.is_(True)).count(),
-        commit=True,
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_APPLE_PREMIUM,
-        value=AppleSubscription.query.count(),
-        commit=True,
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_MANUAL_PREMIUM,
-        value=ManualSubscription.query.filter(
-            ManualSubscription.end_at > now,
-            ManualSubscription.is_giveaway.is_(False),
-        ).count(),
-        commit=True,
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_COINBASE_PREMIUM,
-        value=CoinbaseSubscription.query.filter(
-            CoinbaseSubscription.end_at > now
-        ).count(),
-        commit=True,
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_VERIFIED_CUSTOM_DOMAIN,
-        value=CustomDomain.query.filter_by(verified=True).count(),
-        commit=True,
-    )
-
-    Metric.create(
-        date=now,
-        name=Metric.NB_APP,
-        value=Client.query.count(),
-        commit=True,
-    )
-
-
 def compute_metric2() -> Metric2:
     now = arrow.now()
     nb_referred_user_paid = 0
@@ -484,9 +361,6 @@ def stats():
     if not ADMIN_EMAIL:
         # nothing to do
         return
-
-    # todo: remove metrics1
-    compute_metrics()
 
     stats_today = compute_metric2()
     stats_yesterday = (
