@@ -517,6 +517,7 @@ If you like the project, you can make a donation on our Patreon page at https://
 The above self-hosting instructions correspond to a freshly Ubuntu server and doesn't cover all possible server configuration.
 Below are pointers to different topics:
 
+- [Troubleshooting](docs/troubleshooting.md)
 - [Enable SSL](docs/ssl.md)
 - [UFW - uncomplicated firewall](docs/ufw.md)
 - [SES - Amazon Simple Email Service](docs/ses.md)
