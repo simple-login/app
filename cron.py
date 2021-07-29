@@ -729,7 +729,9 @@ async def check_hibp():
     LOG.d("Updating list of known breaches")
     r = requests.get("https://haveibeenpwned.com/api/v3/breaches")
     for entry in r.json():
-        Hibp.get_or_create(name=entry["Name"])
+        hibp_entry = Hibp.get_or_create(name=entry["Name"])
+        hibp_entry.date = arrow.get(entry["BreachDate"])
+        hibp_entry.description = entry["Description"]
 
     db.session.commit()
     LOG.d("Updated list of known breaches")
