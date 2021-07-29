@@ -271,6 +271,9 @@ def increase_percent(old, new) -> str:
     if old == 0:
         return "N/A"
 
+    if not old or not new:
+        return "N/A"
+
     increase = (new - old) / old * 100
     return f"{increase:.1f}%. Delta: {new - old}"
 
