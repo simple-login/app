@@ -56,6 +56,7 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     Hibp,
+    HibpNotifiedAlias,
 )
 from app.utils import sanitize_email
 from server import create_app
@@ -271,7 +272,7 @@ def increase_percent(old, new) -> str:
         return "N/A"
 
     increase = (new - old) / old * 100
-    return f"{increase:.1f}%. Delta: {new-old}"
+    return f"{increase:.1f}%. Delta: {new - old}"
 
 
 def bounce_report() -> List[Tuple[str, int]]:
@@ -781,6 +782,7 @@ def notify_hibp():
         db.session.query(Alias)
         .options(joinedload(Alias.hibp_breaches))
         .filter(Alias.hibp_breaches.any())
+        .filter(Alias.id.notin_(db.session.query(HibpNotifiedAlias.alias_id)))
         .distinct(Alias.user_id)
         .all()
     )
@@ -795,7 +797,11 @@ def notify_hibp():
             .all()
         )
 
-        LOG.d(f"Send new breaches found email to user {user}")
+        LOG.d(
+            f"Send new breaches found email to %s for %s breaches aliases",
+            user,
+            len(breached_aliases),
+        )
 
         send_email(
             user.email,
@@ -811,6 +817,11 @@ def notify_hibp():
                 breached_aliases=breached_aliases,
             ),
         )
+
+        # add the breached aliases to HibpNotifiedAlias to avoid sending another email
+        for alias in breached_aliases:
+            HibpNotifiedAlias.create(user_id=user.id, alias_id=alias.id)
+        db.session.commit()
 
 
 if __name__ == "__main__":
