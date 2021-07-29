@@ -163,7 +163,8 @@
 
             <select name="filter"
                     onchange="this.form.submit()"
-                    class="form-control mr-3 shadow">
+                    class="form-control mr-3 shadow"
+                    style="max-width: 200px">
               <option value="" {% if filter == "" %} selected {% endif %}>
                 All Aliases
               </option>
@@ -326,12 +327,12 @@
               </a>
             </div>
             {% if not current_user.expand_alias_info %}
-            <div class="col text-right">
-              <a class="btn btn-sm" data-toggle="collapse" href="#alias-{{ alias.id }}" role="button"
-                 aria-expanded="false">
-                More <i class="fe fe-chevron-down"></i>
-              </a>
-            </div>
+              <div class="col text-right">
+                <a class="btn btn-sm" data-toggle="collapse" href="#alias-{{ alias.id }}" role="button"
+                   aria-expanded="false">
+                  More <i class="fe fe-chevron-down"></i>
+                </a>
+              </div>
             {% endif %}
           </div>
           <!-- END Send Email && More button -->
@@ -474,9 +475,9 @@
 
                   <span class="btn btn-link btn-sm float-right text-danger"
                         onclick="confirmDeleteAlias.call(this)"
-                        {% if alias.custom_domain %}
-                          data-custom-domain-trash-url="{{ alias.custom_domain.get_trash_url() }}"
-                        {% endif %}
+                      {% if alias.custom_domain %}
+                        data-custom-domain-trash-url="{{ alias.custom_domain.get_trash_url() }}"
+                      {% endif %}
                         data-alias="{{ alias.id }}"
                         data-alias-email="{{ alias.email }}"
                   >
@@ -497,24 +498,24 @@
 
   <!-- Only show pagination control if there are previous/next page -->
   {% if page > 0 or not last_page %}
-  <div class="row">
-    <div class="col">
-      <nav aria-label="Alias navigation">
-        <ul class="pagination">
-          <li class="page-item">
-            <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}"
-               href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort, filter=filter) }}">
-              Previous</a>
-          </li>
-          <li class="page-item">
-            <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}"
-               href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort, filter=filter) }}">
-              Next</a>
-          </li>
-        </ul>
-      </nav>
+    <div class="row">
+      <div class="col">
+        <nav aria-label="Alias navigation">
+          <ul class="pagination">
+            <li class="page-item">
+              <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}"
+                 href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort, filter=filter) }}">
+                Previous</a>
+            </li>
+            <li class="page-item">
+              <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}"
+                 href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort, filter=filter) }}">
+                Next</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
     </div>
-  </div>
   {% endif %}
 
 {% endblock %}
