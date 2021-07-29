@@ -7,6 +7,7 @@ from typing import List, Tuple
 import arrow
 import requests
 from sqlalchemy import func, desc, or_
+from sqlalchemy.orm import joinedload
 
 from app import s3
 from app.alias_utils import nb_email_log_for_mailbox
@@ -771,6 +772,47 @@ async def check_hibp():
     LOG.d("Done checking HIBP API for aliases in breaches")
 
 
+def notify_hibp():
+    """
+    Send aggregated email reports for HIBP breaches
+    """
+    # to get a list of users that have at least a breached alias
+    alias_query = (
+        db.session.query(Alias)
+        .options(joinedload(Alias.hibp_breaches))
+        .filter(Alias.hibp_breaches.any())
+        .distinct(Alias.user_id)
+        .all()
+    )
+
+    user_ids = [alias.user_id for alias in alias_query]
+
+    for user in User.query.filter(User.id.in_(user_ids)):
+        breached_aliases = (
+            db.session.query(Alias)
+            .options(joinedload(Alias.hibp_breaches))
+            .filter(Alias.hibp_breaches.any(), Alias.user_id == user.id)
+            .all()
+        )
+
+        LOG.d(f"Send new breaches found email to user {user}")
+
+        send_email(
+            user.email,
+            f"You were in a data breach",
+            render(
+                "transactional/hibp-new-breaches.txt.jinja2",
+                user=user,
+                breached_aliases=breached_aliases,
+            ),
+            render(
+                "transactional/hibp-new-breaches.html",
+                user=user,
+                breached_aliases=breached_aliases,
+            ),
+        )
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -790,6 +832,7 @@ if __name__ == "__main__":
             "delete_old_monitoring",
             "check_custom_domain",
             "check_hibp",
+            "notify_hibp",
         ],
     )
     args = parser.parse_args()
@@ -827,3 +870,6 @@ if __name__ == "__main__":
         elif args.job == "check_hibp":
             LOG.d("Check HIBP")
             asyncio.run(check_hibp())
+        elif args.job == "notify_hibp":
+            LOG.d("Notify users about HIBP breaches")
+            notify_hibp()

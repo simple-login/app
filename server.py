@@ -102,6 +102,8 @@ from app.models import (
     Payout,
     Coupon,
     SLDomain,
+    Hibp,
+    AliasHibp,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -420,6 +422,21 @@ def fake_data():
     )
 
     SLDomain.create(domain="premium.com", premium_only=True, commit=True)
+
+    hibp1 = Hibp.create(
+        name="first breach", description="breach description", commit=True
+    )
+    hibp2 = Hibp.create(
+        name="second breach", description="breach description", commit=True
+    )
+    breached_alias1 = Alias.create(
+        email="john@example.com", user_id=user.id, mailbox_id=m1.id, commit=True
+    )
+    breached_alias2 = Alias.create(
+        email="wick@example.com", user_id=user.id, mailbox_id=m1.id, commit=True
+    )
+    AliasHibp.create(hibp_id=hibp1.id, alias_id=breached_alias1.id)
+    AliasHibp.create(hibp_id=hibp2.id, alias_id=breached_alias2.id)
 
 
 @login_manager.user_loader

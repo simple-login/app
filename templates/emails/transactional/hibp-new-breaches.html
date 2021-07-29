@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    <h1>
+      {{ breached_aliases|count }} of your aliases are found in data breaches.
+    </h1>
+  {% endcall %}
+
+  <ol>
+    {%- for alias in breached_aliases[:10] %}
+      <li>{% call text() %}
+        <b>{{ alias.email }}</b> was found in {{ alias.hibp_breaches|count }} data breaches. <br>
+
+        <ul>
+          {% set breaches = alias.hibp_breaches|sort(attribute='date', reverse=True) %}
+          {%- for breach in breaches[:4] %}
+            <li>
+              <b>{{ breach.name }}</b> {% if breach.date %}({{ breach.date.format('YYYY-MM-DD') }}){% endif %}
+              {{ breach.description }}
+            </li>
+          {%- endfor %}
+        </ul>
+
+        {% if  breaches|length > 4 %}
+          And {{ breaches|length - 4 }} more data breaches...
+        {% endif %}
+
+      {% endcall %}</li>
+    {%- endfor %}
+
+  </ol>
+
+  {% if  breached_aliases|length > 10 %}
+    {% call text() %}
+      And {{ breached_aliases|length - 10 }} more aliases...
+    {% endcall %}
+  {% endif %}
+
+  {% call text() %}
+    For more information, check <a href='https://haveibeenpwned.com/'>HaveIBeenPwned.com</a>.
+  {% endcall %}
+
+
+  {{ render_text('Best, <br />SimpleLogin Team.') }}
+{% endblock %}
