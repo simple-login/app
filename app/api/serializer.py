@@ -269,6 +269,8 @@ def get_alias_infos_with_pagination_v3(
         q = q.order_by(Alias.email)
     elif sort == "z2a":
         q = q.order_by(Alias.email.desc())
+    elif alias_filter == "hibp":
+        q = q.filter(Alias.hibp_breaches.any())
     else:
         # default sorting
         q = q.order_by(latest_activity.desc())

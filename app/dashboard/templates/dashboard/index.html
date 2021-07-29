@@ -173,6 +173,9 @@
               <option value="disabled" {% if filter == "disabled" %} selected {% endif %}>
                 Only Disabled Aliases
               </option>
+              <option value="hibp" {% if filter == "hibp" %} selected {% endif %}>
+                Only Aliases Found In Data Breaches
+              </option>
             </select>
 
             <input type="search" name="query" placeholder="Enter to search for alias"
