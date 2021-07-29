@@ -44,6 +44,7 @@ from app.models import (
     CoinbaseSubscription,
     AppleSubscription,
     Job,
+    Subscription,
 )
 from app.utils import random_string, sanitize_email
 
@@ -185,6 +186,12 @@ def setting():
             return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "delete-account":
+            sub: Subscription = current_user.get_subscription()
+            # user who has canceled can also re-subscribe
+            if sub and not sub.cancelled:
+                flash("Please cancel your current subscription first", "warning")
+                return redirect(url_for("dashboard.setting"))
+
             # Schedule delete account job
             LOG.warning("schedule delete account job for %s", current_user)
             Job.create(
