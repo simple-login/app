@@ -77,6 +77,7 @@ def render(template_name, **kwargs) -> str:
         MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN,
         URL=URL,
         LANDING_PAGE_URL=LANDING_PAGE_URL,
+        YEAR=arrow.now().year,
         **kwargs,
     )
 
