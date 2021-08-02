@@ -58,6 +58,7 @@ from app.models import (
     Alias,
     EmailLog,
     TransactionalEmail,
+    IgnoreBounceSender,
 )
 from app.utils import (
     random_string,
@@ -1213,3 +1214,11 @@ def get_queue_id(msg: Message) -> Optional[str]:
     with_esmtps = received_header[search_result.start() : search_result.end()]
 
     return with_esmtps[len("with ESMTPS id ") :]
+
+
+def should_ignore_bounce(mail_from: str) -> bool:
+    if IgnoreBounceSender.get_by(mail_from=mail_from):
+        LOG.w("do not send back bounce report to %s", mail_from)
+        return True
+
+    return False

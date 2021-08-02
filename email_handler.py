@@ -111,6 +111,7 @@ from app.email_utils import (
     sl_sendmail,
     sanitize_header,
     get_queue_id,
+    should_ignore_bounce,
 )
 from app.extensions import db
 from app.log import LOG, set_message_id
@@ -540,13 +541,19 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         alias = try_auto_create(address)
         if not alias:
             LOG.d("alias %s cannot be created on-the-fly, return 550", address)
-            return [(False, status.E515)]
+            if should_ignore_bounce(envelope.mail_from):
+                return [(True, status.E207)]
+            else:
+                return [(False, status.E515)]
 
     user = alias.user
 
     if user.disabled:
         LOG.w("User %s disabled, disable forwarding emails for %s", user, alias)
-        return [(False, status.E504)]
+        if should_ignore_bounce(envelope.mail_from):
+            return [(True, status.E207)]
+        else:
+            return [(False, status.E504)]
 
     # mail_from = envelope.mail_from
     # for mb in alias.mailboxes:
@@ -588,7 +595,10 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     # no valid mailbox
     if not mailboxes:
-        return [(False, status.E516)]
+        if should_ignore_bounce(envelope.mail_from):
+            return [(True, status.E207)]
+        else:
+            return [(False, status.E516)]
 
     # no need to create a copy of message
     for mailbox in mailboxes:
@@ -618,8 +628,11 @@ def forward_email_to_mailbox(
     LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
 
     if mailbox.disabled:
-        LOG.debug("%s disabled, do not forward")
-        return False, status.E518
+        LOG.d("%s disabled, do not forward")
+        if should_ignore_bounce(envelope.mail_from):
+            return True, status.E207
+        else:
+            return False, status.E518
 
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
@@ -819,7 +832,10 @@ def forward_email_to_mailbox(
             alias,
             mailbox,
         )
-        return False, status.E521
+        if should_ignore_bounce(envelope.mail_from):
+            return True, status.E207
+        else:
+            return False, status.E521
     else:
         db.session.commit()
         return True, status.E200
@@ -1707,7 +1723,10 @@ def handle(envelope: Envelope) -> str:
 
     if rate_limited(mail_from, rcpt_tos):
         LOG.w("Rate Limiting applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
-        return status.E522
+        if should_ignore_bounce(envelope.mail_from):
+            return status.E207
+        else:
+            return status.E522
 
     # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
     # todo: remove logging

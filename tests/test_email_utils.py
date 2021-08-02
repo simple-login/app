@@ -28,9 +28,10 @@ from app.email_utils import (
     decode_text,
     parse_id_from_bounce,
     get_queue_id,
+    should_ignore_bounce,
 )
 from app.extensions import db
-from app.models import User, CustomDomain, Alias, Contact, EmailLog
+from app.models import User, CustomDomain, Alias, Contact, EmailLog, IgnoreBounceSender
 
 # flake8: noqa: E101, W191
 from tests.utils import login
@@ -740,3 +741,10 @@ def test_get_queue_id():
     )
 
     assert get_queue_id(msg) == "4FxQmw1DXdz2vK2"
+
+
+def test_should_ignore_bounce(flask_client):
+    assert not should_ignore_bounce("not-exist")
+
+    IgnoreBounceSender.create(mail_from="to-ignore@example.com")
+    assert should_ignore_bounce("to-ignore@example.com")
