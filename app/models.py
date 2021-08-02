@@ -2340,3 +2340,12 @@ class IgnoredEmail(db.Model, ModelMixin):
 
     mail_from = db.Column(db.String(512), nullable=False)
     rcpt_to = db.Column(db.String(512), nullable=False)
+
+
+class IgnoreBounceSender(db.Model, ModelMixin):
+    """Ignore sender that doesn't correctly handle bounces, for example noreply@github.com"""
+
+    mail_from = db.Column(db.String(512), nullable=False, unique=True)
+
+    def __repr__(self):
+        return f"<NoReplySender {self.mail_from}"
