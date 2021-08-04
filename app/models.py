@@ -1047,10 +1047,10 @@ class Alias(db.Model, ModelMixin):
     user_id = db.Column(
         db.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
     )
-    email = db.Column(db.String(128), unique=True, nullable=False)
+    email = db.Column(db.String(128), unique=True, nullable=False, index=True)
 
     # the name to use when user replies/sends from alias
-    name = db.Column(db.String(128), nullable=True, default=None)
+    name = db.Column(db.String(128), nullable=True, default=None, index=True)
 
     enabled = db.Column(db.Boolean(), default=True, nullable=False)
 
