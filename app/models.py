@@ -8,7 +8,7 @@ import arrow
 from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
-from sqlalchemy import text, desc, CheckConstraint
+from sqlalchemy import text, desc, CheckConstraint, Index
 from sqlalchemy.orm import deferred
 from sqlalchemy_utils import ArrowType
 
@@ -38,6 +38,13 @@ from app.utils import (
     sanitize_email,
     random_word,
 )
+
+import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import TSVECTOR
+
+
+class TSVector(sa.types.TypeDecorator):
+    impl = TSVECTOR
 
 
 class ModelMixin(object):
@@ -1120,6 +1127,16 @@ class Alias(db.Model, ModelMixin):
     # have I been pwned
     hibp_last_check = db.Column(ArrowType, default=None)
     hibp_breaches = db.relationship("Hibp", secondary="alias_hibp")
+
+    # to use Postgres full text search. Only applied on "note" column for now
+    # this is a generated Postgres column
+    ts_vector = db.Column(
+        TSVector(), db.Computed("to_tsvector('english', note)", persisted=True)
+    )
+
+    __table_args__ = (
+        Index("ix_video___ts_vector__", ts_vector, postgresql_using="gin"),
+    )
 
     user = db.relationship(User, foreign_keys=[user_id])
     mailbox = db.relationship("Mailbox", lazy="joined")
