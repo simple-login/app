@@ -247,7 +247,7 @@ def get_alias_infos_with_pagination_v3(
         q = q.filter(
             or_(
                 Alias.email.ilike(f"%{query}%"),
-                Alias.note.ilike(f"%{query}%"),
+                Alias.ts_vector.match(query),
                 Alias.name.ilike(f"%{query}%"),
                 mailboxes_sub.c.nb_matched_mailboxes > 0,
                 Mailbox.email.ilike(f"%{query}%"),
