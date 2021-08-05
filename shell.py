@@ -140,7 +140,7 @@ app = create_app()
 with app.app_context():
     # to test email template
     # with open("/tmp/email.html", "w") as f:
-    #     user = User.get(1)
+    #     user = User.first()
     #     f.write(
     #         render(
     #             "transactional/reset-password.html",

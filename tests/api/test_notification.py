@@ -61,5 +61,5 @@ def test_mark_notification_as_read(flask_client):
     )
 
     assert r.status_code == 200
-    notification = Notification.get(1)
+    notification = Notification.first()
     assert notification.read
