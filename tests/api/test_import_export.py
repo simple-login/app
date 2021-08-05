@@ -9,6 +9,7 @@ from app.models import (
     Alias,
     AliasMailbox,
     BatchImport,
+    File,
 )
 from app.import_utils import import_from_csv
 from tests.utils import login
@@ -107,8 +108,8 @@ def test_import_no_mailboxes_no_domains(flask_client):
         "ebay@my-domain.com,Used on eBay",
         'facebook@my-domain.com,"Used on Facebook, Instagram."',
     ]
-
-    batch_import = BatchImport.create(user_id=user.id, file_id=0)
+    file = File.create(path="/test", commit=True)
+    batch_import = BatchImport.create(user_id=user.id, file_id=file.id, commit=True)
 
     import_from_csv(batch_import, user, alias_data)
 
@@ -133,7 +134,8 @@ def test_import_no_mailboxes(flask_client):
         'facebook@my-domain.com,"Used on Facebook, Instagram."',
     ]
 
-    batch_import = BatchImport.create(user_id=user.id, file_id=0)
+    file = File.create(path="/test", commit=True)
+    batch_import = BatchImport.create(user_id=user.id, file_id=file.id)
 
     import_from_csv(batch_import, user, alias_data)
 
@@ -153,7 +155,8 @@ def test_import_no_domains(flask_client):
         'facebook@my-domain.com,"Used on Facebook, Instagram.",destination1@my-destination-domain.com destination2@my-destination-domain.com',
     ]
 
-    batch_import = BatchImport.create(user_id=user.id, file_id=0)
+    file = File.create(path="/test", commit=True)
+    batch_import = BatchImport.create(user_id=user.id, file_id=file.id)
 
     import_from_csv(batch_import, user, alias_data)
 
@@ -190,7 +193,8 @@ def test_import(flask_client):
         'facebook@my-domain.com,"Used on Facebook, Instagram.",destination@my-destination-domain.com destination2@my-destination-domain.com',
     ]
 
-    batch_import = BatchImport.create(user_id=user.id, file_id=0)
+    file = File.create(path="/test", commit=True)
+    batch_import = BatchImport.create(user_id=user.id, file_id=file.id)
 
     import_from_csv(batch_import, user, alias_data)
 

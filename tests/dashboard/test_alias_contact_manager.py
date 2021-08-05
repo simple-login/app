@@ -38,7 +38,7 @@ def test_add_contact_success(flask_client):
     )
     # a new contact is added
     assert Contact.query.count() == 2
-    contact = Contact.get(2)
+    contact = Contact.query.filter(Contact.id != contact.id).first()
     assert contact.website_email == "another@gmail.com"
     assert contact.name == "First Last"
 
