@@ -6,7 +6,7 @@ from flask import url_for
 
 from app.extensions import db
 from app.jose_utils import verify_id_token, decode_id_token
-from app.models import Client, User
+from app.models import Client, User, ClientUser
 from app.oauth.views.authorize import (
     get_host_name_and_scheme,
     generate_access_token,
@@ -192,14 +192,16 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
     assert not r.json["scope"]
     assert r.json["token_type"] == "Bearer"
 
+    client_user = ClientUser.first()
+
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
         "email": "x@y.z",
         "email_verified": True,
-        "id": 1,
+        "id": client_user.id,
         "name": "AB CD",
-        "sub": "1",
+        "sub": str(client_user.id),
     }
 
 
@@ -280,14 +282,16 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     assert r.json["scope"] == "openid"
     assert r.json["token_type"] == "Bearer"
 
+    client_user = ClientUser.first()
+
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
         "email": "x@y.z",
         "email_verified": True,
-        "id": 1,
+        "id": client_user.id,
         "name": "AB CD",
-        "sub": "1",
+        "sub": str(client_user.id),
     }
 
     # id_token must be returned
@@ -601,14 +605,16 @@ def test_authorize_code_id_token_flow(flask_client):
     assert not r.json["scope"]
     assert r.json["token_type"] == "Bearer"
 
+    client_user = ClientUser.first()
+
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
         "email": "x@y.z",
         "email_verified": True,
-        "id": 1,
+        "id": client_user.id,
         "name": "AB CD",
-        "sub": "1",
+        "sub": str(client_user.id),
     }
 
     # id_token must be returned
