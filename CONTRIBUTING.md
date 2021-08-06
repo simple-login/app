@@ -54,7 +54,13 @@ You also need to install `gpg`, on Mac it can be done with:
 brew install gnupg
 ```
 
-Then make sure all tests pass
+Then make sure all tests pass. You need to run a local postgres database to run tests, it can be run with docker with:
+
+```bash
+docker run -e POSTGRES_PASSWORD=test -e POSTGRES_USER=test -e POSTGRES_DB=test -p 5432:5432 postgres:13
+```
+
+then run all tests
 
 ```bash
 pytest
