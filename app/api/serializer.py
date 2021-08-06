@@ -172,34 +172,6 @@ def get_alias_infos_with_pagination_v3(
         .subquery()
     )
 
-    if query:
-        mailboxes_sub = (
-            db.session.query(
-                Alias.id,
-                func.count(Mailbox.id).label("nb_matched_mailboxes"),
-            )
-            .join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
-            .join(
-                Mailbox,
-                and_(
-                    AliasMailbox.mailbox_id == Mailbox.id,
-                    Mailbox.email.ilike(f"%{query}%"),
-                ),
-                isouter=True,
-            )
-        )
-    else:
-        mailboxes_sub = (
-            db.session.query(
-                Alias.id,
-                func.count(Mailbox.id).label("nb_matched_mailboxes"),
-            )
-            .join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
-            .join(Mailbox, AliasMailbox.mailbox_id == Mailbox.id, isouter=True)
-        )
-
-    mailboxes_sub = mailboxes_sub.group_by(Alias.id).subquery()
-
     latest_activity = case(
         [
             (Alias.created_at > EmailLog.created_at, Alias.created_at),
@@ -222,10 +194,8 @@ def get_alias_infos_with_pagination_v3(
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(CustomDomain, Alias.custom_domain_id == CustomDomain.id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
-        .join(Mailbox, Alias.mailbox_id == Mailbox.id, isouter=True)
         .filter(Alias.id == alias_activity_subquery.c.id)
         .filter(Alias.id == alias_contact_subquery.c.id)
-        .filter(Alias.id == mailboxes_sub.c.id)
         .filter(
             or_(
                 EmailLog.created_at
@@ -244,15 +214,25 @@ def get_alias_infos_with_pagination_v3(
     )
 
     if query:
-        q = q.filter(
-            or_(
-                Alias.email.ilike(f"%{query}%"),
-                # can't use match() here as it uses to_tsquery that expected a tsquery input
-                # Alias.ts_vector.match(query),
-                Alias.ts_vector.op("@@")(func.plainto_tsquery(query)),
-                Alias.name.ilike(f"%{query}%"),
-                mailboxes_sub.c.nb_matched_mailboxes > 0,
-                Mailbox.email.ilike(f"%{query}%"),
+        q = (
+            # to find mailbox whose email match the query
+            q.join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
+            .join(
+                Mailbox,
+                or_(
+                    Mailbox.id == Alias.mailbox_id,
+                    Mailbox.id == AliasMailbox.mailbox_id,
+                ),
+            )
+            .filter(
+                or_(
+                    Alias.email.ilike(f"%{query}%"),
+                    # can't use match() here as it uses to_tsquery that expected a tsquery input
+                    # Alias.ts_vector.match(query),
+                    Alias.ts_vector.op("@@")(func.plainto_tsquery(query)),
+                    Alias.name.ilike(f"%{query}%"),
+                    Mailbox.email.ilike(f"%{query}%"),
+                )
             )
         )
 
