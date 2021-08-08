@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import IntEnum, unique
-from functools import cache
+from functools import lru_cache
 from hashlib import blake2b
 import unicodedata
 
@@ -111,7 +111,7 @@ class PasswordKind(IntEnum):
     AEAD_XCHACHA20_BCRYPT = 0
 
     @property
-    @cache
+    @lru_cache(1)
     def oracle(self) -> KeyedOracle:
         if self == PasswordKind.AEAD_XCHACHA20_BCRYPT:
             return XChacha20(Bcrypt(), self)
