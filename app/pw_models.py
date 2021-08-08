@@ -30,18 +30,22 @@ class UnkeyedOracle(ABC):
 class KeyedOracle(UnkeyedOracle):
     "Helper class that derives a class-specific key, from the site-wide key."
 
-    "32 bytes secret key, unique to the subclass."
-    @property
-    def key(self):
-        # Using Blake2 as a fast KDF
-        return blake2b(
-            type(self).__name__.encode('ASCII'),
+    # Prepare the necessary Blake2b state when the class is initialized
+    _KEY_HASHER = blake2b(
             key=PW_SITE_KEY,
             person=blake2b(
                 b"simplelogin.io/pw_models/KeyedOracle",
                 digest_size=blake2b.PERSON_SIZE
             ).digest(),
             digest_size=32,
+    )
+
+    "32 bytes secret key, unique to the subclass."
+    @property
+    def key(self):
+        # Using Blake2 as a fast KDF
+        return KeyedOracle._KEY_HASHER.copy().update(
+            type(self).__name__.encode('ASCII'),
         ).digest()
 
 
