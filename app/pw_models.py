@@ -35,8 +35,12 @@ class KeyedOracle(UnkeyedOracle):
     def key(self):
         # Using Blake2 as a fast KDF
         return blake2b(
-            f"simplelogin.io/pw/{type(self).__name__}".encode('ASCII'),
+            type(self).__name__.encode('ASCII'),
             key=PW_SITE_KEY,
+            person=blake2b(
+                b"simplelogin.io/pw_models/KeyedOracle",
+                digest_size=blake2b.PERSON_SIZE
+            ).digest(),
             digest_size=32,
         ).digest()
 
