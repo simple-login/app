@@ -396,7 +396,7 @@ HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
 NEWRELIC_CONFIG_PATH = os.environ.get("NEWRELIC_CONFIG_PATH")
 
 PW_SITE_KEY = unhexlify(os.environ.get("PW_SITE_KEY", ""))
-if len(PW_SITE_KEY) != 256/8:
+if len(PW_SITE_KEY) != 256 / 8:
     raise ValueError(
         "'PW_SITE_KEY' must be set to a 256b random string. Generate one with\n"
         "python3 -c 'import secrets; print(secrets.token_hex(32))'"

@@ -13,22 +13,33 @@ class DummyKeyed(KeyedOracle):
     def check(self, user: int, password: bytes, blob: bytes) -> bool:
         raise NotImplementedError
 
-class Keyed1(DummyKeyed): pass
-class Keyed2(DummyKeyed): pass
+
+class Keyed1(DummyKeyed):
+    pass
+
+
+class Keyed2(DummyKeyed):
+    pass
 
 
 def test_unique_keys():
     assert Keyed1().key != Keyed2().key
 
+
 def test_stable_keys():
     assert Keyed1().key == Keyed1().key
     assert Keyed2().key == Keyed2().key
 
+
 def test_methods_must_override():
     """Check that the methods on UnkeyedOracle must be overriden."""
-    class Unkeyed(UnkeyedOracle): pass
 
-    with raises(TypeError, match="Can't instantiate abstract class.* with abstract method"):
+    class Unkeyed(UnkeyedOracle):
+        pass
+
+    with raises(
+        TypeError, match="Can't instantiate abstract class.* with abstract method"
+    ):
         Unkeyed()
 
 
@@ -47,7 +58,7 @@ class DummyUnkeyed(UnkeyedOracle):
 
 def users():
     """Hypothesis strategy for valid user IDs."""
-    return st.integers(min_value=0, max_value=2**64 - 1)
+    return st.integers(min_value=0, max_value=2 ** 64 - 1)
 
 
 @given(user_1=users(), user_2=users(), password=st.binary())

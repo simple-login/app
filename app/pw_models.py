@@ -20,11 +20,14 @@ class UnkeyedOracle(ABC):
     Such unkeyed constructions should only ever be used through a wrapper
     that turns them into a keyed oracle, such as XChacha20.
     """
-    @abstractmethod
-    def new(self, user: int, password: bytes) -> bytes: pass
 
     @abstractmethod
-    def check(self, user: int, password: bytes, blob: bytes) -> bool: pass
+    def new(self, user: int, password: bytes) -> bytes:
+        pass
+
+    @abstractmethod
+    def check(self, user: int, password: bytes, blob: bytes) -> bool:
+        pass
 
 
 class KeyedOracle(UnkeyedOracle):
@@ -32,21 +35,25 @@ class KeyedOracle(UnkeyedOracle):
 
     # Prepare the necessary Blake2b state when the class is initialized
     _KEY_HASHER = blake2b(
-            key=PW_SITE_KEY,
-            person=blake2b(
-                b"simplelogin.io/pw_models/KeyedOracle",
-                digest_size=blake2b.PERSON_SIZE
-            ).digest(),
-            digest_size=32,
+        key=PW_SITE_KEY,
+        person=blake2b(
+            b"simplelogin.io/pw_models/KeyedOracle", digest_size=blake2b.PERSON_SIZE
+        ).digest(),
+        digest_size=32,
     )
 
     "32 bytes secret key, unique to the subclass."
+
     @property
     def key(self):
         # Using Blake2 as a fast KDF
-        return KeyedOracle._KEY_HASHER.copy().update(
-            type(self).__name__.encode('ASCII'),
-        ).digest()
+        return (
+            KeyedOracle._KEY_HASHER.copy()
+            .update(
+                type(self).__name__.encode("ASCII"),
+            )
+            .digest()
+        )
 
 
 class Bcrypt(UnkeyedOracle):
@@ -66,11 +73,11 @@ class XChacha20(KeyedOracle):
     oracle: UnkeyedOracle
     kind_id: bytes
 
-    def __init__(self, oracle: UnkeyedOracle, kind: 'PasswordKind'):
+    def __init__(self, oracle: UnkeyedOracle, kind: "PasswordKind"):
         self.box = Aead(self.key)
         self.oracle = oracle
-        self.kind_id = kind.to_bytes(8, byteorder='big')
-    
+        self.kind_id = kind.to_bytes(8, byteorder="big")
+
     def aad(self, user: int) -> bytes:
         # Construct an AAD value, binding the (encrypted) password hash to
         # a specific (PasswordKind, user) pair.
@@ -80,7 +87,7 @@ class XChacha20(KeyedOracle):
         # Using plain concatenation is safe, as the components are both
         # fixed-size byte strings.  Endianness is fixed, so the AADs stay
         # stable across various architectures; network order is conventional.
-        return self.kind_id + user.to_bytes(8, byteorder='big')
+        return self.kind_id + user.to_bytes(8, byteorder="big")
 
     def new(self, user: int, password: bytes) -> bytes:
         return self.box.encrypt(
@@ -95,7 +102,7 @@ class XChacha20(KeyedOracle):
             self.box.decrypt(
                 blob,
                 self.aad(user),
-            )
+            ),
         )
 
 
@@ -115,7 +122,7 @@ class PasswordKind(IntEnum):
 DEFAULT_KIND = PasswordKind.AEAD_XCHACHA20_BCRYPT
 
 
-class PasswordOracle():
+class PasswordOracle:
     pw_blob = db.Column(db.BINARY, nullable=True)
     pw_kind = db.Column(ChoiceType(PasswordKind), nullable=True)
 
