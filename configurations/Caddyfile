@@ -1,0 +1,9 @@
+{
+    # REMOVE this in production
+    acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+    email "YOUR EMAIL HERE!"
+}
+
+<YOUR FQDN ADDRESS> {
+    reverse_proxy webapp:7777
+}

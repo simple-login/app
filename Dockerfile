@@ -4,8 +4,8 @@ WORKDIR /code
 COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm install
 
-# Main image
-FROM python:3.7
+# Base build
+FROM python:3.7 as base
 
 # install poetry, "pip3 install poetry==1.1.5" doesn't work
 # poetry will be available at /root/.poetry/bin/poetry
@@ -25,7 +25,12 @@ COPY --from=npm /code /code
 # copy everything else into /code
 COPY . .
 
+# Email client image
+FROM base as email-handler
+CMD ["./entrypoints/email-handler-entrypoint.sh"]
+
+# Main image
+FROM base
 EXPOSE 7777
 
-#gunicorn wsgi:app -b 0.0.0.0:7777 -w 2 --timeout 15 --log-level DEBUG
-CMD ["gunicorn","wsgi:app","-b","0.0.0.0:7777","-w","2","--timeout","15"]
+CMD ["./entrypoints/webapp-entrypoint.sh"]
