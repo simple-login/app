@@ -509,7 +509,7 @@ If you have followed the steps above, there will be 3 ports exposed over the int
 You can verify the ports are open by running the following command from a different machine
 
 ```bash
-sudo nmap -sS 107.172.193.177 -p 7777,20381,5432
+sudo nmap -sS <IP-ADDR> -p 7777,20381,5432
 ```
 
 It is important to secure the Postgres port.
