@@ -49,7 +49,6 @@ from app.config import (
     URL,
     SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
-    RESET_DB,
     FLASK_PROFILER_PATH,
     FLASK_PROFILER_PASSWORD,
     SENTRY_FRONT_END_DSN,
@@ -950,15 +949,6 @@ def local_main():
     app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
     app.debug = True
     DebugToolbarExtension(app)
-
-    # warning: only used in local
-    if RESET_DB:
-        from init_app import add_sl_domains
-
-        LOG.warning("reset db, add fake data")
-        with app.app_context():
-            fake_data()
-            add_sl_domains()
 
     app.run(debug=True, port=7777)
 
