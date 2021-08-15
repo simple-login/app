@@ -205,7 +205,6 @@ def create_app() -> Flask:
 def fake_data():
     LOG.d("create fake data")
 
-
     # Create a user
     user = User.create(
         email="john@wick.com",
