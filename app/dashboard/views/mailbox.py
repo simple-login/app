@@ -137,7 +137,7 @@ def delete_mailbox(mailbox_id: int):
 
         Mailbox.delete(mailbox_id)
         db.session.commit()
-        LOG.d("Mailbox %s %s deleted", mailbox_id,mailbox_email)
+        LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
 
         send_email(
             user.email,
