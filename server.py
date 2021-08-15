@@ -204,13 +204,7 @@ def create_app() -> Flask:
 
 def fake_data():
     LOG.d("create fake data")
-    # Remove db if exist
-    if os.path.exists("db.sqlite"):
-        LOG.d("remove existing db file")
-        os.remove("db.sqlite")
 
-    # Create all tables
-    db.create_all()
 
     # Create a user
     user = User.create(
@@ -917,6 +911,15 @@ def register_custom_commands(app):
 
             LOG.d("finish trunk %s, update %s email logs", trunk, nb_update)
             db.session.commit()
+
+    @app.cli.command("dummy-data")
+    def dummy_data():
+        from init_app import add_sl_domains
+
+        LOG.warning("reset db, add fake data")
+        with app.app_context():
+            fake_data()
+            add_sl_domains()
 
 
 def setup_do_not_track(app):
