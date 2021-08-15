@@ -502,6 +502,36 @@ sudo systemctl reload nginx
 At this step, you should also setup the SSL for Nginx. 
 [Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
 
+### Optional, but recommended security steps
+
+If you have followed the steps above, there will be 3 ports exposed over the internet: 7777 (sl-app), 20381 (sl-email) & 5432 (postgresql).
+
+You can verify the ports are open by running the following command from a different machine
+
+```bash
+sudo nmap -sS 107.172.193.177 -p 7777,20381,5432
+```
+
+It is important to secure the Postgres port.
+
+Using `ufw` didn't help because docker writes persisten rules to the `iptables`.
+
+To get around this, first run this command to allow only localhost connections to the docker containers:
+
+```bash
+iptables -I DOCKER-USER -i eth0 ! -s 127.0.0.1 -j DROP
+```
+
+Next, to make the changes persistent across reboots, we are going to use `iptables-persistent` package.
+
+```bash
+sudo apt install iptables-persistent
+sudo service netfilter-persistent save
+```
+
+Reboot your machine and run the above `nmap` command one more time to verify the said ports are not in closed/filtered state.
+
+
 ### Enjoy!
 
 If all the above steps are successful, open http://app.mydomain.com/ and create your first account!
