@@ -506,7 +506,7 @@ At this step, you should also setup the SSL for Nginx.
 
 If you have followed the steps above, there will be 3 ports exposed over the internet: 7777 (sl-app), 20381 (sl-email) & 5432 (postgresql).
 
-You can verify the ports are open by running the following command from a different machine
+You can verify the ports are open by running the following command from a different machine.
 
 ```bash
 sudo nmap -sS <IP-ADDR> -p 7777,20381,5432
@@ -522,7 +522,7 @@ To get around this, first run this command to allow only localhost connections t
 iptables -I DOCKER-USER -i eth0 ! -s 127.0.0.1 -j DROP
 ```
 
-Docker documentation reference for more info: [documentation](https://docs.docker.com/network/iptables/#restrict-connections-to-the-docker-host)
+Docker documentation reference for more info: [documentation](https://docs.docker.com/network/iptables/#restrict-connections-to-the-docker-host).
 
 Next, to make the changes persistent across reboots, we are going to use `iptables-persistent` package.
 
