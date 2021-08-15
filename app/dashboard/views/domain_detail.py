@@ -208,7 +208,7 @@ def domain_detail(custom_domain_id):
     return render_template("dashboard/domain_detail/info.html", **locals())
 
 
-def delete_domain(custom_domain_id: CustomDomain):
+def delete_domain(custom_domain_id: int):
     from server import create_light_app
 
     with create_light_app().app_context():
