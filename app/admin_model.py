@@ -138,7 +138,6 @@ class UserAdmin(SLModelView):
             return redirect("/")
 
 
-
 def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
     query = User.query.filter(User.id.in_(ids))
 
