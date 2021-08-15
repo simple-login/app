@@ -514,13 +514,15 @@ sudo nmap -sS 107.172.193.177 -p 7777,20381,5432
 
 It is important to secure the Postgres port.
 
-Using `ufw` didn't help because docker writes persisten rules to the `iptables`.
+Using `ufw` doesn't help because docker writes persisten rules to the `iptables`.
 
 To get around this, first run this command to allow only localhost connections to the docker containers:
 
 ```bash
 iptables -I DOCKER-USER -i eth0 ! -s 127.0.0.1 -j DROP
 ```
+
+Docker documentation reference for more info: [documentation](https://docs.docker.com/network/iptables/#restrict-connections-to-the-docker-host)
 
 Next, to make the changes persistent across reboots, we are going to use `iptables-persistent` package.
 
