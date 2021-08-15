@@ -1,21 +1,6 @@
 Thanks for taking the time to contribute! 🎉👍
 
-The project uses Flask and requires Python3.7+.
-
-## Quick start
-
-If you have Docker installed, run the following command to start SimpleLogin local server:
-
-
-```bash
-docker run --name sl -it --rm \
-    -e RESET_DB=true \
-    -e CONFIG=/code/example.env \
-    -p 7777:7777 \
-    simplelogin/app:3.4.0 python server.py
-```
-
-Then open http://localhost:7777, you should be able to login with `john@wick.com/password` account.
+The project uses Flask, Python3.7+ and requires Postgres 12+ as dependency. 
 
 ## General Architecture
 
@@ -25,15 +10,16 @@ Then open http://localhost:7777, you should be able to login with `john@wick.com
 
 SimpleLogin backend consists of 2 main components:
 
-- the `webapp` used by several clients: web UI (the dashboard), browser extension (Chrome & Firefox for now), OAuth clients (apps that integrate "Login with SimpleLogin" button) and mobile app (work in progress).
+- the `webapp` used by several clients: the web app, the browser extensions (Chrome & Firefox for now), OAuth clients (apps that integrate "Sign in with SimpleLogin" button) and mobile apps.
 
 - the `email handler`: implements the email forwarding (i.e. alias receiving email) and email sending (i.e. alias sending email).
 
-## Run code locally
+## Install dependencies
 
-The project uses
+The project requires:
 - Python 3.7+ and [poetry](https://python-poetry.org/) to manage dependencies
 - Node v10 for front-end.
+- Postgres 12+
 
 First, install all dependencies by running the following command.
 Feel free to use `virtualenv` or similar tools to isolate development environment.
@@ -42,22 +28,24 @@ Feel free to use `virtualenv` or similar tools to isolate development environmen
 poetry install
 ```
 
-On Mac, sometimes you might need to install some other packages like
+On Mac, sometimes you might need to install some other packages via `brew`:
 
 ```bash
 brew install pkg-config libffi openssl postgresql
 ```
 
-You also need to install `gpg`, on Mac it can be done with:
+You also need to install `gpg` tool, on Mac it can be done with:
 
 ```bash
 brew install gnupg
 ```
 
-Then make sure all tests pass. You need to run a local postgres database to run tests, it can be run with docker with:
+## Run tests
+
+Running test requires a Postgres database. You can run one with docker: 
 
 ```bash
-docker run -e POSTGRES_PASSWORD=test -e POSTGRES_USER=test -e POSTGRES_DB=test -p 5432:5432 postgres:13
+docker run -e POSTGRES_PASSWORD=test -e POSTGRES_USER=test -e POSTGRES_DB=test -p 15432:5432 postgres:13
 ```
 
 then run all tests
@@ -65,6 +53,8 @@ then run all tests
 ```bash
 pytest
 ```
+
+## Run the code locally
 
 Install npm packages
 
@@ -78,17 +68,19 @@ To run the code locally, please create a local setting file based on `example.en
 cp example.env .env
 ```
 
+Run the postgres database:
+
+```bash
+docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 35432:5432 postgres:13
+```
+
 To run the server:
 
 ```
-python3 server.py
+flask db upgrade && flask dummy-data && python3 server.py
 ```
 
-then open http://localhost:7777, you should be able to login with the following account
-
-```
-john@wick.com / password
-```
+then open http://localhost:7777, you should be able to login with `john@wick.com / password` account.
 
 You might need to change the `.env` file for developing certain features. This file is ignored by git.
 

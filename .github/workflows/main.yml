@@ -25,12 +25,11 @@ jobs:
           # required
           POSTGRES_PASSWORD: test
           # optional (defaults to `5432`)
-          POSTGRES_PORT: 5432
+          POSTGRES_PORT: 15432
           # optional (defaults to `postgres`)
           POSTGRES_USER: test
         ports:
-          # maps tcp port 5432 on service container to the host
-          - 5432:5432
+          - 15432:15432
         # set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
