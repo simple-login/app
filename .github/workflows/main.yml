@@ -25,11 +25,11 @@ jobs:
           # required
           POSTGRES_PASSWORD: test
           # optional (defaults to `5432`)
-          POSTGRES_PORT: 15432
+          POSTGRES_PORT: 5432
           # optional (defaults to `postgres`)
           POSTGRES_USER: test
         ports:
-          - 15432:15432
+          - 15432:5432
         # set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -62,6 +62,7 @@ jobs:
         run: |
           poetry run black --check .
           flake8
+
 
       - name: Test with pytest
         run: |
