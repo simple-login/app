@@ -45,8 +45,7 @@ def domain_detail_dns(custom_domain_id):
         if request.form.get("form-name") == "check-ownership":
             txt_records = get_txt_record(custom_domain.domain)
 
-            # if custom_domain.get_ownership_dns_txt_value() in txt_records:
-            if True:
+            if custom_domain.get_ownership_dns_txt_value() in txt_records:
                 flash(
                     "Domain ownership is verified. Please proceed to the other records setup",
                     "success",
