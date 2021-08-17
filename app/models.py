@@ -8,7 +8,7 @@ import arrow
 from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
-from sqlalchemy import text, desc, CheckConstraint, Index
+from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.orm import deferred
 from sqlalchemy_utils import ArrowType
 
@@ -1785,6 +1785,7 @@ class CustomDomain(db.Model, ModelMixin):
     # default name to use when user replies/sends from alias
     name = db.Column(db.String(128), nullable=True, default=None)
 
+    # mx verified
     verified = db.Column(db.Boolean, nullable=False, default=False)
     dkim_verified = db.Column(
         db.Boolean, nullable=False, default=False, server_default="0"
@@ -1813,6 +1814,26 @@ class CustomDomain(db.Model, ModelMixin):
         db.Integer, default=0, server_default="0", nullable=False
     )
 
+    # only domain has the ownership verified can go the next DNS step
+    # MX verified domains before this change don't have to do the TXT check
+    # and therefore have ownership_verified=True
+    ownership_verified = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
+    # randomly generated TXT value for verifying domain ownership
+    # the TXT record should be sl-verification=txt_token
+    ownership_txt_token = db.Column(db.String(128), nullable=True)
+
+    __table_args__ = (
+        Index(
+            "ix_unique_domain",  # Index name
+            "domain",  # Columns which are part of the index
+            unique=True,
+            postgresql_where=Column("ownership_verified"),
+        ),  # The condition
+    )
+
     user = db.relationship(User, foreign_keys=[user_id])
 
     @property
@@ -1827,6 +1848,20 @@ class CustomDomain(db.Model, ModelMixin):
 
     def get_trash_url(self):
         return URL + f"/dashboard/domains/{self.id}/trash"
+
+    def get_ownership_dns_txt_value(self):
+        return f"sl-verification={self.ownership_txt_token}"
+
+    @classmethod
+    def create(cls, **kw):
+        domain: CustomDomain = super(CustomDomain, cls).create(**kw)
+
+        # generate a domain ownership txt token
+        if not domain.ownership_txt_token:
+            domain.ownership_txt_token = random_string(30)
+            db.session.commit()
+
+        return domain
 
     def __repr__(self):
         return f"<Custom Domain {self.domain}>"
