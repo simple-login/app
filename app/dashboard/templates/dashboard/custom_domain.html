@@ -21,7 +21,7 @@
       {% if not current_user.is_premium() %}
         <div class="alert alert-danger" role="alert">
           This feature is only available on Premium plan.
-          <a href="{{URL}}/dashboard/pricing" target="_blank" rel="noopener">
+          <a href="{{ URL }}/dashboard/pricing" target="_blank" rel="noopener">
             Upgrade<i class="fe fe-external-link"></i>
           </a>
         </div>
@@ -42,14 +42,20 @@
               <div class="card-body">
                 <h5 class="card-title">
                   <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}">{{ custom_domain.domain }}</a>
-                  {% if custom_domain.verified %}
-                    <span class="cursor" data-toggle="tooltip" data-original-title="Domain Verified">✅</span>
+                  {% if custom_domain.ownership_verified and not custom_domain.verified %}
+                    <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id,
+                              _anchor='dns-setup') }}" class="btn btn-info btn-sm">
+                      Ownership verified. Setup the DNS
+                    </a>
+                  {% elif custom_domain.ownership_verified and custom_domain.verified %}
+                    <span class="badge badge-success">Domain ready</span>
+
+                    <!-- custom_domain.ownership_verified is False -->
                   {% else %}
-                    <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup Needed">
-                      <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
-                         class="text-decoration-none">🚫
-                      </a>
-                    </span>
+                    <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id,
+                              _anchor='ownership-form') }}" class="btn btn-warning btn-sm" role="button">
+                      Verify domain ownership
+                    </a>
                   {% endif %}
                 </h5>
 

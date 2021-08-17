@@ -38,11 +38,33 @@ def domain_detail_dns(custom_domain_id):
 
     dmarc_record = "v=DMARC1; p=quarantine; pct=100; adkim=s; aspf=s"
 
-    mx_ok = spf_ok = dkim_ok = dmarc_ok = True
-    mx_errors = spf_errors = dkim_errors = dmarc_errors = []
+    mx_ok = spf_ok = dkim_ok = dmarc_ok = ownership_ok = True
+    mx_errors = spf_errors = dkim_errors = dmarc_errors = ownership_errors = []
 
     if request.method == "POST":
-        if request.form.get("form-name") == "check-mx":
+        if request.form.get("form-name") == "check-ownership":
+            txt_records = get_txt_record(custom_domain.domain)
+
+            # if custom_domain.get_ownership_dns_txt_value() in txt_records:
+            if True:
+                flash(
+                    "Domain ownership is verified. Please proceed to the other records setup",
+                    "success",
+                )
+                custom_domain.ownership_verified = True
+                db.session.commit()
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail_dns",
+                        custom_domain_id=custom_domain.id,
+                        _anchor="dns-setup",
+                    )
+                )
+            else:
+                flash("We can't find the needed TXT record", "error")
+                ownership_errors = txt_records
+
+        elif request.form.get("form-name") == "check-mx":
             mx_domains = get_mx_domains(custom_domain.domain)
 
             if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):

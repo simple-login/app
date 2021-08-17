@@ -430,6 +430,11 @@ def fake_data():
     AliasHibp.create(hibp_id=hibp1.id, alias_id=breached_alias1.id)
     AliasHibp.create(hibp_id=hibp2.id, alias_id=breached_alias2.id)
 
+    # old domain will have ownership_verified=True
+    CustomDomain.create(
+        user_id=user.id, domain="old.com", verified=True, ownership_verified=True
+    )
+
 
 @login_manager.user_loader
 def load_user(user_id):

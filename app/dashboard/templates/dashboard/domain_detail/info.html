@@ -7,17 +7,7 @@
 {% endblock %}
 
 {% block domain_detail_content %}
-  <h1 class="h3"> {{ custom_domain.domain }}
-    {% if custom_domain.verified %}
-      <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup OK">✅</span>
-    {% else %}
-      <span class="cursor" data-toggle="tooltip" data-original-title="DNS Setup Needed">
-        <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
-           class="text-decoration-none">🚫
-        </a>
-      </span>
-    {% endif %}
-  </h1>
+  <h1 class="h3"> {{ custom_domain.domain }}  </h1>
 
   <div class="small-text">Created {{ custom_domain.created_at | dt }}</div>
 
