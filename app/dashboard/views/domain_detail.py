@@ -15,15 +15,21 @@ from app.email_utils import send_email
 from app.extensions import db
 from app.log import LOG
 from app.models import CustomDomain, Alias, DomainDeletedAlias
+from app.utils import random_string
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
 @login_required
 def domain_detail_dns(custom_domain_id):
-    custom_domain = CustomDomain.get(custom_domain_id)
+    custom_domain: CustomDomain = CustomDomain.get(custom_domain_id)
     if not custom_domain or custom_domain.user_id != current_user.id:
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
+
+    # generate a domain ownership txt token if needed
+    if not custom_domain.ownership_verified and not custom_domain.ownership_txt_token:
+        custom_domain.ownership_txt_token = random_string(30)
+        db.session.commit()
 
     spf_record = f"v=spf1 include:{EMAIL_DOMAIN} -all"
 
