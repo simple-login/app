@@ -61,6 +61,7 @@ def domain_detail_dns(custom_domain_id):
                 )
             else:
                 flash("We can't find the needed TXT record", "error")
+                ownership_ok = False
                 ownership_errors = txt_records
 
         elif request.form.get("form-name") == "check-mx":
