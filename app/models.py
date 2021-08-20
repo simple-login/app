@@ -1137,9 +1137,12 @@ class Alias(db.Model, ModelMixin):
     __table_args__ = (
         Index("ix_video___ts_vector__", ts_vector, postgresql_using="gin"),
         # index on note column using pg_trgm
-        Index('note_pg_trgm_index', "note",
-              postgresql_ops={"note": "gin_trgm_ops"},
-              postgresql_using='gin'),
+        Index(
+            "note_pg_trgm_index",
+            "note",
+            postgresql_ops={"note": "gin_trgm_ops"},
+            postgresql_using="gin",
+        ),
     )
 
     user = db.relationship(User, foreign_keys=[user_id])

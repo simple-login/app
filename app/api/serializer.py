@@ -129,7 +129,7 @@ def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
 
 
 def get_alias_infos_with_pagination_v3(
-    user, page_id=0, query=None, sort=None, alias_filter=None
+    user, page_id=0, query=None, sort=None, alias_filter=None, mailbox_id=None
 ) -> [AliasInfo]:
     # subquery on alias annotated with nb_reply, nb_blocked, nb_forward, max_created_at, latest_email_log_created_at
     alias_activity_subquery = (
@@ -214,27 +214,22 @@ def get_alias_infos_with_pagination_v3(
     )
 
     if query:
-        q = (
-            # to find mailbox whose email match the query
-            q.join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
-            .join(
-                Mailbox,
-                or_(
-                    Mailbox.id == Alias.mailbox_id,
-                    Mailbox.id == AliasMailbox.mailbox_id,
-                ),
+        q = q.filter(
+            or_(
+                Alias.email.ilike(f"%{query}%"),
+                Alias.note.ilike(f"%{query}%"),
+                # can't use match() here as it uses to_tsquery that expected a tsquery input
+                # Alias.ts_vector.match(query),
+                Alias.ts_vector.op("@@")(func.plainto_tsquery("english", query)),
+                Alias.name.ilike(f"%{query}%"),
             )
-            .filter(
-                or_(
-                    Alias.email.ilike(f"%{query}%"),
-                    Alias.note.ilike(f"%{query}%"),
-                    # can't use match() here as it uses to_tsquery that expected a tsquery input
-                    # Alias.ts_vector.match(query),
-                    Alias.ts_vector.op("@@")(func.plainto_tsquery("english", query)),
-                    Alias.name.ilike(f"%{query}%"),
-                    Mailbox.email.ilike(f"%{query}%"),
-                )
-            )
+        )
+
+    if mailbox_id:
+        q = q.join(
+            AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True
+        ).filter(
+            or_(Alias.mailbox_id == mailbox_id, AliasMailbox.mailbox_id == mailbox_id)
         )
 
     if alias_filter == "enabled":

@@ -177,6 +177,12 @@
               <option value="hibp" {% if filter == "hibp" %} selected {% endif %}>
                 Only Aliases Found In Data Breaches
               </option>
+              {% for mailbox in current_user.mailboxes() %}
+                <option value="mailbox:{{ mailbox.id }}" {% if filter == "mailbox:" ~ mailbox.id %}
+                        selected {% endif %}>
+                  {{ mailbox.email }}'s aliases
+                </option>
+              {% endfor %}
             </select>
 
             <input type="search" name="query" placeholder="Enter to search for alias"

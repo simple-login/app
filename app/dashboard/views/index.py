@@ -150,8 +150,12 @@ def index():
 
     stats = get_stats(current_user)
 
+    mailbox_id = None
+    if alias_filter and alias_filter.startswith("mailbox:"):
+        mailbox_id = int(alias_filter[len("mailbox:") :])
+
     alias_infos = get_alias_infos_with_pagination_v3(
-        current_user, page, query, sort, alias_filter
+        current_user, page, query, sort, alias_filter, mailbox_id
     )
     last_page = len(alias_infos) < PAGE_LIMIT
 
