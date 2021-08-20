@@ -42,16 +42,8 @@ brew install gnupg
 
 ## Run tests
 
-Running test requires a Postgres database. You can run one with docker: 
-
 ```bash
-docker run -e POSTGRES_PASSWORD=test -e POSTGRES_USER=test -e POSTGRES_DB=test -p 15432:5432 postgres:13
-```
-
-then run all tests
-
-```bash
-pytest
+sh scripts/run-test.sh
 ```
 
 ## Run the code locally
@@ -93,7 +85,7 @@ Whenever the model changes, a new migration has to be created.
 If you have Docker installed, you can create the migration by the following script:
 
 ```bash
-sh new_migration.sh
+sh scripts/new-migration.sh
 ```
 
 Make sure to review the migration script before committing it.
