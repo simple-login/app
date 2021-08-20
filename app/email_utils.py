@@ -699,7 +699,7 @@ def copy(msg: Message) -> Message:
     """return a copy of message"""
     try:
         return deepcopy(msg)
-    except:
+    except Exception:
         LOG.warning("deepcopy fails, try string parsing")
         try:
             return email.message_from_string(msg.as_string())
