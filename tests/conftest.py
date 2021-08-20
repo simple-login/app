@@ -19,7 +19,13 @@ app.config["WTF_CSRF_ENABLED"] = False
 app.config["SERVER_NAME"] = "sl.test"
 
 with app.app_context():
+    # enable pg_trgm extension
+    with db.engine.connect() as conn:
+        conn.execute("DROP EXTENSION if exists pg_trgm")
+        conn.execute("CREATE EXTENSION pg_trgm")
+
     db.create_all()
+
     add_sl_domains()
 
 
