@@ -14,6 +14,7 @@ from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP, SMTPServerDisconnected
 from typing import Tuple, List, Optional
+from copy import deepcopy
 
 import arrow
 import dkim
@@ -697,11 +698,14 @@ def parseaddr_unicode(addr) -> (str, str):
 def copy(msg: Message) -> Message:
     """return a copy of message"""
     try:
-        # prefer the unicode way
-        return email.message_from_string(msg.as_string())
-    except (UnicodeEncodeError, KeyError, LookupError):
-        LOG.warning("as_string() fails, try to_bytes")
-        return email.message_from_bytes(to_bytes(msg))
+        return deepcopy(msg)
+    except:
+        LOG.warning("deepcopy fails, try string parsing")
+        try:
+            return email.message_from_string(msg.as_string())
+        except (UnicodeEncodeError, KeyError, LookupError):
+            LOG.warning("as_string() fails, try bytes parsing")
+            return email.message_from_bytes(to_bytes(msg))
 
 
 def to_bytes(msg: Message):
