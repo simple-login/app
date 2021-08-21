@@ -305,13 +305,32 @@
                     {{ email_log.created_at | dt }}
                   {% endif %}
                 {% else %}
-                  No Activity in the last 14 days. Alias created {{ alias.created_at | dt }}
+                  No emails received/sent in the last 14 days. Created {{ alias.created_at | dt }}.
                 {% endif %}
 
               </div>
             </div>
           </div>
           <!-- END Email Activity -->
+
+          <div class="small-text mt-1">Alias description</div>
+          <div class="d-flex mb-2">
+            <div class="flex-grow-1 mr-2">
+                <textarea
+                    id="note-{{ alias.id }}"
+                    name="note"
+                    class="form-control"
+                    rows="2"
+                    placeholder="e.g. where the alias is used or why is it created">{{ alias.note or "" }}</textarea>
+            </div>
+
+            <div class="">
+              <a data-alias="{{ alias.id }}"
+                 class="save-note btn btn-sm btn-outline-success w-100">
+                Save
+              </a>
+            </div>
+          </div>
 
           <!-- Send Email && More button -->
           <div class="row">
@@ -389,25 +408,6 @@
                 Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
               </div>
             {% endif %}
-
-            <div class="small-text mt-2">Note</div>
-            <div class="d-flex">
-              <div class="flex-grow-1 mr-2">
-                <textarea
-                    id="note-{{ alias.id }}"
-                    name="note"
-                    class="form-control"
-                    rows="2"
-                    placeholder="e.g. where the alias is used or why is it created">{{ alias.note or "" }}</textarea>
-              </div>
-
-              <div class="">
-                <a data-alias="{{ alias.id }}"
-                   class="save-note btn btn-sm btn-outline-success w-100">
-                  Save
-                </a>
-              </div>
-            </div>
 
             <div class="small-text mt-2" data-toogle="tooltip"
                  title="When sending an email from this alias, the email will have 'Display Name <{{ alias.email }}>' as sender.">
