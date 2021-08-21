@@ -386,7 +386,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
 
         return user
 
-    def _lifetime_or_active_subscription(self) -> bool:
+    def lifetime_or_active_subscription(self) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
@@ -435,7 +435,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
 
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
-        if self._lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription():
             return False
 
         if self.trial_end and arrow.now() < self.trial_end:
@@ -444,7 +444,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         return False
 
     def should_show_upgrade_button(self):
-        if self._lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription():
             # user who has canceled can also re-subscribe
             sub: Subscription = self.get_subscription()
             if sub and sub.cancelled:
@@ -490,7 +490,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         - in trial period or
         - active subscription
         """
-        if self._lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription():
             return True
 
         if self.trial_end and arrow.now() < self.trial_end:
@@ -582,7 +582,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         Whether user can create a new alias. User can't create a new alias if
         - has more than 15 aliases in the free plan, *even in the free trial*
         """
-        if self._lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription():
             return True
         else:
             return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN

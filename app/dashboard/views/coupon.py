@@ -23,7 +23,7 @@ def coupon_route():
         return redirect(url_for("dashboard.index"))
 
     # handle case user already has an active subscription via another channel (Paddle, Apple, etc)
-    if current_user._lifetime_or_active_subscription():
+    if current_user.lifetime_or_active_subscription():
         manual_sub: ManualSubscription = ManualSubscription.get_by(
             user_id=current_user.id
         )
