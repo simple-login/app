@@ -92,124 +92,133 @@
   </div>
   <!-- END Global Stats -->
 
-
-  <div class="row mb-3">
-
-    <div class="col-lg-6 pt-1" style="max-width: 25em">
-      <div class="btn-group" role="group">
-        <form method="post">
-          <input type="hidden" name="form-name" value="create-custom-email">
-          <button data-toggle="tooltip"
-                  title="Create a custom alias"
-                  class="btn btn-primary mr-2"><i class="fa fa-plus"></i> New Custom Alias
-          </button>
-        </form>
-        <div class="btn-group" role="group">
-          <form method="post">
-            <input type="hidden" name="form-name" value="create-random-email">
-            <button data-toggle="tooltip"
-                    title="Create a totally random alias"
-                    class="btn btn-success"><i class="fa fa-random"></i> Random Alias
-            </button>
-          </form>
-          <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle btn-group-border-left"
-                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          </button>
-          <div class="dropdown-menu dropdown-menu-right border-left" aria-labelledby="btnGroupDrop1">
-            <div class="">
+  <!-- Controls: buttons & search -->
+  <div id="filter-app">
+    <div class="row mb-3">
+      <div class="col d-flex">
+        <div>
+          <div class="btn-group" role="group">
+            <form method="post">
+              <input type="hidden" name="form-name" value="create-custom-email">
+              <button data-toggle="tooltip"
+                      title="Create a custom alias"
+                      class="btn btn-primary mr-2"><i class="fa fa-plus"></i> New Custom Alias
+              </button>
+            </form>
+            <div class="btn-group" role="group">
               <form method="post">
                 <input type="hidden" name="form-name" value="create-random-email">
-                <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
-                <button class="dropdown-item">By Random Words</button>
+                <button data-toggle="tooltip"
+                        title="Create a totally random alias"
+                        class="btn btn-success"><i class="fa fa-random"></i> Random Alias
+                </button>
               </form>
+              <button id="btnGroupDrop1" type="button" class="btn btn-success dropdown-toggle btn-group-border-left"
+                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              </button>
+              <div class="dropdown-menu dropdown-menu-right border-left" aria-labelledby="btnGroupDrop1">
+                <div class="">
+                  <form method="post">
+                    <input type="hidden" name="form-name" value="create-random-email">
+                    <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.word.value }}">
+                    <button class="dropdown-item">By Random Words</button>
+                  </form>
+                </div>
+                <div class="">
+                  <form method="post">
+                    <input type="hidden" name="form-name" value="create-random-email">
+                    <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.uuid.value }}">
+                    <button class="dropdown-item">By UUID</button>
+                  </form>
+                </div>
+              </div>
             </div>
-            <div class="">
-              <form method="post">
-                <input type="hidden" name="form-name" value="create-random-email">
-                <input type="hidden" name="generator_scheme" value="{{ AliasGeneratorEnum.uuid.value }}">
-                <button class="dropdown-item">By UUID</button>
-              </form>
-            </div>
+          </div>
+        </div>
+
+        <div class="" style="margin-left: auto">
+          <div class="btn-group">
+            <a v-if="!showFilter" @click="toggleFilter()" class="btn btn-outline-secondary">
+              <i class="fe fe-chevrons-down"></i> Filters
+            </a>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="filter-app" class="col-lg-auto pt-1 flex-grow-1">
-      <div class="float-right d-flex">
+    <div class="row mb-2" v-if="showFilter" id="filter-control">
+      <!-- Filter Control -->
+      <div class="col d-flex">
+        <form method="get" class="form-inline">
+          <select name="sort"
+                  onchange="this.form.submit()"
+                  class="form-control mr-3 shadow">
+            <option value="" {% if sort == "" %} selected {% endif %}>
+              Sort by most recent activity
+            </option>
+            <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
+              Alias Old-Recent
+            </option>
+            <option value="new2old" {% if sort == "new2old" %} selected {% endif %}>
+              Alias Recent-Old
+            </option>
+            <option value="a2z" {% if sort == "a2z" %} selected {% endif %}>
+              Alias A-Z
+            </option>
+            <option value="z2a" {% if sort == "z2a" %} selected {% endif %}>
+              Alias Z-A
+            </option>
+          </select>
 
-        <!-- Filter Control -->
-        <div v-if="showFilter" id="filter-control">
-          <form method="get" class="form-inline">
-            <select name="sort"
-                    onchange="this.form.submit()"
-                    class="form-control mr-3 shadow">
-              <option value="" {% if sort == "" %} selected {% endif %}>
-                Sort by most recent activity
+          <select name="filter"
+                  onchange="this.form.submit()"
+                  class="form-control mr-3 shadow"
+                  style="max-width: 200px">
+            <option value="" {% if filter == "" %} selected {% endif %}>
+              All Aliases
+            </option>
+            <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
+              Only Enabled Aliases
+            </option>
+            <option value="disabled" {% if filter == "disabled" %} selected {% endif %}>
+              Only Disabled Aliases
+            </option>
+            <option value="hibp" {% if filter == "hibp" %} selected {% endif %}>
+              Only Aliases Found In Data Breaches
+            </option>
+            {% for mailbox in current_user.mailboxes() %}
+              <option value="mailbox:{{ mailbox.id }}" {% if filter == "mailbox:" ~ mailbox.id %}
+                      selected {% endif %}>
+                {{ mailbox.email }}'s aliases
               </option>
-              <option value="old2new" {% if sort == "old2new" %} selected {% endif %}>
-                Alias Old-Recent
-              </option>
-              <option value="new2old" {% if sort == "new2old" %} selected {% endif %}>
-                Alias Recent-Old
-              </option>
-              <option value="a2z" {% if sort == "a2z" %} selected {% endif %}>
-                Alias A-Z
-              </option>
-              <option value="z2a" {% if sort == "z2a" %} selected {% endif %}>
-                Alias Z-A
-              </option>
-            </select>
+            {% endfor %}
+          </select>
 
-            <select name="filter"
-                    onchange="this.form.submit()"
-                    class="form-control mr-3 shadow"
-                    style="max-width: 200px">
-              <option value="" {% if filter == "" %} selected {% endif %}>
-                All Aliases
-              </option>
-              <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
-                Only Enabled Aliases
-              </option>
-              <option value="disabled" {% if filter == "disabled" %} selected {% endif %}>
-                Only Disabled Aliases
-              </option>
-              <option value="hibp" {% if filter == "hibp" %} selected {% endif %}>
-                Only Aliases Found In Data Breaches
-              </option>
-              {% for mailbox in current_user.mailboxes() %}
-                <option value="mailbox:{{ mailbox.id }}" {% if filter == "mailbox:" ~ mailbox.id %}
-                        selected {% endif %}>
-                  {{ mailbox.email }}'s aliases
-                </option>
-              {% endfor %}
-            </select>
+          <input type="search" name="query" placeholder="Enter to search for alias"
+                 class="form-control shadow mr-2"
+                 style="max-width: 15em"
+                 value="{{ query }}">
 
-            <input type="search" name="query" placeholder="Enter to search for alias"
-                   class="form-control shadow mr-2"
-                   style="max-width: 15em"
-                   value="{{ query }}">
 
-            {% if query or sort or filter %}
-              <a href="{{ url_for('dashboard.index') }}"
-                 class="btn btn-light">Reset</a>
-            {% endif %}
-          </form>
-        </div>
+        </form>
 
-        <div class="btn-group">
-          <a v-if="!showFilter" @click="toggleFilter()" class="btn btn-outline-secondary">
-            <i class="fe fe-chevrons-left"></i> Filters
-          </a>
+        <div style="margin-left: auto">
+
+          {% if query or sort or filter %}
+            <a href="{{ url_for('dashboard.index') }}"
+               class="btn btn-outline-secondary">Reset</a>
+          {% endif %}
 
           <a v-if="showFilter" @click="toggleFilter()" class="btn btn-outline-secondary">
-            <i class="fe fe-chevrons-right"></i>
+            <i class="fe fe-chevrons-up"></i>
           </a>
         </div>
       </div>
     </div>
   </div>
+  <!-- END Controls: buttons & search -->
 
+  <!-- Alias list -->
   <div class="row">
     {% for alias_info in alias_infos %}
       {% set alias = alias_info.alias %}
@@ -502,6 +511,7 @@
       </div>
     {% endfor %}
   </div>
+  <!-- END Alias list -->
 
   <!-- Only show pagination control if there are previous/next page -->
   {% if page > 0 or not last_page %}
