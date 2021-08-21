@@ -69,7 +69,7 @@
         <div class="row mb-2">
           <div class="col p-1">
             <select data-width="100%"
-                    class="mailbox-select" id="mailboxes" multiple name="mailboxes">
+                    class="mailbox-select" id="mailboxes" multiple name="mailboxes" required>
               {% for mailbox in mailboxes %}
                 <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
                         selected {% endif %}>
@@ -94,7 +94,7 @@
 
         <div class="row">
           <div class="col p-1">
-            <span id="submit" class="btn btn-primary mt-1">Create</span>
+            <button type="submit" id="create" class="btn btn-primary mt-1">Create</button>
           </div>
         </div>
       </form>
@@ -117,7 +117,7 @@
       }
     })
 
-    $("#submit").on("click", async function () {
+    $("#create").on("click", async function () {
       let that = $(this);
       let mailbox_ids = $(`#mailboxes`).val();
       let prefix = $('#prefix').val();
