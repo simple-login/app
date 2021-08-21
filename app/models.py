@@ -5,10 +5,12 @@ from email.utils import formataddr
 from typing import List, Tuple, Optional
 
 import arrow
+import sqlalchemy as sa
 from arrow import Arrow
 from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import deferred
 from sqlalchemy_utils import ArrowType
 
@@ -38,9 +40,6 @@ from app.utils import (
     sanitize_email,
     random_word,
 )
-
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import TSVECTOR
 
 
 class TSVector(sa.types.TypeDecorator):

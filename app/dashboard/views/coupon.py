@@ -8,7 +8,13 @@ from app.config import ADMIN_EMAIL
 from app.dashboard.base import dashboard_bp
 from app.email_utils import send_email
 from app.extensions import db
-from app.models import ManualSubscription, Coupon
+from app.models import (
+    ManualSubscription,
+    Coupon,
+    Subscription,
+    AppleSubscription,
+    CoinbaseSubscription,
+)
 
 
 class CouponForm(FlaskForm):
@@ -18,20 +24,29 @@ class CouponForm(FlaskForm):
 @dashboard_bp.route("/coupon", methods=["GET", "POST"])
 @login_required
 def coupon_route():
-    if current_user.lifetime:
-        flash("You already have a lifetime licence", "warning")
-        return redirect(url_for("dashboard.index"))
-
     # handle case user already has an active subscription via another channel (Paddle, Apple, etc)
-    if current_user.lifetime_or_active_subscription():
-        manual_sub: ManualSubscription = ManualSubscription.get_by(
-            user_id=current_user.id
-        )
+    can_use_coupon = True
 
-        # user has an non-manual subscription
-        if not manual_sub or not manual_sub.is_active():
-            flash("You already have another subscription.", "warning")
-            return redirect(url_for("dashboard.index"))
+    if current_user.lifetime:
+        can_use_coupon = False
+
+    sub: Subscription = current_user.get_subscription()
+    if sub:
+        can_use_coupon = False
+
+    apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=current_user.id)
+    if apple_sub and apple_sub.is_valid():
+        can_use_coupon = False
+
+    coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+        user_id=current_user.id
+    )
+    if coinbase_subscription and coinbase_subscription.is_active():
+        can_use_coupon = False
+
+    if not can_use_coupon:
+        flash("You already have another subscription.", "warning")
+        return redirect(url_for("dashboard.index"))
 
     coupon_form = CouponForm()
 
