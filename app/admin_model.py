@@ -224,6 +224,12 @@ class ClientAdmin(SLModelView):
     can_edit = True
 
 
+class CustomDomainAdmin(SLModelView):
+    column_searchable_list = ["domain", "user.email", "user.id"]
+    column_exclude_list = ["ownership_txt_token"]
+    can_edit = False
+
+
 class ReferralAdmin(SLModelView):
     column_searchable_list = ["id", "user.email", "code", "name"]
     column_filters = ["id", "user.email", "code", "name"]

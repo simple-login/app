@@ -39,6 +39,7 @@ from app.admin_model import (
     ReferralAdmin,
     PayoutAdmin,
     CouponAdmin,
+    CustomDomainAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -883,6 +884,7 @@ def init_admin(app):
     admin.add_view(CouponAdmin(Coupon, db.session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, db.session))
     admin.add_view(ClientAdmin(Client, db.session))
+    admin.add_view(CustomDomainAdmin(CustomDomain, db.session))
     admin.add_view(ReferralAdmin(Referral, db.session))
     admin.add_view(PayoutAdmin(Payout, db.session))
 
