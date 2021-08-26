@@ -6,6 +6,7 @@ import unicodedata
 
 import bcrypt
 from nacl.secret import Aead
+from sqlalchemy.types import LargeBinary
 from sqlalchemy_utils import ChoiceType
 
 from app.config import PW_SITE_KEY
@@ -123,7 +124,7 @@ DEFAULT_KIND = PasswordKind.AEAD_XCHACHA20_BCRYPT
 
 
 class PasswordOracle:
-    pw_blob = db.Column(db.BINARY, nullable=True)
+    pw_blob = db.Column(LargeBinary, nullable=True)
     pw_kind = db.Column(ChoiceType(PasswordKind), nullable=True)
 
     def set_password(self, password):
