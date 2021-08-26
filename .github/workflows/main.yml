@@ -54,6 +54,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo apt install -qy libsodium-dev
           python -m pip install poetry==1.0.10
           poetry config virtualenvs.create false
           poetry install
