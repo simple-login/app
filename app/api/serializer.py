@@ -129,7 +129,13 @@ def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
 
 
 def get_alias_infos_with_pagination_v3(
-    user, page_id=0, query=None, sort=None, alias_filter=None, mailbox_id=None
+    user,
+    page_id=0,
+    query=None,
+    sort=None,
+    alias_filter=None,
+    mailbox_id=None,
+    directory_id=None,
 ) -> [AliasInfo]:
     # subquery on alias annotated with nb_reply, nb_blocked, nb_forward, max_created_at, latest_email_log_created_at
     alias_activity_subquery = (
@@ -231,6 +237,9 @@ def get_alias_infos_with_pagination_v3(
         ).filter(
             or_(Alias.mailbox_id == mailbox_id, AliasMailbox.mailbox_id == mailbox_id)
         )
+
+    if directory_id:
+        q = q.filter(Alias.directory_id == directory_id)
 
     if alias_filter == "enabled":
         q = q.filter(Alias.enabled)

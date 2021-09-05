@@ -1924,7 +1924,7 @@ class Directory(db.Model, ModelMixin):
     # when a directory is disabled, new alias can't be created on the fly
     disabled = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
 
-    user = db.relationship(User)
+    user = db.relationship(User, backref="directories")
 
     _mailboxes = db.relationship(
         "Mailbox", secondary="directory_mailbox", lazy="joined"

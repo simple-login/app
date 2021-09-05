@@ -192,6 +192,14 @@
                 {{ mailbox.email }}'s aliases
               </option>
             {% endfor %}
+
+            {% for directory in current_user.directories %}
+              <option value="directory:{{ directory.id }}" {% if filter == "directory:" ~ directory.id %}
+                      selected {% endif %}>
+                Directory <b>{{ directory.name }}</b> aliases
+              </option>
+            {% endfor %}
+
           </select>
 
           <input type="search" name="query" placeholder="Enter to search for alias"
