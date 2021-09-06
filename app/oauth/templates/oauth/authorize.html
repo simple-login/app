@@ -33,7 +33,7 @@
 
 {% block single_content %}
 
-  <form class="card" method="post" style="max-width: 40rem; margin: auto; border-radius: 2%">
+  <form class="card" method="post" data-parsley-validate style="max-width: 40rem; margin: auto; border-radius: 2%">
     {% if not client.approved %}
       <div class="alert alert-warning" style="border-bottom: 3px solid;">
         <b>{{ client.name }}</b> is in Dev Mode and isn't approved (yet) by SimpleLogin.
@@ -101,10 +101,11 @@
                 <div class="col-sm-6 pr-1 mb-1" style="min-width: 5em">
                   <input name="prefix" class="form-control"
                          type="text"
-                         pattern="[0-9a-z-_]{1,}"
                          maxlength="40"
-                         data-bouncer-message="Only lowercase letters, dots, numbers, dashes (-) and underscores (_) are currently supported."
-                         placeholder="email alias"
+                         data-parsley-pattern="[0-9a-z-_.]{1,}"
+                         data-parsley-trigger="change"
+                         data-parsley-error-message="Only lowercase letters, dots, numbers, dashes (-) and underscores (_) are currently supported."
+                         placeholder="Alias prefix, for example newsletter.com-123_xyz"
                          autofocus>
                 </div>
 
@@ -124,10 +125,6 @@
                   </select>
                 </div>
               </div>
-
-              <small class="text-muted">
-                Alias can use letter, number, dash and cannot be empty
-              </small>
             {% endif %}
           </div>
         </div>
@@ -201,11 +198,4 @@
 
     </div>
   </form>
-{% endblock %}
-
-{% block script %}
-  <script>
-    // init bouncer
-    new Bouncer('form');
-  </script>
 {% endblock %}
