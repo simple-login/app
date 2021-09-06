@@ -333,6 +333,8 @@ AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN = "custom_domain_mx_record_issue"
 # alert when a new alias is about to be created on a disabled directory
 ALERT_DIRECTORY_DISABLED_ALIAS_CREATION = "alert_directory_disabled_alias_creation"
 
+ALERT_HOTMAIL_COMPLAINT = "alert_hotmail_complaint"
+
 # <<<<< END ALERT EMAIL >>>>
 
 # Disable onboarding emails
@@ -393,3 +395,5 @@ except Exception:
 HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
 
 NEWRELIC_CONFIG_PATH = os.environ.get("NEWRELIC_CONFIG_PATH")
+
+POSTMASTER = os.environ.get("POSTMASTER")

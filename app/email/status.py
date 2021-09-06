@@ -11,6 +11,8 @@ E206 = "250 SL E206 Out of office"
 # if mail_from is a IgnoreBounceSender, no need to send back a bounce report
 E207 = "250 SL E207 No bounce report"
 
+E208 = "250 SL E208 Hotmail complaint handled"
+
 # 4** errors
 # E401 = "421 SL E401 Retry later"
 E402 = "421 SL E402 Encryption failed - Retry later"

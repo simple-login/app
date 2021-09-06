@@ -76,6 +76,8 @@ from app.config import (
     ENABLE_SPAM_ASSASSIN,
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
     NEWRELIC_CONFIG_PATH,
+    POSTMASTER,
+    ALERT_HOTMAIL_COMPLAINT,
 )
 from app.email import status
 from app.email.rate_limit import rate_limited
@@ -112,6 +114,7 @@ from app.email_utils import (
     sanitize_header,
     get_queue_id,
     should_ignore_bounce,
+    get_orig_message_from_outlook_complaint,
 )
 from app.extensions import db
 from app.log import LOG, set_message_id
@@ -1279,6 +1282,37 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         )
 
 
+def handle_hotmail_complaint(msg: Message):
+    """
+    Handle hotmail complaint sent to postmaster
+    """
+    orig_msg = get_orig_message_from_outlook_complaint(msg)
+    alias_address = orig_msg["To"]
+    alias = Alias.get_by(email=alias_address)
+
+    if not alias:
+        LOG.d("No alias for %s", alias_address)
+
+    user = alias.user
+    LOG.e("Handle hotmail complaint for %s %s", alias, user)
+
+    send_email_with_rate_control(
+        user,
+        ALERT_HOTMAIL_COMPLAINT,
+        user.email,
+        f"Hotmail abuse report",
+        render(
+            "transactional/hotmail-complaint.txt.jinja2",
+            alias=alias,
+        ),
+        render(
+            "transactional/hotmail-complaint.html",
+            alias=alias,
+        ),
+        max_nb_alert=2,
+    )
+
+
 def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
     """
     Handle reply phase bounce
@@ -1686,6 +1720,15 @@ def handle(envelope: Envelope) -> str:
         LOG.d("Handle email sent to sender from %s", mail_from)
         handle_transactional_bounce(envelope, rcpt_tos[0])
         return status.E205
+
+    if (
+        len(rcpt_tos) == 1
+        and mail_from == "staff@hotmail.com"
+        and rcpt_tos[0] == POSTMASTER
+    ):
+        LOG.w("Handle hotmail complaint")
+        handle_hotmail_complaint(msg)
+        return status.E208
 
     # Handle bounce
     if (

@@ -567,6 +567,19 @@ def get_orig_message_from_bounce(msg: Message) -> Message:
             return part
 
 
+def get_orig_message_from_outlook_complaint(msg: Message) -> Message:
+    """parse the original email from Bounce"""
+    i = 0
+    for part in msg.walk():
+        i += 1
+
+        # 1st part is the container
+        # 2nd part is the empty body
+        # 3rd is original message
+        if i == 3:
+            return part
+
+
 def get_header_from_bounce(msg: Message, header: str) -> str:
     """using regex to get header value from bounce message
     get_orig_message_from_bounce is better. This should be the last option
