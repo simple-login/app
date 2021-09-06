@@ -231,8 +231,12 @@
     {% for alias_info in alias_infos %}
       {% set alias = alias_info.alias %}
 
-      <div class="col-12 col-lg-6">
-        <div class="card p-4 shadow-sm {% if alias.id == highlight_alias_id %} highlight-row {% endif %} ">
+      <div class="col-12 col-lg-6" id="alias-container-{{ alias.id }}">
+        <div class="card p-4 shadow-sm {% if alias.id == highlight_alias_id %} highlight-row {% endif %} "
+             {% if highlight_alias_id and alias.id != highlight_alias_id %}
+          style="opacity: 0.6"
+             {% endif %}
+        >
 
           <div class="row">
             <div class="col-8">
