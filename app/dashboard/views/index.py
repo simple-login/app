@@ -4,7 +4,7 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
 from app import alias_utils
-from app.api.serializer import get_alias_infos_with_pagination_v3
+from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
 from app.config import PAGE_LIMIT, ALIAS_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.extensions import db, limiter
@@ -162,6 +162,16 @@ def index():
         current_user, page, query, sort, alias_filter, mailbox_id, directory_id
     )
     last_page = len(alias_infos) < PAGE_LIMIT
+
+    # add highlighted alias in case it's not included
+    if highlight_alias_id and highlight_alias_id not in [
+        alias_info.alias.id for alias_info in alias_infos
+    ]:
+        highlight_alias_info = get_alias_info_v3(
+            current_user, alias_id=highlight_alias_id
+        )
+        if highlight_alias_info:
+            alias_infos.insert(0, highlight_alias_info)
 
     return render_template(
         "dashboard/index.html",
