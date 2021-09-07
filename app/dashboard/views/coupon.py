@@ -78,7 +78,7 @@ def coupon_route():
                     user_id=current_user.id,
                     end_at=arrow.now().shift(years=coupon.nb_year, days=1),
                     comment="using coupon code",
-                    is_giveaway=False,
+                    is_giveaway=coupon.is_giveaway,
                     commit=True,
                 )
                 flash(
@@ -87,9 +87,13 @@ def coupon_route():
                 )
 
             # notify admin
+            if coupon.is_giveaway:
+                subject = f"User {current_user} applies a (free) coupon"
+            else:
+                subject = f"User {current_user} applies a (paid) coupon"
             send_email(
                 ADMIN_EMAIL,
-                subject=f"User {current_user} applies the coupon",
+                subject=subject,
                 plaintext="",
                 html="",
             )
