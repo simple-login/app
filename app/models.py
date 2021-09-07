@@ -1917,6 +1917,10 @@ class Coupon(db.Model, ModelMixin):
         db.ForeignKey(User.id, ondelete="cascade"), nullable=True
     )
 
+    is_giveaway = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
 
 class Directory(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
