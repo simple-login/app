@@ -177,6 +177,9 @@
             <option value="" {% if filter == "" %} selected {% endif %}>
               All Aliases
             </option>
+            <option value="pinned" {% if filter == "pinned" %} selected {% endif %}>
+              Pinned Aliases
+            </option>
             <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
               Only Enabled Aliases
             </option>

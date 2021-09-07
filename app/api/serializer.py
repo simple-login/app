@@ -245,6 +245,10 @@ def get_alias_infos_with_pagination_v3(
         q = q.filter(Alias.enabled)
     elif alias_filter == "disabled":
         q = q.filter(Alias.enabled.is_(False))
+    elif alias_filter == "pinned":
+        q = q.filter(Alias.pinned)
+    elif alias_filter == "hibp":
+        q = q.filter(Alias.hibp_breaches.any())
 
     q = q.order_by(Alias.pinned.desc())
 
@@ -256,8 +260,6 @@ def get_alias_infos_with_pagination_v3(
         q = q.order_by(Alias.email)
     elif sort == "z2a":
         q = q.order_by(Alias.email.desc())
-    elif alias_filter == "hibp":
-        q = q.filter(Alias.hibp_breaches.any())
     else:
         # default sorting
         q = q.order_by(latest_activity.desc())
