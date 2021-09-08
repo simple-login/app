@@ -699,7 +699,12 @@ def parseaddr_unicode(addr) -> (str, str):
                     LOG.w(
                         "Cannot decode %s with %s, use utf-8", decoded_string, charset
                     )
-                    name = decoded_string.decode("utf-8")
+                    try:
+                        name = decoded_string.decode("utf-8")
+                    except UnicodeDecodeError:
+                        LOG.w("utf-8 not work on %s", decoded_string)
+                        name = ""
+
             else:
                 name = decoded_string
 
