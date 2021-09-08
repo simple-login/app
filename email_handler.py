@@ -1288,6 +1288,11 @@ def handle_hotmail_complaint(msg: Message):
     """
     orig_msg = get_orig_message_from_outlook_complaint(msg)
     to_header = orig_msg["To"]
+    if not to_header:
+        LOG.e("cannot find the alias")
+        LOG.d("msg:%s, \n orig_msg:%s", msg, orig_msg)
+        return
+
     _, alias_address = parseaddr_unicode(to_header)
     alias = Alias.get_by(email=alias_address)
 
