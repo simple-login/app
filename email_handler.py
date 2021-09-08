@@ -1287,11 +1287,13 @@ def handle_hotmail_complaint(msg: Message):
     Handle hotmail complaint sent to postmaster
     """
     orig_msg = get_orig_message_from_outlook_complaint(msg)
-    alias_address = orig_msg["To"]
+    to_header = orig_msg["To"]
+    _, alias_address = parseaddr_unicode(to_header)
     alias = Alias.get_by(email=alias_address)
 
     if not alias:
         LOG.d("No alias for %s", alias_address)
+        return
 
     user = alias.user
     LOG.e("Handle hotmail complaint for %s %s", alias, user)
