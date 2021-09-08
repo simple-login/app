@@ -1704,7 +1704,7 @@ def handle(envelope: Envelope) -> str:
 
     contact = Contact.get_by(reply_email=mail_from)
     if contact:
-        LOG.e(
+        LOG.w(
             "email can't be sent from a reverse-alias:%s, contact email:%s, %s, %s",
             contact.reply_email,
             contact.website_email,
