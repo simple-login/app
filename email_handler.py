@@ -1296,7 +1296,7 @@ def handle_hotmail_complaint(msg: Message):
         return
 
     user = alias.user
-    LOG.e("Handle hotmail complaint for %s %s", alias, user)
+    LOG.w("Handle hotmail complaint for %s %s %s", alias, user, alias.mailboxes)
 
     send_email_with_rate_control(
         user,
