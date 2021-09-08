@@ -1702,9 +1702,11 @@ def handle(envelope: Envelope) -> str:
     contact = Contact.get_by(reply_email=mail_from)
     if contact:
         LOG.e(
-            "email can't be sent from a reverse-alias alias:%s, contact email:%s",
-            contact.alias,
+            "email can't be sent from a reverse-alias:%s, contact email:%s, %s, %s",
+            contact.reply_email,
             contact.website_email,
+            contact.alias,
+            contact.user,
         )
         return status.E203
 
