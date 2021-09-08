@@ -323,7 +323,7 @@ def send_email_with_rate_control(
     )
 
     if nb_alert >= max_nb_alert:
-        LOG.warning(
+        LOG.w(
             "%s emails were sent to %s in the last %s days, alert type %s",
             nb_alert,
             to_email,
@@ -359,7 +359,7 @@ def send_email_at_most_times(
     ).count()
 
     if nb_alert >= max_times:
-        LOG.warning(
+        LOG.w(
             "%s emails were sent to %s alert type %s",
             nb_alert,
             to_email,
@@ -645,7 +645,7 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
         )
         score = float(score_section[len("score=") :])
         if score >= max_score:
-            LOG.warning("Spam score %s exceeds %s", score, max_score)
+            LOG.w("Spam score %s exceeds %s", score, max_score)
             return True, spam_status_header
 
     return spamassassin_answer.lower() == "yes", spam_status_header
@@ -660,13 +660,13 @@ def get_header_unicode(header: str) -> str:
         try:
             return decoded_string.decode(charset)
         except UnicodeDecodeError:
-            LOG.warning("Cannot decode header %s", header)
+            LOG.w("Cannot decode header %s", header)
         except LookupError:  # charset is unknown
-            LOG.warning("Cannot decode %s with %s, use utf-8", decoded_string, charset)
+            LOG.w("Cannot decode %s with %s, use utf-8", decoded_string, charset)
             try:
                 return decoded_string.decode("utf-8")
             except UnicodeDecodeError:
-                LOG.warning("Cannot UTF-8 decode %s", decoded_string)
+                LOG.w("Cannot UTF-8 decode %s", decoded_string)
                 return decoded_string.decode("utf-8", errors="replace")
 
     return header
@@ -687,16 +687,16 @@ def parseaddr_unicode(addr) -> (str, str):
         try:
             decoded_string, charset = decode_header(name)[0]
         except HeaderParseError:  # fail in case
-            LOG.warning("Can't decode name %s", name)
+            LOG.w("Can't decode name %s", name)
         else:
             if charset is not None:
                 try:
                     name = decoded_string.decode(charset)
                 except UnicodeDecodeError:
-                    LOG.warning("Cannot decode addr name %s", name)
+                    LOG.w("Cannot decode addr name %s", name)
                     name = ""
                 except LookupError:  # charset is unknown
-                    LOG.warning(
+                    LOG.w(
                         "Cannot decode %s with %s, use utf-8", decoded_string, charset
                     )
                     name = decoded_string.decode("utf-8")
@@ -713,11 +713,11 @@ def copy(msg: Message) -> Message:
     try:
         return deepcopy(msg)
     except Exception:
-        LOG.warning("deepcopy fails, try string parsing")
+        LOG.w("deepcopy fails, try string parsing")
         try:
             return email.message_from_string(msg.as_string())
         except (UnicodeEncodeError, KeyError, LookupError):
-            LOG.warning("as_string() fails, try bytes parsing")
+            LOG.w("as_string() fails, try bytes parsing")
             return email.message_from_bytes(to_bytes(msg))
 
 
@@ -726,17 +726,15 @@ def to_bytes(msg: Message):
     try:
         return msg.as_bytes()
     except UnicodeEncodeError:
-        LOG.warning("as_bytes fails with default policy, try SMTP policy")
+        LOG.w("as_bytes fails with default policy, try SMTP policy")
         try:
             return msg.as_bytes(policy=email.policy.SMTP)
         except UnicodeEncodeError:
-            LOG.warning("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
+            LOG.w("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
             try:
                 return msg.as_bytes(policy=email.policy.SMTPUTF8)
             except UnicodeEncodeError:
-                LOG.warning(
-                    "as_bytes fails with SMTPUTF8 policy, try converting to string"
-                )
+                LOG.w("as_bytes fails with SMTPUTF8 policy, try converting to string")
                 msg_string = msg.as_string()
                 try:
                     return msg_string.encode()
@@ -790,7 +788,7 @@ def get_encoding(msg: Message) -> EmailEncoding:
     if cte in ("amazonses.com",):
         return EmailEncoding.NO
 
-    LOG.exception("Unknown encoding %s", cte)
+    LOG.e("Unknown encoding %s", cte)
 
     return EmailEncoding.NO
 
@@ -915,7 +913,7 @@ def replace(msg: Message, old, new) -> Message:
         clone_msg.set_payload(new_parts)
         return clone_msg
 
-    LOG.exception("Cannot replace text for %s", msg.get_content_type())
+    LOG.e("Cannot replace text for %s", msg.get_content_type())
     return msg
 
 
@@ -991,7 +989,7 @@ def should_disable(alias: Alias) -> bool:
     """Disable an alias if it has too many bounces recently"""
     # Bypass the bounce rule
     if alias.cannot_be_disabled:
-        LOG.warning("%s cannot be disabled", alias)
+        LOG.w("%s cannot be disabled", alias)
         return False
 
     yesterday = arrow.now().shift(days=-1)
@@ -1025,7 +1023,7 @@ def should_disable(alias: Alias) -> bool:
             .count()
         )
         if nb_bounced_7d_1d > 1:
-            LOG.debug(
+            LOG.d(
                 "more than 5 bounces in the last 24h and more than 1 bounces in the last 7 days, "
                 "disable alias %s",
                 alias,
@@ -1105,7 +1103,7 @@ def spf_pass(
         try:
             r = spf.check2(i=ip, s=envelope.mail_from, h=None)
         except Exception:
-            LOG.exception("SPF error, mailbox %s, ip %s", mailbox.email, ip)
+            LOG.e("SPF error, mailbox %s, ip %s", mailbox.email, ip)
         else:
             # TODO: Handle temperr case (e.g. dns timeout)
             # only an absolute pass, or no SPF policy at all is 'valid'

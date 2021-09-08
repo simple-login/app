@@ -485,7 +485,7 @@ def set_index_page(app):
             and not request.path.startswith("/admin/static")
             and not request.path.startswith("/_debug_toolbar")
         ):
-            LOG.debug(
+            LOG.d(
                 "%s %s %s %s %s, takes %s",
                 request.remote_addr,
                 request.method,
@@ -563,7 +563,7 @@ def setup_error_page(app):
 
     @app.errorhandler(429)
     def rate_limited(e):
-        LOG.warning(
+        LOG.w(
             "Client hit rate limit on path %s, user:%s",
             request.path,
             get_current_user(),
@@ -589,7 +589,7 @@ def setup_error_page(app):
 
     @app.errorhandler(Exception)
     def error_handler(e):
-        LOG.exception(e)
+        LOG.e(e)
         if request.path.startswith("/api/"):
             return jsonify(error="Internal error"), 500
         else:
@@ -632,13 +632,11 @@ def jinja2_filter(app):
 def setup_paddle_callback(app: Flask):
     @app.route("/paddle", methods=["GET", "POST"])
     def paddle():
-        LOG.debug(f"paddle callback {request.form.get('alert_name')} {request.form}")
+        LOG.d(f"paddle callback {request.form.get('alert_name')} {request.form}")
 
         # make sure the request comes from Paddle
         if not paddle_utils.verify_incoming_request(dict(request.form)):
-            LOG.exception(
-                "request not coming from paddle. Request data:%s", dict(request.form)
-            )
+            LOG.e("request not coming from paddle. Request data:%s", dict(request.form))
             return "KO", 400
 
         if (
@@ -657,7 +655,7 @@ def setup_paddle_callback(app: Flask):
             elif subscription_plan_id in PADDLE_YEARLY_PRODUCT_IDS:
                 plan = PlanEnum.yearly
             else:
-                LOG.exception(
+                LOG.e(
                     "Unknown subscription_plan_id %s %s",
                     subscription_plan_id,
                     request.form,
@@ -694,13 +692,13 @@ def setup_paddle_callback(app: Flask):
                 # in case user cancels a plan and subscribes a new plan
                 sub.cancelled = False
 
-            LOG.debug("User %s upgrades!", user)
+            LOG.d("User %s upgrades!", user)
 
             db.session.commit()
 
         elif request.form.get("alert_name") == "subscription_payment_succeeded":
             subscription_id = request.form.get("subscription_id")
-            LOG.debug("Update subscription %s", subscription_id)
+            LOG.d("Update subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             # when user subscribes, the "subscription_payment_succeeded" can arrive BEFORE "subscription_created"
@@ -719,7 +717,7 @@ def setup_paddle_callback(app: Flask):
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
                 # cancellation_effective_date should be the same as next_bill_date
-                LOG.warning(
+                LOG.w(
                     "Cancel subscription %s %s on %s, next bill date %s",
                     subscription_id,
                     sub.user,
@@ -749,7 +747,7 @@ def setup_paddle_callback(app: Flask):
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
-                LOG.debug(
+                LOG.d(
                     "Update subscription %s %s on %s, next bill date %s",
                     subscription_id,
                     sub.user,
@@ -795,7 +793,7 @@ def setup_coinbase_commerce(app):
                 request_data, request_sig, COINBASE_WEBHOOK_SECRET
             )
         except (WebhookInvalidPayload, SignatureVerificationError) as e:
-            LOG.exception("Invalid Coinbase webhook")
+            LOG.e("Invalid Coinbase webhook")
             return str(e), 400
 
         LOG.d("Coinbase event %s", event)
@@ -814,7 +812,7 @@ def handle_coinbase_event(event) -> bool:
     code = event["data"]["code"]
     user = User.get(user_id)
     if not user:
-        LOG.exception("User not found %s", user_id)
+        LOG.e("User not found %s", user_id)
         return False
 
     coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
@@ -922,7 +920,7 @@ def register_custom_commands(app):
     def dummy_data():
         from init_app import add_sl_domains
 
-        LOG.warning("reset db, add fake data")
+        LOG.w("reset db, add fake data")
         with app.app_context():
             fake_data()
             add_sl_domains()

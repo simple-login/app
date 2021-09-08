@@ -62,7 +62,7 @@ def verify_id_token(id_token) -> bool:
     try:
         jwt.JWT(key=_key, jwt=id_token)
     except Exception:
-        LOG.exception("id token not verified")
+        LOG.e("id token not verified")
         return False
     else:
         return True

@@ -249,11 +249,11 @@ def custom_alias():
                 signed_alias_suffix_decoded
             )
         except SignatureExpired:
-            LOG.warning("Alias creation time expired for %s", current_user)
+            LOG.w("Alias creation time expired for %s", current_user)
             flash("Alias creation time is expired, please retry", "warning")
             return redirect(url_for("dashboard.custom_alias"))
         except Exception:
-            LOG.warning("Alias suffix is tampered, user %s", current_user)
+            LOG.w("Alias suffix is tampered, user %s", current_user)
             flash("Unknown error, refresh the page", "error")
             return redirect(url_for("dashboard.custom_alias"))
 
@@ -281,7 +281,7 @@ def custom_alias():
                     )
                 else:
                     # should never happen as user can only choose their domains
-                    LOG.exception(
+                    LOG.e(
                         "Deleted Alias %s does not belong to user %s",
                         domain_deleted_alias,
                     )
@@ -309,7 +309,7 @@ def custom_alias():
                     )
                     db.session.flush()
                 except IntegrityError:
-                    LOG.warning("Alias %s already exists", full_alias)
+                    LOG.w("Alias %s already exists", full_alias)
                     db.session.rollback()
                     flash("Unknown error, please retry", "error")
                     return redirect(url_for("dashboard.custom_alias"))
@@ -351,7 +351,7 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
 
     # alias_domain must be either one of user custom domains or built-in domains
     if alias_domain not in user.available_alias_domains():
-        LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
+        LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
         return False
 
     # SimpleLogin domain case:
@@ -365,17 +365,17 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
     ):
 
         if not alias_domain_prefix.startswith("."):
-            LOG.exception("User %s submits a wrong alias suffix %s", user, alias_suffix)
+            LOG.e("User %s submits a wrong alias suffix %s", user, alias_suffix)
             return False
 
     else:
         if alias_domain not in user_custom_domains:
             if not DISABLE_ALIAS_SUFFIX:
-                LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
+                LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
 
             if alias_domain not in user.available_sl_domains():
-                LOG.exception("wrong alias suffix %s, user %s", alias_suffix, user)
+                LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
 
     return True

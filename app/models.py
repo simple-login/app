@@ -685,7 +685,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
                 or not custom_domain.verified
                 or custom_domain.user_id != self.id
             ):
-                LOG.warning("Problem with %s default random alias domain", self)
+                LOG.w("Problem with %s default random alias domain", self)
                 return FIRST_ALIAS_DOMAIN
 
             return custom_domain.domain
@@ -694,11 +694,11 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
             sl_domain = SLDomain.get(self.default_alias_public_domain_id)
             # sanity check
             if not sl_domain:
-                LOG.exception("Problem with %s public random alias domain", self)
+                LOG.e("Problem with %s public random alias domain", self)
                 return FIRST_ALIAS_DOMAIN
 
             if sl_domain.premium_only and not self.is_premium():
-                LOG.warning(
+                LOG.w(
                     "%s is not premium and cannot use %s. Reset default random alias domain setting",
                     self,
                     sl_domain,
@@ -863,13 +863,11 @@ def generate_oauth_client_id(client_name) -> str:
 
     # check that the client does not exist yet
     if not Client.get_by(oauth_client_id=oauth_client_id):
-        LOG.debug("generate oauth_client_id %s", oauth_client_id)
+        LOG.d("generate oauth_client_id %s", oauth_client_id)
         return oauth_client_id
 
     # Rerun the function
-    LOG.warning(
-        "client_id %s already exists, generate a new client_id", oauth_client_id
-    )
+    LOG.w("client_id %s already exists, generate a new client_id", oauth_client_id)
     return generate_oauth_client_id(client_name)
 
 
@@ -1041,11 +1039,11 @@ def generate_email(
     if not Alias.get_by(email=random_email) and not DeletedAlias.get_by(
         email=random_email
     ):
-        LOG.debug("generate email %s", random_email)
+        LOG.d("generate email %s", random_email)
         return random_email
 
     # Rerun the function
-    LOG.warning("email %s already exists, generate a new email", random_email)
+    LOG.w("email %s already exists, generate a new email", random_email)
     return generate_email(scheme=scheme, in_hex=in_hex)
 
 
@@ -1240,7 +1238,7 @@ class Alias(db.Model, ModelMixin):
         elif user.default_alias_public_domain_id:
             sl_domain: SLDomain = SLDomain.get(user.default_alias_public_domain_id)
             if sl_domain.premium_only and not user.is_premium():
-                LOG.warning("%s not premium, cannot use %s", user, sl_domain)
+                LOG.w("%s not premium, cannot use %s", user, sl_domain)
             else:
                 random_email = generate_email(
                     scheme=scheme, in_hex=in_hex, alias_domain=sl_domain.domain
@@ -1355,7 +1353,7 @@ class ClientUser(db.Model, ModelMixin):
             elif scope == Scope.EMAIL:
                 # Use generated email
                 if self.alias_id:
-                    LOG.debug(
+                    LOG.d(
                         "Use gen email for user %s, client %s", self.user, self.client
                     )
                     res[Scope.EMAIL.value] = self.alias.email
@@ -1454,7 +1452,7 @@ class Contact(db.Model, ModelMixin):
                 name, _ = parseaddr_unicode(self.website_from)
             except Exception:
                 # Skip if website_from is wrongly formatted
-                LOG.warning(
+                LOG.w(
                     "Cannot parse contact %s website_from %s", self, self.website_from
                 )
                 name = ""

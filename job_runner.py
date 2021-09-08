@@ -159,7 +159,7 @@ if __name__ == "__main__":
                         continue
 
                     user_email = user.email
-                    LOG.warning("Delete user %s", user)
+                    LOG.w("Delete user %s", user)
                     User.delete(user.id)
                     db.session.commit()
 
@@ -170,6 +170,6 @@ if __name__ == "__main__":
                         render("transactional/account-delete.html"),
                     )
                 else:
-                    LOG.exception("Unknown job name %s", job.name)
+                    LOG.e("Unknown job name %s", job.name)
 
         time.sleep(10)

@@ -31,7 +31,7 @@ def batch_import_route():
 
         bi = BatchImport.create(user_id=current_user.id, file_id=file.id)
         db.session.flush()
-        LOG.debug("Add a batch import job %s for %s", bi, current_user)
+        LOG.d("Add a batch import job %s for %s", bi, current_user)
 
         # Schedule batch import job
         Job.create(

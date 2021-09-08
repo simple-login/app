@@ -102,7 +102,7 @@ def authorize():
             )
             user_info = {}
             if client_user:
-                LOG.debug("user %s has already allowed client %s", current_user, client)
+                LOG.d("user %s has already allowed client %s", current_user, client)
                 user_info = client_user.get_user_info()
             else:
                 suggested_email, other_emails = current_user.suggested_emails(
@@ -131,11 +131,11 @@ def authorize():
             )
     else:  # POST - user allows or denies
         if request.form.get("button") == "deny":
-            LOG.debug("User %s denies Client %s", current_user, client)
+            LOG.d("User %s denies Client %s", current_user, client)
             final_redirect_uri = f"{redirect_uri}?error=deny&state={state}"
             return redirect(final_redirect_uri)
 
-        LOG.debug("User %s allows Client %s", current_user, client)
+        LOG.d("User %s allows Client %s", current_user, client)
         client_user = ClientUser.get_by(client_id=client.id, user_id=current_user.id)
 
         # user has already allowed this client, user cannot change information
@@ -167,11 +167,11 @@ def authorize():
                 try:
                     alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
                 except SignatureExpired:
-                    LOG.warning("Alias creation time expired for %s", current_user)
+                    LOG.w("Alias creation time expired for %s", current_user)
                     flash("Alias creation time is expired, please retry", "warning")
                     return redirect(request.url)
                 except Exception:
-                    LOG.warning("Alias suffix is tampered, user %s", current_user)
+                    LOG.w("Alias suffix is tampered, user %s", current_user)
                     flash("Unknown error, refresh the page", "error")
                     return redirect(request.url)
 
@@ -189,7 +189,7 @@ def authorize():
                         or DeletedAlias.get_by(email=full_alias)
                         or DomainDeletedAlias.get_by(email=full_alias)
                     ):
-                        LOG.exception("alias %s already used, very rare!", full_alias)
+                        LOG.e("alias %s already used, very rare!", full_alias)
                         flash(f"Alias {full_alias} already used", "error")
                         return redirect(request.url)
                     else:
@@ -255,9 +255,7 @@ def authorize():
         if state:
             redirect_args["state"] = state
         else:
-            LOG.warning(
-                "more security reason, state should be added. client %s", client
-            )
+            LOG.w("more security reason, state should be added. client %s", client)
 
         if scope:
             redirect_args["scope"] = scope
@@ -339,7 +337,7 @@ def generate_access_token() -> str:
         return access_token
 
     # Rerun the function
-    LOG.warning("access token already exists, generate a new one")
+    LOG.w("access token already exists, generate a new one")
     return generate_access_token()
 
 

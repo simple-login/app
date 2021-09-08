@@ -69,7 +69,7 @@ def index():
         try:
             highlight_alias_id = int(request.args.get("highlight_alias_id"))
         except ValueError:
-            LOG.warning(
+            LOG.w(
                 "highlight_alias_id must be a number, received %s",
                 request.args.get("highlight_alias_id"),
             )

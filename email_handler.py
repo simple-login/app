@@ -347,7 +347,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                 contact.name = contact_name
                 db.session.commit()
         else:
-            LOG.debug(
+            LOG.d(
                 "create contact for alias %s and email %s, header %s",
                 alias,
                 contact_email,
@@ -488,7 +488,7 @@ def sign_msg(msg: Message) -> Message:
     try:
         signature.set_payload(sign_data(to_bytes(msg).replace(b"\n", b"\r\n")))
     except Exception:
-        LOG.exception("Cannot sign, try using pgpy")
+        LOG.e("Cannot sign, try using pgpy")
         signature.set_payload(
             sign_data_with_pgpy(to_bytes(msg).replace(b"\n", b"\r\n"))
         )
@@ -871,14 +871,14 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # Sanity check: verify alias domain is managed by SimpleLogin
     # scenario: a user have removed a domain but due to a bug, the aliases are still there
     if not is_valid_alias_address_domain(alias.email):
-        LOG.exception("%s domain isn't known", alias)
+        LOG.e("%s domain isn't known", alias)
         return False, status.E503
 
     user = alias.user
     mail_from = envelope.mail_from
 
     if user.disabled:
-        LOG.exception(
+        LOG.e(
             "User %s disabled, disable sending emails from %s to %s",
             user,
             alias,
@@ -1094,7 +1094,7 @@ def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
 
         for address in mailbox.authorized_addresses:
             if address.email == mail_from:
-                LOG.debug(
+                LOG.d(
                     "Found an authorized address for %s %s %s", alias, mailbox, address
                 )
                 return mailbox
@@ -1172,12 +1172,12 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
 
     # email_log.mailbox should be set during the forward phase
     if not mailbox:
-        LOG.exception("Use %s default mailbox %s", alias, alias.mailbox)
+        LOG.e("Use %s default mailbox %s", alias, alias.mailbox)
         mailbox = alias.mailbox
 
     Bounce.create(email=mailbox.email, commit=True)
 
-    LOG.debug(
+    LOG.d(
         "Handle forward bounce %s -> %s -> %s. %s", contact, alias, mailbox, email_log
     )
 
@@ -1325,9 +1325,7 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
     user = alias.user
     mailbox = email_log.mailbox or alias.mailbox
 
-    LOG.debug(
-        "Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log
-    )
+    LOG.d("Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log)
 
     Bounce.create(email=sanitize_email(contact.website_email), commit=True)
 
@@ -1548,11 +1546,11 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
     """return the SMTP status"""
     user = User.get(user_id)
     if not user:
-        LOG.exception("No such user %s %s", user_id, mail_from)
+        LOG.e("No such user %s %s", user_id, mail_from)
         return status.E510
 
     if mail_from != user.email:
-        LOG.exception("Unauthorized mail_from %s %s", user, mail_from)
+        LOG.e("Unauthorized mail_from %s %s", user, mail_from)
         return status.E511
 
     user.notification = False

@@ -31,9 +31,7 @@ from app.models import (
 def try_auto_create(address: str) -> Optional[Alias]:
     """Try to auto-create the alias using directory or catch-all domain"""
     if address.startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"):
-        LOG.exception(
-            "alias %s can't start with %s", address, BOUNCE_PREFIX_FOR_REPLY_PHASE
-        )
+        LOG.e("alias %s can't start with %s", address, BOUNCE_PREFIX_FOR_REPLY_PHASE)
         return None
 
     alias = try_auto_create_catch_all_domain(address)
@@ -101,7 +99,7 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             db.session.commit()
             return alias
         except AliasInTrashError:
-            LOG.warning(
+            LOG.w(
                 "Alias %s was deleted before, cannot auto-create using directory %s, user %s",
                 address,
                 directory_name,
@@ -109,7 +107,7 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             )
             return None
         except IntegrityError:
-            LOG.warning("Alias %s already exists", address)
+            LOG.w("Alias %s already exists", address)
             db.session.rollback()
             alias = Alias.get_by(email=address)
             return alias
@@ -156,7 +154,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         db.session.commit()
         return alias
     except AliasInTrashError:
-        LOG.warning(
+        LOG.w(
             "Alias %s was deleted before, cannot auto-create using domain catch-all %s, user %s",
             address,
             custom_domain,
@@ -164,12 +162,12 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         )
         return None
     except IntegrityError:
-        LOG.warning("Alias %s already exists", address)
+        LOG.w("Alias %s already exists", address)
         db.session.rollback()
         alias = Alias.get_by(email=address)
         return alias
     except DataError:
-        LOG.warning("Cannot create alias %s", address)
+        LOG.w("Cannot create alias %s", address)
         db.session.rollback()
         return None
 
@@ -184,7 +182,7 @@ def delete_alias(alias: Alias, user: User):
         if not DomainDeletedAlias.get_by(
             email=alias.email, domain_id=alias.custom_domain_id
         ):
-            LOG.debug("add %s to domain %s trash", alias, alias.custom_domain_id)
+            LOG.d("add %s to domain %s trash", alias, alias.custom_domain_id)
             db.session.add(
                 DomainDeletedAlias(
                     user_id=user.id, email=alias.email, domain_id=alias.custom_domain_id

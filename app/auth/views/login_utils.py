@@ -29,15 +29,15 @@ def after_login(user, next_url):
         else:
             return redirect(url_for("auth.mfa"))
     else:
-        LOG.debug("log user %s in", user)
+        LOG.d("log user %s in", user)
         login_user(user)
 
         # User comes to login page from another page
         if next_url:
-            LOG.debug("redirect user to %s", next_url)
+            LOG.d("redirect user to %s", next_url)
             return redirect(next_url)
         else:
-            LOG.debug("redirect user to dashboard")
+            LOG.d("redirect user to dashboard")
             return redirect(url_for("dashboard.index"))
 
 

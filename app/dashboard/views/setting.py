@@ -105,7 +105,7 @@ def setting():
                         other_email_change: EmailChange = EmailChange.get_by(
                             new_email=new_email
                         )
-                        LOG.warning(
+                        LOG.w(
                             "Another user has a pending %s with the same email address. Current user:%s",
                             other_email_change,
                             current_user,
@@ -193,7 +193,7 @@ def setting():
                 return redirect(url_for("dashboard.setting"))
 
             # Schedule delete account job
-            LOG.warning("schedule delete account job for %s", current_user)
+            LOG.w("schedule delete account job for %s", current_user)
             Job.create(
                 name=JOB_DELETE_ACCOUNT,
                 payload={"user_id": current_user.id},
@@ -236,7 +236,7 @@ def setting():
                             custom_domain.user_id != current_user.id
                             or not custom_domain.verified
                         ):
-                            LOG.exception(
+                            LOG.e(
                                 "%s cannot use domain %s", current_user, default_domain
                             )
                         else:

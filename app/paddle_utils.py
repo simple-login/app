@@ -72,9 +72,7 @@ def cancel_subscription(subscription_id: str) -> bool:
     )
     res = r.json()
     if not res["success"]:
-        LOG.exception(
-            f"cannot cancel subscription {subscription_id}, paddle response: {res}"
-        )
+        LOG.e(f"cannot cancel subscription {subscription_id}, paddle response: {res}")
 
     return res["success"]
 
@@ -102,7 +100,7 @@ def change_plan(user: User, subscription_id: str, plan_id) -> (bool, str):
                 )
                 return False, "Your card cannot be charged"
         except KeyError:
-            LOG.exception(
+            LOG.e(
                 f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
             )
             return False, ""

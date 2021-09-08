@@ -151,7 +151,7 @@ def notify_manual_sub_end():
 
         if need_reminder:
             user = manual_sub.user
-            LOG.debug("Remind user %s that their manual sub is ending soon", user)
+            LOG.d("Remind user %s that their manual sub is ending soon", user)
             send_email(
                 user.email,
                 f"Your subscription will end soon",
@@ -185,7 +185,7 @@ def notify_manual_sub_end():
 
         if need_reminder:
             user = coinbase_subscription.user
-            LOG.debug(
+            LOG.d(
                 "Remind user %s that their coinbase subscription is ending soon", user
             )
             send_email(
@@ -443,9 +443,7 @@ def migrate_domain_trash():
         if not SLDomain.get_by(domain=alias_domain):
             custom_domain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain:
-                LOG.exception(
-                    "move %s to domain %s trash", deleted_alias, custom_domain
-                )
+                LOG.e("move %s to domain %s trash", deleted_alias, custom_domain)
                 db.session.add(
                     DomainDeletedAlias(
                         user_id=custom_domain.user_id,
@@ -470,7 +468,7 @@ def set_custom_domain_for_alias():
             alias_domain = get_email_domain_part(alias.email)
             custom_domain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain:
-                LOG.exception("set %s for %s", custom_domain, alias)
+                LOG.e("set %s for %s", custom_domain, alias)
                 alias.custom_domain_id = custom_domain.id
             else:  # phantom domain
                 LOG.d("phantom domain %s %s %s", alias.user, alias, alias.enabled)
@@ -533,7 +531,7 @@ def sanity_check():
                         render("transactional/disable-mailbox.html", mailbox=mailbox),
                     )
 
-            LOG.warning(
+            LOG.w(
                 "issue with mailbox %s domain. #alias %s, nb email log %s",
                 mailbox,
                 mailbox.nb_alias(),
@@ -546,40 +544,40 @@ def sanity_check():
 
     for user in User.filter_by(activated=True).all():
         if sanitize_email(user.email) != user.email:
-            LOG.exception("%s does not have sanitized email", user)
+            LOG.e("%s does not have sanitized email", user)
 
     for alias in Alias.query.all():
         if sanitize_email(alias.email) != alias.email:
-            LOG.exception("Alias %s email not sanitized", alias)
+            LOG.e("Alias %s email not sanitized", alias)
 
         if alias.name and "\n" in alias.name:
             alias.name = alias.name.replace("\n", "")
             db.session.commit()
-            LOG.exception("Alias %s name contains linebreak %s", alias, alias.name)
+            LOG.e("Alias %s name contains linebreak %s", alias, alias.name)
 
     contact_email_sanity_date = arrow.get("2021-01-12")
     for contact in Contact.query.all():
         if sanitize_email(contact.reply_email) != contact.reply_email:
-            LOG.exception("Contact %s reply-email not sanitized", contact)
+            LOG.e("Contact %s reply-email not sanitized", contact)
 
         if (
             sanitize_email(contact.website_email) != contact.website_email
             and contact.created_at > contact_email_sanity_date
         ):
-            LOG.exception("Contact %s website-email not sanitized", contact)
+            LOG.e("Contact %s website-email not sanitized", contact)
 
         if not contact.invalid_email and not is_valid_email(contact.website_email):
-            LOG.exception("%s invalid email", contact)
+            LOG.e("%s invalid email", contact)
             contact.invalid_email = True
             db.session.commit()
 
     for mailbox in Mailbox.query.all():
         if sanitize_email(mailbox.email) != mailbox.email:
-            LOG.exception("Mailbox %s address not sanitized", mailbox)
+            LOG.e("Mailbox %s address not sanitized", mailbox)
 
     for contact in Contact.query.all():
         if normalize_reply_email(contact.reply_email) != contact.reply_email:
-            LOG.exception(
+            LOG.e(
                 "Contact %s reply email is not normalized %s",
                 contact,
                 contact.reply_email,
@@ -587,7 +585,7 @@ def sanity_check():
 
     for domain in CustomDomain.query.all():
         if domain.name and "\n" in domain.name:
-            LOG.exception("Domain %s name contain linebreak %s", domain, domain.name)
+            LOG.e("Domain %s name contain linebreak %s", domain, domain.name)
 
     migrate_domain_trash()
     set_custom_domain_for_alias()
@@ -605,7 +603,7 @@ def check_custom_domain():
 
         if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
             user = custom_domain.user
-            LOG.warning(
+            LOG.w(
                 "The MX record is not correctly set for %s %s %s",
                 custom_domain,
                 user,
@@ -617,9 +615,7 @@ def check_custom_domain():
             # send alert if fail for 5 consecutive days
             if custom_domain.nb_failed_checks > 5:
                 domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
-                LOG.warning(
-                    "Alert domain MX check fails %s about %s", user, custom_domain
-                )
+                LOG.w("Alert domain MX check fails %s about %s", user, custom_domain)
                 send_email_with_rate_control(
                     user,
                     AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
@@ -728,7 +724,7 @@ async def check_hibp():
     LOG.d("Checking HIBP API for aliases in breaches")
 
     if len(HIBP_API_KEYS) == 0:
-        LOG.exception("No HIBP API keys")
+        LOG.e("No HIBP API keys")
         return
 
     LOG.d("Updating list of known breaches")

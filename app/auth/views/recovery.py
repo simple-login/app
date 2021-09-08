@@ -58,10 +58,10 @@ def recovery_route():
 
                 # User comes to login page from another page
                 if next_url:
-                    LOG.debug("redirect user to %s", next_url)
+                    LOG.d("redirect user to %s", next_url)
                     return redirect(next_url)
                 else:
-                    LOG.debug("redirect user to dashboard")
+                    LOG.d("redirect user to dashboard")
                     return redirect(url_for("dashboard.index"))
         else:
             # Trigger rate limiter

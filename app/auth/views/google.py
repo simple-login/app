@@ -101,7 +101,7 @@ def google_callback():
     # The activation link contains the original page, for ex authorize page
     if "google_next_url" in session:
         next_url = session["google_next_url"]
-        LOG.debug("redirect user to %s", next_url)
+        LOG.d("redirect user to %s", next_url)
 
         # reset the next_url to avoid user getting redirected at each login :)
         session.pop("google_next_url", None)

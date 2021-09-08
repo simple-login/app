@@ -53,7 +53,7 @@ def register():
             #  'challenge_ts': '2020-07-23T10:03:25',
             #  'hostname': '127.0.0.1'}
             if not hcaptcha_res["success"]:
-                LOG.warning(
+                LOG.w(
                     "User put wrong captcha %s %s",
                     form.email.data,
                     hcaptcha_res,
@@ -74,7 +74,7 @@ def register():
             if personal_email_already_used(email):
                 flash(f"Email {email} already used", "error")
             else:
-                LOG.debug("create user %s", email)
+                LOG.d("create user %s", email)
                 user = User.create(
                     email=email,
                     name="",

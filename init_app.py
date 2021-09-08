@@ -15,9 +15,7 @@ def load_pgp_public_keys():
 
         # sanity check
         if fingerprint != mailbox.pgp_finger_print:
-            LOG.exception(
-                "fingerprint %s different for mailbox %s", fingerprint, mailbox
-            )
+            LOG.e("fingerprint %s different for mailbox %s", fingerprint, mailbox)
             mailbox.pgp_finger_print = fingerprint
     db.session.commit()
 
@@ -27,9 +25,7 @@ def load_pgp_public_keys():
 
         # sanity check
         if fingerprint != contact.pgp_finger_print:
-            LOG.exception(
-                "fingerprint %s different for contact %s", fingerprint, contact
-            )
+            LOG.e("fingerprint %s different for contact %s", fingerprint, contact)
             contact.pgp_finger_print = fingerprint
 
     db.session.commit()
@@ -42,14 +38,14 @@ def add_sl_domains():
         if SLDomain.get_by(domain=alias_domain):
             LOG.d("%s is already a SL domain", alias_domain)
         else:
-            LOG.info("Add %s to SL domain", alias_domain)
+            LOG.i("Add %s to SL domain", alias_domain)
             SLDomain.create(domain=alias_domain)
 
     for premium_domain in PREMIUM_ALIAS_DOMAINS:
         if SLDomain.get_by(domain=premium_domain):
             LOG.d("%s is already a SL domain", premium_domain)
         else:
-            LOG.info("Add %s to SL domain", premium_domain)
+            LOG.i("Add %s to SL domain", premium_domain)
             SLDomain.create(domain=premium_domain, premium_only=True)
 
     db.session.commit()

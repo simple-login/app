@@ -15,7 +15,7 @@ def refused_email_route():
         try:
             highlight_id = int(highlight_id)
         except ValueError:
-            LOG.warning("Cannot parse highlight_id %s", highlight_id)
+            LOG.w("Cannot parse highlight_id %s", highlight_id)
             highlight_id = None
 
     email_logs: [EmailLog] = (
