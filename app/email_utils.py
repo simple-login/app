@@ -652,24 +652,33 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
 
 
 def get_header_unicode(header: str) -> str:
+    """
+    Convert a header to unicode
+    Should be used to handle headers like From:, To:, CC:, Subject:
+    """
     if header is None:
         return ""
 
-    decoded_string, charset = decode_header(header)[0]
-    if charset is not None:
-        try:
-            return decoded_string.decode(charset)
-        except UnicodeDecodeError:
-            LOG.w("Cannot decode header %s", header)
-        except LookupError:  # charset is unknown
-            LOG.w("Cannot decode %s with %s, use utf-8", decoded_string, charset)
+    ret = ""
+    for to_decoded_str, charset in decode_header(header):
+        if charset is None:
+            if type(to_decoded_str) is bytes:
+                decoded_str = to_decoded_str.decode()
+            else:
+                decoded_str = to_decoded_str
+        else:
             try:
-                return decoded_string.decode("utf-8")
-            except UnicodeDecodeError:
-                LOG.w("Cannot UTF-8 decode %s", decoded_string)
-                return decoded_string.decode("utf-8", errors="replace")
+                decoded_str = to_decoded_str.decode(charset)
+            except (LookupError, UnicodeDecodeError):  # charset is unknown
+                LOG.w("Cannot decode %s with %s, try utf-8", to_decoded_str, charset)
+                try:
+                    decoded_str = to_decoded_str.decode("utf-8")
+                except UnicodeDecodeError:
+                    LOG.w("Cannot UTF-8 decode %s", to_decoded_str)
+                    decoded_str = to_decoded_str.decode("utf-8", errors="replace")
+        ret += decoded_str
 
-    return header
+    return ret
 
 
 def parseaddr_unicode(addr) -> (str, str):

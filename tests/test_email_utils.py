@@ -29,6 +29,7 @@ from app.email_utils import (
     parse_id_from_bounce,
     get_queue_id,
     should_ignore_bounce,
+    get_header_unicode,
 )
 from app.extensions import db
 from app.models import User, CustomDomain, Alias, Contact, EmailLog, IgnoreBounceSender
@@ -748,3 +749,8 @@ def test_should_ignore_bounce(flask_client):
 
     IgnoreBounceSender.create(mail_from="to-ignore@example.com")
     assert should_ignore_bounce("to-ignore@example.com")
+
+
+def test_get_header_unicode():
+    assert get_header_unicode("ab@cd.com") == "ab@cd.com"
+    assert get_header_unicode("=?utf-8?B?w6nDqQ==?=@example.com") == "éé@example.com"
