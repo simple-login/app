@@ -1282,23 +1282,23 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         )
 
 
-def handle_hotmail_complaint(msg: Message):
+def handle_hotmail_complaint(msg: Message) -> bool:
     """
     Handle hotmail complaint sent to postmaster
+    Return True if the complaint can be handled, False otherwise
     """
     orig_msg = get_orig_message_from_outlook_complaint(msg)
     to_header = orig_msg["To"]
     if not to_header:
         LOG.e("cannot find the alias")
-        LOG.d("msg:%s, \n orig_msg:%s", msg, orig_msg)
-        return
+        return False
 
     _, alias_address = parseaddr_unicode(to_header)
     alias = Alias.get_by(email=alias_address)
 
     if not alias:
         LOG.d("No alias for %s", alias_address)
-        return
+        return False
 
     user = alias.user
     LOG.w("Handle hotmail complaint for %s %s %s", alias, user, alias.mailboxes)
@@ -1318,6 +1318,8 @@ def handle_hotmail_complaint(msg: Message):
         ),
         max_nb_alert=2,
     )
+
+    return True
 
 
 def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
@@ -1734,8 +1736,10 @@ def handle(envelope: Envelope) -> str:
         and rcpt_tos[0] == POSTMASTER
     ):
         LOG.w("Handle hotmail complaint")
-        handle_hotmail_complaint(msg)
-        return status.E208
+
+        # if the complaint cannot be handled, forward it normally
+        if handle_hotmail_complaint(msg):
+            return status.E208
 
     # Handle bounce
     if (
