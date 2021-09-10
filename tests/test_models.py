@@ -3,7 +3,7 @@ from uuid import UUID
 import pytest
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
-from app.email_utils import parseaddr_unicode
+from app.email_utils import parse_full_address
 from app.extensions import db
 from app.models import (
     generate_email,
@@ -159,8 +159,8 @@ def test_new_addr(flask_client):
         == "=?utf-8?q?Nh=C6=A1n_Nguy=E1=BB=85n_-_abcd_at_example=2Ecom?= <rep@SL>"
     )
 
-    # sanity check for parseaddr_unicode
-    assert parseaddr_unicode(c1.new_addr()) == (
+    # sanity check
+    assert parse_full_address(c1.new_addr()) == (
         "Nhơn Nguyễn - abcd at example.com",
         "rep@sl",
     )

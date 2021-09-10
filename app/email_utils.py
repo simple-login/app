@@ -7,12 +7,11 @@ import random
 import re
 import time
 from copy import deepcopy
-from email.errors import HeaderParseError
 from email.header import decode_header, Header
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import make_msgid, formatdate, parseaddr
+from email.utils import make_msgid, formatdate
 from smtplib import SMTP, SMTPServerDisconnected
 from typing import Tuple, List, Optional, Union
 
@@ -20,6 +19,8 @@ import arrow
 import dkim
 import spf
 from email_validator import validate_email, EmailNotValidError
+from flanker.addresslib import address
+from flanker.addresslib.address import EmailAddress
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import func
 
@@ -681,47 +682,6 @@ def get_header_unicode(header: Union[str, Header]) -> str:
     return ret
 
 
-def parseaddr_unicode(addr) -> (str, str):
-    """Like parseaddr() but return name in unicode instead of in RFC 2047 format
-    Should be used instead of parseaddr()
-    '=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>' -> ('Nhơn Nguyễn', "abcd@gmail.com")
-    """
-    # sometimes linebreaks are present in addr
-    addr = addr.replace("\n", "").strip()
-    name, email = parseaddr(addr)
-    # email can have whitespace so we can't remove whitespace here
-    email = email.strip().lower()
-    if name:
-        name = name.strip()
-        try:
-            decoded_string, charset = decode_header(name)[0]
-        except HeaderParseError:  # fail in case
-            LOG.w("Can't decode name %s", name)
-        else:
-            if charset is not None:
-                try:
-                    name = decoded_string.decode(charset)
-                except UnicodeDecodeError:
-                    LOG.w("Cannot decode addr name %s", name)
-                    name = ""
-                except LookupError:  # charset is unknown
-                    LOG.w(
-                        "Cannot decode %s with %s, use utf-8", decoded_string, charset
-                    )
-                    try:
-                        name = decoded_string.decode("utf-8")
-                    except UnicodeDecodeError:
-                        LOG.w("utf-8 not work on %s", decoded_string)
-                        name = ""
-
-            else:
-                name = decoded_string
-
-    if type(name) == bytes:
-        name = name.decode()
-    return name, email
-
-
 def copy(msg: Message) -> Message:
     """return a copy of message"""
     try:
@@ -1257,3 +1217,17 @@ def should_ignore_bounce(mail_from: str) -> bool:
         return True
 
     return False
+
+
+def parse_full_address(full_address) -> (str, str):
+    """
+    parse the email address full format and return the display name and address
+    For ex: ab <cd@xy.com> -> (ab, cd@xy.com)
+    '=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>' -> ('Nhơn Nguyễn', "abcd@gmail.com")
+
+    If the parsing fails, raise ValueError
+    """
+    full_address: EmailAddress = address.parse(full_address)
+    if full_address is None:
+        raise ValueError
+    return full_address.display_name, full_address.address
