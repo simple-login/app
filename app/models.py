@@ -7,6 +7,7 @@ from typing import List, Tuple, Optional
 import arrow
 import sqlalchemy as sa
 from arrow import Arrow
+from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
@@ -1447,12 +1448,10 @@ class Contact(db.Model, ModelMixin):
         # if no name, try to parse it from website_from
         if not name and self.website_from:
             try:
-                from app.email_utils import parseaddr_unicode
-
-                name, _ = parseaddr_unicode(self.website_from)
+                name = address.parse(self.website_from).display_name
             except Exception:
                 # Skip if website_from is wrongly formatted
-                LOG.w(
+                LOG.e(
                     "Cannot parse contact %s website_from %s", self, self.website_from
                 )
                 name = ""

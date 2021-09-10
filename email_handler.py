@@ -95,7 +95,6 @@ from app.email_utils import (
     delete_all_headers_except,
     get_spam_info,
     get_orig_message_from_spamassassin_report,
-    parseaddr_unicode,
     send_email_with_rate_control,
     get_email_domain_part,
     copy,
@@ -180,16 +179,17 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
     """
     contact_from_header is the RFC 2047 format FROM header
     """
-    contact_name, contact_email = parseaddr_unicode(from_header)
+    full_address: EmailAddress = address.parse(from_header)
+    contact_name, contact_email = full_address.display_name, full_address.address
     if not is_valid_email(contact_email):
         # From header is wrongly formatted, try with mail_from
         if mail_from and mail_from != "<>":
             LOG.w(
-                "Cannot parse email from from_header %s, parse from mail_from %s",
+                "Cannot parse email from from_header %s, use mail_from %s",
                 from_header,
                 mail_from,
             )
-            _, contact_email = parseaddr_unicode(mail_from)
+            contact_email = mail_from
 
     if not is_valid_email(contact_email):
         LOG.w(
@@ -273,25 +273,23 @@ def get_or_create_reply_to_contact(
     """
     Get or create the contact for the Reply-To header
     """
-    name, address = parseaddr_unicode(reply_to_header)
+    full_address: EmailAddress = address.parse(reply_to_header)
 
-    if not is_valid_email(address):
+    if not is_valid_email(full_address.address):
         LOG.w(
             "invalid reply-to address %s. Parse from %s",
-            address,
+            full_address,
             reply_to_header,
         )
         return None
 
-    address = sanitize_email(address)
-
-    contact = Contact.get_by(alias_id=alias.id, website_email=address)
+    contact = Contact.get_by(alias_id=alias.id, website_email=full_address.address)
     if contact:
         return contact
     else:
         LOG.d(
             "create contact %s for alias %s via reply-to header",
-            address,
+            full_address.address,
             alias,
             reply_to_header,
         )
@@ -300,15 +298,17 @@ def get_or_create_reply_to_contact(
             contact = Contact.create(
                 user_id=alias.user_id,
                 alias_id=alias.id,
-                website_email=address,
-                name=name,
-                reply_email=generate_reply_email(address, alias.user),
+                website_email=full_address.address,
+                name=full_address.display_name,
+                reply_email=generate_reply_email(full_address.address, alias.user),
             )
             db.session.commit()
         except IntegrityError:
-            LOG.w("Contact %s %s already exist", alias, address)
+            LOG.w("Contact %s %s already exist", alias, full_address.address)
             db.session.rollback()
-            contact = Contact.get_by(alias_id=alias.id, website_email=address)
+            contact = Contact.get_by(
+                alias_id=alias.id, website_email=full_address.address
+            )
 
     return contact
 
@@ -336,7 +336,9 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
 
         try:
             # NOT allow unicode for contact address
-            validate_email(contact_email, check_deliverability=False, allow_smtputf8=False)
+            validate_email(
+                contact_email, check_deliverability=False, allow_smtputf8=False
+            )
         except EmailNotValidError:
             LOG.w("invalid contact email %s. %s. Skip", contact_email, headers)
             continue
@@ -572,13 +574,13 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     #         handle_email_sent_to_ourself(alias, mb, msg, user)
     #         return [(True, "250 Message accepted for delivery")]
 
-    from_header = str(msg["From"])
+    from_header = get_header_unicode(msg["From"])
     LOG.d("Create or get contact for from_header:%s", from_header)
     contact = get_or_create_contact(from_header, envelope.mail_from, alias)
 
     reply_to_contact = None
     if msg["Reply-To"]:
-        reply_to = str(msg["Reply-To"])
+        reply_to = get_header_unicode(msg["Reply-To"])
         LOG.d("Create or get contact for from_header:%s", reply_to)
         # ignore when reply-to = alias
         if reply_to == alias.email:
@@ -1299,7 +1301,8 @@ def handle_hotmail_complaint(msg: Message) -> bool:
         LOG.e("cannot find the alias")
         return False
 
-    _, alias_address = parseaddr_unicode(to_header)
+    full_address: EmailAddress = address.parse(get_header_unicode(to_header))
+    alias_address = full_address.address
     alias = Alias.get_by(email=alias_address)
 
     if not alias:
