@@ -423,7 +423,7 @@ requests = "*"
 name = "filelock"
 version = "3.0.12"
 description = "A platform independent file lock."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -1167,19 +1167,6 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
-name = "py3-validate-email"
-version = "0.2.10"
-description = "Email validator with regex, blacklisted domains and SMTP checking."
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-dnspython = ">=2.0,<3.0"
-filelock = ">=3.0,<4.0"
-idna = ">=2.10,<3.0"
-
-[[package]]
 name = "pyasn1"
 version = "0.4.8"
 description = "ASN.1 types and codecs"
@@ -1805,7 +1792,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "a80a9f350a39e926d74ea73a7b9d5b04ec8b515bcc2e9bc31bd2537989763aa5"
+content-hash = "a2f1de1d4ecbe4b1e36d965bb9ba52d10d16b344b6c7e4509a53245b67fdcec5"
 
 [metadata.files]
 aiohttp = [
@@ -2439,9 +2426,6 @@ ptyprocess = [
 py = [
     {file = "py-1.9.0-py2.py3-none-any.whl", hash = "sha256:366389d1db726cd2fcfc79732e75410e5fe4d31db13692115529d34069a043c2"},
     {file = "py-1.9.0.tar.gz", hash = "sha256:9ca6883ce56b4e8da7e79ac18787889fa5206c79dcc67fb065376cd2fe03f342"},
-]
-py3-validate-email = [
-    {file = "py3-validate-email-0.2.10.tar.gz", hash = "sha256:3bbb264b49c0ae09afdb2738956f00b0e8dd7e079e2d079b2e9b6688de474d28"},
 ]
 pyasn1 = [
     {file = "pyasn1-0.4.8-py2.4.egg", hash = "sha256:fec3e9d8e36808a28efb59b489e4528c10ad0f480e57dcc32b4de5c9d8c9fdf3"},

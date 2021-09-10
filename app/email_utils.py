@@ -6,22 +6,22 @@ import quopri
 import random
 import re
 import time
+from copy import deepcopy
 from email.errors import HeaderParseError
-from email.header import decode_header
+from email.header import decode_header, Header
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, parseaddr
 from smtplib import SMTP, SMTPServerDisconnected
-from typing import Tuple, List, Optional
-from copy import deepcopy
+from typing import Tuple, List, Optional, Union
 
 import arrow
 import dkim
 import spf
+from email_validator import validate_email, EmailNotValidError
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import func
-from validate_email import validate_email
 
 from app.config import (
     SUPPORT_EMAIL,
@@ -769,10 +769,16 @@ def should_add_dkim_signature(domain: str) -> bool:
 
 
 def is_valid_email(email_address: str) -> bool:
-    """Used to check whether an email address is valid"""
-    return validate_email(
-        email_address=email_address, check_mx=False, use_blacklist=False
-    )
+    """
+    Used to check whether an email address is valid
+    NOT run MX check.
+    NOT allow unicode.
+    """
+    try:
+        validate_email(email_address, check_deliverability=False, allow_smtputf8=False)
+        return True
+    except EmailNotValidError:
+        return False
 
 
 class EmailEncoding(enum.Enum):
