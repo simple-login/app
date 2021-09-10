@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from operator import or_
 
-from flanker.addresslib import address
-from flanker.addresslib.address import EmailAddress
 from flask import render_template, request, redirect, flash
 from flask import url_for
 from flask_login import login_required, current_user
@@ -20,7 +18,6 @@ from app.email_utils import (
 from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
-from app.utils import sanitize_email
 
 
 def email_validator():
