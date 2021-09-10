@@ -47,6 +47,9 @@ from typing import List, Tuple, Optional
 import newrelic.agent
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
+from email_validator import validate_email, EmailNotValidError
+from flanker.addresslib import address
+from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
 
 from app import pgp_utils, s3
@@ -317,34 +320,38 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
     new_addrs: [str] = []
     headers = msg.get_all(header, [])
     # headers can be an array of Header, convert it to string here
-    headers = [str(h) for h in headers]
-    for contact_name, contact_email in getaddresses(headers):
-        # convert back to original then parse again to make sure contact_name is unicode
-        addr = formataddr((contact_name, contact_email))
-        contact_name, _ = parseaddr_unicode(addr)
+    headers = [get_header_unicode(h) for h in headers]
 
-        contact_email = sanitize_email(contact_email)
+    full_addresses: [EmailAddress] = []
+    for h in headers:
+        full_addresses += address.parse_list(h)
+
+    for full_address in full_addresses:
+        contact_email = sanitize_email(full_address.address)
 
         # no transformation when alias is already in the header
         if contact_email == alias.email:
-            new_addrs.append(addr)
+            new_addrs.append(full_address.full_spec())
             continue
 
-        if not is_valid_email(contact_email):
+        try:
+            # NOT allow unicode for contact address
+            validate_email(contact_email, check_deliverability=False, allow_smtputf8=False)
+        except EmailNotValidError:
             LOG.w("invalid contact email %s. %s. Skip", contact_email, headers)
             continue
 
         contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
         if contact:
             # update the contact name if needed
-            if contact.name != contact_name:
+            if contact.name != full_address.display_name:
                 LOG.d(
                     "Update contact %s name %s to %s",
                     contact,
                     contact.name,
-                    contact_name,
+                    full_address.display_name,
                 )
-                contact.name = contact_name
+                contact.name = full_address.display_name
                 db.session.commit()
         else:
             LOG.d(
@@ -359,10 +366,9 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     user_id=alias.user_id,
                     alias_id=alias.id,
                     website_email=contact_email,
-                    name=contact_name,
+                    name=full_address.display_name,
                     reply_email=generate_reply_email(contact_email, alias.user),
                     is_cc=header.lower() == "cc",
-                    from_header=addr,
                 )
                 db.session.commit()
             except IntegrityError:
