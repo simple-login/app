@@ -13,6 +13,8 @@ E207 = "250 SL E207 No bounce report"
 
 E208 = "250 SL E208 Hotmail complaint handled"
 
+E209 = "250 SL E209 Email Loop"
+
 # 4** errors
 # E401 = "421 SL E401 Retry later"
 E402 = "421 SL E402 Encryption failed - Retry later"
