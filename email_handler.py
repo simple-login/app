@@ -549,14 +549,17 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     is_success indicates whether an email has been delivered and
     smtp_status is the SMTP Status ("250 Message accepted", "550 Non-existent email address", etc)
     """
-    address = rcpt_to  # alias@SL
+    alias_address = rcpt_to  # alias@SL
 
-    alias = Alias.get_by(email=address)
+    alias = Alias.get_by(email=alias_address)
     if not alias:
-        LOG.d("alias %s not exist. Try to see if it can be created on the fly", address)
-        alias = try_auto_create(address)
+        LOG.d(
+            "alias %s not exist. Try to see if it can be created on the fly",
+            alias_address,
+        )
+        alias = try_auto_create(alias_address)
         if not alias:
-            LOG.d("alias %s cannot be created on-the-fly, return 550", address)
+            LOG.d("alias %s cannot be created on-the-fly, return 550", alias_address)
             if should_ignore_bounce(envelope.mail_from):
                 return [(True, status.E207)]
             else:
