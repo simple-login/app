@@ -78,6 +78,7 @@ py3-validate-email = "^0.2.10"
 coinbase-commerce = "^1.0.1"
 requests = "^2.25.1"
 newrelic = "^6.4.4"
+flanker = "^0.9.11"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.0"

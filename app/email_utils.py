@@ -651,7 +651,7 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
     return spamassassin_answer.lower() == "yes", spam_status_header
 
 
-def get_header_unicode(header: str) -> str:
+def get_header_unicode(header: Union[str, Header]) -> str:
     """
     Convert a header to unicode
     Should be used to handle headers like From:, To:, CC:, Subject:
