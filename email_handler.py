@@ -1100,8 +1100,8 @@ def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
         if mailbox.email == mail_from:
             return mailbox
 
-        for address in mailbox.authorized_addresses:
-            if address.email == mail_from:
+        for addr in mailbox.authorized_addresses:
+            if addr.email == mail_from:
                 LOG.d(
                     "Found an authorized address for %s %s %s", alias, mailbox, address
                 )

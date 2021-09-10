@@ -577,11 +577,11 @@ def test_create_contact_route_invalid_contact_email(flask_client):
 
     r = flask_client.post(
         url_for("api.create_contact_route", alias_id=alias.id),
-        json={"contact": "with space@gmail.com"},
+        json={"contact": "@gmail.com"},
     )
 
     assert r.status_code == 400
-    assert r.json["error"] == "invalid contact email with space@gmail.com"
+    assert r.json["error"] == "invalid contact email @gmail.com"
 
 
 def test_delete_contact(flask_client):

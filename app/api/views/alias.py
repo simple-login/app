@@ -18,7 +18,6 @@ from app.api.serializer import (
 )
 from app.dashboard.views.alias_log import get_alias_log
 from app.email_utils import (
-    is_valid_email,
     generate_reply_email,
 )
 from app.extensions import db
@@ -402,10 +401,10 @@ def create_contact_route(alias_id):
         return jsonify(error="Contact cannot be empty"), 400
 
     full_address: EmailAddress = address.parse(contact_addr)
-    contact_name, contact_email = full_address.display_name, full_address.address
+    if not full_address:
+        return jsonify(error=f"invalid contact email {contact_addr}"), 400
 
-    if not is_valid_email(contact_email):
-        return jsonify(error=f"invalid contact email {contact_email}"), 400
+    contact_name, contact_email = full_address.display_name, full_address.address
 
     contact_email = sanitize_email(contact_email)
 
