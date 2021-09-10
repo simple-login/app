@@ -336,6 +336,12 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         db.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # ignore emails send from a mailbox to its alias. This can happen when replying all to a forwarded email
+    # can automatically re-includes the alias
+    ignore_loop_email = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     @classmethod
     def create(cls, email, name="", password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
