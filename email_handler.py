@@ -117,6 +117,7 @@ from app.email_utils import (
     get_queue_id,
     should_ignore_bounce,
     get_orig_message_from_outlook_complaint,
+    parse_full_address,
 )
 from app.extensions import db
 from app.log import LOG, set_message_id
@@ -179,8 +180,11 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
     """
     contact_from_header is the RFC 2047 format FROM header
     """
-    full_address: EmailAddress = address.parse(from_header)
-    contact_name, contact_email = full_address.display_name, full_address.address
+    try:
+        contact_name, contact_email = parse_full_address(from_header)
+    except ValueError:
+        contact_name, contact_email = "", ""
+
     if not is_valid_email(contact_email):
         # From header is wrongly formatted, try with mail_from
         if mail_from and mail_from != "<>":
@@ -273,23 +277,26 @@ def get_or_create_reply_to_contact(
     """
     Get or create the contact for the Reply-To header
     """
-    full_address: EmailAddress = address.parse(reply_to_header)
+    try:
+        contact_name, contact_address = parse_full_address(reply_to_header)
+    except ValueError:
+        return
 
-    if not is_valid_email(full_address.address):
+    if not is_valid_email(contact_address):
         LOG.w(
             "invalid reply-to address %s. Parse from %s",
-            full_address,
+            contact_address,
             reply_to_header,
         )
         return None
 
-    contact = Contact.get_by(alias_id=alias.id, website_email=full_address.address)
+    contact = Contact.get_by(alias_id=alias.id, website_email=contact_address)
     if contact:
         return contact
     else:
         LOG.d(
             "create contact %s for alias %s via reply-to header",
-            full_address.address,
+            contact_address,
             alias,
             reply_to_header,
         )
@@ -298,17 +305,15 @@ def get_or_create_reply_to_contact(
             contact = Contact.create(
                 user_id=alias.user_id,
                 alias_id=alias.id,
-                website_email=full_address.address,
-                name=full_address.display_name,
-                reply_email=generate_reply_email(full_address.address, alias.user),
+                website_email=contact_address,
+                name=contact_name,
+                reply_email=generate_reply_email(contact_address, alias.user),
             )
             db.session.commit()
         except IntegrityError:
-            LOG.w("Contact %s %s already exist", alias, full_address.address)
+            LOG.w("Contact %s %s already exist", alias, contact_address)
             db.session.rollback()
-            contact = Contact.get_by(
-                alias_id=alias.id, website_email=full_address.address
-            )
+            contact = Contact.get_by(alias_id=alias.id, website_email=contact_address)
 
     return contact
 
@@ -1301,8 +1306,7 @@ def handle_hotmail_complaint(msg: Message) -> bool:
         LOG.e("cannot find the alias")
         return False
 
-    full_address: EmailAddress = address.parse(get_header_unicode(to_header))
-    alias_address = full_address.address
+    _, alias_address = parse_full_address(get_header_unicode(to_header))
     alias = Alias.get_by(email=alias_address)
 
     if not alias:
