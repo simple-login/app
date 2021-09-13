@@ -592,7 +592,6 @@ def get_orig_message_from_bounce(msg: Message) -> Message:
 
 
 def get_orig_message_from_outlook_complaint(msg: Message) -> Message:
-    """parse the original email from Bounce"""
     i = 0
     for part in msg.walk():
         i += 1
@@ -601,6 +600,18 @@ def get_orig_message_from_outlook_complaint(msg: Message) -> Message:
         # 2nd part is the empty body
         # 3rd is original message
         if i == 3:
+            return part
+
+
+def get_orig_message_from_yahoo_complaint(msg: Message) -> Message:
+    i = 0
+    for part in msg.walk():
+        i += 1
+
+        # 1st part is the container
+        # 2nd part is the empty body
+        # 6th is original message
+        if i == 6:
             return part
 
 

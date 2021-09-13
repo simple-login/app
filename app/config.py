@@ -333,6 +333,7 @@ AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN = "custom_domain_mx_record_issue"
 ALERT_DIRECTORY_DISABLED_ALIAS_CREATION = "alert_directory_disabled_alias_creation"
 
 ALERT_HOTMAIL_COMPLAINT = "alert_hotmail_complaint"
+ALERT_YAHOO_COMPLAINT = "alert_yahoo_complaint"
 
 # <<<<< END ALERT EMAIL >>>>
 

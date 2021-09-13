@@ -81,6 +81,7 @@ from app.config import (
     NEWRELIC_CONFIG_PATH,
     POSTMASTER,
     ALERT_HOTMAIL_COMPLAINT,
+    ALERT_YAHOO_COMPLAINT,
 )
 from app.email import status
 from app.email.rate_limit import rate_limited
@@ -118,6 +119,7 @@ from app.email_utils import (
     should_ignore_bounce,
     get_orig_message_from_outlook_complaint,
     parse_full_address,
+    get_orig_message_from_yahoo_complaint,
 )
 from app.extensions import db
 from app.log import LOG, set_message_id
@@ -1314,7 +1316,7 @@ def handle_hotmail_complaint(msg: Message) -> bool:
     alias = Alias.get_by(email=alias_address)
 
     if not alias:
-        LOG.d("No alias for %s", alias_address)
+        LOG.w("No alias for %s", alias_address)
         return False
 
     user = alias.user
@@ -1331,6 +1333,46 @@ def handle_hotmail_complaint(msg: Message) -> bool:
         ),
         render(
             "transactional/hotmail-complaint.html",
+            alias=alias,
+        ),
+        max_nb_alert=2,
+    )
+
+    return True
+
+
+def handle_yahoo_complaint(msg: Message) -> bool:
+    """
+    Handle yahoo complaint sent to postmaster
+    Return True if the complaint can be handled, False otherwise
+    """
+    orig_msg = get_orig_message_from_yahoo_complaint(msg)
+    to_header = orig_msg["To"]
+    if not to_header:
+        LOG.e("cannot find the alias")
+        return False
+
+    _, alias_address = parse_full_address(get_header_unicode(to_header))
+    alias = Alias.get_by(email=alias_address)
+
+    if not alias:
+        LOG.w("No alias for %s", alias_address)
+        return False
+
+    user = alias.user
+    LOG.w("Handle yahoo complaint for %s %s %s", alias, user, alias.mailboxes)
+
+    send_email_with_rate_control(
+        user,
+        ALERT_YAHOO_COMPLAINT,
+        user.email,
+        f"Yahoo abuse report",
+        render(
+            "transactional/yahoo-complaint.txt.jinja2",
+            alias=alias,
+        ),
+        render(
+            "transactional/yahoo-complaint.html",
             alias=alias,
         ),
         max_nb_alert=2,
@@ -1757,6 +1799,17 @@ def handle(envelope: Envelope) -> str:
         # if the complaint cannot be handled, forward it normally
         if handle_hotmail_complaint(msg):
             return status.E208
+
+    if (
+        len(rcpt_tos) == 1
+        and mail_from == "feedback@arf.mail.yahoo.com"
+        and rcpt_tos[0] == POSTMASTER
+    ):
+        LOG.w("Handle yahoo complaint")
+
+        # if the complaint cannot be handled, forward it normally
+        if handle_yahoo_complaint(msg):
+            return status.E210
 
     # Handle bounce
     if (
