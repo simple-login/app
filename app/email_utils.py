@@ -591,7 +591,7 @@ def get_orig_message_from_bounce(msg: Message) -> Message:
             return part
 
 
-def get_orig_message_from_outlook_complaint(msg: Message) -> Message:
+def get_orig_message_from_hotmail_complaint(msg: Message) -> Message:
     i = 0
     for part in msg.walk():
         i += 1

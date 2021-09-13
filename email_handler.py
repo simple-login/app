@@ -117,7 +117,7 @@ from app.email_utils import (
     sanitize_header,
     get_queue_id,
     should_ignore_bounce,
-    get_orig_message_from_outlook_complaint,
+    get_orig_message_from_hotmail_complaint,
     parse_full_address,
     get_orig_message_from_yahoo_complaint,
 )
@@ -1306,7 +1306,7 @@ def handle_hotmail_complaint(msg: Message) -> bool:
     Handle hotmail complaint sent to postmaster
     Return True if the complaint can be handled, False otherwise
     """
-    orig_msg = get_orig_message_from_outlook_complaint(msg)
+    orig_msg = get_orig_message_from_hotmail_complaint(msg)
     to_header = orig_msg["To"]
     if not to_header:
         LOG.e("cannot find the alias")
