@@ -157,7 +157,6 @@ DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
 
 DKIM_SELECTOR = b"dkim"
-DKIM_HEADERS = [b"from", b"to"]
 DKIM_PRIVATE_KEY = None
 
 if "DKIM_PRIVATE_KEY_PATH" in os.environ:

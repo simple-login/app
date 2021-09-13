@@ -577,7 +577,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     if user.ignore_loop_email:
         mail_from = envelope.mail_from
         for mb in alias.mailboxes:
-            # email send from a mailbox to its alias
+            # email sent from a mailbox to its alias
             if mb.email == mail_from:
                 LOG.w("cycle email sent from %s to %s", mb, alias)
                 handle_email_sent_to_ourself(alias, mb, msg, user)

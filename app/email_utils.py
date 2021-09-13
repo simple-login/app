@@ -31,7 +31,6 @@ from app.config import (
     NOT_SEND_EMAIL,
     DKIM_SELECTOR,
     DKIM_PRIVATE_KEY,
-    DKIM_HEADERS,
     ALIAS_DOMAINS,
     SUPPORT_NAME,
     POSTFIX_SUBMISSION_TLS,
@@ -391,7 +390,31 @@ def get_email_domain_part(address):
     return address[address.find("@") + 1 :]
 
 
+# headers used to DKIM sign in order of preference
+_DKIM_HEADERS = [
+    [b"Message-ID", b"Date", b"subject", b"from", b"to"],
+    [b"from", b"to"],
+    [b"Message-ID", b"Date"],
+    [b"from"],
+]
+
+
 def add_dkim_signature(msg: Message, email_domain: str):
+    for dkim_headers in _DKIM_HEADERS:
+        try:
+            add_dkim_signature_with_header(msg, email_domain, dkim_headers)
+            return
+        except dkim.DKIMException:
+            LOG.w("DKIM fail with %s", dkim_headers)
+            # try with another headers
+            continue
+
+    raise Exception("Cannot create DKIM signature")
+
+
+def add_dkim_signature_with_header(
+    msg: Message, email_domain: str, dkim_headers: [bytes]
+):
     delete_header(msg, "DKIM-Signature")
 
     # Specify headers in "byte" form
@@ -402,7 +425,7 @@ def add_dkim_signature(msg: Message, email_domain: str):
             DKIM_SELECTOR,
             email_domain.encode(),
             DKIM_PRIVATE_KEY.encode(),
-            include_headers=DKIM_HEADERS,
+            include_headers=dkim_headers,
         )
         sig = sig.decode()
 
