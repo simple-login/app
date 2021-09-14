@@ -392,10 +392,10 @@ def get_email_domain_part(address):
 
 # headers used to DKIM sign in order of preference
 _DKIM_HEADERS = [
-    [b"Message-ID", b"Date", b"subject", b"from", b"to"],
-    [b"from", b"to"],
+    [b"Message-ID", b"Date", b"Subject", b"From", b"To"],
+    [b"From", b"To"],
     [b"Message-ID", b"Date"],
-    [b"from"],
+    [b"From"],
 ]
 
 
@@ -405,7 +405,7 @@ def add_dkim_signature(msg: Message, email_domain: str):
             add_dkim_signature_with_header(msg, email_domain, dkim_headers)
             return
         except dkim.DKIMException:
-            LOG.w("DKIM fail with %s", dkim_headers)
+            LOG.w("DKIM fail with %s", dkim_headers, exc_info=True)
             # try with another headers
             continue
 
