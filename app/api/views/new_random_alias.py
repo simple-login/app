@@ -48,7 +48,7 @@ def new_random_alias():
         elif mode == "uuid":
             scheme = AliasGeneratorEnum.uuid.value
         else:
-            return jsonify(error=f"{mode} must be either word or alias"), 400
+            return jsonify(error=f"{mode} must be either word or uuid"), 400
 
     alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
     db.session.commit()
