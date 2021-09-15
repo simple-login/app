@@ -6,6 +6,7 @@ import quopri
 import random
 import re
 import time
+import uuid
 from copy import deepcopy
 from email.header import decode_header, Header
 from email.message import Message
@@ -45,6 +46,7 @@ from app.config import (
     TRANSACTIONAL_BOUNCE_EMAIL,
     ALERT_SPF,
     POSTFIX_PORT_FORWARD,
+    TEMP_DIR,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -408,6 +410,14 @@ def add_dkim_signature(msg: Message, email_domain: str):
             LOG.w("DKIM fail with %s", dkim_headers, exc_info=True)
             # try with another headers
             continue
+
+    # To investigate why some emails can't be DKIM signed. todo: remove
+    if TEMP_DIR:
+        file_name = str(uuid.uuid4()) + ".eml"
+        with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
+            f.write(msg.as_bytes())
+
+        LOG.w("email saved to %s", file_name)
 
     raise Exception("Cannot create DKIM signature")
 
