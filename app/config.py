@@ -397,3 +397,6 @@ HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
 NEWRELIC_CONFIG_PATH = os.environ.get("NEWRELIC_CONFIG_PATH")
 
 POSTMASTER = os.environ.get("POSTMASTER")
+
+# store temporary files, especially for debugging
+TEMP_DIR = os.environ.get("TEMP_DIR")
