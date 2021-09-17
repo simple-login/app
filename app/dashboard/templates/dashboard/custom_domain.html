@@ -62,37 +62,7 @@
                 <h6 class="card-subtitle mb-4 text-muted">
                   Created {{ custom_domain.created_at | dt }} <br>
                   <span class="font-weight-bold">{{ custom_domain.nb_alias() }}</span> aliases.
-                  <br><br>
-
-                  <b>Mailboxes:</b>
-                  <i class="fe fe-info" data-toggle="tooltip"
-                     title="Aliases created with this domain are automatically owned by these mailboxes">
-                  </i>
                   <br>
-
-                  {% set domain_mailboxes=custom_domain.mailboxes %}
-                  <form method="post" class="mt-2">
-                    <input type="hidden" name="form-name" value="update">
-                    <input type="hidden" name="domain-id" value="{{ custom_domain.id }}">
-
-                    <div class="d-flex">
-                      <div class="flex-grow-1 mr-2">
-                        <select data-width="100%" required
-                                class="mailbox-select" multiple name="mailbox_ids">
-                          {% for mailbox in mailboxes %}
-                            <option value="{{ mailbox.id }}" {% if mailbox in domain_mailboxes %}
-                                    selected {% endif %}>
-                              {{ mailbox.email }}
-                            </option>
-                          {% endfor %}
-                        </select>
-                      </div>
-                      <div>
-                        <button class="btn btn-outline-primary btn-sm">Update</button>
-                      </div>
-                    </div>
-                  </form>
-
                 </h6>
 
                 <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}" class="mt-3">
@@ -118,24 +88,9 @@
                 {{ new_custom_domain_form.domain(class="form-control", placeholder="my-domain.com", maxlength=128) }}
                 {{ render_field_errors(new_custom_domain_form.domain) }}
                 <div class="small-text">
-                  Please use full path domain, for ex <em>my-subdomain.my-domain.com</em>
+                  Please use full path domain, for example <b>my-domain.com</b>
+                  or <b>my-subdomain.my-domain.com</b> if you are using a subdomain.
                 </div>
-
-                <div class="mt-3 small-text alert alert-info">
-                  By default, aliases created with your domain are "owned" by your default
-                  mailbox <b>{{ current_user.default_mailbox.email }}</b>. <br>
-                  This below option allow you to choose the mailbox(es) that a new alias automatically belongs to.
-                </div>
-
-                <select data-width="100%"
-                        class="mailbox-select" multiple name="mailbox_ids">
-                  {% for mailbox in mailboxes %}
-                    <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
-                            selected {% endif %}>
-                      {{ mailbox.email }}
-                    </option>
-                  {% endfor %}
-                </select>
 
                 <button class="btn btn-primary mt-2">Create</button>
               </form>

@@ -14,7 +14,7 @@ from app.dns_utils import (
 from app.email_utils import send_email
 from app.extensions import db
 from app.log import LOG
-from app.models import CustomDomain, Alias, DomainDeletedAlias
+from app.models import CustomDomain, Alias, DomainDeletedAlias, Mailbox, DomainMailbox
 from app.utils import random_string
 
 
@@ -159,6 +159,8 @@ def domain_detail_dns(custom_domain_id):
 @login_required
 def domain_detail(custom_domain_id):
     custom_domain = CustomDomain.get(custom_domain_id)
+    mailboxes = current_user.mailboxes()
+
     if not custom_domain or custom_domain.user_id != current_user.id:
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
@@ -216,6 +218,46 @@ def domain_detail(custom_domain_id):
                     f"Random prefix generation has been disabled for {custom_domain.domain}",
                     "warning",
                 )
+            return redirect(
+                url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
+            )
+        elif request.form.get("form-name") == "update":
+            mailbox_ids = request.form.getlist("mailbox_ids")
+            # check if mailbox is not tempered with
+            mailboxes = []
+            for mailbox_id in mailbox_ids:
+                mailbox = Mailbox.get(mailbox_id)
+                if (
+                    not mailbox
+                    or mailbox.user_id != current_user.id
+                    or not mailbox.verified
+                ):
+                    flash("Something went wrong, please retry", "warning")
+                    return redirect(
+                        url_for(
+                            "dashboard.domain_detail", custom_domain_id=custom_domain.id
+                        )
+                    )
+                mailboxes.append(mailbox)
+
+            if not mailboxes:
+                flash("You must select at least 1 mailbox", "warning")
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail", custom_domain_id=custom_domain.id
+                    )
+                )
+
+            # first remove all existing domain-mailboxes links
+            DomainMailbox.query.filter_by(domain_id=custom_domain.id).delete()
+            db.session.flush()
+
+            for mailbox in mailboxes:
+                DomainMailbox.create(domain_id=custom_domain.id, mailbox_id=mailbox.id)
+
+            db.session.commit()
+            flash(f"{custom_domain.domain} mailboxes has been updated", "success")
+
             return redirect(
                 url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
             )

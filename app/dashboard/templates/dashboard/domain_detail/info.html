@@ -45,11 +45,38 @@
     </form>
   </div>
 
+  <div class="{% if not custom_domain.catch_all %} disabled-content {% endif %}">
+    <div>Auto-created aliases are automatically owned by these mailboxes</div>
+    {% set domain_mailboxes=custom_domain.mailboxes %}
+    <form method="post" class="mt-2">
+      <input type="hidden" name="form-name" value="update">
+      <input type="hidden" name="domain-id" value="{{ custom_domain.id }}">
+
+      <div class="d-flex">
+        <div class="flex-grow-1 mr-2">
+          <select data-width="100%" required
+                  class="mailbox-select" multiple name="mailbox_ids">
+            {% for mailbox in mailboxes %}
+              <option value="{{ mailbox.id }}" {% if mailbox in domain_mailboxes %}
+                      selected {% endif %}>
+                {{ mailbox.email }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <button class="btn btn-outline-primary btn-sm">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+
   <hr>
   <h3 class="mb-1">Default Display Name</h3>
   <div class="">
     Default display name for aliases created with <b>{{ custom_domain.domain }}</b>
-     unless overwritten by the alias display name.
+    unless overwritten by the alias display name.
   </div>
 
   <div>
@@ -108,6 +135,8 @@
 
 {% block script %}
   <script>
+    $('.mailbox-select').multipleSelect();
+
     $(".custom-switch-input").change(function (e) {
       $(this).closest("form").submit();
     });
@@ -137,3 +166,4 @@
     });
   </script>
 {% endblock %}
+
