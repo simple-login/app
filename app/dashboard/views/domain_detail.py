@@ -158,7 +158,7 @@ def domain_detail_dns(custom_domain_id):
 @dashboard_bp.route("/domains/<int:custom_domain_id>/info", methods=["GET", "POST"])
 @login_required
 def domain_detail(custom_domain_id):
-    custom_domain = CustomDomain.get(custom_domain_id)
+    custom_domain: CustomDomain = CustomDomain.get(custom_domain_id)
     mailboxes = current_user.mailboxes()
 
     if not custom_domain or custom_domain.user_id != current_user.id:
@@ -261,6 +261,26 @@ def domain_detail(custom_domain_id):
             return redirect(
                 url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
             )
+        elif request.form.get("form-name") == "set-auto_create_regex":
+            if request.form.get("action") == "save":
+                auto_create_regex = request.form.get("auto_create_regex")
+                if auto_create_regex:
+                    custom_domain.auto_create_regex = auto_create_regex
+                    db.session.commit()
+                    flash("The auto create regex has been updated", "success")
+                else:
+                    flash("The auto create regex cannot be empty", "error")
+            else:
+                custom_domain.auto_create_regex = None
+                db.session.commit()
+                flash(
+                    f"The auto create regex has been has been removed",
+                    "info",
+                )
+            return redirect(
+                url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
+            )
+
         elif request.form.get("form-name") == "delete":
             name = custom_domain.domain
             LOG.d("Schedule deleting %s", custom_domain)
