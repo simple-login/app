@@ -133,10 +133,22 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         return None
 
     # custom_domain exists
-    if not custom_domain.catch_all:
+    if not custom_domain.catch_all and not custom_domain.auto_create_regex:
         return None
 
-    # custom_domain has catch-all enabled
+    if custom_domain.auto_create_regex:
+        local = get_email_local_part(address)
+        regex = re.compile(custom_domain.auto_create_regex)
+        if not re.fullmatch(regex, local):
+            LOG.d(
+                "%s can't be auto created on %s as it fails regex %s",
+                address,
+                custom_domain,
+                custom_domain.auto_create_regex,
+            )
+            return None
+
+    # custom_domain has catch-all enabled or the address passes the regex
     domain_user: User = custom_domain.user
 
     if not domain_user.can_create_new_alias():
