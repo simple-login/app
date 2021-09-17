@@ -19,7 +19,7 @@ from typing import Tuple, List, Optional, Union
 import arrow
 import dkim
 import spf
-from email_validator import validate_email, EmailNotValidError
+from email_validator import validate_email, EmailNotValidError, ValidatedEmail
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from jinja2 import Environment, FileSystemLoader
@@ -379,8 +379,12 @@ def get_email_local_part(address) -> str:
     """
     Get the local part from email
     ab@cd.com -> ab
+    Convert the local part to lowercase
     """
-    return address[: address.find("@")]
+    r: ValidatedEmail = validate_email(
+        address, check_deliverability=False, allow_smtputf8=False
+    )
+    return r.local_part.lower()
 
 
 def get_email_domain_part(address):
@@ -388,8 +392,10 @@ def get_email_domain_part(address):
     Get the domain part from email
     ab@cd.com -> cd.com
     """
-    address = sanitize_email(address)
-    return address[address.find("@") + 1 :]
+    r: ValidatedEmail = validate_email(
+        address, check_deliverability=False, allow_smtputf8=False
+    )
+    return r.domain
 
 
 # headers used to DKIM sign in order of preference
