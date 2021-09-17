@@ -7,24 +7,23 @@
 {% endblock %}
 
 {% block domain_detail_content %}
-  <h1 class="h3"> {{ custom_domain.domain }}  </h1>
+  <h1 class="h2 mb-1"> {{ custom_domain.domain }}  </h1>
 
-  <div class="small-text">Created {{ custom_domain.created_at | dt }}</div>
-
-  {{ nb_alias }} aliases
+  <div class="small-text">Created {{ custom_domain.created_at | dt }}. {{ nb_alias }} aliases</div>
 
   <hr>
-  <div>Catch All</div>
-  <div class="small-text">
-    This feature allows you to create aliases <b>on the fly</b>.
+  <h3 class="mb-1">Catch All</h3>
+  <div class="">
+    Create aliases <b>on the fly</b>.
+
     Simply use <em>anything@{{ custom_domain.domain }}</em>
-    next time you need an email address. <br>
-    The alias will be created the first time it receives an email
-    and automatically belong to <b>{{ custom_domain.domain }}</b> mailboxes (
+    next time you need an alias: it'll be <b>automatically</b>
+    created the first time it receives an email. <br>
+    The new alias will belong to
     {% for mailbox in custom_domain.mailboxes %}
       <b>{{ mailbox.email }}</b>
       {% if not loop.last %},{% endif %}
-    {% endfor %})
+    {% endfor %}
   </div>
 
   <div>
@@ -47,33 +46,32 @@
   </div>
 
   <hr>
-  <div>Default Alias Name</div>
-  <div class="small-text">
-    This name will be used as the default alias name when you send
-    or reply from an alias, unless overwritten by the alias specific name.
+  <h3 class="mb-1">Default Display Name</h3>
+  <div class="">
+    Default display name for aliases created with <b>{{ custom_domain.domain }}</b>
+     unless overwritten by the alias display name.
   </div>
 
   <div>
-    <form method="post">
+    <form method="post" class="form-inline">
       <input type="hidden" name="form-name" value="set-name">
       <div class="form-group">
-        <input class="form-control"
+        <input class="form-control mr-2"
                value="{{ custom_domain.name or "" }}"
                name="alias-name"
-               placeholder="Alias name">
+               placeholder="Alias Display Name">
       </div>
-      <button class="btn btn-primary" name="action" value="save">Save</button>
+      <button class="btn btn-outline-primary" name="action" value="save">Save</button>
       {% if custom_domain.name %}
-        <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+        <button class="btn btn-outline-danger float-right ml-2" name="action" value="remove">Remove</button>
       {% endif %}
     </form>
   </div>
 
   <hr>
-  <div>Random Prefix Generation</div>
-  <div class="small-text">
-    A random prefix can be generated for this domain for usage in the New Alias
-    feature.
+  <h3 class="mb-1">Random Prefix Generation</h3>
+  <div class="">
+    Add a random prefix for this domain when creating a new alias.
   </div>
 
   <div>
@@ -96,14 +94,14 @@
   </div>
 
   <hr>
-  <h3 class="mb-0">Delete Domain</h3>
-  <div class="small-text mb-3">Please note that this operation is irreversible.
-    All aliases associated with this domain will be also deleted.
+  <h3 class="mb-1">Delete Domain</h3>
+  <div class="mb-3">This operation is <b>irreversible</b>.
+    All aliases associated with this domain will be deleted.
   </div>
 
   <form method="post">
     <input type="hidden" name="form-name" value="delete">
-    <span class="delete-custom-domain btn btn-outline-danger">Delete domain</span>
+    <span class="delete-custom-domain btn btn-danger">Delete domain</span>
   </form>
 
 {% endblock %}

@@ -166,3 +166,7 @@ textarea.parsley-error {
     opacity: 1;
 }
 /* END Parsley CSS */
+
+.domain_detail_content {
+    font-size: 15px;
+}
