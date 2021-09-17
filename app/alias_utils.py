@@ -1,6 +1,7 @@
 import re
 from typing import Optional
 
+from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import IntegrityError, DataError
 
 from app.config import BOUNCE_PREFIX_FOR_REPLY_PHASE
@@ -10,6 +11,7 @@ from app.email_utils import (
     send_cannot_create_domain_alias,
     can_create_directory_for_address,
     send_cannot_create_directory_alias_disabled,
+    get_email_local_part,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -32,6 +34,12 @@ def try_auto_create(address: str) -> Optional[Alias]:
     """Try to auto-create the alias using directory or catch-all domain"""
     if address.startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"):
         LOG.e("alias %s can't start with %s", address, BOUNCE_PREFIX_FOR_REPLY_PHASE)
+        return None
+
+    try:
+        # NOT allow unicode for now
+        validate_email(address, check_deliverability=False, allow_smtputf8=False)
+    except EmailNotValidError:
         return None
 
     alias = try_auto_create_catch_all_domain(address)
