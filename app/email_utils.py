@@ -47,6 +47,7 @@ from app.config import (
     ALERT_SPF,
     POSTFIX_PORT_FORWARD,
     TEMP_DIR,
+    ALIAS_AUTOMATIC_DISABLE,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -1020,6 +1021,9 @@ def should_disable(alias: Alias) -> bool:
     # Bypass the bounce rule
     if alias.cannot_be_disabled:
         LOG.w("%s cannot be disabled", alias)
+        return False
+
+    if not ALIAS_AUTOMATIC_DISABLE:
         return False
 
     yesterday = arrow.now().shift(days=-1)
