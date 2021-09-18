@@ -49,7 +49,8 @@
               {% if custom_domain.catch_all %} disabled-content {% endif %}
             border border-info p-2"
          id="regex-section">
-      <span class="badge badge-info">Advanced</span> <br>
+      <span class="badge badge-info">Advanced</span>
+      <span class="badge badge-warning">Beta</span> <br>
       You can also set a regular expression (regex): if an alias matches the expression, it'll be automatically created.
       <br>
       Please note that only the local part of the alias (i.e. <b>@{{ custom_domain.domain }}</b> is ignored) during the
