@@ -23,7 +23,6 @@ from email_validator import (
     validate_email,
     EmailNotValidError,
     ValidatedEmail,
-    EmailSyntaxError,
 )
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
