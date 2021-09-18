@@ -19,7 +19,12 @@ from typing import Tuple, List, Optional, Union
 import arrow
 import dkim
 import spf
-from email_validator import validate_email, EmailNotValidError, ValidatedEmail, EmailSyntaxError
+from email_validator import (
+    validate_email,
+    EmailNotValidError,
+    ValidatedEmail,
+    EmailSyntaxError,
+)
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from jinja2 import Environment, FileSystemLoader
@@ -524,7 +529,7 @@ def email_can_be_used_as_mailbox(email: str) -> bool:
         domain = get_email_domain_part(email)
     except EmailNotValidError:
         return False
-        
+
     if not domain:
         return False
 
