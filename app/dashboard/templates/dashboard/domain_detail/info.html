@@ -64,7 +64,7 @@
                  value="{{ custom_domain.auto_create_regex or "" }}"
                  name="auto_create_regex"
                  required
-                 data-parsley-pattern="[0-9a-z-_.(\\)(\*)]{1,}"
+                 data-parsley-pattern="[0-9a-z-_.(\\)(\*)(\|)]{1,}"
                  data-parsley-trigger="change"
                  data-parsley-error-message="Only lowercase letter, number, dot (.), dash (-), underscore (_), backslash (\), star (*)  are currently supported."
                  placeholder="prefix\..*">
