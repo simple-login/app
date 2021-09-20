@@ -283,14 +283,6 @@
           <input type="hidden" name="form-name" value="change-sender-format">
 
           <select class="form-control mr-sm-2" name="sender-format">
-            {# Only show this for compatibility reason #}
-            {% if current_user.sender_format == SenderFormatEnum.VIA.value %}
-              <option value="{{ SenderFormatEnum.VIA.value }}"
-                  {% if current_user.sender_format == SenderFormatEnum.VIA.value %} selected {% endif %}>
-                john@wick.com via SimpleLogin (Not recommended)
-              </option>
-            {% endif %}
-
             <option value="{{ SenderFormatEnum.AT.value }}"
                 {% if current_user.sender_format == SenderFormatEnum.AT.value %} selected {% endif %}>
               John Wick - john at wick.com
@@ -301,13 +293,6 @@
               John Wick - john(a)wick.com
             </option>
 
-            {# Only show this for compatibility reason #}
-            {% if current_user.sender_format == SenderFormatEnum.FULL.value %}
-              <option value="{{ SenderFormatEnum.FULL.value }}"
-                  {% if current_user.sender_format == SenderFormatEnum.FULL.value %} selected {% endif %}>
-                John Wick - john@wick.com (Not recommended)
-              </option>
-            {% endif %}
           </select>
 
           <button class="btn btn-outline-primary mt-3">Update</button>
