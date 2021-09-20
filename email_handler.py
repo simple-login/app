@@ -1615,7 +1615,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
     """return the SMTP status"""
     user = User.get(user_id)
     if not user:
-        LOG.e("No such user %s %s", user_id, mail_from)
+        LOG.w("No such user %s %s", user_id, mail_from)
         return status.E510
 
     if mail_from != user.email:
