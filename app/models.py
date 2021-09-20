@@ -83,12 +83,17 @@ class ModelMixin(object):
     def create(cls, **kw):
         # whether should call db.session.commit
         commit = kw.pop("commit", False)
+        flush = kw.pop("flush", False)
 
         r = cls(**kw)
         db.session.add(r)
 
         if commit:
             db.session.commit()
+
+        if flush:
+            db.session.flush()
+
         return r
 
     def save(self):
