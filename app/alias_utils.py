@@ -27,6 +27,7 @@ from app.models import (
     Mailbox,
     EmailLog,
     Contact,
+    AutoCreateRule,
 )
 
 
@@ -132,22 +133,28 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
     if not custom_domain:
         return None
 
-    if not custom_domain.catch_all and not custom_domain.auto_create_regex:
+    if not custom_domain.catch_all and len(custom_domain.auto_create_rules) == 0:
         return None
-
-    if custom_domain.auto_create_regex and not custom_domain.catch_all:
+    elif not custom_domain.catch_all and len(custom_domain.auto_create_rules) > 0:
         local = get_email_local_part(address)
-        regex = re.compile(custom_domain.auto_create_regex)
-        if not re.fullmatch(regex, local):
-            LOG.d(
-                "%s can't be auto created on %s as it fails regex %s",
-                address,
-                custom_domain,
-                custom_domain.auto_create_regex,
-            )
-            return None
+        for rule in custom_domain.auto_create_rules:
+            rule: AutoCreateRule
+            regex = re.compile(rule.regex)
+            if re.fullmatch(regex, local):
+                LOG.d(
+                    "%s passes %s on %s",
+                    address,
+                    rule.regex,
+                    custom_domain,
+                )
+                mailboxes = rule.mailboxes
+                break
+        else:  # no rule passes
+            LOG.d("no rule passed to create %s", local)
+            return
+    else:  # catch-all is enabled
+        mailboxes = custom_domain.mailboxes
 
-    # custom_domain has catch-all enabled or the address passes the regex
     domain_user: User = custom_domain.user
 
     if not domain_user.can_create_new_alias():
@@ -156,7 +163,6 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
 
     try:
         LOG.d("create alias %s for domain %s", address, custom_domain)
-        mailboxes = custom_domain.mailboxes
         alias = Alias.create(
             email=address,
             user_id=custom_domain.user_id,
