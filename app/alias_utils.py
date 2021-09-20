@@ -132,11 +132,10 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
     if not custom_domain:
         return None
 
-    # custom_domain exists
     if not custom_domain.catch_all and not custom_domain.auto_create_regex:
         return None
 
-    if custom_domain.auto_create_regex:
+    if custom_domain.auto_create_regex and not custom_domain.catch_all:
         local = get_email_local_part(address)
         regex = re.compile(custom_domain.auto_create_regex)
         if not re.fullmatch(regex, local):
