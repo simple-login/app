@@ -59,9 +59,9 @@ def test_update_settings_sender_format(flask_client):
     r = flask_client.patch("/api/setting", json={"sender_format": "invalid"})
     assert r.status_code == 400
 
-    r = flask_client.patch("/api/setting", json={"sender_format": "VIA"})
+    r = flask_client.patch("/api/setting", json={"sender_format": "A"})
     assert r.status_code == 200
-    assert user.sender_format == SenderFormatEnum.VIA.value
+    assert user.sender_format == SenderFormatEnum.A.value
 
 
 def test_get_setting_domains(flask_client):

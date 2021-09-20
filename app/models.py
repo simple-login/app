@@ -160,9 +160,7 @@ class PlanEnum(EnumE):
 # Specify the format for sender address
 class SenderFormatEnum(EnumE):
     AT = 0  # John Wick - john at wick.com
-    VIA = 1  # john@wick.com via SimpleLogin
     A = 2  # John Wick - john(a)wick.com
-    FULL = 3  # John Wick - john@wick.com
 
 
 class AliasGeneratorEnum(EnumE):
@@ -1486,26 +1484,19 @@ class Contact(db.Model, ModelMixin):
         `new_email` is a special reply address
         """
         user = self.user
-        if (
-            not user
-            or not SenderFormatEnum.has_value(user.sender_format)
-            or user.sender_format == SenderFormatEnum.VIA.value
-        ):
-            new_name = f"{self.website_email} via SimpleLogin"
-        else:
-            if user.sender_format == SenderFormatEnum.AT.value:
-                formatted_email = self.website_email.replace("@", " at ").strip()
-            elif user.sender_format == SenderFormatEnum.A.value:
-                formatted_email = self.website_email.replace("@", "(a)").strip()
-            elif user.sender_format == SenderFormatEnum.FULL.value:
-                formatted_email = self.website_email.strip()
+        sender_format = user.sender_format if user else SenderFormatEnum.AT.value
 
-            # Prefix name to formatted email if available
-            new_name = (
-                (self.name + " - " + formatted_email)
-                if self.name and self.name != self.website_email.strip()
-                else formatted_email
-            )
+        if sender_format == SenderFormatEnum.AT.value:
+            formatted_email = self.website_email.replace("@", " at ").strip()
+        else:
+            formatted_email = self.website_email.replace("@", "(a)").strip()
+
+        # Prefix name to formatted email if available
+        new_name = (
+            (self.name + " - " + formatted_email)
+            if self.name and self.name != self.website_email.strip()
+            else formatted_email
+        )
 
         new_addr = formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
