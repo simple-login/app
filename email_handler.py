@@ -1945,6 +1945,9 @@ class MailHandler:
             newrelic.agent.record_custom_metric(
                 "Custom/email_handler_time", elapsed, newrelic_app
             )
+            newrelic.agent.record_custom_metric(
+                "Custom/number_incoming_email", 1, newrelic_app
+            )
             return ret
 
 
