@@ -1875,8 +1875,55 @@ class CustomDomain(db.Model, ModelMixin):
 
         return domain
 
+    @property
+    def auto_create_rules(self):
+        return sorted(self._auto_create_rules, key=lambda rule: rule.order)
+
     def __repr__(self):
         return f"<Custom Domain {self.domain}>"
+
+
+class AutoCreateRule(db.Model, ModelMixin):
+    """Alias auto creation rule for custom domain"""
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "custom_domain_id", "order", name="uq_auto_create_rule_order"
+        ),
+    )
+
+    custom_domain_id = db.Column(
+        db.ForeignKey(CustomDomain.id, ondelete="cascade"), nullable=False
+    )
+    # an alias is auto created if it matches the regex
+    regex = db.Column(db.String(512), nullable=False)
+
+    # the order in which rules are evaluated in case there are multiple rules
+    order = db.Column(db.Integer, default=0, nullable=False)
+
+    custom_domain = db.relationship(CustomDomain, backref="_auto_create_rules")
+
+    mailboxes = db.relationship(
+        "Mailbox", secondary="auto_create_rule__mailbox", lazy="joined"
+    )
+
+
+class AutoCreateRuleMailbox(db.Model, ModelMixin):
+    """store auto create rule - mailbox association"""
+
+    __tablename__ = "auto_create_rule__mailbox"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "auto_create_rule_id", "mailbox_id", name="uq_auto_create_rule_mailbox"
+        ),
+    )
+
+    auto_create_rule_id = db.Column(
+        db.ForeignKey(AutoCreateRule.id, ondelete="cascade"), nullable=False
+    )
+    mailbox_id = db.Column(
+        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=False
+    )
 
 
 class DomainDeletedAlias(db.Model, ModelMixin):
