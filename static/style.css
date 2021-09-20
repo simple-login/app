@@ -170,7 +170,3 @@ textarea.parsley-error {
 .domain_detail_content {
     font-size: 15px;
 }
-
-.domain_detail_content .parsley-errors-list {
-    max-width: 20em;
-}

@@ -1845,10 +1845,6 @@ class CustomDomain(db.Model, ModelMixin):
     user = db.relationship(User, foreign_keys=[user_id])
 
     @property
-    def auto_create_alias_enabled(self) -> bool:
-        return self.catch_all or self.auto_create_regex is not None
-
-    @property
     def mailboxes(self):
         if self._mailboxes:
             return self._mailboxes

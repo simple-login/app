@@ -20,6 +20,12 @@
            class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'trash' }}">
           <span class="icon mr-3"><i class="fe fe-trash"></i></span>Deleted Alias
         </a>
+
+        <a href="{{ url_for('dashboard.domain_detail_auto_create', custom_domain_id=custom_domain.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'auto_create' }}">
+          <span class="icon mr-3"><i class="fe fe-layers"></i></span>Auto Create
+        </a>
+
       </div>
     </div>
 
