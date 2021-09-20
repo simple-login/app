@@ -1850,6 +1850,17 @@ def handle(envelope: Envelope) -> str:
 
     if rate_limited(mail_from, rcpt_tos):
         LOG.w("Rate Limiting applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
+
+        # add more logging info. TODO: remove
+        if len(rcpt_tos) == 1:
+            alias = Alias.get_by(email=rcpt_tos[0])
+            if alias:
+                LOG.w(
+                    "total number email log on %s is %s",
+                    alias,
+                    EmailLog.query.filter(EmailLog.alias_id == alias.id).count(),
+                )
+
         if should_ignore_bounce(envelope.mail_from):
             return status.E207
         else:
