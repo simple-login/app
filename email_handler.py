@@ -1271,6 +1271,8 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
                 mailbox_email=mailbox.email,
             ),
             max_nb_alert=10,
+            # smtp error can happen if user mailbox is unreachable, that might explain the bounce
+            ignore_smtp_error=True,
         )
     else:
         LOG.w(
@@ -1298,6 +1300,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
                 mailbox_email=mailbox.email,
             ),
             max_nb_alert=10,
+            ignore_smtp_error=True,
         )
 
 

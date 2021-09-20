@@ -13,7 +13,7 @@ from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate
-from smtplib import SMTP, SMTPServerDisconnected
+from smtplib import SMTP, SMTPServerDisconnected, SMTPException
 from typing import Tuple, List, Optional, Union
 
 import arrow
@@ -315,6 +315,7 @@ def send_email_with_rate_control(
     html=None,
     max_nb_alert=MAX_ALERT_24H,
     nb_day=1,
+    ignore_smtp_error=False,
 ) -> bool:
     """Same as send_email with rate control over alert_type.
     Make sure no more than `max_nb_alert` emails are sent over the period of `nb_day` days
@@ -341,7 +342,15 @@ def send_email_with_rate_control(
 
     SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
     db.session.commit()
-    send_email(to_email, subject, plaintext, html)
+
+    if ignore_smtp_error:
+        try:
+            send_email(to_email, subject, plaintext, html)
+        except SMTPException:
+            LOG.w("Cannot send email to %s, subject %s", to_email, subject)
+    else:
+        send_email(to_email, subject, plaintext, html)
+
     return True
 
 
