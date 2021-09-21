@@ -1856,9 +1856,11 @@ def handle(envelope: Envelope) -> str:
             alias = Alias.get_by(email=rcpt_tos[0])
             if alias:
                 LOG.w(
-                    "total number email log on %s is %s",
+                    "total number email log on %s, %s is %s, %s",
                     alias,
+                    alias.user,
                     EmailLog.query.filter(EmailLog.alias_id == alias.id).count(),
+                    EmailLog.query.filter(EmailLog.user_id == alias.user_id).count(),
                 )
 
         if should_ignore_bounce(envelope.mail_from):
