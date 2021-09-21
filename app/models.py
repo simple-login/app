@@ -2421,7 +2421,7 @@ class TransactionalEmail(db.Model, ModelMixin):
     Deleted after 7 days
     """
 
-    email = db.Column(db.String(256), nullable=False, unique=True)
+    email = db.Column(db.String(256), nullable=False, unique=False)
 
 
 class Payout(db.Model, ModelMixin):

@@ -298,9 +298,7 @@ def send_email(
 
     msg_raw = to_bytes(msg)
 
-    transaction = TransactionalEmail.get_by(email=to_email)
-    if not transaction:
-        transaction = TransactionalEmail.create(email=to_email, commit=True)
+    transaction = TransactionalEmail.create(email=to_email, commit=True)
 
     # use a different envelope sender for each transactional email (aka VERP)
     smtp.sendmail(TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id), to_email, msg_raw)
