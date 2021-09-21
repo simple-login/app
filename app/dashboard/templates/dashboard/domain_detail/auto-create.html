@@ -38,7 +38,7 @@
     </div>
 
     {% if custom_domain.auto_create_rules | length > 0 %}
-      <div class="mt-2">
+      <div class="mt-2" id="rule-list">
         {% for auto_create_rule in custom_domain.auto_create_rules %}
           <div class="card">
             <div class="card-body">
@@ -61,11 +61,11 @@
       </div>
     {% endif %}
 
-    <div class="mt-2">
+    <div class="mt-2" id="new-rule">
       <hr>
       <h3>New rule </h3>
 
-      <form method="post" data-parsley-validate>
+      <form method="post" action="#rule-list" data-parsley-validate>
         <input type="hidden" name="form-name" value="create-auto-create-rule">
         {{ new_auto_create_rule_form.csrf_token }}
 
@@ -152,7 +152,7 @@
       </form>
 
       {% if auto_create_test_result %}
-      <div class="alert {% if auto_create_test_passed %} alert-success {% else %} alert-warning {% endif %}">
+        <div class="alert {% if auto_create_test_passed %} alert-success {% else %} alert-warning {% endif %}">
           {{ auto_create_test_result }}
         </div>
       {% endif %}
