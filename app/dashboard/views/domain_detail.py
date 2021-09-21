@@ -504,6 +504,12 @@ def domain_detail_auto_create(custom_domain_id):
             AutoCreateRule.delete(rule_id)
             db.session.commit()
             flash(f"Rule #{rule_order} has been deleted", "success")
+            return redirect(
+                url_for(
+                    "dashboard.domain_detail_auto_create",
+                    custom_domain_id=custom_domain.id,
+                )
+            )
         elif request.form.get("form-name") == "test-auto-create-rule":
             if auto_create_test_form.validate():
                 local = auto_create_test_form.local.data
@@ -526,11 +532,5 @@ def domain_detail_auto_create(custom_domain_id):
                 return render_template(
                     "dashboard/domain_detail/auto-create.html", **locals()
                 )
-
-        return redirect(
-            url_for(
-                "dashboard.domain_detail_auto_create", custom_domain_id=custom_domain.id
-            )
-        )
 
     return render_template("dashboard/domain_detail/auto-create.html", **locals())
