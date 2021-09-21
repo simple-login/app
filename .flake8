@@ -6,7 +6,9 @@ ignore =
     W503,
     E203,
     # Ignore "f-string is missing placeholders"
-    F541
+    F541,
+    # allow bare "except"
+    E722
 exclude = 
     .git,
     __pycache__,
