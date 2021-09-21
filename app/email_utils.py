@@ -501,11 +501,11 @@ def delete_all_headers_except(msg: Message, headers: [str]):
             del msg._headers[i]
 
 
-def can_create_directory_for_address(address: str) -> bool:
+def can_create_directory_for_address(email_address: str) -> bool:
     """return True if an email ends with one of the alias domains provided by SimpleLogin"""
     # not allow creating directory with premium domain
     for domain in ALIAS_DOMAINS:
-        if address.endswith("@" + domain):
+        if email_address.endswith("@" + domain):
             return True
 
     return False
