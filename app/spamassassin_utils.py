@@ -2,7 +2,7 @@
 https://github.com/petermat/spamassassin_client
 """
 import logging
-import re
+import re2 as re
 import select
 import socket
 from io import BytesIO

@@ -1,4 +1,4 @@
-import re
+import re2 as re
 from threading import Thread
 
 from flask import render_template, request, redirect, url_for, flash

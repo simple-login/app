@@ -4,7 +4,7 @@ import enum
 import os
 import quopri
 import random
-import re
+import re2 as re
 import time
 import uuid
 from copy import deepcopy
