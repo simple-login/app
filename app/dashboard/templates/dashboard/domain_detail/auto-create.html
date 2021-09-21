@@ -74,10 +74,8 @@
           <label>Regex</label>
 
           {{ new_auto_create_rule_form.regex(class="form-control",
-              placeholder="prefix\..*",
-              data_parsley_pattern="[0-9a-z-_.(\\\)(\*)(\|)]{1,}",
-              data_parsley_trigger="change",
-              data_parsley_error_message="Only lowercase letter, number, dot (.), dash (-), underscore (_), backslash (\), star (*)  are currently supported.") }}
+              placeholder="prefix\..*"
+              ) }}
           {{ render_field_errors(new_auto_create_rule_form.regex) }}
 
           <div class="small-text">
