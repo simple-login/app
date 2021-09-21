@@ -1769,18 +1769,12 @@ class ApiKey(db.Model, ModelMixin):
     user = db.relationship(User)
 
     @classmethod
-    def create(cls, user_id, name):
-        # generate unique code
-        found = False
-        while not found:
-            code = random_string(60)
+    def create(cls, user_id, name=None, **kwargs):
+        code = random_string(60)
+        if cls.get_by(code=code):
+            code = str(uuid.uuid4())
 
-            if not cls.get_by(code=code):
-                found = True
-
-        a = cls(user_id=user_id, code=code, name=name)
-        db.session.add(a)
-        return a
+        return super().create(user_id=user_id, name=name, code=code, **kwargs)
 
 
 class CustomDomain(db.Model, ModelMixin):
