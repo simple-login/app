@@ -251,15 +251,15 @@ def cancel_mailbox_change_route(mailbox_id):
 @dashboard_bp.route("/mailbox/confirm_change")
 def mailbox_confirm_change_route():
     s = Signer(MAILBOX_SECRET)
-    mailbox_id = request.args.get("mailbox_id")
+    signed_mailbox_id = request.args.get("mailbox_id")
 
     try:
-        r_id = int(s.unsign(mailbox_id))
+        mailbox_id = int(s.unsign(signed_mailbox_id))
     except Exception:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.index"))
     else:
-        mailbox = Mailbox.get(r_id)
+        mailbox = Mailbox.get(mailbox_id)
 
         # new_email can be None if user cancels change in the meantime
         if mailbox and mailbox.new_email:
