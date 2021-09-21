@@ -178,8 +178,6 @@ def get_alias_infos_with_pagination_v3(
     elif alias_filter == "hibp":
         q = q.filter(Alias.hibp_breaches.any())
 
-    q = q.order_by(Alias.pinned.desc())
-
     if sort == "old2new":
         q = q.order_by(Alias.created_at)
     elif sort == "new2old":
@@ -197,6 +195,7 @@ def get_alias_infos_with_pagination_v3(
             ],
             else_=Alias.created_at,
         )
+        q = q.order_by(Alias.pinned.desc())
         q = q.order_by(latest_activity.desc())
 
     q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
