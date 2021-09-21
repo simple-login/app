@@ -1,13 +1,12 @@
 import base64
-import email
 import enum
 import os
 import quopri
 import random
-import re2 as re
 import time
 import uuid
 from copy import deepcopy
+from email import policy, message_from_bytes, message_from_string
 from email.header import decode_header, Header
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
@@ -18,6 +17,7 @@ from typing import Tuple, List, Optional, Union
 
 import arrow
 import dkim
+import re2 as re
 import spf
 from email_validator import (
     validate_email,
@@ -511,9 +511,9 @@ def can_create_directory_for_address(email_address: str) -> bool:
     return False
 
 
-def is_valid_alias_address_domain(address) -> bool:
+def is_valid_alias_address_domain(email_address) -> bool:
     """Return whether an address domain might a domain handled by SimpleLogin"""
-    domain = get_email_domain_part(address)
+    domain = get_email_domain_part(email_address)
     if SLDomain.get_by(domain=domain):
         return True
 
@@ -523,7 +523,7 @@ def is_valid_alias_address_domain(address) -> bool:
     return False
 
 
-def email_can_be_used_as_mailbox(email: str) -> bool:
+def email_can_be_used_as_mailbox(email_address: str) -> bool:
     """Return True if an email can be used as a personal email.
     Use the email domain as criteria. A domain can be used if it is not:
     - one of ALIAS_DOMAINS
@@ -532,7 +532,7 @@ def email_can_be_used_as_mailbox(email: str) -> bool:
     - a disposable domain
     """
     try:
-        domain = get_email_domain_part(email)
+        domain = get_email_domain_part(email_address)
     except EmailNotValidError:
         return False
 
@@ -588,9 +588,9 @@ def get_mx_domain_list(domain) -> [str]:
     return [d[:-1] for _, d in priority_domains]
 
 
-def personal_email_already_used(email: str) -> bool:
+def personal_email_already_used(email_address: str) -> bool:
     """test if an email can be used as user email"""
-    if User.get_by(email=email):
+    if User.get_by(email=email_address):
         return True
 
     return False
@@ -755,10 +755,10 @@ def copy(msg: Message) -> Message:
     except Exception:
         LOG.w("deepcopy fails, try string parsing")
         try:
-            return email.message_from_string(msg.as_string())
+            return message_from_string(msg.as_string())
         except (UnicodeEncodeError, KeyError, LookupError):
             LOG.w("as_string() fails, try bytes parsing")
-            return email.message_from_bytes(to_bytes(msg))
+            return message_from_bytes(to_bytes(msg))
 
 
 def to_bytes(msg: Message):
@@ -768,11 +768,11 @@ def to_bytes(msg: Message):
     except UnicodeEncodeError:
         LOG.w("as_bytes fails with default policy, try SMTP policy")
         try:
-            return msg.as_bytes(policy=email.policy.SMTP)
+            return msg.as_bytes(policy=policy.SMTP)
         except UnicodeEncodeError:
             LOG.w("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
             try:
-                return msg.as_bytes(policy=email.policy.SMTPUTF8)
+                return msg.as_bytes(policy=policy.SMTPUTF8)
             except UnicodeEncodeError:
                 LOG.w("as_bytes fails with SMTPUTF8 policy, try converting to string")
                 msg_string = msg.as_string()
