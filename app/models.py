@@ -1807,9 +1807,6 @@ class CustomDomain(db.Model, ModelMixin):
     # an alias is created automatically the first time it receives an email
     catch_all = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
-    # an alias is auto created if it matches the regex
-    auto_create_regex = db.Column(db.String(512), nullable=True)
-
     # option to generate random prefix version automatically
     random_prefix_generation = db.Column(
         db.Boolean, nullable=False, default=False, server_default="0"
