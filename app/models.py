@@ -1762,7 +1762,7 @@ class ApiKey(db.Model, ModelMixin):
 
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     code = db.Column(db.String(128), unique=True, nullable=False)
-    name = db.Column(db.String(128), nullable=False)
+    name = db.Column(db.String(128), nullable=True)
     last_used = db.Column(ArrowType, default=None)
     times = db.Column(db.Integer, default=0, nullable=False)
 
