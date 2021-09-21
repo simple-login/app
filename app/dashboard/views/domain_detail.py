@@ -1,3 +1,4 @@
+import re
 from threading import Thread
 
 from flask import render_template, request, redirect, url_for, flash
@@ -382,6 +383,12 @@ class AutoCreateRuleForm(FlaskForm):
     )
 
 
+class AutoCreateTestForm(FlaskForm):
+    local = StringField(
+        "local part", validators=[validators.DataRequired(), validators.Length(max=128)]
+    )
+
+
 @dashboard_bp.route(
     "/domains/<int:custom_domain_id>/auto-create", methods=["GET", "POST"]
 )
@@ -390,6 +397,13 @@ def domain_detail_auto_create(custom_domain_id):
     custom_domain: CustomDomain = CustomDomain.get(custom_domain_id)
     mailboxes = current_user.mailboxes()
     new_auto_create_rule_form = AutoCreateRuleForm()
+
+    auto_create_test_form = AutoCreateTestForm()
+    auto_create_test_local, auto_create_test_result, auto_create_test_passed = (
+        "",
+        "",
+        False,
+    )
 
     if not custom_domain or custom_domain.user_id != current_user.id:
         flash("You cannot see this page", "warning")
@@ -476,13 +490,33 @@ def domain_detail_auto_create(custom_domain_id):
             AutoCreateRule.delete(rule_id)
             db.session.commit()
             flash(f"Rule #{rule_order} has been deleted", "success")
+        elif request.form.get("form-name") == "test-auto-create-rule":
+            if auto_create_test_form.validate():
+                local = auto_create_test_form.local.data
+                auto_create_test_local = local
+
+                for rule in custom_domain.auto_create_rules:
+                    rule: AutoCreateRule
+                    regex = re.compile(rule.regex)
+                    if re.fullmatch(regex, local):
+                        auto_create_test_result = (
+                            f"{local}@{custom_domain.domain} passes rule #{rule.order}"
+                        )
+                        auto_create_test_passed = True
+                        break
+                else:  # no rule passes
+                    auto_create_test_result = (
+                        f"{local}@{custom_domain.domain} doesn't pass any rule"
+                    )
+
+                return render_template(
+                    "dashboard/domain_detail/auto-create.html", **locals()
+                )
 
         return redirect(
             url_for(
                 "dashboard.domain_detail_auto_create", custom_domain_id=custom_domain.id
             )
         )
-
-    nb_alias = Alias.filter_by(custom_domain_id=custom_domain.id).count()
 
     return render_template("dashboard/domain_detail/auto-create.html", **locals())

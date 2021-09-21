@@ -125,6 +125,39 @@
 
     </div>
 
+    <div id="debug-zone">
+      <hr>
+      <h3>Debug Zone</h3>
+      <p>You can test whether an alias will be automatically created given the rules above </p>
+      <div class="alert alert-info">
+        No worries, no alias will be created during the test :)
+      </div>
+      <form method="post" action="#debug-zone">
+        <input type="hidden" name="form-name" value="test-auto-create-rule">
+        {{ auto_create_test_form.csrf_token }}
+
+        <div class="d-flex">
+          <div class="form-group d-flex">
+            {{ auto_create_test_form.local(class="form-control", type="text", placeholder="local", value=auto_create_test_local) }}
+            {{ render_field_errors(auto_create_test_form.local) }}
+            <b class="pt-2 ml-1">@{{ custom_domain.domain }}</b>
+          </div>
+          <div>
+
+          </div>
+        </div>
+        <div class="form-group">
+          <button class="btn btn-outline-primary">Test</button>
+        </div>
+      </form>
+
+      {% if auto_create_test_result %}
+      <div class="alert {% if auto_create_test_passed %} alert-success {% else %} alert-warning {% endif %}">
+          {{ auto_create_test_result }}
+        </div>
+      {% endif %}
+    </div>
+
   </div>
 
 
