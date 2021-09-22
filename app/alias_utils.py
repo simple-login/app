@@ -43,7 +43,7 @@ def try_auto_create(address: str) -> Optional[Alias]:
     except EmailNotValidError:
         return None
 
-    alias = try_auto_create_catch_all_domain(address)
+    alias = try_auto_create_via_domain(address)
     if not alias:
         alias = try_auto_create_directory(address)
 
@@ -122,8 +122,8 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             return alias
 
 
-def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
-    """Try to create an alias with catch-all domain"""
+def try_auto_create_via_domain(address: str) -> Optional[Alias]:
+    """Try to create an alias with catch-all or auto-create rules on custom domain"""
 
     # try to create alias on-the-fly with custom-domain catch-all feature
     # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
