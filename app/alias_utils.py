@@ -75,15 +75,15 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
         if not directory:
             return None
 
-        dir_user: User = directory.user
+        user: User = directory.user
 
-        if not dir_user.can_create_new_alias():
-            send_cannot_create_directory_alias(dir_user, address, directory_name)
+        if not user.can_create_new_alias():
+            send_cannot_create_directory_alias(user, address, directory_name)
             return None
 
         if directory.disabled:
             send_cannot_create_directory_alias_disabled(
-                dir_user, address, directory_name
+                user, address, directory_name
             )
             return None
 
@@ -112,7 +112,7 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
                 "Alias %s was deleted before, cannot auto-create using directory %s, user %s",
                 address,
                 directory_name,
-                dir_user,
+                user,
             )
             return None
         except IntegrityError:
