@@ -129,6 +129,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
     # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
     alias_domain = get_email_domain_part(address)
     custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
+    alias_note = ""
 
     if not custom_domain:
         return None
@@ -137,6 +138,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         return None
     elif not custom_domain.catch_all and len(custom_domain.auto_create_rules) > 0:
         local = get_email_local_part(address)
+
         for rule in custom_domain.auto_create_rules:
             rule: AutoCreateRule
             regex = re.compile(rule.regex)
@@ -147,6 +149,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
                     rule.regex,
                     custom_domain,
                 )
+                alias_note = f"Created by rule {rule.order} with regex {rule.regex}"
                 mailboxes = rule.mailboxes
                 break
         else:  # no rule passes
@@ -154,6 +157,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
             return
     else:  # catch-all is enabled
         mailboxes = custom_domain.mailboxes
+        alias_note = "Created by catch-all option"
 
     domain_user: User = custom_domain.user
 
@@ -169,6 +173,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
             custom_domain_id=custom_domain.id,
             automatic_creation=True,
             mailbox_id=mailboxes[0].id,
+            note=alias_note,
         )
         db.session.flush()
         for i in range(1, len(mailboxes)):
