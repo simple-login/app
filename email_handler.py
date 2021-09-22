@@ -32,6 +32,7 @@ It should contain the following info:
 """
 import argparse
 import email
+import os
 import time
 import uuid
 from email import encoders
@@ -82,6 +83,7 @@ from app.config import (
     POSTMASTER,
     ALERT_HOTMAIL_COMPLAINT,
     ALERT_YAHOO_COMPLAINT,
+    TEMP_DIR,
 )
 from app.email import status
 from app.email.rate_limit import rate_limited
@@ -1847,6 +1849,26 @@ def handle(envelope: Envelope) -> str:
             msg.as_string(),
         )
         return handle_bounce(envelope, email_log, msg)
+
+    # case where From: header is a reverse alias which should never happen
+    from_header = get_header_unicode(msg["From"])
+    if from_header:
+        _, from_header_address = parse_full_address(from_header)
+        if is_reply_email(from_header_address):
+            LOG.e("email sent from a reverse alias %s", from_header_address)
+            # get more info for debug
+            contact = Contact.get_by(reply_email=from_header_address)
+            if contact:
+                LOG.d("%s %s %s", contact.user, contact.alias, contact)
+
+            # To investigate. todo: remove
+            if TEMP_DIR:
+                file_name = str(uuid.uuid4()) + ".eml"
+                with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
+                    f.write(msg.as_bytes())
+
+                LOG.d("email saved to %s", file_name)
+            return status.E523
 
     if rate_limited(mail_from, rcpt_tos):
         LOG.w("Rate Limiting applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)

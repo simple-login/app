@@ -51,3 +51,4 @@ E522 = (
     "550 SL E522 The user you are trying to contact is receiving mail "
     "at a rate that prevents additional messages from being delivered."
 )
+E523 = "550 SL E523 Unknown error"
