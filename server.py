@@ -626,6 +626,7 @@ def jinja2_filter(app):
             STATUS_PAGE_URL=STATUS_PAGE_URL,
             SUPPORT_EMAIL=SUPPORT_EMAIL,
             PGP_SIGNER=PGP_SIGNER,
+            current_url=request.url
         )
 
 
