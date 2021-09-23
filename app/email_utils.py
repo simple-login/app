@@ -292,10 +292,6 @@ def send_email(
                 msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
             )
 
-    # add DKIM
-    email_domain = SUPPORT_EMAIL[SUPPORT_EMAIL.find("@") + 1 :]
-    add_dkim_signature(msg, email_domain)
-
     msg_raw = to_bytes(msg)
 
     transaction = TransactionalEmail.create(email=to_email, commit=True)

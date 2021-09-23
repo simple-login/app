@@ -90,7 +90,6 @@ from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
 from app.email_utils import (
     send_email,
-    add_dkim_signature,
     add_or_replace_header,
     delete_header,
     render,
@@ -104,7 +103,6 @@ from app.email_utils import (
     to_bytes,
     send_email_at_most_times,
     is_valid_alias_address_domain,
-    should_add_dkim_signature,
     add_header,
     get_header_unicode,
     generate_reply_email,
@@ -828,8 +826,6 @@ def forward_email_to_mailbox(
             msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
         )
 
-    add_dkim_signature(msg, EMAIL_DOMAIN)
-
     LOG.d(
         "Forward mail from %s to %s, mail_options:%s, rcpt_options:%s ",
         contact.website_email,
@@ -1061,9 +1057,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         envelope.mail_options,
         envelope.rcpt_options,
     )
-
-    if should_add_dkim_signature(alias_domain):
-        add_dkim_signature(msg, alias_domain)
 
     # generate a mail_from for VERP
     verp_mail_from = f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+{email_log.id}+@{alias_domain}"
