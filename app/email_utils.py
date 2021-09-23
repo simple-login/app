@@ -931,6 +931,7 @@ def replace(msg: Message, old, new) -> Message:
         or content_type == "text/calendar"
         or content_type == "text/directory"
         or content_type == "text/csv"
+        or content_type == "text/x-python-script"
     ):
         LOG.d("not applicable for %s", content_type)
         return msg
@@ -959,7 +960,7 @@ def replace(msg: Message, old, new) -> Message:
         clone_msg.set_payload(new_parts)
         return clone_msg
 
-    LOG.e("Cannot replace text for %s", msg.get_content_type())
+    LOG.w("Cannot replace text for %s", msg.get_content_type())
     return msg
 
 
