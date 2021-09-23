@@ -42,7 +42,7 @@ def domain_detail_dns(custom_domain_id):
         custom_domain.ownership_txt_token = random_string(30)
         db.session.commit()
 
-    spf_record = f"v=spf1 include:{EMAIL_DOMAIN} -all"
+    spf_record = f"v=spf1 include:{EMAIL_DOMAIN} ~all"
 
     # hardcode the DKIM selector here
     dkim_cname = f"dkim._domainkey.{EMAIL_DOMAIN}"
