@@ -1417,8 +1417,6 @@ class Contact(db.Model, ModelMixin):
     # to investigate why the website_email is sometimes not correctly parsed
     # the envelope mail_from
     mail_from = db.Column(db.Text, nullable=True, default=None)
-    # the message["From"] header
-    from_header = db.Column(db.Text, nullable=True, default=None)
 
     # a contact can have an empty email address, in this case it can't receive emails
     invalid_email = db.Column(

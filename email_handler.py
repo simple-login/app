@@ -237,16 +237,6 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             )
             contact.mail_from = mail_from
             db.session.commit()
-
-        if not contact.from_header and from_header:
-            LOG.d(
-                "Set contact from_header %s: %s to %s",
-                contact,
-                contact.from_header,
-                from_header,
-            )
-            contact.from_header = from_header
-            db.session.commit()
     else:
         LOG.d(
             "create contact %s for alias %s",
@@ -261,7 +251,6 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 website_email=contact_email,
                 name=contact_name,
                 mail_from=mail_from,
-                from_header=from_header,
                 reply_email=generate_reply_email(contact_email, alias.user)
                 if is_valid_email(contact_email)
                 else NOREPLY,
