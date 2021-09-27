@@ -477,10 +477,6 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         if sub and not sub.cancelled:
             return False
 
-        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
-        if apple_sub and apple_sub.is_valid():
-            return False
-
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         # user who has giveaway premium can decide to upgrade
         if manual_sub and manual_sub.is_active() and not manual_sub.is_giveaway:

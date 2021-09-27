@@ -49,8 +49,15 @@
           {% endif %}
 
         {% elif apple_sub and apple_sub.is_valid() %}
-          You are on the Premium plan which expires {{ apple_sub.expires_date | dt }}
+          You are on the Premium plan (subscribed via Apple) which expires {{ apple_sub.expires_date | dt }}
           ({{ apple_sub.expires_date.format("YYYY-MM-DD") }}).
+          <div class="alert alert-info">
+            If you want to subscribe via the Web instead, please make sure to cancel your subscription
+            on Apple first.
+            <a href="{{ url_for('dashboard.pricing') }}"
+               class="">Upgrade <i class="fa fa-arrow-right" aria-hidden="true"></i></a>
+          </div>
+
         {% elif coinbase_sub and coinbase_sub.is_active() %}
           You are on the Premium plan which expires {{ coinbase_sub.end_at | dt }}
           ({{ coinbase_sub.end_at.format("YYYY-MM-DD") }}).
@@ -252,7 +259,7 @@
         <form method="post" action="#random-alias-suffix" class="form-inline">
           <input type="hidden" name="form-name" value="random-alias-suffix">
           <select class="form-control mr-sm-2" name="random-alias-suffix-generator">
-  
+
             <option value="0" {% if current_user.random_alias_suffix==0 %} selected {% endif %}>
               Random word from our dictionary
             </option>
@@ -343,8 +350,9 @@
           <input type="hidden" name="form-name" value="sender-in-ra">
           <div class="form-check">
             <input type="checkbox" id="include-sender-ra" name="enable"
-{#                   todo: remove current_user.include_sender_in_reverse_alias is none condition #}
-                {% if current_user.include_sender_in_reverse_alias is none or current_user.include_sender_in_reverse_alias %} checked {% endif %} class="form-check-input">
+                {#                   todo: remove current_user.include_sender_in_reverse_alias is none condition #}
+                {% if current_user.include_sender_in_reverse_alias is none or current_user.include_sender_in_reverse_alias %}
+                   checked {% endif %} class="form-check-input">
             <label for="include-sender-ra">Include sender address in reverse-alias</label>
           </div>
           <button type="submit" class="btn btn-outline-primary">Update</button>
