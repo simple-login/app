@@ -404,10 +404,8 @@ def get_email_domain_part(address):
     Get the domain part from email
     ab@cd.com -> cd.com
     """
-    r: ValidatedEmail = validate_email(
-        address, check_deliverability=False, allow_smtputf8=False
-    )
-    return r.domain
+    address = sanitize_email(address)
+    return address[address.find("@") + 1 :]
 
 
 # headers used to DKIM sign in order of preference
@@ -532,7 +530,9 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
     - a disposable domain
     """
     try:
-        domain = get_email_domain_part(email_address)
+        domain = validate_email(
+            email_address, check_deliverability=False, allow_smtputf8=False
+        ).domain
     except EmailNotValidError:
         return False
 

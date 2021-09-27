@@ -128,7 +128,6 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
     # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
     alias_domain = get_email_domain_part(address)
     custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
-    alias_note = ""
 
     if not custom_domain:
         return None
