@@ -211,6 +211,10 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
 
     contact_email = sanitize_email(contact_email)
 
+    if contact_name and "\x00" in contact_name:
+        LOG.w("issue with contact name %s", contact_name)
+        contact_name = ""
+
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
         if contact.name != contact_name:
