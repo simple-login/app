@@ -123,6 +123,10 @@ def notify_premium_end():
             >= arrow.now().shift(days=2).date()
         ):
             user = sub.user
+
+            if user.lifetime:
+                continue
+
             LOG.d(f"Send subscription ending soon email to user {user}")
 
             send_email(
