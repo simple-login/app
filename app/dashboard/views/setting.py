@@ -300,6 +300,15 @@ def setting():
             db.session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "ignore-loop-email":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.ignore_loop_email = True
+            else:
+                current_user.ignore_loop_email = False
+            db.session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "export-data":
             return redirect(url_for("api.export_data"))
