@@ -502,7 +502,6 @@ sudo systemctl reload nginx
 At this step, you should also setup the SSL for Nginx. 
 [Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
 
-
 ### Enjoy!
 
 If all the above steps are successful, open http://app.mydomain.com/ and create your first account!
