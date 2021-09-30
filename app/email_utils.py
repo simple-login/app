@@ -1,26 +1,33 @@
 import base64
-import email
 import enum
 import os
 import quopri
 import random
-import re
 import time
-from email.errors import HeaderParseError
-from email.header import decode_header
+import uuid
+from copy import deepcopy
+from email import policy, message_from_bytes, message_from_string
+from email.header import decode_header, Header
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import make_msgid, formatdate, parseaddr
-from smtplib import SMTP, SMTPServerDisconnected
-from typing import Tuple, List, Optional
+from email.utils import make_msgid, formatdate
+from smtplib import SMTP, SMTPServerDisconnected, SMTPException
+from typing import Tuple, List, Optional, Union
 
 import arrow
 import dkim
+import re2 as re
 import spf
+from email_validator import (
+    validate_email,
+    EmailNotValidError,
+    ValidatedEmail,
+)
+from flanker.addresslib import address
+from flanker.addresslib.address import EmailAddress
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import func
-from validate_email import validate_email
 
 from app.config import (
     SUPPORT_EMAIL,
@@ -29,7 +36,6 @@ from app.config import (
     NOT_SEND_EMAIL,
     DKIM_SELECTOR,
     DKIM_PRIVATE_KEY,
-    DKIM_HEADERS,
     ALIAS_DOMAINS,
     SUPPORT_NAME,
     POSTFIX_SUBMISSION_TLS,
@@ -44,6 +50,8 @@ from app.config import (
     TRANSACTIONAL_BOUNCE_EMAIL,
     ALERT_SPF,
     POSTFIX_PORT_FORWARD,
+    TEMP_DIR,
+    ALIAS_AUTOMATIC_DISABLE,
 )
 from app.dns_utils import get_mx_domains
 from app.extensions import db
@@ -290,9 +298,7 @@ def send_email(
 
     msg_raw = to_bytes(msg)
 
-    transaction = TransactionalEmail.get_by(email=to_email)
-    if not transaction:
-        transaction = TransactionalEmail.create(email=to_email, commit=True)
+    transaction = TransactionalEmail.create(email=to_email, commit=True)
 
     # use a different envelope sender for each transactional email (aka VERP)
     smtp.sendmail(TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id), to_email, msg_raw)
@@ -307,6 +313,7 @@ def send_email_with_rate_control(
     html=None,
     max_nb_alert=MAX_ALERT_24H,
     nb_day=1,
+    ignore_smtp_error=False,
 ) -> bool:
     """Same as send_email with rate control over alert_type.
     Make sure no more than `max_nb_alert` emails are sent over the period of `nb_day` days
@@ -322,7 +329,7 @@ def send_email_with_rate_control(
     )
 
     if nb_alert >= max_nb_alert:
-        LOG.warning(
+        LOG.w(
             "%s emails were sent to %s in the last %s days, alert type %s",
             nb_alert,
             to_email,
@@ -333,7 +340,15 @@ def send_email_with_rate_control(
 
     SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
     db.session.commit()
-    send_email(to_email, subject, plaintext, html)
+
+    if ignore_smtp_error:
+        try:
+            send_email(to_email, subject, plaintext, html)
+        except SMTPException:
+            LOG.w("Cannot send email to %s, subject %s", to_email, subject)
+    else:
+        send_email(to_email, subject, plaintext, html)
+
     return True
 
 
@@ -358,7 +373,7 @@ def send_email_at_most_times(
     ).count()
 
     if nb_alert >= max_times:
-        LOG.warning(
+        LOG.w(
             "%s emails were sent to %s alert type %s",
             nb_alert,
             to_email,
@@ -376,8 +391,12 @@ def get_email_local_part(address) -> str:
     """
     Get the local part from email
     ab@cd.com -> ab
+    Convert the local part to lowercase
     """
-    return address[: address.find("@")]
+    r: ValidatedEmail = validate_email(
+        address, check_deliverability=False, allow_smtputf8=False
+    )
+    return r.local_part.lower()
 
 
 def get_email_domain_part(address):
@@ -389,7 +408,39 @@ def get_email_domain_part(address):
     return address[address.find("@") + 1 :]
 
 
+# headers used to DKIM sign in order of preference
+_DKIM_HEADERS = [
+    [b"Message-ID", b"Date", b"Subject", b"From", b"To"],
+    [b"From", b"To"],
+    [b"Message-ID", b"Date"],
+    [b"From"],
+]
+
+
 def add_dkim_signature(msg: Message, email_domain: str):
+    for dkim_headers in _DKIM_HEADERS:
+        try:
+            add_dkim_signature_with_header(msg, email_domain, dkim_headers)
+            return
+        except dkim.DKIMException:
+            LOG.w("DKIM fail with %s", dkim_headers, exc_info=True)
+            # try with another headers
+            continue
+
+    # To investigate why some emails can't be DKIM signed. todo: remove
+    if TEMP_DIR:
+        file_name = str(uuid.uuid4()) + ".eml"
+        with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
+            f.write(msg.as_bytes())
+
+        LOG.w("email saved to %s", file_name)
+
+    raise Exception("Cannot create DKIM signature")
+
+
+def add_dkim_signature_with_header(
+    msg: Message, email_domain: str, dkim_headers: [bytes]
+):
     delete_header(msg, "DKIM-Signature")
 
     # Specify headers in "byte" form
@@ -400,7 +451,7 @@ def add_dkim_signature(msg: Message, email_domain: str):
             DKIM_SELECTOR,
             email_domain.encode(),
             DKIM_PRIVATE_KEY.encode(),
-            include_headers=DKIM_HEADERS,
+            include_headers=dkim_headers,
         )
         sig = sig.decode()
 
@@ -448,19 +499,19 @@ def delete_all_headers_except(msg: Message, headers: [str]):
             del msg._headers[i]
 
 
-def can_create_directory_for_address(address: str) -> bool:
+def can_create_directory_for_address(email_address: str) -> bool:
     """return True if an email ends with one of the alias domains provided by SimpleLogin"""
     # not allow creating directory with premium domain
     for domain in ALIAS_DOMAINS:
-        if address.endswith("@" + domain):
+        if email_address.endswith("@" + domain):
             return True
 
     return False
 
 
-def is_valid_alias_address_domain(address) -> bool:
+def is_valid_alias_address_domain(email_address) -> bool:
     """Return whether an address domain might a domain handled by SimpleLogin"""
-    domain = get_email_domain_part(address)
+    domain = get_email_domain_part(email_address)
     if SLDomain.get_by(domain=domain):
         return True
 
@@ -470,7 +521,7 @@ def is_valid_alias_address_domain(address) -> bool:
     return False
 
 
-def email_can_be_used_as_mailbox(email: str) -> bool:
+def email_can_be_used_as_mailbox(email_address: str) -> bool:
     """Return True if an email can be used as a personal email.
     Use the email domain as criteria. A domain can be used if it is not:
     - one of ALIAS_DOMAINS
@@ -478,7 +529,13 @@ def email_can_be_used_as_mailbox(email: str) -> bool:
     - one of custom domains
     - a disposable domain
     """
-    domain = get_email_domain_part(email)
+    try:
+        domain = validate_email(
+            email_address, check_deliverability=False, allow_smtputf8=False
+        ).domain
+    except EmailNotValidError:
+        return False
+
     if not domain:
         return False
 
@@ -531,9 +588,9 @@ def get_mx_domain_list(domain) -> [str]:
     return [d[:-1] for _, d in priority_domains]
 
 
-def personal_email_already_used(email: str) -> bool:
+def personal_email_already_used(email_address: str) -> bool:
     """test if an email can be used as user email"""
-    if User.get_by(email=email):
+    if User.get_by(email=email_address):
         return True
 
     return False
@@ -563,6 +620,30 @@ def get_orig_message_from_bounce(msg: Message) -> Message:
         # ...
         # 7th is original message
         if i == 7:
+            return part
+
+
+def get_orig_message_from_hotmail_complaint(msg: Message) -> Message:
+    i = 0
+    for part in msg.walk():
+        i += 1
+
+        # 1st part is the container
+        # 2nd part is the empty body
+        # 3rd is original message
+        if i == 3:
+            return part
+
+
+def get_orig_message_from_yahoo_complaint(msg: Message) -> Message:
+    i = 0
+    for part in msg.walk():
+        i += 1
+
+        # 1st part is the container
+        # 2nd part is the empty body
+        # 6th is original message
+        if i == 6:
             return part
 
 
@@ -631,77 +712,53 @@ def get_spam_from_header(spam_status_header, max_score=None) -> (bool, str):
         )
         score = float(score_section[len("score=") :])
         if score >= max_score:
-            LOG.warning("Spam score %s exceeds %s", score, max_score)
+            LOG.w("Spam score %s exceeds %s", score, max_score)
             return True, spam_status_header
 
     return spamassassin_answer.lower() == "yes", spam_status_header
 
 
-def get_header_unicode(header: str) -> str:
+def get_header_unicode(header: Union[str, Header]) -> str:
+    """
+    Convert a header to unicode
+    Should be used to handle headers like From:, To:, CC:, Subject:
+    """
     if header is None:
         return ""
 
-    decoded_string, charset = decode_header(header)[0]
-    if charset is not None:
-        try:
-            return decoded_string.decode(charset)
-        except UnicodeDecodeError:
-            LOG.warning("Cannot decode header %s", header)
-        except LookupError:  # charset is unknown
-            LOG.warning("Cannot decode %s with %s, use utf-8", decoded_string, charset)
-            try:
-                return decoded_string.decode("utf-8")
-            except UnicodeDecodeError:
-                LOG.warning("Cannot UTF-8 decode %s", decoded_string)
-                return decoded_string.decode("utf-8", errors="replace")
-
-    return header
-
-
-def parseaddr_unicode(addr) -> (str, str):
-    """Like parseaddr() but return name in unicode instead of in RFC 2047 format
-    Should be used instead of parseaddr()
-    '=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>' -> ('Nhơn Nguyễn', "abcd@gmail.com")
-    """
-    # sometimes linebreaks are present in addr
-    addr = addr.replace("\n", "").strip()
-    name, email = parseaddr(addr)
-    # email can have whitespace so we can't remove whitespace here
-    email = email.strip().lower()
-    if name:
-        name = name.strip()
-        try:
-            decoded_string, charset = decode_header(name)[0]
-        except HeaderParseError:  # fail in case
-            LOG.warning("Can't decode name %s", name)
-        else:
-            if charset is not None:
-                try:
-                    name = decoded_string.decode(charset)
-                except UnicodeDecodeError:
-                    LOG.warning("Cannot decode addr name %s", name)
-                    name = ""
-                except LookupError:  # charset is unknown
-                    LOG.warning(
-                        "Cannot decode %s with %s, use utf-8", decoded_string, charset
-                    )
-                    name = decoded_string.decode("utf-8")
+    ret = ""
+    for to_decoded_str, charset in decode_header(header):
+        if charset is None:
+            if type(to_decoded_str) is bytes:
+                decoded_str = to_decoded_str.decode()
             else:
-                name = decoded_string
+                decoded_str = to_decoded_str
+        else:
+            try:
+                decoded_str = to_decoded_str.decode(charset)
+            except (LookupError, UnicodeDecodeError):  # charset is unknown
+                LOG.w("Cannot decode %s with %s, try utf-8", to_decoded_str, charset)
+                try:
+                    decoded_str = to_decoded_str.decode("utf-8")
+                except UnicodeDecodeError:
+                    LOG.w("Cannot UTF-8 decode %s", to_decoded_str)
+                    decoded_str = to_decoded_str.decode("utf-8", errors="replace")
+        ret += decoded_str
 
-    if type(name) == bytes:
-        name = name.decode()
-    return name, email
+    return ret
 
 
 def copy(msg: Message) -> Message:
     """return a copy of message"""
     try:
-        # prefer the unicode way
-        return email.message_from_string(msg.as_string())
-    except (UnicodeEncodeError, KeyError, LookupError):
-        LOG.warning("as_string() fails, try to_bytes")
-        return email.message_from_bytes(to_bytes(msg))
+        return deepcopy(msg)
+    except Exception:
+        LOG.w("deepcopy fails, try string parsing")
+        try:
+            return message_from_string(msg.as_string())
+        except (UnicodeEncodeError, KeyError, LookupError):
+            LOG.w("as_string() fails, try bytes parsing")
+            return message_from_bytes(to_bytes(msg))
 
 
 def to_bytes(msg: Message):
@@ -709,17 +766,15 @@ def to_bytes(msg: Message):
     try:
         return msg.as_bytes()
     except UnicodeEncodeError:
-        LOG.warning("as_bytes fails with default policy, try SMTP policy")
+        LOG.w("as_bytes fails with default policy, try SMTP policy")
         try:
-            return msg.as_bytes(policy=email.policy.SMTP)
+            return msg.as_bytes(policy=policy.SMTP)
         except UnicodeEncodeError:
-            LOG.warning("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
+            LOG.w("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
             try:
-                return msg.as_bytes(policy=email.policy.SMTPUTF8)
+                return msg.as_bytes(policy=policy.SMTPUTF8)
             except UnicodeEncodeError:
-                LOG.warning(
-                    "as_bytes fails with SMTPUTF8 policy, try converting to string"
-                )
+                LOG.w("as_bytes fails with SMTPUTF8 policy, try converting to string")
                 msg_string = msg.as_string()
                 try:
                     return msg_string.encode()
@@ -740,10 +795,16 @@ def should_add_dkim_signature(domain: str) -> bool:
 
 
 def is_valid_email(email_address: str) -> bool:
-    """Used to check whether an email address is valid"""
-    return validate_email(
-        email_address=email_address, check_mx=False, use_blacklist=False
-    )
+    """
+    Used to check whether an email address is valid
+    NOT run MX check.
+    NOT allow unicode.
+    """
+    try:
+        validate_email(email_address, check_deliverability=False, allow_smtputf8=False)
+        return True
+    except EmailNotValidError:
+        return False
 
 
 class EmailEncoding(enum.Enum):
@@ -773,7 +834,7 @@ def get_encoding(msg: Message) -> EmailEncoding:
     if cte in ("amazonses.com",):
         return EmailEncoding.NO
 
-    LOG.exception("Unknown encoding %s", cte)
+    LOG.e("Unknown encoding %s", cte)
 
     return EmailEncoding.NO
 
@@ -870,6 +931,7 @@ def replace(msg: Message, old, new) -> Message:
         or content_type == "text/calendar"
         or content_type == "text/directory"
         or content_type == "text/csv"
+        or content_type == "text/x-python-script"
     ):
         LOG.d("not applicable for %s", content_type)
         return msg
@@ -898,7 +960,7 @@ def replace(msg: Message, old, new) -> Message:
         clone_msg.set_payload(new_parts)
         return clone_msg
 
-    LOG.exception("Cannot replace text for %s", msg.get_content_type())
+    LOG.w("Cannot replace text for %s", msg.get_content_type())
     return msg
 
 
@@ -974,7 +1036,10 @@ def should_disable(alias: Alias) -> bool:
     """Disable an alias if it has too many bounces recently"""
     # Bypass the bounce rule
     if alias.cannot_be_disabled:
-        LOG.warning("%s cannot be disabled", alias)
+        LOG.w("%s cannot be disabled", alias)
+        return False
+
+    if not ALIAS_AUTOMATIC_DISABLE:
         return False
 
     yesterday = arrow.now().shift(days=-1)
@@ -1008,7 +1073,7 @@ def should_disable(alias: Alias) -> bool:
             .count()
         )
         if nb_bounced_7d_1d > 1:
-            LOG.debug(
+            LOG.d(
                 "more than 5 bounces in the last 24h and more than 1 bounces in the last 7 days, "
                 "disable alias %s",
                 alias,
@@ -1088,7 +1153,7 @@ def spf_pass(
         try:
             r = spf.check2(i=ip, s=envelope.mail_from, h=None)
         except Exception:
-            LOG.exception("SPF error, mailbox %s, ip %s", mailbox.email, ip)
+            LOG.e("SPF error, mailbox %s, ip %s", mailbox.email, ip)
         else:
             # TODO: Handle temperr case (e.g. dns timeout)
             # only an absolute pass, or no SPF policy at all is 'valid'
@@ -1222,3 +1287,17 @@ def should_ignore_bounce(mail_from: str) -> bool:
         return True
 
     return False
+
+
+def parse_full_address(full_address) -> (str, str):
+    """
+    parse the email address full format and return the display name and address
+    For ex: ab <cd@xy.com> -> (ab, cd@xy.com)
+    '=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>' -> ('Nhơn Nguyễn', "abcd@gmail.com")
+
+    If the parsing fails, raise ValueError
+    """
+    full_address: EmailAddress = address.parse(full_address)
+    if full_address is None:
+        raise ValueError
+    return full_address.display_name, full_address.address

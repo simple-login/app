@@ -45,7 +45,6 @@ if config_file:
 else:
     load_dotenv()
 
-RESET_DB = "RESET_DB" in os.environ
 COLOR_LOG = "COLOR_LOG" in os.environ
 
 # Allow user to have 1 year of premium: set the expiration_date to 1 year more
@@ -158,7 +157,6 @@ DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
 
 DKIM_SELECTOR = b"dkim"
-DKIM_HEADERS = [b"from", b"to"]
 DKIM_PRIVATE_KEY = None
 
 if "DKIM_PRIVATE_KEY_PATH" in os.environ:
@@ -334,6 +332,9 @@ AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN = "custom_domain_mx_record_issue"
 # alert when a new alias is about to be created on a disabled directory
 ALERT_DIRECTORY_DISABLED_ALIAS_CREATION = "alert_directory_disabled_alias_creation"
 
+ALERT_HOTMAIL_COMPLAINT = "alert_hotmail_complaint"
+ALERT_YAHOO_COMPLAINT = "alert_yahoo_complaint"
+
 # <<<<< END ALERT EMAIL >>>>
 
 # Disable onboarding emails
@@ -394,3 +395,11 @@ except Exception:
 HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
 
 NEWRELIC_CONFIG_PATH = os.environ.get("NEWRELIC_CONFIG_PATH")
+
+POSTMASTER = os.environ.get("POSTMASTER")
+
+# store temporary files, especially for debugging
+TEMP_DIR = os.environ.get("TEMP_DIR")
+
+# enable the alias automation disable: an alias can be automatically disabled if it has too many bounces
+ALIAS_AUTOMATIC_DISABLE = "ALIAS_AUTOMATIC_DISABLE" in os.environ

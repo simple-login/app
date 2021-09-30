@@ -5,10 +5,13 @@ from email.utils import formataddr
 from typing import List, Tuple, Optional
 
 import arrow
+import sqlalchemy as sa
 from arrow import Arrow
+from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
-from sqlalchemy import text, desc, CheckConstraint, Index
+from sqlalchemy import text, desc, CheckConstraint, Index, Column
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import deferred
 from sqlalchemy_utils import ArrowType
 
@@ -38,9 +41,6 @@ from app.utils import (
     sanitize_email,
     random_word,
 )
-
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import TSVECTOR
 
 
 class TSVector(sa.types.TypeDecorator):
@@ -83,12 +83,17 @@ class ModelMixin(object):
     def create(cls, **kw):
         # whether should call db.session.commit
         commit = kw.pop("commit", False)
+        flush = kw.pop("flush", False)
 
         r = cls(**kw)
         db.session.add(r)
 
         if commit:
             db.session.commit()
+
+        if flush:
+            db.session.flush()
+
         return r
 
     def save(self):
@@ -160,9 +165,7 @@ class PlanEnum(EnumE):
 # Specify the format for sender address
 class SenderFormatEnum(EnumE):
     AT = 0  # John Wick - john at wick.com
-    VIA = 1  # john@wick.com via SimpleLogin
     A = 2  # John Wick - john(a)wick.com
-    FULL = 3  # John Wick - john@wick.com
 
 
 class AliasGeneratorEnum(EnumE):
@@ -336,6 +339,12 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         db.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # ignore emails send from a mailbox to its alias. This can happen when replying all to a forwarded email
+    # can automatically re-includes the alias
+    ignore_loop_email = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     @classmethod
     def create(cls, email, name="", password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
@@ -386,7 +395,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
 
         return user
 
-    def _lifetime_or_active_subscription(self) -> bool:
+    def lifetime_or_active_subscription(self) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
@@ -435,7 +444,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
 
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
-        if self._lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription():
             return False
 
         if self.trial_end and arrow.now() < self.trial_end:
@@ -444,7 +453,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         return False
 
     def should_show_upgrade_button(self):
-        if self._lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription():
             # user who has canceled can also re-subscribe
             sub: Subscription = self.get_subscription()
             if sub and sub.cancelled:
@@ -468,10 +477,6 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         if sub and not sub.cancelled:
             return False
 
-        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
-        if apple_sub and apple_sub.is_valid():
-            return False
-
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         # user who has giveaway premium can decide to upgrade
         if manual_sub and manual_sub.is_active() and not manual_sub.is_giveaway:
@@ -490,7 +495,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         - in trial period or
         - active subscription
         """
-        if self._lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription():
             return True
 
         if self.trial_end and arrow.now() < self.trial_end:
@@ -506,9 +511,9 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         sub: Subscription = self.get_subscription()
         if sub:
             if sub.cancelled:
-                return f"Cancelled Paddle Subscription {sub.subscription_id}"
+                return f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
             else:
-                return f"Active Paddle Subscription {sub.subscription_id}"
+                return f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
         if apple_sub and apple_sub.is_valid():
@@ -582,7 +587,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         Whether user can create a new alias. User can't create a new alias if
         - has more than 15 aliases in the free plan, *even in the free trial*
         """
-        if self._lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription():
             return True
         else:
             return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
@@ -686,7 +691,7 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
                 or not custom_domain.verified
                 or custom_domain.user_id != self.id
             ):
-                LOG.warning("Problem with %s default random alias domain", self)
+                LOG.w("Problem with %s default random alias domain", self)
                 return FIRST_ALIAS_DOMAIN
 
             return custom_domain.domain
@@ -695,11 +700,11 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
             sl_domain = SLDomain.get(self.default_alias_public_domain_id)
             # sanity check
             if not sl_domain:
-                LOG.exception("Problem with %s public random alias domain", self)
+                LOG.e("Problem with %s public random alias domain", self)
                 return FIRST_ALIAS_DOMAIN
 
             if sl_domain.premium_only and not self.is_premium():
-                LOG.warning(
+                LOG.w(
                     "%s is not premium and cannot use %s. Reset default random alias domain setting",
                     self,
                     sl_domain,
@@ -864,13 +869,11 @@ def generate_oauth_client_id(client_name) -> str:
 
     # check that the client does not exist yet
     if not Client.get_by(oauth_client_id=oauth_client_id):
-        LOG.debug("generate oauth_client_id %s", oauth_client_id)
+        LOG.d("generate oauth_client_id %s", oauth_client_id)
         return oauth_client_id
 
     # Rerun the function
-    LOG.warning(
-        "client_id %s already exists, generate a new client_id", oauth_client_id
-    )
+    LOG.w("client_id %s already exists, generate a new client_id", oauth_client_id)
     return generate_oauth_client_id(client_name)
 
 
@@ -1042,11 +1045,11 @@ def generate_email(
     if not Alias.get_by(email=random_email) and not DeletedAlias.get_by(
         email=random_email
     ):
-        LOG.debug("generate email %s", random_email)
+        LOG.d("generate email %s", random_email)
         return random_email
 
     # Rerun the function
-    LOG.warning("email %s already exists, generate a new email", random_email)
+    LOG.w("email %s already exists, generate a new email", random_email)
     return generate_email(scheme=scheme, in_hex=in_hex)
 
 
@@ -1136,6 +1139,13 @@ class Alias(db.Model, ModelMixin):
 
     __table_args__ = (
         Index("ix_video___ts_vector__", ts_vector, postgresql_using="gin"),
+        # index on note column using pg_trgm
+        Index(
+            "note_pg_trgm_index",
+            "note",
+            postgresql_ops={"note": "gin_trgm_ops"},
+            postgresql_using="gin",
+        ),
     )
 
     user = db.relationship(User, foreign_keys=[user_id])
@@ -1234,7 +1244,7 @@ class Alias(db.Model, ModelMixin):
         elif user.default_alias_public_domain_id:
             sl_domain: SLDomain = SLDomain.get(user.default_alias_public_domain_id)
             if sl_domain.premium_only and not user.is_premium():
-                LOG.warning("%s not premium, cannot use %s", user, sl_domain)
+                LOG.w("%s not premium, cannot use %s", user, sl_domain)
             else:
                 random_email = generate_email(
                     scheme=scheme, in_hex=in_hex, alias_domain=sl_domain.domain
@@ -1349,7 +1359,7 @@ class ClientUser(db.Model, ModelMixin):
             elif scope == Scope.EMAIL:
                 # Use generated email
                 if self.alias_id:
-                    LOG.debug(
+                    LOG.d(
                         "Use gen email for user %s, client %s", self.user, self.client
                     )
                     res[Scope.EMAIL.value] = self.alias.email
@@ -1407,8 +1417,6 @@ class Contact(db.Model, ModelMixin):
     # to investigate why the website_email is sometimes not correctly parsed
     # the envelope mail_from
     mail_from = db.Column(db.Text, nullable=True, default=None)
-    # the message["From"] header
-    from_header = db.Column(db.Text, nullable=True, default=None)
 
     # a contact can have an empty email address, in this case it can't receive emails
     invalid_email = db.Column(
@@ -1443,12 +1451,10 @@ class Contact(db.Model, ModelMixin):
         # if no name, try to parse it from website_from
         if not name and self.website_from:
             try:
-                from app.email_utils import parseaddr_unicode
-
-                name, _ = parseaddr_unicode(self.website_from)
+                name = address.parse(self.website_from).display_name
             except Exception:
                 # Skip if website_from is wrongly formatted
-                LOG.warning(
+                LOG.e(
                     "Cannot parse contact %s website_from %s", self, self.website_from
                 )
                 name = ""
@@ -1477,26 +1483,19 @@ class Contact(db.Model, ModelMixin):
         `new_email` is a special reply address
         """
         user = self.user
-        if (
-            not user
-            or not SenderFormatEnum.has_value(user.sender_format)
-            or user.sender_format == SenderFormatEnum.VIA.value
-        ):
-            new_name = f"{self.website_email} via SimpleLogin"
-        else:
-            if user.sender_format == SenderFormatEnum.AT.value:
-                formatted_email = self.website_email.replace("@", " at ").strip()
-            elif user.sender_format == SenderFormatEnum.A.value:
-                formatted_email = self.website_email.replace("@", "(a)").strip()
-            elif user.sender_format == SenderFormatEnum.FULL.value:
-                formatted_email = self.website_email.strip()
+        sender_format = user.sender_format if user else SenderFormatEnum.AT.value
 
-            # Prefix name to formatted email if available
-            new_name = (
-                (self.name + " - " + formatted_email)
-                if self.name and self.name != self.website_email.strip()
-                else formatted_email
-            )
+        if sender_format == SenderFormatEnum.AT.value:
+            formatted_email = self.website_email.replace("@", " at ").strip()
+        else:
+            formatted_email = self.website_email.replace("@", "(a)").strip()
+
+        # Prefix name to formatted email if available
+        new_name = (
+            (self.name + " - " + formatted_email)
+            if self.name and self.name != self.website_email.strip()
+            else formatted_email
+        )
 
         new_addr = formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
@@ -1757,25 +1756,19 @@ class ApiKey(db.Model, ModelMixin):
 
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     code = db.Column(db.String(128), unique=True, nullable=False)
-    name = db.Column(db.String(128), nullable=False)
+    name = db.Column(db.String(128), nullable=True)
     last_used = db.Column(ArrowType, default=None)
     times = db.Column(db.Integer, default=0, nullable=False)
 
     user = db.relationship(User)
 
     @classmethod
-    def create(cls, user_id, name):
-        # generate unique code
-        found = False
-        while not found:
-            code = random_string(60)
+    def create(cls, user_id, name=None, **kwargs):
+        code = random_string(60)
+        if cls.get_by(code=code):
+            code = str(uuid.uuid4())
 
-            if not cls.get_by(code=code):
-                found = True
-
-        a = cls(user_id=user_id, code=code, name=name)
-        db.session.add(a)
-        return a
+        return super().create(user_id=user_id, name=name, code=code, **kwargs)
 
 
 class CustomDomain(db.Model, ModelMixin):
@@ -1785,6 +1778,7 @@ class CustomDomain(db.Model, ModelMixin):
     # default name to use when user replies/sends from alias
     name = db.Column(db.String(128), nullable=True, default=None)
 
+    # mx verified
     verified = db.Column(db.Boolean, nullable=False, default=False)
     dkim_verified = db.Column(
         db.Boolean, nullable=False, default=False, server_default="0"
@@ -1813,6 +1807,26 @@ class CustomDomain(db.Model, ModelMixin):
         db.Integer, default=0, server_default="0", nullable=False
     )
 
+    # only domain has the ownership verified can go the next DNS step
+    # MX verified domains before this change don't have to do the TXT check
+    # and therefore have ownership_verified=True
+    ownership_verified = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+
+    # randomly generated TXT value for verifying domain ownership
+    # the TXT record should be sl-verification=txt_token
+    ownership_txt_token = db.Column(db.String(128), nullable=True)
+
+    __table_args__ = (
+        Index(
+            "ix_unique_domain",  # Index name
+            "domain",  # Columns which are part of the index
+            unique=True,
+            postgresql_where=Column("ownership_verified"),
+        ),  # The condition
+    )
+
     user = db.relationship(User, foreign_keys=[user_id])
 
     @property
@@ -1828,8 +1842,69 @@ class CustomDomain(db.Model, ModelMixin):
     def get_trash_url(self):
         return URL + f"/dashboard/domains/{self.id}/trash"
 
+    def get_ownership_dns_txt_value(self):
+        return f"sl-verification={self.ownership_txt_token}"
+
+    @classmethod
+    def create(cls, **kw):
+        domain: CustomDomain = super(CustomDomain, cls).create(**kw)
+
+        # generate a domain ownership txt token
+        if not domain.ownership_txt_token:
+            domain.ownership_txt_token = random_string(30)
+            db.session.commit()
+
+        return domain
+
+    @property
+    def auto_create_rules(self):
+        return sorted(self._auto_create_rules, key=lambda rule: rule.order)
+
     def __repr__(self):
         return f"<Custom Domain {self.domain}>"
+
+
+class AutoCreateRule(db.Model, ModelMixin):
+    """Alias auto creation rule for custom domain"""
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "custom_domain_id", "order", name="uq_auto_create_rule_order"
+        ),
+    )
+
+    custom_domain_id = db.Column(
+        db.ForeignKey(CustomDomain.id, ondelete="cascade"), nullable=False
+    )
+    # an alias is auto created if it matches the regex
+    regex = db.Column(db.String(512), nullable=False)
+
+    # the order in which rules are evaluated in case there are multiple rules
+    order = db.Column(db.Integer, default=0, nullable=False)
+
+    custom_domain = db.relationship(CustomDomain, backref="_auto_create_rules")
+
+    mailboxes = db.relationship(
+        "Mailbox", secondary="auto_create_rule__mailbox", lazy="joined"
+    )
+
+
+class AutoCreateRuleMailbox(db.Model, ModelMixin):
+    """store auto create rule - mailbox association"""
+
+    __tablename__ = "auto_create_rule__mailbox"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "auto_create_rule_id", "mailbox_id", name="uq_auto_create_rule_mailbox"
+        ),
+    )
+
+    auto_create_rule_id = db.Column(
+        db.ForeignKey(AutoCreateRule.id, ondelete="cascade"), nullable=False
+    )
+    mailbox_id = db.Column(
+        db.ForeignKey("mailbox.id", ondelete="cascade"), nullable=False
+    )
 
 
 class DomainDeletedAlias(db.Model, ModelMixin):
@@ -1876,6 +1951,10 @@ class Coupon(db.Model, ModelMixin):
         db.ForeignKey(User.id, ondelete="cascade"), nullable=True
     )
 
+    is_giveaway = db.Column(
+        db.Boolean, default=False, nullable=False, server_default="0"
+    )
+
 
 class Directory(db.Model, ModelMixin):
     user_id = db.Column(db.ForeignKey(User.id, ondelete="cascade"), nullable=False)
@@ -1883,7 +1962,7 @@ class Directory(db.Model, ModelMixin):
     # when a directory is disabled, new alias can't be created on the fly
     disabled = db.Column(db.Boolean, default=False, nullable=False, server_default="0")
 
-    user = db.relationship(User)
+    user = db.relationship(User, backref="directories")
 
     _mailboxes = db.relationship(
         "Mailbox", secondary="directory_mailbox", lazy="joined"
@@ -2330,7 +2409,7 @@ class TransactionalEmail(db.Model, ModelMixin):
     Deleted after 7 days
     """
 
-    email = db.Column(db.String(256), nullable=False, unique=True)
+    email = db.Column(db.String(256), nullable=False, unique=False)
 
 
 class Payout(db.Model, ModelMixin):

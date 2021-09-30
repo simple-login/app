@@ -25,15 +25,16 @@
         </div>
       {% endif %}
 
-      <form method="post">
+      <form method="post" data-parsley-validate>
         <div class="row mb-2">
           <div class="col-sm-6 mb-1 p-1" style="min-width: 4em">
             <input name="prefix" class="form-control"
                    id="prefix"
                    type="text"
-                   pattern="[0-9a-z-_.]{1,}"
+                   data-parsley-pattern="[0-9a-z-_.]{1,}"
+                   data-parsley-trigger="change"
+                   data-parsley-error-message="Only lowercase letters, dots, numbers, dashes (-) and underscores (_) are currently supported."
                    maxlength="40"
-                   data-bouncer-message="Only lowercase letters, dots, numbers, dashes (-) and underscores (_) are currently supported."
                    placeholder="Alias prefix, for example newsletter.com-123_xyz"
                    autofocus required>
 
@@ -69,7 +70,7 @@
         <div class="row mb-2">
           <div class="col p-1">
             <select data-width="100%"
-                    class="mailbox-select" id="mailboxes" multiple name="mailboxes">
+                    class="mailbox-select" id="mailboxes" multiple name="mailboxes" required>
               {% for mailbox in mailboxes %}
                 <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
                         selected {% endif %}>
@@ -94,7 +95,7 @@
 
         <div class="row">
           <div class="col p-1">
-            <button type="button" id="submit" class="btn btn-primary mt-1">Create</button>
+            <button type="submit" id="create" class="btn btn-primary mt-1">Create</button>
           </div>
         </div>
       </form>
@@ -105,9 +106,6 @@
 
 {% block script %}
   <script>
-    // init bouncer
-    new Bouncer('form');
-
     $('.mailbox-select').multipleSelect();
     
     // Ctrl-enter submit the form
@@ -117,7 +115,7 @@
       }
     })
 
-    $("#submit").on("click", async function () {
+    $("#create").on("click", async function () {
       let that = $(this);
       let mailbox_ids = $(`#mailboxes`).val();
       let prefix = $('#prefix').val();

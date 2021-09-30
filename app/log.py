@@ -42,7 +42,7 @@ def _get_console_handler():
     return console_handler
 
 
-def _get_logger(name):
+def _get_logger(name) -> logging.Logger:
     logger = logging.getLogger(name)
 
     logger.setLevel(logging.DEBUG)

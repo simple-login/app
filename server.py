@@ -39,6 +39,7 @@ from app.admin_model import (
     ReferralAdmin,
     PayoutAdmin,
     CouponAdmin,
+    CustomDomainAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -49,7 +50,6 @@ from app.config import (
     URL,
     SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
-    RESET_DB,
     FLASK_PROFILER_PATH,
     FLASK_PROFILER_PASSWORD,
     SENTRY_FRONT_END_DSN,
@@ -205,13 +205,6 @@ def create_app() -> Flask:
 
 def fake_data():
     LOG.d("create fake data")
-    # Remove db if exist
-    if os.path.exists("db.sqlite"):
-        LOG.d("remove existing db file")
-        os.remove("db.sqlite")
-
-    # Create all tables
-    db.create_all()
 
     # Create a user
     user = User.create(
@@ -438,6 +431,11 @@ def fake_data():
     AliasHibp.create(hibp_id=hibp1.id, alias_id=breached_alias1.id)
     AliasHibp.create(hibp_id=hibp2.id, alias_id=breached_alias2.id)
 
+    # old domain will have ownership_verified=True
+    CustomDomain.create(
+        user_id=user.id, domain="old.com", verified=True, ownership_verified=True
+    )
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -487,7 +485,7 @@ def set_index_page(app):
             and not request.path.startswith("/admin/static")
             and not request.path.startswith("/_debug_toolbar")
         ):
-            LOG.debug(
+            LOG.d(
                 "%s %s %s %s %s, takes %s",
                 request.remote_addr,
                 request.method,
@@ -565,7 +563,7 @@ def setup_error_page(app):
 
     @app.errorhandler(429)
     def rate_limited(e):
-        LOG.warning(
+        LOG.w(
             "Client hit rate limit on path %s, user:%s",
             request.path,
             get_current_user(),
@@ -591,7 +589,7 @@ def setup_error_page(app):
 
     @app.errorhandler(Exception)
     def error_handler(e):
-        LOG.exception(e)
+        LOG.e(e)
         if request.path.startswith("/api/"):
             return jsonify(error="Internal error"), 500
         else:
@@ -628,19 +626,18 @@ def jinja2_filter(app):
             STATUS_PAGE_URL=STATUS_PAGE_URL,
             SUPPORT_EMAIL=SUPPORT_EMAIL,
             PGP_SIGNER=PGP_SIGNER,
+            canonical_url=f"{URL}{request.path}",
         )
 
 
 def setup_paddle_callback(app: Flask):
     @app.route("/paddle", methods=["GET", "POST"])
     def paddle():
-        LOG.debug(f"paddle callback {request.form.get('alert_name')} {request.form}")
+        LOG.d(f"paddle callback {request.form.get('alert_name')} {request.form}")
 
         # make sure the request comes from Paddle
         if not paddle_utils.verify_incoming_request(dict(request.form)):
-            LOG.exception(
-                "request not coming from paddle. Request data:%s", dict(request.form)
-            )
+            LOG.e("request not coming from paddle. Request data:%s", dict(request.form))
             return "KO", 400
 
         if (
@@ -659,7 +656,7 @@ def setup_paddle_callback(app: Flask):
             elif subscription_plan_id in PADDLE_YEARLY_PRODUCT_IDS:
                 plan = PlanEnum.yearly
             else:
-                LOG.exception(
+                LOG.e(
                     "Unknown subscription_plan_id %s %s",
                     subscription_plan_id,
                     request.form,
@@ -696,13 +693,13 @@ def setup_paddle_callback(app: Flask):
                 # in case user cancels a plan and subscribes a new plan
                 sub.cancelled = False
 
-            LOG.debug("User %s upgrades!", user)
+            LOG.d("User %s upgrades!", user)
 
             db.session.commit()
 
         elif request.form.get("alert_name") == "subscription_payment_succeeded":
             subscription_id = request.form.get("subscription_id")
-            LOG.debug("Update subscription %s", subscription_id)
+            LOG.d("Update subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             # when user subscribes, the "subscription_payment_succeeded" can arrive BEFORE "subscription_created"
@@ -721,7 +718,7 @@ def setup_paddle_callback(app: Flask):
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
                 # cancellation_effective_date should be the same as next_bill_date
-                LOG.warning(
+                LOG.w(
                     "Cancel subscription %s %s on %s, next bill date %s",
                     subscription_id,
                     sub.user,
@@ -751,7 +748,7 @@ def setup_paddle_callback(app: Flask):
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
-                LOG.debug(
+                LOG.d(
                     "Update subscription %s %s on %s, next bill date %s",
                     subscription_id,
                     sub.user,
@@ -797,7 +794,7 @@ def setup_coinbase_commerce(app):
                 request_data, request_sig, COINBASE_WEBHOOK_SECRET
             )
         except (WebhookInvalidPayload, SignatureVerificationError) as e:
-            LOG.exception("Invalid Coinbase webhook")
+            LOG.e("Invalid Coinbase webhook")
             return str(e), 400
 
         LOG.d("Coinbase event %s", event)
@@ -816,7 +813,7 @@ def handle_coinbase_event(event) -> bool:
     code = event["data"]["code"]
     user = User.get(user_id)
     if not user:
-        LOG.exception("User not found %s", user_id)
+        LOG.e("User not found %s", user_id)
         return False
 
     coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
@@ -886,6 +883,7 @@ def init_admin(app):
     admin.add_view(CouponAdmin(Coupon, db.session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, db.session))
     admin.add_view(ClientAdmin(Client, db.session))
+    admin.add_view(CustomDomainAdmin(CustomDomain, db.session))
     admin.add_view(ReferralAdmin(Referral, db.session))
     admin.add_view(PayoutAdmin(Payout, db.session))
 
@@ -919,6 +917,15 @@ def register_custom_commands(app):
             LOG.d("finish trunk %s, update %s email logs", trunk, nb_update)
             db.session.commit()
 
+    @app.cli.command("dummy-data")
+    def dummy_data():
+        from init_app import add_sl_domains
+
+        LOG.w("reset db, add fake data")
+        with app.app_context():
+            fake_data()
+            add_sl_domains()
+
 
 def setup_do_not_track(app):
     @app.route("/dnt")
@@ -950,15 +957,6 @@ def local_main():
     app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
     app.debug = True
     DebugToolbarExtension(app)
-
-    # warning: only used in local
-    if RESET_DB:
-        from init_app import add_sl_domains
-
-        LOG.warning("reset db, add fake data")
-        with app.app_context():
-            fake_data()
-            add_sl_domains()
 
     app.run(debug=True, port=7777)
 

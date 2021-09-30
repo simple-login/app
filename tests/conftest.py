@@ -2,10 +2,14 @@ import os
 
 # use the tests/test.env config fle
 # flake8: noqa: E402
+import sqlalchemy
+
 os.environ["CONFIG"] = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests/test.env")
 )
 
+from psycopg2 import errors
+from psycopg2.errorcodes import DEPENDENT_OBJECTS_STILL_EXIST
 
 import pytest
 
@@ -19,7 +23,18 @@ app.config["WTF_CSRF_ENABLED"] = False
 app.config["SERVER_NAME"] = "sl.test"
 
 with app.app_context():
+    # enable pg_trgm extension
+    with db.engine.connect() as conn:
+        try:
+            conn.execute("DROP EXTENSION if exists pg_trgm")
+            conn.execute("CREATE EXTENSION pg_trgm")
+        except sqlalchemy.exc.InternalError as e:
+            if isinstance(e.orig, errors.lookup(DEPENDENT_OBJECTS_STILL_EXIST)):
+                print(">>> pg_trgm can't be dropped, ignore")
+            conn.execute("Rollback")
+
     db.create_all()
+
     add_sl_domains()
 
 

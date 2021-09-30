@@ -3,7 +3,7 @@ from flask import redirect, url_for, request, flash
 from flask_admin import expose, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.contrib import sqla
-from flask_login import current_user
+from flask_login import current_user, login_user
 
 from app.extensions import db
 from app.models import User, ManualSubscription
@@ -122,6 +122,21 @@ class UserAdmin(SLModelView):
 
         db.session.commit()
 
+    @action(
+        "login_as",
+        "Login as this user",
+        "Login as this user?",
+    )
+    def login_as(self, ids):
+        if len(ids) != 1:
+            flash("only 1 user can be selected", "error")
+            return
+
+        for user in User.query.filter(User.id.in_(ids)):
+            login_user(user)
+            flash(f"Login as user {user}", "success")
+            return redirect("/")
+
 
 def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
     query = User.query.filter(User.id.in_(ids))
@@ -207,6 +222,12 @@ class ClientAdmin(SLModelView):
     column_searchable_list = ["name", "description", "user.email"]
     column_exclude_list = ["oauth_client_secret", "home_url"]
     can_edit = True
+
+
+class CustomDomainAdmin(SLModelView):
+    column_searchable_list = ["domain", "user.email", "user.id"]
+    column_exclude_list = ["ownership_txt_token"]
+    can_edit = False
 
 
 class ReferralAdmin(SLModelView):

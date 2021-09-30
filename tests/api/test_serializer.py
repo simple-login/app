@@ -59,7 +59,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_mailbox(flask_client):
         commit=True,
     )
     alias = Alias.first()
-    alias_infos = get_alias_infos_with_pagination_v3(user, query=alias.mailbox.email)
+    alias_infos = get_alias_infos_with_pagination_v3(user, mailbox_id=alias.mailbox_id)
     assert len(alias_infos) == 1
 
 
@@ -77,7 +77,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_mailboxes(flask_client):
     alias._mailboxes.append(mb)
     db.session.commit()
 
-    alias_infos = get_alias_infos_with_pagination_v3(user, query=mb.email)
+    alias_infos = get_alias_infos_with_pagination_v3(user, mailbox_id=mb.id)
     assert len(alias_infos) == 1
 
     alias_infos = get_alias_infos_with_pagination_v3(user, query=alias.email)

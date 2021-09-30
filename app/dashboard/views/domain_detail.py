@@ -1,7 +1,10 @@
+import re2 as re
 from threading import Thread
 
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
+from flask_wtf import FlaskForm
+from wtforms import StringField, validators, IntegerField
 
 from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
 from app.dashboard.base import dashboard_bp
@@ -14,29 +17,65 @@ from app.dns_utils import (
 from app.email_utils import send_email
 from app.extensions import db
 from app.log import LOG
-from app.models import CustomDomain, Alias, DomainDeletedAlias
+from app.models import (
+    CustomDomain,
+    Alias,
+    DomainDeletedAlias,
+    Mailbox,
+    DomainMailbox,
+    AutoCreateRule,
+    AutoCreateRuleMailbox,
+)
+from app.utils import random_string
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
 @login_required
 def domain_detail_dns(custom_domain_id):
-    custom_domain = CustomDomain.get(custom_domain_id)
+    custom_domain: CustomDomain = CustomDomain.get(custom_domain_id)
     if not custom_domain or custom_domain.user_id != current_user.id:
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
 
-    spf_record = f"v=spf1 include:{EMAIL_DOMAIN} -all"
+    # generate a domain ownership txt token if needed
+    if not custom_domain.ownership_verified and not custom_domain.ownership_txt_token:
+        custom_domain.ownership_txt_token = random_string(30)
+        db.session.commit()
+
+    spf_record = f"v=spf1 include:{EMAIL_DOMAIN} ~all"
 
     # hardcode the DKIM selector here
     dkim_cname = f"dkim._domainkey.{EMAIL_DOMAIN}"
 
     dmarc_record = "v=DMARC1; p=quarantine; pct=100; adkim=s; aspf=s"
 
-    mx_ok = spf_ok = dkim_ok = dmarc_ok = True
-    mx_errors = spf_errors = dkim_errors = dmarc_errors = []
+    mx_ok = spf_ok = dkim_ok = dmarc_ok = ownership_ok = True
+    mx_errors = spf_errors = dkim_errors = dmarc_errors = ownership_errors = []
 
     if request.method == "POST":
-        if request.form.get("form-name") == "check-mx":
+        if request.form.get("form-name") == "check-ownership":
+            txt_records = get_txt_record(custom_domain.domain)
+
+            if custom_domain.get_ownership_dns_txt_value() in txt_records:
+                flash(
+                    "Domain ownership is verified. Please proceed to the other records setup",
+                    "success",
+                )
+                custom_domain.ownership_verified = True
+                db.session.commit()
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail_dns",
+                        custom_domain_id=custom_domain.id,
+                        _anchor="dns-setup",
+                    )
+                )
+            else:
+                flash("We can't find the needed TXT record", "error")
+                ownership_ok = False
+                ownership_errors = txt_records
+
+        elif request.form.get("form-name") == "check-mx":
             mx_domains = get_mx_domains(custom_domain.domain)
 
             if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
@@ -130,7 +169,9 @@ def domain_detail_dns(custom_domain_id):
 @dashboard_bp.route("/domains/<int:custom_domain_id>/info", methods=["GET", "POST"])
 @login_required
 def domain_detail(custom_domain_id):
-    custom_domain = CustomDomain.get(custom_domain_id)
+    custom_domain: CustomDomain = CustomDomain.get(custom_domain_id)
+    mailboxes = current_user.mailboxes()
+
     if not custom_domain or custom_domain.user_id != current_user.id:
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
@@ -191,6 +232,47 @@ def domain_detail(custom_domain_id):
             return redirect(
                 url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
             )
+        elif request.form.get("form-name") == "update":
+            mailbox_ids = request.form.getlist("mailbox_ids")
+            # check if mailbox is not tempered with
+            mailboxes = []
+            for mailbox_id in mailbox_ids:
+                mailbox = Mailbox.get(mailbox_id)
+                if (
+                    not mailbox
+                    or mailbox.user_id != current_user.id
+                    or not mailbox.verified
+                ):
+                    flash("Something went wrong, please retry", "warning")
+                    return redirect(
+                        url_for(
+                            "dashboard.domain_detail", custom_domain_id=custom_domain.id
+                        )
+                    )
+                mailboxes.append(mailbox)
+
+            if not mailboxes:
+                flash("You must select at least 1 mailbox", "warning")
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail", custom_domain_id=custom_domain.id
+                    )
+                )
+
+            # first remove all existing domain-mailboxes links
+            DomainMailbox.query.filter_by(domain_id=custom_domain.id).delete()
+            db.session.flush()
+
+            for mailbox in mailboxes:
+                DomainMailbox.create(domain_id=custom_domain.id, mailbox_id=mailbox.id)
+
+            db.session.commit()
+            flash(f"{custom_domain.domain} mailboxes has been updated", "success")
+
+            return redirect(
+                url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
+            )
+
         elif request.form.get("form-name") == "delete":
             name = custom_domain.domain
             LOG.d("Schedule deleting %s", custom_domain)
@@ -208,7 +290,7 @@ def domain_detail(custom_domain_id):
     return render_template("dashboard/domain_detail/info.html", **locals())
 
 
-def delete_domain(custom_domain_id: CustomDomain):
+def delete_domain(custom_domain_id: int):
     from server import create_light_app
 
     with create_light_app().app_context():
@@ -288,3 +370,167 @@ def domain_detail_trash(custom_domain_id):
         domain_deleted_aliases=domain_deleted_aliases,
         custom_domain=custom_domain,
     )
+
+
+class AutoCreateRuleForm(FlaskForm):
+    regex = StringField(
+        "regex", validators=[validators.DataRequired(), validators.Length(max=128)]
+    )
+
+    order = IntegerField(
+        "order",
+        validators=[validators.DataRequired(), validators.NumberRange(min=0, max=100)],
+    )
+
+
+class AutoCreateTestForm(FlaskForm):
+    local = StringField(
+        "local part", validators=[validators.DataRequired(), validators.Length(max=128)]
+    )
+
+
+@dashboard_bp.route(
+    "/domains/<int:custom_domain_id>/auto-create", methods=["GET", "POST"]
+)
+@login_required
+def domain_detail_auto_create(custom_domain_id):
+    custom_domain: CustomDomain = CustomDomain.get(custom_domain_id)
+    mailboxes = current_user.mailboxes()
+    new_auto_create_rule_form = AutoCreateRuleForm()
+
+    auto_create_test_form = AutoCreateTestForm()
+    auto_create_test_local, auto_create_test_result, auto_create_test_passed = (
+        "",
+        "",
+        False,
+    )
+
+    if not custom_domain or custom_domain.user_id != current_user.id:
+        flash("You cannot see this page", "warning")
+        return redirect(url_for("dashboard.index"))
+
+    if request.method == "POST":
+        if request.form.get("form-name") == "create-auto-create-rule":
+            if new_auto_create_rule_form.validate():
+                # make sure order isn't used before
+                for auto_create_rule in custom_domain.auto_create_rules:
+                    auto_create_rule: AutoCreateRule
+                    if auto_create_rule.order == int(
+                        new_auto_create_rule_form.order.data
+                    ):
+                        flash(
+                            "Another rule with the same order already exists", "error"
+                        )
+                        break
+                else:
+                    mailbox_ids = request.form.getlist("mailbox_ids")
+                    # check if mailbox is not tempered with
+                    mailboxes = []
+                    for mailbox_id in mailbox_ids:
+                        mailbox = Mailbox.get(mailbox_id)
+                        if (
+                            not mailbox
+                            or mailbox.user_id != current_user.id
+                            or not mailbox.verified
+                        ):
+                            flash("Something went wrong, please retry", "warning")
+                            return redirect(
+                                url_for(
+                                    "dashboard.domain_detail_auto_create",
+                                    custom_domain_id=custom_domain.id,
+                                )
+                            )
+                        mailboxes.append(mailbox)
+
+                    if not mailboxes:
+                        flash("You must select at least 1 mailbox", "warning")
+                        return redirect(
+                            url_for(
+                                "dashboard.domain_detail_auto_create",
+                                custom_domain_id=custom_domain.id,
+                            )
+                        )
+
+                    try:
+                        re.compile(new_auto_create_rule_form.regex.data)
+                    except:
+                        flash(
+                            f"Invalid regex {new_auto_create_rule_form.regex.data}",
+                            "error",
+                        )
+                        return redirect(
+                            url_for(
+                                "dashboard.domain_detail_auto_create",
+                                custom_domain_id=custom_domain.id,
+                            )
+                        )
+
+                    rule = AutoCreateRule.create(
+                        custom_domain_id=custom_domain.id,
+                        order=int(new_auto_create_rule_form.order.data),
+                        regex=new_auto_create_rule_form.regex.data,
+                        flush=True,
+                    )
+
+                    for mailbox in mailboxes:
+                        AutoCreateRuleMailbox.create(
+                            auto_create_rule_id=rule.id, mailbox_id=mailbox.id
+                        )
+
+                    db.session.commit()
+
+                    flash("New auto create rule has been created", "success")
+
+                    return redirect(
+                        url_for(
+                            "dashboard.domain_detail_auto_create",
+                            custom_domain_id=custom_domain.id,
+                        )
+                    )
+        elif request.form.get("form-name") == "delete-auto-create-rule":
+            rule_id = request.form.get("rule-id")
+            rule: AutoCreateRule = AutoCreateRule.get(int(rule_id))
+
+            if not rule or rule.custom_domain_id != custom_domain.id:
+                flash("Something wrong, please retry", "error")
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail_auto_create",
+                        custom_domain_id=custom_domain.id,
+                    )
+                )
+
+            rule_order = rule.order
+            AutoCreateRule.delete(rule_id)
+            db.session.commit()
+            flash(f"Rule #{rule_order} has been deleted", "success")
+            return redirect(
+                url_for(
+                    "dashboard.domain_detail_auto_create",
+                    custom_domain_id=custom_domain.id,
+                )
+            )
+        elif request.form.get("form-name") == "test-auto-create-rule":
+            if auto_create_test_form.validate():
+                local = auto_create_test_form.local.data
+                auto_create_test_local = local
+
+                for rule in custom_domain.auto_create_rules:
+                    rule: AutoCreateRule
+                    regex = re.compile(rule.regex)
+                    if re.fullmatch(regex, local):
+                        auto_create_test_result = (
+                            f"{local}@{custom_domain.domain} passes rule #{rule.order}"
+                        )
+                        auto_create_test_passed = True
+                        break
+                else:  # no rule passes
+                    auto_create_test_result = (
+                        f"{local}@{custom_domain.domain} doesn't pass any rule"
+                    )
+
+                return render_template(
+                    "dashboard/domain_detail/auto-create.html", **locals()
+                )
+
+    return render_template("dashboard/domain_detail/auto-create.html", **locals())

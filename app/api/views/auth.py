@@ -96,7 +96,7 @@ def auth_register():
     if not password or len(password) < 8:
         return jsonify(error="password too short"), 400
 
-    LOG.debug("create user %s", email)
+    LOG.d("create user %s", email)
     user = User.create(email=email, name="", password=password)
     db.session.flush()
 
@@ -166,7 +166,7 @@ def auth_activate():
 
         return jsonify(error="Wrong email or code"), 400
 
-    LOG.debug("activate user %s", user)
+    LOG.d("activate user %s", user)
     user.activated = True
     AccountActivation.delete(account_activation.id)
     db.session.commit()

@@ -1,6 +1,7 @@
-import re
+import re2 as re
 from typing import Optional
 
+from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import IntegrityError, DataError
 
 from app.config import BOUNCE_PREFIX_FOR_REPLY_PHASE
@@ -10,6 +11,7 @@ from app.email_utils import (
     send_cannot_create_domain_alias,
     can_create_directory_for_address,
     send_cannot_create_directory_alias_disabled,
+    get_email_local_part,
 )
 from app.errors import AliasInTrashError
 from app.extensions import db
@@ -25,18 +27,23 @@ from app.models import (
     Mailbox,
     EmailLog,
     Contact,
+    AutoCreateRule,
 )
 
 
 def try_auto_create(address: str) -> Optional[Alias]:
     """Try to auto-create the alias using directory or catch-all domain"""
     if address.startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"):
-        LOG.exception(
-            "alias %s can't start with %s", address, BOUNCE_PREFIX_FOR_REPLY_PHASE
-        )
+        LOG.e("alias %s can't start with %s", address, BOUNCE_PREFIX_FOR_REPLY_PHASE)
         return None
 
-    alias = try_auto_create_catch_all_domain(address)
+    try:
+        # NOT allow unicode for now
+        validate_email(address, check_deliverability=False, allow_smtputf8=False)
+    except EmailNotValidError:
+        return None
+
+    alias = try_auto_create_via_domain(address)
     if not alias:
         alias = try_auto_create_directory(address)
 
@@ -68,16 +75,14 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
         if not directory:
             return None
 
-        dir_user: User = directory.user
+        user: User = directory.user
 
-        if not dir_user.can_create_new_alias():
-            send_cannot_create_directory_alias(dir_user, address, directory_name)
+        if not user.can_create_new_alias():
+            send_cannot_create_directory_alias(user, address, directory_name)
             return None
 
         if directory.disabled:
-            send_cannot_create_directory_alias_disabled(
-                dir_user, address, directory_name
-            )
+            send_cannot_create_directory_alias_disabled(user, address, directory_name)
             return None
 
         try:
@@ -90,6 +95,7 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
                 user_id=directory.user_id,
                 directory_id=directory.id,
                 mailbox_id=mailboxes[0].id,
+                note=f"Created by directory {directory.name}",
             )
             db.session.flush()
             for i in range(1, len(mailboxes)):
@@ -101,22 +107,22 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             db.session.commit()
             return alias
         except AliasInTrashError:
-            LOG.warning(
+            LOG.w(
                 "Alias %s was deleted before, cannot auto-create using directory %s, user %s",
                 address,
                 directory_name,
-                dir_user,
+                user,
             )
             return None
         except IntegrityError:
-            LOG.warning("Alias %s already exists", address)
+            LOG.w("Alias %s already exists", address)
             db.session.rollback()
             alias = Alias.get_by(email=address)
             return alias
 
 
-def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
-    """Try to create an alias with catch-all domain"""
+def try_auto_create_via_domain(address: str) -> Optional[Alias]:
+    """Try to create an alias with catch-all or auto-create rules on custom domain"""
 
     # try to create alias on-the-fly with custom-domain catch-all feature
     # check if alias is custom-domain alias and if the custom-domain has catch-all enabled
@@ -126,11 +132,31 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
     if not custom_domain:
         return None
 
-    # custom_domain exists
-    if not custom_domain.catch_all:
+    if not custom_domain.catch_all and len(custom_domain.auto_create_rules) == 0:
         return None
+    elif not custom_domain.catch_all and len(custom_domain.auto_create_rules) > 0:
+        local = get_email_local_part(address)
 
-    # custom_domain has catch-all enabled
+        for rule in custom_domain.auto_create_rules:
+            rule: AutoCreateRule
+            regex = re.compile(rule.regex)
+            if re.fullmatch(regex, local):
+                LOG.d(
+                    "%s passes %s on %s",
+                    address,
+                    rule.regex,
+                    custom_domain,
+                )
+                alias_note = f"Created by rule {rule.order} with regex {rule.regex}"
+                mailboxes = rule.mailboxes
+                break
+        else:  # no rule passes
+            LOG.d("no rule passed to create %s", local)
+            return
+    else:  # catch-all is enabled
+        mailboxes = custom_domain.mailboxes
+        alias_note = "Created by catch-all option"
+
     domain_user: User = custom_domain.user
 
     if not domain_user.can_create_new_alias():
@@ -139,13 +165,13 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
 
     try:
         LOG.d("create alias %s for domain %s", address, custom_domain)
-        mailboxes = custom_domain.mailboxes
         alias = Alias.create(
             email=address,
             user_id=custom_domain.user_id,
             custom_domain_id=custom_domain.id,
             automatic_creation=True,
             mailbox_id=mailboxes[0].id,
+            note=alias_note,
         )
         db.session.flush()
         for i in range(1, len(mailboxes)):
@@ -156,7 +182,7 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         db.session.commit()
         return alias
     except AliasInTrashError:
-        LOG.warning(
+        LOG.w(
             "Alias %s was deleted before, cannot auto-create using domain catch-all %s, user %s",
             address,
             custom_domain,
@@ -164,12 +190,12 @@ def try_auto_create_catch_all_domain(address: str) -> Optional[Alias]:
         )
         return None
     except IntegrityError:
-        LOG.warning("Alias %s already exists", address)
+        LOG.w("Alias %s already exists", address)
         db.session.rollback()
         alias = Alias.get_by(email=address)
         return alias
     except DataError:
-        LOG.warning("Cannot create alias %s", address)
+        LOG.w("Cannot create alias %s", address)
         db.session.rollback()
         return None
 
@@ -184,7 +210,7 @@ def delete_alias(alias: Alias, user: User):
         if not DomainDeletedAlias.get_by(
             email=alias.email, domain_id=alias.custom_domain_id
         ):
-            LOG.debug("add %s to domain %s trash", alias, alias.custom_domain_id)
+            LOG.d("add %s to domain %s trash", alias, alias.custom_domain_id)
             db.session.add(
                 DomainDeletedAlias(
                     user_id=user.id, email=alias.email, domain_id=alias.custom_domain_id

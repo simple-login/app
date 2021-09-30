@@ -16,7 +16,7 @@
   <form class="card" style="border-radius: 2%" method="post">
     {{ form.csrf_token }}
     <div class="card-body p-6">
-      <div class="card-title">Welcome back!</div>
+      <h1 class="card-title">Welcome back!</h1>
       <div class="form-group">
         <label class="form-label">Email address</label>
         {{ form.email(class="form-control", type="email", autofocus="true") }}

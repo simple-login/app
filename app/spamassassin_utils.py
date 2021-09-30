@@ -2,7 +2,7 @@
 https://github.com/petermat/spamassassin_client
 """
 import logging
-import re
+import re2 as re
 import select
 import socket
 from io import BytesIO
@@ -115,7 +115,7 @@ class SpamAssassin(object):
                     "description": " ".join(wordlist[1:]),
                 }
             except ValueError:
-                LOG.warning("Cannot parse %s %s", wordlist[0], wordlist)
+                LOG.w("Cannot parse %s %s", wordlist[0], wordlist)
 
         headers = (
             headers.decode("utf-8")

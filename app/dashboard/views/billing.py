@@ -21,7 +21,7 @@ def billing():
 
     if request.method == "POST":
         if request.form.get("form-name") == "cancel":
-            LOG.warning(f"User {current_user} cancels their subscription")
+            LOG.w(f"User {current_user} cancels their subscription")
             success = cancel_subscription(sub.subscription_id)
 
             if success:
@@ -37,7 +37,7 @@ def billing():
 
             return redirect(url_for("dashboard.billing"))
         elif request.form.get("form-name") == "change-monthly":
-            LOG.debug(f"User {current_user} changes to monthly plan")
+            LOG.d(f"User {current_user} changes to monthly plan")
             success, msg = change_plan(
                 current_user, sub.subscription_id, PADDLE_MONTHLY_PRODUCT_ID
             )
@@ -58,7 +58,7 @@ def billing():
 
             return redirect(url_for("dashboard.billing"))
         elif request.form.get("form-name") == "change-yearly":
-            LOG.debug(f"User {current_user} changes to yearly plan")
+            LOG.d(f"User {current_user} changes to yearly plan")
             success, msg = change_plan(
                 current_user, sub.subscription_id, PADDLE_YEARLY_PRODUCT_ID
             )

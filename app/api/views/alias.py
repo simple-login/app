@@ -1,3 +1,5 @@
+from flanker.addresslib import address
+from flanker.addresslib.address import EmailAddress
 from flask import g
 from flask import jsonify
 from flask import request
@@ -16,8 +18,6 @@ from app.api.serializer import (
 )
 from app.dashboard.views.alias_log import get_alias_log
 from app.email_utils import (
-    parseaddr_unicode,
-    is_valid_email,
     generate_reply_email,
 )
 from app.extensions import db
@@ -400,10 +400,11 @@ def create_contact_route(alias_id):
     if not contact_addr:
         return jsonify(error="Contact cannot be empty"), 400
 
-    contact_name, contact_email = parseaddr_unicode(contact_addr)
+    full_address: EmailAddress = address.parse(contact_addr)
+    if not full_address:
+        return jsonify(error=f"invalid contact email {contact_addr}"), 400
 
-    if not is_valid_email(contact_email):
-        return jsonify(error=f"invalid contact email {contact_email}"), 400
+    contact_name, contact_email = full_address.display_name, full_address.address
 
     contact_email = sanitize_email(contact_email)
 

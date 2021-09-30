@@ -12,6 +12,7 @@ from app.config import (
 )
 from app.dashboard.base import dashboard_bp
 from app.log import LOG
+from app.models import AppleSubscription
 
 
 @dashboard_bp.route("/pricing", methods=["GET", "POST"])
@@ -20,6 +21,10 @@ def pricing():
     if not current_user.can_upgrade():
         flash("You are already a premium user", "warning")
         return redirect(url_for("dashboard.index"))
+
+    apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=current_user.id)
+    if apple_sub and apple_sub.is_valid():
+        flash("Please make sure to cancel your subscription on Apple first", "warning")
 
     return render_template(
         "dashboard/pricing.html",

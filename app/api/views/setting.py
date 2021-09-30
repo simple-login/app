@@ -87,7 +87,7 @@ def update_setting():
 
             # sanity check
             if custom_domain.user_id != user.id or not custom_domain.verified:
-                LOG.exception("%s cannot use domain %s", user, default_domain)
+                LOG.e("%s cannot use domain %s", user, default_domain)
                 return jsonify(error="invalid domain"), 400
             else:
                 user.default_alias_custom_domain_id = custom_domain.id

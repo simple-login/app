@@ -43,7 +43,7 @@ def load_public_key_and_check(public_key: str) -> str:
         try:
             encrypt_file(dummy_data, fingerprint)
         except Exception as e:
-            LOG.warning(
+            LOG.w(
                 "Cannot encrypt using the imported key %s %s", fingerprint, public_key
             )
             # remove the fingerprint
@@ -55,7 +55,7 @@ def load_public_key_and_check(public_key: str) -> str:
 
 def hard_exit():
     pid = os.getpid()
-    LOG.warning("kill pid %s", pid)
+    LOG.w("kill pid %s", pid)
     os.kill(pid, 9)
 
 

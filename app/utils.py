@@ -1,6 +1,8 @@
 import random
 import string
+import time
 import urllib.parse
+from functools import wraps
 
 from unidecode import unidecode
 
@@ -73,3 +75,15 @@ def sanitize_email(email_address: str) -> str:
 def query2str(query):
     """Useful utility method to print out a SQLAlchemy query"""
     return query.statement.compile(compile_kwargs={"literal_binds": True})
+
+
+def debug_info(func):
+    @wraps(func)
+    def wrap(*args, **kwargs):
+        start = time.time()
+        LOG.d("start %s %s %s", func.__name__, args, kwargs)
+        ret = func(*args, **kwargs)
+        LOG.d("finish %s. Takes %s seconds", func.__name__, time.time() - start)
+        return ret
+
+    return wrap

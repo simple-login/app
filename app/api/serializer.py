@@ -7,7 +7,15 @@ from sqlalchemy.orm import joinedload
 
 from app.config import PAGE_LIMIT
 from app.extensions import db
-from app.models import Alias, Contact, EmailLog, Mailbox, AliasMailbox, CustomDomain
+from app.models import (
+    Alias,
+    Contact,
+    EmailLog,
+    Mailbox,
+    AliasMailbox,
+    CustomDomain,
+    User,
+)
 
 
 @dataclass
@@ -129,119 +137,46 @@ def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
 
 
 def get_alias_infos_with_pagination_v3(
-    user, page_id=0, query=None, sort=None, alias_filter=None
+    user,
+    page_id=0,
+    query=None,
+    sort=None,
+    alias_filter=None,
+    mailbox_id=None,
+    directory_id=None,
 ) -> [AliasInfo]:
-    # subquery on alias annotated with nb_reply, nb_blocked, nb_forward, max_created_at, latest_email_log_created_at
-    alias_activity_subquery = (
-        db.session.query(
-            Alias.id,
-            func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
-            func.sum(
-                case(
-                    [(and_(EmailLog.is_reply.is_(False), EmailLog.blocked), 1)],
-                    else_=0,
-                )
-            ).label("nb_blocked"),
-            func.sum(
-                case(
-                    [
-                        (
-                            and_(
-                                EmailLog.is_reply.is_(False),
-                                EmailLog.blocked.is_(False),
-                            ),
-                            1,
-                        )
-                    ],
-                    else_=0,
-                )
-            ).label("nb_forward"),
-            func.max(EmailLog.created_at).label("latest_email_log_created_at"),
-        )
-        .join(EmailLog, Alias.id == EmailLog.alias_id, isouter=True)
-        .filter(Alias.user_id == user.id)
-        .group_by(Alias.id)
-        .subquery()
-    )
-
-    alias_contact_subquery = (
-        db.session.query(Alias.id, func.max(Contact.id).label("max_contact_id"))
-        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
-        .filter(Alias.user_id == user.id)
-        .group_by(Alias.id)
-        .subquery()
-    )
-
-    latest_activity = case(
-        [
-            (Alias.created_at > EmailLog.created_at, Alias.created_at),
-            (Alias.created_at < EmailLog.created_at, EmailLog.created_at),
-        ],
-        else_=Alias.created_at,
-    )
-
-    q = (
-        db.session.query(
-            Alias,
-            Contact,
-            EmailLog,
-            CustomDomain,
-            alias_activity_subquery.c.nb_reply,
-            alias_activity_subquery.c.nb_blocked,
-            alias_activity_subquery.c.nb_forward,
-        )
-        .options(joinedload(Alias.hibp_breaches))
-        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
-        .join(CustomDomain, Alias.custom_domain_id == CustomDomain.id, isouter=True)
-        .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
-        .filter(Alias.id == alias_activity_subquery.c.id)
-        .filter(Alias.id == alias_contact_subquery.c.id)
-        .filter(
-            or_(
-                EmailLog.created_at
-                == alias_activity_subquery.c.latest_email_log_created_at,
-                and_(
-                    # no email log yet for this alias
-                    alias_activity_subquery.c.latest_email_log_created_at.is_(None),
-                    # to make sure only 1 contact is returned in this case
-                    or_(
-                        Contact.id == alias_contact_subquery.c.max_contact_id,
-                        alias_contact_subquery.c.max_contact_id.is_(None),
-                    ),
-                ),
-            )
-        )
-    )
+    q = construct_alias_query(user)
 
     if query:
-        q = (
-            # to find mailbox whose email match the query
-            q.join(AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True)
-            .join(
-                Mailbox,
-                or_(
-                    Mailbox.id == Alias.mailbox_id,
-                    Mailbox.id == AliasMailbox.mailbox_id,
-                ),
-            )
-            .filter(
-                or_(
-                    Alias.email.ilike(f"%{query}%"),
-                    # can't use match() here as it uses to_tsquery that expected a tsquery input
-                    # Alias.ts_vector.match(query),
-                    Alias.ts_vector.op("@@")(func.plainto_tsquery(query)),
-                    Alias.name.ilike(f"%{query}%"),
-                    Mailbox.email.ilike(f"%{query}%"),
-                )
+        q = q.filter(
+            or_(
+                Alias.email.ilike(f"%{query}%"),
+                Alias.note.ilike(f"%{query}%"),
+                # can't use match() here as it uses to_tsquery that expected a tsquery input
+                # Alias.ts_vector.match(query),
+                Alias.ts_vector.op("@@")(func.plainto_tsquery("english", query)),
+                Alias.name.ilike(f"%{query}%"),
             )
         )
+
+    if mailbox_id:
+        q = q.join(
+            AliasMailbox, Alias.id == AliasMailbox.alias_id, isouter=True
+        ).filter(
+            or_(Alias.mailbox_id == mailbox_id, AliasMailbox.mailbox_id == mailbox_id)
+        )
+
+    if directory_id:
+        q = q.filter(Alias.directory_id == directory_id)
 
     if alias_filter == "enabled":
         q = q.filter(Alias.enabled)
     elif alias_filter == "disabled":
         q = q.filter(Alias.enabled.is_(False))
-
-    q = q.order_by(Alias.pinned.desc())
+    elif alias_filter == "pinned":
+        q = q.filter(Alias.pinned)
+    elif alias_filter == "hibp":
+        q = q.filter(Alias.hibp_breaches.any())
 
     if sort == "old2new":
         q = q.order_by(Alias.created_at)
@@ -251,10 +186,16 @@ def get_alias_infos_with_pagination_v3(
         q = q.order_by(Alias.email)
     elif sort == "z2a":
         q = q.order_by(Alias.email.desc())
-    elif alias_filter == "hibp":
-        q = q.filter(Alias.hibp_breaches.any())
     else:
         # default sorting
+        latest_activity = case(
+            [
+                (Alias.created_at > EmailLog.created_at, Alias.created_at),
+                (Alias.created_at < EmailLog.created_at, EmailLog.created_at),
+            ],
+            else_=Alias.created_at,
+        )
+        q = q.order_by(Alias.pinned.desc())
         q = q.order_by(latest_activity.desc())
 
     q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
@@ -367,3 +308,98 @@ def get_alias_contacts(alias, page_id: int) -> [dict]:
         res.append(serialize_contact(fe))
 
     return res
+
+
+def get_alias_info_v3(user: User, alias_id: int) -> AliasInfo:
+    # use the same query construction in get_alias_infos_with_pagination_v3
+    q = construct_alias_query(user)
+    q = q.filter(Alias.id == alias_id)
+
+    for alias, contact, email_log, custom_domain, nb_reply, nb_blocked, nb_forward in q:
+        return AliasInfo(
+            alias=alias,
+            mailbox=alias.mailbox,
+            mailboxes=alias.mailboxes,
+            nb_forward=nb_forward,
+            nb_blocked=nb_blocked,
+            nb_reply=nb_reply,
+            latest_email_log=email_log,
+            latest_contact=contact,
+            custom_domain=custom_domain,
+        )
+
+
+def construct_alias_query(user: User):
+    # subquery on alias annotated with nb_reply, nb_blocked, nb_forward, max_created_at, latest_email_log_created_at
+    alias_activity_subquery = (
+        db.session.query(
+            Alias.id,
+            func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
+            func.sum(
+                case(
+                    [(and_(EmailLog.is_reply.is_(False), EmailLog.blocked), 1)],
+                    else_=0,
+                )
+            ).label("nb_blocked"),
+            func.sum(
+                case(
+                    [
+                        (
+                            and_(
+                                EmailLog.is_reply.is_(False),
+                                EmailLog.blocked.is_(False),
+                            ),
+                            1,
+                        )
+                    ],
+                    else_=0,
+                )
+            ).label("nb_forward"),
+            func.max(EmailLog.created_at).label("latest_email_log_created_at"),
+        )
+        .join(EmailLog, Alias.id == EmailLog.alias_id, isouter=True)
+        .filter(Alias.user_id == user.id)
+        .group_by(Alias.id)
+        .subquery()
+    )
+
+    alias_contact_subquery = (
+        db.session.query(Alias.id, func.max(Contact.id).label("max_contact_id"))
+        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
+        .filter(Alias.user_id == user.id)
+        .group_by(Alias.id)
+        .subquery()
+    )
+
+    return (
+        db.session.query(
+            Alias,
+            Contact,
+            EmailLog,
+            CustomDomain,
+            alias_activity_subquery.c.nb_reply,
+            alias_activity_subquery.c.nb_blocked,
+            alias_activity_subquery.c.nb_forward,
+        )
+        .options(joinedload(Alias.hibp_breaches))
+        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
+        .join(CustomDomain, Alias.custom_domain_id == CustomDomain.id, isouter=True)
+        .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
+        .filter(Alias.id == alias_activity_subquery.c.id)
+        .filter(Alias.id == alias_contact_subquery.c.id)
+        .filter(
+            or_(
+                EmailLog.created_at
+                == alias_activity_subquery.c.latest_email_log_created_at,
+                and_(
+                    # no email log yet for this alias
+                    alias_activity_subquery.c.latest_email_log_created_at.is_(None),
+                    # to make sure only 1 contact is returned in this case
+                    or_(
+                        Contact.id == alias_contact_subquery.c.max_contact_id,
+                        alias_contact_subquery.c.max_contact_id.is_(None),
+                    ),
+                ),
+            )
+        )
+    )

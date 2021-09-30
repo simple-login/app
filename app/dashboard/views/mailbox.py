@@ -1,3 +1,5 @@
+from threading import Thread
+
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -49,10 +51,13 @@ def mailbox_route():
                 flash("You cannot delete default mailbox", "error")
                 return redirect(url_for("dashboard.mailbox_route"))
 
-            email = mailbox.email
-            Mailbox.delete(mailbox_id)
-            db.session.commit()
-            flash(f"Mailbox {email} has been deleted", "success")
+            LOG.d("Schedule deleting %s", mailbox)
+            Thread(target=delete_mailbox, args=(mailbox.id,)).start()
+            flash(
+                f"Mailbox {mailbox.email} scheduled for deletion."
+                f"You will receive a confirmation email when the deletion is finished",
+                "success",
+            )
 
             return redirect(url_for("dashboard.mailbox_route"))
         if request.form.get("form-name") == "set-default":
@@ -117,6 +122,32 @@ def mailbox_route():
         mailboxes=mailboxes,
         new_mailbox_form=new_mailbox_form,
     )
+
+
+def delete_mailbox(mailbox_id: int):
+    from server import create_light_app
+
+    with create_light_app().app_context():
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox:
+            return
+
+        mailbox_email = mailbox.email
+        user = mailbox.user
+
+        Mailbox.delete(mailbox_id)
+        db.session.commit()
+        LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
+
+        send_email(
+            user.email,
+            f"Your mailbox {mailbox_email} has been deleted",
+            f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
+
+Regards,
+SimpleLogin team.
+        """,
+        )
 
 
 def send_verification_email(user, mailbox):

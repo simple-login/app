@@ -11,6 +11,12 @@ E206 = "250 SL E206 Out of office"
 # if mail_from is a IgnoreBounceSender, no need to send back a bounce report
 E207 = "250 SL E207 No bounce report"
 
+E208 = "250 SL E208 Hotmail complaint handled"
+
+E209 = "250 SL E209 Email Loop"
+
+E210 = "250 SL E210 Yahoo complaint handled"
+
 # 4** errors
 # E401 = "421 SL E401 Retry later"
 E402 = "421 SL E402 Encryption failed - Retry later"
@@ -45,3 +51,4 @@ E522 = (
     "550 SL E522 The user you are trying to contact is receiving mail "
     "at a rate that prevents additional messages from being delivered."
 )
+E523 = "550 SL E523 Unknown error"

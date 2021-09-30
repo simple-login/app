@@ -27,7 +27,7 @@
           <div class="col-12 col-lg-6">
             <div class="card">
               <div class="card-body">
-                <h5 class="card-title">{{ api_key.name }}</h5>
+                <h5 class="card-title">{{ api_key.name or "N/A" }}</h5>
                 <h6 class="card-subtitle mb-2 text-muted">
                   {% if api_key.last_used %}
                     Last used: {{ api_key.last_used | dt }} <br>

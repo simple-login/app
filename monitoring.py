@@ -43,7 +43,7 @@ def get_stats():
             # reset
             _nb_failed = 0
 
-            LOG.exception(
+            LOG.e(
                 "Too many emails in incoming & active queue %s %s",
                 incoming_queue,
                 active_queue,

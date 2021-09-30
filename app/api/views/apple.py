@@ -36,7 +36,7 @@ def apple_process_payment():
         200 of the payment is successful, i.e. user is upgraded to premium
 
     """
-    LOG.debug("request for /apple/process_payment")
+    LOG.d("request for /apple/process_payment")
     user = g.user
     data = request.get_json()
     receipt_data = data.get("receipt_data")
@@ -229,7 +229,7 @@ def apple_update_notification():
     #     "auto_renew_product_id": "io.simplelogin.ios_app.subscription.premium.yearly",
     #     "notification_type": "DID_CHANGE_RENEWAL_STATUS",
     # }
-    LOG.debug("request for /api/apple/update_notification")
+    LOG.d("request for /api/apple/update_notification")
     data = request.get_json()
     if not (
         data
@@ -282,7 +282,7 @@ def apple_update_notification():
             db.session.commit()
             return jsonify(ok=True), 200
         else:
-            LOG.warning(
+            LOG.w(
                 "No existing AppleSub for original_transaction_id %s",
                 original_transaction_id,
             )
@@ -305,16 +305,16 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
             _PROD_URL, json={"receipt-data": receipt_data, "password": password}
         )
     except RequestException:
-        LOG.warning("cannot call Apple server %s", _PROD_URL)
+        LOG.w("cannot call Apple server %s", _PROD_URL)
         return None
 
     if r.status_code >= 500:
-        LOG.warning("Apple server error, response:%s %s", r, r.content)
+        LOG.w("Apple server error, response:%s %s", r, r.content)
         return None
 
     if r.json() == {"status": 21007}:
         # try sandbox_url
-        LOG.warning("Use the sandbox url instead")
+        LOG.w("Use the sandbox url instead")
         r = requests.post(
             _SANDBOX_URL,
             json={"receipt-data": receipt_data, "password": password},
@@ -472,7 +472,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     # }
 
     if data["status"] != 0:
-        LOG.warning(
+        LOG.w(
             "verifyReceipt status !=0, probably invalid receipt. User %s",
             user,
         )
@@ -499,7 +499,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     # }
     transactions = data["receipt"]["in_app"]
     if not transactions:
-        LOG.warning("Empty transactions in data %s", data)
+        LOG.w("Empty transactions in data %s", data)
         return None
 
     latest_transaction = max(transactions, key=lambda t: int(t["expires_date_ms"]))
@@ -527,7 +527,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     else:
         # the same original_transaction_id has been used on another account
         if AppleSubscription.get_by(original_transaction_id=original_transaction_id):
-            LOG.exception("Same Apple Sub has been used before, current user %s", user)
+            LOG.e("Same Apple Sub has been used before, current user %s", user)
             return None
 
         LOG.d(

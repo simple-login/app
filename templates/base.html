@@ -28,6 +28,7 @@
 
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
   <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
+  <link rel="canonical" href="{{ canonical_url }}">
 
   <title>
     {% block title %}{% endblock %} | SimpleLogin
@@ -77,8 +78,9 @@
   <script
       src="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.js') }}"></script>
 
-  <!-- bouncer library -->
-  <script src="{{ url_for('static', filename='node_modules/formbouncerjs/dist/bouncer.js') }}"></script>
+  <!-- Parseley library -->
+  <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/parsley.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/i18n/en.js') }}"></script>
 
 
   {% if PLAUSIBLE_HOST and PLAUSIBLE_DOMAIN %}

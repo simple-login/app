@@ -23,7 +23,7 @@ from server import create_app
 
 def create_db():
     if not database_exists(DB_URI):
-        LOG.debug("db not exist, create database")
+        LOG.d("db not exist, create database")
         create_database(DB_URI)
 
         # Create all tables
@@ -56,7 +56,7 @@ def send_mailbox_newsletter():
                 )
                 sleep(1)
             except Exception:
-                LOG.warning("Cannot send to user %s", user)
+                LOG.w("Cannot send to user %s", user)
 
 
 def send_pgp_newsletter():
@@ -72,7 +72,7 @@ def send_pgp_newsletter():
                 )
                 sleep(1)
             except Exception:
-                LOG.warning("Cannot send to user %s", user)
+                LOG.w("Cannot send to user %s", user)
 
 
 def send_mobile_newsletter():
@@ -89,7 +89,7 @@ def send_mobile_newsletter():
                     render("com/newsletter/mobile-darkmode.html", user=user),
                 )
             except Exception:
-                LOG.warning("Cannot send to user %s", user)
+                LOG.w("Cannot send to user %s", user)
 
             if count % 5 == 0:
                 # sleep every 5 sends to avoid hitting email limits
@@ -125,7 +125,7 @@ def disable_mailbox(mailbox_id):
             email_msg.replace("\n", "<br>"),
         )
     except Exception:
-        LOG.exception("Cannot send disable mailbox email to %s", mailbox.user)
+        LOG.e("Cannot send disable mailbox email to %s", mailbox.user)
 
 
 def send_onboarding_emails(user):

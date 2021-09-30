@@ -139,9 +139,9 @@ $(".pin-alias").change(async function () {
 
     if (res.ok) {
       if (newValue) {
-        toastr.success(`${alias} is added to favorite`);
+        toastr.success(`${alias} is pinned`);
       } else {
-        toastr.info(`${alias} is removed from favorite`);
+        toastr.info(`${alias} is unpinned`);
       }
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
@@ -172,7 +172,7 @@ $(".save-note").on("click", async function () {
     });
 
     if (res.ok) {
-      toastr.success(`Note Saved`);
+      toastr.success(`Saved`);
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
       // reset to the original value

@@ -55,7 +55,7 @@ def fido_setup():
         try:
             fido_credential = fido_reg_response.verify()
         except Exception as e:
-            LOG.warning(f"An error occurred in WebAuthn registration process: {e}")
+            LOG.w(f"An error occurred in WebAuthn registration process: {e}")
             flash("Key registration failed.", "warning")
             return redirect(url_for("dashboard.index"))
 

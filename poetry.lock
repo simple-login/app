@@ -18,14 +18,16 @@ speedups = ["aiodns", "brotlipy", "cchardet"]
 
 [[package]]
 name = "aiosmtpd"
-version = "1.2"
+version = "1.4.2"
 description = "aiosmtpd - asyncio based SMTP server"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = "~=3.6"
 
 [package.dependencies]
 atpublic = "*"
+attrs = "*"
+typing-extensions = {version = "*", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "aiosmtplib"
@@ -396,11 +398,11 @@ trio = ["trio (>=0.14.0)", "sniffio (>=1.1)"]
 
 [[package]]
 name = "email-validator"
-version = "1.1.1"
+version = "1.1.3"
 description = "A robust email syntax and deliverability validation library for Python 2.x/3.x."
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 
 [package.dependencies]
 dnspython = ">=1.15.0"
@@ -421,7 +423,7 @@ requests = "*"
 name = "filelock"
 version = "3.0.12"
 description = "A platform independent file lock."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -438,6 +440,30 @@ importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 mccabe = ">=0.6.0,<0.7.0"
 pycodestyle = ">=2.6.0a1,<2.7.0"
 pyflakes = ">=2.2.0,<2.3.0"
+
+[[package]]
+name = "flanker"
+version = "0.9.11"
+description = "Mailgun Parsing Tools"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+attrs = "*"
+chardet = ">=1.0.1"
+cryptography = ">=0.5"
+idna = ">=2.5"
+ply = ">=3.10"
+regex = ">=0.1.20110315"
+six = "*"
+tld = "*"
+WebOb = ">=0.9.8"
+
+[package.extras]
+cchardet = ["cchardet (>=0.3.5)"]
+tests = ["coverage", "coveralls", "mock", "nose"]
+validator = ["dnsq (>=1.1.6)", "redis (>=2.7.1)"]
 
 [[package]]
 name = "flask"
@@ -563,7 +589,7 @@ simplejson = "*"
 
 [[package]]
 name = "flask-sqlalchemy"
-version = "2.4.4"
+version = "2.5.1"
 description = "Adds SQLAlchemy support to your Flask application."
 category = "main"
 optional = false
@@ -1059,6 +1085,14 @@ importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
 dev = ["pre-commit", "tox"]
 
 [[package]]
+name = "ply"
+version = "3.11"
+description = "Python Lex & Yacc"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pre-commit"
 version = "2.7.1"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
@@ -1131,19 +1165,6 @@ description = "library with cross-python path, ini-parsing, io, code, log facili
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-
-[[package]]
-name = "py3-validate-email"
-version = "0.2.10"
-description = "Email validator with regex, blacklisted domains and SMTP checking."
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-dnspython = ">=2.0,<3.0"
-filelock = ">=3.0,<4.0"
-idna = ">=2.10,<3.0"
 
 [[package]]
 name = "pyasn1"
@@ -1235,6 +1256,18 @@ description = "Python parsing module"
 category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[[package]]
+name = "pyre2"
+version = "0.3.6"
+description = "Python wrapper for Google\\'s RE2 using Cython"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.extras]
+perf = ["regex"]
+test = ["pytest"]
 
 [[package]]
 name = "pyreadline"
@@ -1348,7 +1381,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 name = "regex"
 version = "2020.9.27"
 description = "Alternative regular expression module, to replace re."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1534,6 +1567,14 @@ python-dateutil = ">=2.6.0"
 "ruamel.yaml" = ">=0.14.2"
 
 [[package]]
+name = "tld"
+version = "0.12.6"
+description = "Extract the top-level domain (TLD) from the URL given."
+category = "main"
+optional = false
+python-versions = ">=2.7, <4"
+
+[[package]]
 name = "toml"
 version = "0.10.1"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -1654,6 +1695,18 @@ pyOpenSSL = ">=16.0.0"
 six = ">=1.11.0"
 
 [[package]]
+name = "webob"
+version = "1.8.7"
+description = "WSGI request and response object"
+category = "main"
+optional = false
+python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*"
+
+[package.extras]
+docs = ["Sphinx (>=1.7.5)", "pylons-sphinx-themes"]
+testing = ["pytest (>=3.1.0)", "coverage", "pytest-cov", "pytest-xdist"]
+
+[[package]]
 name = "werkzeug"
 version = "1.0.1"
 description = "The comprehensive WSGI web application library."
@@ -1751,7 +1804,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "6a909880eb2c4afcd161158bd606edde3839aedbfca57a751c6b0c6e5306d9dc"
+content-hash = "7c789c1e89d6b2859ee06adcc2b1caf93c759097624059461d1d613da1888e8e"
 
 [metadata.files]
 aiohttp = [
@@ -1769,7 +1822,8 @@ aiohttp = [
     {file = "aiohttp-3.6.2.tar.gz", hash = "sha256:259ab809ff0727d0e834ac5e8a283dc5e3e0ecc30c4d80b3cd17a4139ce1f326"},
 ]
 aiosmtpd = [
-    {file = "aiosmtpd-1.2.tar.gz", hash = "sha256:b7ea7ee663f3b8514d3224d55c4e8827148277b124ea862a0bbfca1bc899aef5"},
+    {file = "aiosmtpd-1.4.2-py3-none-any.whl", hash = "sha256:314f70b74cb8474882cef396b186fbfad8660c7b52be5c1937f3c31df14232a4"},
+    {file = "aiosmtpd-1.4.2.tar.gz", hash = "sha256:aa891d010d2097274189078c6ce2a59a167f3fb2e974e028b572a61e92e1549c"},
 ]
 aiosmtplib = [
     {file = "aiosmtplib-1.1.4-py3-none-any.whl", hash = "sha256:93e53edac183f1a608bc34464efeef23902e59e949017b1682014f59ecdcd37d"},
@@ -1989,8 +2043,8 @@ dnspython = [
     {file = "dnspython-2.0.0.zip", hash = "sha256:044af09374469c3a39eeea1a146e8cac27daec951f1f1f157b1962fc7cb9d1b7"},
 ]
 email-validator = [
-    {file = "email_validator-1.1.1-py2.py3-none-any.whl", hash = "sha256:5f246ae8d81ce3000eade06595b7bb55a4cf350d559e890182a1466a21f25067"},
-    {file = "email_validator-1.1.1.tar.gz", hash = "sha256:63094045c3e802c3d3d575b18b004a531c36243ca8d1cec785ff6bfcb04185bb"},
+    {file = "email_validator-1.1.3-py2.py3-none-any.whl", hash = "sha256:5675c8ceb7106a37e40e2698a57c056756bf3f272cfa8682a4f87ebd95d8440b"},
+    {file = "email_validator-1.1.3.tar.gz", hash = "sha256:aa237a65f6f4da067119b7df3f13e89c25c051327b2b5b66dc075f33d62480d7"},
 ]
 facebook-sdk = [
     {file = "facebook-sdk-3.1.0.tar.gz", hash = "sha256:cabcd2e69ea3d9f042919c99b353df7aa1e2be86d040121f6e9f5e63c1cf0f8d"},
@@ -2003,6 +2057,9 @@ filelock = [
 flake8 = [
     {file = "flake8-3.8.4-py2.py3-none-any.whl", hash = "sha256:749dbbd6bfd0cf1318af27bf97a14e28e5ff548ef8e5b1566ccfb25a11e7c839"},
     {file = "flake8-3.8.4.tar.gz", hash = "sha256:aadae8761ec651813c24be05c6f7b4680857ef6afaae4651a4eccaef97ce6c3b"},
+]
+flanker = [
+    {file = "flanker-0.9.11.tar.gz", hash = "sha256:974418e5b498fd3bcb3859c22e22d26495257f9cf98b744c17f2335aca86e001"},
 ]
 flask = [
     {file = "Flask-1.1.2-py2.py3-none-any.whl", hash = "sha256:8a4fdd8936eba2512e9c85df320a37e694c93945b33ef33c89946a340a238557"},
@@ -2041,8 +2098,8 @@ flask-profiler = [
     {file = "flask_profiler-1.8.1.tar.gz", hash = "sha256:fc9f2875a4f22223ddc04ffacd75792854162c4cdbef165598a51f898521ac51"},
 ]
 flask-sqlalchemy = [
-    {file = "Flask-SQLAlchemy-2.4.4.tar.gz", hash = "sha256:bfc7150eaf809b1c283879302f04c42791136060c6eeb12c0c6674fb1291fae5"},
-    {file = "Flask_SQLAlchemy-2.4.4-py2.py3-none-any.whl", hash = "sha256:05b31d2034dd3f2a685cbbae4cfc4ed906b2a733cff7964ada450fd5e462b84e"},
+    {file = "Flask-SQLAlchemy-2.5.1.tar.gz", hash = "sha256:2bda44b43e7cacb15d4e05ff3cc1f8bc97936cc464623424102bfc2c35e95912"},
+    {file = "Flask_SQLAlchemy-2.5.1-py2.py3-none-any.whl", hash = "sha256:f12c3d4cc5cc7fdcc148b9527ea05671718c3ea45d50c7e732cceb33f574b390"},
 ]
 flask-wtf = [
     {file = "Flask-WTF-0.14.3.tar.gz", hash = "sha256:d417e3a0008b5ba583da1763e4db0f55a1269d9dd91dcc3eb3c026d3c5dbd720"},
@@ -2295,6 +2352,10 @@ pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
     {file = "pluggy-0.13.1.tar.gz", hash = "sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0"},
 ]
+ply = [
+    {file = "ply-3.11-py2.py3-none-any.whl", hash = "sha256:096f9b8350b65ebd2fd1346b12452efe5b9607f7482813ffca50c22722a807ce"},
+    {file = "ply-3.11.tar.gz", hash = "sha256:00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3"},
+]
 pre-commit = [
     {file = "pre_commit-2.7.1-py2.py3-none-any.whl", hash = "sha256:810aef2a2ba4f31eed1941fc270e72696a1ad5590b9751839c90807d0fff6b9a"},
     {file = "pre_commit-2.7.1.tar.gz", hash = "sha256:c54fd3e574565fe128ecc5e7d2f91279772ddb03f8729645fa812fe809084a70"},
@@ -2377,9 +2438,6 @@ ptyprocess = [
 py = [
     {file = "py-1.9.0-py2.py3-none-any.whl", hash = "sha256:366389d1db726cd2fcfc79732e75410e5fe4d31db13692115529d34069a043c2"},
     {file = "py-1.9.0.tar.gz", hash = "sha256:9ca6883ce56b4e8da7e79ac18787889fa5206c79dcc67fb065376cd2fe03f342"},
-]
-py3-validate-email = [
-    {file = "py3-validate-email-0.2.10.tar.gz", hash = "sha256:3bbb264b49c0ae09afdb2738956f00b0e8dd7e079e2d079b2e9b6688de474d28"},
 ]
 pyasn1 = [
     {file = "pyasn1-0.4.8-py2.4.egg", hash = "sha256:fec3e9d8e36808a28efb59b489e4528c10ad0f480e57dcc32b4de5c9d8c9fdf3"},
@@ -2475,6 +2533,25 @@ pyotp = [
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
     {file = "pyparsing-2.4.7.tar.gz", hash = "sha256:c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1"},
+]
+pyre2 = [
+    {file = "pyre2-0.3.6-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:6d8e550899886ee01f1b8149ba1c336e1c749cec2e33414815a76fb5649cdf67"},
+    {file = "pyre2-0.3.6-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:310d5c98495114692940ffa020aaeef1341427755b6ca5a17c63092060ed93dc"},
+    {file = "pyre2-0.3.6-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:97de5d4cf7d8b9be7dbe0dc0941c4a6c1395fc598722d9644adc55427d3dd083"},
+    {file = "pyre2-0.3.6-cp36-cp36m-win_amd64.whl", hash = "sha256:18cd5d76973ee57232a5d851489c202105e4752aee6dcbd38742c0475f3f1c4e"},
+    {file = "pyre2-0.3.6-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:225784d7bd905bc3e87d4bbcc6ac4087ccea8905dd657273fd71bfb113e50e82"},
+    {file = "pyre2-0.3.6-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:c3b45f789374d0f95866330fcd34bb6b93705e8f5c276d9d70d318a227ba5954"},
+    {file = "pyre2-0.3.6-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:f3467dd9a4c8100f6406bc6277d945a13b7fd7c4426d2415564de1324b5db94f"},
+    {file = "pyre2-0.3.6-cp37-cp37m-win_amd64.whl", hash = "sha256:608558276d3539002ad6300d0b0a2b0941577fdea009715ff4d31052e05cb409"},
+    {file = "pyre2-0.3.6-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:ebe92a3222f2f6f176eeb3859638734e4f9a82d5940ad7d6f0c1288153c70ce2"},
+    {file = "pyre2-0.3.6-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:961020835a3b805eed51a082e5effdccb51979c4efef2a17f17122967cb4749a"},
+    {file = "pyre2-0.3.6-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:cc180989186f05b75020b53c79059c338e9e1940d325fc945c84aab2b5c57525"},
+    {file = "pyre2-0.3.6-cp38-cp38-win_amd64.whl", hash = "sha256:7c398942c3467fe23b2dd4a11dd78da8aee774d0b481e84b1b208819ee724cca"},
+    {file = "pyre2-0.3.6-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:617c4d75b41b34afe7590e144efad1c564a8b49a1e0827872afc2243b24beada"},
+    {file = "pyre2-0.3.6-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:f3ae7b087abcbc4b910d535c2fb877ef452b61d2514a63fd15b8b020b51fe4b5"},
+    {file = "pyre2-0.3.6-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:b87e9aeee74376210bd82c8328eb007b93378f3cd61fa6176161c3b9037e8474"},
+    {file = "pyre2-0.3.6-cp39-cp39-win_amd64.whl", hash = "sha256:1efec117f2543b38adcbe038a2ae156eb91b6ed8a73c998c3752a766d6241075"},
+    {file = "pyre2-0.3.6.tar.gz", hash = "sha256:6fe972c0cadec49a5a055690e5aa29f8aebaed0fa9b7d8d3530e33719b61f91c"},
 ]
 pyreadline = [
     {file = "pyreadline-2.1.win-amd64.exe", hash = "sha256:9ce5fa65b8992dfa373bddc5b6e0864ead8f291c94fbfec05fbd5c836162e67b"},
@@ -2691,6 +2768,15 @@ sqlalchemy-utils = [
 strictyaml = [
     {file = "strictyaml-1.1.0.tar.gz", hash = "sha256:6b07dbd4f77ab023ed4167c43ffc1b9f9354fb6075cc6ff3b91fefcbb80342ca"},
 ]
+tld = [
+    {file = "tld-0.12.6-py27-none-any.whl", hash = "sha256:ef5b162d6fa295822dacd4fe4df1b62d8df2550795a97399a8905821b58d3702"},
+    {file = "tld-0.12.6-py35-none-any.whl", hash = "sha256:826bbe61dccc8d63144b51caef83e1373fbaac6f9ada46fca7846021f5d36fef"},
+    {file = "tld-0.12.6-py36-none-any.whl", hash = "sha256:843844e4256c943983d86366b5af3ac9cd1c9a0b6465f04d9f70e3b4c1a7989f"},
+    {file = "tld-0.12.6-py37-none-any.whl", hash = "sha256:a92ac6b84917e7d9e934434b8d37e9be534598f138fbb86b3c0d5426f2621890"},
+    {file = "tld-0.12.6-py38-none-any.whl", hash = "sha256:266106ad9035f54cd5cce5f823911a51f697e7c58cb45bfbd6c53b4c2976ece2"},
+    {file = "tld-0.12.6-py39-none-any.whl", hash = "sha256:b6650f2d5392a49760064bc55d73ce3397a378ef24ded96efb516c6b8ec68c26"},
+    {file = "tld-0.12.6.tar.gz", hash = "sha256:69fed19d26bb3f715366fb4af66fdeace896c55c052b00e8aaba3a7b63f3e7f0"},
+]
 toml = [
     {file = "toml-0.10.1-py2.py3-none-any.whl", hash = "sha256:bda89d5935c2eac546d648028b9901107a595863cb36bae0c73ac804a9b4ce88"},
     {file = "toml-0.10.1.tar.gz", hash = "sha256:926b612be1e5ce0634a2ca03470f95169cf16f939018233a670519cb4ac58b0f"},
@@ -2754,6 +2840,10 @@ wcwidth = [
 webauthn = [
     {file = "webauthn-0.4.7-py2.py3-none-any.whl", hash = "sha256:238391b2e2cc60fb51a2cd2d2d6be149920b9af6184651353d9f95856617a9e7"},
     {file = "webauthn-0.4.7.tar.gz", hash = "sha256:8ad9072ff1d6169f3be30d4dc8733ea563dd266962397bc58b40f674a6af74ac"},
+]
+webob = [
+    {file = "WebOb-1.8.7-py2.py3-none-any.whl", hash = "sha256:73aae30359291c14fa3b956f8b5ca31960e420c28c1bec002547fb04928cf89b"},
+    {file = "WebOb-1.8.7.tar.gz", hash = "sha256:b64ef5141be559cfade448f044fa45c2260351edcb6a8ef6b7e00c7dcef0c323"},
 ]
 werkzeug = [
     {file = "Werkzeug-1.0.1-py2.py3-none-any.whl", hash = "sha256:2de2a5db0baeae7b2d2664949077c2ac63fbd16d98da0ff71837f7d1dea3fd43"},

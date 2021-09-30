@@ -59,5 +59,5 @@ def get_spam_score(
             return get_spam_score(message, email_log, can_retry=False)
         else:
             # return a negative score so the message is always considered as ham
-            LOG.exception("SpamAssassin exception, ignore spam check")
+            LOG.e("SpamAssassin exception, ignore spam check")
             return -999, None

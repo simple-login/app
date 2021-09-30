@@ -25,7 +25,7 @@ def handle_batch_import(batch_import: BatchImport):
     batch_import.processed = True
     db.session.commit()
 
-    LOG.debug("Start batch import for %s %s", batch_import, user)
+    LOG.d("Start batch import for %s %s", batch_import, user)
     file_url = s3.get_url(batch_import.file.path)
 
     LOG.d("Download file %s from %s", batch_import.file, file_url)
@@ -43,7 +43,7 @@ def import_from_csv(batch_import: BatchImport, user: User, lines):
             full_alias = sanitize_email(row["alias"])
             note = row["note"]
         except KeyError:
-            LOG.warning("Cannot parse row %s", row)
+            LOG.w("Cannot parse row %s", row)
             continue
 
         alias_domain = get_email_domain_part(full_alias)
@@ -54,7 +54,7 @@ def import_from_csv(batch_import: BatchImport, user: User, lines):
             or not custom_domain.verified
             or custom_domain.user_id != user.id
         ):
-            LOG.debug("domain %s can't be used %s", alias_domain, user)
+            LOG.d("domain %s can't be used %s", alias_domain, user)
             continue
 
         if (
