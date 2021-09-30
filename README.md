@@ -237,7 +237,7 @@ docker run -d \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
-    -p 5432:5432 \
+    -p 127.0.0.1:5432:5432 \
     -v $(pwd)/sl/db:/var/lib/postgresql/data \
     --restart always \
     --network="sl-network" \
@@ -451,7 +451,7 @@ docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 7777:7777 \
+    -p 127.0.0.1:7777:7777 \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0
@@ -467,7 +467,7 @@ docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 20381:20381 \
+    -p 127.0.0.1:20381:20381 \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0 python email_handler.py
@@ -501,37 +501,6 @@ sudo systemctl reload nginx
 
 At this step, you should also setup the SSL for Nginx. 
 [Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
-
-### Optional, but recommended security steps
-
-If you have followed the steps above, there will be 3 ports exposed over the internet: 7777 (sl-app), 20381 (sl-email) & 5432 (postgresql).
-
-You can verify the ports are open by running the following command from a different machine.
-
-```bash
-sudo nmap -sS <IP-ADDR> -p 7777,20381,5432
-```
-
-It is important to secure the Postgres port.
-
-Using `ufw` doesn't help because docker writes persistent rules to the `iptables`.
-
-To get around this, first run this command to allow only localhost connections to the docker containers:
-
-```bash
-iptables -I DOCKER-USER -i eth0 ! -s 127.0.0.1 -j DROP
-```
-
-Docker documentation reference for more info: [documentation](https://docs.docker.com/network/iptables/#restrict-connections-to-the-docker-host).
-
-Next, to make the changes persistent across reboots, we are going to use `iptables-persistent` package.
-
-```bash
-sudo apt install iptables-persistent
-sudo service netfilter-persistent save
-```
-
-Reboot your machine and run the above `nmap` command one more time to verify the said ports are not in closed/filtered state.
 
 
 ### Enjoy!

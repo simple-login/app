@@ -164,7 +164,7 @@ sudo docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 7777:7777 \
+    -p 127.0.0.1:7777:7777 \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0
@@ -177,7 +177,7 @@ sudo docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 20381:20381 \
+    -p 127.0.0.1:20381:20381 \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0 python email_handler.py
