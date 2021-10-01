@@ -126,13 +126,25 @@ for user in User.query.all():
 sudo docker pull simplelogin/app:3.4.0
 
 # Stop SimpleLogin containers
-sudo docker stop sl-email sl-migration sl-app
+sudo docker stop sl-email sl-migration sl-app sl-db
 
 # Make sure to remove these containers to avoid conflict
-sudo docker rm -f sl-email sl-migration sl-app
+sudo docker rm -f sl-email sl-migration sl-app sl-db
 
 # create ./sl/upload/ if not exist
 mkdir -p ./sl/upload/
+
+# Run the database container. Make sure to replace `myuser` and `mypassword`
+docker run -d \
+    --name sl-db \
+    -e POSTGRES_PASSWORD=mypassword \
+    -e POSTGRES_USER=myuser \
+    -e POSTGRES_DB=simplelogin \
+    -p 127.0.0.1:5432:5432 \
+    -v $(pwd)/sl/db:/var/lib/postgresql/data \
+    --restart always \
+    --network="sl-network" \
+    postgres:12.1
 
 # Run the database migration
 sudo docker run --rm \
