@@ -370,7 +370,7 @@ Finally, restart Postfix
 sudo systemctl restart postfix
 ```
 
-### Run SimpleLogin Docker containers
+### Run SimpleLogin Docker containers:
 
 To run SimpleLogin, you need a config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to
 
@@ -473,7 +473,7 @@ docker run -d \
     simplelogin/app:3.4.0 python email_handler.py
 ```
 
-### Nginx
+### Nginx:
 
 Install Nginx and make sure to replace `mydomain.com` by your domain
 
@@ -512,7 +512,7 @@ please go to the database, table "users" and set "lifetime" column to "1" or "TR
 You don't have to pay anything to SimpleLogin to use all its features.
 If you like the project, you can make a donation on our Patreon page at https://www.patreon.com/simplelogin
 
-### Misc
+### Misc:
 
 The above self-hosting instructions correspond to a freshly Ubuntu server and doesn't cover all possible server configuration.
 Below are pointers to different topics:
@@ -525,7 +525,7 @@ Below are pointers to different topics:
 - [Enforce SPF](docs/enforce-spf.md)
 - [Postfix TLS](docs/postfix-tls.md)
 
-## ❤️ Contributors
+## ❤️ Contributors:
 
 Thanks go to these wonderful people:
 
