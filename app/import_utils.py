@@ -51,7 +51,7 @@ def import_from_csv(batch_import: BatchImport, user: User, lines):
 
         if (
             not custom_domain
-            or not custom_domain.verified
+            or not custom_domain.ownership_verified
             or custom_domain.user_id != user.id
         ):
             LOG.d("domain %s can't be used %s", alias_domain, user)
