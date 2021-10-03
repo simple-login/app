@@ -125,7 +125,7 @@ def test_import_no_mailboxes(flask_client):
     assert len(Alias.filter_by(user_id=user.id).all()) == 1  # Onboarding alias
 
     # Create domain
-    CustomDomain.create(user_id=user.id, domain="my-domain.com", verified=True)
+    CustomDomain.create(user_id=user.id, domain="my-domain.com", ownership_verified=True)
     db.session.commit()
 
     alias_data = [
