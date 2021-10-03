@@ -172,9 +172,9 @@ def test_import(flask_client):
     assert len(Alias.filter_by(user_id=user.id).all()) == 1  # Onboarding alias
 
     # Create domains
-    CustomDomain.create(user_id=user.id, domain="my-domain.com", verified=True)
+    CustomDomain.create(user_id=user.id, domain="my-domain.com", ownership_verified=True)
     CustomDomain.create(
-        user_id=user.id, domain="my-destination-domain.com", verified=True
+        user_id=user.id, domain="my-destination-domain.com", ownership_verified=True
     )
     db.session.commit()
 
