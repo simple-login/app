@@ -1934,6 +1934,7 @@ class LifetimeCoupon(db.Model, ModelMixin):
     code = db.Column(db.String(128), nullable=False, unique=True)
     nb_used = db.Column(db.Integer, nullable=False)
     paid = db.Column(db.Boolean, default=False, server_default="0", nullable=False)
+    comment = db.Column(db.Text, nullable=True)
 
 
 class Coupon(db.Model, ModelMixin):
