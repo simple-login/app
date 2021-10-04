@@ -37,6 +37,7 @@ def lifetime_licence():
         if coupon and coupon.nb_used > 0:
             coupon.nb_used -= 1
             current_user.lifetime = True
+            current_user.lifetime_coupon_id = coupon.id
             if coupon.paid:
                 current_user.paid_lifetime = True
             db.session.commit()

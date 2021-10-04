@@ -266,6 +266,11 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
     paid_lifetime = db.Column(
         db.Boolean, default=False, nullable=False, server_default="0"
     )
+    lifetime_coupon_id = db.Column(
+        db.ForeignKey("lifetime_coupon.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+    )
 
     # user can use all premium features until this date
     trial_end = db.Column(
