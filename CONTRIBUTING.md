@@ -40,6 +40,13 @@ You also need to install `gpg` tool, on Mac it can be done with:
 brew install gnupg
 ```
 
+If you see the `pyre2` package in the error message, you might need to install its dependencies with `brew`. 
+More info on https://github.com/andreasvc/pyre2
+
+```bash
+brew install -s re2 pybind11
+```
+
 ## Run tests
 
 ```bash
