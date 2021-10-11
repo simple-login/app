@@ -141,22 +141,6 @@ from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_app, create_light_app
 
-# forward or reply
-_DIRECTION = "X-SimpleLogin-Type"
-
-
-_EMAIL_LOG_ID_HEADER = "X-SimpleLogin-EmailLog-ID"
-_ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
-_ENVELOPE_TO = "X-SimpleLogin-Envelope-To"
-
-_MIME_HEADERS = [
-    "MIME-Version",
-    "Content-Type",
-    "Content-Disposition",
-    "Content-Transfer-Encoding",
-]
-_MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
-
 
 newrelic_app = None
 if NEWRELIC_CONFIG_PATH:
@@ -436,13 +420,13 @@ def prepare_pgp_message(
     # copy all headers from original message except all standard MIME headers
     for i in reversed(range(len(clone_msg._headers))):
         header_name = clone_msg._headers[i][0].lower()
-        if header_name.lower() not in _MIME_HEADERS:
+        if header_name.lower() not in headers.MIME_HEADERS:
             msg[header_name] = clone_msg._headers[i][1]
 
     # Delete unnecessary headers in clone_msg except _MIME_HEADERS to save space
     delete_all_headers_except(
         clone_msg,
-        _MIME_HEADERS,
+        headers.MIME_HEADERS,
     )
 
     if clone_msg[headers.CONTENT_TYPE] is None:
@@ -748,17 +732,17 @@ def forward_email_to_mailbox(
     delete_all_headers_except(
         msg,
         [
-            "From",
-            "To",
-            "Cc",
-            "Subject",
+            headers.FROM,
+            headers.TO,
+            headers.CC,
+            headers.SUBJECT,
             # do not delete original message id
             headers.MESSAGE_ID,
             # References and In-Reply-To are used for keeping the email thread
             headers.REFERENCES,
             headers.IN_REPLY_TO,
         ]
-        + _MIME_HEADERS,
+        + headers.MIME_HEADERS,
     )
 
     # create PGP email if needed
@@ -787,12 +771,12 @@ def forward_email_to_mailbox(
             return False, status.E406
 
     # add custom header
-    add_or_replace_header(msg, _DIRECTION, "Forward")
+    add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
 
-    msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
-    msg[_ENVELOPE_FROM] = envelope.mail_from
+    msg[headers.SL_EMAIL_LOG_ID] = str(email_log.id)
+    msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
-    msg[_ENVELOPE_TO] = alias.email
+    msg[headers.SL_ENVELOPE_TO] = alias.email
 
     if not msg[headers.MESSAGE_ID]:
         LOG.w("missing message id header, create one")
@@ -987,17 +971,17 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     delete_all_headers_except(
         msg,
         [
-            "From",
-            "To",
-            "Cc",
-            "Subject",
+            headers.FROM,
+            headers.TO,
+            headers.CC,
+            headers.SUBJECT,
             # do not delete original message id
             headers.MESSAGE_ID,
             # References and In-Reply-To are used for keeping the email thread
             headers.REFERENCES,
             headers.IN_REPLY_TO,
         ]
-        + _MIME_HEADERS,
+        + headers.MIME_HEADERS,
     )
 
     # replace the reverse-alias (i.e. "ra+string@simplelogin.co") by the contact email in the email body
@@ -1053,8 +1037,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         LOG.w("missing date header, add one")
         msg[headers.DATE] = date_header
 
-    msg[_DIRECTION] = "Reply"
-    msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
+    msg[headers.SL_DIRECTION] = "Reply"
+    msg[headers.SL_EMAIL_LOG_ID] = str(email_log.id)
 
     LOG.d(
         "send email from %s to %s, mail_options:%s,rcpt_options:%s",

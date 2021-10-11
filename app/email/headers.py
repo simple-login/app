@@ -7,6 +7,8 @@ SUBJECT = "Subject"
 FROM = "From"
 TO = "To"
 CONTENT_TYPE = "Content-Type"
+CONTENT_DISPOSITION = "Content-Disposition"
+CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding"
 MIME_VERSION = "Mime-Version"
 REPLY_TO = "Reply-To"
 RECEIVED = "Received"
@@ -21,3 +23,17 @@ DKIM_HEADERS = [
     [MESSAGE_ID.encode(), DATE.encode()],
     [FROM.encode()],
 ]
+
+SL_DIRECTION = "X-SimpleLogin-Type"
+SL_EMAIL_LOG_ID = "X-SimpleLogin-EmailLog-ID"
+SL_ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
+SL_ENVELOPE_TO = "X-SimpleLogin-Envelope-To"
+
+MIME_HEADERS = [
+    MIME_VERSION,
+    CONTENT_TYPE,
+    CONTENT_DISPOSITION,
+    CONTENT_TRANSFER_ENCODING,
+]
+# convert to lowercase to facilitate header look up
+MIME_HEADERS = [h.lower() for h in MIME_HEADERS]
