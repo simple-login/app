@@ -48,7 +48,7 @@ def onboarding_send_from_alias(user):
     send_email(
         to_email,
         "SimpleLogin Tip: Send emails from your alias",
-        render("com/onboarding/send-from-alias.txt", user=user, to_email=to_email),
+        render("com/onboarding/send-from-alias.txt.j2", user=user, to_email=to_email),
         render("com/onboarding/send-from-alias.html", user=user, to_email=to_email),
         unsubscribe_link,
         via_email,
