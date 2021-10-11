@@ -1038,21 +1038,20 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         if alias.custom_domain.name:
             from_header = formataddr((alias.custom_domain.name, alias.email))
 
-    add_or_replace_header(msg, "From", from_header)
+    add_or_replace_header(msg, headers.FROM, from_header)
 
-    replace_header_when_reply(msg, alias, "To")
-    replace_header_when_reply(msg, alias, "Cc")
+    replace_header_when_reply(msg, alias, headers.TO)
+    replace_header_when_reply(msg, alias, headers.CC)
 
-    # Message-ID can reveal about the mailbox -> replace it
-    message_id = make_msgid(str(email_log.id), get_email_domain_part(alias.email))
-    LOG.d("make message id %s", message_id)
-    add_or_replace_header(
-        msg,
-        headers.MESSAGE_ID,
-        message_id,
-    )
-    date_header = formatdate()
-    msg[headers.DATE] = date_header
+    if not msg[headers.MESSAGE_ID]:
+        message_id = make_msgid(str(email_log.id), get_email_domain_part(alias.email))
+        LOG.w("missing message id, add one %s", message_id)
+        msg[headers.MESSAGE_ID] = message_id
+
+    if not msg[headers.DATE]:
+        date_header = formatdate()
+        LOG.w("missing date header, add one")
+        msg[headers.DATE] = date_header
 
     msg[_DIRECTION] = "Reply"
     msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
