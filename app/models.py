@@ -350,6 +350,17 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         db.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # used for flask-login as an "alternative token"
+    # cf https://flask-login.readthedocs.io/en/latest/#alternative-tokens
+    alternative_id = db.Column(db.String(128), unique=True, nullable=True)
+
+    # implement flask-login "alternative token"
+    def get_id(self):
+        if self.alternative_id:
+            return self.alternative_id
+        else:
+            return str(self.id)
+
     @classmethod
     def create(cls, email, name="", password=None, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
