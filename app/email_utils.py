@@ -54,6 +54,7 @@ from app.config import (
     ALIAS_AUTOMATIC_DISABLE,
 )
 from app.dns_utils import get_mx_domains
+from app.email import headers
 from app.extensions import db
 from app.log import LOG
 from app.models import (
@@ -275,15 +276,15 @@ def send_email(
         html = plaintext.replace("\n", "<br>")
     msg.attach(MIMEText(html, "html"))
 
-    msg["Subject"] = subject
-    msg["From"] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
-    msg["To"] = to_email
+    msg[headers.SUBJECT] = subject
+    msg[headers.FROM] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
+    msg[headers.TO] = to_email
 
     msg_id_header = make_msgid()
-    msg["Message-ID"] = msg_id_header
+    msg[headers.MESSAGE_ID] = msg_id_header
 
     date_header = formatdate()
-    msg["Date"] = date_header
+    msg[headers.DATE] = date_header
 
     if unsubscribe_link:
         add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
@@ -408,17 +409,8 @@ def get_email_domain_part(address):
     return address[address.find("@") + 1 :]
 
 
-# headers used to DKIM sign in order of preference
-_DKIM_HEADERS = [
-    [b"Message-ID", b"Date", b"Subject", b"From", b"To"],
-    [b"From", b"To"],
-    [b"Message-ID", b"Date"],
-    [b"From"],
-]
-
-
 def add_dkim_signature(msg: Message, email_domain: str):
-    for dkim_headers in _DKIM_HEADERS:
+    for dkim_headers in headers.DKIM_HEADERS:
         try:
             add_dkim_signature_with_header(msg, email_domain, dkim_headers)
             return
@@ -457,7 +449,7 @@ def add_dkim_signature_with_header(
 
         # remove linebreaks from sig
         sig = sig.replace("\n", " ").replace("\r", "")
-        msg["DKIM-Signature"] = sig[len("DKIM-Signature: ") :]
+        msg[headers.DKIM_SIGNATURE] = sig[len("DKIM-Signature: ") :]
 
 
 def add_or_replace_header(msg: Message, header: str, value: str):
@@ -686,7 +678,7 @@ def get_spam_info(msg: Message, max_score=None) -> (bool, str):
     DKIM_VALID_AU,RCVD_IN_DNSWL_BLOCKED,RCVD_IN_MSPIKE_H2,SPF_PASS,
     URIBL_BLOCKED autolearn=unavailable autolearn_force=no version=3.4.2```
     """
-    spamassassin_status = msg["X-Spam-Status"]
+    spamassassin_status = msg[headers.X_SPAM_STATUS]
     if not spamassassin_status:
         return False, ""
 
@@ -1164,7 +1156,7 @@ def spf_pass(
                     r[0],
                     ip,
                 )
-                subject = get_header_unicode(msg["Subject"])
+                subject = get_header_unicode(msg[headers.SUBJECT])
                 send_email_with_rate_control(
                     user,
                     ALERT_SPF,
@@ -1214,9 +1206,9 @@ def sl_sendmail(
     if NOT_SEND_EMAIL:
         LOG.d(
             "send email with subject '%s', from '%s' to '%s'",
-            msg["Subject"],
-            msg["From"],
-            msg["To"],
+            msg[headers.SUBJECT],
+            msg[headers.FROM],
+            msg[headers.TO],
         )
         return
 
@@ -1236,9 +1228,9 @@ def sl_sendmail(
             "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
             from_addr,
             to_addr,
-            msg["From"],
-            msg["To"],
-            msg["Cc"],
+            msg[headers.FROM],
+            msg[headers.TO],
+            msg[headers.CC],
         )
         smtp.sendmail(
             from_addr,
@@ -1266,7 +1258,7 @@ def sl_sendmail(
 
 def get_queue_id(msg: Message) -> Optional[str]:
     """Get the Postfix queue-id from a message"""
-    received_header = str(msg["Received"])
+    received_header = str(msg[headers.RECEIVED])
     if not received_header:
         return
 

@@ -445,13 +445,13 @@ def prepare_pgp_message(
         _MIME_HEADERS,
     )
 
-    if clone_msg["Content-Type"] is None:
+    if clone_msg[headers.CONTENT_TYPE] is None:
         LOG.d("Content-Type missing")
-        clone_msg["Content-Type"] = "text/plain"
+        clone_msg[headers.CONTENT_TYPE] = "text/plain"
 
-    if clone_msg["Mime-Version"] is None:
+    if clone_msg[headers.MIME_VERSION] is None:
         LOG.d("Mime-Version missing")
-        clone_msg["Mime-Version"] = "1.0"
+        clone_msg[headers.MIME_VERSION] = "1.0"
 
     first = MIMEApplication(
         _subtype="pgp-encrypted", _encoder=encoders.encode_7or8bit, _data=""
@@ -581,13 +581,13 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
                 handle_email_sent_to_ourself(alias, mb, msg, user)
                 return [(True, status.E209)]
 
-    from_header = get_header_unicode(msg["From"])
+    from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
     contact = get_or_create_contact(from_header, envelope.mail_from, alias)
 
     reply_to_contact = None
-    if msg["Reply-To"]:
-        reply_to = get_header_unicode(msg["Reply-To"])
+    if msg[headers.REPLY_TO]:
+        reply_to = get_header_unicode(msg[headers.REPLY_TO])
         LOG.d("Create or get contact for from_header:%s", reply_to)
         # ignore when reply-to = alias
         if reply_to == alias.email:
@@ -766,7 +766,7 @@ def forward_email_to_mailbox(
         LOG.d("Encrypt message using mailbox %s", mailbox)
         if mailbox.generic_subject:
             LOG.d("Use a generic subject for %s", mailbox)
-            orig_subject = msg["Subject"]
+            orig_subject = msg[headers.SUBJECT]
             orig_subject = get_header_unicode(orig_subject)
             add_or_replace_header(msg, "Subject", mailbox.generic_subject)
             msg = add_header(
@@ -806,13 +806,13 @@ def forward_email_to_mailbox(
     # change the from header so the sender comes from a reverse-alias
     # so it can pass DMARC check
     # replace the email part in from: header
-    contact_from_header = msg["From"]
+    contact_from_header = msg[headers.FROM]
     new_from_header = contact.new_addr()
     add_or_replace_header(msg, "From", new_from_header)
     LOG.d("From header, new:%s, old:%s", new_from_header, contact_from_header)
 
     if reply_to_contact:
-        reply_to_header = msg["Reply-To"]
+        reply_to_header = msg[headers.REPLY_TO]
         new_reply_to_header = reply_to_contact.new_addr()
         add_or_replace_header(msg, "Reply-To", new_reply_to_header)
         LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header)
@@ -1048,11 +1048,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     LOG.d("make message id %s", message_id)
     add_or_replace_header(
         msg,
-        "Message-ID",
+        headers.MESSAGE_ID,
         message_id,
     )
     date_header = formatdate()
-    msg["Date"] = date_header
+    msg[headers.DATE] = date_header
 
     msg[_DIRECTION] = "Reply"
     msg[_EMAIL_LOG_ID_HEADER] = str(email_log.id)
@@ -1133,7 +1133,7 @@ def handle_unknown_mailbox(
         "Reply email can only be used by mailbox. "
         "Actual mail_from: %s. msg from header: %s, reverse-alias %s, %s %s %s",
         envelope.mail_from,
-        msg["From"],
+        msg[headers.FROM],
         reply_email,
         alias,
         user,
@@ -1315,7 +1315,7 @@ def handle_hotmail_complaint(msg: Message) -> bool:
     Return True if the complaint can be handled, False otherwise
     """
     orig_msg = get_orig_message_from_hotmail_complaint(msg)
-    to_header = orig_msg["To"]
+    to_header = orig_msg[headers.TO]
     if not to_header:
         LOG.e("cannot find the alias")
         return False
@@ -1355,7 +1355,7 @@ def handle_yahoo_complaint(msg: Message) -> bool:
     Return True if the complaint can be handled, False otherwise
     """
     orig_msg = get_orig_message_from_yahoo_complaint(msg)
-    to_header = orig_msg["To"]
+    to_header = orig_msg[headers.TO]
     if not to_header:
         LOG.e("cannot find the alias")
         return False
@@ -1559,7 +1559,7 @@ def handle_spam(
 def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
     """return the SMTP status"""
     # format: alias_id:
-    subject = msg["Subject"]
+    subject = msg[headers.SUBJECT]
     try:
         # subject has the format {alias.id}=
         if subject.endswith("="):
@@ -1574,7 +1574,7 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
 
         alias = Alias.get(alias_id)
     except Exception:
-        LOG.w("Cannot parse alias from subject %s", msg["Subject"])
+        LOG.w("Cannot parse alias from subject %s", msg[headers.SUBJECT])
         return status.E507
 
     if not alias:
@@ -1746,7 +1746,7 @@ def handle(envelope: Envelope) -> str:
     if postfix_queue_id:
         set_message_id(postfix_queue_id)
     else:
-        LOG.d("Cannot parse Postfix queue ID from %s", msg["Received"])
+        LOG.d("Cannot parse Postfix queue ID from %s", msg[headers.RECEIVED])
 
     if should_ignore(mail_from, rcpt_tos):
         LOG.w("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
@@ -1763,10 +1763,10 @@ def handle(envelope: Envelope) -> str:
         "cc:%s, reply-to:%s, mail_options:%s, rcpt_options:%s",
         mail_from,
         rcpt_tos,
-        msg["From"],
-        msg["To"],
-        msg["Cc"],
-        msg["Reply-To"],
+        msg[headers.FROM],
+        msg[headers.TO],
+        msg[headers.CC],
+        msg[headers.REPLY_TO],
         envelope.mail_options,
         envelope.rcpt_options,
     )
@@ -1854,7 +1854,7 @@ def handle(envelope: Envelope) -> str:
         return handle_bounce(envelope, email_log, msg)
 
     # case where From: header is a reverse alias which should never happen
-    from_header = get_header_unicode(msg["From"])
+    from_header = get_header_unicode(msg[headers.FROM])
     if from_header:
         try:
             _, from_header_address = parse_full_address(from_header)
@@ -1926,14 +1926,16 @@ def handle(envelope: Envelope) -> str:
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
         if is_reply_email(rcpt_to):
-            LOG.d("Reply phase %s(%s) -> %s", mail_from, copy_msg["From"], rcpt_to)
+            LOG.d(
+                "Reply phase %s(%s) -> %s", mail_from, copy_msg[headers.FROM], rcpt_to
+            )
             is_delivered, smtp_status = handle_reply(envelope, copy_msg, rcpt_to)
             res.append((is_delivered, smtp_status))
         else:  # Forward case
             LOG.d(
                 "Forward phase %s(%s) -> %s",
                 mail_from,
-                copy_msg["From"],
+                copy_msg[headers.FROM],
                 rcpt_to,
             )
             for is_delivered, smtp_status in handle_forward(
