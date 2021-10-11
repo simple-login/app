@@ -85,7 +85,7 @@ from app.config import (
     ALERT_YAHOO_COMPLAINT,
     TEMP_DIR,
 )
-from app.email import status
+from app.email import status, headers
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
 from app.email_utils import (
@@ -156,6 +156,7 @@ _MIME_HEADERS = [
     "Content-Transfer-Encoding",
 ]
 _MIME_HEADERS = [h.lower() for h in _MIME_HEADERS]
+
 
 newrelic_app = None
 if NEWRELIC_CONFIG_PATH:
@@ -751,9 +752,11 @@ def forward_email_to_mailbox(
             "To",
             "Cc",
             "Subject",
+            # do not delete original message id
+            headers.MESSAGE_ID,
             # References and In-Reply-To are used for keeping the email thread
-            "References",
-            "In-Reply-To",
+            headers.REFERENCES,
+            headers.IN_REPLY_TO,
         ]
         + _MIME_HEADERS,
     )
@@ -790,10 +793,15 @@ def forward_email_to_mailbox(
     msg[_ENVELOPE_FROM] = envelope.mail_from
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
     msg[_ENVELOPE_TO] = alias.email
-    message_id = make_msgid(str(email_log.id), EMAIL_DOMAIN)
-    LOG.d("message id %s", message_id)
-    msg["Message-ID"] = message_id
-    msg["Date"] = formatdate()
+
+    if not msg[headers.MESSAGE_ID]:
+        LOG.w("missing message id header, create one")
+        message_id = make_msgid(str(email_log.id), EMAIL_DOMAIN)
+        msg[headers.MESSAGE_ID] = message_id
+
+    if not msg[headers.DATE]:
+        LOG.w("missing date header, create one")
+        msg[headers.DATE] = formatdate()
 
     # change the from header so the sender comes from a reverse-alias
     # so it can pass DMARC check
@@ -983,9 +991,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             "To",
             "Cc",
             "Subject",
+            # do not delete original message id
+            headers.MESSAGE_ID,
             # References and In-Reply-To are used for keeping the email thread
-            "References",
-            "In-Reply-To",
+            headers.REFERENCES,
+            headers.IN_REPLY_TO,
         ]
         + _MIME_HEADERS,
     )

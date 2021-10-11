@@ -1,0 +1,5 @@
+"""Email headers"""
+MESSAGE_ID = "Message-ID"
+IN_REPLY_TO = "In-Reply-To"
+REFERENCES = "References"
+DATE = "date"
