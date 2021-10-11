@@ -1,3 +1,5 @@
+import uuid
+
 from flask import request, flash, render_template, url_for, g
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -50,6 +52,7 @@ def reset_password():
             return render_template("auth/reset_password.html", form=form, error=error)
 
         user.set_password(new_password)
+
         flash("Your new password has been set", "success")
 
         # this can be served to activate user too
@@ -57,6 +60,10 @@ def reset_password():
 
         # remove the reset password code
         ResetPasswordCode.delete(reset_password_code.id)
+
+        # change the alternative_id to log user out on other browsers
+        user.alternative_id = str(uuid.uuid4())
+
         db.session.commit()
 
         # do not use login_user(user) here

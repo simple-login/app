@@ -438,8 +438,8 @@ def fake_data():
 
 
 @login_manager.user_loader
-def load_user(user_id):
-    user = User.get(user_id)
+def load_user(alternative_id):
+    user = User.get_by(alternative_id=alternative_id)
     if user and user.disabled:
         return None
 
