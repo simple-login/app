@@ -387,6 +387,10 @@ class User(db.Model, ModelMixin, UserMixin, PasswordOracle):
         user.newsletter_alias_id = alias.id
         db.session.flush()
 
+        # generate an alternative_id if needed
+        if "alternative_id" not in kwargs:
+            user.alternative_id = str(uuid.uuid4())
+
         if DISABLE_ONBOARDING:
             LOG.d("Disable onboarding emails")
             return user
