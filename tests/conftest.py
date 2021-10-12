@@ -48,11 +48,12 @@ def flask_app():
 def flask_client():
     transaction = connection.begin()
 
-    try:
-        client = app.test_client()
-        yield client
-    finally:
-        # roll back all commits made during a test
-        transaction.rollback()
-        Session.rollback()
-        Session.close()
+    with app.app_context():
+        try:
+            client = app.test_client()
+            yield client
+        finally:
+            # roll back all commits made during a test
+            transaction.rollback()
+            Session.rollback()
+            Session.close()
