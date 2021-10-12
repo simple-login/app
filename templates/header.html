@@ -10,11 +10,6 @@
           <i class="fe fe-moon"></i>
         </div>
 
-        {% if current_user.should_show_upgrade_button() %}
-          <div class="nav-item">
-            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
-          </div>
-        {% endif %}
 
         <div class="nav-item">
 
@@ -66,6 +61,12 @@
             <i class="fa fa-external-link" aria-hidden="true"></i>
           </a>
         </div>
+
+        {% if current_user.should_show_upgrade_button() %}
+          <div class="nav-item">
+            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+          </div>
+        {% endif %}
 
         <div class="dropdown">
           <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
