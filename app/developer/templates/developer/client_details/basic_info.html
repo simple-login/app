@@ -45,33 +45,33 @@
     <button type="submit" class="mt-2 btn btn-primary">Update</button>
   </form>
 
-  <hr>
-  <h3>Submit for approval</h3>
-
-  <div class="alert alert-info">
-    Approval is only needed when you deploy the <b>Sign in with SimpleLogin</b> integration
-    in production. <br>
-    For local/testing/staging environment, you don't have to submit your app/website for approval. <br>
-  </div>
-
-  <form method="post" enctype="multipart/form-data"
-        action="{{ url_for('developer.client_detail', client_id=client.id, action="submit") }}">
-    {{ approval_form.csrf_token }}
-
-    <div class="form-group">
-      <label class="form-label">Tell us about your website/app</label>
-      {{ approval_form.description(
-          class="form-control", rows="10",
-          placeholder="This information is used for approving your application. Please give us as much info as you can, for example where you plan to use SimpleLogin, for which community, etc."
-          ) }}
-      {{ render_field_errors(approval_form.description) }}
-    </div>
-
-    <div class="alert alert-warning">
-      Don't make this frequent mistake: make sure to add your production URL to the <b>Authorized Redirect URIs</b> on
-      <a href="{{ url_for('developer.client_detail_oauth_setting', client_id=client.id) }}">OAuth Settings</a>.
-    </div>
-
-    <button type="submit" class="btn btn-success">Submit</button>
-  </form>
+{#  <hr>#}
+{#  <h3>Submit for approval</h3>#}
+{##}
+{#  <div class="alert alert-info">#}
+{#    Approval is only needed when you deploy the <b>Sign in with SimpleLogin</b> integration#}
+{#    in production. <br>#}
+{#    For local/testing/staging environment, you don't have to submit your app/website for approval. <br>#}
+{#  </div>#}
+{##}
+{#  <form method="post" enctype="multipart/form-data"#}
+{#        action="{{ url_for('developer.client_detail', client_id=client.id, action="submit") }}">#}
+{#    {{ approval_form.csrf_token }}#}
+{##}
+{#    <div class="form-group">#}
+{#      <label class="form-label">Tell us about your website/app</label>#}
+{#      {{ approval_form.description(#}
+{#          class="form-control", rows="10",#}
+{#          placeholder="This information is used for approving your application. Please give us as much info as you can, for example where you plan to use SimpleLogin, for which community, etc."#}
+{#          ) }}#}
+{#      {{ render_field_errors(approval_form.description) }}#}
+{#    </div>#}
+{##}
+{#    <div class="alert alert-warning">#}
+{#      Don't make this frequent mistake: make sure to add your production URL to the <b>Authorized Redirect URIs</b> on#}
+{#      <a href="{{ url_for('developer.client_detail_oauth_setting', client_id=client.id) }}">OAuth Settings</a>.#}
+{#    </div>#}
+{##}
+{#    <button type="submit" class="btn btn-success">Submit</button>#}
+{#  </form>#}
 {% endblock %}
