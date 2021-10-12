@@ -5,19 +5,20 @@ COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm install
 
 # Main image
-FROM python:3.7
+FROM python:3.7-alpine
 
-# install poetry, "pip3 install poetry==1.1.5" doesn't work
-# poetry will be available at /root/.poetry/bin/poetry
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+# install poetry
+RUN apk update \
+    && apk add --no-cache build-base openssl-dev libffi-dev \
+    && pip3 install poetry 
 
 WORKDIR /code
 
 # install dependencies
 COPY poetry.lock pyproject.toml ./
 
-RUN /root/.poetry/bin/poetry config virtualenvs.create false \
-  && /root/.poetry/bin/poetry install --no-root
+RUN poetry config virtualenvs.create false \
+  && poetry install --no-root
 
 # copy npm packages
 COPY --from=npm /code /code
