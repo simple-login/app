@@ -51,8 +51,5 @@ def add_sl_domains():
 
 
 if __name__ == "__main__":
-    app = create_app()
-
-    with app.app_context():
-        load_pgp_public_keys()
-        add_sl_domains()
+    load_pgp_public_keys()
+    add_sl_domains()

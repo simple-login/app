@@ -1986,9 +1986,7 @@ def main(port: int):
 
     if LOAD_PGP_EMAIL_HANDLER:
         LOG.w("LOAD PGP keys")
-        app = create_app()
-        with app.app_context():
-            load_pgp_public_keys()
+        load_pgp_public_keys()
 
     while True:
         time.sleep(2)

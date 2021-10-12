@@ -924,9 +924,8 @@ def register_custom_commands(app):
         from init_app import add_sl_domains
 
         LOG.w("reset db, add fake data")
-        with app.app_context():
-            fake_data()
-            add_sl_domains()
+        fake_data()
+        add_sl_domains()
 
 
 def setup_do_not_track(app):

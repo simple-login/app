@@ -103,70 +103,67 @@ if __name__ == "__main__":
         min_dt = arrow.now().shift(hours=-1)
         max_dt = arrow.now().shift(hours=1)
 
-        app = new_app()
+        for job in Job.filter(
+            Job.taken.is_(False), Job.run_at > min_dt, Job.run_at <= max_dt
+        ).all():
+            LOG.d("Take job %s", job)
 
-        with app.app_context():
-            for job in Job.filter(
-                Job.taken.is_(False), Job.run_at > min_dt, Job.run_at <= max_dt
-            ).all():
-                LOG.d("Take job %s", job)
+            # mark the job as taken, whether it will be executed successfully or not
+            job.taken = True
+            Session.commit()
 
-                # mark the job as taken, whether it will be executed successfully or not
-                job.taken = True
+            if job.name == JOB_ONBOARDING_1:
+                user_id = job.payload.get("user_id")
+                user = User.get(user_id)
+
+                # user might delete their account in the meantime
+                # or disable the notification
+                if user and user.notification and user.activated:
+                    LOG.d("send onboarding send-from-alias email to user %s", user)
+                    onboarding_send_from_alias(user)
+            elif job.name == JOB_ONBOARDING_2:
+                user_id = job.payload.get("user_id")
+                user = User.get(user_id)
+
+                # user might delete their account in the meantime
+                # or disable the notification
+                if user and user.notification and user.activated:
+                    LOG.d("send onboarding mailbox email to user %s", user)
+                    onboarding_mailbox(user)
+            elif job.name == JOB_ONBOARDING_4:
+                user_id = job.payload.get("user_id")
+                user = User.get(user_id)
+
+                # user might delete their account in the meantime
+                # or disable the notification
+                if user and user.notification and user.activated:
+                    LOG.d("send onboarding pgp email to user %s", user)
+                    onboarding_pgp(user)
+
+            elif job.name == JOB_BATCH_IMPORT:
+                batch_import_id = job.payload.get("batch_import_id")
+                batch_import = BatchImport.get(batch_import_id)
+                handle_batch_import(batch_import)
+            elif job.name == JOB_DELETE_ACCOUNT:
+                user_id = job.payload.get("user_id")
+                user = User.get(user_id)
+
+                if not user:
+                    LOG.i("No user found for %s", user_id)
+                    continue
+
+                user_email = user.email
+                LOG.w("Delete user %s", user)
+                User.delete(user.id)
                 Session.commit()
 
-                if job.name == JOB_ONBOARDING_1:
-                    user_id = job.payload.get("user_id")
-                    user = User.get(user_id)
-
-                    # user might delete their account in the meantime
-                    # or disable the notification
-                    if user and user.notification and user.activated:
-                        LOG.d("send onboarding send-from-alias email to user %s", user)
-                        onboarding_send_from_alias(user)
-                elif job.name == JOB_ONBOARDING_2:
-                    user_id = job.payload.get("user_id")
-                    user = User.get(user_id)
-
-                    # user might delete their account in the meantime
-                    # or disable the notification
-                    if user and user.notification and user.activated:
-                        LOG.d("send onboarding mailbox email to user %s", user)
-                        onboarding_mailbox(user)
-                elif job.name == JOB_ONBOARDING_4:
-                    user_id = job.payload.get("user_id")
-                    user = User.get(user_id)
-
-                    # user might delete their account in the meantime
-                    # or disable the notification
-                    if user and user.notification and user.activated:
-                        LOG.d("send onboarding pgp email to user %s", user)
-                        onboarding_pgp(user)
-
-                elif job.name == JOB_BATCH_IMPORT:
-                    batch_import_id = job.payload.get("batch_import_id")
-                    batch_import = BatchImport.get(batch_import_id)
-                    handle_batch_import(batch_import)
-                elif job.name == JOB_DELETE_ACCOUNT:
-                    user_id = job.payload.get("user_id")
-                    user = User.get(user_id)
-
-                    if not user:
-                        LOG.i("No user found for %s", user_id)
-                        continue
-
-                    user_email = user.email
-                    LOG.w("Delete user %s", user)
-                    User.delete(user.id)
-                    Session.commit()
-
-                    send_email(
-                        user_email,
-                        "Your SimpleLogin account has been deleted",
-                        render("transactional/account-delete.txt"),
-                        render("transactional/account-delete.html"),
-                    )
-                else:
-                    LOG.e("Unknown job name %s", job.name)
+                send_email(
+                    user_email,
+                    "Your SimpleLogin account has been deleted",
+                    render("transactional/account-delete.txt"),
+                    render("transactional/account-delete.html"),
+                )
+            else:
+                LOG.e("Unknown job name %s", job.name)
 
         time.sleep(10)

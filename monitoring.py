@@ -59,9 +59,7 @@ def nb_files(directory) -> int:
 
 if __name__ == "__main__":
     while True:
-        app = create_app()
-        with app.app_context():
-            get_stats()
+        get_stats()
 
         # 1 min
         sleep(60)

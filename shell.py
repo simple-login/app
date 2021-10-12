@@ -137,9 +137,7 @@ def send_onboarding_emails(user):
     onboarding_pgp(user)
 
 
-app = create_app()
-
-with app.app_context():
+if __name__ == "__main__":
     # to test email template
     # with open("/tmp/email.html", "w") as f:
     #     user = User.first()
