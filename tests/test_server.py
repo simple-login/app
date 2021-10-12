@@ -1,6 +1,6 @@
 import arrow
 
-from app.extensions import db
+from app.db import Session
 from app.models import User, CoinbaseSubscription
 from server import handle_coinbase_event
 
@@ -44,7 +44,7 @@ def test_handle_coinbase_event_extend_subscription(flask_client):
         activated=True,
     )
     user.trial_end = None
-    db.session.commit()
+    Session.commit()
 
     cb = CoinbaseSubscription.create(
         user_id=user.id, end_at=arrow.now().shift(days=-400), commit=True

@@ -2,7 +2,7 @@ import os
 from time import sleep
 
 from app.config import HOST
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import Monitoring
 from server import create_app
@@ -32,7 +32,7 @@ def get_stats():
         active_queue=active_queue,
         deferred_queue=deferred_queue,
     )
-    db.session.commit()
+    Session.commit()
 
     global _nb_failed
     # alert when too many emails in incoming + active queue

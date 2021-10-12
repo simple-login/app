@@ -9,7 +9,7 @@ from app.config import (
     FACEBOOK_CLIENT_ID,
     FACEBOOK_CLIENT_SECRET,
 )
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import User, SocialAuth
 from .login_utils import after_login
@@ -102,7 +102,7 @@ def facebook_callback():
             LOG.d("set user profile picture to %s", picture_url)
             file = create_file_from_url(user, picture_url)
             user.profile_picture_id = file.id
-            db.session.commit()
+            Session.commit()
 
     else:
         flash(
@@ -122,6 +122,6 @@ def facebook_callback():
 
     if not SocialAuth.get_by(user_id=user.id, social="facebook"):
         SocialAuth.create(user_id=user.id, social="facebook")
-        db.session.commit()
+        Session.commit()
 
     return after_login(user, next_url)

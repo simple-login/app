@@ -1,3 +1,5 @@
+from app.db import Session
+
 """
 Allow user to "unsubscribe", aka block an email alias
 """
@@ -6,7 +8,6 @@ from flask import redirect, url_for, flash, request, render_template
 from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
 from app.models import Alias
 
 
@@ -29,7 +30,7 @@ def unsubscribe(alias_id):
     if request.method == "POST":
         alias.enabled = False
         flash(f"Alias {alias.email} has been blocked", "success")
-        db.session.commit()
+        Session.commit()
 
         return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))
     else:  # ask user confirmation

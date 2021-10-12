@@ -1,3 +1,5 @@
+from app.db import Session
+from app.db import Session
 from time import sleep
 
 import flask_migrate
@@ -34,7 +36,7 @@ def create_db():
 def change_password(user_id, new_password):
     user = User.get(user_id)
     user.set_password(new_password)
-    db.session.commit()
+    Session.commit()
 
 
 def reset_db():
@@ -44,7 +46,7 @@ def reset_db():
 
 
 def send_mailbox_newsletter():
-    for user in User.query.order_by(User.id).all():
+    for user in User.order_by(User.id).all():
         if user.notification and user.activated:
             try:
                 LOG.d("Send newsletter to %s", user)
@@ -60,7 +62,7 @@ def send_mailbox_newsletter():
 
 
 def send_pgp_newsletter():
-    for user in User.query.order_by(User.id).all():
+    for user in User.order_by(User.id).all():
         if user.notification and user.activated:
             try:
                 LOG.d("Send PGP newsletter to %s", user)
@@ -77,7 +79,7 @@ def send_pgp_newsletter():
 
 def send_mobile_newsletter():
     count = 0
-    for user in User.query.order_by(User.id).all():
+    for user in User.order_by(User.id).all():
         if user.notification and user.activated:
             count += 1
             try:
@@ -104,7 +106,7 @@ def disable_mailbox(mailbox_id):
     for alias in mailbox.aliases:
         alias.enabled = False
 
-    db.session.commit()
+    Session.commit()
 
     email_msg = f"""Hi,
 

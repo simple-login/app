@@ -3,7 +3,8 @@ from flask_login import login_user, current_user
 
 from app import email_utils
 from app.auth.base import auth_bp
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import ActivationCode
 
@@ -50,7 +51,7 @@ def activate():
 
     # activation code is to be used only once
     ActivationCode.delete(activation_code.id)
-    db.session.commit()
+    Session.commit()
 
     flash("Your account has been activated", "success")
 

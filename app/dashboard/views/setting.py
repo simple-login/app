@@ -22,11 +22,11 @@ from app.config import (
     ALIAS_RANDOM_SUFFIX_LENGTH,
 )
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
-from app.extensions import db
 from app.log import LOG
 from app.models import (
     PlanEnum,
@@ -116,7 +116,7 @@ def setting():
                                 "delete the expired email change %s", other_email_change
                             )
                             EmailChange.delete(other_email_change.id)
-                            db.session.commit()
+                            Session.commit()
                         else:
                             flash(
                                 "You cannot use this email address as your personal inbox.",
@@ -132,7 +132,7 @@ def setting():
                             ),  # todo: make sure the code is unique
                             new_email=new_email,
                         )
-                        db.session.commit()
+                        Session.commit()
                         send_change_email_confirmation(current_user, email_change)
                         flash(
                             "A confirmation email is on the way, please check your inbox",
@@ -145,7 +145,7 @@ def setting():
                 # update user info
                 if form.name.data != current_user.name:
                     current_user.name = form.name.data
-                    db.session.commit()
+                    Session.commit()
                     profile_updated = True
 
                 if form.profile_picture.data:
@@ -156,11 +156,11 @@ def setting():
                         file_path, BytesIO(form.profile_picture.data.read())
                     )
 
-                    db.session.flush()
+                    Session.flush()
                     LOG.d("upload file %s to s3", file)
 
                     current_user.profile_picture_id = file.id
-                    db.session.commit()
+                    Session.commit()
                     profile_updated = True
 
                 if profile_updated:
@@ -181,7 +181,7 @@ def setting():
                 current_user.notification = True
             else:
                 current_user.notification = False
-            db.session.commit()
+            Session.commit()
             flash("Your notification preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -212,7 +212,7 @@ def setting():
             scheme = int(request.form.get("alias-generator-scheme"))
             if AliasGeneratorEnum.has_value(scheme):
                 current_user.alias_generator = scheme
-                db.session.commit()
+                Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -249,7 +249,7 @@ def setting():
                 current_user.default_alias_custom_domain_id = None
                 current_user.default_alias_public_domain_id = None
 
-            db.session.commit()
+            Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -257,7 +257,7 @@ def setting():
             scheme = int(request.form.get("random-alias-suffix-generator"))
             if AliasSuffixEnum.has_value(scheme):
                 current_user.random_alias_suffix = scheme
-                db.session.commit()
+                Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -266,9 +266,9 @@ def setting():
             if SenderFormatEnum.has_value(sender_format):
                 current_user.sender_format = sender_format
                 current_user.sender_format_updated_at = arrow.now()
-                db.session.commit()
+                Session.commit()
                 flash("Your sender format preference has been updated", "success")
-            db.session.commit()
+            Session.commit()
             return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "replace-ra":
@@ -277,7 +277,7 @@ def setting():
                 current_user.replace_reverse_alias = True
             else:
                 current_user.replace_reverse_alias = False
-            db.session.commit()
+            Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -287,7 +287,7 @@ def setting():
                 current_user.include_sender_in_reverse_alias = True
             else:
                 current_user.include_sender_in_reverse_alias = False
-            db.session.commit()
+            Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -297,7 +297,7 @@ def setting():
                 current_user.expand_alias_info = True
             else:
                 current_user.expand_alias_info = False
-            db.session.commit()
+            Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
         elif request.form.get("form-name") == "ignore-loop-email":
@@ -306,7 +306,7 @@ def setting():
                 current_user.ignore_loop_email = True
             else:
                 current_user.ignore_loop_email = False
-            db.session.commit()
+            Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -344,7 +344,7 @@ def send_reset_password_email(user):
     reset_password_code = ResetPasswordCode.create(
         user_id=user.id, code=random_string(60)
     )
-    db.session.commit()
+    Session.commit()
 
     reset_password_link = f"{URL}/auth/reset_password?code={reset_password_code.code}"
 
@@ -368,7 +368,7 @@ def resend_email_change():
     if email_change:
         # extend email change expiration
         email_change.expired = arrow.now().shift(hours=12)
-        db.session.commit()
+        Session.commit()
 
         send_change_email_confirmation(current_user, email_change)
         flash("A confirmation email is on the way, please check your inbox", "success")
@@ -386,7 +386,7 @@ def cancel_email_change():
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
         EmailChange.delete(email_change.id)
-        db.session.commit()
+        Session.commit()
         flash("Your email change is cancelled", "success")
         return redirect(url_for("dashboard.setting"))
     else:

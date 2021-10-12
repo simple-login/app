@@ -1,10 +1,11 @@
-import re2 as re
 from typing import Optional
 
+import re2 as re
 from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import IntegrityError, DataError
 
 from app.config import BOUNCE_PREFIX_FOR_REPLY_PHASE
+from app.db import Session
 from app.email_utils import (
     get_email_domain_part,
     send_cannot_create_directory_alias,
@@ -14,7 +15,6 @@ from app.email_utils import (
     get_email_local_part,
 )
 from app.errors import AliasInTrashError
-from app.extensions import db
 from app.log import LOG
 from app.models import (
     Alias,
@@ -97,14 +97,14 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
                 mailbox_id=mailboxes[0].id,
                 note=f"Created by directory {directory.name}",
             )
-            db.session.flush()
+            Session.flush()
             for i in range(1, len(mailboxes)):
                 AliasMailbox.create(
                     alias_id=alias.id,
                     mailbox_id=mailboxes[i].id,
                 )
 
-            db.session.commit()
+            Session.commit()
             return alias
         except AliasInTrashError:
             LOG.w(
@@ -116,7 +116,7 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             return None
         except IntegrityError:
             LOG.w("Alias %s already exists", address)
-            db.session.rollback()
+            Session.rollback()
             alias = Alias.get_by(email=address)
             return alias
 
@@ -173,13 +173,13 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
             mailbox_id=mailboxes[0].id,
             note=alias_note,
         )
-        db.session.flush()
+        Session.flush()
         for i in range(1, len(mailboxes)):
             AliasMailbox.create(
                 alias_id=alias.id,
                 mailbox_id=mailboxes[i].id,
             )
-        db.session.commit()
+        Session.commit()
         return alias
     except AliasInTrashError:
         LOG.w(
@@ -191,12 +191,12 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         return None
     except IntegrityError:
         LOG.w("Alias %s already exists", address)
-        db.session.rollback()
+        Session.rollback()
         alias = Alias.get_by(email=address)
         return alias
     except DataError:
         LOG.w("Cannot create alias %s", address)
-        db.session.rollback()
+        Session.rollback()
         return None
 
 
@@ -211,30 +211,30 @@ def delete_alias(alias: Alias, user: User):
             email=alias.email, domain_id=alias.custom_domain_id
         ):
             LOG.d("add %s to domain %s trash", alias, alias.custom_domain_id)
-            db.session.add(
+            Session.add(
                 DomainDeletedAlias(
                     user_id=user.id, email=alias.email, domain_id=alias.custom_domain_id
                 )
             )
-            db.session.commit()
+            Session.commit()
     else:
         if not DeletedAlias.get_by(email=alias.email):
             LOG.d("add %s to global trash", alias)
-            db.session.add(DeletedAlias(email=alias.email))
-            db.session.commit()
+            Session.add(DeletedAlias(email=alias.email))
+            Session.commit()
 
-    Alias.query.filter(Alias.id == alias.id).delete()
-    db.session.commit()
+    Alias.filter(Alias.id == alias.id).delete()
+    Session.commit()
 
 
 def aliases_for_mailbox(mailbox: Mailbox) -> [Alias]:
     """
     get list of aliases for a given mailbox
     """
-    ret = set(Alias.query.filter(Alias.mailbox_id == mailbox.id).all())
+    ret = set(Alias.filter(Alias.mailbox_id == mailbox.id).all())
 
     for alias in (
-        db.session.query(Alias)
+        Session.query(Alias)
         .join(AliasMailbox, Alias.id == AliasMailbox.alias_id)
         .filter(AliasMailbox.mailbox_id == mailbox.id)
     ):
@@ -247,7 +247,7 @@ def nb_email_log_for_mailbox(mailbox: Mailbox):
     aliases = aliases_for_mailbox(mailbox)
     alias_ids = [alias.id for alias in aliases]
     return (
-        db.session.query(EmailLog)
+        Session.query(EmailLog)
         .join(Contact, EmailLog.contact_id == Contact.id)
         .filter(Contact.alias_id.in_(alias_ids))
         .count()

@@ -6,7 +6,8 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.models import ResetPasswordCode
 
 
@@ -64,7 +65,7 @@ def reset_password():
         # change the alternative_id to log user out on other browsers
         user.alternative_id = str(uuid.uuid4())
 
-        db.session.commit()
+        Session.commit()
 
         # do not use login_user(user) here
         # to make sure user needs to go through MFA if enabled

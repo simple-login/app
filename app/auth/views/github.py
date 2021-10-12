@@ -4,7 +4,7 @@ from requests_oauthlib import OAuth2Session
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
 from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import User, SocialAuth
 from app.utils import encode_url, sanitize_email
@@ -94,7 +94,7 @@ def github_callback():
 
     if not SocialAuth.get_by(user_id=user.id, social="github"):
         SocialAuth.create(user_id=user.id, social="github")
-        db.session.commit()
+        Session.commit()
 
     # The activation link contains the original page, for ex authorize page
     next_url = request.args.get("next") if request.args else None

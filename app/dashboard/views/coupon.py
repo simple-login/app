@@ -6,8 +6,8 @@ from wtforms import StringField, validators
 
 from app.config import ADMIN_EMAIL
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import send_email
-from app.extensions import db
 from app.models import (
     ManualSubscription,
     Coupon,
@@ -57,7 +57,7 @@ def coupon_route():
         if coupon and not coupon.used:
             coupon.used_by_user_id = current_user.id
             coupon.used = True
-            db.session.commit()
+            Session.commit()
 
             manual_sub: ManualSubscription = ManualSubscription.get_by(
                 user_id=current_user.id
@@ -68,7 +68,7 @@ def coupon_route():
                     manual_sub.end_at = manual_sub.end_at.shift(years=coupon.nb_year)
                 else:
                     manual_sub.end_at = arrow.now().shift(years=coupon.nb_year, days=1)
-                db.session.commit()
+                Session.commit()
                 flash(
                     f"Your current subscription is extended to {manual_sub.end_at.humanize()}",
                     "success",

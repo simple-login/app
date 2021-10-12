@@ -11,13 +11,14 @@ from app import email_utils
 from app.api.base import api_bp
 from app.config import FLASK_SECRET, DISABLE_REGISTRATION
 from app.dashboard.views.setting import send_reset_password_email
+from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
     personal_email_already_used,
     send_email,
     render,
 )
-from app.extensions import db, limiter
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
 from app.utils import sanitize_email
@@ -98,12 +99,12 @@ def auth_register():
 
     LOG.d("create user %s", email)
     user = User.create(email=email, name="", password=password)
-    db.session.flush()
+    Session.flush()
 
     # create activation code
     code = "".join([str(random.randint(0, 9)) for _ in range(6)])
     AccountActivation.create(user_id=user.id, code=code)
-    db.session.commit()
+    Session.commit()
 
     send_email(
         email,
@@ -155,13 +156,13 @@ def auth_activate():
     if account_activation.code != code:
         # decrement nb tries
         account_activation.tries -= 1
-        db.session.commit()
+        Session.commit()
         # Trigger rate limiter
         g.deduct_limit = True
 
         if account_activation.tries == 0:
             AccountActivation.delete(account_activation.id)
-            db.session.commit()
+            Session.commit()
             return jsonify(error="Too many wrong tries"), 410
 
         return jsonify(error="Wrong email or code"), 400
@@ -169,7 +170,7 @@ def auth_activate():
     LOG.d("activate user %s", user)
     user.activated = True
     AccountActivation.delete(account_activation.id)
-    db.session.commit()
+    Session.commit()
 
     return jsonify(msg="Account is activated, user can login now"), 200
 
@@ -198,12 +199,12 @@ def auth_reactivate():
     account_activation = AccountActivation.get_by(user_id=user.id)
     if account_activation:
         AccountActivation.delete(account_activation.id)
-        db.session.commit()
+        Session.commit()
 
     # create activation code
     code = "".join([str(random.randint(0, 9)) for _ in range(6)])
     AccountActivation.create(user_id=user.id, code=code)
-    db.session.commit()
+    Session.commit()
 
     send_email(
         email,
@@ -255,12 +256,12 @@ def auth_facebook():
 
         LOG.d("create facebook user with %s", user_info)
         user = User.create(email=email, name=user_info["name"], activated=True)
-        db.session.commit()
+        Session.commit()
         email_utils.send_welcome_email(user)
 
     if not SocialAuth.get_by(user_id=user.id, social="facebook"):
         SocialAuth.create(user_id=user.id, social="facebook")
-        db.session.commit()
+        Session.commit()
 
     return jsonify(**auth_payload(user, device)), 200
 
@@ -308,12 +309,12 @@ def auth_google():
 
         LOG.d("create Google user with %s", user_info)
         user = User.create(email=email, name="", activated=True)
-        db.session.commit()
+        Session.commit()
         email_utils.send_welcome_email(user)
 
     if not SocialAuth.get_by(user_id=user.id, social="google"):
         SocialAuth.create(user_id=user.id, social="google")
-        db.session.commit()
+        Session.commit()
 
     return jsonify(**auth_payload(user, device)), 200
 
@@ -331,7 +332,7 @@ def auth_payload(user, device) -> dict:
         if not api_key:
             LOG.d("create new api key for %s and %s", user, device)
             api_key = ApiKey.create(user.id, device)
-            db.session.commit()
+            Session.commit()
         ret["mfa_key"] = None
         ret["api_key"] = api_key.code
 

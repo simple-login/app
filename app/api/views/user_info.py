@@ -7,7 +7,7 @@ from flask_login import logout_user
 from app import s3
 from app.api.base import api_bp, require_api_auth
 from app.config import SESSION_COOKIE_NAME
-from app.extensions import db
+from app.db import Session
 from app.models import ApiKey, File, User
 from app.utils import random_string
 
@@ -56,24 +56,24 @@ def update_user_info():
             if user.profile_picture_id:
                 file = user.profile_picture
                 user.profile_picture_id = None
-                db.session.flush()
+                Session.flush()
                 if file:
                     File.delete(file.id)
                     s3.delete(file.path)
-                    db.session.flush()
+                    Session.flush()
         else:
             raw_data = base64.decodebytes(data["profile_picture"].encode())
             file_path = random_string(30)
             file = File.create(user_id=user.id, path=file_path)
-            db.session.flush()
+            Session.flush()
             s3.upload_from_bytesio(file_path, BytesIO(raw_data))
             user.profile_picture_id = file.id
-            db.session.flush()
+            Session.flush()
 
     if "name" in data:
         user.name = data["name"]
 
-    db.session.commit()
+    Session.commit()
 
     return jsonify(user_to_dict(user))
 
@@ -95,7 +95,7 @@ def create_api_key():
     device = data.get("device")
 
     api_key = ApiKey.create(user_id=g.user.id, name=device)
-    db.session.commit()
+    Session.commit()
 
     return jsonify(api_key=api_key.code), 201
 

@@ -10,12 +10,12 @@ from wtforms import StringField, validators, ValidationError
 
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import (
     is_valid_email,
     generate_reply_email,
     parse_full_address,
 )
-from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
 
@@ -64,7 +64,7 @@ def get_contact_infos(
 ) -> [ContactInfo]:
     """if contact_id is set, only return the contact info for this contact"""
     sub = (
-        db.session.query(
+        Session.query(
             Contact.id,
             func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
             func.sum(
@@ -94,7 +94,7 @@ def get_contact_infos(
     )
 
     q = (
-        db.session.query(
+        Session.query(
             Contact,
             EmailLog,
             sub.c.nb_reply,
@@ -221,7 +221,7 @@ def alias_contact_manager(alias_id):
                 )
 
                 LOG.d("create reverse-alias for %s", contact_addr)
-                db.session.commit()
+                Session.commit()
                 flash(f"Reverse alias for {contact_addr} is created", "success")
 
                 return redirect(
@@ -248,7 +248,7 @@ def alias_contact_manager(alias_id):
 
             delete_contact_email = contact.website_email
             Contact.delete(contact_id)
-            db.session.commit()
+            Session.commit()
 
             flash(
                 f"Reverse-alias for {delete_contact_email} has been deleted", "success"

@@ -13,11 +13,11 @@ from app.config import (
     JOB_BATCH_IMPORT,
     JOB_DELETE_ACCOUNT,
 )
+from app.db import Session
 from app.email_utils import (
     send_email,
     render,
 )
-from app.extensions import db
 from app.import_utils import handle_batch_import
 from app.log import LOG
 from app.models import User, Job, BatchImport
@@ -32,10 +32,7 @@ def new_app():
     @app.teardown_appcontext
     def shutdown_session(response_or_exc):
         # same as shutdown_session() in flask-sqlalchemy but this is not enough
-        db.session.remove()
-
-        # dispose the engine too
-        db.engine.dispose()
+        Session.remove()
 
     return app
 
@@ -109,14 +106,14 @@ if __name__ == "__main__":
         app = new_app()
 
         with app.app_context():
-            for job in Job.query.filter(
+            for job in Job.filter(
                 Job.taken.is_(False), Job.run_at > min_dt, Job.run_at <= max_dt
             ).all():
                 LOG.d("Take job %s", job)
 
                 # mark the job as taken, whether it will be executed successfully or not
                 job.taken = True
-                db.session.commit()
+                Session.commit()
 
                 if job.name == JOB_ONBOARDING_1:
                     user_id = job.payload.get("user_id")
@@ -161,7 +158,7 @@ if __name__ == "__main__":
                     user_email = user.email
                     LOG.w("Delete user %s", user)
                     User.delete(user.id)
-                    db.session.commit()
+                    Session.commit()
 
                     send_email(
                         user_email,

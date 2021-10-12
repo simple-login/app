@@ -5,8 +5,8 @@ from wtforms import StringField, validators
 
 from app.config import EMAIL_SERVERS_WITH_PRIORITY
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import get_email_domain_part
-from app.extensions import db
 from app.models import CustomDomain, Mailbox, DomainMailbox, SLDomain
 
 
@@ -19,7 +19,7 @@ class NewCustomDomainForm(FlaskForm):
 @dashboard_bp.route("/custom_domain", methods=["GET", "POST"])
 @login_required
 def custom_domain():
-    custom_domains = CustomDomain.query.filter_by(user_id=current_user.id).all()
+    custom_domains = CustomDomain.filter_by(user_id=current_user.id).all()
     mailboxes = current_user.mailboxes()
     new_custom_domain_form = NewCustomDomainForm()
 
@@ -54,7 +54,7 @@ def custom_domain():
                     new_custom_domain = CustomDomain.create(
                         domain=new_domain, user_id=current_user.id
                     )
-                    db.session.commit()
+                    Session.commit()
 
                     mailbox_ids = request.form.getlist("mailbox_ids")
                     if mailbox_ids:
@@ -76,7 +76,7 @@ def custom_domain():
                                 domain_id=new_custom_domain.id, mailbox_id=mailbox.id
                             )
 
-                        db.session.commit()
+                        Session.commit()
 
                     flash(
                         f"New domain {new_custom_domain.domain} is created", "success"

@@ -4,7 +4,7 @@ from requests_oauthlib import OAuth2Session
 from app import s3
 from app.auth.base import auth_bp
 from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import User, File, SocialAuth
 from app.utils import random_string, sanitize_email
@@ -89,7 +89,7 @@ def google_callback():
             LOG.d("set user profile picture to %s", picture_url)
             file = create_file_from_url(user, picture_url)
             user.profile_picture_id = file.id
-            db.session.commit()
+            Session.commit()
     else:
         flash(
             "Sorry you cannot sign up via Google, please use email/password sign-up instead",
@@ -108,7 +108,7 @@ def google_callback():
 
     if not SocialAuth.get_by(user_id=user.id, social="google"):
         SocialAuth.create(user_id=user.id, social="google")
-        db.session.commit()
+        Session.commit()
 
     return after_login(user, next_url)
 
@@ -119,7 +119,7 @@ def create_file_from_url(user, url) -> File:
 
     s3.upload_from_url(url, file_path)
 
-    db.session.flush()
+    Session.flush()
     LOG.d("upload file %s to s3", file)
 
     return file

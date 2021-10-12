@@ -9,6 +9,7 @@ from wtforms.fields.html5 import EmailField
 
 from app.config import MAILBOX_SECRET, URL
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
     mailbox_already_used,
@@ -16,7 +17,6 @@ from app.email_utils import (
     send_email,
     is_valid_email,
 )
-from app.extensions import db
 from app.log import LOG
 from app.models import Mailbox
 
@@ -31,7 +31,7 @@ class NewMailboxForm(FlaskForm):
 @login_required
 def mailbox_route():
     mailboxes = (
-        Mailbox.query.filter_by(user_id=current_user.id)
+        Mailbox.filter_by(user_id=current_user.id)
         .order_by(Mailbox.created_at.desc())
         .all()
     )
@@ -77,7 +77,7 @@ def mailbox_route():
                 return redirect(url_for("dashboard.mailbox_route"))
 
             current_user.default_mailbox_id = mailbox.id
-            db.session.commit()
+            Session.commit()
             flash(f"Mailbox {mailbox.email} is set as Default Mailbox", "success")
 
             return redirect(url_for("dashboard.mailbox_route"))
@@ -102,7 +102,7 @@ def mailbox_route():
                     new_mailbox = Mailbox.create(
                         email=mailbox_email, user_id=current_user.id
                     )
-                    db.session.commit()
+                    Session.commit()
 
                     send_verification_email(current_user, new_mailbox)
 
@@ -136,7 +136,7 @@ def delete_mailbox(mailbox_id: int):
         user = mailbox.user
 
         Mailbox.delete(mailbox_id)
-        db.session.commit()
+        Session.commit()
         LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
 
         send_email(
@@ -191,7 +191,7 @@ def mailbox_verify():
             return redirect(url_for("dashboard.mailbox_route"))
 
         mailbox.verified = True
-        db.session.commit()
+        Session.commit()
 
         LOG.d("Mailbox %s is verified", mailbox)
 

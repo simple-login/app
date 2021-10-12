@@ -1,15 +1,14 @@
-"""Initial loading script"""
 from app.config import ALIAS_DOMAINS, PREMIUM_ALIAS_DOMAINS
-from app.models import Mailbox, Contact, SLDomain
+from app.db import Session
 from app.log import LOG
-from app.extensions import db
+from app.models import Mailbox, Contact, SLDomain
 from app.pgp_utils import load_public_key
 from server import create_app
 
 
 def load_pgp_public_keys():
     """Load PGP public key to keyring"""
-    for mailbox in Mailbox.query.filter(Mailbox.pgp_public_key.isnot(None)).all():
+    for mailbox in Mailbox.filter(Mailbox.pgp_public_key.isnot(None)).all():
         LOG.d("Load PGP key for mailbox %s", mailbox)
         fingerprint = load_public_key(mailbox.pgp_public_key)
 
@@ -17,9 +16,9 @@ def load_pgp_public_keys():
         if fingerprint != mailbox.pgp_finger_print:
             LOG.e("fingerprint %s different for mailbox %s", fingerprint, mailbox)
             mailbox.pgp_finger_print = fingerprint
-    db.session.commit()
+    Session.commit()
 
-    for contact in Contact.query.filter(Contact.pgp_public_key.isnot(None)).all():
+    for contact in Contact.filter(Contact.pgp_public_key.isnot(None)).all():
         LOG.d("Load PGP key for %s", contact)
         fingerprint = load_public_key(contact.pgp_public_key)
 
@@ -28,7 +27,7 @@ def load_pgp_public_keys():
             LOG.e("fingerprint %s different for contact %s", fingerprint, contact)
             contact.pgp_finger_print = fingerprint
 
-    db.session.commit()
+    Session.commit()
 
     LOG.d("Finish load_pgp_public_keys")
 
@@ -48,7 +47,7 @@ def add_sl_domains():
             LOG.i("Add %s to SL domain", premium_domain)
             SLDomain.create(domain=premium_domain, premium_only=True)
 
-    db.session.commit()
+    Session.commit()
 
 
 if __name__ == "__main__":

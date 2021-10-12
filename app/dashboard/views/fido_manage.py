@@ -5,7 +5,7 @@ from wtforms import HiddenField, validators
 
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import RecoveryCode, Fido
 
@@ -34,7 +34,7 @@ def fido_manage():
             return redirect(url_for("dashboard.fido_manage"))
 
         Fido.delete(fido_key.id)
-        db.session.commit()
+        Session.commit()
 
         LOG.d(f"FIDO Key ID={fido_key.id} Removed")
         flash(f"Key {fido_key.name} successfully unlinked", "success")
@@ -42,7 +42,7 @@ def fido_manage():
         # Disable FIDO for the user if all keys have been deleted
         if not Fido.filter_by(uuid=current_user.fido_uuid).all():
             current_user.fido_uuid = None
-            db.session.commit()
+            Session.commit()
 
             # user does not have any 2FA enabled left, delete all recovery codes
             if not current_user.two_factor_authentication_enabled():

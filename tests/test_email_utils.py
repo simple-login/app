@@ -4,6 +4,7 @@ from email.message import EmailMessage
 import arrow
 
 from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, BOUNCE_EMAIL
+from app.db import Session
 from app.email_utils import (
     get_email_domain_part,
     can_create_directory_for_address,
@@ -31,7 +32,6 @@ from app.email_utils import (
     get_header_unicode,
     parse_full_address,
 )
-from app.extensions import db
 from app.models import User, CustomDomain, Alias, Contact, EmailLog, IgnoreBounceSender
 
 # flake8: noqa: E101, W191
@@ -136,7 +136,7 @@ def test_send_email_with_rate_control(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     for _ in range(MAX_ALERT_24H):
         assert send_email_with_rate_control(
@@ -598,7 +598,7 @@ def test_should_disable(flask_client):
         include_sender_in_reverse_alias=True,
     )
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     assert not should_disable(alias)
 
@@ -623,7 +623,7 @@ def test_should_disable(flask_client):
 
     # should not affect another alias
     alias2 = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
     assert not should_disable(alias2)
 
 
@@ -631,7 +631,7 @@ def test_should_disable_bounces_every_day(flask_client):
     """if an alias has bounces every day at least 9 days in the last 10 days, disable alias"""
     user = login(flask_client)
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     assert not should_disable(alias)
 
@@ -661,7 +661,7 @@ def test_should_disable_bounces_account(flask_client):
     user = login(flask_client)
     alias = Alias.create_new_random(user)
 
-    db.session.commit()
+    Session.commit()
 
     # create a lot of bounces on alias
     contact = Contact.create(
@@ -690,7 +690,7 @@ def test_should_disable_bounces_account(flask_client):
 def test_should_disable_bounce_consecutive_days(flask_client):
     user = login(flask_client)
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     contact = Contact.create(
         user_id=user.id,

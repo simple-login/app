@@ -7,7 +7,8 @@ from app import alias_utils
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
 from app.config import PAGE_LIMIT, ALIAS_LIMIT
 from app.dashboard.base import dashboard_bp
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     Alias,
@@ -26,19 +27,19 @@ class Stats:
 
 
 def get_stats(user: User) -> Stats:
-    nb_alias = Alias.query.filter_by(user_id=user.id).count()
+    nb_alias = Alias.filter_by(user_id=user.id).count()
     nb_forward = (
-        db.session.query(EmailLog)
+        Session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=False, blocked=False, bounced=False)
         .count()
     )
     nb_reply = (
-        db.session.query(EmailLog)
+        Session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=True, blocked=False, bounced=False)
         .count()
     )
     nb_block = (
-        db.session.query(EmailLog)
+        Session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=False, blocked=True, bounced=False)
         .count()
     )
@@ -92,7 +93,7 @@ def index():
 
                 alias.mailbox_id = current_user.default_mailbox_id
 
-                db.session.commit()
+                Session.commit()
 
                 LOG.d("create new random alias %s for user %s", alias, current_user)
                 flash(f"Alias {alias.email} has been created", "success")
@@ -130,7 +131,7 @@ def index():
                 flash(f"Alias {email} has been deleted", "success")
             elif request.form.get("form-name") == "disable-alias":
                 alias.enabled = False
-                db.session.commit()
+                Session.commit()
                 flash(f"Alias {alias.email} has been disabled", "success")
 
         return redirect(
@@ -146,7 +147,7 @@ def index():
 
         # to make sure not showing intro to user again
         current_user.intro_shown = True
-        db.session.commit()
+        Session.commit()
 
     stats = get_stats(current_user)
 

@@ -1,5 +1,5 @@
 from app.dashboard.views import alias_transfer
-from app.extensions import db
+from app.db import Session
 from app.models import (
     Alias,
     Mailbox,
@@ -14,7 +14,7 @@ def test_alias_transfer(flask_client):
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com", commit=True)
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     AliasMailbox.create(alias_id=alias.id, mailbox_id=mb.id, commit=True)
 

@@ -71,10 +71,11 @@ from app.config import (
     ROOT_DIR,
 )
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.developer.base import developer_bp
 from app.discover.base import discover_bp
 from app.email_utils import send_email, render
-from app.extensions import db, login_manager, migrate, limiter
+from app.extensions import login_manager, migrate, limiter
 from app.jose_utils import get_jwk_key
 from app.log import LOG
 from app.models import (
@@ -128,8 +129,6 @@ def create_light_app() -> Flask:
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    db.init_app(app)
 
     return app
 
@@ -200,6 +199,10 @@ def create_app() -> Flask:
         session.permanent = True
         app.permanent_session_lifetime = timedelta(days=7)
 
+    @app.teardown_appcontext
+    def cleanup(resp_or_exc):
+        Session.remove()
+
     return app
 
 
@@ -219,7 +222,7 @@ def fake_data():
         fido_uuid=None,
     )
     user.trial_end = None
-    db.session.commit()
+    Session.commit()
 
     # add a profile picture
     file_path = "profile_pic.svg"
@@ -230,11 +233,11 @@ def fake_data():
     )
     file = File.create(user_id=user.id, path=file_path, commit=True)
     user.profile_picture_id = file.id
-    db.session.commit()
+    Session.commit()
 
     # create a bounced email
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     bounce_email_file_path = "bounce.eml"
     s3.upload_email_from_bytesio(
@@ -298,7 +301,7 @@ def fake_data():
         pgp_public_key=pgp_public_key,
     )
     m1.pgp_finger_print = load_public_key(pgp_public_key)
-    db.session.commit()
+    Session.commit()
 
     # example@example.com is in a LOT of data breaches
     Alias.create(email="example@example.com", user_id=user.id, mailbox_id=m1.id)
@@ -314,14 +317,14 @@ def fake_data():
                 user_id=user.id,
                 mailbox_id=user.default_mailbox_id,
             )
-        db.session.commit()
+        Session.commit()
 
         if i % 5 == 0:
             if i % 2 == 0:
                 AliasMailbox.create(alias_id=a.id, mailbox_id=user.default_mailbox_id)
             else:
                 AliasMailbox.create(alias_id=a.id, mailbox_id=m1.id)
-        db.session.commit()
+        Session.commit()
 
         # some aliases don't have any activity
         # if i % 3 != 0:
@@ -331,18 +334,18 @@ def fake_data():
         #         website_email=f"contact{i}@example.com",
         #         reply_email=f"rep{i}@sl.local",
         #     )
-        #     db.session.commit()
+        #     Session.commit()
         #     for _ in range(3):
         #         EmailLog.create(user_id=user.id, contact_id=contact.id, alias_id=contact.alias_id)
-        #         db.session.commit()
+        #         Session.commit()
 
         # have some disabled alias
         if i % 5 == 0:
             a.enabled = False
-            db.session.commit()
+            Session.commit()
 
     custom_domain1 = CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
-    db.session.commit()
+    Session.commit()
 
     Alias.create(
         user_id=user.id,
@@ -362,13 +365,13 @@ def fake_data():
 
     Directory.create(user_id=user.id, name="abcd")
     Directory.create(user_id=user.id, name="xyzt")
-    db.session.commit()
+    Session.commit()
 
     # Create a client
     client1 = Client.create_new(name="Demo", user_id=user.id)
     client1.oauth_client_id = "client-id"
     client1.oauth_client_secret = "client-secret"
-    db.session.commit()
+    Session.commit()
 
     RedirectUri.create(
         client_id=client1.id, uri="https://your-website.com/oauth-callback"
@@ -377,7 +380,7 @@ def fake_data():
     client2 = Client.create_new(name="Demo 2", user_id=user.id)
     client2.oauth_client_id = "client-id2"
     client2.oauth_client_secret = "client-secret2"
-    db.session.commit()
+    Session.commit()
 
     ClientUser.create(user_id=user.id, client_id=client1.id, name="Fake Name")
 
@@ -392,11 +395,11 @@ def fake_data():
         number_upgraded_account=200,
         payment_method="PayPal",
     )
-    db.session.commit()
+    Session.commit()
 
     for i in range(6):
         Notification.create(user_id=user.id, message=f"""Hey hey <b>{i}</b> """ * 10)
-    db.session.commit()
+    Session.commit()
 
     user2 = User.create(
         email="winston@continental.com",
@@ -405,7 +408,7 @@ def fake_data():
         referral_id=referral.id,
     )
     Mailbox.create(user_id=user2.id, email="winston2@high.table", verified=True)
-    db.session.commit()
+    Session.commit()
 
     ManualSubscription.create(
         user_id=user2.id,
@@ -695,7 +698,7 @@ def setup_paddle_callback(app: Flask):
 
             LOG.d("User %s upgrades!", user)
 
-            db.session.commit()
+            Session.commit()
 
         elif request.form.get("alert_name") == "subscription_payment_succeeded":
             subscription_id = request.form.get("subscription_id")
@@ -710,7 +713,7 @@ def setup_paddle_callback(app: Flask):
                     request.form.get("next_bill_date"), "YYYY-MM-DD"
                 ).date()
 
-                db.session.commit()
+                Session.commit()
 
         elif request.form.get("alert_name") == "subscription_cancelled":
             subscription_id = request.form.get("subscription_id")
@@ -728,7 +731,7 @@ def setup_paddle_callback(app: Flask):
                 sub.event_time = arrow.now()
 
                 sub.cancelled = True
-                db.session.commit()
+                Session.commit()
 
                 user = sub.user
 
@@ -774,7 +777,7 @@ def setup_paddle_callback(app: Flask):
                 # make sure to set the new plan as not-cancelled
                 sub.cancelled = False
 
-                db.session.commit()
+                Session.commit()
             else:
                 return "No such subscription", 400
         return "OK"
@@ -847,7 +850,7 @@ def handle_coinbase_event(event) -> bool:
         else:  # already expired subscription
             coinbase_subscription.end_at = arrow.now().shift(years=1)
 
-        db.session.commit()
+        Session.commit()
 
         send_email(
             user.email,
@@ -867,7 +870,6 @@ def handle_coinbase_event(event) -> bool:
 
 def init_extensions(app: Flask):
     login_manager.init_app(app)
-    db.init_app(app)
     migrate.init_app(app)
 
 
@@ -875,17 +877,17 @@ def init_admin(app):
     admin = Admin(name="SimpleLogin", template_mode="bootstrap4")
 
     admin.init_app(app, index_view=SLAdminIndexView())
-    admin.add_view(UserAdmin(User, db.session))
-    admin.add_view(AliasAdmin(Alias, db.session))
-    admin.add_view(MailboxAdmin(Mailbox, db.session))
-    admin.add_view(EmailLogAdmin(EmailLog, db.session))
-    admin.add_view(LifetimeCouponAdmin(LifetimeCoupon, db.session))
-    admin.add_view(CouponAdmin(Coupon, db.session))
-    admin.add_view(ManualSubscriptionAdmin(ManualSubscription, db.session))
-    admin.add_view(ClientAdmin(Client, db.session))
-    admin.add_view(CustomDomainAdmin(CustomDomain, db.session))
-    admin.add_view(ReferralAdmin(Referral, db.session))
-    admin.add_view(PayoutAdmin(Payout, db.session))
+    admin.add_view(UserAdmin(User, Session))
+    admin.add_view(AliasAdmin(Alias, Session))
+    admin.add_view(MailboxAdmin(Mailbox, Session))
+    admin.add_view(EmailLogAdmin(EmailLog, Session))
+    admin.add_view(LifetimeCouponAdmin(LifetimeCoupon, Session))
+    admin.add_view(CouponAdmin(Coupon, Session))
+    admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
+    admin.add_view(ClientAdmin(Client, Session))
+    admin.add_view(CustomDomainAdmin(CustomDomain, Session))
+    admin.add_view(ReferralAdmin(Referral, Session))
+    admin.add_view(PayoutAdmin(Payout, Session))
 
 
 def register_custom_commands(app):
@@ -900,12 +902,12 @@ def register_custom_commands(app):
     def fill_up_email_log_alias():
         """Fill up email_log.alias_id column"""
         # split all emails logs into 1000-size trunks
-        nb_email_log = EmailLog.query.count()
+        nb_email_log = EmailLog.count()
         LOG.d("total trunks %s", nb_email_log // 1000 + 2)
         for trunk in reversed(range(1, nb_email_log // 1000 + 2)):
             nb_update = 0
             for email_log, contact in (
-                db.session.query(EmailLog, Contact)
+                Session.query(EmailLog, Contact)
                 .filter(EmailLog.contact_id == Contact.id)
                 .filter(EmailLog.id <= trunk * 1000)
                 .filter(EmailLog.id > (trunk - 1) * 1000)
@@ -915,7 +917,7 @@ def register_custom_commands(app):
                 nb_update += 1
 
             LOG.d("finish trunk %s, update %s email logs", trunk, nb_update)
-            db.session.commit()
+            Session.commit()
 
     @app.cli.command("dummy-data")
     def dummy_data():

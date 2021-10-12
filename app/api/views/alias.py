@@ -17,10 +17,10 @@ from app.api.serializer import (
     get_alias_infos_with_pagination_v3,
 )
 from app.dashboard.views.alias_log import get_alias_log
+from app.db import Session
 from app.email_utils import (
     generate_reply_email,
 )
-from app.extensions import db
 from app.log import LOG
 from app.models import Alias, Contact, Mailbox, AliasMailbox
 from app.utils import sanitize_email
@@ -164,7 +164,7 @@ def toggle_alias(alias_id):
         return jsonify(error="Forbidden"), 403
 
     alias.enabled = not alias.enabled
-    db.session.commit()
+    Session.commit()
 
     return jsonify(enabled=alias.enabled), 200
 
@@ -280,8 +280,8 @@ def update_alias(alias_id):
 
         # <<< update alias mailboxes >>>
         # first remove all existing alias-mailboxes links
-        AliasMailbox.query.filter_by(alias_id=alias.id).delete()
-        db.session.flush()
+        AliasMailbox.filter_by(alias_id=alias.id).delete()
+        Session.flush()
 
         # then add all new mailboxes
         for i, mailbox in enumerate(mailboxes):
@@ -310,7 +310,7 @@ def update_alias(alias_id):
         changed = True
 
     if changed:
-        db.session.commit()
+        Session.commit()
 
     return jsonify(ok=True), 200
 
@@ -422,7 +422,7 @@ def create_contact_route(alias_id):
     )
 
     LOG.d("create reverse-alias for %s %s", contact_addr, alias)
-    db.session.commit()
+    Session.commit()
 
     return jsonify(**serialize_contact(contact)), 201
 
@@ -444,6 +444,6 @@ def delete_contact(contact_id):
         return jsonify(error="Forbidden"), 403
 
     Contact.delete(contact_id)
-    db.session.commit()
+    Session.commit()
 
     return jsonify(deleted=True), 200

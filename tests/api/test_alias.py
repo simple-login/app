@@ -1,8 +1,8 @@
 from flask import url_for
 
 from app.config import PAGE_LIMIT
+from app.db import Session
 from app.email_utils import is_reply_email
-from app.extensions import db
 from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
 from tests.utils import login
 
@@ -18,7 +18,7 @@ def test_get_aliases_error_without_pagination(flask_client):
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         url_for("api.get_aliases"), headers={"Authentication": api_key.code}
@@ -39,12 +39,12 @@ def test_get_aliases_with_pagination(flask_client):
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     # create more aliases than PAGE_LIMIT
     for _ in range(PAGE_LIMIT + 1):
         Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     # get aliases on the 1st page, should return PAGE_LIMIT aliases
     r = flask_client.get(
@@ -79,16 +79,16 @@ def test_get_aliases_query(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     # create more aliases than PAGE_LIMIT
     Alias.create_new(user, "prefix1")
     Alias.create_new(user, "prefix2")
-    db.session.commit()
+    Session.commit()
 
     # get aliases without query, should return 3 aliases as one alias is created when user is created
     r = flask_client.get(
@@ -111,15 +111,15 @@ def test_get_aliases_v2(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     a0 = Alias.create_new(user, "prefix0")
     a1 = Alias.create_new(user, "prefix1")
-    db.session.commit()
+    Session.commit()
 
     # << Aliases have no activity >>
     r = flask_client.get(
@@ -154,13 +154,13 @@ def test_get_aliases_v2(flask_client):
         website_email="c0@example.com",
         reply_email="re0@SL",
     )
-    db.session.commit()
+    Session.commit()
     EmailLog.create(
         contact_id=c0.id,
         user_id=user.id,
         alias_id=c0.alias_id,
     )
-    db.session.commit()
+    Session.commit()
 
     # a1 has more recent activity
     c1 = Contact.create(
@@ -169,13 +169,13 @@ def test_get_aliases_v2(flask_client):
         website_email="c1@example.com",
         reply_email="re1@SL",
     )
-    db.session.commit()
+    Session.commit()
     EmailLog.create(
         contact_id=c1.id,
         user_id=user.id,
         alias_id=c1.alias_id,
     )
-    db.session.commit()
+    Session.commit()
 
     # get aliases v2
     r = flask_client.get(
@@ -199,14 +199,14 @@ def test_delete_alias(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.delete(
         url_for("api.delete_alias", alias_id=alias.id),
@@ -221,14 +221,14 @@ def test_toggle_alias(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("api.toggle_alias", alias_id=alias.id),
@@ -243,14 +243,14 @@ def test_alias_activities(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     # create some alias log
     contact = Contact.create(
@@ -259,7 +259,7 @@ def test_alias_activities(flask_client):
         alias_id=alias.id,
         user_id=alias.user_id,
     )
-    db.session.commit()
+    Session.commit()
 
     for _ in range(int(PAGE_LIMIT / 2)):
         EmailLog.create(
@@ -304,14 +304,14 @@ def test_update_alias(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.put(
         url_for("api.update_alias", alias_id=alias.id),
@@ -326,16 +326,16 @@ def test_update_alias_mailbox(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     mb = Mailbox.create(user_id=user.id, email="ab@cd.com", verified=True)
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.put(
         url_for("api.update_alias", alias_id=alias.id),
@@ -358,14 +358,14 @@ def test_update_alias_name(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.put(
         url_for("api.update_alias", alias_id=alias.id),
@@ -391,17 +391,17 @@ def test_update_alias_mailboxes(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     mb1 = Mailbox.create(user_id=user.id, email="ab1@cd.com", verified=True)
     mb2 = Mailbox.create(user_id=user.id, email="ab2@cd.com", verified=True)
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.put(
         url_for("api.update_alias", alias_id=alias.id),
@@ -428,14 +428,14 @@ def test_update_disable_pgp(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
     assert not alias.disable_pgp
 
     r = flask_client.put(
@@ -468,14 +468,14 @@ def test_alias_contacts(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     # create some alias log
     for i in range(PAGE_LIMIT + 1):
@@ -485,7 +485,7 @@ def test_alias_contacts(flask_client):
             alias_id=alias.id,
             user_id=alias.user_id,
         )
-        db.session.commit()
+        Session.commit()
 
         EmailLog.create(
             contact_id=contact.id,
@@ -493,7 +493,7 @@ def test_alias_contacts(flask_client):
             user_id=contact.user_id,
             alias_id=contact.alias_id,
         )
-        db.session.commit()
+        Session.commit()
 
     r = flask_client.get(
         url_for("api.get_alias_contacts_route", alias_id=alias.id, page_id=0),
@@ -523,14 +523,14 @@ def test_create_contact_route(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("api.create_contact_route", alias_id=alias.id),
@@ -560,7 +560,7 @@ def test_create_contact_route(flask_client):
 
 def test_create_contact_route_empty_contact_address(flask_client):
     login(flask_client)
-    alias = Alias.query.first()
+    alias = Alias.first()
 
     r = flask_client.post(
         url_for("api.create_contact_route", alias_id=alias.id),
@@ -573,7 +573,7 @@ def test_create_contact_route_empty_contact_address(flask_client):
 
 def test_create_contact_route_invalid_contact_email(flask_client):
     login(flask_client)
-    alias = Alias.query.first()
+    alias = Alias.first()
 
     r = flask_client.post(
         url_for("api.create_contact_route", alias_id=alias.id),
@@ -588,14 +588,14 @@ def test_delete_contact(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     contact = Contact.create(
         alias_id=alias.id,
@@ -603,7 +603,7 @@ def test_delete_contact(flask_client):
         reply_email="reply+random@sl.io",
         user_id=alias.user_id,
     )
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.delete(
         url_for("api.delete_contact", contact_id=contact.id),
@@ -618,15 +618,15 @@ def test_get_alias(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     # create more aliases than PAGE_LIMIT
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     # get aliases on the 1st page, should return PAGE_LIMIT aliases
     r = flask_client.get(

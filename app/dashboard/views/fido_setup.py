@@ -11,7 +11,7 @@ from wtforms import StringField, HiddenField, validators
 from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import Fido, RecoveryCode
 
@@ -61,7 +61,7 @@ def fido_setup():
 
         if current_user.fido_uuid is None:
             current_user.fido_uuid = fido_uuid
-            db.session.flush()
+            Session.flush()
 
         Fido.create(
             credential_id=str(fido_credential.credential_id, "utf-8"),
@@ -70,14 +70,14 @@ def fido_setup():
             sign_count=fido_credential.sign_count,
             name=fido_token_form.key_name.data,
         )
-        db.session.commit()
+        Session.commit()
 
         LOG.d(
             f"credential_id={str(fido_credential.credential_id, 'utf-8')} added for {fido_uuid}"
         )
 
         flash("Security key has been activated", "success")
-        if not RecoveryCode.query.filter_by(user_id=current_user.id).all():
+        if not RecoveryCode.filter_by(user_id=current_user.id).all():
             return redirect(url_for("dashboard.recovery_code_route"))
         else:
             return redirect(url_for("dashboard.fido_manage"))

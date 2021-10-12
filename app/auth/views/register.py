@@ -8,11 +8,11 @@ from app import email_utils, config
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import get_referral
 from app.config import URL, HCAPTCHA_SECRET, HCAPTCHA_SITEKEY
+from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
-from app.extensions import db
 from app.log import LOG
 from app.models import User, ActivationCode
 from app.utils import random_string, encode_url, sanitize_email
@@ -81,7 +81,7 @@ def register():
                     password=form.password.data,
                     referral=get_referral(),
                 )
-                db.session.commit()
+                Session.commit()
 
                 try:
                     send_activation_email(user, next_url)
@@ -102,7 +102,7 @@ def register():
 def send_activation_email(user, next_url):
     # the activation code is valid for 1h
     activation = ActivationCode.create(user_id=user.id, code=random_string(30))
-    db.session.commit()
+    Session.commit()
 
     # Send user activation email
     activation_link = f"{URL}/auth/activate?code={activation.code}"

@@ -13,7 +13,8 @@ from app.config import (
     ALIAS_LIMIT,
 )
 from app.dashboard.base import dashboard_bp
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     Alias,
@@ -307,10 +308,10 @@ def custom_alias():
                         mailbox_id=mailboxes[0].id,
                         custom_domain_id=custom_domain_id,
                     )
-                    db.session.flush()
+                    Session.flush()
                 except IntegrityError:
                     LOG.w("Alias %s already exists", full_alias)
-                    db.session.rollback()
+                    Session.rollback()
                     flash("Unknown error, please retry", "error")
                     return redirect(url_for("dashboard.custom_alias"))
 
@@ -320,7 +321,7 @@ def custom_alias():
                         mailbox_id=mailboxes[i].id,
                     )
 
-                db.session.commit()
+                Session.commit()
                 flash(f"Alias {full_alias} has been created", "success")
 
                 return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))

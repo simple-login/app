@@ -9,7 +9,7 @@ from requests import RequestException
 
 from app.api.base import api_bp, require_api_auth
 from app.config import APPLE_API_SECRET, MACAPP_APPLE_API_SECRET
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import PlanEnum, AppleSubscription
 
@@ -279,7 +279,7 @@ def apple_update_notification():
             apple_sub.receipt_data = data["unified_receipt"]["latest_receipt"]
             apple_sub.expires_date = expires_date
             apple_sub.plan = plan
-            db.session.commit()
+            Session.commit()
             return jsonify(ok=True), 200
         else:
             LOG.w(
@@ -544,6 +544,6 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
             plan=plan,
         )
 
-    db.session.commit()
+    Session.commit()
 
     return apple_sub

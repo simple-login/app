@@ -6,7 +6,7 @@ from sqlalchemy import or_, func, case, and_
 from sqlalchemy.orm import joinedload
 
 from app.config import PAGE_LIMIT
-from app.extensions import db
+from app.db import Session
 from app.models import (
     Alias,
     Contact,
@@ -117,7 +117,7 @@ def serialize_contact(contact: Contact, existed=False) -> dict:
 def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
     ret = []
     q = (
-        db.session.query(Alias)
+        Session.query(Alias)
         .options(joinedload(Alias.mailbox))
         .filter(Alias.user_id == user.id)
         .order_by(Alias.created_at.desc())
@@ -221,7 +221,7 @@ def get_alias_infos_with_pagination_v3(
 
 def get_alias_info(alias: Alias) -> AliasInfo:
     q = (
-        db.session.query(Contact, EmailLog)
+        Session.query(Contact, EmailLog)
         .filter(Contact.alias_id == alias.id)
         .filter(EmailLog.contact_id == Contact.id)
     )
@@ -251,7 +251,7 @@ def get_alias_info_v2(alias: Alias, mailbox=None) -> AliasInfo:
         mailbox = alias.mailbox
 
     q = (
-        db.session.query(Contact, EmailLog)
+        Session.query(Contact, EmailLog)
         .filter(Contact.alias_id == alias.id)
         .filter(EmailLog.contact_id == Contact.id)
     )
@@ -297,7 +297,7 @@ def get_alias_info_v2(alias: Alias, mailbox=None) -> AliasInfo:
 
 def get_alias_contacts(alias, page_id: int) -> [dict]:
     q = (
-        Contact.query.filter_by(alias_id=alias.id)
+        Contact.filter_by(alias_id=alias.id)
         .order_by(Contact.id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_id * PAGE_LIMIT)
@@ -332,7 +332,7 @@ def get_alias_info_v3(user: User, alias_id: int) -> AliasInfo:
 def construct_alias_query(user: User):
     # subquery on alias annotated with nb_reply, nb_blocked, nb_forward, max_created_at, latest_email_log_created_at
     alias_activity_subquery = (
-        db.session.query(
+        Session.query(
             Alias.id,
             func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
             func.sum(
@@ -364,7 +364,7 @@ def construct_alias_query(user: User):
     )
 
     alias_contact_subquery = (
-        db.session.query(Alias.id, func.max(Contact.id).label("max_contact_id"))
+        Session.query(Alias.id, func.max(Contact.id).label("max_contact_id"))
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .filter(Alias.user_id == user.id)
         .group_by(Alias.id)
@@ -372,7 +372,7 @@ def construct_alias_query(user: User):
     )
 
     return (
-        db.session.query(
+        Session.query(
             Alias,
             Contact,
             EmailLog,

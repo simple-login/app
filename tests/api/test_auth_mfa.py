@@ -3,7 +3,7 @@ from flask import url_for
 from itsdangerous import Signer
 
 from app.config import FLASK_SECRET
-from app.extensions import db
+from app.db import Session
 from app.models import User
 
 
@@ -16,7 +16,7 @@ def test_auth_mfa_success(flask_client):
         enable_otp=True,
         otp_secret="base32secret3232",
     )
-    db.session.commit()
+    Session.commit()
 
     totp = pyotp.TOTP(user.otp_secret)
     s = Signer(FLASK_SECRET)
@@ -42,7 +42,7 @@ def test_auth_wrong_mfa_key(flask_client):
         enable_otp=True,
         otp_secret="base32secret3232",
     )
-    db.session.commit()
+    Session.commit()
 
     totp = pyotp.TOTP(user.otp_secret)
 

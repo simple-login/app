@@ -19,7 +19,8 @@ from wtforms import HiddenField, validators, BooleanField
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID
 from app.config import RP_ID, URL
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User, Fido, MfaBrowser
 
@@ -102,7 +103,7 @@ def fido():
             auto_activate = False
         else:
             user.fido_sign_count = new_sign_count
-            db.session.commit()
+            Session.commit()
             del session[MFA_USER_ID]
 
             login_user(user)
@@ -113,7 +114,7 @@ def fido():
 
             if fido_token_form.remember.data:
                 browser = MfaBrowser.create_new(user=user)
-                db.session.commit()
+                Session.commit()
                 response.set_cookie(
                     "mfa",
                     value=browser.token,

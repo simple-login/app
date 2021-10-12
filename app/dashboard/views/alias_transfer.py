@@ -5,8 +5,9 @@ from flask_login import login_required, current_user
 
 from app.config import URL
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import send_email, render
-from app.extensions import db, limiter
+from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     Alias,
@@ -25,20 +26,20 @@ def transfer(alias, new_user, new_mailboxes: [Mailbox]):
         raise Exception("Cannot transfer alias that's used to receive newsletter")
 
     # update user_id
-    db.session.query(Contact).filter(Contact.alias_id == alias.id).update(
+    Session.query(Contact).filter(Contact.alias_id == alias.id).update(
         {"user_id": new_user.id}
     )
 
-    db.session.query(AliasUsedOn).filter(AliasUsedOn.alias_id == alias.id).update(
+    Session.query(AliasUsedOn).filter(AliasUsedOn.alias_id == alias.id).update(
         {"user_id": new_user.id}
     )
 
-    db.session.query(ClientUser).filter(ClientUser.alias_id == alias.id).update(
+    Session.query(ClientUser).filter(ClientUser.alias_id == alias.id).update(
         {"user_id": new_user.id}
     )
 
     # remove existing mailboxes from the alias
-    db.session.query(AliasMailbox).filter(AliasMailbox.alias_id == alias.id).delete()
+    Session.query(AliasMailbox).filter(AliasMailbox.alias_id == alias.id).delete()
 
     # set mailboxes
     alias.mailbox_id = new_mailboxes.pop().id
@@ -71,7 +72,7 @@ def transfer(alias, new_user, new_mailboxes: [Mailbox]):
     alias.disable_pgp = False
     alias.pinned = False
 
-    db.session.commit()
+    Session.commit()
 
 
 @dashboard_bp.route("/alias_transfer/send/<int:alias_id>/", methods=["GET", "POST"])
@@ -100,7 +101,7 @@ def alias_transfer_send_route(alias_id):
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             alias.transfer_token = str(uuid4())
-            db.session.commit()
+            Session.commit()
             alias_transfer_url = (
                 URL
                 + "/dashboard/alias_transfer/receive"
@@ -111,7 +112,7 @@ def alias_transfer_send_route(alias_id):
         # request.form.get("form-name") == "remove"
         else:
             alias.transfer_token = None
-            db.session.commit()
+            Session.commit()
             alias_transfer_url = None
             flash("Share URL deleted", "success")
             return redirect(request.url)

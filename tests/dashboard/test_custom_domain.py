@@ -1,13 +1,13 @@
 from flask import url_for
 
-from app.extensions import db
+from app.db import Session
 from tests.utils import login
 
 
 def test_add_domain_success(flask_client):
     user = login(flask_client)
     user.lifetime = True
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("dashboard.custom_domain"),
@@ -23,7 +23,7 @@ def test_add_domain_same_as_user_email(flask_client):
     """cannot add domain if user personal email uses this domain"""
     user = login(flask_client)
     user.lifetime = True
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("dashboard.custom_domain"),

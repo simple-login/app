@@ -2,7 +2,7 @@ from flask import g, request
 from flask import jsonify
 
 from app.api.base import api_bp, require_api_auth
-from app.extensions import db
+from app.db import Session
 from app.models import CustomDomain, DomainDeletedAlias, Mailbox, DomainMailbox
 
 
@@ -108,8 +108,8 @@ def update_custom_domain(custom_domain_id):
                 mailboxes.append(mailbox)
 
             # first remove all existing domain-mailboxes links
-            DomainMailbox.query.filter_by(domain_id=custom_domain.id).delete()
-            db.session.flush()
+            DomainMailbox.filter_by(domain_id=custom_domain.id).delete()
+            Session.flush()
 
             for mailbox in mailboxes:
                 DomainMailbox.create(domain_id=custom_domain.id, mailbox_id=mailbox.id)
@@ -117,6 +117,6 @@ def update_custom_domain(custom_domain_id):
             changed = True
 
     if changed:
-        db.session.commit()
+        Session.commit()
 
     return jsonify(ok=True), 200

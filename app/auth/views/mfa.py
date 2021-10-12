@@ -15,7 +15,8 @@ from wtforms import BooleanField, StringField, validators
 
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID, URL
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.models import User, MfaBrowser
 
 
@@ -67,7 +68,7 @@ def mfa():
         if totp.verify(token) and user.last_otp != token:
             del session[MFA_USER_ID]
             user.last_otp = token
-            db.session.commit()
+            Session.commit()
 
             login_user(user)
             flash(f"Welcome back!", "success")
@@ -77,7 +78,7 @@ def mfa():
 
             if otp_token_form.remember.data:
                 browser = MfaBrowser.create_new(user=user)
-                db.session.commit()
+                Session.commit()
                 response.set_cookie(
                     "mfa",
                     value=browser.token,

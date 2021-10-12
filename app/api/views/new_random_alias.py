@@ -7,7 +7,8 @@ from app.api.serializer import (
     serialize_alias_info_v2,
 )
 from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import Alias, AliasUsedOn, AliasGeneratorEnum
 
@@ -51,12 +52,12 @@ def new_random_alias():
             return jsonify(error=f"{mode} must be either word or uuid"), 400
 
     alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
-    db.session.commit()
+    Session.commit()
 
     hostname = request.args.get("hostname")
     if hostname:
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
-        db.session.commit()
+        Session.commit()
 
     return (
         jsonify(alias=alias.email, **serialize_alias_info_v2(get_alias_info_v2(alias))),

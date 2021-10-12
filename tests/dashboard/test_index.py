@@ -8,7 +8,7 @@ from tests.utils import login
 
 def test_create_random_alias_success(flask_client):
     login(flask_client)
-    assert Alias.query.count() == 1
+    assert Alias.count() == 1
 
     r = flask_client.post(
         url_for("dashboard.index"),
@@ -16,7 +16,7 @@ def test_create_random_alias_success(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert Alias.query.count() == 2
+    assert Alias.count() == 2
 
 
 def test_too_many_requests(flask_client):

@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from flask_cors import cross_origin
 
-from app.extensions import db
+from app.db import Session
 from app.jose_utils import make_id_token
 from app.log import LOG
 from app.models import Client, AuthorizationCode, OauthToken, ClientUser
@@ -49,7 +49,7 @@ def token():
         return jsonify(error=f"no such authorization code {code}"), 400
     elif auth_code.is_expired():
         AuthorizationCode.delete(auth_code.id)
-        db.session.commit()
+        Session.commit()
         LOG.d("delete expired authorization code:%s", auth_code)
         return jsonify(error=f"{code} already expired"), 400
 
@@ -94,6 +94,6 @@ def token():
     # Auth code can be used only once
     AuthorizationCode.delete(auth_code.id)
 
-    db.session.commit()
+    Session.commit()
 
     return jsonify(res)

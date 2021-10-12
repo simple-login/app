@@ -4,7 +4,7 @@ import arrow
 from flask import Blueprint, request, jsonify, g
 from flask_login import current_user
 
-from app.extensions import db
+from app.db import Session
 from app.models import ApiKey
 
 api_bp = Blueprint(name="api", import_name=__name__, url_prefix="/api")
@@ -26,7 +26,7 @@ def require_api_auth(f):
             # Update api key stats
             api_key.last_used = arrow.now()
             api_key.times += 1
-            db.session.commit()
+            Session.commit()
 
             g.user = api_key.user
 

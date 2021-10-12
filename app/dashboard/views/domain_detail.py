@@ -1,6 +1,6 @@
-import re2 as re
 from threading import Thread
 
+import re2 as re
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -8,6 +8,7 @@ from wtforms import StringField, validators, IntegerField
 
 from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.dns_utils import (
     get_mx_domains,
     get_spf_domain,
@@ -15,7 +16,6 @@ from app.dns_utils import (
     get_cname_record,
 )
 from app.email_utils import send_email
-from app.extensions import db
 from app.log import LOG
 from app.models import (
     CustomDomain,
@@ -40,7 +40,7 @@ def domain_detail_dns(custom_domain_id):
     # generate a domain ownership txt token if needed
     if not custom_domain.ownership_verified and not custom_domain.ownership_txt_token:
         custom_domain.ownership_txt_token = random_string(30)
-        db.session.commit()
+        Session.commit()
 
     spf_record = f"v=spf1 include:{EMAIL_DOMAIN} ~all"
 
@@ -62,7 +62,7 @@ def domain_detail_dns(custom_domain_id):
                     "success",
                 )
                 custom_domain.ownership_verified = True
-                db.session.commit()
+                Session.commit()
                 return redirect(
                     url_for(
                         "dashboard.domain_detail_dns",
@@ -92,7 +92,7 @@ def domain_detail_dns(custom_domain_id):
                     "success",
                 )
                 custom_domain.verified = True
-                db.session.commit()
+                Session.commit()
                 return redirect(
                     url_for(
                         "dashboard.domain_detail_dns", custom_domain_id=custom_domain.id
@@ -102,7 +102,7 @@ def domain_detail_dns(custom_domain_id):
             spf_domains = get_spf_domain(custom_domain.domain)
             if EMAIL_DOMAIN in spf_domains:
                 custom_domain.spf_verified = True
-                db.session.commit()
+                Session.commit()
                 flash("SPF is setup correctly", "success")
                 return redirect(
                     url_for(
@@ -111,7 +111,7 @@ def domain_detail_dns(custom_domain_id):
                 )
             else:
                 custom_domain.spf_verified = False
-                db.session.commit()
+                Session.commit()
                 flash(
                     f"SPF: {EMAIL_DOMAIN} is not included in your SPF record.",
                     "warning",
@@ -124,7 +124,7 @@ def domain_detail_dns(custom_domain_id):
             if dkim_record == dkim_cname:
                 flash("DKIM is setup correctly.", "success")
                 custom_domain.dkim_verified = True
-                db.session.commit()
+                Session.commit()
 
                 return redirect(
                     url_for(
@@ -133,7 +133,7 @@ def domain_detail_dns(custom_domain_id):
                 )
             else:
                 custom_domain.dkim_verified = False
-                db.session.commit()
+                Session.commit()
                 flash("DKIM: the CNAME record is not correctly set", "warning")
                 dkim_ok = False
                 dkim_errors = [dkim_record or "[Empty]"]
@@ -142,7 +142,7 @@ def domain_detail_dns(custom_domain_id):
             txt_records = get_txt_record("_dmarc." + custom_domain.domain)
             if dmarc_record in txt_records:
                 custom_domain.dmarc_verified = True
-                db.session.commit()
+                Session.commit()
                 flash("DMARC is setup correctly", "success")
                 return redirect(
                     url_for(
@@ -151,7 +151,7 @@ def domain_detail_dns(custom_domain_id):
                 )
             else:
                 custom_domain.dmarc_verified = False
-                db.session.commit()
+                Session.commit()
                 flash(
                     "DMARC: The TXT record is not correctly set",
                     "warning",
@@ -179,7 +179,7 @@ def domain_detail(custom_domain_id):
     if request.method == "POST":
         if request.form.get("form-name") == "switch-catch-all":
             custom_domain.catch_all = not custom_domain.catch_all
-            db.session.commit()
+            Session.commit()
 
             if custom_domain.catch_all:
                 flash(
@@ -197,14 +197,14 @@ def domain_detail(custom_domain_id):
         elif request.form.get("form-name") == "set-name":
             if request.form.get("action") == "save":
                 custom_domain.name = request.form.get("alias-name").replace("\n", "")
-                db.session.commit()
+                Session.commit()
                 flash(
                     f"Default alias name for Domain {custom_domain.domain} has been set",
                     "success",
                 )
             else:
                 custom_domain.name = None
-                db.session.commit()
+                Session.commit()
                 flash(
                     f"Default alias name for Domain {custom_domain.domain} has been removed",
                     "info",
@@ -217,7 +217,7 @@ def domain_detail(custom_domain_id):
             custom_domain.random_prefix_generation = (
                 not custom_domain.random_prefix_generation
             )
-            db.session.commit()
+            Session.commit()
 
             if custom_domain.random_prefix_generation:
                 flash(
@@ -260,13 +260,13 @@ def domain_detail(custom_domain_id):
                 )
 
             # first remove all existing domain-mailboxes links
-            DomainMailbox.query.filter_by(domain_id=custom_domain.id).delete()
-            db.session.flush()
+            DomainMailbox.filter_by(domain_id=custom_domain.id).delete()
+            Session.flush()
 
             for mailbox in mailboxes:
                 DomainMailbox.create(domain_id=custom_domain.id, mailbox_id=mailbox.id)
 
-            db.session.commit()
+            Session.commit()
             flash(f"{custom_domain.domain} mailboxes has been updated", "success")
 
             return redirect(
@@ -302,7 +302,7 @@ def delete_domain(custom_domain_id: int):
         user = custom_domain.user
 
         CustomDomain.delete(custom_domain.id)
-        db.session.commit()
+        Session.commit()
 
         LOG.d("Domain %s deleted", domain_name)
 
@@ -328,7 +328,7 @@ def domain_detail_trash(custom_domain_id):
     if request.method == "POST":
         if request.form.get("form-name") == "empty-all":
             DomainDeletedAlias.filter_by(domain_id=custom_domain.id).delete()
-            db.session.commit()
+            Session.commit()
 
             flash("All deleted aliases can now be re-created", "success")
             return redirect(
@@ -349,7 +349,7 @@ def domain_detail_trash(custom_domain_id):
                 )
 
             DomainDeletedAlias.delete(deleted_alias.id)
-            db.session.commit()
+            Session.commit()
             flash(
                 f"{deleted_alias.email} can now be re-created",
                 "success",
@@ -477,7 +477,7 @@ def domain_detail_auto_create(custom_domain_id):
                             auto_create_rule_id=rule.id, mailbox_id=mailbox.id
                         )
 
-                    db.session.commit()
+                    Session.commit()
 
                     flash("New auto create rule has been created", "success")
 
@@ -502,7 +502,7 @@ def domain_detail_auto_create(custom_domain_id):
 
             rule_order = rule.order
             AutoCreateRule.delete(rule_id)
-            db.session.commit()
+            Session.commit()
             flash(f"Rule #{rule_order} has been deleted", "success")
             return redirect(
                 url_for(

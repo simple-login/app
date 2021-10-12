@@ -3,8 +3,8 @@ from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
+from app.db import Session
 from app.developer.base import developer_bp
-from app.extensions import db
 from app.models import Client
 
 
@@ -19,7 +19,7 @@ def new_client():
 
     if form.validate_on_submit():
         client = Client.create_new(form.name.data, current_user.id)
-        db.session.commit()
+        Session.commit()
 
         flash("Your app has been created", "success")
 

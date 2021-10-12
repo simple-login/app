@@ -1,6 +1,6 @@
 from flask import url_for
 
-from app.extensions import db
+from app.db import Session
 from app.models import User, ApiKey
 from tests.utils import login
 
@@ -9,11 +9,11 @@ def test_user_in_trial(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # create api_key
     api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         url_for("api.user_info"), headers={"Authentication": api_key.code}
@@ -42,7 +42,7 @@ def test_wrong_api_key(flask_client):
 def test_create_api_key(flask_client):
     # create user, user is activated
     User.create(email="a@b.c", password="password", name="Test User", activated=True)
-    db.session.commit()
+    Session.commit()
 
     # login user
     flask_client.post(
@@ -61,7 +61,7 @@ def test_create_api_key(flask_client):
 def test_logout(flask_client):
     # create user, user is activated
     User.create(email="a@b.c", password="password", name="Test User", activated=True)
-    db.session.commit()
+    Session.commit()
 
     # login user
     flask_client.post(

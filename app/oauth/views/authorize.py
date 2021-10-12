@@ -8,7 +8,7 @@ from itsdangerous import SignatureExpired
 from app.alias_utils import check_alias_prefix
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.custom_alias import signer, get_available_suffixes
-from app.extensions import db
+from app.db import Session
 from app.jose_utils import make_id_token
 from app.log import LOG
 from app.models import (
@@ -206,7 +206,7 @@ def authorize():
                             if domain:
                                 alias.custom_domain_id = domain.id
 
-                        db.session.flush()
+                        Session.flush()
                         flash(f"Alias {full_alias} has been created", "success")
                 # only happen if the request has been "hacked"
                 else:
@@ -224,7 +224,7 @@ def authorize():
                             user_id=current_user.id,
                             mailbox_id=current_user.default_mailbox_id,
                         )
-                        db.session.flush()
+                        Session.flush()
 
             suggested_name = request.form.get("suggested-name")
             custom_name = request.form.get("custom-name")
@@ -247,7 +247,7 @@ def authorize():
                 LOG.d("use default avatar for user %s client %s", current_user, client)
                 client_user.default_avatar = True
 
-            db.session.flush()
+            Session.flush()
             LOG.d("create client-user for client %s, user %s", client, current_user)
 
         redirect_args = {}
@@ -284,7 +284,7 @@ def authorize():
                 access_token=generate_access_token(),
                 response_type=response_types_to_str(response_types),
             )
-            db.session.add(oauth_token)
+            Session.add(oauth_token)
             redirect_args["access_token"] = oauth_token.access_token
 
         if ResponseType.ID_TOKEN in response_types:
@@ -295,7 +295,7 @@ def authorize():
                 auth_code.code if auth_code else None,
             )
 
-        db.session.commit()
+        Session.commit()
 
         # should all params appended the url using fragment (#) or query
         fragment = False

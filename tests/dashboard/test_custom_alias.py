@@ -8,7 +8,7 @@ from app.dashboard.views.custom_alias import (
     get_available_suffixes,
     AliasSuffix,
 )
-from app.extensions import db
+from app.db import Session
 from app.models import (
     Mailbox,
     CustomDomain,
@@ -46,13 +46,13 @@ def test_add_alias_success(flask_client):
     assert r.status_code == 200
     assert f"Alias prefix.12345@{EMAIL_DOMAIN} has been created" in str(r.data)
 
-    alias = Alias.query.order_by(Alias.created_at.desc()).first()
+    alias = Alias.order_by(Alias.created_at.desc()).first()
     assert not alias._mailboxes
 
 
 def test_add_alias_multiple_mailboxes(flask_client):
     user = login(flask_client)
-    db.session.commit()
+    Session.commit()
 
     alias_suffix = AliasSuffix(
         is_custom=False,
@@ -64,7 +64,7 @@ def test_add_alias_multiple_mailboxes(flask_client):
 
     # create with a multiple mailboxes
     mb1 = Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("dashboard.custom_alias"),
@@ -78,18 +78,18 @@ def test_add_alias_multiple_mailboxes(flask_client):
     assert r.status_code == 200
     assert f"Alias prefix.12345@{EMAIL_DOMAIN} has been created" in str(r.data)
 
-    alias = Alias.query.order_by(Alias.created_at.desc()).first()
+    alias = Alias.order_by(Alias.created_at.desc()).first()
     assert alias._mailboxes
 
 
 def test_not_show_unverified_mailbox(flask_client):
     """make sure user unverified mailbox is not shown to user"""
     user = login(flask_client)
-    db.session.commit()
+    Session.commit()
 
     Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
     Mailbox.create(user_id=user.id, email="m2@example.com", verified=False)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(url_for("dashboard.custom_alias"))
 
@@ -99,7 +99,7 @@ def test_not_show_unverified_mailbox(flask_client):
 
 def test_verify_prefix_suffix(flask_client):
     user = login(flask_client)
-    db.session.commit()
+    Session.commit()
 
     CustomDomain.create(user_id=user.id, domain="test.com", verified=True)
 
@@ -128,7 +128,7 @@ def test_available_suffixes(flask_client):
 def test_available_suffixes_default_domain(flask_client):
     user = login(flask_client)
 
-    sl_domain = SLDomain.query.first()
+    sl_domain = SLDomain.first()
     CustomDomain.create(user_id=user.id, domain="test.com", verified=True, commit=True)
 
     user.default_alias_public_domain_id = sl_domain.id
@@ -166,7 +166,7 @@ def test_available_suffixes_random_prefix_generation(flask_client):
 
 def test_add_already_existed_alias(flask_client):
     user = login(flask_client)
-    db.session.commit()
+    Session.commit()
 
     another_user = User.create(
         email="a2@b.c",
@@ -208,7 +208,7 @@ def test_add_already_existed_alias(flask_client):
 
 def test_add_alias_in_global_trash(flask_client):
     user = login(flask_client)
-    db.session.commit()
+    Session.commit()
 
     another_user = User.create(
         email="a2@b.c",
@@ -233,9 +233,9 @@ def test_add_alias_in_global_trash(flask_client):
         commit=True,
     )
 
-    assert DeletedAlias.query.count() == 0
+    assert DeletedAlias.count() == 0
     delete_alias(alias, another_user)
-    assert DeletedAlias.query.count() == 1
+    assert DeletedAlias.count() == 1
 
     # create the same alias, should return error
     r = flask_client.post(
@@ -267,9 +267,9 @@ def test_add_alias_in_custom_domain_trash(flask_client):
         commit=True,
     )
 
-    assert DomainDeletedAlias.query.count() == 0
+    assert DomainDeletedAlias.count() == 0
     delete_alias(alias, user)
-    assert DomainDeletedAlias.query.count() == 1
+    assert DomainDeletedAlias.count() == 1
 
     # create the same alias, should return error
     suffix = "@ab.cd"

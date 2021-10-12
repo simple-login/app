@@ -1,3 +1,5 @@
+from app.db import Session
+
 """
 List of apps that user has used via the "Sign in with SimpleLogin"
 """
@@ -7,7 +9,6 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
 from app.models import (
     ClientUser,
 )
@@ -36,7 +37,7 @@ def app_route():
 
         client = client_user.client
         ClientUser.delete(client_user_id)
-        db.session.commit()
+        Session.commit()
 
         flash(f"Link with {client.name}  has been removed", "success")
         return redirect(request.url)

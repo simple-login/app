@@ -2,7 +2,7 @@ import arrow
 from flask import jsonify, g, request
 
 from app.api.base import api_bp, require_api_auth
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import (
     User,
@@ -93,7 +93,7 @@ def update_setting():
                 user.default_alias_custom_domain_id = custom_domain.id
                 user.default_alias_public_domain_id = None
 
-    db.session.commit()
+    Session.commit()
     return jsonify(setting_to_dict(user))
 
 

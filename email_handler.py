@@ -85,6 +85,7 @@ from app.config import (
     ALERT_YAHOO_COMPLAINT,
     TEMP_DIR,
 )
+from app.db import Session
 from app.email import status, headers
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
@@ -123,7 +124,6 @@ from app.email_utils import (
     parse_full_address,
     get_orig_message_from_yahoo_complaint,
 )
-from app.extensions import db
 from app.log import LOG, set_message_id
 from app.models import (
     Alias,
@@ -141,7 +141,6 @@ from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_app, create_light_app
 
-
 newrelic_app = None
 if NEWRELIC_CONFIG_PATH:
     newrelic.agent.initialize(NEWRELIC_CONFIG_PATH)
@@ -157,10 +156,7 @@ def new_app():
     @app.teardown_appcontext
     def shutdown_session(response_or_exc):
         # same as shutdown_session() in flask-sqlalchemy but this is not enough
-        db.session.remove()
-
-        # dispose the engine too
-        db.engine.dispose()
+        Session.remove()
 
     return app
 
@@ -210,7 +206,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 contact_name,
             )
             contact.name = contact_name
-            db.session.commit()
+            Session.commit()
 
         # contact created in the past does not have mail_from and from_header field
         if not contact.mail_from and mail_from:
@@ -221,7 +217,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 mail_from,
             )
             contact.mail_from = mail_from
-            db.session.commit()
+            Session.commit()
     else:
         LOG.d(
             "create contact %s for alias %s",
@@ -244,10 +240,10 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 LOG.d("Create a contact with invalid email for %s", alias)
                 contact.invalid_email = True
 
-            db.session.commit()
+            Session.commit()
         except IntegrityError:
             LOG.w("Contact %s %s already exist", alias, contact_email)
-            db.session.rollback()
+            Session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
 
     return contact
@@ -291,10 +287,10 @@ def get_or_create_reply_to_contact(
                 name=contact_name,
                 reply_email=generate_reply_email(contact_address, alias.user),
             )
-            db.session.commit()
+            Session.commit()
         except IntegrityError:
             LOG.w("Contact %s %s already exist", alias, contact_address)
-            db.session.rollback()
+            Session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_address)
 
     return contact
@@ -341,7 +337,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     full_address.display_name,
                 )
                 contact.name = full_address.display_name
-                db.session.commit()
+                Session.commit()
         else:
             LOG.d(
                 "create contact for alias %s and email %s, header %s",
@@ -359,10 +355,10 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     reply_email=generate_reply_email(contact_email, alias.user),
                     is_cc=header.lower() == "cc",
                 )
-                db.session.commit()
+                Session.commit()
             except IntegrityError:
                 LOG.w("Contact %s %s already exist", alias, contact_email)
-                db.session.rollback()
+                Session.rollback()
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
 
         new_addrs.append(contact.new_addr())
@@ -501,7 +497,7 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
     refused_email = RefusedEmail.create(
         path=None, full_report_path=full_report_path, user_id=alias.user_id
     )
-    db.session.commit()
+    Session.commit()
     LOG.d("Create refused email %s", refused_email)
     # link available for 6 days as it gets deleted in 7 days
     refused_email_url = refused_email.get_url(expires_in=518400)
@@ -588,7 +584,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             alias_id=contact.alias_id,
             commit=True,
         )
-        db.session.commit()
+        Session.commit()
         # do not return 5** to allow user to receive emails later when alias is enabled
         return [(True, status.E200)]
 
@@ -695,7 +691,7 @@ def forward_email_to_mailbox(
                 spam_report,
             )
             email_log.spam_score = spam_score
-            db.session.commit()
+            Session.commit()
 
             if (user.max_spam_score and spam_score > user.max_spam_score) or (
                 not user.max_spam_score and spam_score > MAX_SPAM_SCORE
@@ -716,7 +712,7 @@ def forward_email_to_mailbox(
             )
             email_log.is_spam = True
             email_log.spam_status = spam_status
-            db.session.commit()
+            Session.commit()
 
             handle_spam(contact, alias, msg, user, mailbox, email_log)
             return False, status.E519
@@ -846,7 +842,7 @@ def forward_email_to_mailbox(
         else:
             return False, status.E521
     else:
-        db.session.commit()
+        Session.commit()
         return True, status.E200
 
 
@@ -963,7 +959,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
             email_log.is_spam = True
             email_log.spam_status = spam_status
-            db.session.commit()
+            Session.commit()
 
             handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
             return False, status.E506
@@ -1003,11 +999,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             )
             # to not save the email_log
             EmailLog.delete(email_log.id)
-            db.session.commit()
+            Session.commit()
             # return 421 so the client can retry later
             return False, status.E402
 
-    db.session.commit()
+    Session.commit()
 
     # make the email comes from alias
     from_header = alias.email
@@ -1065,7 +1061,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         )
     except Exception:
         # to not save the email_log
-        db.session.rollback()
+        Session.rollback()
 
         LOG.w("Cannot send email from %s to %s", alias, contact)
         send_email(
@@ -1218,13 +1214,13 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id
     )
-    db.session.flush()
+    Session.flush()
     LOG.d("Create refused email %s", refused_email)
 
     email_log.bounced = True
     email_log.refused_email_id = refused_email.id
     email_log.bounced_mailbox_id = mailbox.id
-    db.session.commit()
+    Session.commit()
 
     refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
 
@@ -1268,7 +1264,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             alias,
         )
         alias.enabled = False
-        db.session.commit()
+        Session.commit()
 
         send_email_with_rate_control(
             user,
@@ -1411,7 +1407,7 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
 
     email_log.bounced_mailbox_id = mailbox.id
 
-    db.session.commit()
+    Session.commit()
 
     refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
 
@@ -1469,10 +1465,10 @@ def handle_spam(
     refused_email = RefusedEmail.create(
         path=file_path, full_report_path=full_report_path, user_id=user.id
     )
-    db.session.flush()
+    Session.flush()
 
     email_log.refused_email_id = refused_email.id
-    db.session.commit()
+    Session.commit()
 
     LOG.d("Create spam email %s", refused_email)
 
@@ -1574,7 +1570,7 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
 
     # Sender is owner of this alias
     alias.enabled = False
-    db.session.commit()
+    Session.commit()
     user = alias.user
 
     enable_alias_url = URL + f"/dashboard/?highlight_alias_id={alias.id}"
@@ -1611,7 +1607,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
         return status.E511
 
     user.notification = False
-    db.session.commit()
+    Session.commit()
 
     send_email(
         user.email,
@@ -1676,7 +1672,7 @@ def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
             alias = contact.alias
 
             email_log.auto_replied = True
-            db.session.commit()
+            Session.commit()
 
             # replace the BOUNCE_EMAIL by alias in To field
             add_or_replace_header(msg, "To", alias.email)
@@ -1871,8 +1867,8 @@ def handle(envelope: Envelope) -> str:
                     "total number email log on %s, %s is %s, %s",
                     alias,
                     alias.user,
-                    EmailLog.query.filter(EmailLog.alias_id == alias.id).count(),
-                    EmailLog.query.filter(EmailLog.user_id == alias.user_id).count(),
+                    EmailLog.filter(EmailLog.alias_id == alias.id).count(),
+                    EmailLog.filter(EmailLog.user_id == alias.user_id).count(),
                 )
 
         if should_ignore_bounce(envelope.mail_from):

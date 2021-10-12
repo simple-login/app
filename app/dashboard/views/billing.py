@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 
 from app.config import PADDLE_MONTHLY_PRODUCT_ID, PADDLE_YEARLY_PRODUCT_ID
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import Subscription, PlanEnum
 from app.paddle_utils import cancel_subscription, change_plan
@@ -26,7 +26,7 @@ def billing():
 
             if success:
                 sub.cancelled = True
-                db.session.commit()
+                Session.commit()
                 flash("Your subscription has been canceled successfully", "success")
             else:
                 flash(
@@ -44,7 +44,7 @@ def billing():
 
             if success:
                 sub.plan = PlanEnum.monthly
-                db.session.commit()
+                Session.commit()
                 flash("Your subscription has been updated", "success")
             else:
                 if msg:
@@ -65,7 +65,7 @@ def billing():
 
             if success:
                 sub.plan = PlanEnum.yearly
-                db.session.commit()
+                Session.commit()
                 flash("Your subscription has been updated", "success")
             else:
                 if msg:

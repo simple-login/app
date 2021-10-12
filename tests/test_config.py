@@ -1,4 +1,5 @@
 import pytest
+
 from app.config import sl_getenv
 
 

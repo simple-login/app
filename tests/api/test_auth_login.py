@@ -1,9 +1,8 @@
-import unicodedata
-
 import pytest
+import unicodedata
 from flask import url_for
 
-from app.extensions import db
+from app.db import Session
 from app.models import User, AccountActivation
 
 PASSWORD_1 = "Aurélie"
@@ -20,7 +19,7 @@ def test_auth_login_success(flask_client, mfa: bool):
         activated=True,
         enable_otp=mfa,
     )
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("api.auth_login"),
@@ -49,7 +48,7 @@ def test_auth_login_device_exist(flask_client):
     User.create(
         email="abcd@gmail.com", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("api.auth_login"),
@@ -138,7 +137,7 @@ def test_auth_activate_user_already_activated(flask_client):
     User.create(
         email="abcd@gmail.com", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("api.auth_activate"), json={"email": "abcd@gmail.com", "code": "123456"}
@@ -214,7 +213,7 @@ def test_auth_activate_too_many_wrong_code(flask_client):
 
 def test_auth_reactivate_success(flask_client):
     User.create(email="abcd@gmail.com", password="password", name="Test User")
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("api.auth_reactivate"), json={"email": "abcd@gmail.com"}
@@ -232,7 +231,7 @@ def test_auth_login_forgot_password(flask_client):
     User.create(
         email="abcd@gmail.com", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         url_for("api.forgot_password"),

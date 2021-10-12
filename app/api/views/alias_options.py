@@ -5,7 +5,7 @@ from app.api.base import api_bp, require_api_auth
 from app.dashboard.views.custom_alias import (
     get_available_suffixes,
 )
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import AliasUsedOn, Alias, User
 from app.utils import convert_to_id
@@ -43,7 +43,7 @@ def options_v4():
     if hostname:
         # put the latest used alias first
         q = (
-            db.session.query(AliasUsedOn, Alias, User)
+            Session.query(AliasUsedOn, Alias, User)
             .filter(
                 AliasUsedOn.alias_id == Alias.id,
                 Alias.user_id == user.id,
@@ -114,7 +114,7 @@ def options_v5():
     if hostname:
         # put the latest used alias first
         q = (
-            db.session.query(AliasUsedOn, Alias, User)
+            Session.query(AliasUsedOn, Alias, User)
             .filter(
                 AliasUsedOn.alias_id == Alias.id,
                 Alias.user_id == user.id,

@@ -5,7 +5,7 @@ from flask_admin.actions import action
 from flask_admin.contrib import sqla
 from flask_login import current_user, login_user
 
-from app.extensions import db
+from app.db import Session
 from app.models import User, ManualSubscription
 
 
@@ -99,7 +99,7 @@ class UserAdmin(SLModelView):
         "Extend trial for 1 week more?",
     )
     def extend_trial_1w(self, ids):
-        for user in User.query.filter(User.id.in_(ids)):
+        for user in User.filter(User.id.in_(ids)):
             if user.trial_end and user.trial_end > arrow.now():
                 user.trial_end = user.trial_end.shift(weeks=1)
             else:
@@ -107,7 +107,7 @@ class UserAdmin(SLModelView):
 
             flash(f"Extend trial for {user} to {user.trial_end}", "success")
 
-        db.session.commit()
+        Session.commit()
 
     @action(
         "disable_otp",
@@ -115,12 +115,12 @@ class UserAdmin(SLModelView):
         "Disable OTP?",
     )
     def disable_otp(self, ids):
-        for user in User.query.filter(User.id.in_(ids)):
+        for user in User.filter(User.id.in_(ids)):
             if user.enable_otp:
                 user.enable_otp = False
                 flash(f"Disable OTP for {user}", "info")
 
-        db.session.commit()
+        Session.commit()
 
     @action(
         "login_as",
@@ -132,16 +132,14 @@ class UserAdmin(SLModelView):
             flash("only 1 user can be selected", "error")
             return
 
-        for user in User.query.filter(User.id.in_(ids)):
+        for user in User.filter(User.id.in_(ids)):
             login_user(user)
             flash(f"Login as user {user}", "success")
             return redirect("/")
 
 
 def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
-    query = User.query.filter(User.id.in_(ids))
-
-    for user in query.all():
+    for user in User.filter(User.id.in_(ids)).all():
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=user.id)
         if manual_sub:
             # renew existing subscription
@@ -149,7 +147,7 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
                 manual_sub.end_at = manual_sub.end_at.shift(years=1)
             else:
                 manual_sub.end_at = arrow.now().shift(years=1, days=1)
-            db.session.commit()
+            Session.commit()
             flash(f"Subscription extended to {manual_sub.end_at.humanize()}", "success")
             continue
 
@@ -211,11 +209,11 @@ class ManualSubscriptionAdmin(SLModelView):
         "Extend 1 year more?",
     )
     def extend_1y(self, ids):
-        for ms in ManualSubscription.query.filter(ManualSubscription.id.in_(ids)):
+        for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
             ms.end_at = ms.end_at.shift(years=1)
             flash(f"Extend subscription for {ms.user}", "success")
 
-        db.session.commit()
+        Session.commit()
 
 
 class ClientAdmin(SLModelView):

@@ -11,7 +11,7 @@ def test_add_contact_success(flask_client):
     login(flask_client)
     alias = Alias.first()
 
-    assert Contact.query.count() == 0
+    assert Contact.count() == 0
 
     # <<< Create a new contact >>>
     flask_client.post(
@@ -23,7 +23,7 @@ def test_add_contact_success(flask_client):
         follow_redirects=True,
     )
     # a new contact is added
-    assert Contact.query.count() == 1
+    assert Contact.count() == 1
     contact = Contact.first()
     assert contact.website_email == "abcd@gmail.com"
 
@@ -37,8 +37,8 @@ def test_add_contact_success(flask_client):
         follow_redirects=True,
     )
     # a new contact is added
-    assert Contact.query.count() == 2
-    contact = Contact.query.filter(Contact.id != contact.id).first()
+    assert Contact.count() == 2
+    contact = Contact.filter(Contact.id != contact.id).first()
     assert contact.website_email == "another@gmail.com"
     assert contact.name == "First Last"
 
@@ -53,5 +53,5 @@ def test_add_contact_success(flask_client):
     )
 
     # no new contact is added
-    assert Contact.query.count() == 2
+    assert Contact.count() == 2
     assert "Invalid email format. Email must be either email@example.com" in str(r.data)

@@ -10,7 +10,8 @@ from app.api.serializer import (
 )
 from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
 from app.dashboard.views.custom_alias import verify_prefix_suffix, signer
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     Alias,
@@ -108,11 +109,11 @@ def new_custom_alias_v2():
         custom_domain_id=custom_domain_id,
     )
 
-    db.session.commit()
+    Session.commit()
 
     if hostname:
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
-        db.session.commit()
+        Session.commit()
 
     return (
         jsonify(alias=full_alias, **serialize_alias_info_v2(get_alias_info_v2(alias))),
@@ -217,7 +218,7 @@ def new_custom_alias_v3():
         mailbox_id=mailboxes[0].id,
         custom_domain_id=custom_domain_id,
     )
-    db.session.flush()
+    Session.flush()
 
     for i in range(1, len(mailboxes)):
         AliasMailbox.create(
@@ -225,11 +226,11 @@ def new_custom_alias_v3():
             mailbox_id=mailboxes[i].id,
         )
 
-    db.session.commit()
+    Session.commit()
 
     if hostname:
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
-        db.session.commit()
+        Session.commit()
 
     return (
         jsonify(alias=full_alias, **serialize_alias_info_v2(get_alias_info_v2(alias))),

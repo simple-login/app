@@ -22,6 +22,7 @@ from app.config import (
     HIBP_API_KEYS,
     HIBP_SCAN_INTERVAL_DAYS,
 )
+from app.db import Session
 from app.dns_utils import get_mx_domains
 from app.email_utils import (
     send_email,
@@ -33,7 +34,6 @@ from app.email_utils import (
     is_valid_email,
     get_email_domain_part,
 )
-from app.extensions import db
 from app.log import LOG
 from app.models import (
     Subscription,
@@ -63,7 +63,7 @@ from server import create_app
 
 
 def notify_trial_end():
-    for user in User.query.filter(
+    for user in User.filter(
         User.activated.is_(True), User.trial_end.isnot(None), User.lifetime.is_(False)
     ).all():
         if user.in_trial() and arrow.now().shift(
@@ -78,27 +78,27 @@ def delete_logs():
     delete_refused_emails()
     delete_old_monitoring()
 
-    for t in TransactionalEmail.query.filter(
+    for t in TransactionalEmail.filter(
         TransactionalEmail.created_at < arrow.now().shift(days=-7)
     ):
         TransactionalEmail.delete(t.id)
 
-    for b in Bounce.query.filter(Bounce.created_at < arrow.now().shift(days=-7)):
+    for b in Bounce.filter(Bounce.created_at < arrow.now().shift(days=-7)):
         Bounce.delete(b.id)
 
-    db.session.commit()
+    Session.commit()
 
     LOG.d("Delete EmailLog older than 2 weeks")
 
     max_dt = arrow.now().shift(weeks=-2)
-    nb_deleted = EmailLog.query.filter(EmailLog.created_at < max_dt).delete()
-    db.session.commit()
+    nb_deleted = EmailLog.filter(EmailLog.created_at < max_dt).delete()
+    Session.commit()
 
     LOG.i("Delete %s email logs", nb_deleted)
 
 
 def delete_refused_emails():
-    for refused_email in RefusedEmail.query.filter_by(deleted=False).all():
+    for refused_email in RefusedEmail.filter_by(deleted=False).all():
         if arrow.now().shift(days=1) > refused_email.delete_at >= arrow.now():
             LOG.d("Delete refused email %s", refused_email)
             if refused_email.path:
@@ -109,14 +109,14 @@ def delete_refused_emails():
             # do not set path and full_report_path to null
             # so we can check later that the files are indeed deleted
             refused_email.deleted = True
-            db.session.commit()
+            Session.commit()
 
     LOG.d("Finish delete_refused_emails")
 
 
 def notify_premium_end():
     """sent to user who has canceled their subscription and who has their subscription ending soon"""
-    for sub in Subscription.query.filter_by(cancelled=True).all():
+    for sub in Subscription.filter_by(cancelled=True).all():
         if (
             arrow.now().shift(days=3).date()
             > sub.next_bill_date
@@ -146,7 +146,7 @@ def notify_premium_end():
 
 
 def notify_manual_sub_end():
-    for manual_sub in ManualSubscription.query.all():
+    for manual_sub in ManualSubscription.all():
         need_reminder = False
         if arrow.now().shift(days=14) > manual_sub.end_at > arrow.now().shift(days=13):
             need_reminder = True
@@ -172,7 +172,7 @@ def notify_manual_sub_end():
             )
 
     extend_subscription_url = URL + "/dashboard/coinbase_checkout"
-    for coinbase_subscription in CoinbaseSubscription.query.all():
+    for coinbase_subscription in CoinbaseSubscription.all():
         need_reminder = False
         if (
             arrow.now().shift(days=14)
@@ -211,7 +211,7 @@ def notify_manual_sub_end():
 def poll_apple_subscription():
     """Poll Apple API to update AppleSubscription"""
     # todo: only near the end of the subscription
-    for apple_sub in AppleSubscription.query.all():
+    for apple_sub in AppleSubscription.all():
         user = apple_sub.user
         verify_receipt(apple_sub.receipt_data, user, APPLE_API_SECRET)
         verify_receipt(apple_sub.receipt_data, user, MACAPP_APPLE_API_SECRET)
@@ -224,49 +224,49 @@ def compute_metric2() -> Metric2:
     _24h_ago = now.shift(days=-1)
 
     nb_referred_user_paid = 0
-    for user in User.query.filter(User.referral_id.isnot(None)):
+    for user in User.filter(User.referral_id.isnot(None)):
         if user.is_paid():
             nb_referred_user_paid += 1
 
     return Metric2.create(
         date=now,
         # user stats
-        nb_user=User.query.count(),
-        nb_activated_user=User.query.filter_by(activated=True).count(),
+        nb_user=User.count(),
+        nb_activated_user=User.filter_by(activated=True).count(),
         # subscription stats
-        nb_premium=Subscription.query.filter(Subscription.cancelled.is_(False)).count(),
-        nb_cancelled_premium=Subscription.query.filter(
+        nb_premium=Subscription.filter(Subscription.cancelled.is_(False)).count(),
+        nb_cancelled_premium=Subscription.filter(
             Subscription.cancelled.is_(True)
         ).count(),
         # todo: filter by expires_date > now
-        nb_apple_premium=AppleSubscription.query.count(),
-        nb_manual_premium=ManualSubscription.query.filter(
+        nb_apple_premium=AppleSubscription.count(),
+        nb_manual_premium=ManualSubscription.filter(
             ManualSubscription.end_at > now,
             ManualSubscription.is_giveaway.is_(False),
         ).count(),
-        nb_coinbase_premium=CoinbaseSubscription.query.filter(
+        nb_coinbase_premium=CoinbaseSubscription.filter(
             CoinbaseSubscription.end_at > now
         ).count(),
         # referral stats
-        nb_referred_user=User.query.filter(User.referral_id.isnot(None)).count(),
+        nb_referred_user=User.filter(User.referral_id.isnot(None)).count(),
         nb_referred_user_paid=nb_referred_user_paid,
-        nb_alias=Alias.query.count(),
+        nb_alias=Alias.count(),
         # email log stats
-        nb_forward_last_24h=EmailLog.query.filter(EmailLog.created_at > _24h_ago)
+        nb_forward_last_24h=EmailLog.filter(EmailLog.created_at > _24h_ago)
         .filter_by(bounced=False, is_spam=False, is_reply=False, blocked=False)
         .count(),
-        nb_bounced_last_24h=EmailLog.query.filter(EmailLog.created_at > _24h_ago)
+        nb_bounced_last_24h=EmailLog.filter(EmailLog.created_at > _24h_ago)
         .filter_by(bounced=True)
         .count(),
-        nb_reply_last_24h=EmailLog.query.filter(EmailLog.created_at > _24h_ago)
+        nb_reply_last_24h=EmailLog.filter(EmailLog.created_at > _24h_ago)
         .filter_by(is_reply=True)
         .count(),
-        nb_block_last_24h=EmailLog.query.filter(EmailLog.created_at > _24h_ago)
+        nb_block_last_24h=EmailLog.filter(EmailLog.created_at > _24h_ago)
         .filter_by(blocked=True)
         .count(),
         # other stats
-        nb_verified_custom_domain=CustomDomain.query.filter_by(verified=True).count(),
-        nb_app=Client.query.count(),
+        nb_verified_custom_domain=CustomDomain.filter_by(verified=True).count(),
+        nb_app=Client.count(),
         commit=True,
     )
 
@@ -309,7 +309,7 @@ def bounce_report() -> List[Tuple[str, int]]:
     """
     min_dt = arrow.now().shift(days=-1)
     query = (
-        db.session.query(User.email, func.count(EmailLog.id).label("count"))
+        Session.query(User.email, func.count(EmailLog.id).label("count"))
         .join(EmailLog, EmailLog.user_id == User.id)
         .filter(EmailLog.bounced, EmailLog.created_at > min_dt)
         .group_by(User.email)
@@ -354,7 +354,7 @@ def alias_creation_report() -> List[Tuple[str, int]]:
     """
     min_dt = arrow.now().shift(days=-7)
     query = (
-        db.session.query(
+        Session.query(
             User.email,
             func.count(Alias.id).label("count"),
             func.date(Alias.created_at).label("date"),
@@ -381,7 +381,7 @@ def stats():
 
     stats_today = compute_metric2()
     stats_yesterday = (
-        Metric2.query.filter(Metric2.date < stats_today.date)
+        Metric2.filter(Metric2.date < stats_today.date)
         .order_by(Metric2.date.desc())
         .first()
     )
@@ -442,13 +442,13 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
 
 def migrate_domain_trash():
     """Move aliases from global trash to domain trash if applicable"""
-    for deleted_alias in DeletedAlias.query.all():
+    for deleted_alias in DeletedAlias.all():
         alias_domain = get_email_domain_part(deleted_alias.email)
         if not SLDomain.get_by(domain=alias_domain):
             custom_domain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain:
                 LOG.e("move %s to domain %s trash", deleted_alias, custom_domain)
-                db.session.add(
+                Session.add(
                     DomainDeletedAlias(
                         user_id=custom_domain.user_id,
                         email=deleted_alias.email,
@@ -458,13 +458,13 @@ def migrate_domain_trash():
                 )
                 DeletedAlias.delete(deleted_alias.id)
 
-    db.session.commit()
+    Session.commit()
 
 
 def set_custom_domain_for_alias():
     """Go through all aliases and make sure custom_domain is correctly set"""
-    sl_domains = [sl_domain.domain for sl_domain in SLDomain.query.all()]
-    for alias in Alias.query.filter(Alias.custom_domain_id.is_(None)):
+    sl_domains = [sl_domain.domain for sl_domain in SLDomain.all()]
+    for alias in Alias.filter(Alias.custom_domain_id.is_(None)):
         if (
             not any(alias.email.endswith(f"@{sl_domain}") for sl_domain in sl_domains)
             and not alias.custom_domain_id
@@ -477,7 +477,7 @@ def set_custom_domain_for_alias():
             else:  # phantom domain
                 LOG.d("phantom domain %s %s %s", alias.user, alias, alias.enabled)
 
-    db.session.commit()
+    Session.commit()
 
 
 def sanity_check():
@@ -487,7 +487,7 @@ def sanity_check():
     - detect if there's mailbox that's using a invalid domain
     """
     mailbox_ids = (
-        db.session.query(Mailbox.id)
+        Session.query(Mailbox.id)
         .filter(Mailbox.verified.is_(True), Mailbox.disabled.is_(False))
         .all()
     )
@@ -544,23 +544,23 @@ def sanity_check():
         else:  # reset nb check
             mailbox.nb_failed_checks = 0
 
-        db.session.commit()
+        Session.commit()
 
     for user in User.filter_by(activated=True).all():
         if sanitize_email(user.email) != user.email:
             LOG.e("%s does not have sanitized email", user)
 
-    for alias in Alias.query.all():
+    for alias in Alias.all():
         if sanitize_email(alias.email) != alias.email:
             LOG.e("Alias %s email not sanitized", alias)
 
         if alias.name and "\n" in alias.name:
             alias.name = alias.name.replace("\n", "")
-            db.session.commit()
+            Session.commit()
             LOG.e("Alias %s name contains linebreak %s", alias, alias.name)
 
     contact_email_sanity_date = arrow.get("2021-01-12")
-    for contact in Contact.query.all():
+    for contact in Contact.all():
         if sanitize_email(contact.reply_email) != contact.reply_email:
             LOG.e("Contact %s reply-email not sanitized", contact)
 
@@ -573,13 +573,13 @@ def sanity_check():
         if not contact.invalid_email and not is_valid_email(contact.website_email):
             LOG.e("%s invalid email", contact)
             contact.invalid_email = True
-            db.session.commit()
+            Session.commit()
 
-    for mailbox in Mailbox.query.all():
+    for mailbox in Mailbox.all():
         if sanitize_email(mailbox.email) != mailbox.email:
             LOG.e("Mailbox %s address not sanitized", mailbox)
 
-    for contact in Contact.query.all():
+    for contact in Contact.all():
         if normalize_reply_email(contact.reply_email) != contact.reply_email:
             LOG.e(
                 "Contact %s reply email is not normalized %s",
@@ -587,7 +587,7 @@ def sanity_check():
                 contact.reply_email,
             )
 
-    for domain in CustomDomain.query.all():
+    for domain in CustomDomain.all():
         if domain.name and "\n" in domain.name:
             LOG.e("Domain %s name contain linebreak %s", domain, domain.name)
 
@@ -600,9 +600,7 @@ def sanity_check():
 def check_custom_domain():
     LOG.d("Check verified domain for DNS issues")
 
-    for custom_domain in CustomDomain.query.filter_by(
-        verified=True
-    ):  # type: CustomDomain
+    for custom_domain in CustomDomain.filter_by(verified=True):  # type: CustomDomain
         mx_domains = get_mx_domains(custom_domain.domain)
 
         if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
@@ -644,7 +642,7 @@ def check_custom_domain():
             # reset checks
             custom_domain.nb_failed_checks = 0
 
-        db.session.commit()
+        Session.commit()
 
 
 def delete_old_monitoring():
@@ -652,8 +650,8 @@ def delete_old_monitoring():
     Delete old monitoring records
     """
     max_time = arrow.now().shift(days=-30)
-    nb_row = Monitoring.query.filter(Monitoring.created_at < max_time).delete()
-    db.session.commit()
+    nb_row = Monitoring.filter(Monitoring.created_at < max_time).delete()
+    Session.commit()
     LOG.d("delete monitoring records older than %s, nb row %s", max_time, nb_row)
 
 
@@ -713,8 +711,8 @@ async def _hibp_check(api_key, queue):
             return
 
         alias.hibp_last_check = arrow.utcnow()
-        db.session.add(alias)
-        db.session.commit()
+        Session.add(alias)
+        Session.commit()
 
         LOG.d("Updated breaches info for %s", alias)
 
@@ -738,14 +736,14 @@ async def check_hibp():
         hibp_entry.date = arrow.get(entry["BreachDate"])
         hibp_entry.description = entry["Description"]
 
-    db.session.commit()
+    Session.commit()
     LOG.d("Updated list of known breaches")
 
     LOG.d("Preparing list of aliases to check")
     queue = asyncio.Queue()
     max_date = arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS)
     for alias in (
-        Alias.query.filter(
+        Alias.filter(
             or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date)
         )
         .filter(Alias.enabled)
@@ -782,19 +780,19 @@ def notify_hibp():
     """
     # to get a list of users that have at least a breached alias
     alias_query = (
-        db.session.query(Alias)
+        Session.query(Alias)
         .options(joinedload(Alias.hibp_breaches))
         .filter(Alias.hibp_breaches.any())
-        .filter(Alias.id.notin_(db.session.query(HibpNotifiedAlias.alias_id)))
+        .filter(Alias.id.notin_(Session.query(HibpNotifiedAlias.alias_id)))
         .distinct(Alias.user_id)
         .all()
     )
 
     user_ids = [alias.user_id for alias in alias_query]
 
-    for user in User.query.filter(User.id.in_(user_ids)):
+    for user in User.filter(User.id.in_(user_ids)):
         breached_aliases = (
-            db.session.query(Alias)
+            Session.query(Alias)
             .options(joinedload(Alias.hibp_breaches))
             .filter(Alias.hibp_breaches.any(), Alias.user_id == user.id)
             .all()
@@ -824,7 +822,7 @@ def notify_hibp():
         # add the breached aliases to HibpNotifiedAlias to avoid sending another email
         for alias in breached_aliases:
             HibpNotifiedAlias.create(user_id=user.id, alias_id=alias.id)
-        db.session.commit()
+        Session.commit()
 
 
 if __name__ == "__main__":

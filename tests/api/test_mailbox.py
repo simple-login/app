@@ -1,6 +1,6 @@
 from flask import url_for
 
-from app.extensions import db
+from app.db import Session
 from app.models import Mailbox
 from tests.utils import login
 
@@ -34,7 +34,7 @@ def test_create_mailbox(flask_client):
 def test_create_mailbox_fail_for_free_user(flask_client):
     user = login(flask_client)
     user.trial_end = None
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.post(
         "/api/mailboxes",
@@ -50,7 +50,7 @@ def test_delete_mailbox(flask_client):
 
     # create a mailbox
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.delete(
         f"/api/mailboxes/{mb.id}",
@@ -88,7 +88,7 @@ def test_set_mailbox_as_default(flask_client):
 
     # <<< Cannot set an unverified mailbox as default >>>
     mb.verified = False
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.put(
         f"/api/mailboxes/{mb.id}",
@@ -104,7 +104,7 @@ def test_update_mailbox_email(flask_client):
 
     # create a mailbox
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.put(
         f"/api/mailboxes/{mb.id}",
@@ -122,7 +122,7 @@ def test_cancel_mailbox_email_change(flask_client):
 
     # create a mailbox
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
-    db.session.commit()
+    Session.commit()
 
     # update mailbox email
     r = flask_client.put(
@@ -150,7 +150,7 @@ def test_get_mailboxes(flask_client):
 
     Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
     Mailbox.create(user_id=user.id, email="m2@example.com", verified=False)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         "/api/mailboxes",
@@ -173,7 +173,7 @@ def test_get_mailboxes_v2(flask_client):
 
     Mailbox.create(user_id=user.id, email="m1@example.com", verified=True)
     Mailbox.create(user_id=user.id, email="m2@example.com", verified=False)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         "/api/v2/mailboxes",

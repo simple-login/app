@@ -3,8 +3,8 @@ from uuid import UUID
 import pytest
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
+from app.db import Session
 from app.email_utils import parse_full_address
-from app.extensions import db
 from app.models import (
     generate_email,
     User,
@@ -53,7 +53,7 @@ def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
     # make sure user runs out of quota to create new email
     for i in range(MAX_NB_EMAIL_FREE_PLAN):
         Alias.create_new(user=user, prefix="test")
-    db.session.commit()
+    Session.commit()
 
     suggested_email, other_emails = user.suggested_emails(website_name="test")
 
@@ -88,7 +88,7 @@ def test_website_send_to(flask_client):
     )
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     # non-empty name
     c1 = Contact.create(
@@ -122,7 +122,7 @@ def test_new_addr(flask_client):
     )
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     # default sender_format is 'via'
     c1 = Contact.create(
@@ -137,18 +137,18 @@ def test_new_addr(flask_client):
 
     # Make sure email isn't duplicated if sender name equals email
     c1.name = "abcd@example.com"
-    db.session.commit()
+    Session.commit()
     assert c1.new_addr() == '"abcd(a)example.com" <rep@SL>'
 
     # set sender_format = AT
     user.sender_format = SenderFormatEnum.AT.value
     c1.name = "First Last"
-    db.session.commit()
+    Session.commit()
     assert c1.new_addr() == '"First Last - abcd at example.com" <rep@SL>'
 
     # unicode name
     c1.name = "Nhơn Nguyễn"
-    db.session.commit()
+    Session.commit()
     assert (
         c1.new_addr()
         == "=?utf-8?q?Nh=C6=A1n_Nguy=E1=BB=85n_-_abcd_at_example=2Ecom?= <rep@SL>"
@@ -182,11 +182,11 @@ def test_mailbox_delete(flask_client):
 
     # alias has 2 mailboxes
     alias = Alias.create_new(user, "prefix", mailbox_id=m1.id)
-    db.session.commit()
+    Session.commit()
 
     alias._mailboxes.append(m2)
     alias._mailboxes.append(m3)
-    db.session.commit()
+    Session.commit()
 
     assert len(alias.mailboxes) == 3
 

@@ -53,9 +53,9 @@ from app.config import (
     TEMP_DIR,
     ALIAS_AUTOMATIC_DISABLE,
 )
+from app.db import Session
 from app.dns_utils import get_mx_domains
 from app.email import headers
-from app.extensions import db
 from app.log import LOG
 from app.models import (
     Mailbox,
@@ -324,7 +324,7 @@ def send_email_with_rate_control(
     to_email = sanitize_email(to_email)
     min_dt = arrow.now().shift(days=-1 * nb_day)
     nb_alert = (
-        SentAlert.query.filter_by(alert_type=alert_type, to_email=to_email)
+        SentAlert.filter_by(alert_type=alert_type, to_email=to_email)
         .filter(SentAlert.created_at > min_dt)
         .count()
     )
@@ -340,7 +340,7 @@ def send_email_with_rate_control(
         return False
 
     SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
-    db.session.commit()
+    Session.commit()
 
     if ignore_smtp_error:
         try:
@@ -369,9 +369,7 @@ def send_email_at_most_times(
     Return true if the email is sent, otherwise False
     """
     to_email = sanitize_email(to_email)
-    nb_alert = SentAlert.query.filter_by(
-        alert_type=alert_type, to_email=to_email
-    ).count()
+    nb_alert = SentAlert.filter_by(alert_type=alert_type, to_email=to_email).count()
 
     if nb_alert >= max_times:
         LOG.w(
@@ -383,7 +381,7 @@ def send_email_at_most_times(
         return False
 
     SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
-    db.session.commit()
+    Session.commit()
     send_email(to_email, subject, plaintext, html)
     return True
 
@@ -1036,7 +1034,7 @@ def should_disable(alias: Alias) -> bool:
 
     yesterday = arrow.now().shift(days=-1)
     nb_bounced_last_24h = (
-        db.session.query(EmailLog)
+        Session.query(EmailLog)
         .filter(
             EmailLog.bounced.is_(True),
             EmailLog.is_reply.is_(False),
@@ -1054,7 +1052,7 @@ def should_disable(alias: Alias) -> bool:
     elif nb_bounced_last_24h > 5:
         one_week_ago = arrow.now().shift(days=-8)
         nb_bounced_7d_1d = (
-            db.session.query(EmailLog)
+            Session.query(EmailLog)
             .filter(
                 EmailLog.bounced.is_(True),
                 EmailLog.is_reply.is_(False),
@@ -1075,7 +1073,7 @@ def should_disable(alias: Alias) -> bool:
         # alias level
         # if bounces at least 9 days in the last 10 days -> disable alias
         query = (
-            db.session.query(
+            Session.query(
                 func.date(EmailLog.created_at).label("date"),
                 func.count(EmailLog.id).label("count"),
             )
@@ -1097,7 +1095,7 @@ def should_disable(alias: Alias) -> bool:
 
         # account level
         query = (
-            db.session.query(
+            Session.query(
                 func.date(EmailLog.created_at).label("date"),
                 func.count(EmailLog.id).label("count"),
             )

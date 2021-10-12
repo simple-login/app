@@ -10,7 +10,7 @@ from app.config import (
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
 )
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.db import Session
 from app.models import Directory, Mailbox, DirectoryMailbox
 
 
@@ -24,7 +24,7 @@ class NewDirForm(FlaskForm):
 @login_required
 def directory():
     dirs = (
-        Directory.query.filter_by(user_id=current_user.id)
+        Directory.filter_by(user_id=current_user.id)
         .order_by(Directory.created_at.desc())
         .all()
     )
@@ -47,7 +47,7 @@ def directory():
 
             name = dir.name
             Directory.delete(dir_id)
-            db.session.commit()
+            Session.commit()
             flash(f"Directory {name} has been deleted", "success")
 
             return redirect(url_for("dashboard.directory"))
@@ -67,7 +67,7 @@ def directory():
                 dir.disabled = True
                 flash(f"On-the-fly is disabled for {dir.name}", "warning")
 
-            db.session.commit()
+            Session.commit()
 
             return redirect(url_for("dashboard.directory"))
 
@@ -98,13 +98,13 @@ def directory():
                 return redirect(url_for("dashboard.directory"))
 
             # first remove all existing directory-mailboxes links
-            DirectoryMailbox.query.filter_by(directory_id=dir.id).delete()
-            db.session.flush()
+            DirectoryMailbox.filter_by(directory_id=dir.id).delete()
+            Session.flush()
 
             for mailbox in mailboxes:
                 DirectoryMailbox.create(directory_id=dir.id, mailbox_id=mailbox.id)
 
-            db.session.commit()
+            Session.commit()
             flash(f"Directory {dir.name} has been updated", "success")
 
             return redirect(url_for("dashboard.directory"))
@@ -141,7 +141,7 @@ def directory():
                     new_dir = Directory.create(
                         name=new_dir_name, user_id=current_user.id
                     )
-                    db.session.commit()
+                    Session.commit()
                     mailbox_ids = request.form.getlist("mailbox_ids")
                     if mailbox_ids:
                         # check if mailbox is not tempered with
@@ -162,7 +162,7 @@ def directory():
                                 directory_id=new_dir.id, mailbox_id=mailbox.id
                             )
 
-                        db.session.commit()
+                        Session.commit()
 
                     flash(f"Directory {new_dir.name} is created", "success")
 

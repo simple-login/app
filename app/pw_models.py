@@ -1,14 +1,12 @@
-import unicodedata
-
 import bcrypt
-
-from app.extensions import db
+import sqlalchemy as sa
+import unicodedata
 
 _NORMALIZATION_FORM = "NFKC"
 
 
 class PasswordOracle:
-    password = db.Column(db.String(128), nullable=True)
+    password = sa.Column(sa.String(128), nullable=True)
 
     def set_password(self, password):
         password = unicodedata.normalize(_NORMALIZATION_FORM, password)

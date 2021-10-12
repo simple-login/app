@@ -7,12 +7,12 @@ from flask import request
 from app.api.base import api_bp, require_api_auth
 from app.dashboard.views.mailbox import send_verification_email
 from app.dashboard.views.mailbox_detail import verify_mailbox_change
+from app.db import Session
 from app.email_utils import (
     mailbox_already_used,
     email_can_be_used_as_mailbox,
     is_valid_email,
 )
-from app.extensions import db
 from app.models import Mailbox
 from app.utils import sanitize_email
 
@@ -58,7 +58,7 @@ def create_mailbox():
         )
     else:
         new_mailbox = Mailbox.create(email=mailbox_email, user_id=user.id)
-        db.session.commit()
+        Session.commit()
 
         send_verification_email(user, new_mailbox)
 
@@ -89,7 +89,7 @@ def delete_mailbox(mailbox_id):
         return jsonify(error="You cannot delete the default mailbox"), 400
 
     Mailbox.delete(mailbox_id)
-    db.session.commit()
+    Session.commit()
 
     return jsonify(deleted=True), 200
 
@@ -158,7 +158,7 @@ def update_mailbox(mailbox_id):
             changed = True
 
     if changed:
-        db.session.commit()
+        Session.commit()
 
     return jsonify(updated=True), 200
 
@@ -190,7 +190,7 @@ def get_mailboxes_v2():
     user = g.user
     mailboxes = []
 
-    for mailbox in Mailbox.query.filter_by(user_id=user.id):
+    for mailbox in Mailbox.filter_by(user_id=user.id):
         mailboxes.append(mailbox)
 
     return (

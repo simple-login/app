@@ -1,6 +1,6 @@
 from app.api.serializer import get_alias_infos_with_pagination_v3
 from app.config import PAGE_LIMIT
-from app.extensions import db
+from app.db import Session
 from app.models import User, Alias, Mailbox, Contact
 from tests.utils import create_user
 
@@ -75,7 +75,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_mailboxes(flask_client):
     alias = Alias.first()
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
     alias._mailboxes.append(mb)
-    db.session.commit()
+    Session.commit()
 
     alias_infos = get_alias_infos_with_pagination_v3(user, mailbox_id=mb.id)
     assert len(alias_infos) == 1
@@ -96,7 +96,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_note(flask_client):
 
     alias = Alias.first()
     alias.note = "test note"
-    db.session.commit()
+    Session.commit()
 
     alias_infos = get_alias_infos_with_pagination_v3(user, query="test note")
     assert len(alias_infos) == 1
@@ -114,7 +114,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_name(flask_client):
 
     alias = Alias.first()
     alias.name = "Test Name"
-    db.session.commit()
+    Session.commit()
 
     alias_infos = get_alias_infos_with_pagination_v3(user, query="test name")
     assert len(alias_infos) == 1
@@ -135,7 +135,7 @@ def test_get_alias_infos_with_pagination_v3_no_duplicate(flask_client):
     alias = Alias.first()
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
     alias._mailboxes.append(mb)
-    db.session.commit()
+    Session.commit()
 
     alias_infos = get_alias_infos_with_pagination_v3(user)
     assert len(alias_infos) == 1
@@ -182,7 +182,7 @@ def test_get_alias_infos_pinned_alias(flask_client):
     for i in range(2 * PAGE_LIMIT):
         Alias.create_new_random(user)
 
-    first_alias = Alias.query.order_by(Alias.id).first()
+    first_alias = Alias.order_by(Alias.id).first()
 
     # should return PAGE_LIMIT alias
     alias_infos = get_alias_infos_with_pagination_v3(user)
@@ -192,7 +192,7 @@ def test_get_alias_infos_pinned_alias(flask_client):
 
     # pin the first alias
     first_alias.pinned = True
-    db.session.commit()
+    Session.commit()
 
     alias_infos = get_alias_infos_with_pagination_v3(user)
     # now first_alias is the first result

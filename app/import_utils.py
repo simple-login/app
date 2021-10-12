@@ -3,8 +3,8 @@ import csv
 import requests
 
 from app import s3
+from app.db import Session
 from app.email_utils import get_email_domain_part
-from app.extensions import db
 from app.models import (
     Alias,
     AliasMailbox,
@@ -23,7 +23,7 @@ def handle_batch_import(batch_import: BatchImport):
     user = batch_import.user
 
     batch_import.processed = True
-    db.session.commit()
+    Session.commit()
 
     LOG.d("Start batch import for %s %s", batch_import, user)
     file_url = s3.get_url(batch_import.file.path)
@@ -97,5 +97,5 @@ def import_from_csv(batch_import: BatchImport, user: User, lines):
                 AliasMailbox.create(
                     alias_id=alias.id, mailbox_id=mailboxes[i], commit=True
                 )
-                db.session.commit()
+                Session.commit()
                 LOG.d("Add %s to mailbox %s", alias, mailboxes[i])

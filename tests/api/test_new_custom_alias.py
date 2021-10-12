@@ -3,7 +3,7 @@ from flask import g
 from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.dashboard.views.custom_alias import signer
-from app.extensions import db
+from app.db import Session
 from app.models import Alias, CustomDomain, Mailbox, AliasUsedOn
 from app.utils import random_word
 from tests.utils import login
@@ -86,13 +86,13 @@ def test_full_payload(flask_client):
 
     # create another mailbox
     mb = Mailbox.create(user_id=user.id, email="abcd@gmail.com", verified=True)
-    db.session.commit()
+    Session.commit()
 
     word = random_word()
     suffix = f".{word}@{EMAIL_DOMAIN}"
     signed_suffix = signer.sign(suffix).decode()
 
-    assert AliasUsedOn.query.count() == 0
+    assert AliasUsedOn.count() == 0
 
     r = flask_client.post(
         "/api/v3/alias/custom/new?hostname=example.com",
@@ -146,7 +146,7 @@ def test_custom_domain_alias(flask_client):
 def test_out_of_quota(flask_client):
     user = login(flask_client)
     user.trial_end = None
-    db.session.commit()
+    Session.commit()
 
     # create MAX_NB_EMAIL_FREE_PLAN custom alias to run out of quota
     for _ in range(MAX_NB_EMAIL_FREE_PLAN):

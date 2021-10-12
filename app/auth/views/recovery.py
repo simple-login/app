@@ -6,7 +6,8 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User, RecoveryCode
 
@@ -54,7 +55,7 @@ def recovery_route():
 
                 recovery_code.used = True
                 recovery_code.used_at = arrow.now()
-                db.session.commit()
+                Session.commit()
 
                 # User comes to login page from another page
                 if next_url:

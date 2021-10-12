@@ -5,8 +5,8 @@ from app.config import (
     MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS,
     MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX,
 )
+from app.db import Session
 from app.email_utils import is_reply_email
-from app.extensions import db
 from app.log import LOG
 from app.models import Alias, EmailLog, Contact
 
@@ -16,7 +16,7 @@ def rate_limited_for_alias(alias: Alias) -> bool:
 
     # get the nb of activity on this alias
     nb_activity = (
-        db.session.query(EmailLog)
+        Session.query(EmailLog)
         .join(Contact, EmailLog.contact_id == Contact.id)
         .filter(
             Contact.alias_id == alias.id,
@@ -42,7 +42,7 @@ def rate_limited_for_mailbox(alias: Alias) -> bool:
 
     # get nb of activity on this mailbox
     nb_activity = (
-        db.session.query(EmailLog)
+        Session.query(EmailLog)
         .join(Contact, EmailLog.contact_id == Contact.id)
         .join(Alias, Contact.alias_id == Alias.id)
         .filter(

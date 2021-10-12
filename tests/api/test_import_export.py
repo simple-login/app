@@ -1,7 +1,8 @@
 from flask import url_for
 
 from app import alias_utils
-from app.extensions import db
+from app.db import Session
+from app.import_utils import import_from_csv
 from app.models import (
     User,
     CustomDomain,
@@ -11,7 +12,6 @@ from app.models import (
     BatchImport,
     File,
 )
-from app.import_utils import import_from_csv
 from tests.utils import login
 
 
@@ -21,14 +21,14 @@ def test_export(flask_client):
     user2 = User.create(
         email="x@y.z", password="password", name="Wrong user", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     # Remove onboarding aliases
     for alias in Alias.filter_by(user_id=user1.id).all():
         alias_utils.delete_alias(alias, user1)
     for alias in Alias.filter_by(user_id=user2.id).all():
         alias_utils.delete_alias(alias, user2)
-    db.session.commit()
+    Session.commit()
 
     # Create domains
     CustomDomain.create(
@@ -37,7 +37,7 @@ def test_export(flask_client):
     CustomDomain.create(
         user_id=user2.id, domain="bad-destionation-domain.com", verified=True
     )
-    db.session.commit()
+    Session.commit()
 
     # Create mailboxes
     mailbox1 = Mailbox.create(
@@ -51,7 +51,7 @@ def test_export(flask_client):
         email="baddestination@bad-destination-domain.com",
         verified=True,
     )
-    db.session.commit()
+    Session.commit()
 
     # Create aliases
     Alias.create(
@@ -72,14 +72,14 @@ def test_export(flask_client):
         note="Should not appear",
         mailbox_id=badmailbox1.id,
     )
-    db.session.commit()
+    Session.commit()
 
     # Add second mailbox to an alias
     AliasMailbox.create(
         alias_id=alias2.id,
         mailbox_id=mailbox2.id,
     )
-    db.session.commit()
+    Session.commit()
 
     # Export
     r = flask_client.get(url_for("api.export_aliases"))
@@ -128,7 +128,7 @@ def test_import_no_mailboxes(flask_client):
     CustomDomain.create(
         user_id=user.id, domain="my-domain.com", ownership_verified=True
     )
-    db.session.commit()
+    Session.commit()
 
     alias_data = [
         "alias,note",
@@ -180,7 +180,7 @@ def test_import(flask_client):
     CustomDomain.create(
         user_id=user.id, domain="my-destination-domain.com", ownership_verified=True
     )
-    db.session.commit()
+    Session.commit()
 
     # Create mailboxes
     mailbox1 = Mailbox.create(
@@ -189,7 +189,7 @@ def test_import(flask_client):
     mailbox2 = Mailbox.create(
         user_id=user.id, email="destination2@my-destination-domain.com", verified=True
     )
-    db.session.commit()
+    Session.commit()
 
     alias_data = [
         "alias,note,mailboxes",

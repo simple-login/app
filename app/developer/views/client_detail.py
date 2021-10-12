@@ -8,9 +8,9 @@ from wtforms import StringField, validators, TextAreaField
 
 from app import s3
 from app.config import ADMIN_EMAIL
+from app.db import Session
 from app.developer.base import developer_bp
 from app.email_utils import send_email
-from app.extensions import db
 from app.log import LOG
 from app.models import Client, RedirectUri, File
 from app.utils import random_string
@@ -55,13 +55,13 @@ def client_detail(client_id):
 
             s3.upload_from_bytesio(file_path, BytesIO(form.icon.data.read()))
 
-            db.session.flush()
+            Session.flush()
             LOG.d("upload file %s to s3", file)
 
             client.icon_id = file.id
-            db.session.flush()
+            Session.flush()
 
-        db.session.commit()
+        Session.commit()
 
         flash(f"{client.name} has been updated", "success")
 
@@ -69,7 +69,7 @@ def client_detail(client_id):
 
     if action == "submit" and approval_form.validate_on_submit():
         client.description = approval_form.description.data
-        db.session.commit()
+        Session.commit()
 
         send_email(
             ADMIN_EMAIL,
@@ -127,7 +127,7 @@ def client_detail_oauth_setting(client_id):
         for uri in uris:
             RedirectUri.create(client_id=client_id, uri=uri)
 
-        db.session.commit()
+        Session.commit()
 
         flash(f"{client.name} has been updated", "success")
 
@@ -178,7 +178,7 @@ def client_detail_advanced(client_id):
         # delete client
         client_name = client.name
         Client.delete(client.id)
-        db.session.commit()
+        Session.commit()
         LOG.d("Remove client %s", client)
         flash(f"{client_name} has been deleted", "success")
 
