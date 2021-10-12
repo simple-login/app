@@ -1,5 +1,3 @@
-from app.db import Session
-from app.db import Session
 from time import sleep
 
 import flask_migrate
@@ -7,8 +5,8 @@ from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from app.config import DB_URI
+from app.db import Session
 from app.email_utils import send_email, render
-from app.extensions import db
 from app.log import LOG
 from app.models import (
     User,
@@ -20,7 +18,6 @@ from job_runner import (
     onboarding_mailbox,
     onboarding_send_from_alias,
 )
-from server import create_app
 
 
 def create_db():
