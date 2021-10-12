@@ -3,7 +3,6 @@ from app.db import Session
 from app.log import LOG
 from app.models import Mailbox, Contact, SLDomain
 from app.pgp_utils import load_public_key
-from server import create_app
 
 
 def load_pgp_public_keys():

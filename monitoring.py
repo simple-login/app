@@ -5,7 +5,6 @@ from app.config import HOST
 from app.db import Session
 from app.log import LOG
 from app.models import Monitoring
-from server import create_app
 
 # the number of consecutive fails
 # if more than _max_nb_fails, alert

@@ -59,7 +59,6 @@ from app.models import (
     HibpNotifiedAlias,
 )
 from app.utils import sanitize_email
-from server import create_app
 
 
 def notify_trial_end():

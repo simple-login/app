@@ -140,7 +140,7 @@ from app.models import (
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
-from server import create_app, create_light_app
+from server import create_light_app
 
 newrelic_app = None
 if NEWRELIC_CONFIG_PATH:
