@@ -473,6 +473,21 @@ docker run -d \
     simplelogin/app:3.4.0 python email_handler.py
 ```
 
+And finally the `job runner`
+
+```bash
+docker run -d \
+    --name sl-job-runner \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:3.4.0 python job_runner.py
+```
+
 ### Nginx
 
 Install Nginx and make sure to replace `mydomain.com` by your domain
