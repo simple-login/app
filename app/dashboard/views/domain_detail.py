@@ -1,12 +1,11 @@
-from threading import Thread
-
 import re2 as re
+from arrow import arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators, IntegerField
 
-from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
+from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN, JOB_DELETE_DOMAIN
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.dns_utils import (
@@ -15,7 +14,6 @@ from app.dns_utils import (
     get_txt_record,
     get_cname_record,
 )
-from app.email_utils import send_email
 from app.log import LOG
 from app.models import (
     CustomDomain,
@@ -25,6 +23,7 @@ from app.models import (
     DomainMailbox,
     AutoCreateRule,
     AutoCreateRuleMailbox,
+    Job,
 )
 from app.utils import random_string
 
@@ -276,7 +275,16 @@ def domain_detail(custom_domain_id):
         elif request.form.get("form-name") == "delete":
             name = custom_domain.domain
             LOG.d("Schedule deleting %s", custom_domain)
-            Thread(target=delete_domain, args=(custom_domain_id,)).start()
+
+            # Schedule delete domain job
+            LOG.w("schedule delete domain job for %s", custom_domain)
+            Job.create(
+                name=JOB_DELETE_DOMAIN,
+                payload={"custom_domain_id": custom_domain.id},
+                run_at=arrow.now(),
+                commit=True,
+            )
+
             flash(
                 f"{name} scheduled for deletion."
                 f"You will receive a confirmation email when the deletion is finished",
@@ -288,33 +296,6 @@ def domain_detail(custom_domain_id):
     nb_alias = Alias.filter_by(custom_domain_id=custom_domain.id).count()
 
     return render_template("dashboard/domain_detail/info.html", **locals())
-
-
-def delete_domain(custom_domain_id: int):
-    from server import create_light_app
-
-    with create_light_app().app_context():
-        custom_domain = CustomDomain.get(custom_domain_id)
-        if not custom_domain:
-            return
-
-        domain_name = custom_domain.domain
-        user = custom_domain.user
-
-        CustomDomain.delete(custom_domain.id)
-        Session.commit()
-
-        LOG.d("Domain %s deleted", domain_name)
-
-        send_email(
-            user.email,
-            f"Your domain {domain_name} has been deleted",
-            f"""Domain {domain_name} along with its aliases are deleted successfully.
-
-Regards,
-SimpleLogin team.
-        """,
-        )
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/trash", methods=["GET", "POST"])
