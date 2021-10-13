@@ -1858,37 +1858,24 @@ async def handle(envelope: Envelope) -> str:
                 return status.E523
 
     if rate_limited(mail_from, rcpt_tos):
-        LOG.w(
-            "Rate Limiting applied for mail_from:%s rcpt_tos:%s, retry in 60s",
-            mail_from,
-            rcpt_tos,
-        )
-        # slow down the rate a bit
-        await asyncio.sleep(60)
+        LOG.w("Rate Limiting applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
 
-        # rate limit is still applied
-        if rate_limited(mail_from, rcpt_tos):
-            LOG.w(
-                "Rate Limiting (no retry) applied for mail_from:%s rcpt_tos:%s",
-                mail_from,
-                rcpt_tos,
-            )
-            # add more logging info. TODO: remove
-            if len(rcpt_tos) == 1:
-                alias = Alias.get_by(email=rcpt_tos[0])
-                if alias:
-                    LOG.w(
-                        "total number email log on %s, %s is %s, %s",
-                        alias,
-                        alias.user,
-                        EmailLog.filter(EmailLog.alias_id == alias.id).count(),
-                        EmailLog.filter(EmailLog.user_id == alias.user_id).count(),
-                    )
+        # add more logging info. TODO: remove
+        if len(rcpt_tos) == 1:
+            alias = Alias.get_by(email=rcpt_tos[0])
+            if alias:
+                LOG.w(
+                    "total number email log on %s, %s is %s, %s",
+                    alias,
+                    alias.user,
+                    EmailLog.filter(EmailLog.alias_id == alias.id).count(),
+                    EmailLog.filter(EmailLog.user_id == alias.user_id).count(),
+                )
 
-            if should_ignore_bounce(envelope.mail_from):
-                return status.E207
-            else:
-                return status.E522
+        if should_ignore_bounce(envelope.mail_from):
+            return status.E207
+        else:
+            return status.E522
 
     # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
     # todo: remove logging
