@@ -1,10 +1,12 @@
 from smtplib import SMTPRecipientsRefused
 
+import arrow
 from flask import g
 from flask import jsonify
 from flask import request
 
 from app.api.base import api_bp, require_api_auth
+from app.config import JOB_DELETE_MAILBOX
 from app.dashboard.views.mailbox import send_verification_email
 from app.dashboard.views.mailbox_detail import verify_mailbox_change
 from app.db import Session
@@ -13,7 +15,8 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
     is_valid_email,
 )
-from app.models import Mailbox
+from app.log import LOG
+from app.models import Mailbox, Job
 from app.utils import sanitize_email
 
 
@@ -88,8 +91,14 @@ def delete_mailbox(mailbox_id):
     if mailbox.id == user.default_mailbox_id:
         return jsonify(error="You cannot delete the default mailbox"), 400
 
-    Mailbox.delete(mailbox_id)
-    Session.commit()
+    # Schedule delete account job
+    LOG.w("schedule delete mailbox job for %s", mailbox)
+    Job.create(
+        name=JOB_DELETE_MAILBOX,
+        payload={"mailbox_id": mailbox.id},
+        run_at=arrow.now(),
+        commit=True,
+    )
 
     return jsonify(deleted=True), 200
 

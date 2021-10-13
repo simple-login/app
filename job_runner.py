@@ -12,6 +12,7 @@ from app.config import (
     JOB_ONBOARDING_4,
     JOB_BATCH_IMPORT,
     JOB_DELETE_ACCOUNT,
+    JOB_DELETE_MAILBOX,
 )
 from app.db import Session
 from app.email_utils import (
@@ -20,7 +21,7 @@ from app.email_utils import (
 )
 from app.import_utils import handle_batch_import
 from app.log import LOG
-from app.models import User, Job, BatchImport
+from app.models import User, Job, BatchImport, Mailbox
 from server import create_light_app
 
 
@@ -163,6 +164,29 @@ if __name__ == "__main__":
                     render("transactional/account-delete.txt"),
                     render("transactional/account-delete.html"),
                 )
+            elif job.name == JOB_DELETE_MAILBOX:
+                mailbox_id = job.payload.get("mailbox_id")
+                mailbox = Mailbox.get(mailbox_id)
+                if not mailbox:
+                    continue
+
+                mailbox_email = mailbox.email
+                user = mailbox.user
+
+                Mailbox.delete(mailbox_id)
+                Session.commit()
+                LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
+
+                send_email(
+                    user.email,
+                    f"Your mailbox {mailbox_email} has been deleted",
+                    f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
+                
+                Regards,
+                SimpleLogin team.
+                        """,
+                )
+
             else:
                 LOG.e("Unknown job name %s", job.name)
 
