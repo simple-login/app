@@ -93,6 +93,9 @@ def rate_limited_reply_phase(reply_email: str) -> bool:
 
 
 def rate_limited(mail_from: str, rcpt_tos: [str]) -> bool:
+    # todo: re-enable rate limiting
+    return False
+
     for rcpt_to in rcpt_tos:
         if is_reply_email(rcpt_to):
             if rate_limited_reply_phase(rcpt_to):
