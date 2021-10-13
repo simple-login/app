@@ -2557,7 +2557,7 @@ class IgnoredEmail(Base, ModelMixin):
 class IgnoreBounceSender(Base, ModelMixin):
     """Ignore sender that doesn't correctly handle bounces, for example noreply@github.com"""
 
-    __tablename__ = "ignored_bounce_sender"
+    __tablename__ = "ignore_bounce_sender"
 
     mail_from = sa.Column(sa.String(512), nullable=False, unique=True)
 
