@@ -8,6 +8,15 @@
   </li>
 
   <li class="nav-item">
+    <a href="{{ url_for('dashboard.email_log') }}"
+       class="nav-link {{ 'active' if active_page == 'email_log' }}">
+      <i class="fe fe-mail"></i>
+      Email Log
+    </a>
+  </li>
+
+
+  <li class="nav-item">
     <a href="{{ url_for('dashboard.directory') }}"
        class="nav-link {{ 'active' if active_page == 'directory' }}">
       <i class="fe fe-folder"></i> Directories
