@@ -1889,6 +1889,12 @@ async def handle(envelope: Envelope) -> str:
                 return status.E207
             else:
                 return status.E522
+        else:
+            LOG.i(
+                "The rate limit is now removed for mail_from:%s,rcpt_tos:%s ",
+                mail_from,
+                rcpt_tos,
+            )
 
     # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
     # todo: remove logging
