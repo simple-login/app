@@ -31,7 +31,6 @@ It should contain the following info:
 
 """
 import argparse
-import asyncio
 import email
 import os
 import time
@@ -1712,7 +1711,7 @@ def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:
     return False
 
 
-async def handle(envelope: Envelope) -> str:
+def handle(envelope: Envelope) -> str:
     """Return SMTP status"""
 
     # sanitize mail_from, rcpt_tos
@@ -1935,7 +1934,7 @@ async def handle(envelope: Envelope) -> str:
 class MailHandler:
     async def handle_DATA(self, server, session, envelope: Envelope):
         try:
-            ret = await self._handle(envelope)
+            ret = self._handle(envelope)
             return ret
         except Exception:
             LOG.e(
@@ -1946,7 +1945,7 @@ class MailHandler:
             return status.E404
 
     @newrelic.agent.background_task(application=newrelic_app)
-    async def _handle(self, envelope: Envelope):
+    def _handle(self, envelope: Envelope):
         start = time.time()
 
         # generate a different message_id to keep track of an email lifecycle
@@ -1959,21 +1958,23 @@ class MailHandler:
             envelope.rcpt_tos,
         )
 
-        ret = await handle(envelope)
-        elapsed = time.time() - start
-        LOG.i(
-            "Finish mail from %s, rctp tos %s, takes %s seconds <<===",
-            envelope.mail_from,
-            envelope.rcpt_tos,
-            elapsed,
-        )
-        newrelic.agent.record_custom_metric(
-            "Custom/email_handler_time", elapsed, newrelic_app
-        )
-        newrelic.agent.record_custom_metric(
-            "Custom/number_incoming_email", 1, newrelic_app
-        )
-        return ret
+        app = new_app()
+        with app.app_context():
+            ret = handle(envelope)
+            elapsed = time.time() - start
+            LOG.i(
+                "Finish mail from %s, rctp tos %s, takes %s seconds <<===",
+                envelope.mail_from,
+                envelope.rcpt_tos,
+                elapsed,
+            )
+            newrelic.agent.record_custom_metric(
+                "Custom/email_handler_time", elapsed, newrelic_app
+            )
+            newrelic.agent.record_custom_metric(
+                "Custom/number_incoming_email", 1, newrelic_app
+            )
+            return ret
 
 
 def main(port: int):
