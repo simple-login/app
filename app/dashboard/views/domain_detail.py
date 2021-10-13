@@ -1,5 +1,5 @@
+import arrow
 import re2 as re
-from arrow import arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
