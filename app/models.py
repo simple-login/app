@@ -2514,6 +2514,7 @@ class Bounce(Base, ModelMixin):
 
     __tablename__ = "bounce"
     email = sa.Column(sa.String(256), nullable=False, index=True)
+    info = sa.Column(sa.Text, nullable=True)
 
 
 class TransactionalEmail(Base, ModelMixin):
