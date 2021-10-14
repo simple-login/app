@@ -123,6 +123,7 @@ from app.email_utils import (
     get_orig_message_from_hotmail_complaint,
     parse_full_address,
     get_orig_message_from_yahoo_complaint,
+    get_mailbox_bounce_info,
 )
 from app.log import LOG, set_message_id
 from app.models import (
@@ -1178,7 +1179,12 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         LOG.e("Use %s default mailbox %s", alias, alias.mailbox)
         mailbox = alias.mailbox
 
-    Bounce.create(email=mailbox.email, commit=True)
+    bounce_info = get_mailbox_bounce_info(msg)
+    if bounce_info:
+        Bounce.create(email=mailbox.email, info=bounce_info.as_string(), commit=True)
+    else:
+        LOG.w("cannot get bounce info")
+        Bounce.create(email=mailbox.email, commit=True)
 
     LOG.d(
         "Handle forward bounce %s -> %s -> %s. %s", contact, alias, mailbox, email_log
@@ -1259,10 +1265,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             ignore_smtp_error=True,
         )
     else:
-        LOG.w(
-            "Disable alias %s now",
-            alias,
-        )
+        LOG.w("Disable alias %s %s. Last contact %s", alias, user, contact)
         alias.enabled = False
         Session.commit()
 
@@ -1380,7 +1383,16 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
 
     LOG.d("Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log)
 
-    Bounce.create(email=sanitize_email(contact.website_email), commit=True)
+    bounce_info = get_mailbox_bounce_info(msg)
+    if bounce_info:
+        Bounce.create(
+            email=sanitize_email(contact.website_email),
+            info=bounce_info.as_string(),
+            commit=True,
+        )
+    else:
+        LOG.w("cannot get bounce info")
+        Bounce.create(email=sanitize_email(contact.website_email), commit=True)
 
     # Store the bounced email
     # generate a name for the email
@@ -1625,7 +1637,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
     return status.E202
 
 
-def handle_transactional_bounce(envelope: Envelope, rcpt_to):
+def handle_transactional_bounce(envelope: Envelope, msg, rcpt_to):
     LOG.d("handle transactional bounce sent to %s", rcpt_to)
 
     # parse the TransactionalEmail
@@ -1635,7 +1647,14 @@ def handle_transactional_bounce(envelope: Envelope, rcpt_to):
     # a transaction might have been deleted in delete_logs()
     if transactional:
         LOG.i("Create bounce for %s", transactional.email)
-        Bounce.create(email=transactional.email, commit=True)
+        bounce_info = get_mailbox_bounce_info(msg)
+        if bounce_info:
+            Bounce.create(
+                email=transactional.email, info=bounce_info.as_string(), commit=True
+            )
+        else:
+            LOG.w("cannot get bounce info")
+            Bounce.create(email=transactional.email, commit=True)
 
 
 def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
@@ -1773,7 +1792,7 @@ def handle(envelope: Envelope) -> str:
         and rcpt_tos[0].endswith(TRANSACTIONAL_BOUNCE_SUFFIX)
     ):
         LOG.d("Handle email sent to sender from %s", mail_from)
-        handle_transactional_bounce(envelope, rcpt_tos[0])
+        handle_transactional_bounce(envelope, msg, rcpt_tos[0])
         return status.E205
 
     if (
