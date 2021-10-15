@@ -126,7 +126,7 @@ for user in User.query.all():
 sudo docker pull simplelogin/app:3.4.0
 
 # Stop SimpleLogin containers
-sudo docker stop sl-email sl-migration sl-app sl-db
+sudo docker stop sl-email sl-migration sl-app sl-db sl-job-runner
 
 # Make sure to remove these containers to avoid conflict
 sudo docker rm -f sl-email sl-migration sl-app sl-db
@@ -193,5 +193,18 @@ sudo docker run -d \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0 python email_handler.py
+    
+# Run the job runner
+docker run -d \
+    --name sl-job-runner \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:3.4.0 python job_runner.py
+    
 ```
 

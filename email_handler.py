@@ -31,7 +31,6 @@ It should contain the following info:
 
 """
 import argparse
-import asyncio
 import email
 import os
 import time
@@ -124,6 +123,7 @@ from app.email_utils import (
     get_orig_message_from_hotmail_complaint,
     parse_full_address,
     get_orig_message_from_yahoo_complaint,
+    get_mailbox_bounce_info,
 )
 from app.log import LOG, set_message_id
 from app.models import (
@@ -1179,7 +1179,12 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         LOG.e("Use %s default mailbox %s", alias, alias.mailbox)
         mailbox = alias.mailbox
 
-    Bounce.create(email=mailbox.email, commit=True)
+    bounce_info = get_mailbox_bounce_info(msg)
+    if bounce_info:
+        Bounce.create(email=mailbox.email, info=bounce_info.as_string(), commit=True)
+    else:
+        LOG.w("cannot get bounce info")
+        Bounce.create(email=mailbox.email, commit=True)
 
     LOG.d(
         "Handle forward bounce %s -> %s -> %s. %s", contact, alias, mailbox, email_log
@@ -1260,10 +1265,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             ignore_smtp_error=True,
         )
     else:
-        LOG.w(
-            "Disable alias %s now",
-            alias,
-        )
+        LOG.w("Disable alias %s %s. Last contact %s", alias, user, contact)
         alias.enabled = False
         Session.commit()
 
@@ -1381,7 +1383,16 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
 
     LOG.d("Handle reply bounce %s -> %s -> %s.%s", mailbox, alias, contact, email_log)
 
-    Bounce.create(email=sanitize_email(contact.website_email), commit=True)
+    bounce_info = get_mailbox_bounce_info(msg)
+    if bounce_info:
+        Bounce.create(
+            email=sanitize_email(contact.website_email),
+            info=bounce_info.as_string(),
+            commit=True,
+        )
+    else:
+        LOG.w("cannot get bounce info")
+        Bounce.create(email=sanitize_email(contact.website_email), commit=True)
 
     # Store the bounced email
     # generate a name for the email
@@ -1626,7 +1637,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
     return status.E202
 
 
-def handle_transactional_bounce(envelope: Envelope, rcpt_to):
+def handle_transactional_bounce(envelope: Envelope, msg, rcpt_to):
     LOG.d("handle transactional bounce sent to %s", rcpt_to)
 
     # parse the TransactionalEmail
@@ -1636,7 +1647,14 @@ def handle_transactional_bounce(envelope: Envelope, rcpt_to):
     # a transaction might have been deleted in delete_logs()
     if transactional:
         LOG.i("Create bounce for %s", transactional.email)
-        Bounce.create(email=transactional.email, commit=True)
+        bounce_info = get_mailbox_bounce_info(msg)
+        if bounce_info:
+            Bounce.create(
+                email=transactional.email, info=bounce_info.as_string(), commit=True
+            )
+        else:
+            LOG.w("cannot get bounce info")
+            Bounce.create(email=transactional.email, commit=True)
 
 
 def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
@@ -1712,7 +1730,7 @@ def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:
     return False
 
 
-async def handle(envelope: Envelope) -> str:
+def handle(envelope: Envelope) -> str:
     """Return SMTP status"""
 
     # sanitize mail_from, rcpt_tos
@@ -1726,7 +1744,11 @@ async def handle(envelope: Envelope) -> str:
     if postfix_queue_id:
         set_message_id(postfix_queue_id)
     else:
-        LOG.d("Cannot parse Postfix queue ID from %s", msg[headers.RECEIVED])
+        LOG.d(
+            "Cannot parse Postfix queue ID from %s %s",
+            msg.get_all(headers.RECEIVED),
+            msg[headers.RECEIVED],
+        )
 
     if should_ignore(mail_from, rcpt_tos):
         LOG.w("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
@@ -1774,7 +1796,7 @@ async def handle(envelope: Envelope) -> str:
         and rcpt_tos[0].endswith(TRANSACTIONAL_BOUNCE_SUFFIX)
     ):
         LOG.d("Handle email sent to sender from %s", mail_from)
-        handle_transactional_bounce(envelope, rcpt_tos[0])
+        handle_transactional_bounce(envelope, msg, rcpt_tos[0])
         return status.E205
 
     if (
@@ -1858,37 +1880,24 @@ async def handle(envelope: Envelope) -> str:
                 return status.E523
 
     if rate_limited(mail_from, rcpt_tos):
-        LOG.w(
-            "Rate Limiting applied for mail_from:%s rcpt_tos:%s, retry in 60s",
-            mail_from,
-            rcpt_tos,
-        )
-        # slow down the rate a bit
-        await asyncio.sleep(60)
+        LOG.w("Rate Limiting applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)
 
-        # rate limit is still applied
-        if rate_limited(mail_from, rcpt_tos):
-            LOG.w(
-                "Rate Limiting (no retry) applied for mail_from:%s rcpt_tos:%s",
-                mail_from,
-                rcpt_tos,
-            )
-            # add more logging info. TODO: remove
-            if len(rcpt_tos) == 1:
-                alias = Alias.get_by(email=rcpt_tos[0])
-                if alias:
-                    LOG.w(
-                        "total number email log on %s, %s is %s, %s",
-                        alias,
-                        alias.user,
-                        EmailLog.filter(EmailLog.alias_id == alias.id).count(),
-                        EmailLog.filter(EmailLog.user_id == alias.user_id).count(),
-                    )
+        # add more logging info. TODO: remove
+        if len(rcpt_tos) == 1:
+            alias = Alias.get_by(email=rcpt_tos[0])
+            if alias:
+                LOG.w(
+                    "total number email log on %s, %s is %s, %s",
+                    alias,
+                    alias.user,
+                    EmailLog.filter(EmailLog.alias_id == alias.id).count(),
+                    EmailLog.filter(EmailLog.user_id == alias.user_id).count(),
+                )
 
-            if should_ignore_bounce(envelope.mail_from):
-                return status.E207
-            else:
-                return status.E522
+        if should_ignore_bounce(envelope.mail_from):
+            return status.E207
+        else:
+            return status.E522
 
     # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
     # todo: remove logging
@@ -1948,7 +1957,7 @@ async def handle(envelope: Envelope) -> str:
 class MailHandler:
     async def handle_DATA(self, server, session, envelope: Envelope):
         try:
-            ret = await self._handle(envelope)
+            ret = self._handle(envelope)
             return ret
         except Exception:
             LOG.e(
@@ -1959,7 +1968,7 @@ class MailHandler:
             return status.E404
 
     @newrelic.agent.background_task(application=newrelic_app)
-    async def _handle(self, envelope: Envelope):
+    def _handle(self, envelope: Envelope):
         start = time.time()
 
         # generate a different message_id to keep track of an email lifecycle
@@ -1972,21 +1981,23 @@ class MailHandler:
             envelope.rcpt_tos,
         )
 
-        ret = await handle(envelope)
-        elapsed = time.time() - start
-        LOG.i(
-            "Finish mail from %s, rctp tos %s, takes %s seconds <<===",
-            envelope.mail_from,
-            envelope.rcpt_tos,
-            elapsed,
-        )
-        newrelic.agent.record_custom_metric(
-            "Custom/email_handler_time", elapsed, newrelic_app
-        )
-        newrelic.agent.record_custom_metric(
-            "Custom/number_incoming_email", 1, newrelic_app
-        )
-        return ret
+        app = new_app()
+        with app.app_context():
+            ret = handle(envelope)
+            elapsed = time.time() - start
+            LOG.i(
+                "Finish mail from %s, rctp tos %s, takes %s seconds <<===",
+                envelope.mail_from,
+                envelope.rcpt_tos,
+                elapsed,
+            )
+            newrelic.agent.record_custom_metric(
+                "Custom/email_handler_time", elapsed, newrelic_app
+            )
+            newrelic.agent.record_custom_metric(
+                "Custom/number_incoming_email", 1, newrelic_app
+            )
+            return ret
 
 
 def main(port: int):

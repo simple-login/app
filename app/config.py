@@ -255,6 +255,8 @@ JOB_ONBOARDING_3 = "onboarding-3"
 JOB_ONBOARDING_4 = "onboarding-4"
 JOB_BATCH_IMPORT = "batch-import"
 JOB_DELETE_ACCOUNT = "delete-account"
+JOB_DELETE_MAILBOX = "delete-mailbox"
+JOB_DELETE_DOMAIN = "delete-domain"
 
 # for pagination
 PAGE_LIMIT = 20

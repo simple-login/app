@@ -76,7 +76,7 @@ docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_D
 To run the server:
 
 ```
-flask db upgrade && flask dummy-data && python3 server.py
+alembic upgrade head && flask dummy-data && python3 server.py
 ```
 
 then open http://localhost:7777, you should be able to login with `john@wick.com / password` account.

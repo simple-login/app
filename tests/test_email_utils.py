@@ -1,9 +1,10 @@
 import email
+import os
 from email.message import EmailMessage
 
 import arrow
 
-from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, BOUNCE_EMAIL
+from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, BOUNCE_EMAIL, ROOT_DIR
 from app.db import Session
 from app.email_utils import (
     get_email_domain_part,
@@ -31,6 +32,8 @@ from app.email_utils import (
     should_ignore_bounce,
     get_header_unicode,
     parse_full_address,
+    get_orig_message_from_bounce,
+    get_mailbox_bounce_info,
 )
 from app.models import User, CustomDomain, Alias, Contact, EmailLog, IgnoreBounceSender
 
@@ -748,3 +751,21 @@ def test_should_ignore_bounce(flask_client):
 def test_get_header_unicode():
     assert get_header_unicode("ab@cd.com") == "ab@cd.com"
     assert get_header_unicode("=?utf-8?B?w6nDqQ==?=@example.com") == "éé@example.com"
+
+
+def test_get_orig_message_from_bounce():
+    with open(os.path.join(ROOT_DIR, "local_data", "email_tests", "bounce.eml")) as f:
+        bounce_report = email.message_from_file(f)
+
+    orig_msg = get_orig_message_from_bounce(bounce_report)
+    assert orig_msg["X-SimpleLogin-Type"] == "Forward"
+    assert orig_msg["X-SimpleLogin-Envelope-From"] == "sender@gmail.com"
+
+
+def test_get_mailbox_bounce_info():
+    with open(os.path.join(ROOT_DIR, "local_data", "email_tests", "bounce.eml")) as f:
+        bounce_report = email.message_from_file(f)
+
+    orig_msg = get_mailbox_bounce_info(bounce_report)
+    assert orig_msg["Final-Recipient"] == "rfc822; not-existing@gmail.com"
+    assert orig_msg["Original-Recipient"] == "rfc822;not-existing@gmail.com"

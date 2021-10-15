@@ -1,5 +1,4 @@
-from threading import Thread
-
+import arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -7,7 +6,7 @@ from itsdangerous import Signer
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
-from app.config import MAILBOX_SECRET, URL
+from app.config import MAILBOX_SECRET, URL, JOB_DELETE_MAILBOX
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import (
@@ -18,7 +17,7 @@ from app.email_utils import (
     is_valid_email,
 )
 from app.log import LOG
-from app.models import Mailbox
+from app.models import Mailbox, Job
 
 
 class NewMailboxForm(FlaskForm):
@@ -51,8 +50,15 @@ def mailbox_route():
                 flash("You cannot delete default mailbox", "error")
                 return redirect(url_for("dashboard.mailbox_route"))
 
-            LOG.d("Schedule deleting %s", mailbox)
-            Thread(target=delete_mailbox, args=(mailbox.id,)).start()
+            # Schedule delete account job
+            LOG.w("schedule delete mailbox job for %s", mailbox)
+            Job.create(
+                name=JOB_DELETE_MAILBOX,
+                payload={"mailbox_id": mailbox.id},
+                run_at=arrow.now(),
+                commit=True,
+            )
+
             flash(
                 f"Mailbox {mailbox.email} scheduled for deletion."
                 f"You will receive a confirmation email when the deletion is finished",

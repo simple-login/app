@@ -12,6 +12,8 @@ from app.config import (
     JOB_ONBOARDING_4,
     JOB_BATCH_IMPORT,
     JOB_DELETE_ACCOUNT,
+    JOB_DELETE_MAILBOX,
+    JOB_DELETE_DOMAIN,
 )
 from app.db import Session
 from app.email_utils import (
@@ -20,7 +22,7 @@ from app.email_utils import (
 )
 from app.import_utils import handle_batch_import
 from app.log import LOG
-from app.models import User, Job, BatchImport
+from app.models import User, Job, BatchImport, Mailbox, CustomDomain
 from server import create_light_app
 
 
@@ -163,6 +165,51 @@ if __name__ == "__main__":
                     render("transactional/account-delete.txt"),
                     render("transactional/account-delete.html"),
                 )
+            elif job.name == JOB_DELETE_MAILBOX:
+                mailbox_id = job.payload.get("mailbox_id")
+                mailbox = Mailbox.get(mailbox_id)
+                if not mailbox:
+                    continue
+
+                mailbox_email = mailbox.email
+                user = mailbox.user
+
+                Mailbox.delete(mailbox_id)
+                Session.commit()
+                LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
+
+                send_email(
+                    user.email,
+                    f"Your mailbox {mailbox_email} has been deleted",
+                    f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
+                Regards,
+                SimpleLogin team.
+                        """,
+                )
+
+            elif job.name == JOB_DELETE_DOMAIN:
+                custom_domain_id = job.payload.get("custom_domain_id")
+                custom_domain = CustomDomain.get(custom_domain_id)
+                if not custom_domain:
+                    continue
+
+                domain_name = custom_domain.domain
+                user = custom_domain.user
+
+                CustomDomain.delete(custom_domain.id)
+                Session.commit()
+
+                LOG.d("Domain %s deleted", domain_name)
+
+                send_email(
+                    user.email,
+                    f"Your domain {domain_name} has been deleted",
+                    f"""Domain {domain_name} along with its aliases are deleted successfully.
+                Regards,
+                SimpleLogin team.
+                        """,
+                )
+
             else:
                 LOG.e("Unknown job name %s", job.name)
 

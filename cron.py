@@ -257,6 +257,7 @@ def compute_metric2() -> Metric2:
         nb_bounced_last_24h=EmailLog.filter(EmailLog.created_at > _24h_ago)
         .filter_by(bounced=True)
         .count(),
+        nb_total_bounced_last_24h=Bounce.filter(Bounce.created_at > _24h_ago).count(),
         nb_reply_last_24h=EmailLog.filter(EmailLog.created_at > _24h_ago)
         .filter_by(is_reply=True)
         .count(),
@@ -408,6 +409,7 @@ nb_forward_last_24h: {stats_today.nb_forward_last_24h} - {increase_percent(stats
 nb_reply_last_24h: {stats_today.nb_reply_last_24h} - {increase_percent(stats_yesterday.nb_reply_last_24h, stats_today.nb_reply_last_24h)}  <br>
 nb_block_last_24h: {stats_today.nb_block_last_24h} - {increase_percent(stats_yesterday.nb_block_last_24h, stats_today.nb_block_last_24h)}  <br>
 nb_bounced_last_24h: {stats_today.nb_bounced_last_24h} - {increase_percent(stats_yesterday.nb_bounced_last_24h, stats_today.nb_bounced_last_24h)}  <br>
+nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_percent(stats_yesterday.nb_total_bounced_last_24h, stats_today.nb_total_bounced_last_24h)}  <br>
 
 nb_custom_domain: {stats_today.nb_verified_custom_domain} - {increase_percent(stats_yesterday.nb_verified_custom_domain, stats_today.nb_verified_custom_domain)}  <br>
 nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_today.nb_app)}  <br>

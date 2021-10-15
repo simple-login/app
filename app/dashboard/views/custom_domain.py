@@ -43,12 +43,18 @@ def custom_domain():
                 if SLDomain.get_by(domain=new_domain):
                     flash("A custom domain cannot be a built-in domain.", "error")
                 elif CustomDomain.get_by(domain=new_domain):
-                    flash(f"{new_domain} already used", "warning")
+                    flash(f"{new_domain} already used", "error")
                 elif get_email_domain_part(current_user.email) == new_domain:
                     flash(
                         "You cannot add a domain that you are currently using for your personal email. "
                         "Please change your personal email to your real email",
                         "error",
+                    )
+                elif Mailbox.filter(
+                    Mailbox.verified.is_(True), Mailbox.email.endswith(f"@{new_domain}")
+                ).first():
+                    flash(
+                        f"{new_domain} already used in a SimpleLogin mailbox", "error"
                     )
                 else:
                     new_custom_domain = CustomDomain.create(

@@ -598,22 +598,53 @@ def mailbox_already_used(email: str, user) -> bool:
     return False
 
 
-def get_orig_message_from_bounce(msg: Message) -> Message:
+def get_orig_message_from_bounce(bounce_report: Message) -> Optional[Message]:
     """parse the original email from Bounce"""
     i = 0
-    for part in msg.walk():
+    for part in bounce_report.walk():
         i += 1
 
-        # the original message is the 4th part
-        # 1st part is the root part,  multipart/report
-        # 2nd is text/plain, Postfix log
+        # 1st part is the container (bounce report)
+        # 2nd part is the report from our own Postfix
+        # 3rd is report from other mailbox
+        # 4th is the container of the original message
         # ...
         # 7th is original message
         if i == 7:
             return part
 
 
-def get_orig_message_from_hotmail_complaint(msg: Message) -> Message:
+def get_mailbox_bounce_info(bounce_report: Message) -> Optional[Message]:
+    """
+    Return the bounce info from the bounce report
+    An example of bounce info:
+
+    Final-Recipient: rfc822; not-existing@gmail.com
+    Original-Recipient: rfc822;not-existing@gmail.com
+    Action: failed
+    Status: 5.1.1
+    Remote-MTA: dns; gmail-smtp-in.l.google.com
+    Diagnostic-Code: smtp;
+     550-5.1.1 The email account that you tried to reach does
+        not exist. Please try 550-5.1.1 double-checking the recipient's email
+        address for typos or 550-5.1.1 unnecessary spaces. Learn more at 550 5.1.1
+        https://support.google.com/mail/?p=NoSuchUser z127si6173191wmc.132 - gsmtp
+
+    """
+    i = 0
+    for part in bounce_report.walk():
+        i += 1
+
+        # 1st part is the container (bounce report)
+        # 2nd part is the report from our own Postfix
+        # 3rd is report from other mailbox
+        # 4th is the container of the original message
+        # 5th is a child of 3rd that contains more info about the bounce
+        if i == 5:
+            return part
+
+
+def get_orig_message_from_hotmail_complaint(msg: Message) -> Optional[Message]:
     i = 0
     for part in msg.walk():
         i += 1
@@ -625,7 +656,7 @@ def get_orig_message_from_hotmail_complaint(msg: Message) -> Message:
             return part
 
 
-def get_orig_message_from_yahoo_complaint(msg: Message) -> Message:
+def get_orig_message_from_yahoo_complaint(msg: Message) -> Optional[Message]:
     i = 0
     for part in msg.walk():
         i += 1

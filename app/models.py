@@ -2503,6 +2503,8 @@ class Metric2(Base, ModelMixin):
     nb_block_last_24h = sa.Column(sa.Float, nullable=True)
     nb_reply_last_24h = sa.Column(sa.Float, nullable=True)
     nb_bounced_last_24h = sa.Column(sa.Float, nullable=True)
+    # includes bounces for both forwarding and transactional email
+    nb_total_bounced_last_24h = sa.Column(sa.Float, nullable=True)
 
     nb_verified_custom_domain = sa.Column(sa.Float, nullable=True)
 
@@ -2514,6 +2516,7 @@ class Bounce(Base, ModelMixin):
 
     __tablename__ = "bounce"
     email = sa.Column(sa.String(256), nullable=False, index=True)
+    info = sa.Column(sa.Text, nullable=True)
 
 
 class TransactionalEmail(Base, ModelMixin):
@@ -2557,7 +2560,7 @@ class IgnoredEmail(Base, ModelMixin):
 class IgnoreBounceSender(Base, ModelMixin):
     """Ignore sender that doesn't correctly handle bounces, for example noreply@github.com"""
 
-    __tablename__ = "ignored_bounce_sender"
+    __tablename__ = "ignore_bounce_sender"
 
     mail_from = sa.Column(sa.String(512), nullable=False, unique=True)
 

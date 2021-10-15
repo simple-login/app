@@ -6,11 +6,14 @@
 docker rm -f sl-db
 docker run -p 25432:5432 --name sl-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sl -d postgres:13
 
-# run run `flask db upgrade` to upgrade the DB to the latest stage and
-env DB_URI=postgresql://postgres:postgres@127.0.0.1:25432/sl poetry run flask db upgrade
+# sleep a little bit for the db to be ready
+sleep 3
 
-# finally `flask db migrate` to generate the migration script.
-env DB_URI=postgresql://postgres:postgres@127.0.0.1:25432/sl poetry run flask db migrate
+# upgrade the DB to the latest stage and
+env DB_URI=postgresql://postgres:postgres@127.0.0.1:25432/sl poetry run alembic upgrade head
+
+# generate the migration script.
+env DB_URI=postgresql://postgres:postgres@127.0.0.1:25432/sl poetry run alembic revision --autogenerate
 
 # remove the db
 docker rm -f sl-db
