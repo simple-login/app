@@ -2503,6 +2503,8 @@ class Metric2(Base, ModelMixin):
     nb_block_last_24h = sa.Column(sa.Float, nullable=True)
     nb_reply_last_24h = sa.Column(sa.Float, nullable=True)
     nb_bounced_last_24h = sa.Column(sa.Float, nullable=True)
+    # includes bounces for both forwarding and transactional email
+    nb_total_bounced_last_24h = sa.Column(sa.Float, nullable=True)
 
     nb_verified_custom_domain = sa.Column(sa.Float, nullable=True)
 
