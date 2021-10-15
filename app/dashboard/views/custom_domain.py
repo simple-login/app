@@ -51,7 +51,7 @@ def custom_domain():
                         "error",
                     )
                 elif Mailbox.filter(
-                    Mailbox.verified == True, Mailbox.email.endswith(f"@{new_domain}")
+                    Mailbox.verified.is_(True), Mailbox.email.endswith(f"@{new_domain}")
                 ).first():
                     flash(
                         f"{new_domain} already used in a SimpleLogin mailbox", "error"
