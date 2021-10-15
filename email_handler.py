@@ -1744,7 +1744,11 @@ def handle(envelope: Envelope) -> str:
     if postfix_queue_id:
         set_message_id(postfix_queue_id)
     else:
-        LOG.d("Cannot parse Postfix queue ID from %s", msg[headers.RECEIVED])
+        LOG.d(
+            "Cannot parse Postfix queue ID from %s %s",
+            msg.get_all(headers.RECEIVED),
+            msg[headers.RECEIVED],
+        )
 
     if should_ignore(mail_from, rcpt_tos):
         LOG.w("Ignore email mail_from=%s rcpt_to=%s", mail_from, rcpt_tos)
