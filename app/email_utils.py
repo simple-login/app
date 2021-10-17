@@ -1321,4 +1321,9 @@ def parse_full_address(full_address) -> (str, str):
     full_address: EmailAddress = address.parse(full_address)
     if full_address is None:
         raise ValueError
+
+    # address.parse can also parse an URL and return UrlAddress
+    if type(full_address) is not EmailAddress:
+        raise ValueError
+
     return full_address.display_name, full_address.address
