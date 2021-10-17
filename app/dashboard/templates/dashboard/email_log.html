@@ -1,0 +1,73 @@
+{% extends 'default.html' %}
+
+{% set active_page = "email_log" %}
+
+{% block title %}
+  Email Log 
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+      <h1 class="h3"> Email Log </h1>
+      <div class="small-text">
+        All sent and forwarded messages in the last 14 days
+      </div>
+    </div>
+  </div>
+
+  <div class="row row-cards row-deck mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-hover table-outline table-vcenter text-nowrap card-table">
+            <thead>
+            <tr>
+              <th></th>
+              <th>
+                From
+              </th>
+              <th>
+                To
+              </th>
+              <th>
+                Date
+              </th>
+              <!--<th class="text-center">Last used</th>-->
+            </tr>
+            </thead>
+            <tbody>
+            {% for email in email_log %}
+              <tr>
+                <td>
+                  {% if email.is_reply %}
+                    <i class="fa fa-reply mr-2" data-toggle="tooltip" title="Email reply/sent from alias"></i>
+                  {% elif email.bounced %}
+                    <i class="fa fa-warning mr-2" data-toggle="tooltip" title="Email bounced and cannot be forwarded to your mailbox"></i>
+                  {% elif email.blocked %}
+                    <i class="fa fa-ban mr-2 text-danger" data-toggle="tooltip" title="Email blocked"></i>
+                  {% else %}
+                    <i class="fa fa-paper-plane  mr-2" data-toggle="tooltip" title="Email sent to alias"></i>
+                  {% endif %}
+                </td>
+                <td>
+                  {{ email.contact.email }}
+                </td>
+
+                <td>
+                  {{ email.contact.alias.email }}
+                </td>
+
+                <td>
+                  {{ email.created_at | dt }}
+                </td>
+              </tr>
+            {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
