@@ -1,5 +1,3 @@
-import json
-
 from flask import url_for
 
 from app.db import Session
@@ -132,9 +130,14 @@ def test_different_scenarios_v5(flask_client):
         "/api/v5/alias/options?hostname=www.test.com",
         headers={"Authentication": api_key.code},
     )
-    print(json.dumps(r.json, indent=2))
-
     assert r.json["prefix_suggestion"] == "test"
+
+    # <<< with hostname with 2 parts TLD, for example wwww.numberoneshoes.co.nz >>>
+    r = flask_client.get(
+        "/api/v5/alias/options?hostname=wwww.numberoneshoes.co.nz",
+        headers={"Authentication": api_key.code},
+    )
+    assert r.json["prefix_suggestion"] == "numberoneshoes"
 
     # <<< with recommendation >>>
     alias = Alias.create_new(user, prefix="test")

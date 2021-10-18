@@ -1,3 +1,4 @@
+import tldextract
 from flask import jsonify, request, g
 from sqlalchemy import desc
 
@@ -62,12 +63,10 @@ def options_v4():
     if hostname:
         # keep only the domain name of hostname, ignore TLD and subdomain
         # for ex www.groupon.com -> groupon
-        domain_name = hostname
-        if "." in hostname:
-            parts = hostname.split(".")
-            domain_name = parts[-2]
-            domain_name = convert_to_id(domain_name)
-        ret["prefix_suggestion"] = domain_name
+        ext = tldextract.extract(hostname)
+        prefix_suggestion = ext.domain
+        prefix_suggestion = convert_to_id(prefix_suggestion)
+        ret["prefix_suggestion"] = prefix_suggestion
 
     suffixes = get_available_suffixes(user)
 
@@ -133,12 +132,10 @@ def options_v5():
     if hostname:
         # keep only the domain name of hostname, ignore TLD and subdomain
         # for ex www.groupon.com -> groupon
-        domain_name = hostname
-        if "." in hostname:
-            parts = hostname.split(".")
-            domain_name = parts[-2]
-            domain_name = convert_to_id(domain_name)
-        ret["prefix_suggestion"] = domain_name
+        ext = tldextract.extract(hostname)
+        prefix_suggestion = ext.domain
+        prefix_suggestion = convert_to_id(prefix_suggestion)
+        ret["prefix_suggestion"] = prefix_suggestion
 
     suffixes = get_available_suffixes(user)
 
