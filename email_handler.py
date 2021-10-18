@@ -136,6 +136,7 @@ from app.models import (
     Bounce,
     TransactionalEmail,
     IgnoredEmail,
+    MessageIDMatching,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -671,6 +672,7 @@ def forward_email_to_mailbox(
         user_id=user.id,
         mailbox_id=mailbox.id,
         alias_id=contact.alias_id,
+        message_id=msg[headers.MESSAGE_ID],
         commit=True,
     )
     LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
@@ -774,11 +776,6 @@ def forward_email_to_mailbox(
     msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
     msg[headers.SL_ENVELOPE_TO] = alias.email
-
-    if not msg[headers.MESSAGE_ID]:
-        LOG.w("missing message id header, create one")
-        message_id = make_msgid(str(email_log.id), EMAIL_DOMAIN)
-        msg[headers.MESSAGE_ID] = message_id
 
     if not msg[headers.DATE]:
         LOG.w("missing date header, create one")
@@ -1024,10 +1021,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     replace_header_when_reply(msg, alias, headers.TO)
     replace_header_when_reply(msg, alias, headers.CC)
 
-    if not msg[headers.MESSAGE_ID]:
-        message_id = make_msgid(str(email_log.id), get_email_domain_part(alias.email))
-        LOG.w("missing message id, add one %s", message_id)
-        msg[headers.MESSAGE_ID] = message_id
 
     if not msg[headers.DATE]:
         date_header = formatdate()
