@@ -642,7 +642,7 @@ def get_mailbox_bounce_info(bounce_report: Message) -> Optional[Message]:
         # 5th is a child of 3rd that contains more info about the bounce
         if i == 5:
             if not part["content-transfer-encoding"]:
-                LOG.e("add missing content-transfer-encoding header")
+                LOG.w("add missing content-transfer-encoding header")
                 part["content-transfer-encoding"] = "7bit"
             return part
 
