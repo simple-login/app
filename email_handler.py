@@ -781,6 +781,39 @@ def forward_email_to_mailbox(
         LOG.w("missing date header, create one")
         msg[headers.DATE] = formatdate()
 
+    # Replace SL Message-ID by original one in In-Reply-To header
+    if msg[headers.IN_REPLY_TO]:
+        matching: MessageIDMatching = MessageIDMatching.get_by(
+            sl_message_id=msg[headers.IN_REPLY_TO]
+        )
+        if matching:
+            LOG.d(
+                "replace SL message id by original one in in-reply-to header, %s -> %s",
+                msg[headers.IN_REPLY_TO],
+                matching.original_message_id,
+            )
+            del msg[headers.IN_REPLY_TO]
+            msg[headers.IN_REPLY_TO] = matching.original_message_id
+
+    # Replace SL Message-ID by original Message-ID in References header
+    if msg[headers.REFERENCES]:
+        message_ids = msg[headers.REFERENCES].split()
+        new_message_ids = []
+        for message_id in message_ids:
+            matching = MessageIDMatching.get_by(sl_message_id=message_id)
+            if matching:
+                LOG.d(
+                    "replace SL message id by original one in references header, %s -> %s",
+                    message_id,
+                    matching.original_message_id,
+                )
+                new_message_ids.append(matching.original_message_id)
+            else:
+                new_message_ids.append(message_id)
+
+        del msg[headers.REFERENCES]
+        msg[headers.REFERENCES] = " ".join(new_message_ids)
+
     # change the from header so the sender comes from a reverse-alias
     # so it can pass DMARC check
     # replace the email part in from: header
@@ -915,6 +948,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         is_reply=True,
         user_id=contact.user_id,
         mailbox_id=mailbox.id,
+        message_id=msg[headers.MESSAGE_ID],
         commit=True,
     )
     LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
@@ -1021,6 +1055,38 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     replace_header_when_reply(msg, alias, headers.TO)
     replace_header_when_reply(msg, alias, headers.CC)
 
+    # Replace original Message-ID by SL Message-ID
+    original_message_id = msg[headers.MESSAGE_ID]
+    sl_message_id = make_msgid(str(email_log.id), get_email_domain_part(alias.email))
+    del msg[headers.MESSAGE_ID]
+    msg[headers.MESSAGE_ID] = sl_message_id
+    email_log.sl_message_id = sl_message_id
+
+    MessageIDMatching.create(
+        sl_message_id=sl_message_id,
+        original_message_id=original_message_id,
+    )
+
+    Session.commit()
+
+    # Replace all original headers in References header by SL Message ID header if needed
+    if msg[headers.REFERENCES]:
+        message_ids = msg[headers.REFERENCES].split()
+        new_message_ids = []
+        for message_id in message_ids:
+            matching = MessageIDMatching.get_by(original_message_id=message_id)
+            if matching:
+                LOG.d(
+                    "replace original message id by SL one, %s -> %s",
+                    message_id,
+                    matching.sl_message_id,
+                )
+                new_message_ids.append(matching.sl_message_id)
+            else:
+                new_message_ids.append(message_id)
+
+        del msg[headers.REFERENCES]
+        msg[headers.REFERENCES] = " ".join(new_message_ids)
 
     if not msg[headers.DATE]:
         date_header = formatdate()
