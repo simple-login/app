@@ -1250,7 +1250,9 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
 
     bounce_info = get_mailbox_bounce_info(msg)
     if bounce_info:
-        Bounce.create(email=mailbox.email, info=bounce_info.as_string(), commit=True)
+        Bounce.create(
+            email=mailbox.email, info=bounce_info.as_bytes().decode(), commit=True
+        )
     else:
         LOG.w("cannot get bounce info")
         Bounce.create(email=mailbox.email, commit=True)
@@ -1456,7 +1458,7 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
     if bounce_info:
         Bounce.create(
             email=sanitize_email(contact.website_email),
-            info=bounce_info.as_string(),
+            info=bounce_info.as_bytes().decode(),
             commit=True,
         )
     else:
@@ -1719,7 +1721,9 @@ def handle_transactional_bounce(envelope: Envelope, msg, rcpt_to):
         bounce_info = get_mailbox_bounce_info(msg)
         if bounce_info:
             Bounce.create(
-                email=transactional.email, info=bounce_info.as_string(), commit=True
+                email=transactional.email,
+                info=bounce_info.as_bytes().decode(),
+                commit=True,
             )
         else:
             LOG.w("cannot get bounce info")
