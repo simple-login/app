@@ -109,7 +109,7 @@ from app.email_utils import (
     add_header,
     get_header_unicode,
     generate_reply_email,
-    is_reply_email,
+    is_reverse_alias,
     normalize_reply_email,
     is_valid_email,
     replace,
@@ -1937,7 +1937,7 @@ def handle(envelope: Envelope) -> str:
         except ValueError:
             LOG.d("cannot parse the From header %s", from_header)
         else:
-            if is_reply_email(from_header_address):
+            if is_reverse_alias(from_header_address):
                 LOG.e("email sent from a reverse alias %s", from_header_address)
                 # get more info for debug
                 contact = Contact.get_by(reply_email=from_header_address)
@@ -1975,7 +1975,7 @@ def handle(envelope: Envelope) -> str:
 
     # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
     # todo: remove logging
-    if len(rcpt_tos) == 1 and is_reply_email(rcpt_tos[0]) and mail_from == "<>":
+    if len(rcpt_tos) == 1 and is_reverse_alias(rcpt_tos[0]) and mail_from == "<>":
         LOG.w(
             "out-of-office email to reverse alias %s. %s", rcpt_tos[0], msg.as_string()
         )
@@ -2001,7 +2001,7 @@ def handle(envelope: Envelope) -> str:
 
         # Reply case
         # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
-        if is_reply_email(rcpt_to):
+        if is_reverse_alias(rcpt_to):
             LOG.d(
                 "Reply phase %s(%s) -> %s", mail_from, copy_msg[headers.FROM], rcpt_to
             )

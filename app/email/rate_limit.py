@@ -6,7 +6,7 @@ from app.config import (
     MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX,
 )
 from app.db import Session
-from app.email_utils import is_reply_email
+from app.email_utils import is_reverse_alias
 from app.log import LOG
 from app.models import Alias, EmailLog, Contact
 
@@ -97,7 +97,7 @@ def rate_limited(mail_from: str, rcpt_tos: [str]) -> bool:
     return False
 
     for rcpt_to in rcpt_tos:
-        if is_reply_email(rcpt_to):
+        if is_reverse_alias(rcpt_to):
             if rate_limited_reply_phase(rcpt_to):
                 return True
         else:

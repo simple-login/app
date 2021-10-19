@@ -2,7 +2,7 @@ from flask import url_for
 
 from app.config import PAGE_LIMIT
 from app.db import Session
-from app.email_utils import is_reply_email
+from app.email_utils import is_reverse_alias
 from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
 from tests.utils import login
 
@@ -649,7 +649,10 @@ def test_get_alias(flask_client):
     assert "pinned" in res
 
 
-def test_is_reply_email(flask_client):
-    assert is_reply_email("ra+abcd@test.org")
-    assert is_reply_email("reply+abcd@test.org")
-    assert not is_reply_email("abcd@test.org")
+def test_is_reverse_alias(flask_client):
+    assert is_reverse_alias("ra+abcd@sl.local")
+    assert is_reverse_alias("reply+abcd@sl.local")
+
+    assert not is_reverse_alias("ra+abcd@test.org")
+    assert not is_reverse_alias("reply+abcd@test.org")
+    assert not is_reverse_alias("abcd@test.org")

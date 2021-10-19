@@ -1032,8 +1032,8 @@ def generate_reply_email(contact_email: str, user: User) -> str:
     raise Exception("Cannot generate reply email")
 
 
-def is_reply_email(address: str) -> bool:
-    return address.startswith("reply+") or address.startswith("ra+")
+def is_reverse_alias(address: str) -> bool:
+    return address.endswith(f"@{EMAIL_DOMAIN}") and (address.startswith("reply+") or address.startswith("ra+"))
 
 
 # allow also + and @ that are present in a reply address
