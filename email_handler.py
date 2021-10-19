@@ -1835,13 +1835,14 @@ def handle(envelope: Envelope) -> str:
 
     LOG.d(
         "==>> Handle mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, "
-        "cc:%s, reply-to:%s, mail_options:%s, rcpt_options:%s",
+        "cc:%s, reply-to:%s, message_id:%s, mail_options:%s, rcpt_options:%s",
         mail_from,
         rcpt_tos,
         msg[headers.FROM],
         msg[headers.TO],
         msg[headers.CC],
         msg[headers.REPLY_TO],
+        msg[headers.MESSAGE_ID],
         envelope.mail_options,
         envelope.rcpt_options,
     )
