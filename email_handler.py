@@ -1062,10 +1062,20 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     msg[headers.MESSAGE_ID] = sl_message_id
     email_log.sl_message_id = sl_message_id
 
-    MessageIDMatching.create(
-        sl_message_id=sl_message_id,
-        original_message_id=original_message_id,
-    )
+    # sanity check to make sure the message id hasn't been added before
+    if not MessageIDMatching.get_by(
+        sl_message_id=sl_message_id
+    ) and not MessageIDMatching.get_by(original_message_id=original_message_id):
+        MessageIDMatching.create(
+            sl_message_id=sl_message_id,
+            original_message_id=original_message_id,
+        )
+    else:
+        LOG.w(
+            "Same SL or Original Message ID has been added before %s %s",
+            sl_message_id,
+            original_message_id,
+        )
 
     Session.commit()
 
