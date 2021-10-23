@@ -174,6 +174,8 @@ def new_custom_alias_v3():
         return jsonify(error="alias prefix invalid format or too long"), 400
 
     # check if mailbox is not tempered with
+    if type(mailbox_ids) is not list:
+        return jsonify(error="mailbox_ids must be an array of id"), 400
     mailboxes = []
     for mailbox_id in mailbox_ids:
         mailbox = Mailbox.get(mailbox_id)

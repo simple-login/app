@@ -155,6 +155,26 @@ def test_wrongly_formatted_payload(flask_client):
     assert r.json == {"error": "request body does not follow the required format"}
 
 
+def test_mailbox_ids_is_not_an_array(flask_client):
+    login(flask_client)
+
+    word = random_word()
+    suffix = f".{word}@{EMAIL_DOMAIN}"
+    signed_suffix = signer.sign(suffix).decode()
+
+    r = flask_client.post(
+        "/api/v3/alias/custom/new",
+        json={
+            "alias_prefix": "prefix",
+            "signed_suffix": signed_suffix,
+            "mailbox_ids": "not an array",
+        },
+    )
+
+    assert r.status_code == 400
+    assert r.json == {"error": "mailbox_ids must be an array of id"}
+
+
 def test_out_of_quota(flask_client):
     user = login(flask_client)
     user.trial_end = None
