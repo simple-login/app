@@ -375,6 +375,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     # cf https://flask-login.readthedocs.io/en/latest/#alternative-tokens
     alternative_id = sa.Column(sa.String(128), unique=True, nullable=True)
 
+    # by default, when an alias is automatically created, a note like "Created with ...." is created
+    # If this field is True, the note won't be created.
+    disable_automatic_alias_note = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     # implement flask-login "alternative token"
     def get_id(self):
         if self.alternative_id:
