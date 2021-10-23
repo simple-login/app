@@ -213,8 +213,10 @@ OPENID_PUBLIC_KEY_PATH = get_abs_path(
 )
 
 # Used to generate random email
+# words.txt is a list of English words and doesn't contain any "bad" word
+# words_alpha.txt comes from https://github.com/dwyl/english-words and also contains bad words.
 WORDS_FILE_PATH = get_abs_path(
-    os.environ.get("WORDS_FILE_PATH", "local_data/words_alpha.txt")
+    os.environ.get("WORDS_FILE_PATH", "local_data/words.txt")
 )
 
 # Used to generate random email
