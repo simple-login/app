@@ -158,6 +158,9 @@ def new_custom_alias_v3():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
+    if type(data) is not dict:
+        return jsonify(error="request body does not follow the required format"), 400
+
     alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
     signed_suffix = data.get("signed_suffix", "").strip()
     mailbox_ids = data.get("mailbox_ids")

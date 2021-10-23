@@ -143,6 +143,18 @@ def test_custom_domain_alias(flask_client):
     assert r.json["alias"] == "prefix@ab.cd"
 
 
+def test_wrongly_formatted_payload(flask_client):
+    login(flask_client)
+
+    r = flask_client.post(
+        "/api/v3/alias/custom/new",
+        json="string isn't a dict",
+    )
+
+    assert r.status_code == 400
+    assert r.json == {"error": "request body does not follow the required format"}
+
+
 def test_out_of_quota(flask_client):
     user = login(flask_client)
     user.trial_end = None
