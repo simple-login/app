@@ -69,6 +69,7 @@ from app.config import (
     PGP_SIGNER,
     COINBASE_WEBHOOK_SECRET,
     ROOT_DIR,
+    PAGE_LIMIT,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -629,7 +630,8 @@ def jinja2_filter(app):
             STATUS_PAGE_URL=STATUS_PAGE_URL,
             SUPPORT_EMAIL=SUPPORT_EMAIL,
             PGP_SIGNER=PGP_SIGNER,
-            canonical_url=f"{URL}{request.path}",
+            CANONICAL_URL=f"{URL}{request.path}",
+            PAGE_LIMIT=PAGE_LIMIT,
         )
 
 
