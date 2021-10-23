@@ -95,8 +95,9 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
                 user_id=directory.user_id,
                 directory_id=directory.id,
                 mailbox_id=mailboxes[0].id,
-                note=f"Created by directory {directory.name}",
             )
+            if not user.disable_automatic_alias_note:
+                alias.note = f"Created by directory {directory.name}"
             Session.flush()
             for i in range(1, len(mailboxes)):
                 AliasMailbox.create(
@@ -171,8 +172,9 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
             custom_domain_id=custom_domain.id,
             automatic_creation=True,
             mailbox_id=mailboxes[0].id,
-            note=alias_note,
         )
+        if not custom_domain.user.disable_automatic_alias_note:
+            alias.note = alias_note
         Session.flush()
         for i in range(1, len(mailboxes)):
             AliasMailbox.create(
