@@ -324,6 +324,50 @@ def bounce_report() -> List[Tuple[str, int]]:
     return res
 
 
+def all_bounce_report() -> str:
+    """
+    Return a report for all mailboxes that have most bounces. Using this query to get mailboxes that have bounces.
+    For each mailbox in the list, return the first bounce info.
+
+    ```
+    SELECT
+        email,
+        count(*) AS nb_bounce
+    FROM
+        bounce
+    WHERE
+        created_at > '2021-10-16'
+    GROUP BY
+        email
+    ORDER BY
+        nb_bounce DESC
+    ```
+
+    """
+    res = ""
+    min_dt = arrow.now().shift(days=-1)
+    query = (
+        Session.query(Bounce.email, func.count(Bounce.id).label("nb_bounce"))
+        .filter(Bounce.created_at > min_dt)
+        .group_by(Bounce.email)
+        # not return mailboxes that have too little bounces
+        .having(func.count(Bounce.id) > 5)
+        .order_by(desc("nb_bounce"))
+    )
+
+    for email, count in query:
+        res += "----\n"
+        res += f"{email}: {count} bounces. "
+        most_recent: Bounce = (
+            Bounce.filter(Bounce.email == email)
+            .order_by(Bounce.created_at.desc())
+            .first()
+        )
+        res += f"Most recent cause: {most_recent.info}\n"
+
+    return res
+
+
 def alias_creation_report() -> List[Tuple[str, int]]:
     """return the accounts that have created most aliases in the last 7 days, e.g.
     (email1, 2021-3-21, 30)
@@ -427,6 +471,8 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
     html += f"""<br><br>
     Alias creation report: <br>
     """
+
+    html += all_bounce_report().replace("\n", "<br>")
 
     for email, nb_alias, date in alias_creation_report():
         html += f"{email}, {date}: {nb_alias} <br>"
