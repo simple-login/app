@@ -169,24 +169,26 @@
     {% endfor %}
   </div>
 
-  <div class="row mt-3">
-    <div class="col">
-      <nav aria-label="Contact navigation">
-        <ul class="pagination">
-          <li class="page-item">
-            <a class="btn btn-outline-secondary {% if page == 0 %}disabled{% endif %}"
-               href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page-1) }}">
-              Previous</a>
-          </li>
-          <li class="page-item">
-            <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}"
-               href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page+1) }}">
-              Next</a>
-          </li>
-        </ul>
-      </nav>
+  {% if nb_contact > PAGE_LIMIT or page > 0 %}
+    <div class="row mt-3">
+      <div class="col">
+        <nav aria-label="Contact navigation">
+          <ul class="pagination">
+            <li class="page-item">
+              <a class="btn btn-outline-secondary {% if page == 0 %}disabled{% endif %}"
+                 href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page-1) }}">
+                Previous</a>
+            </li>
+            <li class="page-item">
+              <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}"
+                 href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page+1) }}">
+                Next</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
     </div>
-  </div>
+  {% endif %}
 
 {% endblock %}
 

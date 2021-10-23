@@ -271,6 +271,7 @@ def alias_contact_manager(alias_id):
 
     contact_infos = get_contact_infos(alias, page, query=query)
     last_page = len(contact_infos) < PAGE_LIMIT
+    nb_contact = Contact.filter(Contact.alias_id == alias.id).count()
 
     # if highlighted contact isn't included, fetch it
     # make sure highlighted contact is at array start
@@ -290,4 +291,5 @@ def alias_contact_manager(alias_id):
         page=page,
         last_page=last_page,
         query=query,
+        nb_contact=nb_contact,
     )
