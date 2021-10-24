@@ -344,7 +344,7 @@ def all_bounce_report() -> str:
     ```
 
     """
-    res = ""
+    res = "\n\nBounce detail report:\n"
     min_dt = arrow.now().shift(days=-1)
     query = (
         Session.query(Bounce.email, func.count(Bounce.id).label("nb_bounce"))
@@ -472,10 +472,10 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
     Alias creation report: <br>
     """
 
-    html += all_bounce_report().replace("\n", "<br>")
-
     for email, nb_alias, date in alias_creation_report():
         html += f"{email}, {date}: {nb_alias} <br>"
+
+    html += all_bounce_report().replace("\n", "<br>")
 
     LOG.d("report email: %s", html)
 
