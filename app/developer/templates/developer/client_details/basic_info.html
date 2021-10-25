@@ -10,7 +10,7 @@
         Please head to our
         <a href="http://docs.simplelogin.io" target="_blank" rel="noopener">
         documentation <i class="fe fe-external-link"></i></a>
-        to see how to add SIWSL into your website/app.
+        to see how to add SIWSL into your app.
       </p>
 
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -23,7 +23,7 @@
         action="{{ url_for('developer.client_detail', client_id=client.id, action="edit") }}">
     {{ form.csrf_token }}
 
-    <h3>Website/App Info</h3>
+    <h3>App Info</h3>
     <div class="form-group">
       <label class="form-label">Name</label>
       {{ form.name(class="form-control", value=client.name) }}
@@ -59,7 +59,7 @@
 {#    {{ approval_form.csrf_token }}#}
 {##}
 {#    <div class="form-group">#}
-{#      <label class="form-label">Tell us about your website/app</label>#}
+{#      <label class="form-label">Tell us about your app</label>#}
 {#      {{ approval_form.description(#}
 {#          class="form-control", rows="10",#}
 {#          placeholder="This information is used for approving your application. Please give us as much info as you can, for example where you plan to use SimpleLogin, for which community, etc."#}
