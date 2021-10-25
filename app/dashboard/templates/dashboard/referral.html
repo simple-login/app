@@ -38,7 +38,7 @@
 
           <div class="d-flex mb-3">
             <div class="mr-2">
-              <input name="name" class="form-control" value="{{ referral.name or '' }}">
+              <input name="name" class="form-control" required value="{{ referral.name or '' }}">
             </div>
             <div>
               <button class="btn btn-outline-success">Update</button>
@@ -117,7 +117,7 @@
       </div>
 
       <div class="form-group">
-        <input name="name" class="form-control"
+        <input name="name" class="form-control" required
                placeholder="Referral name, something to help you remember why you create it :)">
       </div>
 
