@@ -14,7 +14,7 @@ from sqlalchemy import orm
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import deferred, joinedload
+from sqlalchemy.orm import deferred
 from sqlalchemy_utils import ArrowType
 
 from app import s3
