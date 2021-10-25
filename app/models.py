@@ -1477,7 +1477,7 @@ class Contact(Base, ModelMixin):
     # when user clicks on "reply", they will reply to this address.
     # This address allows to hide user personal email
     # this reply email is created every time a website sends an email to user
-    # it has the prefix "reply+" or "ra+" to distinguish with other email
+    # it used to have the prefix "reply+" or "ra+"
     reply_email = sa.Column(sa.String(512), nullable=False, index=True)
 
     # whether a contact is created via CC
@@ -1509,7 +1509,7 @@ class Contact(Base, ModelMixin):
         """return the email address with name.
         to use when user wants to send an email from the alias
         Return
-        "First Last | email at example.com" <ra+random_string@SL>
+        "First Last | email at example.com" <reverse-alias@SL>
         """
 
         # Prefer using contact name if possible

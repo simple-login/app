@@ -1004,10 +1004,6 @@ def generate_reply_email(contact_email: str, user: User) -> str:
         include_sender_in_reverse_alias = user.include_sender_in_reverse_alias
 
     if include_sender_in_reverse_alias and contact_email:
-        # control char: 4 chars (ra+, +)
-        # random suffix: max 10 chars
-        # maximum: 64
-
         # make sure contact_email can be ascii-encoded
         contact_email = convert_to_id(contact_email)
         contact_email = sanitize_email(contact_email)
@@ -1020,11 +1016,15 @@ def generate_reply_email(contact_email: str, user: User) -> str:
         if include_sender_in_reverse_alias and contact_email:
             random_length = random.randint(5, 10)
             reply_email = (
-                f"ra+{contact_email}+{random_string(random_length)}@{EMAIL_DOMAIN}"
+                # do not use the ra+ anymore
+                # f"ra+{contact_email}+{random_string(random_length)}@{EMAIL_DOMAIN}"
+                f"{contact_email}_{random_string(random_length)}@{EMAIL_DOMAIN}"
             )
         else:
             random_length = random.randint(20, 50)
-            reply_email = f"ra+{random_string(random_length)}@{EMAIL_DOMAIN}"
+            # do not use the ra+ anymore
+            # reply_email = f"ra+{random_string(random_length)}@{EMAIL_DOMAIN}"
+            reply_email = f"{random_string(random_length)}@{EMAIL_DOMAIN}"
 
         if not Contact.get_by(reply_email=reply_email):
             return reply_email
@@ -1033,6 +1033,10 @@ def generate_reply_email(contact_email: str, user: User) -> str:
 
 
 def is_reverse_alias(address: str) -> bool:
+    # to take into account the new reverse-alias that doesn't start with "ra+"
+    if Contact.get_by(reply_email=address):
+        return True
+
     return address.endswith(f"@{EMAIL_DOMAIN}") and (
         address.startswith("reply+") or address.startswith("ra+")
     )

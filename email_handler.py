@@ -1012,7 +1012,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         + headers.MIME_HEADERS,
     )
 
-    # replace the reverse-alias (i.e. "ra+string@simplelogin.co") by the contact email in the email body
+    # replace the reverse-alias by the contact email in the email body
     # as this is usually included when replying
     if user.replace_reverse_alias:
         LOG.d("Replace reverse-alias %s by contact email %s", reply_email, contact)
@@ -1372,7 +1372,6 @@ def handle_hotmail_complaint(msg: Message) -> bool:
     if not to_header:
         LOG.e("cannot find the alias")
         return False
-
     try:
         _, alias_address = parse_full_address(get_header_unicode(to_header))
     except ValueError:
@@ -2005,8 +2004,7 @@ def handle(envelope: Envelope) -> str:
         else:
             copy_msg = msg
 
-        # Reply case
-        # recipient starts with "reply+" or "ra+" (ra=reverse-alias) prefix
+        # Reply case: the recipient is a reverse alias. Usually starts with "reply+" or "ra+"
         if is_reverse_alias(rcpt_to):
             LOG.d(
                 "Reply phase %s(%s) -> %s", mail_from, copy_msg[headers.FROM], rcpt_to

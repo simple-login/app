@@ -490,14 +490,9 @@ def test_generate_reply_email(flask_client):
         activated=True,
     )
     reply_email = generate_reply_email("test@example.org", user)
-    # return something like
-    # ra+<random>@sl.local
     assert reply_email.endswith(EMAIL_DOMAIN)
 
     reply_email = generate_reply_email("", user)
-    # return something like
-    # ra+qdrcxzppngmvtajklnhqvvuyyzgkyityrzjwikk@sl.local
-    assert reply_email.startswith("ra+")
     assert reply_email.endswith(EMAIL_DOMAIN)
 
 
@@ -511,23 +506,18 @@ def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
         include_sender_in_reverse_alias=True,
     )
     reply_email = generate_reply_email("test@example.org", user)
-    # return something like
-    # ra+test.at.example.org+gjbnnddll@sl.local
-    assert reply_email.startswith("ra+test.at.example.org+")
+    assert reply_email.startswith("test.at.example.org")
     assert reply_email.endswith(EMAIL_DOMAIN)
 
     reply_email = generate_reply_email("", user)
-    # return something like
-    # ra+qdrcxzppngmvtajklnhqvvuyyzgkyityrzjwikk@sl.local
-    assert reply_email.startswith("ra+")
     assert reply_email.endswith(EMAIL_DOMAIN)
 
     reply_email = generate_reply_email("👌汉字@example.org", user)
-    assert reply_email.startswith("ra+yizi.at.example.org+")
+    assert reply_email.startswith("yizi.at.example.org")
 
     # make sure reply_email only contain lowercase
     reply_email = generate_reply_email("TEST@example.org", user)
-    assert reply_email.startswith("ra+test.at.example.org")
+    assert reply_email.startswith("test.at.example.org")
 
 
 def test_normalize_reply_email(flask_client):
