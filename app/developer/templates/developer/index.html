@@ -53,54 +53,40 @@
     </div>
   </div>
 
-
-
   <div class="row row-cards row-deck mt-4">
     {% for client in clients %}
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title d-flex align-items-center">
-              {% if client.icon_id %}
-                <span class="avatar mr-2" style="background-image: url({{ client.icon.get_url() }})"></span>
-              {% endif %}
-              <span class="">
-                <a href="{{ url_for('developer.client_detail', client_id=client.id) }}">
-                  {{ client.name }}
-                </a>
-                {% if client.approved %}
-                  <span class="cursor" data-toggle="tooltip" data-original-title="Approved">✅</span>
-                {% else %}
-                  <span class="cursor" data-toggle="tooltip" data-original-title="In Dev mode">
+      <div class="col-12 col-lg-6">
+        <div class="card" style="">
+          <div class="card-body">
+            <h5 class="card-title">
+              <a href="{{ url_for('developer.client_detail', client_id=client.id) }}">{{ client.name }}</a>
+              {% if client.approved %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="Approved">✅</span>
+              {% else %}
+                <span class="cursor" data-toggle="tooltip"
+                      data-original-title="In Dev mode. Please contact us to publish your app.">
                     <a href="{{ url_for('developer.client_detail', client_id=client.id) }}"
-                      class="text-decoration-none">🚫
+                       class="text-decoration-none">🚫
                     </a>
                   </span>
-                {% endif %}
-              </span>
-            </div>
+              {% endif %}
+            </h5>
 
-            <div class="card-options">
-              <a href="{{ url_for('developer.client_detail', client_id=client.id) }}"
-                 class="btn btn-primary btn-sm">
-                Edit
-              </a>
-            </div>
+            <h6 class="card-subtitle mb-4 text-muted">
+              Created {{ client.created_at | dt }} <br>
+              <span class="font-weight-bold">{{ client.nb_user() }}</span> users.
+              <span class="font-weight-bold">{{ client.nb_paid_user() }}</span> paid users.
+              <br>
+            </h6>
+
+            <a href="{{ url_for('developer.client_detail', client_id=client.id) }}" class="mt-3">
+              Details ➡
+            </a>
           </div>
-
-          <div class="card-body">
-            <span class="h1 m-0">{{ client.nb_user() }}</span> Users <br>
-            Created {{ client.created_at |dt }} <br>
-            {% if client.last_user_login() %}
-              Last User Login: {{ client.last_user_login().get_user_name() }}
-            {% endif %}
-          </div>
-
         </div>
       </div>
     {% endfor %}
   </div>
-
 {% endblock %}
 
 

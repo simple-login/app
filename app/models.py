@@ -14,7 +14,7 @@ from sqlalchemy import orm
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import deferred
+from sqlalchemy.orm import deferred, joinedload
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -990,6 +990,20 @@ class Client(Base, ModelMixin):
 
     def nb_user(self):
         return ClientUser.filter_by(client_id=self.id).count()
+
+    def nb_paid_user(self) -> int:
+        res = 0
+        for client_user in (
+            Session.query(ClientUser)
+            .options(joinedload(ClientUser.user))
+            .filter_by(client_id=self.id)
+            .all()
+        ):
+            user = client_user.user
+            if user.is_paid():
+                res += 1
+
+        return res
 
     def get_scopes(self) -> [Scope]:
         # todo: client can choose which scopes they want to have access
