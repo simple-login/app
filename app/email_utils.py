@@ -964,12 +964,22 @@ def replace(msg: Message, old, new) -> Message:
         encoding = get_encoding(msg)
         payload = msg.get_payload()
         if type(payload) is str:
-            clone_msg = copy(msg)
-            new_payload = payload.replace(
-                encode_text(old, encoding), encode_text(new, encoding)
-            )
-            clone_msg.set_payload(new_payload)
-            return clone_msg
+            if encoding == EmailEncoding.QUOTED:
+                LOG.d("handle quoted-printable replace %s -> %s", old, new)
+                # first decode the payload
+                new_payload = quopri.decodestring(payload).decode("utf-8")
+                # then replace the old text
+                new_payload = new_payload.replace(old, new)
+                clone_msg = copy(msg)
+                clone_msg.set_payload(quopri.encodestring(new_payload.encode()))
+                return clone_msg
+            else:
+                clone_msg = copy(msg)
+                new_payload = payload.replace(
+                    encode_text(old, encoding), encode_text(new, encoding)
+                )
+                clone_msg.set_payload(new_payload)
+                return clone_msg
 
     elif content_type in (
         "multipart/alternative",
