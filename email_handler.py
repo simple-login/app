@@ -1373,7 +1373,13 @@ def handle_hotmail_complaint(msg: Message) -> bool:
         LOG.e("cannot find the alias")
         return False
 
-    _, alias_address = parse_full_address(get_header_unicode(to_header))
+    try:
+        _, alias_address = parse_full_address(get_header_unicode(to_header))
+    except ValueError:
+        # to_header can be something like 'Undisclosed recipients:;'
+        LOG.w("cannot parse %s", to_header)
+        return False
+
     alias = Alias.get_by(email=alias_address)
 
     if not alias:
