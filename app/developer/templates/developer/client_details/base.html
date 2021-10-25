@@ -14,7 +14,7 @@
       <div class="list-group list-group-transparent mb-0">
         <a href="{{ url_for('developer.client_detail', client_id=client.id) }}"
            class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'basic_info' }}">
-          <span class="icon mr-3"><i class="fe fe-flag"></i></span>App Info
+          <span class="icon mr-3"><i class="fe fe-flag"></i></span>Info
         </a>
 
         <a href="{{ url_for('developer.client_detail_oauth_setting', client_id=client.id) }}"
@@ -29,7 +29,7 @@
 
         <a href="{{ url_for('developer.client_detail_advanced', client_id=client.id) }}"
            class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'advanced' }}">
-          <span class="icon mr-3"><i class="fe fe-alert-octagon"></i></span>Advanced Settings
+          <span class="icon mr-3"><i class="fe fe-alert-octagon"></i></span>Danger
         </a>
 
       </div>

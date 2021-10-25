@@ -5,7 +5,8 @@
 {% block client_details_content %}
   <form method="post">
     {{ form.csrf_token }}
-    <h3>Please note that this operation is not reversible!</h3>
-    <button type="submit" class="btn btn-danger">Delete App</button>
+    <div class="alert alert-danger">When your website is deleted, users can no longer log into it. This operation is not reversible!</div>
+    <button type="submit" class="btn btn-danger">Delete "{{ client.name }}"</button>
+
   </form>
 {% endblock %}

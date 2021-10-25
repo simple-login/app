@@ -23,11 +23,17 @@
         action="{{ url_for('developer.client_detail', client_id=client.id, action="edit") }}">
     {{ form.csrf_token }}
 
-    <h3>App Info</h3>
+    <h3>Info</h3>
     <div class="form-group">
       <label class="form-label">Name</label>
       {{ form.name(class="form-control", value=client.name) }}
       {{ render_field_errors(form.name) }}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Url</label>
+      {{ form.url(class="form-control", value=client.home_url) }}
+      {{ render_field_errors(form.url) }}
     </div>
 
     <div class="form-group">

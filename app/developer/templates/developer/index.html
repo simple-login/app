@@ -17,11 +17,11 @@
       </h1>
 
       <div class="alert alert-primary collapse {% if not clients %} show {% endif %}" id="howtouse" role="alert">
-        If you have a website or a mobile app and want to integrate SIWSL,
+        If you want to integrate SIWSL into your website,
         this page is for you.
         <br><br>
 
-        If you are using a CMS or any system that supports plugin, you can install the OpenID Connect plugin and point
+        If you are using a CMS or any system that supports a OpenID Connect plugin, you can just point
         it to SimpleLogin OpenID Configuration endpoint 👇
 
         <div class="input-group mt-2">
@@ -44,7 +44,7 @@
     <div class="col">
       <div class="btn-group" role="group" aria-label="Basic example">
         <a href="{{ url_for('developer.new_client') }}" class="btn btn-primary">
-          New app
+          New website
         </a>
         <a href="https://docs.simplelogin.io" target="_blank" class="ml-2 btn btn-secondary">
           Docs <i class="fe fe-external-link"></i>
