@@ -481,6 +481,11 @@ def set_index_page(app):
         ):
             g.start_time = time.time()
 
+            # to handle the referral url that has ?slref=code part
+            ref_code = request.args.get("slref")
+            if ref_code:
+                session["slref"] = ref_code
+
     @app.after_request
     def after_request(res):
         # not logging /static call

@@ -53,4 +53,12 @@ def get_referral() -> Optional[Referral]:
         ref_code = request.cookies.get(_REFERRAL_COOKIE)
         referral = Referral.get_by(code=ref_code)
 
+    if not referral:
+        if "slref" in session:
+            ref_code = session["slref"]
+            referral = Referral.get_by(code=ref_code)
+
+    if referral:
+        LOG.d("referral found %s", referral)
+
     return referral

@@ -2269,6 +2269,9 @@ class Referral(Base, ModelMixin):
     def link(self):
         return f"{LANDING_PAGE_URL}?slref={self.code}"
 
+    def __repr__(self):
+        return f"<Referral {self.code}>"
+
 
 class SentAlert(Base, ModelMixin):
     """keep track of alerts sent to user.
