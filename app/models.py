@@ -991,20 +991,6 @@ class Client(Base, ModelMixin):
     def nb_user(self):
         return ClientUser.filter_by(client_id=self.id).count()
 
-    def nb_paid_user(self) -> int:
-        res = 0
-        for client_user in (
-            Session.query(ClientUser)
-            .options(joinedload(ClientUser.user))
-            .filter_by(client_id=self.id)
-            .all()
-        ):
-            user = client_user.user
-            if user.is_paid():
-                res += 1
-
-        return res
-
     def get_scopes(self) -> [Scope]:
         # todo: client can choose which scopes they want to have access
         return [Scope.NAME, Scope.EMAIL, Scope.AVATAR_URL]
