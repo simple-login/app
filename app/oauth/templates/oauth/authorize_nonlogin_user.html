@@ -32,10 +32,15 @@
           <a href="{{ url_for('auth.login', next=next) }}" class="btn btn-success">
             Login
           </a>
-
-          <a href="{{ url_for('auth.register', next=next) }}" class="btn btn-info">
-            Sign Up
-          </a>
+          {% if client.referral %}
+            <a href="{{ url_for('auth.register', slref=client.referral.code, next=next) }}" class="btn btn-info">
+              Sign Up
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.register', next=next) }}" class="btn btn-info">
+              Sign Up
+            </a>
+          {% endif %}
         </div>
       </div>
 
