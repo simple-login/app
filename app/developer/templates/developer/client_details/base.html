@@ -27,6 +27,13 @@
           <span class="icon mr-3"><i class="fe fe-shield"></i></span>OAuth Endpoints
         </a>
 
+        {% if current_user.referrals|count > 0 %}
+        <a href="{{ url_for('developer.client_detail_referral', client_id=client.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'referral' }}">
+          <span class="icon mr-3"><i class="fe fe-share"></i></span>Referral
+        </a>
+        {% endif %}
+
         <a href="{{ url_for('developer.client_detail_advanced', client_id=client.id) }}"
            class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'advanced' }}">
           <span class="icon mr-3"><i class="fe fe-alert-octagon"></i></span>Danger

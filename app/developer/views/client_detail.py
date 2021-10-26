@@ -12,7 +12,7 @@ from app.db import Session
 from app.developer.base import developer_bp
 from app.email_utils import send_email
 from app.log import LOG
-from app.models import Client, RedirectUri, File
+from app.models import Client, RedirectUri, File, Referral
 from app.utils import random_string
 
 
@@ -189,3 +189,34 @@ def client_detail_advanced(client_id):
     return render_template(
         "developer/client_details/advanced.html", form=form, client=client
     )
+
+
+@developer_bp.route("/clients/<client_id>/referral", methods=["GET", "POST"])
+@login_required
+def client_detail_referral(client_id):
+    client = Client.get(client_id)
+    if not client:
+        flash("no such app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if client.user_id != current_user.id:
+        flash("you cannot see this app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if request.method == "POST":
+        referral_id = request.form.get("referral-id")
+        if not referral_id:
+            flash("A referral must be selected", "error")
+            return redirect(request.url)
+
+        referral = Referral.get(referral_id)
+
+        if not referral or referral.user_id != current_user.id:
+            flash("something went wrong, refresh the page", "error")
+            return redirect(request.url)
+
+        client.referral_id = referral.id
+        Session.commit()
+        flash(f"Referral {referral.name} is now attached to {client.name}", "success")
+
+    return render_template("developer/client_details/referral.html", client=client)
