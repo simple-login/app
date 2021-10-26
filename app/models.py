@@ -985,8 +985,13 @@ class Client(Base, ModelMixin):
     approved = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
     description = sa.Column(sa.Text, nullable=True)
 
+    # a referral can be attached to a client
+    # so all users who sign up via the authorize screen are counted towards this referral
+    referral_id = sa.Column(sa.ForeignKey("referral.id"), nullable=True)
+
     icon = orm.relationship(File)
     user = orm.relationship(User)
+    referral = orm.relationship("Referral")
 
     def nb_user(self):
         return ClientUser.filter_by(client_id=self.id).count()
@@ -2251,7 +2256,7 @@ class Referral(Base, ModelMixin):
 
     code = sa.Column(sa.String(128), unique=True, nullable=False)
 
-    user = orm.relationship(User, foreign_keys=[user_id])
+    user = orm.relationship(User, foreign_keys=[user_id], backref="referrals")
 
     @property
     def nb_user(self) -> int:
