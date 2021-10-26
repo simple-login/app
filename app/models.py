@@ -987,7 +987,9 @@ class Client(Base, ModelMixin):
 
     # a referral can be attached to a client
     # so all users who sign up via the authorize screen are counted towards this referral
-    referral_id = sa.Column(sa.ForeignKey("referral.id"), nullable=True)
+    referral_id = sa.Column(
+        sa.ForeignKey("referral.id", ondelete="SET NULL"), nullable=True
+    )
 
     icon = orm.relationship(File)
     user = orm.relationship(User)
