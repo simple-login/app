@@ -345,7 +345,7 @@ def all_bounce_report() -> str:
     ```
 
     """
-    res = "\n\nBounce detail report:\n"
+    res = ""
     min_dt = arrow.now().shift(days=-1)
     query = (
         Session.query(Bounce.email, func.count(Bounce.id).label("nb_bounce"))
@@ -478,6 +478,10 @@ Alias creation report:
     for email, nb_alias, date in alias_creation_report():
         report += f"{email}, {date}: {nb_alias}\n"
 
+    report += f"""
+-----
+Bounce detail report:
+    """
     report += all_bounce_report()
 
     LOG.d("report email: %s", report)
