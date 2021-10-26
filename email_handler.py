@@ -1356,20 +1356,33 @@ def handle_hotmail_complaint(msg: Message) -> bool:
     """
     orig_msg = get_orig_message_from_hotmail_complaint(msg)
     to_header = orig_msg[headers.TO]
+    from_header = orig_msg[headers.FROM]
     if not to_header:
-        LOG.e("cannot find the alias")
+        LOG.e("to header empty")
         return False
+
     try:
         _, alias_address = parse_full_address(get_header_unicode(to_header))
     except ValueError:
         # to_header can be something like 'Undisclosed recipients:;'
-        LOG.w("cannot parse %s", to_header)
-        return False
-
-    alias = Alias.get_by(email=alias_address)
+        LOG.w("cannot find alias from to header %s", to_header)
+        # try parsing the alias from the from header which might contain the reverse alias
+        _, reverse_alias = parse_full_address(get_header_unicode(from_header))
+        contact = Contact.get_by(reply_email=reverse_alias)
+        if contact:
+            alias = contact.alias
+            LOG.d("find %s through %s", alias, contact)
+        else:
+            return False
+    else:
+        alias = Alias.get_by(email=alias_address)
 
     if not alias:
-        LOG.w("No alias for %s", alias_address)
+        LOG.w(
+            "Cannot parse alias from to header %s and from header %s",
+            to_header,
+            from_header,
+        )
         return False
 
     user = alias.user
