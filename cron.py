@@ -59,6 +59,7 @@ from app.models import (
     HibpNotifiedAlias,
 )
 from app.utils import sanitize_email
+from server import create_light_app
 
 
 def notify_trial_end():
@@ -895,37 +896,38 @@ if __name__ == "__main__":
         ],
     )
     args = parser.parse_args()
-
-    if args.job == "stats":
-        LOG.d("Compute Stats")
-        stats()
-    elif args.job == "notify_trial_end":
-        LOG.d("Notify users with trial ending soon")
-        notify_trial_end()
-    elif args.job == "notify_manual_subscription_end":
-        LOG.d("Notify users with manual subscription ending soon")
-        notify_manual_sub_end()
-    elif args.job == "notify_premium_end":
-        LOG.d("Notify users with premium ending soon")
-        notify_premium_end()
-    elif args.job == "delete_logs":
-        LOG.d("Deleted Logs")
-        delete_logs()
-    elif args.job == "poll_apple_subscription":
-        LOG.d("Poll Apple Subscriptions")
-        poll_apple_subscription()
-    elif args.job == "sanity_check":
-        LOG.d("Check data consistency")
-        sanity_check()
-    elif args.job == "delete_old_monitoring":
-        LOG.d("Delete old monitoring records")
-        delete_old_monitoring()
-    elif args.job == "check_custom_domain":
-        LOG.d("Check custom domain")
-        check_custom_domain()
-    elif args.job == "check_hibp":
-        LOG.d("Check HIBP")
-        asyncio.run(check_hibp())
-    elif args.job == "notify_hibp":
-        LOG.d("Notify users about HIBP breaches")
-        notify_hibp()
+    # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
+    with create_light_app().app_context():
+        if args.job == "stats":
+            LOG.d("Compute Stats")
+            stats()
+        elif args.job == "notify_trial_end":
+            LOG.d("Notify users with trial ending soon")
+            notify_trial_end()
+        elif args.job == "notify_manual_subscription_end":
+            LOG.d("Notify users with manual subscription ending soon")
+            notify_manual_sub_end()
+        elif args.job == "notify_premium_end":
+            LOG.d("Notify users with premium ending soon")
+            notify_premium_end()
+        elif args.job == "delete_logs":
+            LOG.d("Deleted Logs")
+            delete_logs()
+        elif args.job == "poll_apple_subscription":
+            LOG.d("Poll Apple Subscriptions")
+            poll_apple_subscription()
+        elif args.job == "sanity_check":
+            LOG.d("Check data consistency")
+            sanity_check()
+        elif args.job == "delete_old_monitoring":
+            LOG.d("Delete old monitoring records")
+            delete_old_monitoring()
+        elif args.job == "check_custom_domain":
+            LOG.d("Check custom domain")
+            check_custom_domain()
+        elif args.job == "check_hibp":
+            LOG.d("Check HIBP")
+            asyncio.run(check_hibp())
+        elif args.job == "notify_hibp":
+            LOG.d("Notify users about HIBP breaches")
+            notify_hibp()

@@ -131,6 +131,10 @@ def create_light_app() -> Flask:
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    @app.teardown_appcontext
+    def shutdown_session(response_or_exc):
+        Session.remove()
+
     return app
 
 

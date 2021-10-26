@@ -3,6 +3,7 @@ from app.db import Session
 from app.log import LOG
 from app.models import Mailbox, Contact, SLDomain
 from app.pgp_utils import load_public_key
+from server import create_light_app
 
 
 def load_pgp_public_keys():
@@ -50,5 +51,7 @@ def add_sl_domains():
 
 
 if __name__ == "__main__":
-    load_pgp_public_keys()
-    add_sl_domains()
+    # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
+    with create_light_app().app_context():
+        load_pgp_public_keys()
+        add_sl_domains()
