@@ -1636,7 +1636,7 @@ class EmailLog(Base, ModelMixin):
     )
 
     # the Message ID
-    message_id = deferred(sa.Column(sa.String(512), nullable=True))
+    message_id = deferred(sa.Column(sa.String(1024), nullable=True))
     # in the reply phase, the original message_id is replaced by the SL message_id
     sl_message_id = deferred(sa.Column(sa.String(512), nullable=True))
 
@@ -2596,4 +2596,4 @@ class MessageIDMatching(Base, ModelMixin):
 
     # SimpleLogin Message ID
     sl_message_id = sa.Column(sa.String(512), unique=True, nullable=False)
-    original_message_id = sa.Column(sa.String(512), unique=True, nullable=False)
+    original_message_id = sa.Column(sa.String(1024), unique=True, nullable=False)
