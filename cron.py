@@ -465,7 +465,7 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
     report += f"""
 ----
 Bounce report:
-    """
+"""
 
     for email, bounces in bounce_report():
         report += f"{email}: {bounces} "
@@ -473,7 +473,7 @@ Bounce report:
     report += f"""
 -----
 Alias creation report:
-    """
+"""
 
     for email, nb_alias, date in alias_creation_report():
         report += f"{email}, {date}: {nb_alias}\n"
