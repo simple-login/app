@@ -23,7 +23,7 @@ COPY poetry.lock pyproject.toml ./
 # Install and setup poetry
 RUN pip install -U pip \
     && apt-get update \
-    && apt install -y curl netcat gcc python3-dev gnupg \
+    && apt install -y curl netcat gcc python3-dev gnupg git \
     && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python - \
     # Remove curl and netcat from the image
     && apt-get purge -y curl netcat \
