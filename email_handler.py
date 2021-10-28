@@ -564,7 +564,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         else:
             reply_to_contact = get_or_create_reply_to_contact(reply_to, alias)
 
-    if not alias.enabled:
+    if not alias.enabled or contact.block_forward:
         LOG.d("%s is disabled, do not forward", alias)
         EmailLog.create(
             contact_id=contact.id,
@@ -574,7 +574,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             commit=True,
         )
         Session.commit()
-        # do not return 5** to allow user to receive emails later when alias is enabled
+        # do not return 5** to allow user to receive emails later when alias is enabled or contact is unblocked
         return [(True, status.E200)]
 
     ret = []
