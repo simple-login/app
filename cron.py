@@ -462,28 +462,28 @@ nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yeste
 nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percent(stats_yesterday.nb_referred_user_paid, stats_today.nb_referred_user_paid)}
     """
 
-# todo: re-enable
-#     report += f"""
-# ----
-# Bounce report:
-# """
-#
-#     for email, bounces in bounce_report():
-#         report += f"{email}: {bounces} "
-#
-#     report += f"""
-# -----
-# Alias creation report:
-# """
-#
-#     for email, nb_alias, date in alias_creation_report():
-#         report += f"{email}, {date}: {nb_alias}\n"
-#
-#     report += f"""
-# -----
-# Bounce detail report:
-#     """
-#     report += all_bounce_report()
+    # todo: re-enable
+    #     report += f"""
+    # ----
+    # Bounce report:
+    # """
+    #
+    #     for email, bounces in bounce_report():
+    #         report += f"{email}: {bounces} "
+    #
+    #     report += f"""
+    # -----
+    # Alias creation report:
+    # """
+    #
+    #     for email, nb_alias, date in alias_creation_report():
+    #         report += f"{email}, {date}: {nb_alias}\n"
+    #
+    #     report += f"""
+    # -----
+    # Bounce detail report:
+    #     """
+    #     report += all_bounce_report()
 
     LOG.d("report email: %s", report)
 
