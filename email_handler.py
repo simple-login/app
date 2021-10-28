@@ -1053,10 +1053,12 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     if not MessageIDMatching.get_by(
         sl_message_id=sl_message_id
     ) and not MessageIDMatching.get_by(original_message_id=original_message_id):
-        MessageIDMatching.create(
-            sl_message_id=sl_message_id,
-            original_message_id=original_message_id,
-        )
+        # original_message_id might be None
+        if original_message_id:
+            MessageIDMatching.create(
+                sl_message_id=sl_message_id,
+                original_message_id=original_message_id,
+            )
     else:
         LOG.w(
             "Same SL or Original Message ID has been added before %s %s",
@@ -1297,7 +1299,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             alias,
         )
         disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
-        block_sender_link  = f"{URL}/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
+        block_sender_link = f"{URL}/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
         send_email_with_rate_control(
             user,
             ALERT_BOUNCE_EMAIL,
