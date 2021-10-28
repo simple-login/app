@@ -1494,6 +1494,11 @@ class Contact(Base, ModelMixin):
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # emails sent from this contact will be blocked
+    block_forward = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     @property
     def email(self):
         return self.website_email
