@@ -656,3 +656,23 @@ def test_is_reverse_alias(flask_client):
     assert not is_reverse_alias("ra+abcd@test.org")
     assert not is_reverse_alias("reply+abcd@test.org")
     assert not is_reverse_alias("abcd@test.org")
+
+
+def test_toggle_contact(flask_client):
+    user = login(flask_client)
+
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    contact = Contact.create(
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="reply+random@sl.io",
+        user_id=alias.user_id,
+    )
+    Session.commit()
+
+    r = flask_client.post(f"/api/contacts/{contact.id}/toggle")
+
+    assert r.status_code == 200
+    assert r.json == {"block_forward": True}

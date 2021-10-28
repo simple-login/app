@@ -447,3 +447,25 @@ def delete_contact(contact_id):
     Session.commit()
 
     return jsonify(deleted=True), 200
+
+
+@api_bp.route("/contacts/<int:contact_id>/toggle", methods=["POST"])
+@require_api_auth
+def toggle_contact(contact_id):
+    """
+    Block/Unblock contact
+    Input:
+        contact_id: in url
+    Output:
+        200
+    """
+    user = g.user
+    contact = Contact.get(contact_id)
+
+    if not contact or contact.alias.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    contact.block_forward = not contact.block_forward
+    Session.commit()
+
+    return jsonify(block_forward=contact.block_forward), 200

@@ -728,6 +728,23 @@ If success, 200.
 }
 ```
 
+#### POST /api/contacts/:contact_id/toggle
+
+Block/unblock contact
+
+Input:
+- `Authentication` header that contains the api key
+- `contact_id` in url.
+
+Output:
+If success, 200 along with the new alias status:
+
+```json
+{
+    "block_forward": false
+}
+```
+
 ### Notification endpoints
 #### GET /api/notifications
 
