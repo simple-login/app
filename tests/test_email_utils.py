@@ -55,6 +55,9 @@ def test_email_belongs_to_alias_domains():
     assert not can_create_directory_for_address("hey@d3.test")
 
 
+@pytest.mark.skip(
+    reason="this test requires DNS lookup that does not work on Github CI"
+)
 def test_can_be_used_as_personal_email(flask_client):
     # default alias domain
     assert not email_can_be_used_as_mailbox("ab@sl.local")
