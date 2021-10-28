@@ -1297,16 +1297,18 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             alias,
         )
         disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
+        block_sender_link  = f"{URL}/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
         send_email_with_rate_control(
             user,
             ALERT_BOUNCE_EMAIL,
             user.email,
             f"Email from {contact.website_email} to {alias.email} cannot be delivered to your mailbox",
             render(
-                "transactional/bounce/bounced-email.txt",
+                "transactional/bounce/bounced-email.txt.jinja2",
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
+                block_sender_link=block_sender_link,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox.email,
             ),

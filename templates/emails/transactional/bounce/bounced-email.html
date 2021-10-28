@@ -9,7 +9,7 @@
   {% endcall %}
 
   {% call text() %}
-    This is usually because your mailbox service thinks the email is a <b>spam</b>.
+    This is usually because your mailbox service thinks the email is <b>spam</b>.
   {% endcall %}
 
   {{ render_button("View the bounced email", refused_email_url) }}
@@ -20,21 +20,21 @@
     Please consider the following options: <br>
 
     <ol>
-      <li>If the email is not spam at all, you can create a <b>filter</b> to explicitly allow this email
-        or simply all emails from SimpleLogin. <br>
-        How to create the filter depends on your mailbox service.
+      <li>If the email is not spam, you can create a
+        <a href="https://simplelogin.io/docs/getting-started/troubleshooting/">filter</a>
+        to explicitly allow all emails from SimpleLogin. <br>
       </li>
 
       <li>
-        If this email is indeed a spam, it means your alias {{alias.email}} is now in the hands of a spammer. <br>
-        You should <b>disable</b> the alias immediately. <br>
-        We'll <b>automatically</b> disable this alias when too many emails sent to it are bounced.
+        If this email is indeed spam, it means your alias {{ alias.email }} is now in the hands of a spammer.
+        You can either <a href="{{ disable_alias_link }}">disable the alias</a>
+        or <a href="{{ block_sender_link }}">block the sender</a> if they send too many spams.
       </li>
     </ol>
+
+    <br>
+    Please note that the alias can be automatically disabled if too many emails sent to it are bounced.
   {% endcall %}
 
-  {{ render_button("Disable alias", disable_alias_link) }}
-
   {{ render_text('Thanks, <br />SimpleLogin Team.') }}
-  {{ raw_url(disable_alias_link) }}
 {% endblock %}
