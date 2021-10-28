@@ -98,11 +98,32 @@
       {% set contact = contact_info.contact %}
       <div class="col-md-6">
         <div class="my-2 p-2 card {% if contact.id == highlight_contact_id %} highlight-row {% endif %}">
-          <div class="mb-2">
-            <span class="font-weight-bold">{{ contact.website_email }}</span>
-            {% if contact.pgp_finger_print %}
-              <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
-            {% endif %}
+          <div class="mb-2 row">
+            <div class="col">
+              <span class="font-weight-bold">{{ contact.website_email }}</span>
+              {% if contact.pgp_finger_print %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+              {% endif %}
+            </div>
+
+            <div class="col text-right">
+              <label class="custom-switch cursor"
+                     data-toggle="tooltip"
+                  {% if contact.block_forward %}
+                     title="Unblock sender - start receiving emails from this sender"
+                  {% else %}
+                     title="Block sender - stop receiving emails from this sender"
+                  {% endif %}
+                     style="padding-left: 0px"
+              >
+                <input type="checkbox" class="enable-disable-contact custom-switch-input"
+                       data-contact="{{ contact.id }}"
+                       data-contact-email="{{ contact.website_email }}"
+                    {{ "checked" if not contact.block_forward else "" }}>
+
+                <span class="custom-switch-indicator"></span>
+              </label>
+            </div>
           </div>
 
           <div>
@@ -216,8 +237,45 @@
           }
         }
       })
-
-
     });
+
+    $(".enable-disable-contact").change(async function () {
+      let contactID = $(this).data("contact");
+      let contactEmail = $(this).data("contact-email");
+
+      await blockContact(contactID, contactEmail);
+    })
+
+    async function blockContact(contactID, contactEmail) {
+      let oldValue;
+      try {
+        let res = await fetch(`/api/contacts/${contactID}/toggle`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        });
+
+        if (res.ok) {
+          let json = await res.json();
+
+          if (json.block_forward) {
+            toastr.success(`${contactEmail} is blocked`);
+          } else {
+            toastr.success(`${contactEmail} is unblocked`);
+          }
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+    }
   </script>
 {% endblock %}
