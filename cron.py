@@ -147,6 +147,7 @@ def notify_premium_end():
 
 def notify_manual_sub_end():
     for manual_sub in ManualSubscription.all():
+        manual_sub: ManualSubscription
         need_reminder = False
         if arrow.now().shift(days=14) > manual_sub.end_at > arrow.now().shift(days=13):
             need_reminder = True
@@ -155,6 +156,26 @@ def notify_manual_sub_end():
 
         if need_reminder:
             user = manual_sub.user
+
+            # user can have a (free) manual subscription but has taken a paid subscription via
+            # Paddle, Coinbase or Apple since then
+            if manual_sub.is_giveaway:
+                if user.get_subscription():
+                    LOG.d("%s has a active Paddle subscription", user)
+                    continue
+
+                coinbase_subscription: CoinbaseSubscription = (
+                    CoinbaseSubscription.get_by(user_id=user.id)
+                )
+                if coinbase_subscription and coinbase_subscription.is_active():
+                    LOG.d("%s has a active Coinbase subscription", user)
+                    continue
+
+                apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=user.id)
+                if apple_sub and apple_sub.is_valid():
+                    LOG.d("%s has a active Apple subscription", user)
+                    continue
+
             LOG.d("Remind user %s that their manual sub is ending soon", user)
             send_email(
                 user.email,
