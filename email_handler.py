@@ -768,38 +768,7 @@ def forward_email_to_mailbox(
         LOG.w("missing date header, create one")
         msg[headers.DATE] = formatdate()
 
-    # Replace SL Message-ID by original one in In-Reply-To header
-    if msg[headers.IN_REPLY_TO]:
-        matching: MessageIDMatching = MessageIDMatching.get_by(
-            sl_message_id=msg[headers.IN_REPLY_TO]
-        )
-        if matching:
-            LOG.d(
-                "replace SL message id by original one in in-reply-to header, %s -> %s",
-                msg[headers.IN_REPLY_TO],
-                matching.original_message_id,
-            )
-            del msg[headers.IN_REPLY_TO]
-            msg[headers.IN_REPLY_TO] = matching.original_message_id
-
-    # Replace SL Message-ID by original Message-ID in References header
-    if msg[headers.REFERENCES]:
-        message_ids = msg[headers.REFERENCES].split()
-        new_message_ids = []
-        for message_id in message_ids:
-            matching = MessageIDMatching.get_by(sl_message_id=message_id)
-            if matching:
-                LOG.d(
-                    "replace SL message id by original one in references header, %s -> %s",
-                    message_id,
-                    matching.original_message_id,
-                )
-                new_message_ids.append(matching.original_message_id)
-            else:
-                new_message_ids.append(message_id)
-
-        del msg[headers.REFERENCES]
-        msg[headers.REFERENCES] = " ".join(new_message_ids)
+    replace_sl_message_id_by_original_message_id(msg)
 
     # change the from header so the sender comes from a reverse-alias
     # so it can pass DMARC check
@@ -862,6 +831,41 @@ def forward_email_to_mailbox(
     else:
         Session.commit()
         return True, status.E200
+
+
+def replace_sl_message_id_by_original_message_id(msg):
+    # Replace SL Message-ID by original one in In-Reply-To header
+    if msg[headers.IN_REPLY_TO]:
+        matching: MessageIDMatching = MessageIDMatching.get_by(
+            sl_message_id=msg[headers.IN_REPLY_TO]
+        )
+        if matching:
+            LOG.d(
+                "replace SL message id by original one in in-reply-to header, %s -> %s",
+                msg[headers.IN_REPLY_TO],
+                matching.original_message_id,
+            )
+            del msg[headers.IN_REPLY_TO]
+            msg[headers.IN_REPLY_TO] = matching.original_message_id
+
+    # Replace SL Message-ID by original Message-ID in References header
+    if msg[headers.REFERENCES]:
+        message_ids = msg[headers.REFERENCES].split()
+        new_message_ids = []
+        for message_id in message_ids:
+            matching = MessageIDMatching.get_by(sl_message_id=message_id)
+            if matching:
+                LOG.d(
+                    "replace SL message id by original one in references header, %s -> %s",
+                    message_id,
+                    matching.original_message_id,
+                )
+                new_message_ids.append(matching.original_message_id)
+            else:
+                new_message_ids.append(message_id)
+
+        del msg[headers.REFERENCES]
+        msg[headers.REFERENCES] = " ".join(new_message_ids)
 
 
 def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
