@@ -46,6 +46,7 @@ from smtplib import SMTPRecipientsRefused
 from typing import List, Tuple, Optional
 
 import newrelic.agent
+import sqlalchemy
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
 from email_validator import validate_email, EmailNotValidError
@@ -1125,13 +1126,25 @@ def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message)
             str(email_log.id), get_email_domain_part(alias.email)
         )
         LOG.d("create a new sl_message_id %s", sl_message_id)
-        MessageIDMatching.create(
-            sl_message_id=sl_message_id,
-            original_message_id=original_message_id,
-            email_log_id=email_log.id,
-        )
+        try:
+            MessageIDMatching.create(
+                sl_message_id=sl_message_id,
+                original_message_id=original_message_id,
+                email_log_id=email_log.id,
+                commit=True,
+            )
+        except IntegrityError:
+            LOG.w(
+                "another matching with original_message_id %s was created in the mean time",
+                original_message_id,
+            )
+            Session.rollback()
+            matching = MessageIDMatching.get_by(original_message_id=original_message_id)
+            sl_message_id = matching.sl_message_id
+
     del msg[headers.MESSAGE_ID]
     msg[headers.MESSAGE_ID] = sl_message_id
+
     email_log.sl_message_id = sl_message_id
     Session.commit()
 
