@@ -967,7 +967,11 @@ def replace(msg: Message, old, new) -> Message:
             if encoding == EmailEncoding.QUOTED:
                 LOG.d("handle quoted-printable replace %s -> %s", old, new)
                 # first decode the payload
-                new_payload = quopri.decodestring(payload).decode("utf-8")
+                try:
+                    new_payload = quopri.decodestring(payload).decode("utf-8")
+                except UnicodeDecodeError:
+                    LOG.w("cannot decode payload:%s", payload)
+                    return msg
                 # then replace the old text
                 new_payload = new_payload.replace(old, new)
                 clone_msg = copy(msg)
