@@ -1050,9 +1050,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     email_log.sl_message_id = sl_message_id
 
     # sanity check to make sure the message id hasn't been added before
-    if not MessageIDMatching.get_by(
-        sl_message_id=sl_message_id
-    ) and not MessageIDMatching.get_by(original_message_id=original_message_id):
+    if not MessageIDMatching.get_by(original_message_id=original_message_id):
         # original_message_id might be None
         if original_message_id:
             MessageIDMatching.create(
