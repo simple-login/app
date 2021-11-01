@@ -1042,48 +1042,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     replace_header_when_reply(msg, alias, headers.TO)
     replace_header_when_reply(msg, alias, headers.CC)
 
-    # Replace original Message-ID by SL Message-ID
-    original_message_id = msg[headers.MESSAGE_ID]
-    sl_message_id = make_msgid(str(email_log.id), get_email_domain_part(alias.email))
-    del msg[headers.MESSAGE_ID]
-    msg[headers.MESSAGE_ID] = sl_message_id
-    email_log.sl_message_id = sl_message_id
-
-    # sanity check to make sure the message id hasn't been added before
-    if not MessageIDMatching.get_by(original_message_id=original_message_id):
-        # original_message_id might be None
-        if original_message_id:
-            MessageIDMatching.create(
-                sl_message_id=sl_message_id,
-                original_message_id=original_message_id,
-            )
-    else:
-        LOG.w(
-            "Same SL or Original Message ID has been added before %s %s",
-            sl_message_id,
-            original_message_id,
-        )
-
-    Session.commit()
-
-    # Replace all original headers in References header by SL Message ID header if needed
-    if msg[headers.REFERENCES]:
-        message_ids = msg[headers.REFERENCES].split()
-        new_message_ids = []
-        for message_id in message_ids:
-            matching = MessageIDMatching.get_by(original_message_id=message_id)
-            if matching:
-                LOG.d(
-                    "replace original message id by SL one, %s -> %s",
-                    message_id,
-                    matching.sl_message_id,
-                )
-                new_message_ids.append(matching.sl_message_id)
-            else:
-                new_message_ids.append(message_id)
-
-        del msg[headers.REFERENCES]
-        msg[headers.REFERENCES] = " ".join(new_message_ids)
+    replace_original_message_id(alias, email_log, msg)
 
     if not msg[headers.DATE]:
         date_header = formatdate()
@@ -1142,6 +1101,54 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     # return 250 even if error as user is already informed of the incident and can retry sending the email
     return True, status.E200
+
+
+def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message):
+    """
+    Replace original Message-ID by SL-Message-ID during the reply phase
+    for "message-id" and "References" headers
+    """
+    original_message_id = msg[headers.MESSAGE_ID]
+    matching = MessageIDMatching.get_by(original_message_id=original_message_id)
+    # can happen when a user replies to multiple recipient from their alias
+    # a SL Message_id will be created for the first recipient
+    # it should be reused for other recipients
+    if matching:
+        sl_message_id = matching.sl_message_id
+        LOG.d("reuse the sl_message_id %s", sl_message_id)
+    else:
+        sl_message_id = make_msgid(
+            str(email_log.id), get_email_domain_part(alias.email)
+        )
+        LOG.d("create a new sl_message_id %s", sl_message_id)
+        MessageIDMatching.create(
+            sl_message_id=sl_message_id,
+            original_message_id=original_message_id,
+            email_log_id=email_log.id,
+        )
+    del msg[headers.MESSAGE_ID]
+    msg[headers.MESSAGE_ID] = sl_message_id
+    email_log.sl_message_id = sl_message_id
+    Session.commit()
+
+    # Replace all original headers in References header by SL Message ID header if needed
+    if msg[headers.REFERENCES]:
+        message_ids = msg[headers.REFERENCES].split()
+        new_message_ids = []
+        for message_id in message_ids:
+            matching = MessageIDMatching.get_by(original_message_id=message_id)
+            if matching:
+                LOG.d(
+                    "replace original message id by SL one, %s -> %s",
+                    message_id,
+                    matching.sl_message_id,
+                )
+                new_message_ids.append(matching.sl_message_id)
+            else:
+                new_message_ids.append(message_id)
+
+        del msg[headers.REFERENCES]
+        msg[headers.REFERENCES] = " ".join(new_message_ids)
 
 
 def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
