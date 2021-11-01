@@ -2602,3 +2602,10 @@ class MessageIDMatching(Base, ModelMixin):
     # SimpleLogin Message ID
     sl_message_id = sa.Column(sa.String(512), unique=True, nullable=False)
     original_message_id = sa.Column(sa.String(1024), unique=True, nullable=False)
+
+    # to track what email_log that has created this matching
+    email_log_id = sa.Column(
+        sa.ForeignKey("email_log.id", ondelete="cascade"), nullable=True
+    )
+
+    email_log = orm.relationship("EmailLog")
