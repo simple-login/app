@@ -9,7 +9,8 @@ from app.config import (
 )
 
 # this format allows clickable link to code source in PyCharm
-_log_format = '%(asctime)s - %(name)s - %(levelname)s - "%(pathname)s:%(lineno)d" - %(funcName)s() - %(message_id)s - %(message)s'
+_log_format = '%(asctime)s - %(name)s - %(levelname)s - %(process)d - ' \
+              '"%(pathname)s:%(lineno)d" - %(funcName)s() - %(message_id)s - %(message)s'
 _log_formatter = logging.Formatter(_log_format)
 
 # used to keep track of an email lifecycle
