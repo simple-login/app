@@ -287,10 +287,10 @@ def send_email(
     msg[headers.DATE] = date_header
 
     if unsubscribe_link:
-        add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+        add_or_replace_header(msg, headers.LIST_UNSUBSCRIBE, f"<{unsubscribe_link}>")
         if not unsubscribe_via_email:
             add_or_replace_header(
-                msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
+                msg, headers.LIST_UNSUBSCRIBE_POST, "List-Unsubscribe=One-Click"
             )
 
     # add DKIM

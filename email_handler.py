@@ -791,10 +791,10 @@ def forward_email_to_mailbox(
 
     # add List-Unsubscribe header
     unsubscribe_link, via_email = alias.unsubscribe_link()
-    add_or_replace_header(msg, "List-Unsubscribe", f"<{unsubscribe_link}>")
+    add_or_replace_header(msg, headers.LIST_UNSUBSCRIBE, f"<{unsubscribe_link}>")
     if not via_email:
         add_or_replace_header(
-            msg, "List-Unsubscribe-Post", "List-Unsubscribe=One-Click"
+            msg, headers.LIST_UNSUBSCRIBE_POST, "List-Unsubscribe=One-Click"
         )
 
     add_dkim_signature(msg, EMAIL_DOMAIN)
