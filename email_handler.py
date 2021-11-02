@@ -636,7 +636,7 @@ def forward_email_to_mailbox(
             user.email,
             f"Your mailbox {mailbox.email} and alias {alias.email} use the same domain",
             render(
-                "transactional/mailbox-invalid.txt",
+                "transactional/mailbox-invalid.txt.jinja2",
                 mailbox=mailbox,
                 mailbox_url=mailbox_url,
                 alias=alias,
