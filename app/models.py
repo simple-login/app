@@ -381,6 +381,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # By default, the one-click unsubscribe disable the alias
+    # If set to true, it will block the sender instead
+    one_click_unsubscribe_block_sender = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     # implement flask-login "alternative token"
     def get_id(self):
         if self.alternative_id:
