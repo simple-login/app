@@ -48,7 +48,7 @@ jobs:
       - uses: actions/cache@v1
         with:
           path: ~/.cache/poetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('**/peotry.lock') }}
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             ${{ runner.os }}-poetry-
 
@@ -62,7 +62,6 @@ jobs:
         run: |
           poetry run black --check .
           flake8
-
 
       - name: Test with pytest
         run: |
