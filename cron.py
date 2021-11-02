@@ -590,7 +590,8 @@ def sanity_check():
                         mailbox.user.email,
                         f"Mailbox {mailbox.email} is disabled",
                         render(
-                            "transactional/disable-mailbox-warning.txt", mailbox=mailbox
+                            "transactional/disable-mailbox-warning.txt.jinja2",
+                            mailbox=mailbox,
                         ),
                         render(
                             "transactional/disable-mailbox-warning.html",
