@@ -1021,7 +1021,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             LOG.e(
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
-            # to not save the email_log
+            # programming error, user shouldn't see a new email log
             EmailLog.delete(email_log.id)
             Session.commit()
             # return 421 so the client can retry later
@@ -1081,9 +1081,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             is_forward=False,
         )
     except Exception:
-        # to not save the email_log
-        Session.rollback()
-
         LOG.w("Cannot send email from %s to %s", alias, contact)
         send_email(
             mailbox.email,
