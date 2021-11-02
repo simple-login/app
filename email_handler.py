@@ -46,7 +46,6 @@ from smtplib import SMTPRecipientsRefused
 from typing import List, Tuple, Optional
 
 import newrelic.agent
-import sqlalchemy
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
 from email_validator import validate_email, EmailNotValidError
