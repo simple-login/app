@@ -124,6 +124,7 @@ from app.email_utils import (
     parse_full_address,
     get_orig_message_from_yahoo_complaint,
     get_mailbox_bounce_info,
+    save_email_for_debugging,
 )
 from app.log import LOG, set_message_id
 from app.models import (
@@ -1261,7 +1262,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             email=mailbox.email, info=bounce_info.as_bytes().decode(), commit=True
         )
     else:
-        LOG.w("cannot get bounce info")
+        LOG.w("cannot get bounce info, debug at %s", save_email_for_debugging(msg))
         Bounce.create(email=mailbox.email, commit=True)
 
     LOG.d(
@@ -1489,7 +1490,7 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
             commit=True,
         )
     else:
-        LOG.w("cannot get bounce info")
+        LOG.w("cannot get bounce info, debug at %s", save_email_for_debugging(msg))
         Bounce.create(email=sanitize_email(contact.website_email), commit=True)
 
     # Store the bounced email
@@ -1753,7 +1754,7 @@ def handle_transactional_bounce(envelope: Envelope, msg, rcpt_to):
                 commit=True,
             )
         else:
-            LOG.w("cannot get bounce info")
+            LOG.w("cannot get bounce info, debug at %s", save_email_for_debugging(msg))
             Bounce.create(email=transactional.email, commit=True)
 
 
