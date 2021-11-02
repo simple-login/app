@@ -1,4 +1,4 @@
-name: Run tests & Public to Docker Registry
+name: Run tests & Publish to Docker Registry
 
 on: [push, pull_request]
 
