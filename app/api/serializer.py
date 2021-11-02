@@ -104,6 +104,7 @@ def serialize_contact(contact: Contact, existed=False) -> dict:
         "reverse_alias": contact.website_send_to(),
         "reverse_alias_address": contact.reply_email,
         "existed": existed,
+        "block_forward": contact.block_forward,
     }
 
     email_log: EmailLog = contact.last_reply()

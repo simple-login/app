@@ -465,14 +465,7 @@ def test_update_pinned(flask_client):
 
 
 def test_alias_contacts(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user = login(flask_client)
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -495,10 +488,7 @@ def test_alias_contacts(flask_client):
         )
         Session.commit()
 
-    r = flask_client.get(
-        url_for("api.get_alias_contacts_route", alias_id=alias.id, page_id=0),
-        headers={"Authentication": api_key.code},
-    )
+    r = flask_client.get(f"/api/aliases/{alias.id}/contacts?page_id=0")
 
     assert r.status_code == 200
     assert len(r.json["contacts"]) == PAGE_LIMIT
@@ -510,12 +500,10 @@ def test_alias_contacts(flask_client):
         assert ac["contact"]
         assert ac["reverse_alias"]
         assert ac["reverse_alias_address"]
+        assert "block_forward" in ac
 
     # second page, should return 1 result only
-    r = flask_client.get(
-        url_for("api.get_alias_contacts_route", alias_id=alias.id, page_id=1),
-        headers={"Authentication": api_key.code},
-    )
+    r = flask_client.get(f"/api/aliases/{alias.id}/contacts?page_id=1")
     assert len(r.json["contacts"]) == 1
 
 

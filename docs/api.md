@@ -497,7 +497,8 @@ If success, 200 with the list of contacts, for example:
       "creation_timestamp": 1582284900,
       "last_email_sent_date": null,
       "last_email_sent_timestamp": null,
-      "reverse_alias": "marketing at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>"
+      "reverse_alias": "marketing at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>",
+      "block_forward": false
     },
     {
       "id": 2,
@@ -507,7 +508,8 @@ If success, 200 with the list of contacts, for example:
       "last_email_sent_date": "2020-02-21 11:35:00+00:00",
       "last_email_sent_timestamp": 1582284900,
       "reverse_alias": "newsletter at example.com <reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co>",
-      "reverse_alias_address": "reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co"
+      "reverse_alias_address": "reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co",
+      "block_forward": true
     }
   ]
 }
