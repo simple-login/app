@@ -1089,7 +1089,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             mailbox.email,
             f"Email cannot be sent to {contact.email} from {alias.email}",
             render(
-                "transactional/reply-error.txt",
+                "transactional/reply-error.txt.jinja2",
                 user=user,
                 alias=alias,
                 contact=contact,
