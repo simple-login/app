@@ -497,7 +497,7 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
         mailbox.email,
         f"Email sent to {alias.email} from its own mailbox {mailbox.email}",
         render(
-            "transactional/cycle-email.txt",
+            "transactional/cycle-email.txt.jinja2",
             alias=alias,
             mailbox=mailbox,
             refused_email_url=refused_email_url,
