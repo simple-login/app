@@ -702,7 +702,7 @@ def check_custom_domain():
                     user.email,
                     f"Please update {custom_domain.domain} DNS on SimpleLogin",
                     render(
-                        "transactional/custom-domain-dns-issue.txt",
+                        "transactional/custom-domain-dns-issue.txt.jinja2",
                         custom_domain=custom_domain,
                         domain_dns_url=domain_dns_url,
                     ),
