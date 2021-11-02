@@ -160,6 +160,10 @@ def notify_manual_sub_end():
             # user can have a (free) manual subscription but has taken a paid subscription via
             # Paddle, Coinbase or Apple since then
             if manual_sub.is_giveaway:
+                if user.lifetime:
+                    LOG.d("%s has a lifetime licence", user)
+                    continue
+
                 if user.get_subscription():
                     LOG.d("%s has a active Paddle subscription", user)
                     continue
