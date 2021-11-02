@@ -790,7 +790,11 @@ def forward_email_to_mailbox(
     replace_header_when_forward(msg, alias, "To")
 
     # add List-Unsubscribe header
-    unsubscribe_link, via_email = alias.unsubscribe_link()
+    if user.one_click_unsubscribe_block_sender:
+        unsubscribe_link, via_email = alias.unsubscribe_link(contact)
+    else:
+        unsubscribe_link, via_email = alias.unsubscribe_link()
+
     add_or_replace_header(msg, headers.LIST_UNSUBSCRIBE, f"<{unsubscribe_link}>")
     if not via_email:
         add_or_replace_header(
@@ -1650,10 +1654,19 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
     """return the SMTP status"""
     # format: alias_id:
     subject = msg[headers.SUBJECT]
+    alias, contact = None, None
+
     try:
         # subject has the format {alias.id}=
         if subject.endswith("="):
             alias_id = int(subject[:-1])
+            alias = Alias.get(alias_id)
+        # {contact.id}_
+        elif subject.endswith("_"):
+            contact_id = int(subject[:-1])
+            contact = Contact.get(contact_id)
+            if contact:
+                alias = contact.alias
         # {user.id}*
         elif subject.endswith("*"):
             user_id = int(subject[:-1])
@@ -1661,8 +1674,7 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
         # some email providers might strip off the = suffix
         else:
             alias_id = int(subject)
-
-        alias = Alias.get(alias_id)
+            alias = Alias.get(alias_id)
     except Exception:
         LOG.w("Cannot parse alias from subject %s", msg[headers.SUBJECT])
         return status.E507
@@ -1671,7 +1683,6 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
         LOG.w("No such alias %s", alias_id)
         return status.E508
 
-    # This sender cannot unsubscribe
     mail_from = envelope.mail_from
     # Only alias's owning mailbox can send the unsubscribe request
     mailbox = get_mailbox_from_mail_from(mail_from, alias)
@@ -1679,29 +1690,48 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
         LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
         return status.E509
 
-    # Sender is owner of this alias
-    alias.enabled = False
-    Session.commit()
     user = alias.user
 
-    enable_alias_url = URL + f"/dashboard/?highlight_alias_id={alias.id}"
-    for mailbox in alias.mailboxes:
-        send_email(
-            mailbox.email,
-            f"Alias {alias.email} has been disabled successfully",
-            render(
-                "transactional/unsubscribe-disable-alias.txt",
-                user=user,
-                alias=alias.email,
-                enable_alias_url=enable_alias_url,
-            ),
-            render(
-                "transactional/unsubscribe-disable-alias.html",
-                user=user,
-                alias=alias.email,
-                enable_alias_url=enable_alias_url,
-            ),
+    if contact:
+        contact.block_forward = True
+        Session.commit()
+        unblock_contact_url = (
+            URL
+            + f"dashboard/alias_contact_manager/{alias.id}/highlight_contact_id={contact.id}"
         )
+        for mailbox in alias.mailboxes:
+            send_email(
+                mailbox.email,
+                f"Emails from {contact.website_email} to {alias.email} are now blocked",
+                render(
+                    "transactional/unsubscribe-block-contact.txt.jinja2",
+                    user=user,
+                    alias=alias,
+                    contact=contact,
+                    unblock_contact_url=unblock_contact_url,
+                ),
+            )
+    else:
+        alias.enabled = False
+        Session.commit()
+        enable_alias_url = URL + f"/dashboard/?highlight_alias_id={alias.id}"
+        for mailbox in alias.mailboxes:
+            send_email(
+                mailbox.email,
+                f"Alias {alias.email} has been disabled successfully",
+                render(
+                    "transactional/unsubscribe-disable-alias.txt",
+                    user=user,
+                    alias=alias.email,
+                    enable_alias_url=enable_alias_url,
+                ),
+                render(
+                    "transactional/unsubscribe-disable-alias.html",
+                    user=user,
+                    alias=alias.email,
+                    enable_alias_url=enable_alias_url,
+                ),
+            )
 
     return status.E202
 
