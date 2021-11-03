@@ -1,10 +1,10 @@
 <button
-    class="ml-2 btn btn-sm {% if contact.block_forward %} btn-outline-success {% else %} btn-outline-warning {% endif %}"
+    class="btn btn-sm {% if contact.block_forward %} text-primary {% else %} text-warning {% endif %}"
     hx-post="{{ url_for('dashboard.toggle_contact', contact_id=contact.id) }}" hx-swap="outerHTML">
   {% if contact.block_forward %}
-    Unblock sender
+    <i class="fe fe-play-circle" data-toggle="tooltip" title="Unblock sender"></i>
   {% else %}
-    Block sender
+    <i class="fe fe-pause-circle" data-toggle="tooltip" title="Block sender"></i>
   {% endif %}
 </button>
 
