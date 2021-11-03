@@ -316,8 +316,8 @@
         </div>
         <div class="mb-3">
           When replying to a forwarded email, the <b>reverse-alias</b> can be automatically included
-          in the attached message by your email client. <br>
-          Turning on this option will <b>replace</b> the reverse-alias by your contact email. <br>
+          in the attached message by your email client.
+          If this option is enabled, SimpleLogin will try to <b>replace</b> the reverse-alias by your contact email. <br>
         </div>
         <form method="post" action="#reverse-alias-replacement-section">
           <input type="hidden" name="form-name" value="replace-ra">
@@ -340,9 +340,10 @@
           By default, the reverse-alias is randomly generated and doesn't contain any information about
           the sender.<br>
 
-          You can however enable this option to include the sender address in the reverse-alias. <br>
+          Enabling this option will include the sender address in the reverse-alias. <br>
 
-          This can be useful when setting up an email filter and makes the reverse-alias more readable.
+          This can be useful if you want to set up email filters based on the reverse-alias.
+          It will also make the reverse-alias more readable.
         </div>
         <form method="post" action="#sender-in-ra">
           <input type="hidden" name="form-name" value="sender-in-ra">
