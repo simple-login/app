@@ -41,7 +41,7 @@ function confirmDeleteAlias() {
       },
 
     }
-  })
+  });
 }
 
 $(".enable-disable-alias").change(async function () {
@@ -113,7 +113,7 @@ $(".enable-disable-pgp").change(async function (e) {
       // reset to the original value
       $(this).prop("checked", oldValue);
     }
-  } catch (e) {
+  } catch (err) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
     // reset to the original value
     $(this).prop("checked", oldValue);
