@@ -403,6 +403,30 @@
     </div>
     <!-- END Ignore Loop Email -->
 
+    <!-- One-click subscribe -->
+    <div class="card" id="one-click-unsubscribe-section">
+      <div class="card-body">
+        <div class="card-title">One-click unsubscribe</div>
+        <div class="mb-3">
+          On email clients that support the
+          <a href="https://simplelogin.io/docs/getting-started/one-click-unsubscribe/">One-click unsubscribe</a> button,
+          clicking on it will disable the alias that receives the emails.
+          <br>
+          You can choose to block the sender instead of disabling the alias.
+        </div>
+        <form method="post" action="#one-click-unsubscribe-section">
+          <input type="hidden" name="form-name" value="one-click-unsubscribe">
+          <div class="form-check">
+            <input type="checkbox" id="one-click-unsubscribe" name="enable"
+                {% if current_user.one_click_unsubscribe_block_sender %} checked {% endif %} class="form-check-input">
+            <label for="one-click-unsubscribe">Block sender instead</label>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Update</button>
+        </form>
+      </div>
+    </div>
+    <!-- END One-click subscribe -->
+
     <div class="card">
       <div class="card-body">
         <div class="card-title">Quarantine</div>
