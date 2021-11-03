@@ -314,11 +314,11 @@
                     {{ email_log.created_at | dt }}
                   {% elif email_log.bounced %}
                     <span class="text-danger">
-                  {{ contact.website_email }}
-                  <i class="fa fa-warning mr-2" data-toggle="tooltip"
-                     title="Email bounced and cannot be forwarded to your mailbox"></i>
-                  {{ email_log.created_at | dt }}
-                </span>
+                      {{ contact.website_email }}
+                      <i class="fa fa-warning mr-2" data-toggle="tooltip"
+                         title="Email bounced and cannot be forwarded to your mailbox"></i>
+                      {{ email_log.created_at | dt }}
+                    </span>
                   {% elif email_log.blocked %}
                     {{ contact.website_email }}
                     <i class="fa fa-ban mr-2 text-danger" data-toggle="tooltip" title="Email blocked"></i>
@@ -371,9 +371,9 @@
                   {% endif %}
                  class="btn btn-sm btn-outline-primary {% if not alias.enabled %} disabled {% endif %}"
                  data-toggle="tooltip"
-                 title="Alias can be used to SEND and RECEIVE messages"
+                 title="Add new contact, manage your existing contacts"
               >
-                Send Email&nbsp; &nbsp;<i class="fe fe-send"></i>
+                Contacts&nbsp; &nbsp;<i class="fe fe-send"></i>
               </a>
             </div>
             {% if not current_user.expand_alias_info %}
