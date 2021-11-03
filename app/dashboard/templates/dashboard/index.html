@@ -327,6 +327,8 @@
                     {{ contact.website_email }}
                     <i class="fa fa-paper-plane  mr-2" data-toggle="tooltip" title="Email sent to alias"></i>
                     {{ email_log.created_at | dt }}
+                    {% include 'partials/toggle_contact.html' %}
+
                   {% endif %}
                 {% else %}
                   No emails received/sent in the last 14 days. Created {{ alias.created_at | dt }}.

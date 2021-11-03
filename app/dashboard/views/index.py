@@ -15,6 +15,7 @@ from app.models import (
     AliasGeneratorEnum,
     User,
     EmailLog,
+    Contact,
 )
 
 
@@ -187,4 +188,29 @@ def index():
         sort=sort,
         filter=alias_filter,
         stats=stats,
+    )
+
+
+@dashboard_bp.route("/contacts/<int:contact_id>/toggle", methods=["POST"])
+def toggle_contact(contact_id):
+    """
+    Block/Unblock contact
+    """
+    contact = Contact.get(contact_id)
+
+    if not contact or contact.alias.user_id != current_user.id:
+        return "Forbidden", 403
+
+    contact.block_forward = not contact.block_forward
+    Session.commit()
+
+    if contact.block_forward:
+        toast_msg = f"{contact.website_email} can no longer send emails to {contact.alias.email}"
+    else:
+        toast_msg = (
+            f"{contact.website_email} can now send emails to {contact.alias.email}"
+        )
+
+    return render_template(
+        "partials/toggle_contact.html", contact=contact, toast_msg=toast_msg
     )
