@@ -1697,7 +1697,7 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
         Session.commit()
         unblock_contact_url = (
             URL
-            + f"dashboard/alias_contact_manager/{alias.id}/highlight_contact_id={contact.id}"
+            + f"/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
         )
         for mailbox in alias.mailboxes:
             send_email(
