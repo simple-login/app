@@ -49,7 +49,7 @@ $(".enable-disable-alias").change(async function () {
   let alias = $(this).data("alias-email");
 
   await disableAlias(aliasId, alias);
-})
+});
 
 async function disableAlias(aliasId, alias) {
   let oldValue;
@@ -118,7 +118,7 @@ $(".enable-disable-pgp").change(async function (e) {
     // reset to the original value
     $(this).prop("checked", oldValue);
   }
-})
+});
 
 $(".pin-alias").change(async function () {
   let aliasId = $(this).data("alias");
@@ -153,7 +153,7 @@ $(".pin-alias").change(async function () {
     // reset to the original value
     $(this).prop("checked", oldValue);
   }
-})
+});
 
 $(".save-note").on("click", async function () {
   let oldValue;
@@ -186,7 +186,7 @@ $(".save-note").on("click", async function () {
     $(this).prop("checked", oldValue);
   }
 
-})
+});
 
 $(".save-mailbox").on("click", async function () {
   let oldValue;
@@ -224,7 +224,7 @@ $(".save-mailbox").on("click", async function () {
     $(this).prop("checked", oldValue);
   }
 
-})
+});
 
 $(".save-alias-name").on("click", async function () {
   let aliasId = $(this).data("alias");
@@ -250,7 +250,7 @@ $(".save-alias-name").on("click", async function () {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
   }
 
-})
+});
 
 
 new Vue({
