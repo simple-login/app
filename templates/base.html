@@ -202,6 +202,10 @@
     }
   });
 
+  document.body.addEventListener('htmx:responseError', function(evt) {
+    toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+  });
+
 </script>
 
 <script src="{{ url_for('static', filename='local-storage-polyfill.js') }}"></script>
