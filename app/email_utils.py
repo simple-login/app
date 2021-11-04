@@ -268,13 +268,13 @@ def send_email(
     else:
         smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
 
-    msg = MIMEMultipart("alternative")
-    msg.attach(MIMEText(plaintext))
-
-    if not html:
-        LOG.d("Use plaintext as html")
-        html = plaintext.replace("\n", "<br>")
-    msg.attach(MIMEText(html, "html"))
+    if html:
+        msg = MIMEMultipart("alternative")
+        msg.attach(MIMEText(plaintext))
+        msg.attach(MIMEText(html, "html"))
+    else:
+        msg = Message()
+        msg.set_payload(plaintext)
 
     msg[headers.SUBJECT] = subject
     msg[headers.FROM] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
