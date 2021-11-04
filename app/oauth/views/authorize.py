@@ -104,6 +104,21 @@ def authorize():
             if client_user:
                 LOG.d("user %s has already allowed client %s", current_user, client)
                 user_info = client_user.get_user_info()
+
+                # redirect user to the client page
+                redirect_args = construct_redirect_args(
+                    client,
+                    client_user,
+                    nonce,
+                    redirect_uri,
+                    response_types,
+                    scope,
+                    state,
+                )
+                fragment = get_fragment(response_mode, response_types)
+
+                # construct redirect_uri with redirect_args
+                return redirect(construct_url(redirect_uri, redirect_args, fragment))
             else:
                 suggested_email, other_emails = current_user.suggested_emails(
                     client.name
@@ -250,67 +265,74 @@ def authorize():
             Session.flush()
             LOG.d("create client-user for client %s, user %s", client, current_user)
 
-        redirect_args = {}
-
-        if state:
-            redirect_args["state"] = state
-        else:
-            LOG.w("more security reason, state should be added. client %s", client)
-
-        if scope:
-            redirect_args["scope"] = scope
-
-        auth_code = None
-        if ResponseType.CODE in response_types:
-            auth_code = AuthorizationCode.create(
-                client_id=client.id,
-                user_id=current_user.id,
-                code=random_string(),
-                scope=scope,
-                redirect_uri=redirect_uri,
-                response_type=response_types_to_str(response_types),
-                nonce=nonce,
-            )
-            redirect_args["code"] = auth_code.code
-
-        oauth_token = None
-        if ResponseType.TOKEN in response_types:
-            # create access-token
-            oauth_token = OauthToken.create(
-                client_id=client.id,
-                user_id=current_user.id,
-                scope=scope,
-                redirect_uri=redirect_uri,
-                access_token=generate_access_token(),
-                response_type=response_types_to_str(response_types),
-            )
-            Session.add(oauth_token)
-            redirect_args["access_token"] = oauth_token.access_token
-
-        if ResponseType.ID_TOKEN in response_types:
-            redirect_args["id_token"] = make_id_token(
-                client_user,
-                nonce,
-                oauth_token.access_token if oauth_token else None,
-                auth_code.code if auth_code else None,
-            )
-
-        Session.commit()
-
-        # should all params appended the url using fragment (#) or query
-        fragment = False
-
-        if response_mode and response_mode == "fragment":
-            fragment = True
-
-        # if response_types contain "token" => implicit flow => should use fragment
-        # except if client sets explicitly response_mode
-        if not response_mode:
-            if ResponseType.TOKEN in response_types:
-                fragment = True
+        redirect_args = construct_redirect_args(
+            client, client_user, nonce, redirect_uri, response_types, scope, state
+        )
+        fragment = get_fragment(response_mode, response_types)
 
         # construct redirect_uri with redirect_args
         return redirect(construct_url(redirect_uri, redirect_args, fragment))
+
+
+def get_fragment(response_mode, response_types):
+    # should all params appended the url using fragment (#) or query
+    fragment = False
+    if response_mode and response_mode == "fragment":
+        fragment = True
+    # if response_types contain "token" => implicit flow => should use fragment
+    # except if client sets explicitly response_mode
+    if not response_mode:
+        if ResponseType.TOKEN in response_types:
+            fragment = True
+    return fragment
+
+
+def construct_redirect_args(
+    client, client_user, nonce, redirect_uri, response_types, scope, state
+) -> dict:
+    redirect_args = {}
+    if state:
+        redirect_args["state"] = state
+    else:
+        LOG.w("more security reason, state should be added. client %s", client)
+    if scope:
+        redirect_args["scope"] = scope
+
+    auth_code = None
+    if ResponseType.CODE in response_types:
+        auth_code = AuthorizationCode.create(
+            client_id=client.id,
+            user_id=current_user.id,
+            code=random_string(),
+            scope=scope,
+            redirect_uri=redirect_uri,
+            response_type=response_types_to_str(response_types),
+            nonce=nonce,
+        )
+        redirect_args["code"] = auth_code.code
+
+    oauth_token = None
+    if ResponseType.TOKEN in response_types:
+        # create access-token
+        oauth_token = OauthToken.create(
+            client_id=client.id,
+            user_id=current_user.id,
+            scope=scope,
+            redirect_uri=redirect_uri,
+            access_token=generate_access_token(),
+            response_type=response_types_to_str(response_types),
+        )
+        Session.add(oauth_token)
+        redirect_args["access_token"] = oauth_token.access_token
+    if ResponseType.ID_TOKEN in response_types:
+        redirect_args["id_token"] = make_id_token(
+            client_user,
+            nonce,
+            oauth_token.access_token if oauth_token else None,
+            auth_code.code if auth_code else None,
+        )
+    Session.commit()
+    return redirect_args
 
 
 def construct_url(url, args: Dict[str, str], fragment: bool = False):
