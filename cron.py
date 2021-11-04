@@ -382,14 +382,14 @@ def all_bounce_report() -> str:
     )
 
     for email, count in query:
-        res += "----\n"
         res += f"{email}: {count} bounces. "
         most_recent: Bounce = (
             Bounce.filter(Bounce.email == email)
             .order_by(Bounce.created_at.desc())
             .first()
         )
-        res += f"Most recent cause: {most_recent.info}\n"
+        res += f"Most recent cause: \n{most_recent.info or ''}"
+        res += "\n----\n"
 
     return res
 
@@ -487,28 +487,25 @@ nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yeste
 nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percent(stats_yesterday.nb_referred_user_paid, stats_today.nb_referred_user_paid)}
     """
 
-    # todo: re-enable
-    #     report += f"""
-    # ----
-    # Bounce report:
-    # """
-    #
-    #     for email, bounces in bounce_report():
-    #         report += f"{email}: {bounces} "
-    #
-    #     report += f"""
-    # -----
-    # Alias creation report:
-    # """
-    #
-    #     for email, nb_alias, date in alias_creation_report():
-    #         report += f"{email}, {date}: {nb_alias}\n"
-    #
-    #     report += f"""
-    # -----
-    # Bounce detail report:
-    #     """
-    #     report += all_bounce_report()
+    report += "\n====================================\n"
+    report += f"""
+# Account bounce report:
+"""
+
+    for email, bounces in bounce_report():
+        report += f"{email}: {bounces} "
+
+    report += f"""\n
+# Alias creation report:
+"""
+
+    for email, nb_alias, date in alias_creation_report():
+        report += f"{email}, {date}: {nb_alias}\n"
+
+    report += f"""\n
+# Full bounce detail report:
+"""
+    report += all_bounce_report()
 
     LOG.d("report email: %s", report)
 
