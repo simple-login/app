@@ -114,7 +114,7 @@ def send_trial_end_soon_email(user):
     send_email(
         user.email,
         f"Your trial will end soon",
-        render("transactional/trial-end.txt", user=user),
+        render("transactional/trial-end.txt.jinja2", user=user),
         render("transactional/trial-end.html", user=user),
     )
 

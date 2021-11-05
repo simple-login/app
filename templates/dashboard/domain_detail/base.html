@@ -1,6 +1,10 @@
 {% extends 'default.html' %}
 
-{% set active_page = "custom_domain" %}
+{% if custom_domain.is_sl_subdomain %}
+  {% set active_page = "subdomain" %}
+{% else %}
+  {% set active_page = "custom_domain" %}
+{% endif %}
 
 {% block default_content %}
   <div class="row">
