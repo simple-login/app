@@ -1932,6 +1932,11 @@ class CustomDomain(Base, ModelMixin):
     # the TXT record should be sl-verification=txt_token
     ownership_txt_token = sa.Column(sa.String(128), nullable=True)
 
+    # if the domain is SimpleLogin subdomain, no need for the ownership, SPF, DKIM, DMARC check
+    is_sl_subdomain = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     __table_args__ = (
         Index(
             "ix_unique_domain",  # Index name
@@ -2444,6 +2449,11 @@ class SLDomain(Base, ModelMixin):
 
     # only available for premium accounts
     premium_only = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
+    )
+
+    # if True, the domain can be used for the subdomain feature
+    can_use_subdomain = sa.Column(
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
