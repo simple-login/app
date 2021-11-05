@@ -387,6 +387,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # subdomain access is limited at the beginning
+    can_use_subdomain = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     # implement flask-login "alternative token"
     def get_id(self):
         if self.alternative_id:
