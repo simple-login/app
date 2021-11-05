@@ -50,9 +50,9 @@ def subdomain_route():
                     domain=full_domain,
                     user_id=current_user.id,
                     verified=True,
-                    dkim_verified=True,
+                    dkim_verified=False,  # wildcard DNS does not work for DKIM
                     spf_verified=True,
-                    dmarc_verified=True,
+                    dmarc_verified=False,  # wildcard DNS does not work for DMARC
                     ownership_verified=True,
                     commit=True,
                 )
