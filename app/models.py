@@ -392,6 +392,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    @staticmethod
+    def subdomain_is_available():
+        return SLDomain.filter_by(can_use_subdomain=True).count() > 0
+
     # implement flask-login "alternative token"
     def get_id(self):
         if self.alternative_id:

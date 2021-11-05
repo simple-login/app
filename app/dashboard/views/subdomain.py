@@ -9,7 +9,7 @@ from app.models import CustomDomain, Mailbox, SLDomain
 @dashboard_bp.route("/subdomain", methods=["GET", "POST"])
 @login_required
 def subdomain_route():
-    if not current_user.can_use_subdomain:
+    if not current_user.can_use_subdomain or not current_user.subdomain_is_available():
         flash("Unknown error, redirect to the home page", "error")
         return redirect(url_for("dashboard.index"))
 
