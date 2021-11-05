@@ -1115,33 +1115,41 @@ def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message)
     for "message-id" and "References" headers
     """
     original_message_id = msg[headers.MESSAGE_ID]
-    matching = MessageIDMatching.get_by(original_message_id=original_message_id)
-    # can happen when a user replies to multiple recipient from their alias
-    # a SL Message_id will be created for the first recipient
-    # it should be reused for other recipients
-    if matching:
-        sl_message_id = matching.sl_message_id
-        LOG.d("reuse the sl_message_id %s", sl_message_id)
+    if original_message_id:
+        matching = MessageIDMatching.get_by(original_message_id=original_message_id)
+        # can happen when a user replies to multiple recipient from their alias
+        # a SL Message_id will be created for the first recipient
+        # it should be reused for other recipients
+        if matching:
+            sl_message_id = matching.sl_message_id
+            LOG.d("reuse the sl_message_id %s", sl_message_id)
+        else:
+            sl_message_id = make_msgid(
+                str(email_log.id), get_email_domain_part(alias.email)
+            )
+            LOG.d("create a new sl_message_id %s", sl_message_id)
+            try:
+                MessageIDMatching.create(
+                    sl_message_id=sl_message_id,
+                    original_message_id=original_message_id,
+                    email_log_id=email_log.id,
+                    commit=True,
+                )
+            except IntegrityError:
+                LOG.w(
+                    "another matching with original_message_id %s was created in the mean time",
+                    original_message_id,
+                )
+                Session.rollback()
+                matching = MessageIDMatching.get_by(
+                    original_message_id=original_message_id
+                )
+                sl_message_id = matching.sl_message_id
     else:
         sl_message_id = make_msgid(
             str(email_log.id), get_email_domain_part(alias.email)
         )
-        LOG.d("create a new sl_message_id %s", sl_message_id)
-        try:
-            MessageIDMatching.create(
-                sl_message_id=sl_message_id,
-                original_message_id=original_message_id,
-                email_log_id=email_log.id,
-                commit=True,
-            )
-        except IntegrityError:
-            LOG.w(
-                "another matching with original_message_id %s was created in the mean time",
-                original_message_id,
-            )
-            Session.rollback()
-            matching = MessageIDMatching.get_by(original_message_id=original_message_id)
-            sl_message_id = matching.sl_message_id
+        LOG.d("no original_message_id, create a new sl_message_id %s", sl_message_id)
 
     del msg[headers.MESSAGE_ID]
     msg[headers.MESSAGE_ID] = sl_message_id
