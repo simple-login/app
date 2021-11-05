@@ -11,10 +11,12 @@
           <span class="icon mr-3"><i class="fe fe-flag"></i></span>Info
         </a>
 
-        <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
-           class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'dns' }}">
-          <span class="icon mr-3"><i class="fe fe-cloud"></i></span>DNS
-        </a>
+        {% if not custom_domain.is_sl_subdomain %}
+          <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
+             class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'dns' }}">
+            <span class="icon mr-3"><i class="fe fe-cloud"></i></span>DNS
+          </a>
+        {% endif %}
 
         <a href="{{ url_for('dashboard.domain_detail_trash', custom_domain_id=custom_domain.id) }}"
            class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'trash' }}">

@@ -3,6 +3,7 @@ from .views import (
     pricing,
     setting,
     custom_alias,
+    subdomain,
     billing,
     alias_log,
     unsubscribe,
