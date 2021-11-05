@@ -263,7 +263,7 @@ def mailbox_confirm_change_route():
 
         # new_email can be None if user cancels change in the meantime
         if mailbox and mailbox.new_email:
-            if Mailbox.get_by(email=mailbox.new_email):
+            if Mailbox.get_by(email=mailbox.new_email, user_id=current_user.id):
                 flash(f"{mailbox.new_email} is already used", "error")
                 return redirect(
                     url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
