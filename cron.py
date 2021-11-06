@@ -377,7 +377,7 @@ def all_bounce_report() -> str:
         .filter(Bounce.created_at > min_dt)
         .group_by(Bounce.email)
         # not return mailboxes that have too little bounces
-        .having(func.count(Bounce.id) > 5)
+        .having(func.count(Bounce.id) > 3)
         .order_by(desc("nb_bounce"))
     )
 
@@ -493,7 +493,7 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
 """
 
     for email, bounces in bounce_report():
-        report += f"{email}: {bounces} "
+        report += f"{email}: {bounces}\n"
 
     report += f"""\n
 # Alias creation report:
