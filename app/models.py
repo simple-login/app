@@ -232,7 +232,7 @@ class Fido(Base, ModelMixin):
         nullable=False,
     )
     public_key = sa.Column(sa.String(), nullable=False, unique=True)
-    sign_count = sa.Column(sa.Integer(), nullable=False)
+    sign_count = sa.Column(sa.BigInteger(), nullable=False)
     name = sa.Column(sa.String(128), nullable=False, unique=False)
 
 
