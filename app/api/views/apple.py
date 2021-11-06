@@ -36,8 +36,8 @@ def apple_process_payment():
         200 of the payment is successful, i.e. user is upgraded to premium
 
     """
-    LOG.d("request for /apple/process_payment")
     user = g.user
+    LOG.d("request for /apple/process_payment from %s", user)
     data = request.get_json()
     receipt_data = data.get("receipt_data")
     is_macapp = "is_macapp" in data
@@ -291,9 +291,10 @@ def apple_update_notification():
 
 
 def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
-    """Call verifyReceipt endpoint and create/update AppleSubscription table
+    """
+    Call https://buy.itunes.apple.com/verifyReceipt and create/update AppleSubscription table
     Call the production URL for verifyReceipt first,
-    and proceed to verify with the sandbox URL if receive a 21007 status code.
+        use sandbox URL if receive a 21007 status code.
 
     Return AppleSubscription object if success
 
@@ -473,8 +474,9 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
 
     if data["status"] != 0:
         LOG.w(
-            "verifyReceipt status !=0, probably invalid receipt. User %s",
+            "verifyReceipt status !=0, probably invalid receipt. User %s, data %s",
             user,
+            data,
         )
         return None
 
