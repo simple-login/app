@@ -202,7 +202,7 @@ def test_import(flask_client):
 
     import_from_csv(batch_import, user, alias_data)
 
-    aliases = Alias.filter_by(user_id=user.id).all()
+    aliases = Alias.filter_by(user_id=user.id).order_by(Alias.id).all()
     assert len(aliases) == 3  # +2
 
     # aliases[0] is the onboarding alias, skip it
