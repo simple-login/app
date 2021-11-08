@@ -842,7 +842,7 @@ def replace_sl_message_id_by_original_message_id(msg):
     # Replace SL Message-ID by original one in In-Reply-To header
     if msg[headers.IN_REPLY_TO]:
         matching: MessageIDMatching = MessageIDMatching.get_by(
-            sl_message_id=msg[headers.IN_REPLY_TO]
+            sl_message_id=str(msg[headers.IN_REPLY_TO])
         )
         if matching:
             LOG.d(
