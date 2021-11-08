@@ -8,7 +8,7 @@
   {% endcall %}
 
   {% call text() %}
-    If you have several email addresses, say Gmail and Protonmail,
+    If you have several email inboxes, say Gmail and ProtonMail,
     you can add them into SimpleLogin as <b>mailboxes</b>.
   {% endcall %}
 
@@ -16,14 +16,14 @@
        style="max-width: 100%; margin: auto; border: 1px solid">
 
   {% call text() %}
-    When creating an alias, you can choose the mailbox that <b>owns</b> this alias, meaning: <br>
-    1. Emails sent to this alias are forwarded to the owning mailbox. <br>
-    2. The owning mailbox can send or reply emails from this alias.
+    When creating an alias, you can choose the mailbox(es) that
+    <b>owns</b> this alias, meaning: <br>
+    1. Emails sent to this alias are forwarded to the owning mailbox(es). <br>
+    2. The owning mailbox(es) can send emails from this alias.
   {% endcall %}
 
   {% call text() %}
-    A mailbox doesn't have to be <b>your</b> email address: you can also create aliases for your friend by adding
-    his/her email address as your mailbox.
+    Please note that adding additional mailboxes is only available in the Premium plan.
   {% endcall %}
 
   {{ render_button("Create mailbox", URL ~ "/dashboard/mailbox") }}
