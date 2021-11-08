@@ -296,6 +296,9 @@ def update_alias(alias_id):
     if "name" in data:
         # to make sure alias name doesn't contain linebreak
         new_name = data.get("name")
+        if len(new_name) > 128:
+            return jsonify(error="Name can't be longer than 128 characters"), 400
+
         if new_name:
             new_name = new_name.replace("\n", "")
         alias.name = new_name
