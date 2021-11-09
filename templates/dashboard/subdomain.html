@@ -61,7 +61,7 @@
         {% endfor %}
       </div>
 
-      <div class="row" id="new-subdomain">
+      <div class="row {% if not can_create %} disabled-content {% endif %}" id="new-subdomain" >
         <div class="col">
           <div class="card">
             <div class="card-body">

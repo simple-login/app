@@ -1,6 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
+from app.config import MAX_NB_SUBDOMAIN
 from app.dashboard.base import dashboard_bp
 from app.log import LOG
 from app.models import CustomDomain, Mailbox, SLDomain
@@ -24,6 +25,12 @@ def subdomain_route():
         if request.form.get("form-name") == "create":
             if not current_user.is_premium():
                 flash("Only premium plan can add subdomain", "warning")
+                return redirect(request.url)
+
+            if len(subdomains) >= MAX_NB_SUBDOMAIN:
+                flash(
+                    f"You can't create more than {MAX_NB_SUBDOMAIN} subdomains", "error"
+                )
                 return redirect(request.url)
 
             subdomain = request.form.get("subdomain").lower().strip()
@@ -74,4 +81,5 @@ def subdomain_route():
         sl_domains=sl_domains,
         errors=errors,
         subdomains=subdomains,
+        can_create=len(subdomains) < MAX_NB_SUBDOMAIN,
     )
