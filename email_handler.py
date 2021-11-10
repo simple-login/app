@@ -1438,7 +1438,8 @@ def handle_hotmail_complaint(msg: Message) -> bool:
             "transactional/hotmail-complaint.html",
             alias=alias,
         ),
-        max_nb_alert=2,
+        max_nb_alert=1,
+        nb_day=7,
     )
 
     return True
