@@ -660,7 +660,7 @@ def forward_email_to_mailbox(
         user_id=user.id,
         mailbox_id=mailbox.id,
         alias_id=contact.alias_id,
-        message_id=msg[headers.MESSAGE_ID],
+        message_id=str(msg[headers.MESSAGE_ID]),
         commit=True,
     )
     LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
