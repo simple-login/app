@@ -45,7 +45,7 @@ def lifetime_licence():
             # notify admin
             send_email(
                 ADMIN_EMAIL,
-                subject=f"User {current_user} used lifetime coupon. Coupon nb_used: {coupon.nb_used}",
+                subject=f"User {current_user} used lifetime coupon({coupon.comment}). Coupon nb_used: {coupon.nb_used}",
                 plaintext="",
                 html="",
             )
