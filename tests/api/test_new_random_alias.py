@@ -50,7 +50,7 @@ def test_custom_mode(flask_client):
 
     # without note
     r = flask_client.post(
-        url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
+        url_for("api.new_random_alias", mode="uuid"),
     )
 
     assert r.status_code == 201
@@ -61,7 +61,7 @@ def test_custom_mode(flask_client):
 
     # with note
     r = flask_client.post(
-        url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
+        url_for("api.new_random_alias", mode="uuid"),
         json={"note": "test note"},
     )
 
