@@ -1,3 +1,4 @@
+import tldextract
 from flask import g
 from flask import jsonify, request
 
@@ -11,6 +12,7 @@ from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
 from app.models import Alias, AliasUsedOn, AliasGeneratorEnum
+from app.utils import convert_to_id
 
 
 @api_bp.route("/alias/random/new", methods=["POST"])
@@ -41,20 +43,33 @@ def new_random_alias():
     if data:
         note = data.get("note")
 
-    scheme = user.alias_generator
-    mode = request.args.get("mode")
-    if mode:
-        if mode == "word":
-            scheme = AliasGeneratorEnum.word.value
-        elif mode == "uuid":
-            scheme = AliasGeneratorEnum.uuid.value
-        else:
-            return jsonify(error=f"{mode} must be either word or uuid"), 400
-
-    alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
-    Session.commit()
-
+    # custom alias suggestion and suffix
     hostname = request.args.get("hostname")
+    if hostname and user.include_website_in_one_click_alias:
+        LOG.d("Use %s to create new alias", hostname)
+        # keep only the domain name of hostname, ignore TLD and subdomain
+        # for ex www.groupon.com -> groupon
+        ext = tldextract.extract(hostname)
+        prefix_suggestion = ext.domain
+        prefix_suggestion = convert_to_id(prefix_suggestion)
+
+        alias = Alias.create_new(user, prefix_suggestion, note=note)
+        Session.commit()
+
+    else:
+        scheme = user.alias_generator
+        mode = request.args.get("mode")
+        if mode:
+            if mode == "word":
+                scheme = AliasGeneratorEnum.word.value
+            elif mode == "uuid":
+                scheme = AliasGeneratorEnum.uuid.value
+            else:
+                return jsonify(error=f"{mode} must be either word or uuid"), 400
+
+        alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
+        Session.commit()
+
     if hostname:
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
         Session.commit()

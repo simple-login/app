@@ -8,7 +8,7 @@ from app.models import Alias
 from tests.utils import login
 
 
-def test_success(flask_client):
+def test_with_hostname(flask_client):
     login(flask_client)
 
     r = flask_client.post(
@@ -17,6 +17,9 @@ def test_success(flask_client):
 
     assert r.status_code == 201
     assert r.json["alias"].endswith(EMAIL_DOMAIN)
+
+    # make sure alias starts with the suggested prefix
+    assert r.json["alias"].startswith("test")
 
     # assert returned field
     res = r.json
@@ -29,6 +32,17 @@ def test_success(flask_client):
     assert "nb_reply" in res
     assert "enabled" in res
     assert "note" in res
+
+
+def test_without_hostname(flask_client):
+    login(flask_client)
+
+    r = flask_client.post(
+        url_for("api.new_random_alias"),
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"].endswith(EMAIL_DOMAIN)
 
 
 def test_custom_mode(flask_client):
