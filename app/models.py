@@ -392,6 +392,16 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # automatically include the website name when user creates an alias via the SimpleLogin icon in the email field
+    include_website_in_one_click_alias = sa.Column(
+        sa.Boolean,
+        # new user will have this option turned on automatically
+        default=True,
+        nullable=False,
+        # old user will have this option turned off
+        server_default="0",
+    )
+
     @staticmethod
     def subdomain_is_available():
         return SLDomain.filter_by(can_use_subdomain=True).count() > 0
