@@ -8,6 +8,7 @@ from app.api.serializer import (
     serialize_alias_info_v2,
 )
 from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
+from app.dashboard.views.custom_alias import get_available_suffixes
 from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
@@ -43,6 +44,8 @@ def new_random_alias():
     if data:
         note = data.get("note")
 
+    alias = None
+
     # custom alias suggestion and suffix
     hostname = request.args.get("hostname")
     if hostname and user.include_website_in_one_click_alias:
@@ -53,10 +56,36 @@ def new_random_alias():
         prefix_suggestion = ext.domain
         prefix_suggestion = convert_to_id(prefix_suggestion)
 
-        alias = Alias.create_new(user, prefix_suggestion, note=note)
-        Session.commit()
+        suffixes = get_available_suffixes(user)
+        # use the first suffix
+        suggested_alias = prefix_suggestion + suffixes[0].suffix
 
-    else:
+        alias = Alias.get_by(email=suggested_alias)
+
+        # cannot use this alias as it belongs to another user
+        if alias and not alias.user_id == user.id:
+            LOG.d("%s belongs to another user", alias)
+            alias = None
+        elif alias and alias.user_id == user.id:
+            # make sure alias was created for this website
+            if AliasUsedOn.get_by(
+                alias_id=alias.id, hostname=hostname, user_id=alias.user_id
+            ):
+                LOG.d("Use existing alias %s", alias)
+            else:
+                LOG.d("%s wasn't created for this website %s", alias, hostname)
+                alias = None
+        elif not alias:
+            LOG.d("create new alias %s", suggested_alias)
+            alias = Alias.create(
+                user_id=user.id,
+                email=suggested_alias,
+                note=note,
+                mailbox_id=user.default_mailbox_id,
+                commit=True,
+            )
+
+    if not alias:
         scheme = user.alias_generator
         mode = request.args.get("mode")
         if mode:
@@ -70,7 +99,7 @@ def new_random_alias():
         alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
         Session.commit()
 
-    if hostname:
+    if hostname and not AliasUsedOn.get_by(alias_id=alias.id, hostname=hostname):
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
         Session.commit()
 

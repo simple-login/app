@@ -4,7 +4,7 @@ from flask import url_for, g
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
-from app.models import Alias
+from app.models import Alias, CustomDomain, AliasUsedOn
 from tests.utils import login
 
 
@@ -16,7 +16,7 @@ def test_with_hostname(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["alias"].endswith(EMAIL_DOMAIN)
+    assert r.json["alias"].endswith("d1.test")
 
     # make sure alias starts with the suggested prefix
     assert r.json["alias"].startswith("test")
@@ -32,6 +32,33 @@ def test_with_hostname(flask_client):
     assert "nb_reply" in res
     assert "enabled" in res
     assert "note" in res
+
+    alias_used_on: AliasUsedOn = AliasUsedOn.first()
+    assert alias_used_on.hostname == "www.test.com"
+    assert alias_used_on.alias_id == res["id"]
+
+
+def test_with_custom_domain(flask_client):
+    user = login(flask_client)
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+
+    r = flask_client.post(
+        url_for("api.new_random_alias", hostname="www.test.com"),
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"] == "test@ab.cd"
+    assert Alias.count() == 2
+
+    # call the endpoint again, should return the same alias
+    r = flask_client.post(
+        url_for("api.new_random_alias", hostname="www.test.com"),
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"] == "test@ab.cd"
+    # no new alias is created
+    assert Alias.count() == 2
 
 
 def test_without_hostname(flask_client):
