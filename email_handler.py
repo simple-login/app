@@ -1561,7 +1561,6 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
             refused_email_url=refused_email_url,
         ),
     )
-    return status.E520
 
 
 def handle_spam(
@@ -1855,10 +1854,11 @@ def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
             # Failed delivery for all, return the first failure
             return res[0][1]
 
-        return handle_bounce_reply_phase(envelope, msg, email_log)
+        handle_bounce_reply_phase(envelope, msg, email_log)
+        return status.E212
     else:  # forward phase
         handle_bounce_forward_phase(msg, email_log)
-        return status.E513
+        return status.E211
 
 
 def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:

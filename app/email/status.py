@@ -16,6 +16,8 @@ E208 = "250 SL E208 Hotmail complaint handled"
 E209 = "250 SL E209 Email Loop"
 
 E210 = "250 SL E210 Yahoo complaint handled"
+E211 = "250 SL E211 Bounce Forward phase handled"
+E212 = "250 SL E212 Bounce Reply phase handled"
 
 # 4** errors
 # E401 = "421 SL E401 Retry later"
@@ -38,14 +40,12 @@ E509 = "550 SL E509 unauthorized"
 E510 = "550 SL E510 so such user"
 E511 = "550 SL E511 unsubscribe error"
 E512 = "550 SL E512 No such email log"
-E513 = "550 SL E513 Email cannot be forwarded to mailbox"
 E514 = "550 SL E514 Email sent to noreply address"
 E515 = "550 SL E515 Email not exist"
 E516 = "550 SL E516 invalid mailbox"
 E517 = "550 SL E517 unverified mailbox"
 E518 = "550 SL E518 Disabled mailbox"
 E519 = "550 SL E519 Email detected as spam"
-E520 = "550 SL E520 Email cannot be sent to contact"
 E521 = "550 SL E521 Cannot reach mailbox"
 E522 = (
     "550 SL E522 The user you are trying to contact is receiving mail "
