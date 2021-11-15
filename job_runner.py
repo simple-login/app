@@ -171,9 +171,9 @@ if __name__ == "__main__":
                         user.email,
                         f"Your mailbox {mailbox_email} has been deleted",
                         f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
-                    Regards,
-                    SimpleLogin team.
-                            """,
+Regards,
+SimpleLogin team.
+""",
                     )
 
                 elif job.name == JOB_DELETE_DOMAIN:
@@ -194,9 +194,10 @@ if __name__ == "__main__":
                         user.email,
                         f"Your domain {domain_name} has been deleted",
                         f"""Domain {domain_name} along with its aliases are deleted successfully.
-                    Regards,
-                    SimpleLogin team.
-                            """,
+
+Regards,
+SimpleLogin team.
+""",
                     )
 
                 else:
