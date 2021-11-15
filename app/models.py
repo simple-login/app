@@ -387,11 +387,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
-    # subdomain access is limited at the beginning
-    can_use_subdomain = sa.Column(
-        sa.Boolean, default=False, nullable=False, server_default="0"
-    )
-
     # automatically include the website name when user creates an alias via the SimpleLogin icon in the email field
     include_website_in_one_click_alias = sa.Column(
         sa.Boolean,

@@ -28,7 +28,7 @@
     </a>
   </li>
 
-  {% if current_user.can_use_subdomain and current_user.subdomain_is_available() %}
+  {% if current_user.subdomain_is_available() %}
     <li class="nav-item">
       <a href="{{ url_for('dashboard.subdomain_route') }}"
          class="nav-link {{ 'active' if active_page == 'subdomain' }}">
