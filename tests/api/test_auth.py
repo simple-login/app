@@ -105,6 +105,16 @@ def test_auth_register_too_short_password(flask_client):
     assert r.json["error"] == "password too short"
 
 
+def test_auth_register_too_long_password(flask_client):
+    r = flask_client.post(
+        url_for("api.auth_register"),
+        json={"email": "abcd@gmail.com", "password": "0123456789" * 11},
+    )
+
+    assert r.status_code == 400
+    assert r.json["error"] == "password too long"
+
+
 def test_auth_activate_success(flask_client):
     r = flask_client.post(
         url_for("api.auth_register"),

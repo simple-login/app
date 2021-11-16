@@ -21,7 +21,8 @@ from app.utils import random_string, encode_url, sanitize_email
 class RegisterForm(FlaskForm):
     email = StringField("Email", validators=[validators.DataRequired()])
     password = StringField(
-        "Password", validators=[validators.DataRequired(), validators.Length(min=8)]
+        "Password",
+        validators=[validators.DataRequired(), validators.Length(min=8, max=100)],
     )
 
 

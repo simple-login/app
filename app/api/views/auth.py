@@ -97,6 +97,9 @@ def auth_register():
     if not password or len(password) < 8:
         return jsonify(error="password too short"), 400
 
+    if len(password) > 100:
+        return jsonify(error="password too long"), 400
+
     LOG.d("create user %s", email)
     user = User.create(email=email, name="", password=password)
     Session.flush()

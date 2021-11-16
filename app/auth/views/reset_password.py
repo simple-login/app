@@ -13,7 +13,8 @@ from app.models import ResetPasswordCode
 
 class ResetPasswordForm(FlaskForm):
     password = StringField(
-        "Password", validators=[validators.DataRequired(), validators.Length(min=8)]
+        "Password",
+        validators=[validators.DataRequired(), validators.Length(min=8, max=100)],
     )
 
 
