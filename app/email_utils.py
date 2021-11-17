@@ -644,7 +644,14 @@ def get_mailbox_bounce_info(bounce_report: Message) -> Optional[Message]:
             if not part["content-transfer-encoding"]:
                 LOG.w("add missing content-transfer-encoding header")
                 part["content-transfer-encoding"] = "7bit"
-            return part
+
+            try:
+                part.as_bytes().decode()
+            except UnicodeDecodeError:
+                LOG.w("cannot use this bounce report")
+                return
+            else:
+                return part
 
 
 def get_orig_message_from_hotmail_complaint(msg: Message) -> Optional[Message]:
