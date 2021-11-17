@@ -2665,3 +2665,11 @@ class DeletedDirectory(Base, ModelMixin):
     __tablename__ = "deleted_directory"
 
     name = sa.Column(sa.String(128), unique=True, nullable=False)
+
+
+class DeletedSubdomain(Base, ModelMixin):
+    """To avoid directory from being reused"""
+
+    __tablename__ = "deleted_subdomain"
+
+    domain = sa.Column(sa.String(128), unique=True, nullable=False)
