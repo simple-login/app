@@ -1477,7 +1477,7 @@ botocore = ">=1.12.36,<2.0a.0"
 
 [[package]]
 name = "sentry-sdk"
-version = "0.19.5"
+version = "1.4.3"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
@@ -1496,6 +1496,7 @@ chalice = ["chalice (>=1.16.0)"]
 django = ["django (>=1.8)"]
 falcon = ["falcon (>=1.4)"]
 flask = ["flask (>=0.11)", "blinker (>=1.1)"]
+httpx = ["httpx (>=0.16.0)"]
 pure_eval = ["pure-eval", "executing", "asttokens"]
 pyspark = ["pyspark (>=2.4.4)"]
 rq = ["rq (>=0.6)"]
@@ -1762,14 +1763,14 @@ locale = ["Babel (>=1.3)"]
 
 [[package]]
 name = "yacron"
-version = "0.11.1"
+version = "0.11.2"
 description = "A modern Cron replacement that is Docker-friendly"
 category = "main"
 optional = false
 python-versions = ">=3.5"
 
 [package.dependencies]
-aiohttp = ">=3.0"
+aiohttp = ">=3.0,<4"
 aiosmtplib = "*"
 crontab = "0.22.8"
 jinja2 = "*"
@@ -1830,7 +1831,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "75047a94939daa6fa9d5fe58428e15a4d93424c37d53245a213bc2b2e2ca077b"
+content-hash = "98ab6c7d6ef5e8d1f6110101c859fab38067c0d3ba3bdaa2e18b9b5f70e735e4"
 
 [metadata.files]
 aiohttp = [
@@ -2724,8 +2725,8 @@ s3transfer = [
     {file = "s3transfer-0.3.3.tar.gz", hash = "sha256:921a37e2aefc64145e7b73d50c71bb4f26f46e4c9f414dc648c6245ff92cf7db"},
 ]
 sentry-sdk = [
-    {file = "sentry-sdk-0.19.5.tar.gz", hash = "sha256:737a094e49a529dd0fdcaafa9e97cf7c3d5eb964bd229821d640bc77f3502b3f"},
-    {file = "sentry_sdk-0.19.5-py2.py3-none-any.whl", hash = "sha256:0a711ec952441c2ec89b8f5d226c33bc697914f46e876b44a4edd3e7864cf4d0"},
+    {file = "sentry-sdk-1.4.3.tar.gz", hash = "sha256:b9844751e40710e84a457c5bc29b21c383ccb2b63d76eeaad72f7f1c808c8828"},
+    {file = "sentry_sdk-1.4.3-py2.py3-none-any.whl", hash = "sha256:c091cc7115ff25fe3a0e410dbecd7a996f81a3f6137d2272daef32d6c3cfa6dc"},
 ]
 simplejson = [
     {file = "simplejson-3.17.2-cp27-cp27m-macosx_10_13_x86_64.whl", hash = "sha256:2d3eab2c3fe52007d703a26f71cf649a8c771fcdd949a3ae73041ba6797cfcf8"},
@@ -2917,8 +2918,8 @@ wtforms = [
     {file = "WTForms-2.3.3.tar.gz", hash = "sha256:81195de0ac94fbc8368abbaf9197b88c4f3ffd6c2719b5bf5fc9da744f3d829c"},
 ]
 yacron = [
-    {file = "yacron-0.11.1-py3-none-any.whl", hash = "sha256:0fb795d55a712fed68648d8737fe16d4e118f2b4104c94d7fa325eaabc5cd96b"},
-    {file = "yacron-0.11.1.tar.gz", hash = "sha256:3d942313576142cb7779a4258efc02880cd43ffc9a54df82dfb2f9aba3a13dd9"},
+    {file = "yacron-0.11.2-py3-none-any.whl", hash = "sha256:2f5bf07f7064c9a8a335ec7311177dc057cd122eb478373cd76597e0872941f9"},
+    {file = "yacron-0.11.2.tar.gz", hash = "sha256:5d8da679f3ab503c7871845f3034876af4828aad5ac8eff066413e77ac3bc772"},
 ]
 yarl = [
     {file = "yarl-1.6.0-cp35-cp35m-macosx_10_14_x86_64.whl", hash = "sha256:db9eb8307219d7e09b33bcb43287222ef35cbcf1586ba9472b0a4b833666ada1"},
