@@ -11,6 +11,7 @@ from app.config import (
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
+from app.errors import DirectoryInTrashError
 from app.models import Directory, Mailbox, DirectoryMailbox
 
 
@@ -138,33 +139,42 @@ def directory():
                         "warning",
                     )
                 else:
-                    new_dir = Directory.create(
-                        name=new_dir_name, user_id=current_user.id
-                    )
-                    Session.commit()
-                    mailbox_ids = request.form.getlist("mailbox_ids")
-                    if mailbox_ids:
-                        # check if mailbox is not tempered with
-                        mailboxes = []
-                        for mailbox_id in mailbox_ids:
-                            mailbox = Mailbox.get(mailbox_id)
-                            if (
-                                not mailbox
-                                or mailbox.user_id != current_user.id
-                                or not mailbox.verified
-                            ):
-                                flash("Something went wrong, please retry", "warning")
-                                return redirect(url_for("dashboard.directory"))
-                            mailboxes.append(mailbox)
-
-                        for mailbox in mailboxes:
-                            DirectoryMailbox.create(
-                                directory_id=new_dir.id, mailbox_id=mailbox.id
-                            )
-
+                    try:
+                        new_dir = Directory.create(
+                            name=new_dir_name, user_id=current_user.id
+                        )
+                    except DirectoryInTrashError:
+                        flash(
+                            f"{new_dir_name} has been used before and cannot be reused",
+                            "error",
+                        )
+                    else:
                         Session.commit()
+                        mailbox_ids = request.form.getlist("mailbox_ids")
+                        if mailbox_ids:
+                            # check if mailbox is not tempered with
+                            mailboxes = []
+                            for mailbox_id in mailbox_ids:
+                                mailbox = Mailbox.get(mailbox_id)
+                                if (
+                                    not mailbox
+                                    or mailbox.user_id != current_user.id
+                                    or not mailbox.verified
+                                ):
+                                    flash(
+                                        "Something went wrong, please retry", "warning"
+                                    )
+                                    return redirect(url_for("dashboard.directory"))
+                                mailboxes.append(mailbox)
 
-                    flash(f"Directory {new_dir.name} is created", "success")
+                            for mailbox in mailboxes:
+                                DirectoryMailbox.create(
+                                    directory_id=new_dir.id, mailbox_id=mailbox.id
+                                )
+
+                            Session.commit()
+
+                        flash(f"Directory {new_dir.name} is created", "success")
 
                     return redirect(url_for("dashboard.directory"))
 

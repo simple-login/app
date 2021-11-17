@@ -32,7 +32,7 @@ from app.config import (
     ALIAS_RANDOM_SUFFIX_LENGTH,
 )
 from app.db import Session
-from app.errors import AliasInTrashError
+from app.errors import AliasInTrashError, DirectoryInTrashError
 from app.log import LOG
 from app.oauth_models import Scope
 from app.pw_models import PasswordOracle
@@ -2124,6 +2124,14 @@ class Directory(Base, ModelMixin):
         return Alias.filter_by(directory_id=self.id).count()
 
     @classmethod
+    def create(cls, *args, **kwargs):
+        name = kwargs.get("name")
+        if DeletedDirectory.get_by(name=name):
+            raise DirectoryInTrashError
+
+        return super(Directory, cls).create(*args, **kwargs)
+
+    @classmethod
     def delete(cls, obj_id):
         obj: Directory = cls.get(obj_id)
         user = obj.user
@@ -2133,6 +2141,7 @@ class Directory(Base, ModelMixin):
 
             alias_utils.delete_alias(alias, user)
 
+        DeletedDirectory.create(name=obj.name)
         cls.filter(cls.id == obj_id).delete()
         Session.commit()
 
