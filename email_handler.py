@@ -1479,6 +1479,12 @@ def handle_yahoo_complaint(msg: Message) -> bool:
         LOG.e("cannot find the alias")
         return False
 
+    user = User.get_by(email=to_header)
+    if user:
+        LOG.d("Handle transactional yahoo complaint for %s", user)
+        handle_yahoo_complain_for_transactional_email(user)
+        return True
+
     _, alias_address = parse_full_address(get_header_unicode(to_header))
     alias = Alias.get_by(email=alias_address)
 
@@ -1503,6 +1509,22 @@ def handle_yahoo_complaint(msg: Message) -> bool:
             alias=alias,
         ),
         max_nb_alert=2,
+    )
+
+    return True
+
+
+def handle_yahoo_complain_for_transactional_email(user):
+    """Handle the case when a transactional email is set as Spam by user or by Yahoo"""
+    send_email_with_rate_control(
+        user,
+        ALERT_YAHOO_COMPLAINT,
+        user.email,
+        f"Yahoo abuse report",
+        render("transactional/yahoo-transactional-complaint.txt.jinja2", user=user),
+        render("transactional/yahoo-transactional-complaint.html", user=user),
+        max_nb_alert=1,
+        nb_day=7,
     )
 
     return True
