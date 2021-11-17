@@ -32,7 +32,7 @@ from app.config import (
     ALIAS_RANDOM_SUFFIX_LENGTH,
 )
 from app.db import Session
-from app.errors import AliasInTrashError, DirectoryInTrashError
+from app.errors import AliasInTrashError, DirectoryInTrashError, SubdomainInTrashError
 from app.log import LOG
 from app.oauth_models import Scope
 from app.pw_models import PasswordOracle
@@ -1979,8 +1979,12 @@ class CustomDomain(Base, ModelMixin):
         return f"sl-verification={self.ownership_txt_token}"
 
     @classmethod
-    def create(cls, **kw):
-        domain: CustomDomain = super(CustomDomain, cls).create(**kw)
+    def create(cls, **kwargs):
+        domain = kwargs.get("domain")
+        if DeletedSubdomain.get_by(domain=domain):
+            raise SubdomainInTrashError
+
+        domain: CustomDomain = super(CustomDomain, cls).create(**kwargs)
 
         # generate a domain ownership txt token
         if not domain.ownership_txt_token:
@@ -1988,6 +1992,14 @@ class CustomDomain(Base, ModelMixin):
             Session.commit()
 
         return domain
+
+    @classmethod
+    def delete(cls, obj_id):
+        obj: CustomDomain = cls.get(obj_id)
+        if obj.is_sl_subdomain:
+            DeletedSubdomain.create(domain=obj.domain)
+
+        return super(CustomDomain, cls).delete(obj_id)
 
     @property
     def auto_create_rules(self):

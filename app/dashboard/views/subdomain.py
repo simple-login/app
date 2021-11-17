@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 
 from app.config import MAX_NB_SUBDOMAIN
 from app.dashboard.base import dashboard_bp
+from app.errors import SubdomainInTrashError
 from app.log import LOG
 from app.models import CustomDomain, Mailbox, SLDomain
 
@@ -51,30 +52,36 @@ def subdomain_route():
             ).first():
                 flash(f"{full_domain} already used in a SimpleLogin mailbox", "error")
             else:
-                new_custom_domain = CustomDomain.create(
-                    is_sl_subdomain=True,
-                    catch_all=True,  # by default catch-all is enabled
-                    domain=full_domain,
-                    user_id=current_user.id,
-                    verified=True,
-                    dkim_verified=False,  # wildcard DNS does not work for DKIM
-                    spf_verified=True,
-                    dmarc_verified=False,  # wildcard DNS does not work for DMARC
-                    ownership_verified=True,
-                    commit=True,
-                )
-
-                flash(
-                    f"New subdomain {new_custom_domain.domain} is created",
-                    "success",
-                )
-
-                return redirect(
-                    url_for(
-                        "dashboard.domain_detail",
-                        custom_domain_id=new_custom_domain.id,
+                try:
+                    new_custom_domain = CustomDomain.create(
+                        is_sl_subdomain=True,
+                        catch_all=True,  # by default catch-all is enabled
+                        domain=full_domain,
+                        user_id=current_user.id,
+                        verified=True,
+                        dkim_verified=False,  # wildcard DNS does not work for DKIM
+                        spf_verified=True,
+                        dmarc_verified=False,  # wildcard DNS does not work for DMARC
+                        ownership_verified=True,
+                        commit=True,
                     )
-                )
+                except SubdomainInTrashError:
+                    flash(
+                        f"{full_domain} has been used before and cannot be reused",
+                        "error",
+                    )
+                else:
+                    flash(
+                        f"New subdomain {new_custom_domain.domain} is created",
+                        "success",
+                    )
+
+                    return redirect(
+                        url_for(
+                            "dashboard.domain_detail",
+                            custom_domain_id=new_custom_domain.id,
+                        )
+                    )
 
     return render_template(
         "dashboard/subdomain.html",
