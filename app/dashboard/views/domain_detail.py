@@ -291,7 +291,10 @@ def domain_detail(custom_domain_id):
                 "success",
             )
 
-            return redirect(url_for("dashboard.custom_domain"))
+            if custom_domain.is_sl_subdomain:
+                return redirect(url_for("dashboard.subdomain_route"))
+            else:
+                return redirect(url_for("dashboard.custom_domain"))
 
     nb_alias = Alias.filter_by(custom_domain_id=custom_domain.id).count()
 
