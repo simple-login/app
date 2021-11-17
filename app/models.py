@@ -2097,6 +2097,8 @@ class Coupon(Base, ModelMixin):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    comment = sa.Column(sa.Text, nullable=True)
+
 
 class Directory(Base, ModelMixin):
     __tablename__ = "directory"
