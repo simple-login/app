@@ -10,6 +10,7 @@ from app.api.serializer import (
 from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
 from app.dashboard.views.custom_alias import get_available_suffixes
 from app.db import Session
+from app.errors import AliasInTrashError
 from app.extensions import limiter
 from app.log import LOG
 from app.models import Alias, AliasUsedOn, AliasGeneratorEnum
@@ -77,13 +78,17 @@ def new_random_alias():
                 alias = None
         elif not alias:
             LOG.d("create new alias %s", suggested_alias)
-            alias = Alias.create(
-                user_id=user.id,
-                email=suggested_alias,
-                note=note,
-                mailbox_id=user.default_mailbox_id,
-                commit=True,
-            )
+            try:
+                alias = Alias.create(
+                    user_id=user.id,
+                    email=suggested_alias,
+                    note=note,
+                    mailbox_id=user.default_mailbox_id,
+                    commit=True,
+                )
+            except AliasInTrashError:
+                LOG.i("Alias %s is in trash", suggested_alias)
+                alias = None
 
     if not alias:
         scheme = user.alias_generator
