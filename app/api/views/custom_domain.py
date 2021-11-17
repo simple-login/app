@@ -27,7 +27,9 @@ def custom_domain_to_dict(custom_domain: CustomDomain):
 @require_api_auth
 def get_custom_domains():
     user = g.user
-    custom_domains = CustomDomain.filter_by(user_id=user.id).all()
+    custom_domains = CustomDomain.filter_by(
+        user_id=user.id, is_sl_subdomain=False
+    ).all()
 
     return jsonify(custom_domains=[custom_domain_to_dict(cd) for cd in custom_domains])
 

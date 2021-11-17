@@ -19,7 +19,9 @@ class NewCustomDomainForm(FlaskForm):
 @dashboard_bp.route("/custom_domain", methods=["GET", "POST"])
 @login_required
 def custom_domain():
-    custom_domains = CustomDomain.filter_by(user_id=current_user.id).all()
+    custom_domains = CustomDomain.filter_by(
+        user_id=current_user.id, is_sl_subdomain=False
+    ).all()
     mailboxes = current_user.mailboxes()
     new_custom_domain_form = NewCustomDomainForm()
 
