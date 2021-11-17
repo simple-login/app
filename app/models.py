@@ -2593,6 +2593,11 @@ class Metric2(Base, ModelMixin):
     nb_total_bounced_last_24h = sa.Column(sa.Float, nullable=True)
 
     nb_verified_custom_domain = sa.Column(sa.Float, nullable=True)
+    nb_subdomain = sa.Column(sa.Float, nullable=True)
+    nb_directory = sa.Column(sa.Float, nullable=True)
+
+    nb_deleted_directory = sa.Column(sa.Float, nullable=True)
+    nb_deleted_subdomain = sa.Column(sa.Float, nullable=True)
 
     nb_app = sa.Column(sa.Float, nullable=True)
 

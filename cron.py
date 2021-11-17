@@ -57,6 +57,9 @@ from app.models import (
     DomainDeletedAlias,
     Hibp,
     HibpNotifiedAlias,
+    Directory,
+    DeletedDirectory,
+    DeletedSubdomain,
 )
 from app.utils import sanitize_email
 from server import create_light_app
@@ -292,6 +295,10 @@ def compute_metric2() -> Metric2:
         .count(),
         # other stats
         nb_verified_custom_domain=CustomDomain.filter_by(verified=True).count(),
+        nb_subdomain=CustomDomain.filter_by(is_sl_subdomain=True).count(),
+        nb_directory=Directory.count(),
+        nb_deleted_directory=DeletedDirectory.count(),
+        nb_deleted_subdomain=DeletedSubdomain.count(),
         nb_app=Client.count(),
         commit=True,
     )
@@ -482,6 +489,11 @@ nb_bounced_last_24h: {stats_today.nb_bounced_last_24h} - {increase_percent(stats
 nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_percent(stats_yesterday.nb_total_bounced_last_24h, stats_today.nb_total_bounced_last_24h)}
 
 nb_custom_domain: {stats_today.nb_verified_custom_domain} - {increase_percent(stats_yesterday.nb_verified_custom_domain, stats_today.nb_verified_custom_domain)}
+nb_subdomain: {stats_today.nb_subdomain} - {increase_percent(stats_yesterday.nb_subdomain, stats_today.nb_subdomain)}
+nb_directory: {stats_today.nb_directory} - {increase_percent(stats_yesterday.nb_directory, stats_today.nb_directory)}
+nb_deleted_directory: {stats_today.nb_deleted_directory} - {increase_percent(stats_yesterday.nb_deleted_directory, stats_today.nb_deleted_directory)}
+nb_deleted_subdomain: {stats_today.nb_deleted_subdomain} - {increase_percent(stats_yesterday.nb_deleted_subdomain, stats_today.nb_deleted_subdomain)}
+
 nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_today.nb_app)}
 nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yesterday.nb_referred_user, stats_today.nb_referred_user)}
 nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percent(stats_yesterday.nb_referred_user_paid, stats_today.nb_referred_user_paid)}
