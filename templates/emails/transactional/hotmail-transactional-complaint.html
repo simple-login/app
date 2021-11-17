@@ -2,7 +2,10 @@
 
 {% block content %}
   {% call text() %}
-    This is SimpleLogin team. <br>
+    This is SimpleLogin team.
+  {% endcall %}
+
+  {% call text() %}
     Hotmail has informed us about an email sent to <b>{{ user.email }}</b> that might have been considered as spam,
     either by you or by Hotmail spam filter.
   {% endcall %}
