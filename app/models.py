@@ -2648,3 +2648,11 @@ class MessageIDMatching(Base, ModelMixin):
     )
 
     email_log = orm.relationship("EmailLog")
+
+
+class DeletedDirectory(Base, ModelMixin):
+    """To avoid directory from being reused"""
+
+    __tablename__ = "deleted_directory"
+
+    name = sa.Column(sa.String(128), unique=True, nullable=False)
