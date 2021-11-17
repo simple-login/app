@@ -1392,6 +1392,13 @@ def handle_hotmail_complaint(msg: Message) -> bool:
     orig_msg = get_orig_message_from_hotmail_complaint(msg)
     to_header = orig_msg[headers.TO]
     from_header = orig_msg[headers.FROM]
+
+    user = User.get_by(email=to_header)
+    if user:
+        LOG.d("Handle transactional hotmail complaint for %s", user)
+        handle_hotmail_complain_for_transactional_email(user)
+        return True
+
     alias = None
 
     # try parsing the from header which might contain the reverse alias
@@ -1438,6 +1445,22 @@ def handle_hotmail_complaint(msg: Message) -> bool:
             "transactional/hotmail-complaint.html",
             alias=alias,
         ),
+        max_nb_alert=1,
+        nb_day=7,
+    )
+
+    return True
+
+
+def handle_hotmail_complain_for_transactional_email(user):
+    """Handle the case when a transactional email is set as Spam by user or by HotMail"""
+    send_email_with_rate_control(
+        user,
+        ALERT_HOTMAIL_COMPLAINT,
+        user.email,
+        f"Hotmail abuse report",
+        render("transactional/hotmail-transactional-complaint.txt.jinja2", user=user),
+        render("transactional/hotmail-transactional-complaint.html", user=user),
         max_nb_alert=1,
         nb_day=7,
     )
