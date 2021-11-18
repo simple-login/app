@@ -29,7 +29,8 @@
 
       <div class="alert alert-primary collapse {% if not subdomains %} show {% endif %}" id="howtouse" role="alert">
         You can use subdomain to quickly create email aliases without opening SimpleLogin app. <br>
-        Handy when you need to quickly give out an email address, for example on a phone call, in a meeting or just anywhere you want. <br>
+        Handy when you need to quickly give out an email address, for example on a phone call, in a meeting or just
+        anywhere you want. <br>
         After choosing a subdomain, simply use <b>anything@my-subdomain.simplelogin.co</b>
         next time you need an alias:
         it'll be <b>automatically created</b> the first time it receives an email. <br>
@@ -61,12 +62,15 @@
         {% endfor %}
       </div>
 
-      <div class="row {% if not can_create %} disabled-content {% endif %}" id="new-subdomain" >
+      <div class="row {% if current_user.subdomain_quota <= 0 %} disabled-content {% endif %}" id="new-subdomain">
         <div class="col">
           <div class="card">
             <div class="card-body">
 
-              <h2 class="h4">New Subdomain</h2>
+              <h2 class="h4 mb-1">New Subdomain</h2>
+              <div class="small-text mb-4">
+                You can create up to {{ current_user.subdomain_quota }} subdomains.
+              </div>
 
               <form method="post" class="mt-2" data-parsley-validate>
                 <input type="hidden" name="form-name" value="create">

@@ -28,7 +28,7 @@ def subdomain_route():
                 flash("Only premium plan can add subdomain", "warning")
                 return redirect(request.url)
 
-            if len(subdomains) >= MAX_NB_SUBDOMAIN:
+            if current_user.subdomain_quota <= 0:
                 flash(
                     f"You can't create more than {MAX_NB_SUBDOMAIN} subdomains", "error"
                 )
@@ -88,5 +88,4 @@ def subdomain_route():
         sl_domains=sl_domains,
         errors=errors,
         subdomains=subdomains,
-        can_create=len(subdomains) < MAX_NB_SUBDOMAIN,
     )

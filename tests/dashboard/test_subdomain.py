@@ -1,5 +1,6 @@
 from flask import url_for
 
+from app.config import MAX_NB_SUBDOMAIN
 from app.db import Session
 from app.models import SLDomain, CustomDomain, Job
 from tests.utils import login
@@ -81,3 +82,27 @@ def test_create_subdomain_in_trash(flask_client):
         f"test.{sl_domain.domain} has been used before and cannot be reused"
         in r.data.decode()
     )
+
+
+def test_create_subdomain_out_of_quota(flask_client):
+    user = login(flask_client)
+    sl_domain = setup_sl_domain()
+
+    for i in range(MAX_NB_SUBDOMAIN):
+        CustomDomain.create(
+            domain=f"test{i}.{sl_domain.domain}",
+            user_id=user.id,
+            is_sl_subdomain=True,
+            commit=True,
+        )
+
+    assert CustomDomain.count() == MAX_NB_SUBDOMAIN
+
+    r = flask_client.post(
+        url_for("dashboard.subdomain_route"),
+        data={"form-name": "create", "subdomain": "test", "domain": sl_domain.domain},
+        follow_redirects=True,
+    )
+
+    # no new subdomain is created
+    assert CustomDomain.count() == MAX_NB_SUBDOMAIN

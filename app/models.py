@@ -2016,6 +2016,11 @@ class CustomDomain(Base, ModelMixin):
             domain.ownership_txt_token = random_string(30)
             Session.commit()
 
+        if domain.is_sl_subdomain:
+            user = domain.user
+            user._subdomain_quota -= 1
+            Session.flush()
+
         return domain
 
     @classmethod
@@ -2023,6 +2028,10 @@ class CustomDomain(Base, ModelMixin):
         obj: CustomDomain = cls.get(obj_id)
         if obj.is_sl_subdomain:
             DeletedSubdomain.create(domain=obj.domain)
+
+        user = obj.user
+        user._subdomain_quota -= 1
+        Session.flush()
 
         return super(CustomDomain, cls).delete(obj_id)
 
@@ -2166,7 +2175,14 @@ class Directory(Base, ModelMixin):
         if DeletedDirectory.get_by(name=name):
             raise DirectoryInTrashError
 
-        return super(Directory, cls).create(*args, **kwargs)
+        directory = super(Directory, cls).create(*args, **kwargs)
+        Session.flush()
+
+        user = directory.user
+        user._directory_quota -= 1
+
+        Session.flush()
+        return directory
 
     @classmethod
     def delete(cls, obj_id):
@@ -2180,6 +2196,10 @@ class Directory(Base, ModelMixin):
 
         DeletedDirectory.create(name=obj.name)
         cls.filter(cls.id == obj_id).delete()
+
+        user = obj.user
+        user._directory_quota -= 1
+
         Session.commit()
 
     def __repr__(self):

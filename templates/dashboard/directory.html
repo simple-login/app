@@ -139,7 +139,7 @@
         {% endfor %}
       </div>
 
-      <div class="row">
+      <div class="row {% if current_user.directory_quota <= 0 %} disabled-content {% endif %}">
         <div class="col">
           <div class="card">
             <div class="card-body">
@@ -148,7 +148,10 @@
                 {{ new_dir_form.csrf_token }}
                 <input type="hidden" name="form-name" value="create">
 
-                <h2 class="h4">New Directory</h2>
+                <h2 class="h4 mb-1">New Directory</h2>
+                <div class="small-text mb-4">
+                  You can create up to {{ current_user.directory_quota }} directories.
+                </div>
 
                 {{ new_dir_form.name(class="form-control", placeholder="my-directory",
             pattern="[0-9a-z-_]{3,}",
@@ -195,7 +198,8 @@
       let directory = $(this).parent().find(".dir-name").val();
 
       let that = $(this);
-      let message = `All aliases associated with <b>${directory}</b> directory will also be deleted, ` +
+      let message = `All aliases associated with <b>${directory}</b> directory will also be deleted. ` +
+        `Your directory quota will be {{ current_user.directory_quota - 1 }} after the deletion, ` +
         " please confirm.";
 
       bootbox.confirm({

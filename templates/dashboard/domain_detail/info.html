@@ -128,10 +128,23 @@
   </div>
 
   <hr>
-  <h3 class="mb-1">Delete Domain</h3>
+  <h3 class="mb-1">
+    {% if custom_domain.is_sl_subdomain %}
+      Delete Subdomain
+    {% else %}
+      Delete Domain
+    {% endif %}
+  </h3>
+
   <div class="mb-3">This operation is <b>irreversible</b>.
     All aliases associated with this domain will be deleted.
+    {% if custom_domain.is_sl_subdomain %}
+      <br>
+      After deletion, your subdomain quota will be {{ current_user.subdomain_quota - 1 }}.
+    {% endif %}
   </div>
+
+
 
   <form method="post">
     <input type="hidden" name="form-name" value="delete">

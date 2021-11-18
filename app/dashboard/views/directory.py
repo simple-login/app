@@ -114,7 +114,7 @@ def directory():
                 flash("Only premium plan can add directory", "warning")
                 return redirect(url_for("dashboard.directory"))
 
-            if current_user.nb_directory() >= MAX_NB_DIRECTORY:
+            if current_user.directory_quota <= 0:
                 flash(
                     f"You cannot have more than {MAX_NB_DIRECTORY} directories",
                     "warning",
