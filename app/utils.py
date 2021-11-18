@@ -66,9 +66,11 @@ def encode_url(url):
     return urllib.parse.quote(url, safe="")
 
 
-def sanitize_email(email_address: str) -> str:
+def sanitize_email(email_address: str, not_lower=False) -> str:
     if email_address:
-        return email_address.lower().strip().replace(" ", "").replace("\n", " ")
+        email_address = email_address.strip().replace(" ", "").replace("\n", " ")
+        if not not_lower:
+            email_address = email_address.lower()
     return email_address
 
 

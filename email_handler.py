@@ -180,7 +180,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
         # either reuse a contact with empty email or create a new contact with empty email
         contact_email = ""
 
-    contact_email = sanitize_email(contact_email)
+    contact_email = sanitize_email(contact_email, not_lower=True)
 
     if contact_name and "\x00" in contact_name:
         LOG.w("issue with contact name %s", contact_name)
@@ -300,10 +300,10 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
         full_addresses += address.parse_list(h)
 
     for full_address in full_addresses:
-        contact_email = sanitize_email(full_address.address)
+        contact_email = sanitize_email(full_address.address, not_lower=True)
 
         # no transformation when alias is already in the header
-        if contact_email == alias.email:
+        if contact_email.lower() == alias.email:
             new_addrs.append(full_address.full_spec())
             continue
 
@@ -1545,13 +1545,15 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
     bounce_info = get_mailbox_bounce_info(msg)
     if bounce_info:
         Bounce.create(
-            email=sanitize_email(contact.website_email),
+            email=sanitize_email(contact.website_email, not_lower=True),
             info=bounce_info.as_bytes().decode(),
             commit=True,
         )
     else:
         LOG.w("cannot get bounce info, debug at %s", save_email_for_debugging(msg))
-        Bounce.create(email=sanitize_email(contact.website_email), commit=True)
+        Bounce.create(
+            email=sanitize_email(contact.website_email, not_lower=True), commit=True
+        )
 
     # Store the bounced email
     # generate a name for the email

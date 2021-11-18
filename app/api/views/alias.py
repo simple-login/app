@@ -409,7 +409,7 @@ def create_contact_route(alias_id):
 
     contact_name, contact_email = full_address.display_name, full_address.address
 
-    contact_email = sanitize_email(contact_email)
+    contact_email = sanitize_email(contact_email, not_lower=True)
 
     # already been added
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)

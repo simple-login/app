@@ -656,7 +656,8 @@ def sanity_check():
             LOG.e("Contact %s reply-email not sanitized", contact)
 
         if (
-            sanitize_email(contact.website_email) != contact.website_email
+            sanitize_email(contact.website_email, not_lower=True)
+            != contact.website_email
             and contact.created_at > contact_email_sanity_date
         ):
             LOG.e("Contact %s website-email not sanitized", contact)
