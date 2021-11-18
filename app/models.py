@@ -407,6 +407,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         "subdomain_quota", sa.Integer, default=5, nullable=False, server_default="5"
     )
 
+    # user can use import to import too many aliases
+    disable_import = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     @property
     def directory_quota(self):
         return min(
