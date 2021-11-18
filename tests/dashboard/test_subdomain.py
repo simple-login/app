@@ -98,7 +98,7 @@ def test_create_subdomain_out_of_quota(flask_client):
 
     assert CustomDomain.count() == MAX_NB_SUBDOMAIN
 
-    r = flask_client.post(
+    flask_client.post(
         url_for("dashboard.subdomain_route"),
         data={"form-name": "create", "subdomain": "test", "domain": sl_domain.domain},
         follow_redirects=True,
