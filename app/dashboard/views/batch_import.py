@@ -18,6 +18,13 @@ def batch_import_route():
     if not current_user.verified_custom_domains():
         flash("Alias batch import is only available for custom domains", "warning")
 
+    if current_user.disable_import:
+        flash(
+            "you cannot use the import feature, please contact SimpleLogin team",
+            "error",
+        )
+        return redirect(url_for("dashboard.index"))
+
     batch_imports = BatchImport.filter_by(user_id=current_user.id).all()
 
     if request.method == "POST":
