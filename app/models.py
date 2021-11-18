@@ -30,6 +30,8 @@ from app.config import (
     DISABLE_ONBOARDING,
     UNSUBSCRIBER,
     ALIAS_RANDOM_SUFFIX_LENGTH,
+    MAX_NB_SUBDOMAIN,
+    MAX_NB_DIRECTORY,
 )
 from app.db import Session
 from app.errors import AliasInTrashError, DirectoryInTrashError, SubdomainInTrashError
@@ -396,6 +398,29 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         # old user will have this option turned off
         server_default="0",
     )
+
+    _directory_quota = sa.Column(
+        "directory_quota", sa.Integer, default=50, nullable=False, server_default="50"
+    )
+
+    _subdomain_quota = sa.Column(
+        "subdomain_quota", sa.Integer, default=5, nullable=False, server_default="5"
+    )
+
+    @property
+    def directory_quota(self):
+        return min(
+            self._directory_quota,
+            MAX_NB_DIRECTORY - Directory.filter_by(user_id=self.id).count(),
+        )
+
+    @property
+    def subdomain_quota(self):
+        return min(
+            self._subdomain_quota,
+            MAX_NB_SUBDOMAIN
+            - CustomDomain.filter_by(user_id=self.id, is_sl_subdomain=True).count(),
+        )
 
     @staticmethod
     def subdomain_is_available():
