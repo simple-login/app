@@ -972,6 +972,8 @@ def local_main():
     app.debug = True
     DebugToolbarExtension(app)
 
+    app.config["DEBUG_TB_PANELS"] += ("flask_debugtoolbar_sqlalchemy.SQLAlchemyPanel",)
+
     app.run(debug=True, port=7777)
 
     # uncomment to run https locally

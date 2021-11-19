@@ -527,6 +527,20 @@ itsdangerous = "*"
 werkzeug = "*"
 
 [[package]]
+name = "flask-debugtoolbar-sqlalchemy"
+version = "0.2.0"
+description = "Flask Debug Toolbar panel for SQLAlchemy"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+flask-debugtoolbar = "*"
+Pygments = "*"
+sqlalchemy = "*"
+sqlparse = "*"
+
+[[package]]
 name = "flask-httpauth"
 version = "4.1.0"
 description = "Basic and Digest HTTP authentication for Flask routes"
@@ -1568,6 +1582,14 @@ timezone = ["python-dateutil"]
 url = ["furl (>=0.4.1)"]
 
 [[package]]
+name = "sqlparse"
+version = "0.4.2"
+description = "A non-validating SQL parser."
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[[package]]
 name = "strictyaml"
 version = "1.1.0"
 description = "Strict, typed YAML parser"
@@ -1831,7 +1853,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "98ab6c7d6ef5e8d1f6110101c859fab38067c0d3ba3bdaa2e18b9b5f70e735e4"
+content-hash = "d5f89e2b5bb3c7b324e1e87441c64c048ef23c33782637a55e9d2c989c9d73a4"
 
 [metadata.files]
 aiohttp = [
@@ -2102,6 +2124,10 @@ flask-cors = [
 flask-debugtoolbar = [
     {file = "Flask-DebugToolbar-0.11.0.tar.gz", hash = "sha256:3c4e79d354ede014e6657c545a536d4fb273cc89e3fd6b4835b02e346dd3aab4"},
     {file = "Flask_DebugToolbar-0.11.0-py2.py3-none-any.whl", hash = "sha256:0e9a80d4c599233c68376e81cc99976200b5ac5248cfb24f18935cc5b69ac5b3"},
+]
+flask-debugtoolbar-sqlalchemy = [
+    {file = "flask-debugtoolbar-sqlalchemy-0.2.0.tar.gz", hash = "sha256:82be8b0c20784a71f9f89bcb38b0f4f9220c70964e4cb86f04e0403e7c6b19b5"},
+    {file = "flask_debugtoolbar_sqlalchemy-0.2.0-py3-none-any.whl", hash = "sha256:86ff6c21b7c9a3fe555b16fcd665947c9a03defcf0dfa941d94f82343d9d261a"},
 ]
 flask-httpauth = [
     {file = "Flask-HTTPAuth-4.1.0.tar.gz", hash = "sha256:9e028e4375039a49031eb9ecc40be4761f0540476040f6eff329a31dabd4d000"},
@@ -2815,6 +2841,10 @@ sqlalchemy = [
 ]
 sqlalchemy-utils = [
     {file = "SQLAlchemy-Utils-0.36.8.tar.gz", hash = "sha256:fb66e9956e41340011b70b80f898fde6064ec1817af77199ee21ace71d7d6ab0"},
+]
+sqlparse = [
+    {file = "sqlparse-0.4.2-py3-none-any.whl", hash = "sha256:48719e356bb8b42991bdbb1e8b83223757b93789c00910a616a071910ca4a64d"},
+    {file = "sqlparse-0.4.2.tar.gz", hash = "sha256:0c00730c74263a94e5a9919ade150dfc3b19c574389985446148402998287dae"},
 ]
 strictyaml = [
     {file = "strictyaml-1.1.0.tar.gz", hash = "sha256:6b07dbd4f77ab023ed4167c43ffc1b9f9354fb6075cc6ff3b91fefcbb80342ca"},
