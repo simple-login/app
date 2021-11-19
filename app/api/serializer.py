@@ -145,6 +145,8 @@ def get_alias_infos_with_pagination_v3(
     alias_filter=None,
     mailbox_id=None,
     directory_id=None,
+    page_limit=PAGE_LIMIT,
+    page_size=PAGE_LIMIT,
 ) -> [AliasInfo]:
     q = construct_alias_query(user)
 
@@ -199,7 +201,7 @@ def get_alias_infos_with_pagination_v3(
         q = q.order_by(Alias.pinned.desc())
         q = q.order_by(latest_activity.desc())
 
-    q = list(q.limit(PAGE_LIMIT).offset(page_id * PAGE_LIMIT))
+    q = list(q.limit(page_limit).offset(page_id * page_size))
 
     ret = []
     for alias, contact, email_log, custom_domain, nb_reply, nb_blocked, nb_forward in q:

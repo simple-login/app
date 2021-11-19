@@ -163,7 +163,19 @@ def index():
     alias_infos = get_alias_infos_with_pagination_v3(
         current_user, page, query, sort, alias_filter, mailbox_id, directory_id
     )
-    last_page = len(alias_infos) < PAGE_LIMIT
+    # to know whether there's alias on the next page
+    next_page_alias = get_alias_infos_with_pagination_v3(
+        current_user,
+        page + 1,  # next page
+        query,
+        sort,
+        alias_filter,
+        mailbox_id,
+        directory_id,
+        page_limit=1,  # only load 1 alias
+    )
+
+    last_page = len(next_page_alias) == 0
 
     # add highlighted alias in case it's not included
     if highlight_alias_id and highlight_alias_id not in [
