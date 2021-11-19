@@ -99,7 +99,7 @@ def coupon_route():
             if coupon.is_giveaway:
                 subject = f"User {current_user} applies a (free) coupon"
             else:
-                subject = f"User {current_user} applies a (paid) coupon"
+                subject = f"User {current_user} applies a (paid, {coupon.comment or ''}) coupon"
             send_email(
                 ADMIN_EMAIL,
                 subject=subject,
