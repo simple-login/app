@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 
 from app import alias_utils
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
-from app.config import PAGE_LIMIT, ALIAS_LIMIT
+from app.config import ALIAS_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.extensions import limiter
