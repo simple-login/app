@@ -136,11 +136,23 @@
     {% endif %}
   </h3>
 
-  <div class="mb-3">This operation is <b>irreversible</b>.
-    All aliases associated with this domain will be deleted.
+  <div class="mb-3">
     {% if custom_domain.is_sl_subdomain %}
-      <br>
-      After deletion, your subdomain quota will be {{ current_user.subdomain_quota - 1 }}.
+      <div class="alert alert-danger">
+        This operation is <b>irreversible</b>.
+        All aliases associated with this subdomain will be deleted.
+      </div>
+      <div class="alert alert-warning">
+        Because a deleted subdomain can't be recycled, i.e. reused by someone else,
+        deleting a subdomain won't restore the subdomain quota.
+        After deletion, your subdomain quota will still be {{ current_user.subdomain_quota }}.
+        We recommend to disable the <b>catch-all</b> option instead of deleting this subdomain.
+      </div>
+    {% else %}
+      <div class="alert alert-danger">
+        This operation is <b>irreversible</b>.
+        All aliases associated with this domain will be deleted.
+      </div>
     {% endif %}
   </div>
 
@@ -148,7 +160,10 @@
 
   <form method="post">
     <input type="hidden" name="form-name" value="delete">
-    <span class="delete-custom-domain btn btn-danger">Delete domain</span>
+    <span
+        class="delete-custom-domain btn btn-danger">
+      Delete {{ custom_domain.domain }}
+    </span>
   </form>
 
 {% endblock %}

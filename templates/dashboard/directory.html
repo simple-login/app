@@ -199,7 +199,8 @@
 
       let that = $(this);
       let message = `All aliases associated with <b>${directory}</b> directory will also be deleted. ` +
-        `Your directory quota will be {{ current_user.directory_quota - 1 }} after the deletion, ` +
+        `As a deleted directory can't be used by someone else, deleting a directory doesn't reset your directory quota. ` +
+        `Your directory quota will be {{ current_user.directory_quota }} after the deletion, ` +
         " please confirm.";
 
       bootbox.confirm({
