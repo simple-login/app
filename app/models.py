@@ -830,7 +830,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         - the unsubscribe URL
         - whether the unsubscribe method is via sending email (mailto:) or Http POST
         """
-        if self.notification and self.activated:
+        if self.notification and self.activated and not self.disabled:
             if self.newsletter_alias_id:
                 alias = Alias.get(self.newsletter_alias_id)
                 if alias.enabled:
