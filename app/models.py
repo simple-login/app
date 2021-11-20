@@ -2034,10 +2034,6 @@ class CustomDomain(Base, ModelMixin):
         if obj.is_sl_subdomain:
             DeletedSubdomain.create(domain=obj.domain)
 
-        user = obj.user
-        user._subdomain_quota -= 1
-        Session.flush()
-
         return super(CustomDomain, cls).delete(obj_id)
 
     @property
@@ -2201,9 +2197,6 @@ class Directory(Base, ModelMixin):
 
         DeletedDirectory.create(name=obj.name)
         cls.filter(cls.id == obj_id).delete()
-
-        user = obj.user
-        user._directory_quota -= 1
 
         Session.commit()
 
