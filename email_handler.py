@@ -84,6 +84,8 @@ from app.config import (
     ALERT_HOTMAIL_COMPLAINT,
     ALERT_YAHOO_COMPLAINT,
     TEMP_DIR,
+    ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL,
+    ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
 )
 from app.db import Session
 from app.email import status, headers
@@ -1399,6 +1401,38 @@ def handle_hotmail_complaint(msg: Message) -> bool:
         handle_hotmail_complain_for_transactional_email(user)
         return True
 
+    try:
+        _, from_address = parse_full_address(get_header_unicode(from_header))
+        alias = Alias.get_by(email=from_address)
+
+        # the email is during a reply phase, from=alias and to=destination
+        if alias:
+            user = alias.user
+            LOG.i(
+                "Hotmail complaint during reply phase %s -> %s, %s",
+                alias,
+                to_header,
+                user,
+            )
+            send_email_with_rate_control(
+                user,
+                ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
+                user.email,
+                f"Hotmail abuse report",
+                render(
+                    "transactional/hotmail-complaint-reply-phase.txt.jinja2",
+                    user=user,
+                    alias=alias,
+                    destination=to_header,
+                ),
+                max_nb_alert=1,
+                nb_day=7,
+            )
+            return True
+
+    except ValueError:
+        LOG.w("Cannot parse %s", from_header)
+
     alias = None
 
     # try parsing the from header which might contain the reverse alias
@@ -1456,7 +1490,7 @@ def handle_hotmail_complain_for_transactional_email(user):
     """Handle the case when a transactional email is set as Spam by user or by HotMail"""
     send_email_with_rate_control(
         user,
-        ALERT_HOTMAIL_COMPLAINT,
+        ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL,
         user.email,
         f"Hotmail abuse report",
         render("transactional/hotmail-transactional-complaint.txt.jinja2", user=user),
