@@ -6,7 +6,7 @@ from flask_admin.contrib import sqla
 from flask_login import current_user, login_user
 
 from app.db import Session
-from app.models import User, ManualSubscription
+from app.models import User, ManualSubscription, Fido
 
 
 class SLModelView(sqla.ModelView):
@@ -121,6 +121,7 @@ class UserAdmin(SLModelView):
                 flash(f"Disable OTP for {user}", "info")
 
             if user.fido_uuid:
+                Fido.filter_by(uuid=user.fido_uuid).delete()
                 user.fido_uuid = None
                 flash(f"Disable FIDO for {user}", "info")
 
