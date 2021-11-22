@@ -205,6 +205,8 @@ PADDLE_PUBLIC_KEY_PATH = get_abs_path(
 
 PADDLE_AUTH_CODE = os.environ.get("PADDLE_AUTH_CODE")
 
+PADDLE_COUPON_ID = os.environ.get("PADDLE_COUPON_ID")
+
 # OpenID keys, used to sign id_token
 OPENID_PRIVATE_KEY_PATH = get_abs_path(
     os.environ.get("OPENID_PRIVATE_KEY_PATH", "local_data/jwtRS256.key")
