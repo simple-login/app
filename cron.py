@@ -720,11 +720,6 @@ def check_custom_domain():
                         custom_domain=custom_domain,
                         domain_dns_url=domain_dns_url,
                     ),
-                    render(
-                        "transactional/custom-domain-dns-issue.html",
-                        custom_domain=custom_domain,
-                        domain_dns_url=domain_dns_url,
-                    ),
                     max_nb_alert=1,
                     nb_day=30,
                 )
