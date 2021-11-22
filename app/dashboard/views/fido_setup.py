@@ -69,6 +69,7 @@ def fido_setup():
             public_key=str(fido_credential.public_key, "utf-8"),
             sign_count=fido_credential.sign_count,
             name=fido_token_form.key_name.data,
+            user_id=current_user.id,
         )
         Session.commit()
 
