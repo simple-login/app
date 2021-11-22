@@ -236,6 +236,7 @@ class Fido(Base, ModelMixin):
     public_key = sa.Column(sa.String(), nullable=False, unique=True)
     sign_count = sa.Column(sa.BigInteger(), nullable=False)
     name = sa.Column(sa.String(128), nullable=False, unique=False)
+    user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=True)
 
 
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
