@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import ADMIN_EMAIL
+from app.config import ADMIN_EMAIL, PADDLE_VENDOR_ID, PADDLE_COUPON_ID
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import send_email
@@ -54,10 +54,6 @@ def coupon_route():
     )
     if coinbase_subscription and coinbase_subscription.is_active():
         can_use_coupon = False
-
-    if not can_use_coupon:
-        flash("You already have another subscription.", "warning")
-        return redirect(url_for("dashboard.index"))
 
     if coupon_form.validate_on_submit():
         code = coupon_form.code.data
@@ -112,4 +108,10 @@ def coupon_route():
         else:
             flash(f"Code *{code}* expired or invalid", "warning")
 
-    return render_template("dashboard/coupon.html", coupon_form=coupon_form)
+    return render_template(
+        "dashboard/coupon.html",
+        coupon_form=coupon_form,
+        PADDLE_VENDOR_ID=PADDLE_VENDOR_ID,
+        PADDLE_COUPON_ID=PADDLE_COUPON_ID,
+        can_use_coupon=can_use_coupon,
+    )
