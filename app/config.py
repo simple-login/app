@@ -157,6 +157,9 @@ DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 # the email address that receives all unsubscription request
 UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
 
+# due to a typo, both UNSUBSCRIBER and OLD_UNSUBSCRIBER are supported
+OLD_UNSUBSCRIBER = os.environ.get("OLD_UNSUBSCRIBER")
+
 DKIM_SELECTOR = b"dkim"
 DKIM_PRIVATE_KEY = None
 

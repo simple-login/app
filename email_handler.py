@@ -86,6 +86,7 @@ from app.config import (
     TEMP_DIR,
     ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL,
     ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
+    OLD_UNSUBSCRIBER,
 )
 from app.db import Session
 from app.email import status, headers
@@ -2015,7 +2016,7 @@ def handle(envelope: Envelope) -> str:
         return status.E203
 
     # unsubscribe request
-    if UNSUBSCRIBER and rcpt_tos == [UNSUBSCRIBER]:
+    if UNSUBSCRIBER and (rcpt_tos == [UNSUBSCRIBER] or rcpt_tos == [OLD_UNSUBSCRIBER]):
         LOG.d("Handle unsubscribe request from %s", mail_from)
         return handle_unsubscribe(envelope, msg)
 
