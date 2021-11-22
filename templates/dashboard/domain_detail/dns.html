@@ -87,10 +87,10 @@
         </div>
 
         <div class="mb-2">Add the following MX DNS record to your domain. <br>
-          Please note that there's a point (<em>.</em>) at the end target addresses.
-          This is to make sure the <i>absolute</i> address is used.
+          Please note that there's a dot (<em>.</em>) at the end target addresses.
+          If your domain registrar doesn't allow this trailing dot, please remove it when adding the DNS record.
           <br>
-          Also some domain registrars (Namecheap, CloudFlare, etc) might use <em>@</em> for the root domain.
+          Some domain registrars (Namecheap, CloudFlare, etc) might also use <em>@</em> for the root domain.
         </div>
 
         {% for priority, email_server in EMAIL_SERVERS_WITH_PRIORITY %}
