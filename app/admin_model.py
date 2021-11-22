@@ -110,15 +110,19 @@ class UserAdmin(SLModelView):
         Session.commit()
 
     @action(
-        "disable_otp",
-        "Disable OTP",
-        "Disable OTP?",
+        "disable_otp_fido",
+        "Disable OTP & FIDO",
+        "Disable OTP & FIDO?",
     )
-    def disable_otp(self, ids):
+    def disable_otp_fido(self, ids):
         for user in User.filter(User.id.in_(ids)):
             if user.enable_otp:
                 user.enable_otp = False
                 flash(f"Disable OTP for {user}", "info")
+
+            if user.fido_uuid:
+                user.fido_uuid = None
+                flash(f"Disable FIDO for {user}", "info")
 
         Session.commit()
 
