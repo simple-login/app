@@ -1,3 +1,6 @@
+from typing import Optional
+
+from email_validator import validate_email
 from flask import g
 from flask import jsonify, request
 from itsdangerous import SignatureExpired
@@ -22,8 +25,21 @@ from app.models import (
     DomainDeletedAlias,
     Mailbox,
     AliasMailbox,
+    SLDomain,
 )
 from app.utils import convert_to_id
+
+
+def get_custom_domain(alias_address) -> Optional[CustomDomain]:
+    alias_domain = validate_email(
+        alias_address, check_deliverability=False, allow_smtputf8=False
+    ).domain
+
+    # handle the case a SLDomain is also a CustomDomain
+    if SLDomain.get_by(domain=alias_domain) is None:
+        custom_domain = CustomDomain.get_by(domain=alias_domain)
+        if custom_domain:
+            return custom_domain
 
 
 @api_bp.route("/v2/alias/custom/new", methods=["POST"])
@@ -88,25 +104,14 @@ def new_custom_alias_v2():
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
-    custom_domain_id = None
-    if alias_suffix.startswith("@"):
-        alias_domain = alias_suffix[1:]
-        domain = CustomDomain.get_by(domain=alias_domain)
-
-        # check if the alias is currently in the domain trash
-        if domain and DomainDeletedAlias.get_by(domain_id=domain.id, email=full_alias):
-            LOG.d(f"Alias {full_alias} is currently in the {domain.domain} trash. ")
-            return jsonify(error=f"alias {full_alias} in domain trash"), 409
-
-        if domain:
-            custom_domain_id = domain.id
+    custom_domain = get_custom_domain(full_alias)
 
     alias = Alias.create(
         user_id=user.id,
         email=full_alias,
         mailbox_id=user.default_mailbox_id,
         note=note,
-        custom_domain_id=custom_domain_id,
+        custom_domain_id=custom_domain.id if custom_domain else None,
     )
 
     Session.commit()
@@ -208,12 +213,7 @@ def new_custom_alias_v3():
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
-    custom_domain_id = None
-    if alias_suffix.startswith("@"):
-        alias_domain = alias_suffix[1:]
-        domain = CustomDomain.get_by(domain=alias_domain)
-        if domain:
-            custom_domain_id = domain.id
+    custom_domain = get_custom_domain(full_alias)
 
     alias = Alias.create(
         user_id=user.id,
@@ -221,7 +221,7 @@ def new_custom_alias_v3():
         note=note,
         name=name or None,
         mailbox_id=mailboxes[0].id,
-        custom_domain_id=custom_domain_id,
+        custom_domain_id=custom_domain.id if custom_domain else None,
     )
     Session.flush()
 
