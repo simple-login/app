@@ -1039,15 +1039,18 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     from_header = alias.email
     # add alias name from alias
     if alias.name:
-        LOG.d("Put alias name in from header")
+        LOG.d("Put alias name %s in from header", alias.name)
         from_header = formataddr((alias.name, alias.email))
     elif alias.custom_domain:
-        LOG.d("Put domain default alias name in from header")
-
         # add alias name from domain
         if alias.custom_domain.name:
+            LOG.d(
+                "Put domain default alias name %s in from header",
+                alias.custom_domain.name,
+            )
             from_header = formataddr((alias.custom_domain.name, alias.email))
 
+    LOG.d("From header is %s", from_header)
     add_or_replace_header(msg, headers.FROM, from_header)
 
     replace_header_when_reply(msg, alias, headers.TO)
@@ -1187,10 +1190,13 @@ def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
         if mailbox.email == mail_from:
             return mailbox
 
-        for addr in mailbox.authorized_addresses:
-            if addr.email == mail_from:
+        for authorized_address in mailbox.authorized_addresses:
+            if authorized_address.email == mail_from:
                 LOG.d(
-                    "Found an authorized address for %s %s %s", alias, mailbox, address
+                    "Found an authorized address for %s %s %s",
+                    alias,
+                    mailbox,
+                    authorized_address,
                 )
                 return mailbox
 
