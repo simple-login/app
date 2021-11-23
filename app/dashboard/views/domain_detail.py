@@ -13,6 +13,7 @@ from app.dns_utils import (
     get_spf_domain,
     get_txt_record,
     get_cname_record,
+    is_mx_equivalent,
 )
 from app.log import LOG
 from app.models import (
@@ -77,7 +78,7 @@ def domain_detail_dns(custom_domain_id):
         elif request.form.get("form-name") == "check-mx":
             mx_domains = get_mx_domains(custom_domain.domain)
 
-            if sorted(mx_domains) != sorted(EMAIL_SERVERS_WITH_PRIORITY):
+            if is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
                 flash("The MX record is not correctly set", "warning")
 
                 mx_ok = False

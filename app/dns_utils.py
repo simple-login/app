@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Tuple
 
 import dns.resolver
 
@@ -95,3 +95,28 @@ def get_txt_record(hostname) -> [str]:
             ret.append(record)
 
     return ret
+
+
+def is_mx_equivalent(
+    mx_domains: List[Tuple[int, str]], ref_mx_domains: List[Tuple[int, str]]
+) -> bool:
+    """
+    Compare mx_domains with ref_mx_domains to see if they are equivalent.
+    mx_domains and ref_mx_domains are list of (priority, domain)
+
+    The priority order is taken into account but not the priority number.
+    For example, [(1, domain1), (2, domain2)] is equivalent to [(10, domain1), (20, domain2)]
+    """
+    mx_domains = sorted(mx_domains, key=lambda priority_domain: priority_domain[0])
+    ref_mx_domains = sorted(
+        ref_mx_domains, key=lambda priority_domain: priority_domain[0]
+    )
+
+    if len(mx_domains) != len(ref_mx_domains):
+        return False
+
+    for i in range(0, len(mx_domains)):
+        if mx_domains[i][1] != ref_mx_domains[i][1]:
+            return False
+
+    return True
