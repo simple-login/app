@@ -695,7 +695,7 @@ def check_custom_domain():
     for custom_domain in CustomDomain.filter_by(verified=True):  # type: CustomDomain
         mx_domains = get_mx_domains(custom_domain.domain)
 
-        if is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
+        if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
             user = custom_domain.user
             LOG.w(
                 "The MX record is not correctly set for %s %s %s",

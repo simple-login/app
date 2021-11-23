@@ -78,7 +78,7 @@ def domain_detail_dns(custom_domain_id):
         elif request.form.get("form-name") == "check-mx":
             mx_domains = get_mx_domains(custom_domain.domain)
 
-            if is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
+            if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
                 flash("The MX record is not correctly set", "warning")
 
                 mx_ok = False
