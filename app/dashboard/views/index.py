@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 
 from app import alias_utils
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
-from app.config import ALIAS_LIMIT
+from app.config import ALIAS_LIMIT, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.extensions import limiter
@@ -161,21 +161,20 @@ def index():
         directory_id = int(alias_filter[len("directory:") :])
 
     alias_infos = get_alias_infos_with_pagination_v3(
-        current_user, page, query, sort, alias_filter, mailbox_id, directory_id
-    )
-    # to know whether there's alias on the next page
-    next_page_alias = get_alias_infos_with_pagination_v3(
         current_user,
-        page + 1,  # next page
+        page,
         query,
         sort,
         alias_filter,
         mailbox_id,
         directory_id,
-        page_limit=1,  # only load 1 alias
+        # load 1 alias more to know whether this is the last page
+        page_limit=PAGE_LIMIT + 1,
     )
 
-    last_page = len(next_page_alias) == 0
+    last_page = len(alias_infos) <= PAGE_LIMIT
+    # remove the last alias that's added to know whether this is the last page
+    alias_infos = alias_infos[:PAGE_LIMIT]
 
     # add highlighted alias in case it's not included
     if highlight_alias_id and highlight_alias_id not in [
