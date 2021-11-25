@@ -8,7 +8,7 @@ import uuid
 from copy import deepcopy
 from email import policy, message_from_bytes, message_from_string
 from email.header import decode_header, Header
-from email.message import Message
+from email.message import Message, EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate
@@ -274,8 +274,9 @@ def send_email(
         msg.attach(MIMEText(plaintext))
         msg.attach(MIMEText(html, "html"))
     else:
-        msg = Message()
+        msg = EmailMessage()
         msg.set_payload(plaintext)
+        msg[headers.CONTENT_TYPE] = "text/plain"
 
     msg[headers.SUBJECT] = subject
     msg[headers.FROM] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
