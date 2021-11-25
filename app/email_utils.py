@@ -52,6 +52,7 @@ from app.config import (
     POSTFIX_PORT_FORWARD,
     TEMP_DIR,
     ALIAS_AUTOMATIC_DISABLE,
+    RSPAMD_SIGN_DKIM,
 )
 from app.db import Session
 from app.dns_utils import get_mx_domains
@@ -408,6 +409,11 @@ def get_email_domain_part(address):
 
 
 def add_dkim_signature(msg: Message, email_domain: str):
+    if RSPAMD_SIGN_DKIM:
+        LOG.d("DKIM signature will be added by rspamd")
+        msg[headers.SL_WANT_SIGNING] = "yes"
+        return
+
     for dkim_headers in headers.DKIM_HEADERS:
         try:
             add_dkim_signature_with_header(msg, email_domain, dkim_headers)
