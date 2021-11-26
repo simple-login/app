@@ -70,6 +70,7 @@ from app.config import (
     COINBASE_WEBHOOK_SECRET,
     ROOT_DIR,
     PAGE_LIMIT,
+    PADDLE_COUPON_ID,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -110,6 +111,7 @@ from app.models import (
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
 from app.pgp_utils import load_public_key
+from app.utils import random_string
 
 if SENTRY_DSN:
     LOG.d("enable sentry")
@@ -794,6 +796,34 @@ def setup_paddle_callback(app: Flask):
             else:
                 return "No such subscription", 400
         return "OK"
+
+    @app.route("/paddle_coupon", methods=["GET", "POST"])
+    def paddle_coupon():
+        LOG.d(f"paddle coupon callback %s", request.form)
+
+        if not paddle_utils.verify_incoming_request(dict(request.form)):
+            LOG.e("request not coming from paddle. Request data:%s", dict(request.form))
+            return "KO", 400
+
+        product_id = request.form.get("p_product_id")
+        if product_id != PADDLE_COUPON_ID:
+            LOG.e("product_id %s not match with %s", product_id, PADDLE_COUPON_ID)
+            return "KO", 400
+
+        email = request.form.get("email")
+        LOG.d("Paddle coupon request for %s", email)
+
+        coupon = Coupon.create(
+            code=random_string(30),
+            comment="For 1-year coupon",
+            expires_date=arrow.now().shift(years=1, days=-1),
+            commit=True,
+        )
+
+        return (
+            f"Your 1-year coupon is <b>{coupon.code}</b> <br> "
+            f"It's valid until <b>{coupon.expires_date.date().isoformat()}</b>"
+        )
 
 
 def setup_coinbase_commerce(app):
