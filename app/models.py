@@ -2147,6 +2147,9 @@ class Coupon(Base, ModelMixin):
 
     comment = sa.Column(sa.Text, nullable=True)
 
+    # a coupon can have an expiration
+    expires_date = sa.Column(ArrowType, nullable=True)
+
 
 class Directory(Base, ModelMixin):
     __tablename__ = "directory"
