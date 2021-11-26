@@ -1,5 +1,5 @@
 import arrow
-from flask import render_template, flash, redirect, url_for
+from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -60,6 +60,13 @@ def coupon_route():
 
         coupon: Coupon = Coupon.get_by(code=code)
         if coupon and not coupon.used:
+            if coupon.expires_date and coupon.expires_date < arrow.now():
+                flash(
+                    f"The coupon was expired on {coupon.expires_date.humanize()}",
+                    "error",
+                )
+                return redirect(request.url)
+
             coupon.used_by_user_id = current_user.id
             coupon.used = True
             Session.commit()
