@@ -121,4 +121,7 @@ def coupon_route():
         PADDLE_VENDOR_ID=PADDLE_VENDOR_ID,
         PADDLE_COUPON_ID=PADDLE_COUPON_ID,
         can_use_coupon=can_use_coupon,
+        # a coupon is only valid until this date
+        # this is to avoid using the coupon to renew an account forever
+        max_coupon_date=arrow.now().shift(years=1, days=-1),
     )

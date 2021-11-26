@@ -52,6 +52,9 @@
         Can be an idea for a gift card :).
         After the payment, the coupon will be sent to you by email.
       </div>
+      <div class="alert alert-info">
+        The coupon must be used before {{ max_coupon_date.date().isoformat() }}
+      </div>
       <a href="#!" class="paddle_button btn btn-primary" data-product="{{ PADDLE_COUPON_ID }}">Buy 1-year SimpleLogin
         coupon</a>
     </div>
