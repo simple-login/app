@@ -157,16 +157,15 @@ def notify_manual_sub_end():
         elif arrow.now().shift(days=4) > manual_sub.end_at > arrow.now().shift(days=3):
             need_reminder = True
 
-        if need_reminder:
-            user = manual_sub.user
+        user = manual_sub.user
+        if user.lifetime:
+            LOG.d("%s has a lifetime licence", user)
+            continue
 
+        if need_reminder:
             # user can have a (free) manual subscription but has taken a paid subscription via
             # Paddle, Coinbase or Apple since then
             if manual_sub.is_giveaway:
-                if user.lifetime:
-                    LOG.d("%s has a lifetime licence", user)
-                    continue
-
                 if user.get_subscription():
                     LOG.d("%s has a active Paddle subscription", user)
                     continue
