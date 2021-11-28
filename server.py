@@ -795,6 +795,18 @@ def setup_paddle_callback(app: Flask):
                 Session.commit()
             else:
                 return "No such subscription", 400
+        elif request.form.get("alert_name") == "payment_refunded":
+            subscription_id = request.form.get("subscription_id")
+            LOG.d("Refund request for subscription %s", subscription_id)
+
+            sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
+
+            if sub:
+                user = sub.user
+                Subscription.delete(sub.id)
+                Session.commit()
+                LOG.e("%s requests a refund", user)
+
         return "OK"
 
     @app.route("/paddle_coupon", methods=["GET", "POST"])
