@@ -493,6 +493,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return user
 
+    # region Billing
     def lifetime_or_active_subscription(self) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
@@ -655,30 +656,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return False
 
-    @property
-    def premium_end(self) -> str:
-        if self.lifetime:
-            return "Forever"
-
-        sub: Subscription = self.get_subscription()
-        if sub:
-            return str(sub.next_bill_date)
-
-        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
-        if apple_sub and apple_sub.is_valid():
-            return apple_sub.expires_date.humanize()
-
-        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
-        if manual_sub and manual_sub.is_active():
-            return manual_sub.end_at.humanize()
-
-        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
-            user_id=self.id
-        )
-        if coinbase_subscription and coinbase_subscription.is_active():
-            return coinbase_subscription.end_at.humanize()
-
-        return "N/A"
+    # endregion
 
     def can_create_new_alias(self) -> bool:
         """
