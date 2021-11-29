@@ -26,42 +26,50 @@
 
         {% if current_user.lifetime %}
           You have lifetime access to the Premium plan.
-        {% elif current_user.get_subscription() %}
-          You are on the  {{ current_user.get_subscription().plan_name() }} plan. <br>
-          <a href="{{ url_for('dashboard.billing') }}" class="btn btn-outline-primary">
-            Manage Subscription
-          </a>
-          {% if current_user.lifetime %}
-            You have however lifetime access to the Premium plan now so make sure to cancel the previous plan :).
-          {% endif %}
-        {% elif manual_sub and manual_sub.is_active() %}
-          You are on the Premium plan which expires {{ manual_sub.end_at | dt }}
-          ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
-          {% if manual_sub.is_giveaway %}
-            <br>
-            To gain additional features and support SimpleLogin you can upgrade to a Premium plan. <br>
-            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+        {% elif current_user.lifetime_or_active_subscription() %}
+          {% if current_user.get_subscription() %}
+            <div>
+              {{ current_user.get_subscription().plan_name() }} plan subscribed via Paddle.
+              <a href="{{ url_for('dashboard.billing') }}">
+                Manage Subscription ➡
+              </a>
+            </div>
           {% endif %}
 
-        {% elif apple_sub and apple_sub.is_valid() %}
-          You are on the Premium plan (subscribed via Apple) which expires {{ apple_sub.expires_date | dt }}
-          ({{ apple_sub.expires_date.format("YYYY-MM-DD") }}).
-          <div class="alert alert-info">
-            If you want to subscribe via the Web instead, please make sure to cancel your subscription
-            on Apple first.
-            <a href="{{ url_for('dashboard.pricing') }}"
-               class="">Upgrade <i class="fa fa-arrow-right" aria-hidden="true"></i></a>
-          </div>
+          {% if manual_sub and manual_sub.is_active() %}
+            <div>
+              Manual plan which expires {{ manual_sub.end_at | dt }}
+              ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
+              {% if manual_sub.is_giveaway %}
+                <br>
+                To gain additional features and support SimpleLogin you can upgrade to a Premium plan. <br>
+                <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+              {% endif %}
+            </div>
+          {% endif %}
 
-        {% elif coinbase_sub and coinbase_sub.is_active() %}
-          You are on the Premium plan which expires {{ coinbase_sub.end_at | dt }}
-          ({{ coinbase_sub.end_at.format("YYYY-MM-DD") }}).
-          <br>
-          <a href="{{ url_for('dashboard.coinbase_checkout_route') }}"
-             class="btn btn-sm btn-outline-primary" target="_blank">
-            Extend Subscription <i class="fe fe-external-link"></i>
-          </a>
+          {% if apple_sub and apple_sub.is_valid() %}
+            <div>
+              Premium plan subscribed via Apple which expires {{ apple_sub.expires_date | dt }}
+              ({{ apple_sub.expires_date.format("YYYY-MM-DD") }}).
+              <div class="alert alert-info">
+                If you want to subscribe via the Web instead, please make sure to cancel your subscription
+                on Apple first.
+                <a href="{{ url_for('dashboard.pricing') }}"
+                   class="">Upgrade <i class="fa fa-arrow-right" aria-hidden="true"></i></a>
+              </div>
+            </div>
+          {% endif %}
 
+          {% if coinbase_sub and coinbase_sub.is_active() %}
+            <div>
+              Yearly plan subscribed with cryptocurrency which expires on
+              {{ coinbase_sub.end_at.format("YYYY-MM-DD") }}.
+              <a href="{{ url_for('dashboard.coinbase_checkout_route') }}" target="_blank">
+                Extend Subscription <i class="fe fe-external-link"></i>
+              </a>
+            </div>
+          {% endif %}
         {% elif current_user.in_trial() %}
           Your Premium trial expires {{ current_user.trial_end | dt }}.
         {% else %}
@@ -312,7 +320,8 @@
         <div class="mb-3">
           When replying to a forwarded email, the <b>reverse-alias</b> can be automatically included
           in the attached message by your email client.
-          If this option is enabled, SimpleLogin will try to <b>replace</b> the reverse-alias by your contact email. <br>
+          If this option is enabled, SimpleLogin will try to <b>replace</b> the reverse-alias by your contact email.
+          <br>
         </div>
         <form method="post" action="#reverse-alias-replacement-section">
           <input type="hidden" name="form-name" value="replace-ra">
