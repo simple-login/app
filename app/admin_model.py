@@ -6,7 +6,7 @@ from flask_admin.contrib import sqla
 from flask_login import current_user, login_user
 
 from app.db import Session
-from app.models import User, ManualSubscription, Fido
+from app.models import User, ManualSubscription, Fido, Subscription, AppleSubscription
 
 
 class SLModelView(sqla.ModelView):
@@ -145,6 +145,26 @@ class UserAdmin(SLModelView):
 
 def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
     for user in User.filter(User.id.in_(ids)).all():
+        if user.lifetime:
+            flash(f"user {user} already has a lifetime license", "warning")
+            continue
+
+        sub: Subscription = user.get_subscription()
+        if sub and not sub.cancelled:
+            flash(
+                f"user {user} already has a Paddle license, they have to cancel it first",
+                "warning",
+            )
+            continue
+
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=user.id)
+        if apple_sub and apple_sub.is_valid():
+            flash(
+                f"user {user} already has a Apple subscription, they have to cancel it first",
+                "warning",
+            )
+            continue
+
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=user.id)
         if manual_sub:
             # renew existing subscription
@@ -154,15 +174,6 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
                 manual_sub.end_at = arrow.now().shift(years=1, days=1)
             Session.commit()
             flash(f"Subscription extended to {manual_sub.end_at.humanize()}", "success")
-            continue
-
-        # user can have manual subscription applied if their current subscription is canceled
-        if (
-            user.is_premium()
-            and not user.in_trial()
-            and not user.subscription_cancelled
-        ):
-            flash(f"User {user} is already premium", "warning")
             continue
 
         ManualSubscription.create(
