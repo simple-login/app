@@ -89,10 +89,6 @@
               {% elif current_user.is_premium() %}
 
                 <small class="text-success d-block mt-1">Premium
-                  {% set sub = current_user.get_subscription() %}
-                  {% if sub and sub.cancelled and not current_user.lifetime %}
-                    until {{ sub.next_bill_date.strftime("%Y-%m-%d") }}
-                  {% endif %}
                 </small>
               {% endif %}
 
