@@ -18,15 +18,14 @@
           You have canceled your subscription and it will end on {{ sub.next_bill_date.strftime("%Y-%m-%d") }}
         </p>
 
-        <hr>
-        <p>
-          If you change your mind you can subscribe again to SimpleLogin but please note that this will be a completely
+        <p class="alert alert-info">
+          If you change your mind you can subscribe again to SimpleLogin but
+          please note that this will be a completely
           new subscription and
-          your payment method will be charged <b>immediately</b>.
+          your payment method will be charged <b>immediately</b>. <br>
+          The period left in the current subscription isn't taken into account.
           <br>
 
-          We are going to send you an email by the end of the subscription so maybe you can upgrade at that time.
-          <br>
           <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-primary mt-2">Re-subscribe</a>
         </p>
 
