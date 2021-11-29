@@ -26,11 +26,6 @@
 
         {% if current_user.lifetime %}
           You have lifetime access to the Premium plan.
-          {% if not current_user.paid_lifetime %}
-            <br>
-            To support SimpleLogin you can switch to a paid plan. <br>
-            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
-          {% endif %}
         {% elif current_user.get_subscription() %}
           You are on the  {{ current_user.get_subscription().plan_name() }} plan. <br>
           <a href="{{ url_for('dashboard.billing') }}" class="btn btn-outline-primary">
