@@ -613,9 +613,13 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sub: Subscription = self.get_subscription()
         if sub:
             if sub.cancelled:
-                channels.append(f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()}")
+                channels.append(
+                    f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
+                )
             else:
-                channels.append(f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()}")
+                channels.append(
+                    f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
+                )
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
         if apple_sub and apple_sub.is_valid():
@@ -630,13 +634,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             user_id=self.id
         )
         if coinbase_subscription and coinbase_subscription.is_active():
-            channels.append(f"Coinbase Subscription ends {coinbase_subscription.end_at.humanize()}")
+            channels.append(
+                f"Coinbase Subscription ends {coinbase_subscription.end_at.humanize()}"
+            )
 
         if self.trial_end and arrow.now() < self.trial_end:
             return "In Trial"
 
         return ".\n".join(channels)
-
 
     # endregion
 
