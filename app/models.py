@@ -604,35 +604,39 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     @property
     def upgrade_channel(self) -> str:
+        """Used on admin dashboard"""
+        # user can have multiple subscription channel
+        channels = []
         if self.lifetime:
-            return "Lifetime"
+            channels.append("Lifetime")
 
         sub: Subscription = self.get_subscription()
         if sub:
             if sub.cancelled:
-                return f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
+                channels.append(f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()}")
             else:
-                return f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
+                channels.append(f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()}")
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
         if apple_sub and apple_sub.is_valid():
-            return "Apple Subscription"
+            channels.append("Apple Subscription")
 
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         if manual_sub and manual_sub.is_active():
             mode = "Giveaway" if manual_sub.is_giveaway else "Paid"
-            return f"Manual Subscription {manual_sub.comment} {mode}"
+            channels.append(f"Manual Subscription {manual_sub.comment} {mode}")
 
         coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
             user_id=self.id
         )
         if coinbase_subscription and coinbase_subscription.is_active():
-            return "Coinbase Subscription"
+            channels.append(f"Coinbase Subscription ends {coinbase_subscription.end_at.humanize()}")
 
         if self.trial_end and arrow.now() < self.trial_end:
             return "In Trial"
 
-        return "N/A"
+        return ".\n".join(channels)
+
 
     # endregion
 
