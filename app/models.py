@@ -623,12 +623,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
         if apple_sub and apple_sub.is_valid():
-            channels.append("Apple Subscription")
+            channels.append(f"Apple Subscription {apple_sub.expires_date.humanize()}")
 
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
         if manual_sub and manual_sub.is_active():
             mode = "Giveaway" if manual_sub.is_giveaway else "Paid"
-            channels.append(f"Manual Subscription {manual_sub.comment} {mode}")
+            channels.append(
+                f"Manual Subscription {manual_sub.comment} {mode} {manual_sub.end_at.humanize()}"
+            )
 
         coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
             user_id=self.id
