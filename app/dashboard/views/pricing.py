@@ -24,6 +24,10 @@ from app.models import (
 @dashboard_bp.route("/pricing", methods=["GET", "POST"])
 @login_required
 def pricing():
+    if current_user.lifetime:
+        flash("You already have a lifetime subscription", "error")
+        return redirect(url_for("dashboard.index"))
+
     sub: Subscription = current_user.get_subscription()
     # user who has canceled can re-subscribe
     if sub and not sub.cancelled:
