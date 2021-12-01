@@ -18,7 +18,6 @@ from app import s3, email_utils
 from app.config import (
     URL,
     FIRST_ALIAS_DOMAIN,
-    JOB_DELETE_ACCOUNT,
     ALIAS_RANDOM_SUFFIX_LENGTH,
 )
 from app.dashboard.base import dashboard_bp
@@ -43,8 +42,6 @@ from app.models import (
     SLDomain,
     CoinbaseSubscription,
     AppleSubscription,
-    Job,
-    Subscription,
 )
 from app.utils import random_string, sanitize_email
 
