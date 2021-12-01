@@ -562,31 +562,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return True
 
-    def can_upgrade(self) -> bool:
-        """
-        The following users can upgrade:
-        - have giveaway lifetime licence
-        - have giveaway manual subscriptions
-        - have a cancelled Paddle subscription
-        - have a expired Apple subscription
-        - have a expired Coinbase subscription
-        """
-        sub: Subscription = self.get_subscription()
-        # user who has canceled can also re-subscribe
-        if sub and not sub.cancelled:
-            return False
-
-        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
-        # user who has giveaway premium can decide to upgrade
-        if manual_sub and manual_sub.is_active() and not manual_sub.is_giveaway:
-            return False
-
-        coinbase_subscription = CoinbaseSubscription.get_by(user_id=self.id)
-        if coinbase_subscription and coinbase_subscription.is_active():
-            return False
-
-        return True
-
     def is_premium(self) -> bool:
         """
         user is premium if they:

@@ -1,3 +1,4 @@
+import arrow
 from coinbase_commerce import Client
 from flask import render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
@@ -12,15 +13,32 @@ from app.config import (
 )
 from app.dashboard.base import dashboard_bp
 from app.log import LOG
-from app.models import AppleSubscription
+from app.models import (
+    AppleSubscription,
+    Subscription,
+    ManualSubscription,
+    CoinbaseSubscription,
+)
 
 
 @dashboard_bp.route("/pricing", methods=["GET", "POST"])
 @login_required
 def pricing():
-    if not current_user.can_upgrade():
-        flash("You are already a premium user", "warning")
+    sub: Subscription = current_user.get_subscription()
+    # user who has canceled can re-subscribe
+    if sub and not sub.cancelled:
+        flash("You already have an active subscription", "error")
         return redirect(url_for("dashboard.index"))
+
+    now = arrow.now()
+    manual_sub: ManualSubscription = ManualSubscription.filter(
+        ManualSubscription.user_id == current_user.id, ManualSubscription.end_at > now
+    ).first()
+
+    coinbase_sub = CoinbaseSubscription.filter(
+        CoinbaseSubscription.user_id == current_user.id,
+        CoinbaseSubscription.end_at > now,
+    ).first()
 
     apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=current_user.id)
     if apple_sub and apple_sub.is_valid():
@@ -32,6 +50,9 @@ def pricing():
         PADDLE_MONTHLY_PRODUCT_ID=PADDLE_MONTHLY_PRODUCT_ID,
         PADDLE_YEARLY_PRODUCT_ID=PADDLE_YEARLY_PRODUCT_ID,
         success_url=URL + "/dashboard/subscription_success",
+        manual_sub=manual_sub,
+        coinbase_sub=coinbase_sub,
+        now=now,
     )
 
 
