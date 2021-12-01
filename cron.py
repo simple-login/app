@@ -162,6 +162,11 @@ def notify_manual_sub_end():
             LOG.d("%s has a lifetime licence", user)
             continue
 
+        paddle_sub: Subscription = user.get_subscription()
+        if paddle_sub and not paddle_sub.cancelled:
+            LOG.d("%s has an active Paddle subscription", user)
+            continue
+
         if need_reminder:
             # user can have a (free) manual subscription but has taken a paid subscription via
             # Paddle, Coinbase or Apple since then
