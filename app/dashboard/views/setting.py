@@ -185,29 +185,6 @@ def setting():
             flash("Your notification preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
-        elif request.form.get("form-name") == "delete-account":
-            sub: Subscription = current_user.get_subscription()
-            # user who has canceled can also re-subscribe
-            if sub and not sub.cancelled:
-                flash("Please cancel your current subscription first", "warning")
-                return redirect(url_for("dashboard.setting"))
-
-            # Schedule delete account job
-            LOG.w("schedule delete account job for %s", current_user)
-            Job.create(
-                name=JOB_DELETE_ACCOUNT,
-                payload={"user_id": current_user.id},
-                run_at=arrow.now(),
-                commit=True,
-            )
-
-            flash(
-                "Your account deletion has been scheduled. "
-                "You'll receive an email when the deletion is finished",
-                "success",
-            )
-            return redirect(url_for("dashboard.setting"))
-
         elif request.form.get("form-name") == "change-alias-generator":
             scheme = int(request.form.get("alias-generator-scheme"))
             if AliasGeneratorEnum.has_value(scheme):

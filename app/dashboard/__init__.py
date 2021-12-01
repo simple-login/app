@@ -29,4 +29,5 @@ from .views import (
     batch_import,
     alias_transfer,
     app,
+    delete_account,
 )

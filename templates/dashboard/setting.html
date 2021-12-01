@@ -492,13 +492,11 @@
     <div class="card">
       <div class="card-body">
         <div class="card-title">Account Deletion</div>
-        <div class="mb-3">Please note that this operation is irreversible.
+        <div class="mb-3">
+          If SimpleLogin isn't the right fit for you, you can simply delete your account.
         </div>
 
-        <form method="post">
-          <input type="hidden" name="form-name" value="delete-account">
-          <span class="delete-account btn btn-outline-danger">Delete account</span>
-        </form>
+        <a href="{{ url_for('dashboard.delete_account') }}" class="btn btn-outline-danger">Delete account</a>
       </div>
     </div>
 
@@ -506,33 +504,5 @@
 
 {% endblock %}
 
-{% block script %}
-  <script>
-    $(".delete-account").on("click", function (e) {
-      let that = $(this);
 
-      bootbox.confirm({
-        message: "All your data including your aliases will be deleted, " +
-          "other people might not be able to reach you after, " +
-          " please confirm.",
-        buttons: {
-          confirm: {
-            label: 'Yes, delete my account',
-            className: 'btn-danger'
-          },
-          cancel: {
-            label: 'Cancel',
-            className: 'btn-outline-primary'
-          }
-        },
-        callback: function (result) {
-          if (result) {
-            that.closest("form").submit();
-          }
-        }
-      })
-
-    });
-  </script>
-{% endblock %}
 
