@@ -156,10 +156,26 @@
     Paddle.Setup({vendor: {{ PADDLE_VENDOR_ID }}});
 
     function upgrade(productId) {
-      Paddle.Checkout.open({
-        product: productId,
-        success: "{{ success_url }}",
-        passthrough: "{\"user_id\": {{current_user.id}} }"
+      bootbox.dialog({
+        title: `Payment with credit card or PayPal via Paddle`,
+        message: `Paddle will ask for an email address for sending out the invoices, please feel free to use an alias. <br>
+        You don't have to use your SimpleLogin account email address`,
+        size: 'large',
+        onEscape: true,
+        backdrop: true,
+        buttons: {
+          got_it: {
+            label: 'Got it!',
+            className: 'btn-outline-primary',
+            callback: function () {
+              Paddle.Checkout.open({
+                product: productId,
+                success: "{{ success_url }}",
+                passthrough: "{\"user_id\": {{current_user.id}} }"
+              });
+            }
+          },
+        }
       });
     }
   </script>
