@@ -413,6 +413,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # user can use the phone feature
+    can_use_phone = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="0"
+    )
+
+    # in minutes
+    phone_quota = sa.Column(sa.Integer, nullable=True)
+
     @property
     def directory_quota(self):
         return min(
@@ -2679,3 +2687,56 @@ class DeletedSubdomain(Base, ModelMixin):
     __tablename__ = "deleted_subdomain"
 
     domain = sa.Column(sa.String(128), unique=True, nullable=False)
+
+
+# region Phone
+class PhoneCountry(Base, ModelMixin):
+    __tablename__ = "phone_country"
+
+    name = sa.Column(sa.String(128), unique=True, nullable=False)
+
+
+class PhoneNumber(Base, ModelMixin):
+    __tablename__ = "phone_number"
+
+    country_id = sa.Column(
+        sa.ForeignKey(PhoneCountry.id, ondelete="cascade"), nullable=False
+    )
+
+    # with country code, e.g. +33612345678
+    number = sa.Column(sa.String(128), unique=True, nullable=False)
+
+    active = sa.Column(sa.Boolean, nullable=False, default=True)
+
+    country = orm.relationship(PhoneCountry)
+
+
+class PhoneReservation(Base, ModelMixin):
+    __tablename__ = "phone_reservation"
+
+    number_id = sa.Column(
+        sa.ForeignKey(PhoneNumber.id, ondelete="cascade"), nullable=False
+    )
+
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+
+    number = orm.relationship(PhoneNumber)
+
+    start = sa.Column(ArrowType, nullable=False)
+    end = sa.Column(ArrowType, nullable=False)
+
+
+class PhoneMessage(Base, ModelMixin):
+    __tablename__ = "phone_message"
+
+    number_id = sa.Column(
+        sa.ForeignKey(PhoneNumber.id, ondelete="cascade"), nullable=False
+    )
+
+    from_number = sa.Column(sa.String(128), nullable=False)
+    body = sa.Column(sa.Text)
+
+    number = orm.relationship(PhoneNumber)
+
+
+# endregion
