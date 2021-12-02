@@ -68,9 +68,7 @@
             <div class="card-body">
 
               <h2 class="h4 mb-1">New Subdomain</h2>
-              <div class="small-text mb-4">
-                You can create up to {{ current_user.subdomain_quota }} subdomains.
-              </div>
+
 
               <form method="post" class="mt-2" data-parsley-validate>
                 <input type="hidden" name="form-name" value="create">
@@ -101,6 +99,14 @@
 
               <div v-if="toShow" class="text-info mt-2">
                 You are about to create <b>[[ subdomain]].[[domain]]</b> subdomain.
+              </div>
+
+              <div class="alert alert-info mt-3" style="font-size: 12px">
+                Deleting a subdomain will <b>not</b> restore the subdomain quota
+                so please make sure
+                to choose the subdomain you want to keep. <br>
+                Currently you can create up to <b style="font-size: 1.5em">{{ current_user.subdomain_quota }}</b>
+                subdomains.
               </div>
             </div>
           </div>
