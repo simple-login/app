@@ -6,8 +6,10 @@ import dns.resolver
 def _get_dns_resolver():
     my_resolver = dns.resolver.Resolver()
 
-    # 1.1.1.1 is CloudFlare's public DNS server
-    my_resolver.nameservers = ["1.1.1.1"]
+    # 103.196.38.38 is Handshake's public DNS server
+    # Everything will work as it is with HNS Support
+    # visit https://handshake.org for more
+    my_resolver.nameservers = ["103.196.38.38"]
 
     return my_resolver
 
