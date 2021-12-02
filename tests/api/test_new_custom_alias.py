@@ -269,3 +269,25 @@ def test_too_many_requests(flask_client):
         # last request
         assert r.status_code == 429
         assert r.json == {"error": "Rate limit exceeded"}
+
+
+def test_invalid_alias_2_consecutive_dots(flask_client):
+    user = login(flask_client)
+
+    word = random_word()
+    suffix = f".{word}@{EMAIL_DOMAIN}"
+    signed_suffix = signer.sign(suffix).decode()
+
+    r = flask_client.post(
+        "/api/v3/alias/custom/new",
+        json={
+            "alias_prefix": "prefix.",  # with the trailing dot, the alias will have 2 consecutive dots
+            "signed_suffix": signed_suffix,
+            "mailbox_ids": [user.default_mailbox_id],
+        },
+    )
+
+    assert r.status_code == 400
+    assert r.json == {
+        "error": "2 consecutive dot signs aren't allowed in an email address"
+    }

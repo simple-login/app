@@ -1,6 +1,6 @@
 from typing import Optional
 
-from email_validator import validate_email
+from email_validator import validate_email, EmailNotValidError
 from flask import g
 from flask import jsonify, request
 from itsdangerous import SignatureExpired
@@ -213,7 +213,16 @@ def new_custom_alias_v3():
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
-    custom_domain = get_custom_domain(full_alias)
+    if ".." in full_alias:
+        return (
+            jsonify(error="2 consecutive dot signs aren't allowed in an email address"),
+            400,
+        )
+
+    try:
+        custom_domain = get_custom_domain(full_alias)
+    except EmailNotValidError:
+        return jsonify(error="invalid email alias"), 400
 
     alias = Alias.create(
         user_id=user.id,
