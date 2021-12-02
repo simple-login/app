@@ -418,3 +418,5 @@ ALIAS_AUTOMATIC_DISABLE = "ALIAS_AUTOMATIC_DISABLE" in os.environ
 
 # whether the DKIM signing is handled by Rspamd
 RSPAMD_SIGN_DKIM = "RSPAMD_SIGN_DKIM" in os.environ
+
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
