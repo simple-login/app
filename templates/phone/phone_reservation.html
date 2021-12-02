@@ -1,0 +1,81 @@
+{% extends 'default.html' %}
+
+{% set active_page = "phone" %}
+
+{% block title %}
+  Phone reservation {{ phone_number.number }}
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      Your number is
+
+      <div class="d-flex mt-3">
+        <h2>{{ phone_number.number }}</h2>
+        <div class="ml-3">
+          <button
+              data-clipboard-text="{{ phone_number.number }}"
+              class="clipboard btn btn-outline-primary btn-sm" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </div>
+      </div>
+
+      {% if now > reservation.end %}
+        was ended {{ reservation.end.humanize() }}
+      {% else %}
+        will be released {{ reservation.end.humanize() }}
+      {% endif %}
+
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+
+      <h2 class="mb-2">Received Messages</h2>
+      <div class="mb-4">Please refresh the page to have the latest messages</div>
+
+      <table class="table">
+        <thead>
+        <tr>
+          <th scope="col">From</th>
+          <th scope="col">Time</th>
+          <th scope="col">Message</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for message in messages %}
+          <tr>
+            <td>{{ message.from_number }}</td>
+            <td>{{ message.created_at.humanize() }}</td>
+            <td>{{ message.body }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  {% if now < reservation.end %}
+    <div class="card">
+      <div class="card-body">
+        When the number is released, you can't reclaim it.
+
+        <form method="post" class="mt-3">
+          <input type="hidden" name="form-name" value="release">
+          <button class="btn btn-outline-danger">Release the number</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+
+
+
+{% endblock %}
+
+
+

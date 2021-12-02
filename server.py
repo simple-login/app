@@ -98,6 +98,7 @@ from app.models import (
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
+from app.phone.base import phone_bp
 from app.utils import random_string
 
 if SENTRY_DSN:
@@ -214,6 +215,7 @@ def register_blueprints(app: Flask):
     app.register_blueprint(monitor_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(developer_bp)
+    app.register_blueprint(phone_bp)
 
     app.register_blueprint(oauth_bp, url_prefix="/oauth")
     app.register_blueprint(oauth_bp, url_prefix="/oauth2")
