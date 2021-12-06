@@ -203,6 +203,7 @@ def index():
 
 
 @dashboard_bp.route("/contacts/<int:contact_id>/toggle", methods=["POST"])
+@login_required
 def toggle_contact(contact_id):
     """
     Block/Unblock contact
