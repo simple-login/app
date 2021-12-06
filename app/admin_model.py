@@ -50,7 +50,6 @@ class UserAdmin(SLModelView):
     def scaffold_list_columns(self):
         ret = super().scaffold_list_columns()
         ret.insert(0, "upgrade_channel")
-        ret.insert(0, "premium_end")
         return ret
 
     @action(
