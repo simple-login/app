@@ -1,5 +1,7 @@
+import re
+
 import arrow
-import re2 as re
+import re2
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -501,9 +503,7 @@ def domain_detail_auto_create(custom_domain_id):
                 auto_create_test_local = local
 
                 for rule in custom_domain.auto_create_rules:
-                    rule: AutoCreateRule
-                    regex = re.compile(rule.regex)
-                    if re.fullmatch(regex, local):
+                    if regex_match(rule.regex, local):
                         auto_create_test_result = (
                             f"{local}@{custom_domain.domain} passes rule #{rule.order}"
                         )
@@ -519,3 +519,16 @@ def domain_detail_auto_create(custom_domain_id):
                 )
 
     return render_template("dashboard/domain_detail/auto-create.html", **locals())
+
+
+def regex_match(rule_regex: str, local):
+    regex = re2.compile(rule_regex)
+    try:
+        if re2.fullmatch(regex, local):
+            return True
+    except TypeError:  # re2 bug "Argument 'pattern' has incorrect type (expected bytes, got PythonRePattern)"
+        LOG.w("use re instead of re2 for %s %s", rule_regex, local)
+        regex = re.compile(rule_regex)
+        if re.fullmatch(regex, local):
+            return True
+    return False
