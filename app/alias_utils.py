@@ -1,6 +1,6 @@
+import re
 from typing import Optional
 
-import re2 as re
 from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import IntegrityError, DataError
 
@@ -27,8 +27,8 @@ from app.models import (
     Mailbox,
     EmailLog,
     Contact,
-    AutoCreateRule,
 )
+from app.regex_utils import regex_match
 
 
 def try_auto_create(address: str) -> Optional[Alias]:
@@ -139,9 +139,7 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         local = get_email_local_part(address)
 
         for rule in custom_domain.auto_create_rules:
-            rule: AutoCreateRule
-            regex = re.compile(rule.regex)
-            if re.fullmatch(regex, local):
+            if regex_match(rule.regex, local):
                 LOG.d(
                     "%s passes %s on %s",
                     address,
