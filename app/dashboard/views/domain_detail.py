@@ -1,7 +1,6 @@
 import re
 
 import arrow
-import re2
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -28,6 +27,7 @@ from app.models import (
     AutoCreateRuleMailbox,
     Job,
 )
+from app.regex_utils import regex_match
 from app.utils import random_string
 
 
@@ -519,16 +519,3 @@ def domain_detail_auto_create(custom_domain_id):
                 )
 
     return render_template("dashboard/domain_detail/auto-create.html", **locals())
-
-
-def regex_match(rule_regex: str, local):
-    regex = re2.compile(rule_regex)
-    try:
-        if re2.fullmatch(regex, local):
-            return True
-    except TypeError:  # re2 bug "Argument 'pattern' has incorrect type (expected bytes, got PythonRePattern)"
-        LOG.w("use re instead of re2 for %s %s", rule_regex, local)
-        regex = re.compile(rule_regex)
-        if re.fullmatch(regex, local):
-            return True
-    return False

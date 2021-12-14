@@ -1,4 +1,4 @@
-from app.dashboard.views.domain_detail import regex_match
+from app.regex_utils import regex_match
 
 
 def test_regex_match(flask_client):
