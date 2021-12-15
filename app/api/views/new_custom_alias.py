@@ -167,7 +167,9 @@ def new_custom_alias_v3():
         return jsonify(error="request body does not follow the required format"), 400
 
     alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
-    signed_suffix = data.get("signed_suffix", "").strip()
+    signed_suffix = data.get("signed_suffix", "") or ""
+    signed_suffix = signed_suffix.strip()
+
     mailbox_ids = data.get("mailbox_ids")
     note = data.get("note")
     name = data.get("name")
