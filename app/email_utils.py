@@ -299,12 +299,10 @@ def send_email(
     email_domain = SUPPORT_EMAIL[SUPPORT_EMAIL.find("@") + 1 :]
     add_dkim_signature(msg, email_domain)
 
-    msg_raw = to_bytes(msg)
-
     transaction = TransactionalEmail.create(email=to_email, commit=True)
 
     # use a different envelope sender for each transactional email (aka VERP)
-    smtp.sendmail(TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id), to_email, msg_raw)
+    sl_sendmail(TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id), to_email, msg)
 
 
 def send_email_with_rate_control(
@@ -1263,9 +1261,9 @@ def sl_sendmail(
     from_addr,
     to_addr,
     msg: Message,
-    mail_options,
-    rcpt_options,
-    is_forward: bool,
+    mail_options=(),
+    rcpt_options=(),
+    is_forward: bool = False,
     can_retry=True,
 ):
     """replace smtp.sendmail"""
