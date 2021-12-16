@@ -302,7 +302,12 @@ def send_email(
     transaction = TransactionalEmail.create(email=to_email, commit=True)
 
     # use a different envelope sender for each transactional email (aka VERP)
-    sl_sendmail(TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id), to_email, msg)
+    sl_sendmail(
+        TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id),
+        to_email,
+        msg,
+        can_retry=False,
+    )
 
 
 def send_email_with_rate_control(
