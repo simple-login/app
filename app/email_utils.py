@@ -12,7 +12,7 @@ from email.message import Message, EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate
-from smtplib import SMTP, SMTPServerDisconnected, SMTPException
+from smtplib import SMTP, SMTPServerDisconnected, SMTPException, SMTPRecipientsRefused
 from typing import Tuple, List, Optional, Union
 
 import arrow
@@ -1303,9 +1303,12 @@ def sl_sendmail(
             mail_options,
             rcpt_options,
         )
-    except SMTPServerDisconnected:
+    except (SMTPServerDisconnected, SMTPRecipientsRefused) as e:
         if can_retry:
-            LOG.w("SMTPServerDisconnected error, retry")
+            LOG.w(
+                "SMTPServerDisconnected or SMTPRecipientsRefused error, retry",
+                exc_info=True,
+            )
             time.sleep(3)
             sl_sendmail(
                 from_addr,
