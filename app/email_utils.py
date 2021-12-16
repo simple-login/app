@@ -1306,7 +1306,8 @@ def sl_sendmail(
     except (SMTPServerDisconnected, SMTPRecipientsRefused) as e:
         if can_retry:
             LOG.w(
-                "SMTPServerDisconnected or SMTPRecipientsRefused error, retry",
+                "SMTPServerDisconnected or SMTPRecipientsRefused error %s, retry",
+                e,
                 exc_info=True,
             )
             time.sleep(3)
@@ -1320,6 +1321,7 @@ def sl_sendmail(
                 can_retry=False,
             )
         else:
+            LOG.w("sendmail fails after retry")
             raise
 
 
