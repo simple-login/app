@@ -42,7 +42,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr, make_msgid, formatdate, getaddresses
 from io import BytesIO
-from smtplib import SMTPRecipientsRefused
+from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
 from typing import List, Tuple, Optional
 
 import newrelic.agent
@@ -824,13 +824,14 @@ def forward_email_to_mailbox(
             envelope.rcpt_options,
             is_forward=True,
         )
-    except SMTPRecipientsRefused:
+    except (SMTPServerDisconnected, SMTPRecipientsRefused):
         # that means the mailbox is maybe invalid
         LOG.w(
-            "SMTPRecipientsRefused forward phase %s -> %s -> %s",
+            "SMTPServerDisconnected or SMTPRecipientsRefused during forward phase %s -> %s -> %s",
             contact,
             alias,
             mailbox,
+            exc_info=True,
         )
         if should_ignore_bounce(envelope.mail_from):
             return True, status.E207
