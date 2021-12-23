@@ -623,9 +623,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                 f"Coinbase Subscription ends {coinbase_subscription.end_at.humanize()}"
             )
 
-        if self.trial_end and arrow.now() < self.trial_end:
-            return "In Trial"
-
         return ".\n".join(channels)
 
     # endregion
