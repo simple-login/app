@@ -835,7 +835,8 @@ def forward_email_to_mailbox(
         if should_ignore_bounce(envelope.mail_from):
             return True, status.E207
         else:
-            return False, status.E521
+            # can be Postfix intermittent "Temporary lookup failure" error
+            return False, status.E407
     else:
         Session.commit()
         return True, status.E200

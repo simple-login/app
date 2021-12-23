@@ -26,6 +26,7 @@ E402 = "421 SL E402 Encryption failed - Retry later"
 E404 = "421 SL E404 Unexpected error - Retry later"
 E405 = "421 SL E405 Mailbox domain problem - Retry later"
 E406 = "421 SL E406 Retry later"
+E407 = "421 SL E407 Retry later"
 
 # 5** errors
 E501 = "550 SL E501"
