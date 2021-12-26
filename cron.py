@@ -399,7 +399,8 @@ def all_bounce_report() -> str:
             .order_by(Bounce.created_at.desc())
             .first()
         )
-        res += f"Most recent cause: \n{most_recent.info or ''}"
+        # most_recent.info can be very verbose
+        res += f"Most recent cause: \n{most_recent.info[:200] if most_recent.info else 'N/A'}"
         res += "\n----\n"
 
     return res
