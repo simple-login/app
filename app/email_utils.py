@@ -306,7 +306,7 @@ def send_email(
         TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id),
         to_email,
         msg,
-        can_retry=False,
+        retries=0,  # no retry
     )
 
 
@@ -1269,7 +1269,7 @@ def sl_sendmail(
     mail_options=(),
     rcpt_options=(),
     is_forward: bool = False,
-    can_retry=True,
+    retries=2,
 ):
     """replace smtp.sendmail"""
     if NOT_SEND_EMAIL:
@@ -1309,13 +1309,13 @@ def sl_sendmail(
             rcpt_options,
         )
     except (SMTPServerDisconnected, SMTPRecipientsRefused) as e:
-        if can_retry:
+        if retries > 0:
             LOG.w(
                 "SMTPServerDisconnected or SMTPRecipientsRefused error %s, retry",
                 e,
                 exc_info=True,
             )
-            time.sleep(0.3)
+            time.sleep(0.3 * retries)
             sl_sendmail(
                 from_addr,
                 to_addr,
@@ -1323,10 +1323,9 @@ def sl_sendmail(
                 mail_options,
                 rcpt_options,
                 is_forward,
-                can_retry=False,
+                retries=retries - 1,
             )
         else:
-            LOG.w("sendmail fails after retry")
             raise
 
 
