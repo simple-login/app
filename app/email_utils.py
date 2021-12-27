@@ -1315,7 +1315,7 @@ def sl_sendmail(
                 e,
                 exc_info=True,
             )
-            time.sleep(3)
+            time.sleep(0.3)
             sl_sendmail(
                 from_addr,
                 to_addr,
