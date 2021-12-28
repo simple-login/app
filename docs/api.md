@@ -20,24 +20,28 @@
 
 ---
 
-SimpleLogin current API clients are Chrome/Firefox/Safari extension and mobile (iOS/Android) app.
-These clients rely on `API Code` for authentication.
+SimpleLogin current API clients are Chrome/Firefox/Safari extension and mobile (iOS/Android) app. These clients rely
+on `API Code` for authentication.
 
-Once the `Api Code` is obtained, either via user entering it (in Browser extension case) or by logging in (in Mobile case),
-the client includes the `api code` in `Authentication` header in almost all requests.
+Once the `Api Code` is obtained, either via user entering it (in Browser extension case) or by logging in (in Mobile
+case), the client includes the `api code` in `Authentication` header in almost all requests.
 
-For some endpoints, the `hostname` should be passed in query string. `hostname` is the the URL hostname (cf https://en.wikipedia.org/wiki/URL), for ex if URL is http://www.example.com/index.html then the hostname is `www.example.com`. This information is important to know where an alias is used in order to suggest user the same alias if they want to create on alias on the same website in the future.
+For some endpoints, the `hostname` should be passed in query string. `hostname` is the the URL hostname (
+cf https://en.wikipedia.org/wiki/URL), for ex if URL is http://www.example.com/index.html then the hostname
+is `www.example.com`. This information is important to know where an alias is used in order to suggest user the same
+alias if they want to create on alias on the same website in the future.
 
 If error, the API returns 4** with body containing the error message, for example:
 
 ```json
 {
-  "error":  "request body cannot be empty"
+  "error": "request body cannot be empty"
 }
 ```
 
-The error message could be displayed to user as-is, for example for when user exceeds their alias quota.
-Some errors should be fixed during development however: for example error like `request body cannot be empty` is there to catch development error and should never be shown to user.
+The error message could be displayed to user as-is, for example for when user exceeds their alias quota. Some errors
+should be fixed during development however: for example error like `request body cannot be empty` is there to catch
+development error and should never be shown to user.
 
 All following endpoint return `401` status code if the API Key is incorrect.
 
@@ -46,68 +50,81 @@ All following endpoint return `401` status code if the API Key is incorrect.
 #### POST /api/auth/login
 
 Input:
+
 - email
 - password
-- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
+- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key"
+  page.
 
 Output:
+
 - name: user name, could be an empty string
 - email: user email
 - mfa_enabled: boolean
 - mfa_key: only useful when user enables MFA. In this case, user needs to enter their OTP token in order to login.
 - api_key: if MFA is not enabled, the `api key` is returned right away.
 
-The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
-If user hasn't enabled MFA, `mfa_key` is empty.
+The `api_key` is used in all subsequent requests. It's empty if MFA is enabled. If user hasn't enabled MFA, `mfa_key` is
+empty.
 
 Return 403 if user has enabled FIDO. The client can display a message to suggest user to use the `API Key` instead.
 
 #### POST /api/auth/mfa
 
 Input:
+
 - mfa_token: OTP token that user enters
 - mfa_key: MFA key obtained in previous auth request, e.g. /api/auth/login
 - device: the device name, used to create an ApiKey associated with this device
 
 Output:
+
 - name: user name, could be an empty string
 - api_key: if MFA is not enabled, the `api key` is returned right away.
 - email: user email
 
-The `api_key` is used in all subsequent requests. It's empty if MFA is enabled.
-If user hasn't enabled MFA, `mfa_key` is empty.
+The `api_key` is used in all subsequent requests. It's empty if MFA is enabled. If user hasn't enabled MFA, `mfa_key` is
+empty.
 
 #### POST /api/auth/facebook
 
 Input:
+
 - facebook_token: Facebook access token
-- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
+- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key"
+  page.
 
 Output: Same output as for `/api/auth/login` endpoint
 
 #### POST /api/auth/google
 
 Input:
+
 - google_token: Google access token
-- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key" page.
+- device: device name. Used to create the API Key. Should be humanly readable so user can manage later on the "API Key"
+  page.
 
 Output: Same output as for `/api/auth/login` endpoint
 
 #### POST /api/auth/register
 
 Input:
+
 - email
 - password
 
-Output: 200 means user is going to receive an email that contains an *activation code*. User needs to enter this code to confirm their account -> next endpoint.
+Output: 200 means user is going to receive an email that contains an *activation code*. User needs to enter this code to
+confirm their account -> next endpoint.
 
 #### POST /api/auth/activate
 
 Input:
+
 - email
 - code: the activation code
 
 Output:
+
 - 200: account is activated. User can login now
 - 400: wrong email, code
 - 410: wrong code too many times. User needs to ask for an reactivation -> next endpoint
@@ -115,24 +132,27 @@ Output:
 #### POST /api/auth/reactivate
 
 Input:
+
 - email
 
 Output:
+
 - 200: user is going to receive an email that contains the activation code.
 
 #### POST /api/auth/forgot_password
 
 Input:
+
 - email
 
 Output: always return 200, even if email doesn't exist. User need to enter correctly their email.
 
 #### GET /api/user_info
 
-Given the API Key, return user name and whether user is premium.
-This endpoint could be used to validate the api key.
+Given the API Key, return user name and whether user is premium. This endpoint could be used to validate the api key.
 
 Input:
+
 - `Authentication` header that contains the api key
 
 Output: if api key is correct, return a json with user name and whether user is premium, for example:
@@ -154,22 +174,24 @@ If api key is incorrect, return 401.
 Update user info
 
 Input:
+
 - profile_picture: the profile picture in base64. Setting to `null` remove the current profile picture.
 - name
 
 Output: same as GET /api/user_info
-
 
 #### POST /api/api_key
 
 Create a new API Key
 
 Input:
+
 - `Authentication` header that contains the api key
 - Or the correct cookie is set, i.e. user is already logged in on the web
 - device: device's name
 
 Output
+
 - 401 if user is not authenticated
 - 201 with the `api_key`
 
@@ -184,13 +206,14 @@ Output
 Log user out
 
 Input:
+
 - `Authentication` header that contains the api key
 - Or the correct cookie is set, i.e. user is already logged in on the web
 
 Output:
+
 - 401 if user is not authenticated
 - 200 if success
-
 
 ### Alias endpoints
 
@@ -199,16 +222,23 @@ Output:
 User alias info and suggestion. Used by the first extension screen when user opens the extension.
 
 Input:
+
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string.
 
 Output: a json with the following field:
+
 - can_create: boolean. Whether user can create new alias
-- suffixes: list of dictionary with `suffix` and `signed-suffix`. List of alias `suffix` that user can use. The `signed-suffix` is necessary to avoid request tampering.
-- prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted from `hostname`. If no `hostname`, then the `prefix_suggestion` is empty.
-- recommendation: optional field, dictionary. If an alias is already used for this website, the recommendation will be returned. There are 2 subfields in `recommendation`: `alias` which is the recommended alias and `hostname` is the website on which this alias is used before.
+- suffixes: list of dictionary with `suffix` and `signed-suffix`. List of alias `suffix` that user can use.
+  The `signed-suffix` is necessary to avoid request tampering.
+- prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted
+  from `hostname`. If no `hostname`, then the `prefix_suggestion` is empty.
+- recommendation: optional field, dictionary. If an alias is already used for this website, the recommendation will be
+  returned. There are 2 subfields in `recommendation`: `alias` which is the recommended alias and `hostname` is the
+  website on which this alias is used before.
 
 For ex:
+
 ```json
 {
   "can_create": true,
@@ -235,6 +265,7 @@ For ex:
 Create a new custom alias.
 
 Input:
+
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
 - Request Message Body in json (`Content-Type` is `application/json`)
@@ -252,6 +283,7 @@ If success, 201 with the new alias info. Use the same format as in GET /api/alia
 Create a new random alias.
 
 Input:
+
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
 - (Optional) mode: either `uuid` or `word`. By default, use the user setting when creating new random alias.
@@ -266,9 +298,12 @@ If success, 201 with the new alias info. Use the same format as in GET /api/alia
 Get user aliases.
 
 Input:
+
 - `Authentication` header that contains the api key
-- `page_id` in query. Used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts at 0.
-- (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this case this endpoint also supports POST. 
+- `page_id` in query. Used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts
+  at 0.
+- (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this
+  case this endpoint also supports POST.
 
 Output:
 If success, 200 with the list of aliases. Each alias has the following fields:
@@ -283,9 +318,8 @@ If success, 200 with the list of aliases. Each alias has the following fields:
 - nb_forward
 - nb_reply
 - support_pgp: whether an alias can support PGP, i.e. when one of alias's mailboxes supports PGP.
-- disable_pgp: whether the PGP is disabled on this alias.
-    This field should only be used when `support_pgp` is true. 
-    By setting `disable_pgp=true`, a user can explicitly disable PGP on an alias even its mailboxes support PGP.
+- disable_pgp: whether the PGP is disabled on this alias. This field should only be used when `support_pgp` is true. By
+  setting `disable_pgp=true`, a user can explicitly disable PGP on an alias even its mailboxes support PGP.
 - mailbox: obsolete, should use `mailboxes` instead.
     - id
     - email
@@ -351,6 +385,7 @@ Here's an example:
 Get alias info
 
 Input:
+
 - `Authentication` header that contains the api key
 - `alias_id` in url
 
@@ -401,16 +436,16 @@ Alias info, use the same format as in /api/v2/aliases. For example:
 Delete an alias
 
 Input:
+
 - `Authentication` header that contains the api key
 - `alias_id` in url.
 
 Output:
 If success, 200.
 
-
 ```json
 {
-    "deleted": true
+  "deleted": true
 }
 ```
 
@@ -419,6 +454,7 @@ If success, 200.
 Enable/disable alias
 
 Input:
+
 - `Authentication` header that contains the api key
 - `alias_id` in url.
 
@@ -427,7 +463,7 @@ If success, 200 along with the new alias status:
 
 ```json
 {
-    "enabled": false
+  "enabled": false
 }
 ```
 
@@ -436,9 +472,11 @@ If success, 200 along with the new alias status:
 Get activities for a given alias.
 
 Input:
+
 - `Authentication` header that contains the api key
 - `alias_id`: the alias id, passed in url.
-- `page_id` used in request query (`?page_id=0`). The endpoint returns maximum 20 aliases for each page. `page_id` starts at 0.
+- `page_id` used in request query (`?page_id=0`). The endpoint returns maximum 20 aliases for each page. `page_id`
+  starts at 0.
 
 Output:
 If success, 200 with the list of activities, for example:
@@ -461,8 +499,9 @@ If success, 200 with the list of activities, for example:
 #### PATCH /api/aliases/:alias_id
 
 Update alias info.
- 
+
 Input:
+
 - `Authentication` header that contains the api key
 - `alias_id` in url.
 - (optional) `note` in request body
@@ -480,9 +519,11 @@ If success, return 200
 Get contacts for a given alias.
 
 Input:
+
 - `Authentication` header that contains the api key
 - `alias_id`: the alias id, passed in url.
-- `page_id` used in request query (`?page_id=0`). The endpoint returns maximum 20 contacts for each page. `page_id` starts at 0.
+- `page_id` used in request query (`?page_id=0`). The endpoint returns maximum 20 contacts for each page. `page_id`
+  starts at 0.
 
 Output:
 If success, 200 with the list of contacts, for example:
@@ -520,8 +561,9 @@ Please note that last_email_sent_timestamp and last_email_sent_date can be null.
 #### POST /api/aliases/:alias_id/contacts
 
 Create a new contact for an alias.
- 
+
 Input:
+
 - `Authentication` header that contains the api key
 - `alias_id` in url.
 - `contact` in request body
@@ -552,6 +594,7 @@ Return 200 and `existed=true` if contact is already added.
 Get user's mailboxes, including unverified ones.
 
 Input:
+
 - `Authentication` header that contains the api key
 
 Output:
@@ -585,14 +628,17 @@ List of mailboxes. Each mailbox has id, email, default, creation_timestamp field
 Create a new mailbox
 
 Input:
+
 - `Authentication` header that contains the api key
 - email: the new mailbox address
 
 Output:
-- 201 along with the following response if new mailbox is created successfully. User is going to receive a verification email.
+
+- 201 along with the following response if new mailbox is created successfully. User is going to receive a verification
+  email.
     - id: integer
     - email: the mailbox email address
-    - verified: boolean. 
+    - verified: boolean.
     - default: whether is the default mailbox. User cannot delete the default mailbox
 - 400 with error message otherwise. The error message can be displayed to user.
 
@@ -601,10 +647,12 @@ Output:
 Delete a mailbox. User cannot delete the default mailbox
 
 Input:
+
 - `Authentication` header that contains the api key
 - `mailbox_id`: in url
 
 Output:
+
 - 200 if deleted successfully
 - 400 if error
 
@@ -613,6 +661,7 @@ Output:
 Update a mailbox.
 
 Input:
+
 - `Authentication` header that contains the api key
 - `mailbox_id`: in url
 - (optional) `default`: boolean. Set a mailbox as default mailbox.
@@ -620,6 +669,7 @@ Input:
 - (optional) `cancel_email_change`: boolean. Cancel mailbox email change.
 
 Output:
+
 - 200 if updated successfully
 - 400 if error
 
@@ -630,6 +680,7 @@ Output:
 Return user's custom domains
 
 Input:
+
 - `Authentication` header that contains the api key
 
 Output:
@@ -679,6 +730,7 @@ List of custom domains.
 Update alias info.
 
 Input:
+
 - `Authentication` header that contains the api key
 - `custom_domain_id` in url.
 - (optional) `catch_all`: boolean, in request body
@@ -694,6 +746,7 @@ If success, return 200
 Get deleted alias for a custom domain
 
 Input:
+
 - `Authentication` header that contains the api key
 
 Output:
@@ -854,36 +907,41 @@ Return domains that user can use to create random alias
 ```
 
 ### Import and export endpoints
+
 #### GET /api/export/data
 
 Export user data
 
 Input:
+
 - `Authentication` in header: the api key
 
 Output:
-Alias, custom domain and app info  
+Alias, custom domain and app info
 
 #### GET /api/export/aliases
 
 Export user aliases in an importable CSV format
 
 Input:
+
 - `Authentication` in header: the api key
 
 Output:
 A CSV file with alias information that can be imported in the settings screen
 
 ### Misc endpoints
+
 #### POST /api/apple/process_payment
 
-Process payment receipt 
+Process payment receipt
 
 Input:
+
 - `Authentication` in header: the api key
 - `receipt_data` in body: the receipt_data base64Encoded returned by StoreKit, i.e. `rawReceiptData.base64EncodedString`
-- (optional) `is_macapp` in body: if this field is present, the request is sent from the MacApp (Safari Extension) and not iOS app.
+- (optional) `is_macapp` in body: if this field is present, the request is sent from the MacApp (Safari Extension) and
+  not iOS app.
 
 Output:
-200 if user is upgraded successfully
-4** if any error.
+200 if user is upgraded successfully 4** if any error.
