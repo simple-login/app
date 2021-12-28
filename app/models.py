@@ -189,6 +189,9 @@ class PlanEnum(EnumE):
 class SenderFormatEnum(EnumE):
     AT = 0  # John Wick - john at wick.com
     A = 2  # John Wick - john(a)wick.com
+    NAME_ONLY = 5  # John Wick
+    AT_ONLY = 6  # john at wick.com
+    NO_NAME = 7
 
 
 class AliasGeneratorEnum(EnumE):
@@ -1555,28 +1558,37 @@ class Contact(Base, ModelMixin):
     def new_addr(self):
         """
         Replace original email by reply_email. Possible formats:
-        - first@example.com via SimpleLogin <reply_email> OR
         - First Last - first at example.com <reply_email> OR
         - First Last - first(a)example.com <reply_email> OR
-        - First Last - first@example.com <reply_email> OR
+        - First Last <reply_email>
+        - first at example.com <reply_email>
+        - reply_email
         And return new address with RFC 2047 format
-
-        `new_email` is a special reply address
         """
         user = self.user
         sender_format = user.sender_format if user else SenderFormatEnum.AT.value
 
-        if sender_format == SenderFormatEnum.AT.value:
-            formatted_email = self.website_email.replace("@", " at ").strip()
-        else:
-            formatted_email = self.website_email.replace("@", "(a)").strip()
+        if sender_format == SenderFormatEnum.NO_NAME.value:
+            return self.reply_email
 
-        # Prefix name to formatted email if available
-        new_name = (
-            (self.name + " - " + formatted_email)
-            if self.name and self.name != self.website_email.strip()
-            else formatted_email
-        )
+        if sender_format == SenderFormatEnum.NAME_ONLY.value:
+            new_name = self.name
+        elif sender_format == SenderFormatEnum.AT_ONLY.value:
+            new_name = self.website_email.replace("@", " at ").strip()
+        elif sender_format == SenderFormatEnum.AT.value:
+            formatted_email = self.website_email.replace("@", " at ").strip()
+            new_name = (
+                (self.name + " - " + formatted_email)
+                if self.name and self.name != self.website_email.strip()
+                else formatted_email
+            )
+        else:  # SenderFormatEnum.A.value
+            formatted_email = self.website_email.replace("@", "(a)").strip()
+            new_name = (
+                (self.name + " - " + formatted_email)
+                if self.name and self.name != self.website_email.strip()
+                else formatted_email
+            )
 
         new_addr = formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()

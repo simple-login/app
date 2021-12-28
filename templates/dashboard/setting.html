@@ -303,6 +303,21 @@
               John Wick - john(a)wick.com
             </option>
 
+            <option value="{{ SenderFormatEnum.NAME_ONLY.value }}"
+                {% if current_user.sender_format == SenderFormatEnum.NAME_ONLY.value %} selected {% endif %}>
+              John Wick
+            </option>
+
+            <option value="{{ SenderFormatEnum.AT_ONLY.value }}"
+                {% if current_user.sender_format == SenderFormatEnum.AT_ONLY.value %} selected {% endif %}>
+              john at wick.com
+            </option>
+
+            <option value="{{ SenderFormatEnum.NO_NAME.value }}"
+                {% if current_user.sender_format == SenderFormatEnum.NO_NAME.value %} selected {% endif %}>
+              No Name (i.e. only reverse-alias)
+            </option>
+
           </select>
 
           <button class="btn btn-outline-primary mt-3">Update</button>
