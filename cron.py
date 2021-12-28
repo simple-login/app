@@ -8,6 +8,7 @@ import arrow
 import requests
 from sqlalchemy import func, desc, or_
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.exc import ObjectDeletedError
 
 from app import s3
 from app.alias_utils import nb_email_log_for_mailbox
@@ -69,11 +70,15 @@ def notify_trial_end():
     for user in User.filter(
         User.activated.is_(True), User.trial_end.isnot(None), User.lifetime.is_(False)
     ).all():
-        if user.in_trial() and arrow.now().shift(
-            days=3
-        ) > user.trial_end >= arrow.now().shift(days=2):
-            LOG.d("Send trial end email to user %s", user)
-            send_trial_end_soon_email(user)
+        try:
+            if user.in_trial() and arrow.now().shift(
+                days=3
+            ) > user.trial_end >= arrow.now().shift(days=2):
+                LOG.d("Send trial end email to user %s", user)
+                send_trial_end_soon_email(user)
+        # happens if user has been deleted in the meantime
+        except ObjectDeletedError:
+            LOG.i("user has been deleted")
 
 
 def delete_logs():
