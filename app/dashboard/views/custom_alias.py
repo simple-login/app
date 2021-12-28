@@ -109,7 +109,7 @@ class AliasSuffix:
     domain: str
 
     # if custom domain, whether the custom domain has MX verified, i.e. can receive emails
-    mx_verified: bool
+    mx_verified: bool = True
 
     def serialize(self):
         return json.dumps(asdict(self))
