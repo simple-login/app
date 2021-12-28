@@ -47,9 +47,6 @@ class SuffixInfo:
 
 def get_available_suffixes(user: User) -> [SuffixInfo]:
     """
-    Similar to as available_suffixes() but also return whether the suffix comes from a premium domain
-    Note that is-premium-domain is only relevant for SL domain
-
     WARNING: should use get_alias_suffixes() instead
     """
     user_custom_domains = user.verified_custom_domains()
@@ -111,6 +108,9 @@ class AliasSuffix:
     # can be either Custom or SL domain
     domain: str
 
+    # if custom domain, whether the custom domain has MX verified, i.e. can receive emails
+    mx_verified: bool
+
     def serialize(self):
         return json.dumps(asdict(self))
 
@@ -121,10 +121,11 @@ class AliasSuffix:
 
 def get_alias_suffixes(user: User) -> [AliasSuffix]:
     """
-    Similar to as available_suffixes() but also return whether the suffix comes from a premium domain
-    Note that is-premium-domain is only relevant for SL domain
+    Similar to as get_available_suffixes() but also return custom domain that doesn't have MX set up.
     """
-    user_custom_domains = user.verified_custom_domains()
+    user_custom_domains = CustomDomain.filter_by(
+        user_id=user.id, ownership_verified=True
+    ).all()
 
     alias_suffixes: [AliasSuffix] = []
 
@@ -138,6 +139,7 @@ def get_alias_suffixes(user: User) -> [AliasSuffix]:
                 suffix=suffix,
                 is_premium=False,
                 domain=custom_domain.domain,
+                mx_verified=custom_domain.verified,
             )
             if user.default_alias_custom_domain_id == custom_domain.id:
                 alias_suffixes.insert(0, alias_suffix)
@@ -146,7 +148,11 @@ def get_alias_suffixes(user: User) -> [AliasSuffix]:
 
         suffix = "@" + custom_domain.domain
         alias_suffix = AliasSuffix(
-            is_custom=True, suffix=suffix, is_premium=False, domain=custom_domain.domain
+            is_custom=True,
+            suffix=suffix,
+            is_premium=False,
+            domain=custom_domain.domain,
+            mx_verified=custom_domain.verified,
         )
 
         # put the default domain to top
@@ -171,6 +177,7 @@ def get_alias_suffixes(user: User) -> [AliasSuffix]:
             suffix=suffix,
             is_premium=sl_domain.premium_only,
             domain=sl_domain.domain,
+            mx_verified=True,
         )
 
         # put the default domain to top

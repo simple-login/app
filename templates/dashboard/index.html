@@ -273,6 +273,11 @@
                         title="This alias was found in {{ alias.hibp_breaches | length }} data breaches. Check haveibeenpwned.com for more information."></span>
                 </a>
               {% endif %}
+
+              {% if alias_info.custom_domain and not alias_info.custom_domain.verified %}
+                <span class="fa fa-warning text-warning" data-toggle="tooltip"
+                      title="Alias can't receive emails as its domain doesn't have MX records set up."></span>
+              {% endif %}
             </div>
             <div class="col text-right">
               <label class="custom-switch cursor"
