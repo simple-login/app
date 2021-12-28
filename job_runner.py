@@ -38,6 +38,7 @@ def onboarding_send_from_alias(user):
         render("com/onboarding/send-from-alias.html", user=user, to_email=to_email),
         unsubscribe_link,
         via_email,
+        retries=3,
     )
 
 
@@ -53,6 +54,7 @@ def onboarding_pgp(user):
         render("com/onboarding/pgp.html", user=user, to_email=to_email),
         unsubscribe_link,
         via_email,
+        retries=3,
     )
 
 
@@ -68,6 +70,7 @@ def onboarding_browser_extension(user):
         render("com/onboarding/browser-extension.html", user=user, to_email=to_email),
         unsubscribe_link,
         via_email,
+        retries=3,
     )
 
 
@@ -83,6 +86,7 @@ def onboarding_mailbox(user):
         render("com/onboarding/mailbox.html", user=user, to_email=to_email),
         unsubscribe_link,
         via_email,
+        retries=3,
     )
 
 
@@ -153,6 +157,7 @@ if __name__ == "__main__":
                         "Your SimpleLogin account has been deleted",
                         render("transactional/account-delete.txt"),
                         render("transactional/account-delete.html"),
+                        retries=3,
                     )
                 elif job.name == JOB_DELETE_MAILBOX:
                     mailbox_id = job.payload.get("mailbox_id")
@@ -174,6 +179,7 @@ if __name__ == "__main__":
 Regards,
 SimpleLogin team.
 """,
+                        retries=3,
                     )
 
                 elif job.name == JOB_DELETE_DOMAIN:
@@ -198,6 +204,7 @@ SimpleLogin team.
 Regards,
 SimpleLogin team.
 """,
+                        retries=3,
                     )
 
                 else:
