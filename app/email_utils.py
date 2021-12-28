@@ -249,6 +249,7 @@ def send_email(
     html=None,
     unsubscribe_link=None,
     unsubscribe_via_email=False,
+    retries=0,  # by default no retry if sending fails
 ):
     to_email = sanitize_email(to_email)
     if NOT_SEND_EMAIL:
@@ -306,7 +307,7 @@ def send_email(
         TRANSACTIONAL_BOUNCE_EMAIL.format(transaction.id),
         to_email,
         msg,
-        retries=0,  # no retry
+        retries=retries,
     )
 
 
@@ -320,6 +321,7 @@ def send_email_with_rate_control(
     max_nb_alert=MAX_ALERT_24H,
     nb_day=1,
     ignore_smtp_error=False,
+    retries=0,
 ) -> bool:
     """Same as send_email with rate control over alert_type.
     Make sure no more than `max_nb_alert` emails are sent over the period of `nb_day` days
@@ -349,11 +351,11 @@ def send_email_with_rate_control(
 
     if ignore_smtp_error:
         try:
-            send_email(to_email, subject, plaintext, html)
+            send_email(to_email, subject, plaintext, html, retries=retries)
         except SMTPException:
             LOG.w("Cannot send email to %s, subject %s", to_email, subject)
     else:
-        send_email(to_email, subject, plaintext, html)
+        send_email(to_email, subject, plaintext, html, retries=retries)
 
     return True
 

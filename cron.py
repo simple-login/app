@@ -150,6 +150,7 @@ def notify_premium_end():
                     user=user,
                     next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
                 ),
+                retries=3,
             )
 
 
@@ -206,6 +207,7 @@ def notify_manual_sub_end():
                     user=user,
                     manual_sub=manual_sub,
                 ),
+                retries=3,
             )
 
     extend_subscription_url = URL + "/dashboard/coinbase_checkout"
@@ -242,6 +244,7 @@ def notify_manual_sub_end():
                     coinbase_subscription=coinbase_subscription,
                     extend_subscription_url=extend_subscription_url,
                 ),
+                retries=3,
             )
 
 
@@ -535,6 +538,7 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
         ADMIN_EMAIL,
         subject=f"SimpleLogin Stats for {today}, {nb_user_increase} users, {nb_alias_increase} aliases, {nb_forward_increase} forwards",
         plaintext=report,
+        retries=3,
     )
 
 
@@ -620,6 +624,7 @@ def sanity_check():
                             "transactional/disable-mailbox-warning.html",
                             mailbox=mailbox,
                         ),
+                        retries=3,
                     )
 
             # alert if too much fail and nb_email_log > 100
@@ -634,6 +639,7 @@ def sanity_check():
                             "transactional/disable-mailbox.txt.jinja2", mailbox=mailbox
                         ),
                         render("transactional/disable-mailbox.html", mailbox=mailbox),
+                        retries=3,
                     )
 
             LOG.w(
@@ -732,6 +738,7 @@ def check_custom_domain():
                     ),
                     max_nb_alert=1,
                     nb_day=30,
+                    retries=3,
                 )
                 # reset checks
                 custom_domain.nb_failed_checks = 0
@@ -914,6 +921,7 @@ def notify_hibp():
                 user=user,
                 breached_aliases=breached_aliases,
             ),
+            retries=3,
         )
 
         # add the breached aliases to HibpNotifiedAlias to avoid sending another email
