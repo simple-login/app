@@ -10,6 +10,7 @@ from app.models import (
     SLDomain,
     CustomDomain,
     SenderFormatEnum,
+    AliasSuffixEnum,
 )
 
 
@@ -21,6 +22,7 @@ def setting_to_dict(user: User):
         else "uuid",
         "random_alias_default_domain": user.default_random_alias_domain(),
         "sender_format": SenderFormatEnum.get_name(user.sender_format),
+        "random_alias_suffix": AliasSuffixEnum.get_name(user.random_alias_suffix),
     }
 
     return ret
@@ -70,6 +72,13 @@ def update_setting():
 
         user.sender_format = SenderFormatEnum.get_value(sender_format)
         user.sender_format_updated_at = arrow.now()
+
+    if "random_alias_suffix" in data:
+        random_alias_suffix = data["random_alias_suffix"]
+        if not AliasSuffixEnum.has_name(random_alias_suffix):
+            return jsonify(error="Invalid random_alias_suffix"), 400
+
+        user.random_alias_suffix = AliasSuffixEnum.get_value(random_alias_suffix)
 
     if "random_alias_default_domain" in data:
         default_domain = data["random_alias_default_domain"]

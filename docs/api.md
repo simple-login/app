@@ -717,16 +717,16 @@ List of deleted alias.
 Delete a contact
 
 Input:
+
 - `Authentication` header that contains the api key
 - `contact_id` in url.
 
 Output:
 If success, 200.
 
-
 ```json
 {
-    "deleted": true
+  "deleted": true
 }
 ```
 
@@ -735,6 +735,7 @@ If success, 200.
 Block/unblock contact
 
 Input:
+
 - `Authentication` header that contains the api key
 - `contact_id` in url.
 
@@ -743,20 +744,23 @@ If success, 200 along with the new alias status:
 
 ```json
 {
-    "block_forward": false
+  "block_forward": false
 }
 ```
 
 ### Notification endpoints
+
 #### GET /api/notifications
 
 Get notifications
 
 Input:
+
 - `Authentication` in header: the api key
 - page in url: the page number, starts at 0
 
 Output:
+
 - more: whether there's more notifications
 - notifications: list of notification, each notification has:
     - id
@@ -768,15 +772,15 @@ For example
 
 ```json
 {
-    "more": false,
-    "notifications": [
-        {
-            "created_at": "2 minutes ago",
-            "id": 1,
-            "message": "Hey!",
-            "read": false
-        }
-    ]
+  "more": false,
+  "notifications": [
+    {
+      "created_at": "2 minutes ago",
+      "id": 1,
+      "message": "Hey!",
+      "read": false
+    }
+  ]
 }
 ```
 
@@ -785,24 +789,26 @@ For example
 Mark a notification as read
 
 Input:
+
 - `Authentication` in header: the api key
 - notification_id in url: the page number, starts at 0
 
-Output: 
+Output:
 200 if success
 
 ### Settings endpoints
 
 #### GET /api/setting
 
-Return user setting. 
+Return user setting.
 
 ```json
 {
   "alias_generator": "word",
   "notification": true,
   "random_alias_default_domain": "sl.local",
-  "sender_format": "VIA"
+  "sender_format": "AT",
+  "random_alias_suffix": "random_string"
 }
 ```
 
@@ -811,10 +817,12 @@ Return user setting.
 Update user setting. All input fields are optional.
 
 Input:
-- alias_generator (string): uuid or word
-- notification (boolean): true or false
+
+- alias_generator (string): `uuid` or `word`
+- notification (boolean): `true` or `false`
 - random_alias_default_domain (string): one of the domains returned by `GET /api/setting/domains`
-- sender_format (string): possible values are AT, VIA, A, FULL
+- sender_format (string): possible values are `AT`, `A`, `NAME_ONLY`, `AT_ONLY`, `NO_NAME`
+- random_alias_suffix (string): possible values are `word`, `random_string`
 
 Output: same as `GET /api/setting`
 
