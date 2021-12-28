@@ -405,7 +405,7 @@ def all_bounce_report() -> str:
             .first()
         )
         # most_recent.info can be very verbose
-        res += f"Most recent cause: \n{most_recent.info[:200] if most_recent.info else 'N/A'}"
+        res += f"Most recent cause: \n{most_recent.info[:1000] if most_recent.info else 'N/A'}"
         res += "\n----\n"
 
     return res
