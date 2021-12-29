@@ -2206,7 +2206,14 @@ class MailHandler:
         with create_light_app().app_context():
             ret = handle(envelope)
             elapsed = time.time() - start
-            LOG.i(
+
+            # use error log if taking more than 1 minute
+            if elapsed > 60:
+                log_f = LOG.e
+            else:
+                log_f = LOG.i
+
+            log_f(
                 "Finish mail from %s, rctp tos %s, takes %s seconds <<===",
                 envelope.mail_from,
                 envelope.rcpt_tos,
