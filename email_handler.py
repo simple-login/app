@@ -32,7 +32,6 @@ It should contain the following info:
 """
 import argparse
 import email
-import os
 import time
 import uuid
 from email import encoders
@@ -83,7 +82,6 @@ from app.config import (
     POSTMASTER,
     ALERT_HOTMAIL_COMPLAINT,
     ALERT_YAHOO_COMPLAINT,
-    TEMP_DIR,
     ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL,
     ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
     OLD_UNSUBSCRIBER,
