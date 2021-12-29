@@ -1297,26 +1297,32 @@ def sl_sendmail(
         return
 
     try:
-        # to avoid creating SMTP server every time
-        smtp = get_smtp_server()
+        if POSTFIX_SUBMISSION_TLS:
+            smtp_port = 587
+        else:
+            smtp_port = POSTFIX_PORT
 
-        # smtp.send_message has UnicodeEncodeError
-        # encode message raw directly instead
-        LOG.d(
-            "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
-            from_addr,
-            to_addr,
-            msg[headers.FROM],
-            msg[headers.TO],
-            msg[headers.CC],
-        )
-        smtp.sendmail(
-            from_addr,
-            to_addr,
-            to_bytes(msg),
-            mail_options,
-            rcpt_options,
-        )
+        with SMTP(POSTFIX_SERVER, smtp_port) as smtp:
+            if POSTFIX_SUBMISSION_TLS:
+                smtp.starttls()
+
+            # smtp.send_message has UnicodeEncodeError
+            # encode message raw directly instead
+            LOG.d(
+                "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
+                from_addr,
+                to_addr,
+                msg[headers.FROM],
+                msg[headers.TO],
+                msg[headers.CC],
+            )
+            smtp.sendmail(
+                from_addr,
+                to_addr,
+                to_bytes(msg),
+                mail_options,
+                rcpt_options,
+            )
     except (SMTPServerDisconnected, SMTPRecipientsRefused) as e:
         if retries > 0:
             LOG.w(
