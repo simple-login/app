@@ -47,13 +47,14 @@ def activate():
     user = activation_code.user
     user.activated = True
     login_user(user)
-    email_utils.send_welcome_email(user)
 
     # activation code is to be used only once
     ActivationCode.delete(activation_code.id)
     Session.commit()
 
     flash("Your account has been activated", "success")
+
+    email_utils.send_welcome_email(user)
 
     # The activation link contains the original page, for ex authorize page
     if "next" in request.args:
