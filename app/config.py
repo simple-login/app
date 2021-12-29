@@ -117,11 +117,6 @@ POSTFIX_PORT = 25
 if "POSTFIX_PORT" in os.environ:
     POSTFIX_PORT = int(os.environ["POSTFIX_PORT"])
 
-# postfix port to use during the forward phase
-POSTFIX_PORT_FORWARD = POSTFIX_PORT
-if "POSTFIX_PORT_FORWARD" in os.environ:
-    POSTFIX_PORT_FORWARD = int(os.environ["POSTFIX_PORT_FORWARD"])
-
 # Use port 587 instead of 25 when sending emails through Postfix
 # Useful when calling Postfix from an external network
 POSTFIX_SUBMISSION_TLS = "POSTFIX_SUBMISSION_TLS" in os.environ

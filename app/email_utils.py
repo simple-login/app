@@ -19,6 +19,7 @@ import arrow
 import dkim
 import re2 as re
 import spf
+from cachetools import cached, TTLCache
 from email_validator import (
     validate_email,
     EmailNotValidError,
@@ -49,7 +50,6 @@ from app.config import (
     ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
     TRANSACTIONAL_BOUNCE_EMAIL,
     ALERT_SPF,
-    POSTFIX_PORT_FORWARD,
     TEMP_DIR,
     ALIAS_AUTOMATIC_DISABLE,
     RSPAMD_SIGN_DKIM,
@@ -1264,6 +1264,19 @@ def spf_pass(
     return True
 
 
+# cache the smtp server for 20 seconds
+@cached(cache=TTLCache(maxsize=2, ttl=20))
+def get_smtp_server():
+    LOG.d("get a smtp server")
+    if POSTFIX_SUBMISSION_TLS:
+        smtp = SMTP(POSTFIX_SERVER, 587)
+        smtp.starttls()
+    else:
+        smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT)
+
+    return smtp
+
+
 def sl_sendmail(
     from_addr,
     to_addr,
@@ -1284,14 +1297,8 @@ def sl_sendmail(
         return
 
     try:
-        if POSTFIX_SUBMISSION_TLS:
-            smtp = SMTP(POSTFIX_SERVER, 587)
-            smtp.starttls()
-        else:
-            if is_forward:
-                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT_FORWARD)
-            else:
-                smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT)
+        # to avoid creating SMTP server every time
+        smtp = get_smtp_server()
 
         # smtp.send_message has UnicodeEncodeError
         # encode message raw directly instead

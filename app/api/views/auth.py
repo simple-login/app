@@ -272,7 +272,7 @@ def auth_facebook():
 @api_bp.route("/auth/google", methods=["POST"])
 def auth_google():
     """
-    Authenticate user with Facebook
+    Authenticate user with Google
     Input:
         google_token: Google access token
         device: to create an ApiKey associated with this device
