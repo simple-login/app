@@ -101,7 +101,7 @@ def test_verify_prefix_suffix(flask_client):
     user = login(flask_client)
     Session.commit()
 
-    CustomDomain.create(user_id=user.id, domain="test.com", verified=True)
+    CustomDomain.create(user_id=user.id, domain="test.com", ownership_verified=True)
 
     assert verify_prefix_suffix(user, "prefix", "@test.com")
     assert not verify_prefix_suffix(user, "prefix", "@abcd.com")
@@ -114,7 +114,7 @@ def test_verify_prefix_suffix(flask_client):
 def test_available_suffixes(flask_client):
     user = login(flask_client)
 
-    CustomDomain.create(user_id=user.id, domain="test.com", verified=True)
+    CustomDomain.create(user_id=user.id, domain="test.com", ownership_verified=True)
 
     assert len(get_available_suffixes(user)) > 0
 
@@ -129,7 +129,9 @@ def test_available_suffixes_default_domain(flask_client):
     user = login(flask_client)
 
     sl_domain = SLDomain.first()
-    CustomDomain.create(user_id=user.id, domain="test.com", verified=True, commit=True)
+    CustomDomain.create(
+        user_id=user.id, domain="test.com", ownership_verified=True, commit=True
+    )
 
     user.default_alias_public_domain_id = sl_domain.id
 
@@ -146,9 +148,11 @@ def test_available_suffixes_default_domain(flask_client):
 def test_available_suffixes_random_prefix_generation(flask_client):
     user = login(flask_client)
 
-    CustomDomain.create(user_id=user.id, domain="test.com", verified=True, commit=True)
+    CustomDomain.create(
+        user_id=user.id, domain="test.com", ownership_verified=True, commit=True
+    )
     cd2 = CustomDomain.create(
-        user_id=user.id, domain="test2.com", verified=True, commit=True
+        user_id=user.id, domain="test2.com", ownership_verified=True, commit=True
     )
 
     user.default_alias_custom_domain_id = cd2.id
@@ -255,7 +259,7 @@ def test_add_alias_in_custom_domain_trash(flask_client):
     user = login(flask_client)
 
     custom_domain = CustomDomain.create(
-        user_id=user.id, domain="ab.cd", verified=True, commit=True
+        user_id=user.id, domain="ab.cd", ownership_verified=True, commit=True
     )
 
     # delete a custom-domain alias: alias should go the DomainDeletedAlias

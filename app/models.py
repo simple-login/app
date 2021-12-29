@@ -694,7 +694,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             return sub
 
     def verified_custom_domains(self) -> List["CustomDomain"]:
-        return CustomDomain.filter_by(user_id=self.id, verified=True).all()
+        return CustomDomain.filter_by(user_id=self.id, ownership_verified=True).all()
 
     def mailboxes(self) -> List["Mailbox"]:
         """list of mailbox that user own"""

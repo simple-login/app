@@ -126,7 +126,9 @@ def test_custom_domain_alias(flask_client):
     user = login(flask_client)
 
     # create a custom domain
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    CustomDomain.create(
+        user_id=user.id, domain="ab.cd", ownership_verified=True, commit=True
+    )
 
     signed_suffix = signer.sign("@ab.cd").decode()
 
@@ -210,7 +212,9 @@ def test_cannot_create_alias_in_trash(flask_client):
     user = login(flask_client)
 
     # create a custom domain
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    CustomDomain.create(
+        user_id=user.id, domain="ab.cd", ownership_verified=True, commit=True
+    )
 
     signed_suffix = signer.sign("@ab.cd").decode()
 

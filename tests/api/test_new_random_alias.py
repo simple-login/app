@@ -40,7 +40,9 @@ def test_with_hostname(flask_client):
 
 def test_with_custom_domain(flask_client):
     user = login(flask_client)
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    CustomDomain.create(
+        user_id=user.id, domain="ab.cd", ownership_verified=True, commit=True
+    )
 
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com"),
