@@ -822,10 +822,9 @@ def forward_email_to_mailbox(
             envelope.rcpt_options,
             is_forward=True,
         )
-    except (SMTPServerDisconnected, SMTPRecipientsRefused):
-        # that means the mailbox is maybe invalid
+    except (SMTPServerDisconnected, SMTPRecipientsRefused, TimeoutError):
         LOG.w(
-            "SMTPServerDisconnected or SMTPRecipientsRefused during forward phase %s -> %s -> %s",
+            "Postfix error during forward phase %s -> %s -> %s",
             contact,
             alias,
             mailbox,
@@ -834,7 +833,7 @@ def forward_email_to_mailbox(
         if should_ignore_bounce(envelope.mail_from):
             return True, status.E207
         else:
-            # can be Postfix intermittent "Temporary lookup failure" error
+            # so Postfix can retry
             return False, status.E407
     else:
         Session.commit()
