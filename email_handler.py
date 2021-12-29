@@ -2097,19 +2097,12 @@ def handle(envelope: Envelope) -> str:
             LOG.d("cannot parse the From header %s", from_header)
         else:
             if is_reverse_alias(from_header_address):
-                LOG.e("email sent from a reverse alias %s", from_header_address)
+                LOG.w("email sent from a reverse alias %s", from_header_address)
                 # get more info for debug
                 contact = Contact.get_by(reply_email=from_header_address)
                 if contact:
                     LOG.d("%s %s %s", contact.user, contact.alias, contact)
 
-                # To investigate. todo: remove
-                if TEMP_DIR:
-                    file_name = str(uuid.uuid4()) + ".eml"
-                    with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
-                        f.write(msg.as_bytes())
-
-                    LOG.d("email saved to %s", file_name)
                 return status.E523
 
     if rate_limited(mail_from, rcpt_tos):
