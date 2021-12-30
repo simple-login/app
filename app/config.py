@@ -401,8 +401,6 @@ except Exception:
     HIBP_SCAN_INTERVAL_DAYS = 7
 HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
 
-NEWRELIC_CONFIG_PATH = os.environ.get("NEWRELIC_CONFIG_PATH")
-
 POSTMASTER = os.environ.get("POSTMASTER")
 
 # store temporary files, especially for debugging
