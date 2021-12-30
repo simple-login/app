@@ -1297,6 +1297,7 @@ def sl_sendmail(
         return
 
     try:
+        start = time.time()
         if POSTFIX_SUBMISSION_TLS:
             smtp_port = 587
         else:
@@ -1305,6 +1306,8 @@ def sl_sendmail(
         with SMTP(POSTFIX_SERVER, smtp_port) as smtp:
             if POSTFIX_SUBMISSION_TLS:
                 smtp.starttls()
+
+            LOG.d("getting a smtp connection takes seconds %s", time.time() - start)
 
             # smtp.send_message has UnicodeEncodeError
             # encode message raw directly instead
