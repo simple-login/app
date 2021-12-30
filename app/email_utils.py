@@ -17,6 +17,7 @@ from typing import Tuple, List, Optional, Union
 
 import arrow
 import dkim
+import newrelic.agent
 import re2 as re
 import spf
 from cachetools import cached, TTLCache
@@ -1307,7 +1308,9 @@ def sl_sendmail(
             if POSTFIX_SUBMISSION_TLS:
                 smtp.starttls()
 
-            LOG.d("getting a smtp connection takes seconds %s", time.time() - start)
+            elapsed = time.time() - start
+            LOG.d("getting a smtp connection takes seconds %s", elapsed)
+            newrelic.agent.record_custom_metric("Custom/smtp_connection_time", elapsed)
 
             # smtp.send_message has UnicodeEncodeError
             # encode message raw directly instead
