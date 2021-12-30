@@ -78,7 +78,6 @@ from app.config import (
     TRANSACTIONAL_BOUNCE_SUFFIX,
     ENABLE_SPAM_ASSASSIN,
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
-    NEWRELIC_CONFIG_PATH,
     POSTMASTER,
     ALERT_HOTMAIL_COMPLAINT,
     ALERT_YAHOO_COMPLAINT,
@@ -144,12 +143,6 @@ from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_light_app
-
-newrelic_app = None
-if NEWRELIC_CONFIG_PATH:
-    newrelic.agent.initialize(NEWRELIC_CONFIG_PATH)
-
-    newrelic_app = newrelic.agent.register_application()
 
 
 def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Contact:
@@ -2188,7 +2181,7 @@ class MailHandler:
             )
             return status.E404
 
-    @newrelic.agent.background_task(application=newrelic_app)
+    @newrelic.agent.background_task()
     def _handle(self, envelope: Envelope):
         start = time.time()
 
@@ -2218,12 +2211,8 @@ class MailHandler:
                 envelope.rcpt_tos,
                 elapsed,
             )
-            newrelic.agent.record_custom_metric(
-                "Custom/email_handler_time", elapsed, newrelic_app
-            )
-            newrelic.agent.record_custom_metric(
-                "Custom/number_incoming_email", 1, newrelic_app
-            )
+            newrelic.agent.record_custom_metric("Custom/email_handler_time", elapsed)
+            newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
             return ret
 
 
