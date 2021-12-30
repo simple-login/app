@@ -1802,6 +1802,10 @@ class AppleSubscription(Base, ModelMixin):
 
     plan = sa.Column(sa.Enum(PlanEnum), nullable=False)
 
+    # to know what subscription user has bought
+    # e.g. io.simplelogin.ios_app.subscription.premium.monthly
+    product_id = sa.Column(sa.String(256), nullable=True)
+
     user = orm.relationship(User)
 
     def is_valid(self):
