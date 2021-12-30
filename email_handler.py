@@ -896,8 +896,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         return False, status.E502
 
     alias = contact.alias
-    address: str = contact.alias.email
-    alias_domain = address[address.find("@") + 1 :]
+    alias_address: str = contact.alias.email
+    alias_domain = alias_address[alias_address.find("@") + 1 :]
 
     # Sanity check: verify alias domain is managed by SimpleLogin
     # scenario: a user have removed a domain but due to a bug, the aliases are still there
@@ -2122,8 +2122,7 @@ def handle(envelope: Envelope) -> str:
         else:
             return status.E522
 
-    # Handle "out of office" auto notice. An automatic response is sent for every forwarded email
-    # todo: remove logging
+    # Handle "out of office" auto notice, i.e. an automatic response is sent for every forwarded email
     if len(rcpt_tos) == 1 and is_reverse_alias(rcpt_tos[0]) and mail_from == "<>":
         LOG.w(
             "out-of-office email to reverse alias %s. %s", rcpt_tos[0], msg.as_string()
@@ -2148,7 +2147,7 @@ def handle(envelope: Envelope) -> str:
         else:
             copy_msg = msg
 
-        # Reply case: the recipient is a reverse alias. Usually starts with "reply+" or "ra+"
+        # Reply case: the recipient is a reverse alias. Used to start with "reply+" or "ra+"
         if is_reverse_alias(rcpt_to):
             LOG.d(
                 "Reply phase %s(%s) -> %s", mail_from, copy_msg[headers.FROM], rcpt_to
@@ -2214,7 +2213,7 @@ class MailHandler:
                 log_f = LOG.i
 
             log_f(
-                "Finish mail from %s, rctp tos %s, takes %s seconds <<===",
+                "Finish mail_from %s, rcpt_tos %s, takes %s seconds <<===",
                 envelope.mail_from,
                 envelope.rcpt_tos,
                 elapsed,
