@@ -509,7 +509,8 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     expires_date = arrow.get(int(latest_transaction["expires_date_ms"]) / 1000)
     plan = (
         PlanEnum.monthly
-        if latest_transaction["product_id"] == _MONTHLY_PRODUCT_ID
+        if latest_transaction["product_id"]
+        in (_MONTHLY_PRODUCT_ID, _MACAPP_MONTHLY_PRODUCT_ID)
         else PlanEnum.yearly
     )
 
