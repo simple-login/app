@@ -279,6 +279,7 @@ def apple_update_notification():
             apple_sub.receipt_data = data["unified_receipt"]["latest_receipt"]
             apple_sub.expires_date = expires_date
             apple_sub.plan = plan
+            apple_sub.product_id = transaction["product_id"]
             Session.commit()
             return jsonify(ok=True), 200
         else:
@@ -526,6 +527,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
         apple_sub.receipt_data = receipt_data
         apple_sub.expires_date = expires_date
         apple_sub.original_transaction_id = original_transaction_id
+        apple_sub.product_id = latest_transaction["product_id"]
         apple_sub.plan = plan
     else:
         # the same original_transaction_id has been used on another account
@@ -545,6 +547,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
             expires_date=expires_date,
             original_transaction_id=original_transaction_id,
             plan=plan,
+            product_id=latest_transaction["product_id"],
         )
 
     Session.commit()
