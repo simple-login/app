@@ -7,7 +7,6 @@ from ast import literal_eval
 from typing import Callable
 from urllib.parse import urlparse
 
-import newrelic.agent
 from dotenv import load_dotenv
 
 SHA1 = subprocess.getoutput("git rev-parse HEAD")
@@ -403,12 +402,6 @@ except Exception:
 HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
 
 NEWRELIC_CONFIG_PATH = os.environ.get("NEWRELIC_CONFIG_PATH")
-newrelic_app = None
-if NEWRELIC_CONFIG_PATH:
-    newrelic.agent.initialize(NEWRELIC_CONFIG_PATH)
-
-    newrelic_app = newrelic.agent.register_application()
-
 
 POSTMASTER = os.environ.get("POSTMASTER")
 
