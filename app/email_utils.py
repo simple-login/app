@@ -864,7 +864,7 @@ def get_encoding(msg: Message) -> EmailEncoding:
     - 7bit: default if unknown or empty
     """
     cte = str(msg.get(headers.CONTENT_TRANSFER_ENCODING, "")).lower().strip()
-    if cte in ("", "7bit", "8bit", "binary", "8bit;"):
+    if cte in ("", "7bit", "8bit", "binary", "8bit;", "utf-8"):
         return EmailEncoding.NO
 
     if cte == "base64":
