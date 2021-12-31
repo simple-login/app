@@ -223,6 +223,7 @@ def delete_alias(alias: Alias, user: User):
             Session.add(DeletedAlias(email=alias.email))
             Session.commit()
 
+    LOG.i("delete alias %s", alias)
     Alias.filter(Alias.id == alias.id).delete()
     Session.commit()
 
