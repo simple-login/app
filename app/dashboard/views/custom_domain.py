@@ -7,6 +7,7 @@ from app.config import EMAIL_SERVERS_WITH_PRIORITY
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import get_email_domain_part
+from app.log import LOG
 from app.models import CustomDomain, Mailbox, DomainMailbox, SLDomain
 
 
@@ -62,6 +63,19 @@ def custom_domain():
                     new_custom_domain = CustomDomain.create(
                         domain=new_domain, user_id=current_user.id
                     )
+                    # new domain has ownership verified if its parent has the ownership verified
+                    for root_cd in current_user.custom_domains:
+                        if (
+                            new_domain.endswith("." + root_cd.domain)
+                            and root_cd.ownership_verified
+                        ):
+                            LOG.i(
+                                "%s ownership verified thanks to %s",
+                                new_custom_domain,
+                                root_cd,
+                            )
+                            new_custom_domain.ownership_verified = True
+
                     Session.commit()
 
                     mailbox_ids = request.form.getlist("mailbox_ids")

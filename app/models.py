@@ -1954,7 +1954,7 @@ class CustomDomain(Base, ModelMixin):
         ),  # The condition
     )
 
-    user = orm.relationship(User, foreign_keys=[user_id])
+    user = orm.relationship(User, foreign_keys=[user_id], backref="custom_domains")
 
     @property
     def mailboxes(self):
