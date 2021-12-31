@@ -769,7 +769,9 @@ def local_main():
     app.debug = True
     DebugToolbarExtension(app)
 
-    app.config["DEBUG_TB_PANELS"] += ("flask_debugtoolbar_sqlalchemy.SQLAlchemyPanel",)
+    # disable the sqlalchemy debug panels because of "IndexError: pop from empty list" from:
+    # duration = time.time() - conn.info['query_start_time'].pop(-1)
+    # app.config["DEBUG_TB_PANELS"] += ("flask_debugtoolbar_sqlalchemy.SQLAlchemyPanel",)
 
     app.run(debug=True, port=7777)
 
