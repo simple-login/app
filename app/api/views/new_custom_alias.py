@@ -104,6 +104,12 @@ def new_custom_alias_v2():
         LOG.d("full alias already used %s", full_alias)
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
+    if ".." in full_alias:
+        return (
+            jsonify(error="2 consecutive dot signs aren't allowed in an email address"),
+            400,
+        )
+
     custom_domain = get_custom_domain(full_alias)
 
     alias = Alias.create(
