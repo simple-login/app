@@ -265,12 +265,6 @@ def send_email(
 
     LOG.d("send email to %s, subject %s", to_email, subject)
 
-    if POSTFIX_SUBMISSION_TLS:
-        smtp = SMTP(POSTFIX_SERVER, 587)
-        smtp.starttls()
-    else:
-        smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT or 25)
-
     if html:
         msg = MIMEMultipart("alternative")
         msg.attach(MIMEText(plaintext))
