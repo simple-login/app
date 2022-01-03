@@ -42,7 +42,6 @@ from app.config import (
     SUPPORT_NAME,
     POSTFIX_SUBMISSION_TLS,
     MAX_NB_EMAIL_FREE_PLAN,
-    DISPOSABLE_EMAIL_DOMAINS,
     MAX_ALERT_24H,
     POSTFIX_PORT,
     URL,
@@ -70,6 +69,7 @@ from app.models import (
     EmailLog,
     TransactionalEmail,
     IgnoreBounceSender,
+    InvalidMailboxDomain,
 )
 from app.utils import (
     random_string,
@@ -548,8 +548,8 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
         LOG.d("domain %s is a SimpleLogin custom domain", domain)
         return False
 
-    if is_disposable_domain(domain):
-        LOG.d("Domain %s is disposable", domain)
+    if is_invalid_mailbox_domain(domain):
+        LOG.d("Domain %s is invalid mailbox domain", domain)
         return False
 
     # check if email MX domain is disposable
@@ -561,19 +561,23 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
         return False
 
     for mx_domain in mx_domains:
-        if is_disposable_domain(mx_domain):
-            LOG.d("MX Domain %s %s is disposable", mx_domain, domain)
+        if is_invalid_mailbox_domain(mx_domain):
+            LOG.d("MX Domain %s %s is invalid mailbox domain", mx_domain, domain)
             return False
 
     return True
 
 
-def is_disposable_domain(domain):
-    for d in DISPOSABLE_EMAIL_DOMAINS:
-        if domain == d:
-            return True
-        # subdomain
-        if domain.endswith("." + d):
+def is_invalid_mailbox_domain(domain):
+    """
+    Whether a domain is invalid mailbox domain
+    Also return True if `domain` is a subdomain of an invalid mailbox domain
+    """
+    parts = domain.split(".")
+    for i in range(0, len(parts) - 1):
+        parent_domain = ".".join(parts[i:])
+
+        if InvalidMailboxDomain.get_by(domain=parent_domain):
             return True
 
     return False

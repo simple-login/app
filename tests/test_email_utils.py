@@ -35,8 +35,17 @@ from app.email_utils import (
     parse_full_address,
     get_orig_message_from_bounce,
     get_mailbox_bounce_info,
+    is_invalid_mailbox_domain,
 )
-from app.models import User, CustomDomain, Alias, Contact, EmailLog, IgnoreBounceSender
+from app.models import (
+    User,
+    CustomDomain,
+    Alias,
+    Contact,
+    EmailLog,
+    IgnoreBounceSender,
+    InvalidMailboxDomain,
+)
 
 # flake8: noqa: E101, W191
 from tests.utils import login
@@ -766,3 +775,13 @@ def test_get_mailbox_bounce_info():
     orig_msg = get_mailbox_bounce_info(bounce_report)
     assert orig_msg["Final-Recipient"] == "rfc822; not-existing@gmail.com"
     assert orig_msg["Original-Recipient"] == "rfc822;not-existing@gmail.com"
+
+
+def test_is_invalid_mailbox_domain(flask_client):
+    InvalidMailboxDomain.create(domain="ab.cd", commit=True)
+
+    assert is_invalid_mailbox_domain("ab.cd")
+    assert is_invalid_mailbox_domain("sub.ab.cd")
+    assert is_invalid_mailbox_domain("sub1.sub2.ab.cd")
+
+    assert not is_invalid_mailbox_domain("xy.zt")
