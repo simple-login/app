@@ -2702,6 +2702,14 @@ class DeletedSubdomain(Base, ModelMixin):
     domain = sa.Column(sa.String(128), unique=True, nullable=False)
 
 
+class InvalidMailboxDomain(Base, ModelMixin):
+    """Domains that can't be used as mailbox"""
+
+    __tablename__ = "invalid_mailbox_domain"
+
+    domain = sa.Column(sa.String(256), unique=True, nullable=False)
+
+
 # region Phone
 class PhoneCountry(Base, ModelMixin):
     __tablename__ = "phone_country"
