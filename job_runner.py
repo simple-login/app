@@ -39,6 +39,7 @@ def onboarding_send_from_alias(user):
         unsubscribe_link,
         via_email,
         retries=3,
+        ignore_smtp_error=True,
     )
 
 
@@ -55,6 +56,7 @@ def onboarding_pgp(user):
         unsubscribe_link,
         via_email,
         retries=3,
+        ignore_smtp_error=True,
     )
 
 
@@ -71,6 +73,7 @@ def onboarding_browser_extension(user):
         unsubscribe_link,
         via_email,
         retries=3,
+        ignore_smtp_error=True,
     )
 
 
@@ -87,6 +90,7 @@ def onboarding_mailbox(user):
         unsubscribe_link,
         via_email,
         retries=3,
+        ignore_smtp_error=True,
     )
 
 
