@@ -709,44 +709,46 @@ def check_custom_domain():
     LOG.d("Check verified domain for DNS issues")
 
     for custom_domain in CustomDomain.filter_by(verified=True):  # type: CustomDomain
-        mx_domains = get_mx_domains(custom_domain.domain)
+        check_single_custom_domain(custom_domain)
 
-        if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
-            user = custom_domain.user
-            LOG.w(
-                "The MX record is not correctly set for %s %s %s",
-                custom_domain,
+
+def check_single_custom_domain(custom_domain):
+    mx_domains = get_mx_domains(custom_domain.domain)
+    if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
+        user = custom_domain.user
+        LOG.w(
+            "The MX record is not correctly set for %s %s %s",
+            custom_domain,
+            user,
+            mx_domains,
+        )
+
+        custom_domain.nb_failed_checks += 1
+
+        # send alert if fail for 5 consecutive days
+        if custom_domain.nb_failed_checks > 5:
+            domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
+            LOG.w("Alert domain MX check fails %s about %s", user, custom_domain)
+            send_email_with_rate_control(
                 user,
-                mx_domains,
+                AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
+                user.email,
+                f"Please update {custom_domain.domain} DNS on SimpleLogin",
+                render(
+                    "transactional/custom-domain-dns-issue.txt.jinja2",
+                    custom_domain=custom_domain,
+                    domain_dns_url=domain_dns_url,
+                ),
+                max_nb_alert=1,
+                nb_day=30,
+                retries=3,
             )
-
-            custom_domain.nb_failed_checks += 1
-
-            # send alert if fail for 5 consecutive days
-            if custom_domain.nb_failed_checks > 5:
-                domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
-                LOG.w("Alert domain MX check fails %s about %s", user, custom_domain)
-                send_email_with_rate_control(
-                    user,
-                    AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
-                    user.email,
-                    f"Please update {custom_domain.domain} DNS on SimpleLogin",
-                    render(
-                        "transactional/custom-domain-dns-issue.txt.jinja2",
-                        custom_domain=custom_domain,
-                        domain_dns_url=domain_dns_url,
-                    ),
-                    max_nb_alert=1,
-                    nb_day=30,
-                    retries=3,
-                )
-                # reset checks
-                custom_domain.nb_failed_checks = 0
-        else:
             # reset checks
             custom_domain.nb_failed_checks = 0
-
-        Session.commit()
+    else:
+        # reset checks
+        custom_domain.nb_failed_checks = 0
+    Session.commit()
 
 
 def delete_old_monitoring():
