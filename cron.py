@@ -709,7 +709,10 @@ def check_custom_domain():
     LOG.d("Check verified domain for DNS issues")
 
     for custom_domain in CustomDomain.filter_by(verified=True):  # type: CustomDomain
-        check_single_custom_domain(custom_domain)
+        try:
+            check_single_custom_domain(custom_domain)
+        except ObjectDeletedError:
+            LOG.i("custom domain has been deleted")
 
 
 def check_single_custom_domain(custom_domain):
