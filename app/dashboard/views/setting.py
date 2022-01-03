@@ -210,9 +210,11 @@ def setting():
                             custom_domain.user_id != current_user.id
                             or not custom_domain.verified
                         ):
-                            LOG.e(
-                                "%s cannot use domain %s", current_user, default_domain
+                            LOG.w(
+                                "%s cannot use domain %s", current_user, custom_domain
                             )
+                            flash(f"Domain {default_domain} can't be used", "error")
+                            return redirect(request.url)
                         else:
                             current_user.default_alias_custom_domain_id = (
                                 custom_domain.id
