@@ -66,9 +66,7 @@ def add_invalid_mailbox_domains():
         for domain in disposable_email_domains:
             if InvalidMailboxDomain.get_by(domain=domain) is None:
                 LOG.i("Add disposable domain %s as invalid mailbox domain", domain)
-                InvalidMailboxDomain.create(domain=domain)
-
-        Session.commit()
+                InvalidMailboxDomain.create(domain=domain, commit=True)
 
 
 if __name__ == "__main__":
