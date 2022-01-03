@@ -118,6 +118,7 @@ def send_trial_end_soon_email(user):
         f"Your trial will end soon",
         render("transactional/trial-end.txt.jinja2", user=user),
         render("transactional/trial-end.html", user=user),
+        ignore_smtp_error=True,
     )
 
 
@@ -251,6 +252,7 @@ def send_email(
     unsubscribe_link=None,
     unsubscribe_via_email=False,
     retries=0,  # by default no retry if sending fails
+    ignore_smtp_error=False,
 ):
     to_email = sanitize_email(to_email)
     if NOT_SEND_EMAIL:
@@ -303,6 +305,7 @@ def send_email(
         to_email,
         msg,
         retries=retries,
+        ignore_smtp_error=ignore_smtp_error,
     )
 
 
@@ -1280,6 +1283,7 @@ def sl_sendmail(
     rcpt_options=(),
     is_forward: bool = False,
     retries=2,
+    ignore_smtp_error=False,
 ):
     """replace smtp.sendmail"""
     if NOT_SEND_EMAIL:
@@ -1341,7 +1345,10 @@ def sl_sendmail(
                 retries=retries - 1,
             )
         else:
-            raise
+            if ignore_smtp_error:
+                LOG.w("Ignore smtp error %s", e)
+            else:
+                raise
 
 
 def get_queue_id(msg: Message) -> Optional[str]:
