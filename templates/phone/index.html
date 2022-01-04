@@ -7,20 +7,22 @@
 {% endblock %}
 
 {% block default_content %}
-  <div class="card">
-    <div class="card-body">
-      <h3>Your current numbers</h3>
+  {% if reservations|length > 0 %}
+    <div class="card">
+      <div class="card-body">
+        <h3>Your current numbers</h3>
 
-      {% for reservation in reservations %}
-        <div>
-          <a href="{{ url_for('phone.reservation_route', reservation_id=reservation.id ) }}">
-            {{ reservation.number.number }} ➡
-          </a>
-        </div>
-      {% endfor %}
+        {% for reservation in reservations %}
+          <div>
+            <a href="{{ url_for('phone.reservation_route', reservation_id=reservation.id ) }}">
+              {{ reservation.number.number }} ➡
+            </a>
+          </div>
+        {% endfor %}
 
+      </div>
     </div>
-  </div>
+  {% endif %}
 
   <div class="card">
     <div class="card-body">
@@ -32,7 +34,8 @@
       <form method="post">
         <div class="form-group">
           <label for="input-minute">How many minutes do you need this number for?</label>
-          <input required name="minute" type="number" class="form-control" id="input-minute" aria-describedby="emailHelp"
+          <input required name="minute" type="number" class="form-control" id="input-minute"
+                 aria-describedby="emailHelp"
                  placeholder="5, 10, 60, etc.">
           <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
         </div>
@@ -54,21 +57,23 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-body">
-      <h3>Past Reservations</h3>
+  {% if past_reservations|length > 0 %}
+    <div class="card">
+      <div class="card-body">
+        <h3>Past Reservations</h3>
 
-      {% for reservation in past_reservations %}
-        <div>
-          <a href="{{ url_for('phone.reservation_route', reservation_id=reservation.id ) }}" class="mr-3">
-            {{ reservation.number.number }} ➡
-          </a>
-          ended {{ reservation.end.humanize() }}
-        </div>
-      {% endfor %}
+        {% for reservation in past_reservations %}
+          <div>
+            <a href="{{ url_for('phone.reservation_route', reservation_id=reservation.id ) }}" class="mr-3">
+              {{ reservation.number.number }} ➡
+            </a>
+            ended {{ reservation.end.humanize() }}
+          </div>
+        {% endfor %}
 
+      </div>
     </div>
-  </div>
+  {% endif %}
 
 
 {% endblock %}
