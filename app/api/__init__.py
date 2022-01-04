@@ -12,4 +12,5 @@ from .views import (
     notification,
     setting,
     export,
+    phone,
 )

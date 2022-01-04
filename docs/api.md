@@ -18,6 +18,8 @@
 
 [MISC endpoints](#misc-endpoints)
 
+[Phone endpoints](#phone-endpoints)
+
 ---
 
 SimpleLogin current API clients are Chrome/Firefox/Safari extension and mobile (iOS/Android) app. These clients rely
@@ -945,3 +947,31 @@ Input:
 
 Output:
 200 if user is upgraded successfully 4** if any error.
+
+### Phone endpoints
+
+#### GET /api/phone/reservations/:reservation_id
+
+Get messages received during a reservation.
+
+Input:
+
+- `Authentication` in header: the api key
+- `reservation_id`
+
+Output:
+List of messages for this reservation and whether the reservation is ended.
+
+```json
+{
+  "ended": false,
+  "messages": [
+    {
+      "body": "body",
+      "created_at": "just now",
+      "from_number": "from_number",
+      "id": 7
+    }
+  ]
+}
+```
