@@ -2729,6 +2729,9 @@ class PhoneNumber(Base, ModelMixin):
 
     active = sa.Column(sa.Boolean, nullable=False, default=True)
 
+    # do not load this column
+    comment = deferred(sa.Column(sa.Text, nullable=True))
+
     country = orm.relationship(PhoneCountry)
 
 
