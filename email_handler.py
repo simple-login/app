@@ -1751,6 +1751,22 @@ def handle_spam(
         )
 
 
+def is_automatic_out_of_office(msg: Message) -> bool:
+    if msg[headers.AUTO_REPLY1] is not None:
+        LOG.d(
+            "out-of-office email %s:%s", headers.AUTO_REPLY1, msg[headers.AUTO_REPLY1]
+        )
+        return True
+
+    if msg[headers.AUTO_REPLY2] is not None:
+        LOG.d(
+            "out-of-office email %s:%s", headers.AUTO_REPLY2, msg[headers.AUTO_REPLY2]
+        )
+        return True
+
+    return False
+
+
 def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
     """return the SMTP status"""
     # format: alias_id:
@@ -2060,13 +2076,19 @@ def handle(envelope: Envelope) -> str:
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
+        # out of office is sent to the mail_from
+        # more info on https://support.google.com/mail/thread/21246740/my-auto-reply-filter-isn-t-replying-to-original-sender-address?hl=en&msgid=21261237
+        and not is_automatic_out_of_office(msg)
     ):
+
         email_log_id = parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
         return handle_bounce(envelope, email_log, msg)
 
-    if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
-        f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
+    if (
+        len(rcpt_tos) == 1
+        and rcpt_tos[0].startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+")
+        and not is_automatic_out_of_office(msg)
     ):
         email_log_id = parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)

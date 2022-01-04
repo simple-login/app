@@ -42,3 +42,7 @@ MIME_HEADERS = [
 ]
 # convert to lowercase to facilitate header look up
 MIME_HEADERS = [h.lower() for h in MIME_HEADERS]
+
+# if any of these headers are present, that means automatic out of office email
+AUTO_REPLY1 = "X-Autoreply"
+AUTO_REPLY2 = "Auto-Submitted"
