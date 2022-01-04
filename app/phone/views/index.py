@@ -32,7 +32,11 @@ def index():
     ).all()
 
     if request.method == "POST":
-        nb_minute = int(request.form.get("minute"))
+        try:
+            nb_minute = int(request.form.get("minute"))
+        except ValueError:
+            flash("Number of minutes must be specified", "error")
+            return redirect(request.url)
 
         if current_user.phone_quota < nb_minute:
             flash(
