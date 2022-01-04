@@ -61,6 +61,7 @@ def index():
             .filter(
                 PhoneNumber.country_id == country.id,
                 PhoneNumber.id.notin_(busy_phone_number_subquery),
+                PhoneNumber.active,
             )
             .first()
         )
