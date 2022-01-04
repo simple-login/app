@@ -289,10 +289,6 @@ STATUS_PAGE_URL = os.environ.get("STATUS_PAGE_URL") or "https://status.simplelog
 # Loading PGP keys when mail_handler runs. To be used locally when init_app is not called.
 LOAD_PGP_EMAIL_HANDLER = "LOAD_PGP_EMAIL_HANDLER" in os.environ
 
-DISPOSABLE_FILE_PATH = get_abs_path(
-    os.environ.get("DISPOSABLE_FILE_PATH", "local_data/local_disposable_domains.txt")
-)
-
 
 # Used when querying info on Apple API
 # for iOS App

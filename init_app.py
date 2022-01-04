@@ -1,8 +1,6 @@
 from app.config import (
     ALIAS_DOMAINS,
     PREMIUM_ALIAS_DOMAINS,
-    get_abs_path,
-    DISPOSABLE_FILE_PATH,
 )
 from app.db import Session
 from app.log import LOG
@@ -55,8 +53,8 @@ def add_sl_domains():
     Session.commit()
 
 
-def add_invalid_mailbox_domains():
-    with open(get_abs_path(DISPOSABLE_FILE_PATH), "r") as f:
+def add_invalid_mailbox_domains(disposable_domains_file_path):
+    with open(disposable_domains_file_path, "r") as f:
         disposable_email_domains = f.readlines()
         disposable_email_domains = [d.strip().lower() for d in disposable_email_domains]
         disposable_email_domains = [
