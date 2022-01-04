@@ -19,7 +19,7 @@ def provider1_sms():
             request.args,
             request.data,
         )
-        return "not ok", 400
+        return "not ok", 200
 
     # request.form should be a dict that contains message_id, number, text, sim_card_number.
     # "number" is the contact number and "sim_card_number" the virtual number
