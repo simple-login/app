@@ -13,7 +13,7 @@ from app.phone.base import phone_bp
 def provider1_sms():
     if request.headers.get(PHONE_PROVIDER_1_HEADER) != PHONE_PROVIDER_1_SECRET:
         LOG.e(
-            "Unauthenticated callback",
+            "Unauthenticated callback %s %s %s %s",
             request.headers,
             request.method,
             request.args,
