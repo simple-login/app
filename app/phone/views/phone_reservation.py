@@ -3,7 +3,7 @@ from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 
 from app.db import Session
-from app.models import PhoneReservation, PhoneMessage, User
+from app.models import PhoneReservation, User
 from app.phone.base import phone_bp
 
 current_user: User
@@ -18,11 +18,6 @@ def reservation_route(reservation_id: int):
         return redirect(url_for("phone.index"))
 
     phone_number = reservation.number
-    messages = PhoneMessage.filter(
-        PhoneMessage.number_id == phone_number.id,
-        PhoneMessage.created_at > reservation.start,
-        PhoneMessage.created_at < reservation.end,
-    ).all()
 
     if request.method == "POST":
         if request.form.get("form-name") == "release":
@@ -43,6 +38,5 @@ def reservation_route(reservation_id: int):
         "phone/phone_reservation.html",
         phone_number=phone_number,
         reservation=reservation,
-        messages=messages,
         now=arrow.now(),
     )
