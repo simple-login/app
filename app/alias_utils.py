@@ -4,7 +4,7 @@ from typing import Optional
 from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import IntegrityError, DataError
 
-from app.config import BOUNCE_PREFIX_FOR_REPLY_PHASE
+from app.config import BOUNCE_PREFIX_FOR_REPLY_PHASE, BOUNCE_PREFIX
 from app.db import Session
 from app.email_utils import (
     get_email_domain_part,
@@ -35,6 +35,10 @@ def try_auto_create(address: str) -> Optional[Alias]:
     """Try to auto-create the alias using directory or catch-all domain"""
     if address.startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"):
         LOG.e("alias %s can't start with %s", address, BOUNCE_PREFIX_FOR_REPLY_PHASE)
+        return None
+
+    if address.startswith(BOUNCE_PREFIX):
+        LOG.e("alias %s can't start with %s", address, BOUNCE_PREFIX)
         return None
 
     try:
