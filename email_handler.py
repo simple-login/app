@@ -2076,22 +2076,43 @@ def handle(envelope: Envelope) -> str:
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
-        # out of office is sent to the mail_from
+    ):
+        email_log_id = parse_id_from_bounce(rcpt_tos[0])
+        email_log = EmailLog.get(email_log_id)
+
+        # out of office is sent to the mail_from and not the From: header
         # more info on https://support.google.com/mail/thread/21246740/my-auto-reply-filter-isn-t-replying-to-original-sender-address?hl=en&msgid=21261237
-        and not is_automatic_out_of_office(msg)
-    ):
+        # convert the email into a normal email sent to the reverse alias
+        if (
+            is_automatic_out_of_office(msg)
+            and msg[headers.TO] == rcpt_tos[0]
+            and email_log
+        ):
+            LOG.d("send the out-of-office email to the contact")
+            rcpt_tos[0] = email_log.contact.reply_email
+            msg[headers.TO] = email_log.contact.reply_email
+            envelope.rcpt_tos = [email_log.contact.reply_email]
+        else:
+            return handle_bounce(envelope, email_log, msg)
 
+    if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
+        f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
+    ):
         email_log_id = parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
-        return handle_bounce(envelope, email_log, msg)
 
-    if (
-        len(rcpt_tos) == 1
-        and rcpt_tos[0].startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+")
-        and not is_automatic_out_of_office(msg)
-    ):
-        email_log_id = parse_id_from_bounce(rcpt_tos[0])
-        email_log = EmailLog.get(email_log_id)
+        # out-of-office email sent by the contact
+        # convert the email into a normal email sent to the alias
+        if (
+            is_automatic_out_of_office(msg)
+            and msg[headers.TO] == rcpt_tos[0]
+            and email_log
+        ):
+            LOG.d("send the out-of-office email to the contact")
+            rcpt_tos[0] = email_log.contact.alias.email
+            msg[headers.TO] = email_log.contact.alias.email
+            envelope.rcpt_tos = [email_log.contact.alias.email]
+
         return handle_bounce(envelope, email_log, msg)
 
     # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
