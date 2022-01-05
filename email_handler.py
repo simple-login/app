@@ -2169,10 +2169,14 @@ def handle(envelope: Envelope) -> str:
         else:
             return status.E522
 
-    # Handle "out of office" auto notice, i.e. an automatic response is sent for every forwarded email
+    # Handle "out-of-office" auto notice, i.e. an automatic response is sent for every forwarded email
     if len(rcpt_tos) == 1 and is_reverse_alias(rcpt_tos[0]) and mail_from == "<>":
+        contact = Contact.get_by(reply_email=rcpt_tos[0])
         LOG.w(
-            "out-of-office email to reverse alias %s. %s", rcpt_tos[0], msg.as_string()
+            "out-of-office email to reverse alias %s. %s %s",
+            contact,
+            msg.as_string(),
+            save_email_for_debugging(msg),  # todo: remove
         )
         return status.E206
 
