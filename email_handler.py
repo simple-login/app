@@ -2240,9 +2240,8 @@ def handle(envelope: Envelope) -> str:
     if len(rcpt_tos) == 1 and is_reverse_alias(rcpt_tos[0]) and mail_from == "<>":
         contact = Contact.get_by(reply_email=rcpt_tos[0])
         LOG.w(
-            "out-of-office email to reverse alias %s. %s %s",
+            "out-of-office email to reverse alias %s. Saved to %s",
             contact,
-            msg.as_string(),
             save_email_for_debugging(msg),  # todo: remove
         )
         return status.E206
