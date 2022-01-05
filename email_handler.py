@@ -1771,6 +1771,14 @@ def is_automatic_out_of_office(msg: Message) -> bool:
     return False
 
 
+def is_bounce(envelope: Envelope, msg: Message):
+    """Detect whether an email is a Delivery Status Notification"""
+    return (
+        envelope.mail_from == "<>"
+        and msg.get_content_type().lower() == "multipart/report"
+    )
+
+
 def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
     """return the SMTP status"""
     # format: alias_id:
