@@ -2051,15 +2051,26 @@ def handle(envelope: Envelope) -> str:
         LOG.d("Handle unsubscribe request from %s", mail_from)
         return handle_unsubscribe(envelope, msg)
 
-    # emails sent to sender. Probably bounce emails
+    # emails sent to transactional VERP. Either bounce emails or out-of-office
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(TRANSACTIONAL_BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(TRANSACTIONAL_BOUNCE_SUFFIX)
     ):
-        LOG.d("Handle email sent to sender from %s", mail_from)
-        handle_transactional_bounce(envelope, msg, rcpt_tos[0])
-        return status.E205
+        if is_bounce(envelope, msg):
+            handle_transactional_bounce(envelope, msg, rcpt_tos[0])
+            return status.E205
+        elif is_automatic_out_of_office(msg):
+            LOG.d(
+                "Ignore out-of-office for transactional emails. Headers: %s", msg.items
+            )
+            return status.E206
+        else:
+            LOG.e(
+                "cannot handle email sent to transactional VERP, saved at %s",
+                save_email_for_debugging(msg),  # todo: remove
+            )
+            return status.E408
 
     if (
         len(rcpt_tos) == 1
@@ -2083,7 +2094,7 @@ def handle(envelope: Envelope) -> str:
         if handle_yahoo_complaint(msg):
             return status.E210
 
-    # Handle bounce
+    # Mails sent to forward VERP, can be either bounce or out-of-office
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
@@ -2092,20 +2103,41 @@ def handle(envelope: Envelope) -> str:
         email_log_id = parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
 
-        # out of office is sent to the mail_from and not the From: header
-        # more info on https://support.google.com/mail/thread/21246740/my-auto-reply-filter-isn-t-replying-to-original-sender-address?hl=en&msgid=21261237
-        # convert the email into a normal email sent to the reverse alias
-        if (
-            is_automatic_out_of_office(msg)
-            and msg[headers.TO] == rcpt_tos[0]
-            and email_log
-        ):
-            LOG.d("send the out-of-office email to the contact")
-            rcpt_tos[0] = email_log.contact.reply_email
-            msg[headers.TO] = email_log.contact.reply_email
-            envelope.rcpt_tos = [email_log.contact.reply_email]
-        else:
+        if not email_log:
+            LOG.w("No such email log")
+            return status.E512
+
+        if is_bounce(envelope, msg):
             return handle_bounce(envelope, email_log, msg)
+        elif is_automatic_out_of_office(msg):
+            # convert the email into a normal email sent to the reverse alias, so it can be forwarded to contact
+            LOG.d(
+                "send the out-of-office email to the contact %s %s %s",
+                email_log.contact,
+                msg[headers.TO],
+                rcpt_tos,
+            )
+            reverse_alias = email_log.contact.reply_email
+
+            rcpt_tos[0] = reverse_alias
+            envelope.rcpt_tos = [reverse_alias]
+
+            add_or_replace_header(msg, headers.TO, reverse_alias)
+            # delete reply-to header that can affect email delivery
+            delete_header(msg, headers.REPLY_TO)
+
+            LOG.d(
+                "after out-of-office transformation %s %s %s",
+                msg.get_all(headers.TO),
+                msg.get_all(headers.REPLY_TO),
+                rcpt_tos,
+            )
+        else:
+            LOG.e(
+                "cannot handle email sent to forward VERP, saved at %s",
+                save_email_for_debugging(msg),
+            )
+            return status.E409
 
     if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
         f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
@@ -2113,19 +2145,42 @@ def handle(envelope: Envelope) -> str:
         email_log_id = parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
 
-        # out-of-office email sent by the contact
-        # convert the email into a normal email sent to the alias
-        if (
-            is_automatic_out_of_office(msg)
-            and msg[headers.TO] == rcpt_tos[0]
-            and email_log
-        ):
-            LOG.d("send the out-of-office email to the contact")
-            rcpt_tos[0] = email_log.contact.alias.email
-            msg[headers.TO] = email_log.contact.alias.email
-            envelope.rcpt_tos = [email_log.contact.alias.email]
+        if not email_log:
+            LOG.w("No such email log")
+            return status.E512
 
-        return handle_bounce(envelope, email_log, msg)
+        if is_bounce(envelope, msg):
+            return handle_bounce(envelope, email_log, msg)
+        elif is_automatic_out_of_office(msg):
+            # convert the email into a normal email sent to the alias, so it can be forwarded to mailbox
+            LOG.d(
+                "send the out-of-office email to the alias %s %s %s",
+                email_log.alias,
+                msg[headers.TO],
+                rcpt_tos,
+            )
+            alias_address = email_log.alias.email
+
+            rcpt_tos[0] = alias_address
+            envelope.rcpt_tos = [alias_address]
+
+            replace(msg, headers.TO, alias_address)
+            # delete reply-to header that can affect email delivery
+            delete_header(msg, headers.REPLY_TO)
+
+            LOG.d(
+                "after out-of-office transformation %s %s %s",
+                msg.get_all(headers.TO),
+                msg.get_all(headers.REPLY_TO),
+                rcpt_tos,
+            )
+
+        else:
+            LOG.e(
+                "cannot handle email sent to reply VERP, saved at %s",
+                save_email_for_debugging(msg),
+            )
+            return status.E410
 
     # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
     if (

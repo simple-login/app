@@ -1,4 +1,4 @@
-# 2** status
+# region 2** status
 E200 = "250 Message accepted for delivery"
 E201 = "250 SL E201"
 E202 = "250 Unsubscribe request accepted"
@@ -19,7 +19,9 @@ E210 = "250 SL E210 Yahoo complaint handled"
 E211 = "250 SL E211 Bounce Forward phase handled"
 E212 = "250 SL E212 Bounce Reply phase handled"
 
-# 4** errors
+# endregion
+
+# region 4** errors
 # E401 = "421 SL E401 Retry later"
 E402 = "421 SL E402 Encryption failed - Retry later"
 # E403 = "421 SL E403 Retry later"
@@ -27,8 +29,12 @@ E404 = "421 SL E404 Unexpected error - Retry later"
 E405 = "421 SL E405 Mailbox domain problem - Retry later"
 E406 = "421 SL E406 Retry later"
 E407 = "421 SL E407 Retry later"
+E408 = "421 SL E408 Retry later"
+E409 = "421 SL E409 Retry later"
+E410 = "421 SL E410 Retry later"
+# endregion
 
-# 5** errors
+# region 5** errors
 E501 = "550 SL E501"
 E502 = "550 SL E502 Email not exist"
 E503 = "550 SL E503"
@@ -53,3 +59,4 @@ E522 = (
     "at a rate that prevents additional messages from being delivered."
 )
 E523 = "550 SL E523 Unknown error"
+# endregion
