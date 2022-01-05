@@ -1752,15 +1752,19 @@ def handle_spam(
 
 
 def is_automatic_out_of_office(msg: Message) -> bool:
-    if msg[headers.AUTO_REPLY1] is not None:
-        LOG.d(
-            "out-of-office email %s:%s", headers.AUTO_REPLY1, msg[headers.AUTO_REPLY1]
-        )
-        return True
+    """
+    Return whether an email is out-of-office
+    For info, out-of-office is sent to the envelope mail_from and not the From: header
+    More info on https://datatracker.ietf.org/doc/html/rfc3834#section-4 and https://support.google.com/mail/thread/21246740/my-auto-reply-filter-isn-t-replying-to-original-sender-address?hl=en&msgid=21261237
+    """
+    if msg[headers.AUTO_SUBMITTED] is None:
+        return False
 
-    if msg[headers.AUTO_REPLY2] is not None:
+    if msg[headers.AUTO_SUBMITTED].lower() in ("auto-replied", "auto-generated"):
         LOG.d(
-            "out-of-office email %s:%s", headers.AUTO_REPLY2, msg[headers.AUTO_REPLY2]
+            "out-of-office email %s:%s",
+            headers.AUTO_SUBMITTED,
+            msg[headers.AUTO_SUBMITTED],
         )
         return True
 

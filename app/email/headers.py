@@ -43,6 +43,7 @@ MIME_HEADERS = [
 # convert to lowercase to facilitate header look up
 MIME_HEADERS = [h.lower() for h in MIME_HEADERS]
 
-# if any of these headers are present, that means automatic out of office email
-AUTO_REPLY1 = "X-Autoreply"
-AUTO_REPLY2 = "Auto-Submitted"
+
+# according to https://datatracker.ietf.org/doc/html/rfc3834#section-3.1.7, this header should be set to  "auto-replied"
+# however on hotmail, this is set to "auto-generated"
+AUTO_SUBMITTED = "Auto-Submitted"

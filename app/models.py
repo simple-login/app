@@ -1666,6 +1666,7 @@ class EmailLog(Base, ModelMixin):
     forward = orm.relationship(Contact)
 
     contact = orm.relationship(Contact, backref="email_logs")
+    alias = orm.relationship(Alias)
     mailbox = orm.relationship("Mailbox", lazy="joined", foreign_keys=[mailbox_id])
     user = orm.relationship(User)
 

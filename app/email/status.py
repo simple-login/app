@@ -5,7 +5,7 @@ E202 = "250 Unsubscribe request accepted"
 E203 = "250 SL E203 email can't be sent from a reverse-alias"
 E204 = "250 SL E204 ignore"
 E205 = "250 SL E205 bounce handled"
-# out of office status
+# out-of-office status
 E206 = "250 SL E206 Out of office"
 
 # if mail_from is a IgnoreBounceSender, no need to send back a bounce report

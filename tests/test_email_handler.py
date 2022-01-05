@@ -53,11 +53,11 @@ def test_is_automatic_out_of_office():
     msg = EmailMessage()
     assert not is_automatic_out_of_office(msg)
 
-    msg[headers.AUTO_REPLY1] = "yes"
+    msg[headers.AUTO_SUBMITTED] = "auto-replied"
     assert is_automatic_out_of_office(msg)
 
-    del msg[headers.AUTO_REPLY1]
+    del msg[headers.AUTO_SUBMITTED]
     assert not is_automatic_out_of_office(msg)
 
-    msg[headers.AUTO_REPLY2] = "auto-replied"
+    msg[headers.AUTO_SUBMITTED] = "auto-generated"
     assert is_automatic_out_of_office(msg)
