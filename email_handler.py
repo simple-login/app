@@ -2314,8 +2314,9 @@ class MailHandler:
         message_id = str(uuid.uuid4())
         set_message_id(message_id)
 
+        LOG.d("====>=====>====>====>====>====>====>====>")
         LOG.i(
-            "===>> New message, mail from %s, rctp tos %s ",
+            "New message, mail from %s, rctp tos %s ",
             envelope.mail_from,
             envelope.rcpt_tos,
         )
