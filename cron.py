@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import urllib.parse
-from time import sleep
 from typing import List, Tuple
 
 import arrow

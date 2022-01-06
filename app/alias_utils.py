@@ -27,7 +27,6 @@ from app.models import (
     Mailbox,
     EmailLog,
     Contact,
-    SLDomain,
 )
 from app.regex_utils import regex_match
 

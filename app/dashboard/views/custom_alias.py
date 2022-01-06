@@ -298,10 +298,6 @@ def custom_alias():
                 flash(general_error_msg, "error")
 
             else:
-                # get the custom_domain_id if alias is created with a custom domain
-                if alias_suffix.is_custom:
-                    alias_domain = alias_suffix.domain
-
                 try:
                     alias = Alias.create(
                         user_id=current_user.id,
