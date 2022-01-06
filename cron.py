@@ -702,6 +702,13 @@ def sanity_check():
     migrate_domain_trash()
     set_custom_domain_for_alias()
 
+    # check if there's an email that starts with "\u200f" (right-to-left mark (RLM))
+    for contact in Contact.filter(Contact.website_email.startswith("\u200f")).all():
+        contact.website_email = contact.website_email.replace("\u200f", "")
+        LOG.e("remove right-to-left mark (RLM) from %s", contact)
+
+    Session.commit()
+
     LOG.d("Finish sanity check")
 
 
