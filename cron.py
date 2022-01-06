@@ -548,7 +548,7 @@ def migrate_domain_trash():
         if not SLDomain.get_by(domain=alias_domain):
             custom_domain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain:
-                LOG.e("move %s to domain %s trash", deleted_alias, custom_domain)
+                LOG.w("move %s to domain %s trash", deleted_alias, custom_domain)
                 Session.add(
                     DomainDeletedAlias(
                         user_id=custom_domain.user_id,
@@ -559,7 +559,7 @@ def migrate_domain_trash():
                 )
                 DeletedAlias.delete(deleted_alias.id)
 
-    Session.commit()
+                Session.commit()
 
 
 def set_custom_domain_for_alias():
