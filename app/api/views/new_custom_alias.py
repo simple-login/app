@@ -1,11 +1,9 @@
-from typing import Optional
-
-from email_validator import validate_email, EmailNotValidError
+from email_validator import EmailNotValidError
 from flask import g
 from flask import jsonify, request
 from itsdangerous import SignatureExpired
 
-from app.alias_utils import check_alias_prefix
+from app.alias_utils import check_alias_prefix, get_custom_domain
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
     serialize_alias_info_v2,
@@ -20,26 +18,12 @@ from app.models import (
     Alias,
     AliasUsedOn,
     User,
-    CustomDomain,
     DeletedAlias,
     DomainDeletedAlias,
     Mailbox,
     AliasMailbox,
-    SLDomain,
 )
 from app.utils import convert_to_id
-
-
-def get_custom_domain(alias_address) -> Optional[CustomDomain]:
-    alias_domain = validate_email(
-        alias_address, check_deliverability=False, allow_smtputf8=False
-    ).domain
-
-    # handle the case a SLDomain is also a CustomDomain
-    if SLDomain.get_by(domain=alias_domain) is None:
-        custom_domain = CustomDomain.get_by(domain=alias_domain)
-        if custom_domain:
-            return custom_domain
 
 
 @api_bp.route("/v2/alias/custom/new", methods=["POST"])

@@ -27,6 +27,7 @@ from app.models import (
     Mailbox,
     EmailLog,
     Contact,
+    SLDomain,
 )
 from app.regex_utils import regex_match
 
@@ -274,3 +275,15 @@ def check_alias_prefix(alias_prefix) -> bool:
         return False
 
     return True
+
+
+def get_custom_domain(alias_address) -> Optional[CustomDomain]:
+    alias_domain = validate_email(
+        alias_address, check_deliverability=False, allow_smtputf8=False
+    ).domain
+
+    # handle the case a SLDomain is also a CustomDomain
+    if SLDomain.get_by(domain=alias_domain) is None:
+        custom_domain = CustomDomain.get_by(domain=alias_domain)
+        if custom_domain:
+            return custom_domain
