@@ -66,6 +66,11 @@ class ModelMixin(object):
         return Session.query(cls)
 
     @classmethod
+    def yield_per_query(cls, page=1000):
+        """to be used when iterating on a big table to avoid taking all the memory"""
+        return Session.query(cls).yield_per(page).enable_eagerloads(False)
+
+    @classmethod
     def get(cls, id):
         return Session.query(cls).get(id)
 
