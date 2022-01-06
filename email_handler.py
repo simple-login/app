@@ -2178,10 +2178,11 @@ def handle(envelope: Envelope) -> str:
 
         else:
             LOG.e(
-                "cannot handle email sent to reply VERP, %s -> %s (%s) saved at %s",
+                "cannot handle email sent to reply VERP, %s -> %s (%s, %s) saved at %s",
                 email_log.alias,
                 email_log.contact,
                 email_log,
+                email_log.user,
                 save_email_for_debugging(msg),
             )
             return status.E410
