@@ -583,76 +583,6 @@ def set_custom_domain_for_alias():
 
 
 def sanity_check():
-    """
-    #TODO: investigate why DNS sometimes not working
-    Different sanity checks
-    - detect if there's mailbox that's using a invalid domain
-    """
-    mailbox_ids = (
-        Session.query(Mailbox.id)
-        .filter(Mailbox.verified.is_(True), Mailbox.disabled.is_(False))
-        .all()
-    )
-    mailbox_ids = [e[0] for e in mailbox_ids]
-
-    # iterate over id instead of mailbox directly
-    # as a mailbox can be deleted during the sleep time
-    for mailbox_id in mailbox_ids:
-        mailbox = Mailbox.get(mailbox_id)
-        # a mailbox has been deleted
-        if not mailbox:
-            continue
-
-        # hack to not query DNS too often
-        sleep(1)
-
-        if not email_can_be_used_as_mailbox(mailbox.email):
-            mailbox.nb_failed_checks += 1
-            nb_email_log = nb_email_log_for_mailbox(mailbox)
-
-            # send a warning
-            if mailbox.nb_failed_checks == 5:
-                if mailbox.user.email != mailbox.email:
-                    send_email(
-                        mailbox.user.email,
-                        f"Mailbox {mailbox.email} is disabled",
-                        render(
-                            "transactional/disable-mailbox-warning.txt.jinja2",
-                            mailbox=mailbox,
-                        ),
-                        render(
-                            "transactional/disable-mailbox-warning.html",
-                            mailbox=mailbox,
-                        ),
-                        retries=3,
-                    )
-
-            # alert if too much fail and nb_email_log > 100
-            if mailbox.nb_failed_checks > 10 and nb_email_log > 100:
-                mailbox.disabled = True
-
-                if mailbox.user.email != mailbox.email:
-                    send_email(
-                        mailbox.user.email,
-                        f"Mailbox {mailbox.email} is disabled",
-                        render(
-                            "transactional/disable-mailbox.txt.jinja2", mailbox=mailbox
-                        ),
-                        render("transactional/disable-mailbox.html", mailbox=mailbox),
-                        retries=3,
-                    )
-
-            LOG.w(
-                "issue with mailbox %s domain. #alias %s, nb email log %s",
-                mailbox,
-                mailbox.nb_alias(),
-                nb_email_log,
-            )
-        else:  # reset nb check
-            mailbox.nb_failed_checks = 0
-
-        Session.commit()
-
     for user in User.filter_by(activated=True).all():
         if sanitize_email(user.email) != user.email:
             LOG.e("%s does not have sanitized email", user)
@@ -702,14 +632,79 @@ def sanity_check():
     migrate_domain_trash()
     set_custom_domain_for_alias()
 
+    check_mailbox_valid_domain()
+
     # check if there's an email that starts with "\u200f" (right-to-left mark (RLM))
     for contact in Contact.filter(Contact.website_email.startswith("\u200f")).all():
         contact.website_email = contact.website_email.replace("\u200f", "")
         LOG.e("remove right-to-left mark (RLM) from %s", contact)
-
     Session.commit()
 
     LOG.d("Finish sanity check")
+
+
+def check_mailbox_valid_domain():
+    """detect if there's mailbox that's using an invalid domain"""
+    mailbox_ids = (
+        Session.query(Mailbox.id)
+        .filter(Mailbox.verified.is_(True), Mailbox.disabled.is_(False))
+        .all()
+    )
+    mailbox_ids = [e[0] for e in mailbox_ids]
+    # iterate over id instead of mailbox directly
+    # as a mailbox can be deleted during the sleep time
+    for mailbox_id in mailbox_ids:
+        mailbox = Mailbox.get(mailbox_id)
+        # a mailbox has been deleted
+        if not mailbox:
+            continue
+
+        if not email_can_be_used_as_mailbox(mailbox.email):
+            mailbox.nb_failed_checks += 1
+            nb_email_log = nb_email_log_for_mailbox(mailbox)
+
+            # send a warning
+            if mailbox.nb_failed_checks == 5:
+                if mailbox.user.email != mailbox.email:
+                    send_email(
+                        mailbox.user.email,
+                        f"Mailbox {mailbox.email} is disabled",
+                        render(
+                            "transactional/disable-mailbox-warning.txt.jinja2",
+                            mailbox=mailbox,
+                        ),
+                        render(
+                            "transactional/disable-mailbox-warning.html",
+                            mailbox=mailbox,
+                        ),
+                        retries=3,
+                    )
+
+            # alert if too much fail and nb_email_log > 100
+            if mailbox.nb_failed_checks > 10 and nb_email_log > 100:
+                mailbox.disabled = True
+
+                if mailbox.user.email != mailbox.email:
+                    send_email(
+                        mailbox.user.email,
+                        f"Mailbox {mailbox.email} is disabled",
+                        render(
+                            "transactional/disable-mailbox.txt.jinja2", mailbox=mailbox
+                        ),
+                        render("transactional/disable-mailbox.html", mailbox=mailbox),
+                        retries=3,
+                    )
+
+            LOG.w(
+                "issue with mailbox %s domain. #alias %s, nb email log %s",
+                mailbox,
+                mailbox.nb_alias(),
+                nb_email_log,
+            )
+        else:  # reset nb check
+            mailbox.nb_failed_checks = 0
+
+        Session.commit()
 
 
 def check_custom_domain():
