@@ -1,9 +1,8 @@
-from email_validator import EmailNotValidError
 from flask import g
 from flask import jsonify, request
 from itsdangerous import SignatureExpired
 
-from app.alias_utils import check_alias_prefix, get_custom_domain
+from app.alias_utils import check_alias_prefix
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
     serialize_alias_info_v2,
@@ -94,14 +93,11 @@ def new_custom_alias_v2():
             400,
         )
 
-    custom_domain = get_custom_domain(full_alias)
-
     alias = Alias.create(
         user_id=user.id,
         email=full_alias,
         mailbox_id=user.default_mailbox_id,
         note=note,
-        custom_domain_id=custom_domain.id if custom_domain else None,
     )
 
     Session.commit()
@@ -211,18 +207,12 @@ def new_custom_alias_v3():
             400,
         )
 
-    try:
-        custom_domain = get_custom_domain(full_alias)
-    except EmailNotValidError:
-        return jsonify(error="invalid email alias"), 400
-
     alias = Alias.create(
         user_id=user.id,
         email=full_alias,
         note=note,
         name=name or None,
         mailbox_id=mailboxes[0].id,
-        custom_domain_id=custom_domain.id if custom_domain else None,
     )
     Session.flush()
 

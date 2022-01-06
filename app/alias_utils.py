@@ -218,17 +218,19 @@ def delete_alias(alias: Alias, user: User):
             email=alias.email, domain_id=alias.custom_domain_id
         ):
             LOG.d("add %s to domain %s trash", alias, alias.custom_domain_id)
-            DomainDeletedAlias.create(
-                user_id=user.id,
-                email=alias.email,
-                domain_id=alias.custom_domain_id,
-                commit=True,
+            Session.add(
+                DomainDeletedAlias(
+                    user_id=user.id,
+                    email=alias.email,
+                    domain_id=alias.custom_domain_id,
+                )
             )
+            Session.commit()
 
     else:
         if not DeletedAlias.get_by(email=alias.email):
             LOG.d("add %s to global trash", alias)
-            DeletedAlias.create(email=alias.email, commit=True)
+            Session.add(DeletedAlias(email=alias.email))
             Session.commit()
 
     LOG.i("delete alias %s", alias)
@@ -275,15 +277,3 @@ def check_alias_prefix(alias_prefix) -> bool:
         return False
 
     return True
-
-
-def get_custom_domain(alias_address) -> Optional[CustomDomain]:
-    alias_domain = validate_email(
-        alias_address, check_deliverability=False, allow_smtputf8=False
-    ).domain
-
-    # handle the case a SLDomain is also a CustomDomain
-    if SLDomain.get_by(domain=alias_domain) is None:
-        custom_domain = CustomDomain.get_by(domain=alias_domain)
-        if custom_domain:
-            return custom_domain

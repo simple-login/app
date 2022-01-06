@@ -19,7 +19,6 @@ from app.models import (
     RedirectUri,
     OauthToken,
     DeletedAlias,
-    CustomDomain,
     DomainDeletedAlias,
 )
 from app.oauth.base import oauth_bp
@@ -213,13 +212,6 @@ def authorize():
                             email=full_alias,
                             mailbox_id=current_user.default_mailbox_id,
                         )
-
-                        # get the custom_domain_id if alias is created with a custom domain
-                        if alias_suffix.startswith("@"):
-                            alias_domain = alias_suffix[1:]
-                            domain = CustomDomain.get_by(domain=alias_domain)
-                            if domain:
-                                alias.custom_domain_id = domain.id
 
                         Session.flush()
                         flash(f"Alias {full_alias} has been created", "success")

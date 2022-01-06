@@ -196,21 +196,13 @@ def test_get_aliases_v2(flask_client):
 
 
 def test_delete_alias(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user = login(flask_client)
 
     alias = Alias.create_new_random(user)
     Session.commit()
 
     r = flask_client.delete(
         url_for("api.delete_alias", alias_id=alias.id),
-        headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 200

@@ -7,6 +7,7 @@ from typing import List, Tuple, Optional
 import arrow
 import sqlalchemy as sa
 from arrow import Arrow
+from email_validator import validate_email
 from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
@@ -1243,9 +1244,20 @@ class Alias(Base, ModelMixin):
             return True
         return False
 
+    @staticmethod
+    def get_custom_domain(alias_address) -> Optional["CustomDomain"]:
+        alias_domain = validate_email(
+            alias_address, check_deliverability=False, allow_smtputf8=False
+        ).domain
+
+        # handle the case a SLDomain is also a CustomDomain
+        if SLDomain.get_by(domain=alias_domain) is None:
+            custom_domain = CustomDomain.get_by(domain=alias_domain)
+            if custom_domain:
+                return custom_domain
+
     @classmethod
     def create(cls, **kw):
-        # whether should call Session.commit
         commit = kw.pop("commit", False)
 
         r = cls(**kw)
@@ -1260,6 +1272,12 @@ class Alias(Base, ModelMixin):
 
         if DomainDeletedAlias.get_by(email=email):
             raise AliasInTrashError
+
+        # detect whether alias should belong to a custom domain
+        if "custom_domain_id" not in kw:
+            custom_domain = Alias.get_custom_domain(email)
+            if custom_domain:
+                r.custom_domain_id = custom_domain.id
 
         Session.add(r)
         if commit:

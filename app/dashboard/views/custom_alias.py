@@ -298,14 +298,9 @@ def custom_alias():
                 flash(general_error_msg, "error")
 
             else:
-                custom_domain_id = None
                 # get the custom_domain_id if alias is created with a custom domain
                 if alias_suffix.is_custom:
                     alias_domain = alias_suffix.domain
-                    domain = CustomDomain.get_by(domain=alias_domain)
-
-                    if domain:
-                        custom_domain_id = domain.id
 
                 try:
                     alias = Alias.create(
@@ -313,7 +308,6 @@ def custom_alias():
                         email=full_alias,
                         note=alias_note,
                         mailbox_id=mailboxes[0].id,
-                        custom_domain_id=custom_domain_id,
                     )
                     Session.flush()
                 except IntegrityError:
