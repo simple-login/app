@@ -566,7 +566,7 @@ def migrate_domain_trash():
     count = 0
     domain_deleted_aliases = []
     deleted_alias_ids = []
-    for deleted_alias in Session.query(DeletedAlias):
+    for deleted_alias in DeletedAlias.yield_per_query():
         if count % 1000 == 0:
             LOG.d("process %s", count)
 
@@ -601,7 +601,7 @@ def migrate_domain_trash():
 def set_custom_domain_for_alias():
     """Go through all aliases and make sure custom_domain is correctly set"""
     sl_domains = [sl_domain.domain for sl_domain in SLDomain.all()]
-    for alias in Alias.filter(Alias.custom_domain_id.is_(None)):
+    for alias in Alias.yield_per_query().filter(Alias.custom_domain_id.is_(None)):
         if (
             not any(alias.email.endswith(f"@{sl_domain}") for sl_domain in sl_domains)
             and not alias.custom_domain_id
@@ -617,12 +617,14 @@ def set_custom_domain_for_alias():
     Session.commit()
 
 
-def sanity_check():
-    for user in User.filter_by(activated=True).all():
-        if sanitize_email(user.email) != user.email:
-            LOG.e("%s does not have sanitized email", user)
+def sanitize_alias_address_name():
+    count = 0
+    # using Alias.all() will take all the memory
+    for alias in Alias.yield_per_query():
+        if count % 1000 == 0:
+            LOG.d("process %s", count)
 
-    for alias in Alias.all():
+        count += 1
         if sanitize_email(alias.email) != alias.email:
             LOG.e("Alias %s email not sanitized", alias)
 
@@ -631,8 +633,19 @@ def sanity_check():
             Session.commit()
             LOG.e("Alias %s name contains linebreak %s", alias, alias.name)
 
+
+def sanity_check():
+    LOG.d("sanitize user email")
+    for user in User.filter_by(activated=True).all():
+        if sanitize_email(user.email) != user.email:
+            LOG.e("%s does not have sanitized email", user)
+
+    LOG.d("sanitize alias address & name")
+    sanitize_alias_address_name()
+
+    LOG.d("sanity contact address")
     contact_email_sanity_date = arrow.get("2021-01-12")
-    for contact in Contact.all():
+    for contact in Contact.yield_per_query():
         if sanitize_email(contact.reply_email) != contact.reply_email:
             LOG.e("Contact %s reply-email not sanitized", contact)
 
@@ -646,13 +659,15 @@ def sanity_check():
         if not contact.invalid_email and not is_valid_email(contact.website_email):
             LOG.e("%s invalid email", contact)
             contact.invalid_email = True
-            Session.commit()
+    Session.commit()
 
-    for mailbox in Mailbox.all():
+    LOG.d("sanitize mailbox address")
+    for mailbox in Mailbox.yield_per_query():
         if sanitize_email(mailbox.email) != mailbox.email:
             LOG.e("Mailbox %s address not sanitized", mailbox)
 
-    for contact in Contact.all():
+    LOG.d("normalize reverse alias")
+    for contact in Contact.yield_per_query():
         if normalize_reply_email(contact.reply_email) != contact.reply_email:
             LOG.e(
                 "Contact %s reply email is not normalized %s",
@@ -660,17 +675,28 @@ def sanity_check():
                 contact.reply_email,
             )
 
-    for domain in CustomDomain.all():
+    LOG.d("clean domain name")
+    for domain in CustomDomain.yield_per_query():
         if domain.name and "\n" in domain.name:
             LOG.e("Domain %s name contain linebreak %s", domain, domain.name)
 
+    LOG.d("migrate domain trash if needed")
     migrate_domain_trash()
+
+    LOG.d("fix custom domain for alias")
     set_custom_domain_for_alias()
 
+    LOG.d("check mailbox valid domain")
     check_mailbox_valid_domain()
 
-    # check if there's an email that starts with "\u200f" (right-to-left mark (RLM))
-    for contact in Contact.filter(Contact.website_email.startswith("\u200f")).all():
+    LOG.d(
+        """check if there's an email that starts with "\u200f" (right-to-left mark (RLM))"""
+    )
+    for contact in (
+        Contact.yield_per_query()
+        .filter(Contact.website_email.startswith("\u200f"))
+        .all()
+    ):
         contact.website_email = contact.website_email.replace("\u200f", "")
         LOG.e("remove right-to-left mark (RLM) from %s", contact)
     Session.commit()
