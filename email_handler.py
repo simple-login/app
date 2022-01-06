@@ -2149,6 +2149,7 @@ def handle(envelope: Envelope) -> str:
             LOG.w("No such email log")
             return status.E512
 
+        # bounce by contact
         if is_bounce(envelope, msg):
             return handle_bounce(envelope, email_log, msg)
         elif is_automatic_out_of_office(msg):
@@ -2177,7 +2178,10 @@ def handle(envelope: Envelope) -> str:
 
         else:
             LOG.e(
-                "cannot handle email sent to reply VERP, saved at %s",
+                "cannot handle email sent to reply VERP, %s -> %s (%s) saved at %s",
+                email_log.alias,
+                email_log.contact,
+                email_log,
                 save_email_for_debugging(msg),
             )
             return status.E410
