@@ -21,6 +21,7 @@ from app.db import Session
 from app.email_utils import (
     generate_reply_email,
 )
+from app.errors import CannotCreateContactForReverseAlias
 from app.log import LOG
 from app.models import Alias, Contact, Mailbox, AliasMailbox
 from app.utils import sanitize_email
@@ -416,13 +417,16 @@ def create_contact_route(alias_id):
     if contact:
         return jsonify(**serialize_contact(contact, existed=True)), 200
 
-    contact = Contact.create(
-        user_id=alias.user_id,
-        alias_id=alias.id,
-        website_email=contact_email,
-        name=contact_name,
-        reply_email=generate_reply_email(contact_email, user),
-    )
+    try:
+        contact = Contact.create(
+            user_id=alias.user_id,
+            alias_id=alias.id,
+            website_email=contact_email,
+            name=contact_name,
+            reply_email=generate_reply_email(contact_email, user),
+        )
+    except CannotCreateContactForReverseAlias:
+        return jsonify(error="You can't create contact for a reverse alias"), 400
 
     LOG.d("create reverse-alias for %s %s", contact_addr, alias)
     Session.commit()

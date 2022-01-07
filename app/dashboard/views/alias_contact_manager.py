@@ -16,6 +16,7 @@ from app.email_utils import (
     generate_reply_email,
     parse_full_address,
 )
+from app.errors import CannotCreateContactForReverseAlias
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
 
@@ -184,41 +185,29 @@ def alias_contact_manager(alias_id):
                     contact_name, contact_email = parse_full_address(contact_addr)
                 except Exception:
                     flash(f"{contact_addr} is invalid", "error")
-                    return redirect(
-                        url_for(
-                            "dashboard.alias_contact_manager",
-                            alias_id=alias_id,
-                        )
-                    )
+                    return redirect(request.url)
 
                 if not is_valid_email(contact_email):
                     flash(f"{contact_email} is invalid", "error")
-                    return redirect(
-                        url_for(
-                            "dashboard.alias_contact_manager",
-                            alias_id=alias_id,
-                        )
-                    )
+                    return redirect(request.url)
 
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
                 # already been added
                 if contact:
                     flash(f"{contact_email} is already added", "error")
-                    return redirect(
-                        url_for(
-                            "dashboard.alias_contact_manager",
-                            alias_id=alias_id,
-                            highlight_contact_id=contact.id,
-                        )
-                    )
+                    return redirect(request.url)
 
-                contact = Contact.create(
-                    user_id=alias.user_id,
-                    alias_id=alias.id,
-                    website_email=contact_email,
-                    name=contact_name,
-                    reply_email=generate_reply_email(contact_email, current_user),
-                )
+                try:
+                    contact = Contact.create(
+                        user_id=alias.user_id,
+                        alias_id=alias.id,
+                        website_email=contact_email,
+                        name=contact_name,
+                        reply_email=generate_reply_email(contact_email, current_user),
+                    )
+                except CannotCreateContactForReverseAlias:
+                    flash("You can't create contact for a reverse alias", "error")
+                    return redirect(request.url)
 
                 LOG.d(
                     "create reverse-alias for %s %s, reverse alias:%s",
