@@ -2121,7 +2121,7 @@ def handle(envelope: Envelope) -> str:
             delete_header(msg, headers.REPLY_TO)
 
             LOG.d(
-                "after out-of-office transformation %s %s %s",
+                "after out-of-office transformation to_header:%s reply_to:%s rcpt_tos:%s",
                 msg.get_all(headers.TO),
                 msg.get_all(headers.REPLY_TO),
                 rcpt_tos,
