@@ -133,8 +133,11 @@ class ModelMixin(object):
         Session.add(self)
 
     @classmethod
-    def delete(cls, obj_id):
+    def delete(cls, obj_id, commit=False):
         Session.query(cls).filter(cls.id == obj_id).delete()
+
+        if commit:
+            Session.commit()
 
     @classmethod
     def first(cls):

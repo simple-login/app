@@ -85,6 +85,7 @@ from app.config import (
     ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL,
     ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
     OLD_UNSUBSCRIBER,
+    ALERT_NON_REVERSE_ALIAS_REPLY_PHASE,
 )
 from app.db import Session
 from app.email import status, headers
@@ -1060,8 +1061,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
                 "Cannot encrypt message %s -> %s. %s %s", alias, contact, mailbox, user
             )
             # programming error, user shouldn't see a new email log
-            EmailLog.delete(email_log.id)
-            Session.commit()
+            EmailLog.delete(email_log.id, commit=True)
             # return 421 so the client can retry later
             return False, status.E402
 
@@ -1090,7 +1090,13 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         replace_header_when_reply(msg, alias, headers.CC)
     except NonReverseAliasInReplyPhase as e:
         LOG.w("non reverse-alias in reply %s %s %s", e, contact, alias)
-        send_email(
+
+        # the email is ignored, delete the email log
+        EmailLog.delete(email_log.id, commit=True)
+
+        send_email_at_most_times(
+            user,
+            ALERT_NON_REVERSE_ALIAS_REPLY_PHASE,
             mailbox.email,
             f"Email sent to {contact.email} contains non reverse-alias addresses",
             render(

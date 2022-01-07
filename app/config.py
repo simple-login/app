@@ -315,6 +315,8 @@ ALERT_SPAM_EMAIL = "spam"
 # When an email is sent from a mailbox to an alias - a cycle
 ALERT_SEND_EMAIL_CYCLE = "cycle"
 
+ALERT_NON_REVERSE_ALIAS_REPLY_PHASE = "non_reverse_alias_reply_phase"
+
 ALERT_SPF = "spf"
 
 # when a mailbox is also an alias
