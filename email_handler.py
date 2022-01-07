@@ -86,6 +86,7 @@ from app.config import (
     ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
     OLD_UNSUBSCRIBER,
     ALERT_NON_REVERSE_ALIAS_REPLY_PHASE,
+    ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
 )
 from app.db import Session
 from app.email import status, headers
@@ -133,7 +134,6 @@ from app.errors import (
     VERPTransactional,
     VERPForward,
     VERPReply,
-    MailSentFromReverseAlias,
     CannotCreateContactForReverseAlias,
 )
 from app.log import LOG, set_message_id
@@ -2084,10 +2084,10 @@ def handle(envelope: Envelope, msg: Message) -> str:
     )
 
     # region mail_from or from_header is a reverse alias which should never happen
-
+    email_sent_from_reverse_alias = False
     contact = Contact.get_by(reply_email=mail_from)
     if contact:
-        raise MailSentFromReverseAlias(f"{contact} {contact.alias} {contact.user}")
+        email_sent_from_reverse_alias = True
 
     from_header = get_header_unicode(msg[headers.FROM])
     if from_header:
@@ -2098,9 +2098,20 @@ def handle(envelope: Envelope, msg: Message) -> str:
         else:
             contact = Contact.get_by(reply_email=from_header_address)
             if contact:
-                raise MailSentFromReverseAlias(
-                    f"{contact} {contact.alias} {contact.user}"
-                )
+                email_sent_from_reverse_alias = True
+
+    if email_sent_from_reverse_alias:
+        LOG.w(f"email sent from reverse alias {contact} {contact.alias} {contact.user}")
+        user = contact.user
+        send_email_at_most_times(
+            user,
+            ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
+            user.email,
+            "SimpleLogin shouldn't be used with another email forwarding system",
+            render(
+                "transactional/email-sent-from-reverse-alias.txt.jinja2",
+            ),
+        )
 
     # endregion
 

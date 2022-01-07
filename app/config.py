@@ -317,6 +317,8 @@ ALERT_SEND_EMAIL_CYCLE = "cycle"
 
 ALERT_NON_REVERSE_ALIAS_REPLY_PHASE = "non_reverse_alias_reply_phase"
 
+ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS = "from_address_is_reverse_alias"
+
 ALERT_SPF = "spf"
 
 # when a mailbox is also an alias
