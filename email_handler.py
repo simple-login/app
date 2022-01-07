@@ -394,7 +394,7 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
                 header,
                 headers,
             )
-            raise NonReverseAliasInReplyPhase
+            raise NonReverseAliasInReplyPhase(reply_email)
             # still keep this email in header
             # new_addrs.append(reply_email)
         else:
@@ -582,7 +582,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     reply_to_contact = None
     if msg[headers.REPLY_TO]:
         reply_to = get_header_unicode(msg[headers.REPLY_TO])
-        LOG.d("Create or get contact for from_header:%s", reply_to)
+        LOG.d("Create or get contact for reply_to_header:%s", reply_to)
         # ignore when reply-to = alias
         if reply_to == alias.email:
             LOG.i("Reply-to same as alias %s", alias)
@@ -1078,8 +1078,23 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     LOG.d("From header is %s", from_header)
     add_or_replace_header(msg, headers.FROM, from_header)
 
-    replace_header_when_reply(msg, alias, headers.TO)
-    replace_header_when_reply(msg, alias, headers.CC)
+    try:
+        replace_header_when_reply(msg, alias, headers.TO)
+        replace_header_when_reply(msg, alias, headers.CC)
+    except NonReverseAliasInReplyPhase as e:
+        LOG.w("non reverse-alias in reply %s %s %s", e, contact, alias)
+        send_email(
+            mailbox.email,
+            f"Email sent to {contact.email} contains non reverse-alias addresses",
+            render(
+                "transactional/non-reverse-alias-reply-phase.txt.jinja2",
+                destination=contact.email,
+                alias=alias.email,
+                subject=msg[headers.SUBJECT],
+            ),
+        )
+        # user is informed and will retry
+        return True, status.E200
 
     replace_original_message_id(alias, email_log, msg)
 
