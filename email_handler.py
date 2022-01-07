@@ -127,7 +127,7 @@ from app.email_utils import (
     get_mailbox_bounce_info,
     save_email_for_debugging,
 )
-from app.errors import NonReverseAliasInReplyPhase
+from app.errors import NonReverseAliasInReplyPhase, CannotCreateContactForReverseAlias
 from app.log import LOG, set_message_id
 from app.models import (
     Alias,
@@ -147,7 +147,9 @@ from init_app import load_pgp_public_keys
 from server import create_light_app
 
 
-def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Contact:
+def get_or_create_contact(
+    from_header: str, mail_from: str, alias: Alias, msg: Message
+) -> Contact:
     """
     contact_from_header is the RFC 2047 format FROM header
     """
@@ -234,12 +236,18 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             LOG.w("Contact %s %s already exist", alias, contact_email)
             Session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+        except CannotCreateContactForReverseAlias:
+            LOG.e(
+                "contact can't be created, email saved to %s",
+                save_email_for_debugging(msg),
+            )  # todo: remove
+            raise
 
     return contact
 
 
 def get_or_create_reply_to_contact(
-    reply_to_header: str, alias: Alias
+    reply_to_header: str, alias: Alias, msg: Message
 ) -> Optional[Contact]:
     """
     Get or create the contact for the Reply-To header
@@ -282,6 +290,12 @@ def get_or_create_reply_to_contact(
             LOG.w("Contact %s %s already exist", alias, contact_address)
             Session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_address)
+        except CannotCreateContactForReverseAlias:
+            LOG.e(
+                "contact can't be created, email saved to %s",
+                save_email_for_debugging(msg),
+            )  # todo: remove
+            raise
 
     return contact
 
@@ -351,6 +365,12 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                 LOG.w("Contact %s %s already exist", alias, contact_email)
                 Session.rollback()
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+            except CannotCreateContactForReverseAlias:
+                LOG.e(
+                    "contact can't be created, email saved to %s",
+                    save_email_for_debugging(msg),
+                )  # todo: remove
+                raise
 
         new_addrs.append(contact.new_addr())
 
@@ -560,7 +580,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
     try:
-        contact = get_or_create_contact(from_header, envelope.mail_from, alias)
+        contact = get_or_create_contact(from_header, envelope.mail_from, alias, msg)
     except ObjectDeletedError:
         LOG.d("maybe alias was deleted in the meantime")
         alias = Alias.get_by(email=alias_address)
@@ -579,7 +599,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         if reply_to == alias.email:
             LOG.i("Reply-to same as alias %s", alias)
         else:
-            reply_to_contact = get_or_create_reply_to_contact(reply_to, alias)
+            reply_to_contact = get_or_create_reply_to_contact(reply_to, alias, msg)
 
     if not alias.enabled or contact.block_forward:
         LOG.d("%s is disabled, do not forward", alias)
