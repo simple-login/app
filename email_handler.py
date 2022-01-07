@@ -2024,7 +2024,7 @@ def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:
     return False
 
 
-def handle(envelope: Envelope) -> str:
+def handle(envelope: Envelope, msg: Message) -> str:
     """Return SMTP status"""
 
     # sanitize mail_from, rcpt_tos
@@ -2033,7 +2033,6 @@ def handle(envelope: Envelope) -> str:
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
 
-    msg = email.message_from_bytes(envelope.original_content)
     postfix_queue_id = get_queue_id(msg)
     if postfix_queue_id:
         set_message_id(postfix_queue_id)
@@ -2347,18 +2346,22 @@ def handle_out_of_office_forward_phase(email_log, envelope, msg, rcpt_tos):
 class MailHandler:
     async def handle_DATA(self, server, session, envelope: Envelope):
         try:
-            ret = self._handle(envelope)
+            msg = email.message_from_bytes(envelope.original_content)
+            ret = self._handle(envelope, msg)
             return ret
         except Exception:
             LOG.e(
-                "email handling fail %s -> %s",
+                "email handling fail mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, saved to %s",
                 envelope.mail_from,
                 envelope.rcpt_tos,
+                msg[headers.FROM],
+                msg[headers.TO],
+                save_email_for_debugging(msg),  # todo: remove
             )
             return status.E404
 
     @newrelic.agent.background_task()
-    def _handle(self, envelope: Envelope):
+    def _handle(self, envelope: Envelope, msg: Message):
         start = time.time()
 
         # generate a different message_id to keep track of an email lifecycle
@@ -2373,7 +2376,7 @@ class MailHandler:
         )
 
         with create_light_app().app_context():
-            ret = handle(envelope)
+            ret = handle(envelope, msg)
             elapsed = time.time() - start
 
             # use error log if taking more than 1 minute
