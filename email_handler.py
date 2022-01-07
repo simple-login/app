@@ -215,6 +215,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 reply_email=generate_reply_email(contact_email, alias.user)
                 if is_valid_email(contact_email)
                 else NOREPLY,
+                automatic_created=True,
             )
             if not contact_email:
                 LOG.d("Create a contact with invalid email for %s", alias)
@@ -273,6 +274,7 @@ def get_or_create_reply_to_contact(
                 website_email=contact_address,
                 name=contact_name,
                 reply_email=generate_reply_email(contact_address, alias.user),
+                automatic_created=True,
             )
             Session.commit()
         except IntegrityError:
@@ -341,6 +343,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     name=full_address.display_name,
                     reply_email=generate_reply_email(contact_email, alias.user),
                     is_cc=header.lower() == "cc",
+                    automatic_created=True,
                 )
                 Session.commit()
             except IntegrityError:
