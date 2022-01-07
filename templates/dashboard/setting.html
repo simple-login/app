@@ -401,26 +401,26 @@
     <!-- END Always expand alias info -->
 
     <!-- Ignore Loop Email -->
-    <div class="card" id="ignore-loop-email-section">
-      <div class="card-body">
-        <div class="card-title">Ignore Loop Emails</div>
-        <div class="mb-3">
-          On some email clients, "Reply All" automatically includes your alias that
-          would send the same email to your mailbox.
-          <br>
-          You can disable these "loop" emails by enabling this option.
-        </div>
-        <form method="post" action="#ignore-loop-email-section">
-          <input type="hidden" name="form-name" value="ignore-loop-email">
-          <div class="form-check">
-            <input type="checkbox" id="ignore-loop-email" name="enable"
-                {% if current_user.ignore_loop_email %} checked {% endif %} class="form-check-input">
-            <label for="ignore-loop-email">Ignore Loop Emails</label>
-          </div>
-          <button type="submit" class="btn btn-outline-primary">Update</button>
-        </form>
-      </div>
-    </div>
+{#    <div class="card" id="ignore-loop-email-section">#}
+{#      <div class="card-body">#}
+{#        <div class="card-title">Ignore Loop Emails</div>#}
+{#        <div class="mb-3">#}
+{#          On some email clients, "Reply All" automatically includes your alias that#}
+{#          would send the same email to your mailbox.#}
+{#          <br>#}
+{#          You can disable these "loop" emails by enabling this option.#}
+{#        </div>#}
+{#        <form method="post" action="#ignore-loop-email-section">#}
+{#          <input type="hidden" name="form-name" value="ignore-loop-email">#}
+{#          <div class="form-check">#}
+{#            <input type="checkbox" id="ignore-loop-email" name="enable"#}
+{#                {% if current_user.ignore_loop_email %} checked {% endif %} class="form-check-input">#}
+{#            <label for="ignore-loop-email">Ignore Loop Emails</label>#}
+{#          </div>#}
+{#          <button type="submit" class="btn btn-outline-primary">Update</button>#}
+{#        </form>#}
+{#      </div>#}
+{#    </div>#}
     <!-- END Ignore Loop Email -->
 
     <!-- One-click subscribe -->
