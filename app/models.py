@@ -1559,8 +1559,9 @@ class Contact(Base, ModelMixin):
         # make sure email is lowercase and doesn't have any whitespace
         website_email = sanitize_email(website_email)
 
-        # make sure alias is not in global trash, i.e. DeletedAlias table
-        if Contact.get_by(reply_email=website_email):
+        # make sure contact.website_email isn't a reverse alias
+        orig_contact = Contact.get_by(reply_email=website_email)
+        if orig_contact:
             raise CannotCreateContactForReverseAlias
 
         Session.add(new_contact)
