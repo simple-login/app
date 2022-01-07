@@ -132,6 +132,7 @@ from app.errors import (
     VERPTransactional,
     VERPForward,
     VERPReply,
+    MailSentFromReverseAlias,
 )
 from app.log import LOG, set_message_id
 from app.models import (
@@ -2054,23 +2055,33 @@ def handle(envelope: Envelope, msg: Message) -> str:
         envelope.rcpt_options,
     )
 
+    # region mail_from or from_header is a reverse alias which should never happen
+
     contact = Contact.get_by(reply_email=mail_from)
     if contact:
-        LOG.w(
-            "email can't be sent from a reverse-alias:%s, contact email:%s, %s, %s",
-            contact.reply_email,
-            contact.website_email,
-            contact.alias,
-            contact.user,
-        )
-        return status.E203
+        raise MailSentFromReverseAlias(f"{contact} {contact.alias} {contact.user}")
+
+    from_header = get_header_unicode(msg[headers.FROM])
+    if from_header:
+        try:
+            _, from_header_address = parse_full_address(from_header)
+        except ValueError:
+            LOG.e("cannot parse the From header %s", from_header)
+        else:
+            contact = Contact.get_by(reply_email=from_header_address)
+            if contact:
+                raise MailSentFromReverseAlias(
+                    f"{contact} {contact.alias} {contact.user}"
+                )
+
+    # endregion
 
     # unsubscribe request
     if UNSUBSCRIBER and (rcpt_tos == [UNSUBSCRIBER] or rcpt_tos == [OLD_UNSUBSCRIBER]):
         LOG.d("Handle unsubscribe request from %s", mail_from)
         return handle_unsubscribe(envelope, msg)
 
-    # region: mail sent to VERP
+    # region mail sent to VERP
 
     # sent to transactional VERP. Either bounce emails or out-of-office
     if (
@@ -2150,6 +2161,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     # endregion
 
+    # region hotmail, yahoo complaints
     if (
         len(rcpt_tos) == 1
         and mail_from == "staff@hotmail.com"
@@ -2172,22 +2184,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
         if handle_yahoo_complaint(msg):
             return status.E210
 
-    # case where From: header is a reverse alias which should never happen
-    from_header = get_header_unicode(msg[headers.FROM])
-    if from_header:
-        try:
-            _, from_header_address = parse_full_address(from_header)
-        except ValueError:
-            LOG.d("cannot parse the From header %s", from_header)
-        else:
-            if is_reverse_alias(from_header_address):
-                LOG.w("email sent from a reverse alias %s", from_header_address)
-                # get more info for debug
-                contact = Contact.get_by(reply_email=from_header_address)
-                if contact:
-                    LOG.d("%s %s %s", contact.user, contact.alias, contact)
-
-                return status.E523
+    # endregion
 
     if rate_limited(mail_from, rcpt_tos):
         LOG.w("Rate Limiting applied for mail_from:%s rcpt_tos:%s", mail_from, rcpt_tos)

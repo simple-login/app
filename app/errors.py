@@ -44,3 +44,9 @@ class VERPReply(Exception):
     """raised an email sent to a reply VERP can't be handled"""
 
     pass
+
+
+class MailSentFromReverseAlias(Exception):
+    """raised when receiving an email sent from a reverse alias"""
+
+    pass
