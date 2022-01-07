@@ -556,14 +556,14 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         else:
             return [(False, status.E504)]
 
-    if user.ignore_loop_email:
-        mail_from = envelope.mail_from
-        for mb in alias.mailboxes:
-            # email sent from a mailbox to its alias
-            if mb.email == mail_from:
-                LOG.w("cycle email sent from %s to %s", mb, alias)
-                handle_email_sent_to_ourself(alias, mb, msg, user)
-                return [(True, status.E209)]
+    # check if email is sent from alias's owning mailbox(es)
+    mail_from = envelope.mail_from
+    for mb in alias.mailboxes:
+        # email sent from a mailbox to its alias
+        if mb.email == mail_from:
+            LOG.i("cycle email sent from %s to %s", mb, alias)
+            handle_email_sent_to_ourself(alias, mb, msg, user)
+            return [(True, status.E209)]
 
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
