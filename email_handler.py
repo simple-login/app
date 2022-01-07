@@ -2094,7 +2094,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
         try:
             _, from_header_address = parse_full_address(from_header)
         except ValueError:
-            LOG.e("cannot parse the From header %s", from_header)
+            LOG.w("cannot parse the From header %s", from_header)
         else:
             contact = Contact.get_by(reply_email=from_header_address)
             if contact:
