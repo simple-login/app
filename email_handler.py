@@ -812,8 +812,14 @@ def forward_email_to_mailbox(
         LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header)
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
-    replace_header_when_forward(msg, alias, "Cc")
-    replace_header_when_forward(msg, alias, "To")
+    try:
+        replace_header_when_forward(msg, alias, "Cc")
+        replace_header_when_forward(msg, alias, "To")
+    except CannotCreateContactForReverseAlias:
+        LOG.d("CannotCreateContactForReverseAlias error, delete %s", email_log)
+        EmailLog.delete(email_log.id)
+        Session.commit()
+        raise
 
     # add List-Unsubscribe header
     if user.one_click_unsubscribe_block_sender:
@@ -2349,7 +2355,6 @@ class MailHandler:
                 msg[headers.FROM],
                 msg[headers.TO],
             )
-            Session.rollback()
             return status.E524
         except Exception as e:
             LOG.e(
