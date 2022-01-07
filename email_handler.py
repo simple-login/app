@@ -733,6 +733,7 @@ def forward_email_to_mailbox(
             headers.TO,
             headers.CC,
             headers.SUBJECT,
+            headers.DATE,
             # do not delete original message id
             headers.MESSAGE_ID,
             # References and In-Reply-To are used for keeping the email thread
@@ -1010,6 +1011,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             headers.TO,
             headers.CC,
             headers.SUBJECT,
+            headers.DATE,
             # do not delete original message id
             headers.MESSAGE_ID,
             # References and In-Reply-To are used for keeping the email thread
