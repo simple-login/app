@@ -129,7 +129,6 @@ from app.email_utils import (
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
-    CannotCreateContactForReverseAlias,
     VERPTransactional,
     VERPForward,
     VERPReply,
