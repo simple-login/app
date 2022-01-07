@@ -2103,29 +2103,7 @@ def handle(envelope: Envelope) -> str:
         if is_bounce(envelope, msg):
             return handle_bounce(envelope, email_log, msg)
         elif is_automatic_out_of_office(msg):
-            # convert the email into a normal email sent to the reverse alias, so it can be forwarded to contact
-            LOG.d(
-                "send the out-of-office email to the contact %s to_header:%s rcpt_tos:%s %s",
-                email_log.contact,
-                msg[headers.TO],
-                rcpt_tos,
-                email_log,
-            )
-            reverse_alias = email_log.contact.reply_email
-
-            rcpt_tos[0] = reverse_alias
-            envelope.rcpt_tos = [reverse_alias]
-
-            add_or_replace_header(msg, headers.TO, reverse_alias)
-            # delete reply-to header that can affect email delivery
-            delete_header(msg, headers.REPLY_TO)
-
-            LOG.d(
-                "after out-of-office transformation to_header:%s reply_to:%s rcpt_tos:%s",
-                msg.get_all(headers.TO),
-                msg.get_all(headers.REPLY_TO),
-                rcpt_tos,
-            )
+            handle_out_of_office_forward_phase(email_log, envelope, msg, rcpt_tos)
         else:
             LOG.e(
                 "cannot handle email sent to forward VERP, saved at %s",
@@ -2148,30 +2126,7 @@ def handle(envelope: Envelope) -> str:
         if is_bounce(envelope, msg):
             return handle_bounce(envelope, email_log, msg)
         elif is_automatic_out_of_office(msg):
-            # convert the email into a normal email sent to the alias, so it can be forwarded to mailbox
-            LOG.d(
-                "send the out-of-office email to the alias %s to_header:%s rcpt_tos:%s, %s",
-                email_log.alias,
-                msg[headers.TO],
-                rcpt_tos,
-                email_log,
-            )
-            alias_address = email_log.alias.email
-
-            rcpt_tos[0] = alias_address
-            envelope.rcpt_tos = [alias_address]
-
-            add_or_replace_header(msg, headers.TO, alias_address)
-            # delete reply-to header that can affect email delivery
-            delete_header(msg, headers.REPLY_TO)
-
-            LOG.d(
-                "after out-of-office transformation to_header:%s reply_to:%s rcpt_tos:%s",
-                msg.get_all(headers.TO),
-                msg.get_all(headers.REPLY_TO),
-                rcpt_tos,
-            )
-
+            handle_out_of_office_reply_phase(email_log, envelope, msg, rcpt_tos)
         else:
             LOG.e(
                 "cannot handle email sent to reply VERP, %s -> %s (%s, %s) saved at %s",
@@ -2315,6 +2270,58 @@ def handle(envelope: Envelope) -> str:
 
     # Failed delivery for all, return the first failure
     return res[0][1]
+
+
+def handle_out_of_office_reply_phase(email_log, envelope, msg, rcpt_tos):
+    """convert the email into a normal email sent to the alias, so it can be forwarded to mailbox"""
+    LOG.d(
+        "send the out-of-office email to the alias %s, old to_header:%s rcpt_tos:%s, %s",
+        email_log.alias,
+        msg[headers.TO],
+        rcpt_tos,
+        email_log,
+    )
+    alias_address = email_log.alias.email
+
+    rcpt_tos[0] = alias_address
+    envelope.rcpt_tos = [alias_address]
+
+    add_or_replace_header(msg, headers.TO, alias_address)
+    # delete reply-to header that can affect email delivery
+    delete_header(msg, headers.REPLY_TO)
+
+    LOG.d(
+        "after out-of-office transformation to_header:%s reply_to:%s rcpt_tos:%s",
+        msg.get_all(headers.TO),
+        msg.get_all(headers.REPLY_TO),
+        rcpt_tos,
+    )
+
+
+def handle_out_of_office_forward_phase(email_log, envelope, msg, rcpt_tos):
+    """convert the email into a normal email sent to the reverse alias, so it can be forwarded to contact"""
+    LOG.d(
+        "send the out-of-office email to the contact %s, old to_header:%s rcpt_tos:%s %s",
+        email_log.contact,
+        msg[headers.TO],
+        rcpt_tos,
+        email_log,
+    )
+    reverse_alias = email_log.contact.reply_email
+
+    rcpt_tos[0] = reverse_alias
+    envelope.rcpt_tos = [reverse_alias]
+
+    add_or_replace_header(msg, headers.TO, reverse_alias)
+    # delete reply-to header that can affect email delivery
+    delete_header(msg, headers.REPLY_TO)
+
+    LOG.d(
+        "after out-of-office transformation to_header:%s reply_to:%s rcpt_tos:%s",
+        msg.get_all(headers.TO),
+        msg.get_all(headers.REPLY_TO),
+        rcpt_tos,
+    )
 
 
 class MailHandler:
