@@ -2064,7 +2064,9 @@ def handle(envelope: Envelope) -> str:
         LOG.d("Handle unsubscribe request from %s", mail_from)
         return handle_unsubscribe(envelope, msg)
 
-    # emails sent to transactional VERP. Either bounce emails or out-of-office
+    # region: mail sent to VERP
+
+    # sent to transactional VERP. Either bounce emails or out-of-office
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(TRANSACTIONAL_BOUNCE_PREFIX)
@@ -2085,29 +2087,7 @@ def handle(envelope: Envelope) -> str:
             )
             return status.E408
 
-    if (
-        len(rcpt_tos) == 1
-        and mail_from == "staff@hotmail.com"
-        and rcpt_tos[0] == POSTMASTER
-    ):
-        LOG.w("Handle hotmail complaint")
-
-        # if the complaint cannot be handled, forward it normally
-        if handle_hotmail_complaint(msg):
-            return status.E208
-
-    if (
-        len(rcpt_tos) == 1
-        and mail_from == "feedback@arf.mail.yahoo.com"
-        and rcpt_tos[0] == POSTMASTER
-    ):
-        LOG.w("Handle yahoo complaint")
-
-        # if the complaint cannot be handled, forward it normally
-        if handle_yahoo_complaint(msg):
-            return status.E210
-
-    # Mails sent to forward VERP, can be either bounce or out-of-office
+    # sent to forward VERP, can be either bounce or out-of-office
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
@@ -2153,6 +2133,7 @@ def handle(envelope: Envelope) -> str:
             )
             return status.E409
 
+    # sent to reply VERP, can be either bounce or out-of-office
     if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
         f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
     ):
@@ -2218,6 +2199,30 @@ def handle(envelope: Envelope) -> str:
             msg.as_string(),
         )
         return handle_bounce(envelope, email_log, msg)
+
+    # endregion
+
+    if (
+        len(rcpt_tos) == 1
+        and mail_from == "staff@hotmail.com"
+        and rcpt_tos[0] == POSTMASTER
+    ):
+        LOG.w("Handle hotmail complaint")
+
+        # if the complaint cannot be handled, forward it normally
+        if handle_hotmail_complaint(msg):
+            return status.E208
+
+    if (
+        len(rcpt_tos) == 1
+        and mail_from == "feedback@arf.mail.yahoo.com"
+        and rcpt_tos[0] == POSTMASTER
+    ):
+        LOG.w("Handle yahoo complaint")
+
+        # if the complaint cannot be handled, forward it normally
+        if handle_yahoo_complaint(msg):
+            return status.E210
 
     # case where From: header is a reverse alias which should never happen
     from_header = get_header_unicode(msg[headers.FROM])
