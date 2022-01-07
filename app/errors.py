@@ -14,3 +14,9 @@ class SubdomainInTrashError(Exception):
     """raised when a subdomain is deleted before """
 
     pass
+
+
+class CannotCreateContactForReverseAlias(Exception):
+    """raised when a contact is created that has website_email=reverse_alias of another contact"""
+
+    pass

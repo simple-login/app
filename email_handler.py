@@ -204,11 +204,6 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             contact.mail_from = mail_from
             Session.commit()
     else:
-        LOG.d(
-            "create contact %s for alias %s",
-            contact_email,
-            alias,
-        )
 
         try:
             contact = Contact.create(
@@ -224,6 +219,13 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             if not contact_email:
                 LOG.d("Create a contact with invalid email for %s", alias)
                 contact.invalid_email = True
+
+            LOG.d(
+                "create contact %s for %s, reverse alias:%s",
+                contact_email,
+                alias,
+                contact.reply_email,
+            )
 
             Session.commit()
         except IntegrityError:

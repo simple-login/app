@@ -220,7 +220,12 @@ def alias_contact_manager(alias_id):
                     reply_email=generate_reply_email(contact_email, current_user),
                 )
 
-                LOG.d("create reverse-alias for %s", contact_addr)
+                LOG.d(
+                    "create reverse-alias for %s %s, reverse alias:%s",
+                    contact_addr,
+                    alias,
+                    contact.reply_email,
+                )
                 Session.commit()
                 flash(f"Reverse alias for {contact_addr} is created", "success")
 

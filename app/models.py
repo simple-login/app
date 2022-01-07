@@ -35,7 +35,12 @@ from app.config import (
     MAX_NB_DIRECTORY,
 )
 from app.db import Session
-from app.errors import AliasInTrashError, DirectoryInTrashError, SubdomainInTrashError
+from app.errors import (
+    AliasInTrashError,
+    DirectoryInTrashError,
+    SubdomainInTrashError,
+    CannotCreateContactForReverseAlias,
+)
 from app.log import LOG
 from app.oauth_models import Scope
 from app.pw_models import PasswordOracle
@@ -109,7 +114,7 @@ class ModelMixin(object):
 
     @classmethod
     def create(cls, **kw):
-        # whether should call Session.commit
+        # whether to call Session.commit
         commit = kw.pop("commit", False)
         flush = kw.pop("flush", False)
 
@@ -1264,8 +1269,9 @@ class Alias(Base, ModelMixin):
     @classmethod
     def create(cls, **kw):
         commit = kw.pop("commit", False)
+        flush = kw.pop("flush", False)
 
-        r = cls(**kw)
+        new_alias = cls(**kw)
 
         email = kw["email"]
         # make sure email is lowercase and doesn't have any whitespace
@@ -1282,12 +1288,17 @@ class Alias(Base, ModelMixin):
         if "custom_domain_id" not in kw:
             custom_domain = Alias.get_custom_domain(email)
             if custom_domain:
-                r.custom_domain_id = custom_domain.id
+                new_alias.custom_domain_id = custom_domain.id
 
-        Session.add(r)
+        Session.add(new_alias)
+
         if commit:
             Session.commit()
-        return r
+
+        if flush:
+            Session.flush()
+
+        return new_alias
 
     @classmethod
     def create_new(cls, user, prefix, note=None, mailbox_id=None):
@@ -1533,6 +1544,31 @@ class Contact(Base, ModelMixin):
     @property
     def email(self):
         return self.website_email
+
+    @classmethod
+    def create(cls, **kw):
+        commit = kw.pop("commit", False)
+        flush = kw.pop("flush", False)
+
+        new_contact = cls(**kw)
+
+        website_email = kw["website_email"]
+        # make sure email is lowercase and doesn't have any whitespace
+        website_email = sanitize_email(website_email)
+
+        # make sure alias is not in global trash, i.e. DeletedAlias table
+        if Contact.get_by(reply_email=website_email):
+            raise CannotCreateContactForReverseAlias
+
+        Session.add(new_contact)
+
+        if commit:
+            Session.commit()
+
+        if flush:
+            Session.flush()
+
+        return new_contact
 
     def website_send_to(self):
         """return the email address with name.
