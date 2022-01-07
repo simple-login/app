@@ -1541,6 +1541,9 @@ class Contact(Base, ModelMixin):
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    # whether contact is created automatically during the forward phase
+    automatic_created = sa.Column(sa.Boolean, nullable=True, default=False)
+
     @property
     def email(self):
         return self.website_email
