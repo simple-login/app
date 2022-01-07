@@ -26,3 +26,21 @@ class NonReverseAliasInReplyPhase(Exception):
     """raised when a non reverse-alias is used during a reply phase"""
 
     pass
+
+
+class VERPTransactional(Exception):
+    """raised an email sent to a transactional VERP can't be handled"""
+
+    pass
+
+
+class VERPForward(Exception):
+    """raised an email sent to a forward VERP can't be handled"""
+
+    pass
+
+
+class VERPReply(Exception):
+    """raised an email sent to a reply VERP can't be handled"""
+
+    pass

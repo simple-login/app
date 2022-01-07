@@ -127,7 +127,13 @@ from app.email_utils import (
     get_mailbox_bounce_info,
     save_email_for_debugging,
 )
-from app.errors import NonReverseAliasInReplyPhase, CannotCreateContactForReverseAlias
+from app.errors import (
+    NonReverseAliasInReplyPhase,
+    CannotCreateContactForReverseAlias,
+    VERPTransactional,
+    VERPForward,
+    VERPReply,
+)
 from app.log import LOG, set_message_id
 from app.models import (
     Alias,
@@ -236,12 +242,6 @@ def get_or_create_contact(
             LOG.w("Contact %s %s already exist", alias, contact_email)
             Session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-        except CannotCreateContactForReverseAlias:
-            LOG.e(
-                "contact can't be created, email saved to %s",
-                save_email_for_debugging(msg),
-            )  # todo: remove
-            raise
 
     return contact
 
@@ -290,12 +290,6 @@ def get_or_create_reply_to_contact(
             LOG.w("Contact %s %s already exist", alias, contact_address)
             Session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_address)
-        except CannotCreateContactForReverseAlias:
-            LOG.e(
-                "contact can't be created, email saved to %s",
-                save_email_for_debugging(msg),
-            )  # todo: remove
-            raise
 
     return contact
 
@@ -365,12 +359,6 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                 LOG.w("Contact %s %s already exist", alias, contact_email)
                 Session.rollback()
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-            except CannotCreateContactForReverseAlias:
-                LOG.e(
-                    "contact can't be created, email saved to %s",
-                    save_email_for_debugging(msg),
-                )  # todo: remove
-                raise
 
         new_addrs.append(contact.new_addr())
 
@@ -2100,11 +2088,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
             )
             return status.E206
         else:
-            LOG.e(
-                "cannot handle email sent to transactional VERP, saved at %s",
-                save_email_for_debugging(msg),  # todo: remove
-            )
-            return status.E408
+            raise VERPTransactional
 
     # sent to forward VERP, can be either bounce or out-of-office
     if (
@@ -2124,11 +2108,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
         elif is_automatic_out_of_office(msg):
             handle_out_of_office_forward_phase(email_log, envelope, msg, rcpt_tos)
         else:
-            LOG.e(
-                "cannot handle email sent to forward VERP, saved at %s",
-                save_email_for_debugging(msg),
-            )
-            return status.E409
+            raise VERPForward
 
     # sent to reply VERP, can be either bounce or out-of-office
     if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
@@ -2147,15 +2127,10 @@ def handle(envelope: Envelope, msg: Message) -> str:
         elif is_automatic_out_of_office(msg):
             handle_out_of_office_reply_phase(email_log, envelope, msg, rcpt_tos)
         else:
-            LOG.e(
-                "cannot handle email sent to reply VERP, %s -> %s (%s, %s) saved at %s",
-                email_log.alias,
-                email_log.contact,
-                email_log,
-                email_log.user,
-                save_email_for_debugging(msg),
+            raise VERPReply(
+                f"cannot handle email sent to reply VERP, "
+                f"{email_log.alias} -> {email_log.contact} ({email_log}, {email_log.user}"
             )
-            return status.E410
 
     # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
     if (
@@ -2345,13 +2320,14 @@ def handle_out_of_office_forward_phase(email_log, envelope, msg, rcpt_tos):
 
 class MailHandler:
     async def handle_DATA(self, server, session, envelope: Envelope):
+        msg = email.message_from_bytes(envelope.original_content)
         try:
-            msg = email.message_from_bytes(envelope.original_content)
             ret = self._handle(envelope, msg)
             return ret
-        except Exception:
+        except Exception as e:
             LOG.e(
-                "email handling fail mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, saved to %s",
+                "email handling fail with error:%s mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, saved to %s",
+                e,
                 envelope.mail_from,
                 envelope.rcpt_tos,
                 msg[headers.FROM],
