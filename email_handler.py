@@ -127,6 +127,7 @@ from app.email_utils import (
     get_mailbox_bounce_info,
     save_email_for_debugging,
 )
+from app.errors import NonReverseAliasInReplyPhase
 from app.log import LOG, set_message_id
 from app.models import (
     Alias,
@@ -373,16 +374,21 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
 
     for _, reply_email in getaddresses(headers):
         # no transformation when alias is already in the header
+        # can happen when user clicks "Reply All"
         if reply_email == alias.email:
             continue
 
         contact = Contact.get_by(reply_email=reply_email)
         if not contact:
             LOG.w(
-                "%s email in reply phase %s must be reply emails", header, reply_email
+                "email %s contained in %s header in reply phase %s must be reply emails. headers:%s",
+                reply_email,
+                header,
+                headers,
             )
+            raise NonReverseAliasInReplyPhase
             # still keep this email in header
-            new_addrs.append(reply_email)
+            # new_addrs.append(reply_email)
         else:
             new_addrs.append(formataddr((contact.name, contact.website_email)))
 
