@@ -1574,7 +1574,7 @@ class Contact(Base, ModelMixin):
         # make sure contact.website_email isn't a reverse alias
         orig_contact = Contact.get_by(reply_email=website_email)
         if orig_contact:
-            raise CannotCreateContactForReverseAlias
+            raise CannotCreateContactForReverseAlias(str(orig_contact))
 
         Session.add(new_contact)
 

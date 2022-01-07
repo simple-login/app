@@ -59,4 +59,5 @@ E522 = (
     "at a rate that prevents additional messages from being delivered."
 )
 E523 = "550 SL E523 Unknown error"
+E524 = "550 SL E524 Wrong use of reverse-alias"
 # endregion

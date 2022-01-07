@@ -133,6 +133,7 @@ from app.errors import (
     VERPForward,
     VERPReply,
     MailSentFromReverseAlias,
+    CannotCreateContactForReverseAlias,
 )
 from app.log import LOG, set_message_id
 from app.models import (
@@ -2335,6 +2336,21 @@ class MailHandler:
         try:
             ret = self._handle(envelope, msg)
             return ret
+
+        # happen if reverse-alias is used during the forward phase
+        # as in this case, a new reverse-alias needs to be created for this reverse-alias -> chaos
+        except CannotCreateContactForReverseAlias as e:
+            LOG.w(
+                "Probably due to reverse-alias used in the forward phase, "
+                "error:%s mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s",
+                e,
+                envelope.mail_from,
+                envelope.rcpt_tos,
+                msg[headers.FROM],
+                msg[headers.TO],
+            )
+            Session.rollback()
+            return status.E524
         except Exception as e:
             LOG.e(
                 "email handling fail with error:%s mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, saved to %s",
