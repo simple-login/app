@@ -4,7 +4,7 @@
   {% call text() %}
     <h1>
       An email was sent to your alias <b>{{ alias.email }}</b> from its own mailbox
-      <b>{{ mailbox.email }}</b>.
+      <b>{{ from_addr }}</b>.
     </h1>
   {% endcall %}
 

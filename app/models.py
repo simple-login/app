@@ -1242,6 +1242,18 @@ class Alias(Base, ModelMixin):
 
         return ret
 
+    def authorized_addresses(self) -> [str]:
+        """return addresses that can send on behalf of this alias, i.e. can send emails to this alias's reverse-aliases
+        Including its mailboxes and their authorized addresses
+        """
+        mailboxes = self.mailboxes
+        ret = [mb.email for mb in mailboxes]
+        for mailbox in mailboxes:
+            for aa in mailbox.authorized_addresses:
+                ret.append(aa.email)
+
+        return ret
+
     def mailbox_support_pgp(self) -> bool:
         """return True of one of the mailboxes support PGP"""
         for mb in self.mailboxes:

@@ -493,7 +493,7 @@ def sign_msg(msg: Message) -> Message:
     return container
 
 
-def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
+def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     # store the refused email
     random_name = str(uuid.uuid4())
     full_report_path = f"refused-emails/cycle-{random_name}.eml"
@@ -509,18 +509,18 @@ def handle_email_sent_to_ourself(alias, mailbox, msg: Message, user):
     send_email_at_most_times(
         user,
         ALERT_SEND_EMAIL_CYCLE,
-        mailbox.email,
-        f"Email sent to {alias.email} from its own mailbox {mailbox.email}",
+        from_addr,
+        f"Email sent to {alias.email} from its own mailbox {from_addr}",
         render(
             "transactional/cycle-email.txt.jinja2",
             alias=alias,
-            mailbox=mailbox,
+            from_addr=from_addr,
             refused_email_url=refused_email_url,
         ),
         render(
             "transactional/cycle-email.html",
             alias=alias,
-            mailbox=mailbox,
+            from_addr=from_addr,
             refused_email_url=refused_email_url,
         ),
     )
@@ -558,11 +558,11 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     # check if email is sent from alias's owning mailbox(es)
     mail_from = envelope.mail_from
-    for mb in alias.mailboxes:
+    for addr in alias.authorized_addresses():
         # email sent from a mailbox to its alias
-        if mb.email == mail_from:
-            LOG.i("cycle email sent from %s to %s", mb, alias)
-            handle_email_sent_to_ourself(alias, mb, msg, user)
+        if addr == mail_from:
+            LOG.i("cycle email sent from %s to %s", addr, alias)
+            handle_email_sent_to_ourself(alias, addr, msg, user)
             return [(True, status.E209)]
 
     from_header = get_header_unicode(msg[headers.FROM])
