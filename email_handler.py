@@ -2361,6 +2361,9 @@ class MailHandler:
             envelope.mail_from,
             envelope.rcpt_tos,
         )
+        newrelic.agent.record_custom_metric(
+            "Custom/nb_rcpt_tos", len(envelope.rcpt_tos)
+        )
 
         with create_light_app().app_context():
             ret = handle(envelope, msg)
