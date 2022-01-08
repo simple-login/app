@@ -1399,12 +1399,15 @@ def parse_full_address(full_address) -> (str, str):
     return full_address.display_name, full_address.address
 
 
-def save_email_for_debugging(msg: Message) -> str:
+def save_email_for_debugging(msg: Message, file_name_prefix=None) -> str:
     """Save email for debugging to temporary location
     Return the file path
     """
     if TEMP_DIR:
         file_name = str(uuid.uuid4()) + ".eml"
+        if file_name_prefix:
+            file_name = file_name_prefix + file_name
+
         with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
             f.write(msg.as_bytes())
 

@@ -2375,13 +2375,16 @@ class MailHandler:
             return status.E524
         except Exception as e:
             LOG.e(
-                "email handling fail with error:%s mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, saved to %s",
+                "email handling fail with error:%s "
+                "mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, saved to %s",
                 e,
                 envelope.mail_from,
                 envelope.rcpt_tos,
                 msg[headers.FROM],
                 msg[headers.TO],
-                save_email_for_debugging(msg),  # todo: remove
+                save_email_for_debugging(
+                    msg, file_name_prefix=e.__class__.__name__
+                ),  # todo: remove
             )
             return status.E404
 
