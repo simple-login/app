@@ -600,7 +600,6 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             alias_id=contact.alias_id,
             commit=True,
         )
-        Session.commit()
         # do not return 5** to allow user to receive emails later when alias is enabled or contact is unblocked
         return [(True, status.E200)]
 
@@ -609,12 +608,12 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     # no valid mailbox
     if not mailboxes:
+        LOG.w("no valid mailboxes for %s", alias)
         if should_ignore_bounce(envelope.mail_from):
             return [(True, status.E207)]
         else:
             return [(False, status.E516)]
 
-    # no need to create a copy of message
     for mailbox in mailboxes:
         if not mailbox.verified:
             LOG.d("%s unverified, do not forward", mailbox)
@@ -781,6 +780,7 @@ def forward_email_to_mailbox(
             LOG.e(
                 "Cannot encrypt message %s -> %s. %s %s", contact, alias, mailbox, user
             )
+            EmailLog.delete(email_log.id, commit=True)
             # so the client can retry later
             return False, status.E406
 
@@ -798,13 +798,12 @@ def forward_email_to_mailbox(
 
     replace_sl_message_id_by_original_message_id(msg)
 
-    # change the from header so the sender comes from a reverse-alias
-    # so it can pass DMARC check
+    # change the from_header so the email comes from a reverse-alias
     # replace the email part in from: header
-    contact_from_header = msg[headers.FROM]
+    old_from_header = msg[headers.FROM]
     new_from_header = contact.new_addr()
     add_or_replace_header(msg, "From", new_from_header)
-    LOG.d("From header, new:%s, old:%s", new_from_header, contact_from_header)
+    LOG.d("From header, new:%s, old:%s", new_from_header, old_from_header)
 
     if reply_to_contact:
         reply_to_header = msg[headers.REPLY_TO]
@@ -865,6 +864,7 @@ def forward_email_to_mailbox(
         if should_ignore_bounce(envelope.mail_from):
             return True, status.E207
         else:
+            EmailLog.delete(email_log.id, commit=True)
             # so Postfix can retry
             return False, status.E407
     else:
@@ -1144,6 +1144,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         )
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
+        EmailLog.delete(email_log.id, commit=True)
         send_email(
             mailbox.email,
             f"Email cannot be sent to {contact.email} from {alias.email}",
