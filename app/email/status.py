@@ -18,6 +18,7 @@ E209 = "250 SL E209 Email Loop"
 E210 = "250 SL E210 Yahoo complaint handled"
 E211 = "250 SL E211 Bounce Forward phase handled"
 E212 = "250 SL E212 Bounce Reply phase handled"
+E213 = "250 SL E213 Unknown email ignored"
 
 # endregion
 

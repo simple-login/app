@@ -2374,6 +2374,17 @@ class MailHandler:
                 msg[headers.TO],
             )
             return status.E524
+        except VERPReply as e:
+            LOG.w(
+                "email handling fail with error:%s "
+                "mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s",
+                e,
+                envelope.mail_from,
+                envelope.rcpt_tos,
+                msg[headers.FROM],
+                msg[headers.TO],
+            )
+            return status.E213
         except Exception as e:
             LOG.e(
                 "email handling fail with error:%s "
