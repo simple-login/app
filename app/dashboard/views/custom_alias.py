@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass, asdict
 
+from email_validator import validate_email, EmailNotValidError
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from itsdangerous import TimestampSigner, SignatureExpired
@@ -229,7 +230,7 @@ def custom_alias():
                 "are currently supported for alias prefix. Cannot be more than 40 letters",
                 "error",
             )
-            return redirect(url_for("dashboard.custom_alias"))
+            return redirect(request.url)
 
         # check if mailbox is not tempered with
         mailboxes = []
@@ -241,12 +242,12 @@ def custom_alias():
                 or not mailbox.verified
             ):
                 flash("Something went wrong, please retry", "warning")
-                return redirect(url_for("dashboard.custom_alias"))
+                return redirect(request.url)
             mailboxes.append(mailbox)
 
         if not mailboxes:
             flash("At least one mailbox must be selected", "error")
-            return redirect(url_for("dashboard.custom_alias"))
+            return redirect(request.url)
 
         # hypothesis: user will click on the button in the 600 secs
         try:
@@ -259,14 +260,26 @@ def custom_alias():
         except SignatureExpired:
             LOG.w("Alias creation time expired for %s", current_user)
             flash("Alias creation time is expired, please retry", "warning")
-            return redirect(url_for("dashboard.custom_alias"))
+            return redirect(request.url)
         except Exception:
             LOG.w("Alias suffix is tampered, user %s", current_user)
             flash("Unknown error, refresh the page", "error")
-            return redirect(url_for("dashboard.custom_alias"))
+            return redirect(request.url)
 
         if verify_prefix_suffix(current_user, alias_prefix, alias_suffix.suffix):
             full_alias = alias_prefix + alias_suffix.suffix
+
+            if ".." in full_alias:
+                flash("Your alias can't contain 2 consecutive dots (..)", "error")
+                return redirect(request.url)
+
+            try:
+                validate_email(
+                    full_alias, check_deliverability=False, allow_smtputf8=False
+                )
+            except EmailNotValidError as e:
+                flash(str(e), "error")
+                return redirect(request.url)
 
             general_error_msg = f"{full_alias} cannot be used"
 
