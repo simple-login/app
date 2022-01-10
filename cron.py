@@ -720,9 +720,19 @@ def check_mailbox_valid_domain():
         if not mailbox:
             continue
 
-        if not email_can_be_used_as_mailbox(mailbox.email):
+        if email_can_be_used_as_mailbox(mailbox.email):
+            LOG.d("Mailbox %s valid", mailbox)
+            mailbox.nb_failed_checks = 0
+        else:
             mailbox.nb_failed_checks += 1
             nb_email_log = nb_email_log_for_mailbox(mailbox)
+
+            LOG.w(
+                "issue with mailbox %s domain. #alias %s, nb email log %s",
+                mailbox,
+                mailbox.nb_alias(),
+                nb_email_log,
+            )
 
             # send a warning
             if mailbox.nb_failed_checks == 5:
@@ -755,15 +765,6 @@ def check_mailbox_valid_domain():
                         render("transactional/disable-mailbox.html", mailbox=mailbox),
                         retries=3,
                     )
-
-            LOG.w(
-                "issue with mailbox %s domain. #alias %s, nb email log %s",
-                mailbox,
-                mailbox.nb_alias(),
-                nb_email_log,
-            )
-        else:  # reset nb check
-            mailbox.nb_failed_checks = 0
 
         Session.commit()
 
