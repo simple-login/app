@@ -534,12 +534,15 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
             email_address, check_deliverability=False, allow_smtputf8=False
         ).domain
     except EmailNotValidError:
+        LOG.d("%s is invalid email address", email_address)
         return False
 
     if not domain:
+        LOG.d("no valid domain associated to %s", email_address)
         return False
 
     if SLDomain.get_by(domain=domain):
+        LOG.d("%s is a SL domain", email_address)
         return False
 
     from app.models import CustomDomain
