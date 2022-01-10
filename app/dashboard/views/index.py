@@ -112,7 +112,12 @@ def index():
                 flash("You need to upgrade your plan to create new alias.", "warning")
 
         elif request.form.get("form-name") in ("delete-alias", "disable-alias"):
-            alias_id = request.form.get("alias-id")
+            try:
+                alias_id = int(request.form.get("alias-id"))
+            except ValueError:
+                flash("unknown error", "error")
+                return redirect(request.url)
+
             alias: Alias = Alias.get(alias_id)
             if not alias or alias.user_id != current_user.id:
                 flash("Unknown error, sorry for the inconvenience", "error")
