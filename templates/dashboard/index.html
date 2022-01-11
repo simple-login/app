@@ -16,6 +16,16 @@
       em {
           padding: 0px;
       }
+
+      {#CSS to change collapse button display from https://stackoverflow.com/a/31967516/1428034#}
+      [data-toggle="collapse"].collapsed .if-not-collapsed {
+          display: none;
+      }
+
+      [data-toggle="collapse"]:not(.collapsed) .if-collapsed {
+          display: none;
+      }
+
   </style>
 {% endblock %}
 
@@ -385,9 +395,15 @@
             </div>
             {% if not current_user.expand_alias_info %}
               <div class="col text-right">
-                <a class="btn btn-sm" data-toggle="collapse" href="#alias-{{ alias.id }}" role="button"
+                <a class="btn btn-sm collapsed" data-toggle="collapse" href="#alias-{{ alias.id }}" role="button"
                    aria-expanded="false">
-                  More <i class="fe fe-chevron-down"></i>
+
+                  <span class="if-collapsed">
+                    More <i class="fe fe-chevron-down"></i>
+                  </span>
+                  <span class="if-not-collapsed">Less
+                    <i class="fe fe-chevron-up"></i>
+                  </span>
                 </a>
               </div>
             {% endif %}
