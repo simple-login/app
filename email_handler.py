@@ -391,7 +391,7 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
         contact = Contact.get_by(reply_email=reply_email)
         if not contact:
             LOG.w(
-                "email %s contained in %s header in reply phase %s must be reply emails. headers:%s",
+                "email %s contained in %s header in reply phase must be reply emails. headers:%s",
                 reply_email,
                 header,
                 headers,
