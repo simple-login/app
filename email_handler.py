@@ -382,6 +382,10 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     # headers can be an array of Header, convert it to string here
     headers = [str(h) for h in headers]
 
+    # headers can contain \r or \n
+    headers = [h.replace("\r", "") for h in headers]
+    headers = [h.replace("\n", "") for h in headers]
+
     for _, reply_email in getaddresses(headers):
         # no transformation when alias is already in the header
         # can happen when user clicks "Reply All"
