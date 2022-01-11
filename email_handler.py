@@ -1098,9 +1098,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         # the email is ignored, delete the email log
         EmailLog.delete(email_log.id, commit=True)
 
-        send_email_at_most_times(
-            user,
-            ALERT_NON_REVERSE_ALIAS_REPLY_PHASE,
+        send_email(
             mailbox.email,
             f"Email sent to {contact.email} contains non reverse-alias addresses",
             render(
