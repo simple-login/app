@@ -294,6 +294,15 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "include_website_in_one_click_alias":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.include_website_in_one_click_alias = True
+            else:
+                current_user.include_website_in_one_click_alias = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "export-data":
             return redirect(url_for("api.export_data"))
