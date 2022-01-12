@@ -21,7 +21,9 @@ def setting_to_dict(user: User):
         if user.alias_generator == AliasGeneratorEnum.word.value
         else "uuid",
         "random_alias_default_domain": user.default_random_alias_domain(),
-        "sender_format": SenderFormatEnum.get_name(user.sender_format),
+        # return the default sender format (AT) in case user uses a non-supported sender format
+        "sender_format": SenderFormatEnum.get_name(user.sender_format)
+        or SenderFormatEnum.AT.name,
         "random_alias_suffix": AliasSuffixEnum.get_name(user.random_alias_suffix),
     }
 

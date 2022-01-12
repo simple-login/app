@@ -329,10 +329,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     profile_picture = orm.relationship(File, foreign_keys=[profile_picture_id])
 
     # Specify the format for sender address
-    # John Wick - john at wick.com  -> 0
-    # john@wick.com via SimpleLogin -> 1
-    # John Wick - john(a)wick.com     -> 2
-    # John Wick - john@wick.com     -> 3
+    # for the full list, see SenderFormatEnum
     sender_format = sa.Column(
         sa.Integer, default="0", nullable=False, server_default="0"
     )
