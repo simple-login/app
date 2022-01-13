@@ -53,23 +53,8 @@ def add_sl_domains():
     Session.commit()
 
 
-def add_invalid_mailbox_domains(disposable_domains_file_path):
-    with open(disposable_domains_file_path, "r") as f:
-        disposable_email_domains = f.readlines()
-        disposable_email_domains = [d.strip().lower() for d in disposable_email_domains]
-        disposable_email_domains = [
-            d for d in disposable_email_domains if not d.startswith("#")
-        ]
-
-        for domain in disposable_email_domains:
-            if InvalidMailboxDomain.get_by(domain=domain) is None:
-                LOG.i("Add disposable domain %s as invalid mailbox domain", domain)
-                InvalidMailboxDomain.create(domain=domain, commit=True)
-
-
 if __name__ == "__main__":
     # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
     with create_light_app().app_context():
         load_pgp_public_keys()
         add_sl_domains()
-        add_invalid_mailbox_domains()

@@ -32,7 +32,7 @@ def log_postfix_metrics():
 
 
 def nb_files(directory) -> int:
-    """return the number of files in directory and its sub-directories"""
+    """return the number of files in directory and its subdirectories"""
     return sum(len(files) for _, _, files in os.walk(directory))
 
 
