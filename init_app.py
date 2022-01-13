@@ -4,7 +4,7 @@ from app.config import (
 )
 from app.db import Session
 from app.log import LOG
-from app.models import Mailbox, Contact, SLDomain, InvalidMailboxDomain
+from app.models import Mailbox, Contact, SLDomain
 from app.pgp_utils import load_public_key
 from server import create_light_app
 
