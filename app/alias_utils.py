@@ -168,6 +168,11 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         send_cannot_create_domain_alias(domain_user, address, alias_domain)
         return None
 
+    # a rule can have 0 mailboxes. Happened when a mailbox is deleted
+    if not mailboxes:
+        LOG.d("use %s default mailbox for %s %s", domain_user, address, custom_domain)
+        mailboxes = [domain_user.default_mailbox]
+
     try:
         LOG.d("create alias %s for domain %s", address, custom_domain)
         alias = Alias.create(
