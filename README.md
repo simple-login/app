@@ -57,6 +57,7 @@ sudo apt update && sudo apt install -y dnsutils
 Create a directory to store SimpleLogin data:
 
 ```bash
+cd /
 mkdir sl
 mkdir sl/pgp # to store PGP key
 mkdir sl/db # to store database
@@ -74,6 +75,7 @@ Setting up DKIM is highly recommended to reduce the chance your emails ending up
 First you need to generate a private and public key for DKIM:
 
 ```bash
+cd /
 openssl genrsa -out dkim.key 1024
 openssl rsa -in dkim.key -pubout -out dkim.pub.key
 ```
@@ -372,7 +374,7 @@ sudo systemctl restart postfix
 
 ### Run SimpleLogin Docker containers
 
-To run SimpleLogin, you need a config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to
+To run SimpleLogin, you need a config file at `/simplelogin.env`. Below is an example that you can use right away, make sure to
 
 - replace `mydomain.com` by your domain,
 - set `FLASK_SECRET` to a secret string, 
@@ -515,14 +517,27 @@ sudo systemctl reload nginx
 ```
 
 At this step, you should also setup the SSL for Nginx. 
-[Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
+[Certbot](https://certbot.eff.org/instructions) can be a good option if you want a free SSL certificate.
 
 ### Enjoy!
 
 If all the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
 By default, new accounts are not premium so don't have unlimited alias. To make your account premium,
-please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
+please go to the database, table "users" and set "lifetime" column to "1" or "TRUE":
+
+```
+docker exec -it sl-db psql -U myuser simplelogin
+UPDATE users SET lifetime = TRUE;
+exit
+```
+
+Once you've created all your desired login accounts, add these lines to `/simplelogin.env` to disable further registrations, then restart to apply:
+
+```
+DISABLE_REGISTRATION=1
+DISABLE_ONBOARDING=true
+```
 
 You don't have to pay anything to SimpleLogin to use all its features.
 If you like the project, you can make a donation on our Patreon page at https://www.patreon.com/simplelogin
