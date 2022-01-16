@@ -47,6 +47,23 @@ def test_update_custom_domains(flask_client):
     assert r.status_code == 200
     assert d1.catch_all is True
 
+    # make sure the full domain json is returned
+    cd_json = r.json["custom_domain"]
+    assert cd_json["domain_name"]
+    assert cd_json["id"] == d1.id
+    assert cd_json["nb_alias"] == 0
+    assert "is_verified" in cd_json
+    assert "catch_all" in cd_json
+    assert "name" in cd_json
+    assert "random_prefix_generation" in cd_json
+    assert cd_json["creation_date"]
+    assert cd_json["creation_timestamp"]
+
+    assert cd_json["mailboxes"]
+    for mailbox in cd_json["mailboxes"]:
+        assert "id" in mailbox
+        assert "email" in mailbox
+
     # test update random_prefix_generation
     assert d1.random_prefix_generation is False
     r = flask_client.patch(

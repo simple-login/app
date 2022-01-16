@@ -121,4 +121,6 @@ def update_custom_domain(custom_domain_id):
     if changed:
         Session.commit()
 
-    return jsonify(ok=True), 200
+    # refresh
+    custom_domain = CustomDomain.get(custom_domain_id)
+    return jsonify(custom_domain=custom_domain_to_dict(custom_domain)), 200

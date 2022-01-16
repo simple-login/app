@@ -741,7 +741,7 @@ Input:
 - (optional) `mailbox_ids`: array of mailbox id, in request body
 
 Output:
-If success, return 200
+If success, return 200 along with updated custom domain
 
 #### GET /api/custom_domains/:custom_domain_id/trash
 
