@@ -147,6 +147,8 @@ from app.models import (
     TransactionalEmail,
     IgnoredEmail,
     MessageIDMatching,
+    DeletedAlias,
+    DomainDeletedAlias,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -1496,7 +1498,7 @@ def handle_hotmail_complaint(msg: Message) -> bool:
 
     alias = None
 
-    # try parsing the from header which might contain the reverse alias
+    # try parsing the from_header which might contain the reverse alias
     try:
         _, reverse_alias = parse_full_address(get_header_unicode(from_header))
         contact = Contact.get_by(reply_email=reverse_alias)
@@ -1512,9 +1514,16 @@ def handle_hotmail_complaint(msg: Message) -> bool:
     if not alias:
         try:
             _, alias_address = parse_full_address(get_header_unicode(to_header))
-            alias = Alias.get_by(email=alias_address)
         except ValueError:
             LOG.w("Cannot parse %s", to_header)
+        else:
+            alias = Alias.get_by(email=alias_address)
+            if not alias:
+                if DeletedAlias.get_by(
+                    email=alias_address
+                ) or DomainDeletedAlias.get_by(email=alias_address):
+                    LOG.w("Alias %s is deleted", alias_address)
+                    return True
 
     if not alias:
         LOG.e(
