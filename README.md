@@ -525,7 +525,7 @@ By default, new accounts are not premium so don't have unlimited alias. To make 
 please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
 
 You don't have to pay anything to SimpleLogin to use all its features.
-If you like the project, you can make a donation on our Patreon page at https://www.patreon.com/simplelogin
+If you like the project, you can make a donation on our Open Collective page at https://opencollective.com/simplelogin
 
 ### Misc
 
