@@ -57,11 +57,9 @@ sudo apt update && sudo apt install -y dnsutils
 Create a directory to store SimpleLogin data:
 
 ```bash
-cd /
-mkdir sl
-mkdir sl/pgp # to store PGP key
-mkdir sl/db # to store database
-mkdir sl/upload # to store quarantine emails
+mkdir -p /sl/pgp # to store PGP key
+mkdir /sl/db # to store database
+mkdir /sl/upload # to store quarantine emails
 ```
 
 ### DKIM
@@ -75,9 +73,8 @@ Setting up DKIM is highly recommended to reduce the chance your emails ending up
 First you need to generate a private and public key for DKIM:
 
 ```bash
-cd /
-openssl genrsa -out dkim.key 1024
-openssl rsa -in dkim.key -pubout -out dkim.pub.key
+openssl genrsa -out /dkim.key 1024
+openssl rsa -in /dkim.key -pubout -out /dkim.pub.key
 ```
 
 You will need the files `dkim.key` and `dkim.pub.key` for the next steps.
@@ -142,7 +139,7 @@ then the `PUBLIC_KEY` would be `abcdefgh`.
 You can get the `PUBLIC_KEY` by running this command:
 
 ```bash
-sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n' | awk 1
+sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" /dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n' | awk 1
 ```
 
 To verify, the following command
@@ -209,8 +206,7 @@ If you don't already have Docker installed on your server, please follow the ste
 You can also install Docker using the [docker-install](https://github.com/docker/docker-install) script which is
 
 ```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
+curl -fsSL https://get.docker.com | sh
 ```
 
 ### Prepare the Docker network
@@ -240,7 +236,7 @@ docker run -d \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
     -p 127.0.0.1:5432:5432 \
-    -v $(pwd)/sl/db:/var/lib/postgresql/data \
+    -v /sl/db:/var/lib/postgresql/data \
     --restart always \
     --network="sl-network" \
     postgres:12.1
@@ -419,11 +415,11 @@ Before running the webapp, you need to prepare the database by running the migra
 ```bash
 docker run --rm \
     --name sl-migration \
-    -v $(pwd)/sl:/sl \
-    -v $(pwd)/sl/upload:/code/static/upload \
-    -v $(pwd)/dkim.key:/dkim.key \
-    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -v $(pwd)/simplelogin.env:/code/.env \
+    -v /sl:/sl \
+    -v /sl/upload:/code/static/upload \
+    -v /dkim.key:/dkim.key \
+    -v /dkim.pub.key:/dkim.pub.key \
+    -v /simplelogin.env:/code/.env \
     --network="sl-network" \
     simplelogin/app:3.4.0 flask db upgrade
 ```
@@ -435,10 +431,10 @@ Init data
 ```bash
 docker run --rm \
     --name sl-init \
-    -v $(pwd)/sl:/sl \
-    -v $(pwd)/simplelogin.env:/code/.env \
-    -v $(pwd)/dkim.key:/dkim.key \
-    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -v /sl:/sl \
+    -v /simplelogin.env:/code/.env \
+    -v /dkim.key:/dkim.key \
+    -v /dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
     simplelogin/app:3.4.0 python init_app.py
 ```
@@ -448,11 +444,11 @@ Now, it's time to run the `webapp` container!
 ```bash
 docker run -d \
     --name sl-app \
-    -v $(pwd)/sl:/sl \
-    -v $(pwd)/sl/upload:/code/static/upload \
-    -v $(pwd)/simplelogin.env:/code/.env \
-    -v $(pwd)/dkim.key:/dkim.key \
-    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -v /sl:/sl \
+    -v /sl/upload:/code/static/upload \
+    -v /simplelogin.env:/code/.env \
+    -v /dkim.key:/dkim.key \
+    -v /dkim.pub.key:/dkim.pub.key \
     -p 127.0.0.1:7777:7777 \
     --restart always \
     --network="sl-network" \
@@ -464,11 +460,11 @@ Next run the `email handler`
 ```bash
 docker run -d \
     --name sl-email \
-    -v $(pwd)/sl:/sl \
-    -v $(pwd)/sl/upload:/code/static/upload \
-    -v $(pwd)/simplelogin.env:/code/.env \
-    -v $(pwd)/dkim.key:/dkim.key \
-    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -v /sl:/sl \
+    -v /sl/upload:/code/static/upload \
+    -v /simplelogin.env:/code/.env \
+    -v /dkim.key:/dkim.key \
+    -v /dkim.pub.key:/dkim.pub.key \
     -p 127.0.0.1:20381:20381 \
     --restart always \
     --network="sl-network" \
@@ -480,11 +476,11 @@ And finally the `job runner`
 ```bash
 docker run -d \
     --name sl-job-runner \
-    -v $(pwd)/sl:/sl \
-    -v $(pwd)/sl/upload:/code/static/upload \
-    -v $(pwd)/simplelogin.env:/code/.env \
-    -v $(pwd)/dkim.key:/dkim.key \
-    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -v /sl:/sl \
+    -v /sl/upload:/code/static/upload \
+    -v /simplelogin.env:/code/.env \
+    -v /dkim.key:/dkim.key \
+    -v /dkim.pub.key:/dkim.pub.key \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0 python job_runner.py
@@ -532,12 +528,16 @@ UPDATE users SET lifetime = TRUE;
 exit
 ```
 
-Once you've created all your desired login accounts, add these lines to `/simplelogin.env` to disable further registrations, then restart to apply:
+Once you've created all your desired login accounts, add these lines to `/simplelogin.env` to disable further registrations:
 
 ```
 DISABLE_REGISTRATION=1
 DISABLE_ONBOARDING=true
 ```
+
+Then restart the web app to apply: `docker restart sl-app`
+
+### Donations Welcome
 
 You don't have to pay anything to SimpleLogin to use all its features.
 If you like the project, you can make a donation on our Patreon page at https://www.patreon.com/simplelogin
