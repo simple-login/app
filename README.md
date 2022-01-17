@@ -540,7 +540,7 @@ Then restart the web app to apply: `docker restart sl-app`
 ### Donations Welcome
 
 You don't have to pay anything to SimpleLogin to use all its features.
-If you like the project, you can make a donation on our Patreon page at https://www.patreon.com/simplelogin
+If you like the project, you can make a donation on our Open Collective page at https://opencollective.com/simplelogin
 
 ### Misc
 
