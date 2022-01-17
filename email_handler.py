@@ -2432,13 +2432,7 @@ class MailHandler:
             ret = handle(envelope, msg)
             elapsed = time.time() - start
 
-            # use error log if taking more than 1 minute
-            if elapsed > 60:
-                log_f = LOG.e
-            else:
-                log_f = LOG.i
-
-            log_f(
+            LOG.i(
                 "Finish mail_from %s, rcpt_tos %s, takes %s seconds <<===",
                 envelope.mail_from,
                 envelope.rcpt_tos,
