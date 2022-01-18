@@ -367,6 +367,9 @@ def get_alias_contacts_route(alias_id):
 
     alias: Alias = Alias.get(alias_id)
 
+    if not alias:
+        return jsonify(error="No such alias"), 404
+
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
