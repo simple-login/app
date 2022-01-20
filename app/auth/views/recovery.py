@@ -5,9 +5,9 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
-from app.config import MFA_USER_ID, ALERT_INVALID_TOTP_LOGIN
+from app.config import MFA_USER_ID
 from app.db import Session
-from app.email_utils import send_email_with_rate_control, render
+from app.email_utils import send_invalid_totp_login_email
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, RecoveryCode
@@ -69,20 +69,6 @@ def recovery_route():
             # Trigger rate limiter
             g.deduct_limit = True
             flash("Incorrect code", "error")
-            send_email_with_rate_control(
-                user,
-                ALERT_INVALID_TOTP_LOGIN,
-                user.email,
-                "There was an unsuccessful login on your SimpleLogin account",
-                render(
-                    "transactional/invalid-totp-login.txt",
-                    type="recovery",
-                ),
-                render(
-                    "transactional/invalid-totp-login.html",
-                    type="recovery",
-                ),
-                1,
-            )
+            send_invalid_totp_login_email(user, "recovery")
 
     return render_template("auth/recovery.html", recovery_form=recovery_form)
