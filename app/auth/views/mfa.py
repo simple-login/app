@@ -14,9 +14,9 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, StringField, validators
 
 from app.auth.base import auth_bp
-from app.config import MFA_USER_ID, URL
+from app.config import MFA_USER_ID, URL, ALERT_INVALID_TOTP_LOGIN
 from app.db import Session
-from app.email_utils import send_email, render
+from app.email_utils import send_email_with_rate_control, render
 from app.extensions import limiter
 from app.models import User, MfaBrowser
 
@@ -92,11 +92,14 @@ def mfa():
             return response
 
         else:
-            send_email(
+            send_email_with_rate_control(
+                user,
+                ALERT_INVALID_TOTP_LOGIN,
                 user.email,
                 "There was an unsuccessful login on your SimpleLogin account",
                 render("transactional/invalid-totp-login.txt"),
                 render("transactional/invalid-totp-login.html"),
+                1,
             )
             flash("Incorrect token", "warning")
             # Trigger rate limiter
