@@ -92,6 +92,10 @@ def mfa():
             return response
 
         else:
+            flash("Incorrect token", "warning")
+            # Trigger rate limiter
+            g.deduct_limit = True
+            otp_token_form.token.data = None
             send_email_with_rate_control(
                 user,
                 ALERT_INVALID_TOTP_LOGIN,
@@ -107,10 +111,6 @@ def mfa():
                 ),
                 1,
             )
-            flash("Incorrect token", "warning")
-            # Trigger rate limiter
-            g.deduct_limit = True
-            otp_token_form.token.data = None
 
     return render_template(
         "auth/mfa.html",

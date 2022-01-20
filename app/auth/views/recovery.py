@@ -68,6 +68,7 @@ def recovery_route():
         else:
             # Trigger rate limiter
             g.deduct_limit = True
+            flash("Incorrect code", "error")
             send_email_with_rate_control(
                 user,
                 ALERT_INVALID_TOTP_LOGIN,
@@ -83,6 +84,5 @@ def recovery_route():
                 ),
                 1,
             )
-            flash("Incorrect code", "error")
 
     return render_template("auth/recovery.html", recovery_form=recovery_form)
