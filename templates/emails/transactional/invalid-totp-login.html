@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("There has been an unsuccessful login on your SimpleLogin account.") }}
+  {{ render_text("An invalid TOTP code was provided. <b>The email and password were provided correctly.</b>") }}
+
+  {{ render_text("If this was <b>not</b> you, please <b>change your password immediately.</b>") }}
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+{% endblock %}
+

@@ -1,0 +1,7 @@
+There has been an unsuccessful login on your SimpleLogin account.
+An invalid TOTP code was provided. The email and password were provided correctly.
+
+If this was not you, please <b>change your password immediately.
+
+Thanks,
+SimpleLogin Team.
