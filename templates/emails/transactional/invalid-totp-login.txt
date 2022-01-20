@@ -1,5 +1,5 @@
 There has been an unsuccessful login attempt on your SimpleLogin account.
-An invalid TOTP code was provided but the email and password were provided correctly.
+An invalid {{type}} code was provided but the email and password were provided correctly.
 
 This request was blocked. However, if this was not you, please change your password immediately.
 {{URL}}/dashboard/setting#change_password

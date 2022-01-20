@@ -2,7 +2,7 @@
 
 {% block content %}
   {{ render_text("There has been an unsuccessful login attempt on your SimpleLogin account.") }}
-  {{ render_text("An invalid TOTP code was provided <b>but the email and password were provided correctly.</b>") }}
+  {{ render_text("An invalid " ~ type ~ " code was provided <b>but the email and password were provided correctly.</b>") }}
 
   {{ render_text("This request was blocked. However, if this was <b>not</b> you, please <b>change your password immediately.</b>") }}
   {{ render_button("Change your password", URL ~ "/dashboard/setting#change_password") }}

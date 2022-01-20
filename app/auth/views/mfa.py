@@ -97,8 +97,14 @@ def mfa():
                 ALERT_INVALID_TOTP_LOGIN,
                 user.email,
                 "There was an unsuccessful login on your SimpleLogin account",
-                render("transactional/invalid-totp-login.txt"),
-                render("transactional/invalid-totp-login.html"),
+                render(
+                    "transactional/invalid-totp-login.txt",
+                    type="TOTP",
+                ),
+                render(
+                    "transactional/invalid-totp-login.html",
+                    type="TOTP",
+                ),
                 1,
             )
             flash("Incorrect token", "warning")
