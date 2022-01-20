@@ -1,7 +1,7 @@
-There has been an unsuccessful login attempt on your SimpleLogin account.
-An invalid {{type}} code was provided but the email and password were provided correctly.
+There has been an unsuccessful attempt to login to your SimpleLogin account.
+An invalid {{type}} code was provided but the email and password were correct.
 
-This request was blocked. However, if this was not you, please change your password immediately.
+This request has been blocked. However, if this was not you, please change your password immediately.
 {{URL}}/dashboard/setting#change_password
 
 Thanks,
