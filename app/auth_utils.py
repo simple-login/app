@@ -3,13 +3,13 @@ import hashlib
 from app.config import DISABLE_PWNEDPASSWORDS
 
 
-def check_pwnedpasswords(password):
+def check_pwnedpasswords(password, bypass=False):
     """
     Checks a password against Pwned Passwords using the k-anonymity range endpoint
 
     Returns true if the password is in Pwned Passwords, false otherwise.
     """
-    if DISABLE_PWNEDPASSWORDS:
+    if bypass is False and DISABLE_PWNEDPASSWORDS:
         return False
     else:
         sha1_hash = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
