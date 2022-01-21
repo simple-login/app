@@ -343,6 +343,8 @@ ALERT_YAHOO_COMPLAINT = "alert_yahoo_complaint"
 # Disable onboarding emails
 DISABLE_ONBOARDING = "DISABLE_ONBOARDING" in os.environ
 
+DISABLE_PWNEDPASSWORDS = "DISABLE_PWNEDPASSWORDS" in os.environ
+
 HCAPTCHA_SECRET = os.environ.get("HCAPTCHA_SECRET")
 HCAPTCHA_SITEKEY = os.environ.get("HCAPTCHA_SITEKEY")
 
