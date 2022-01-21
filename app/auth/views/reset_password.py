@@ -6,6 +6,7 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
+from app.auth_utils import check_pwnedpasswords
 from app.db import Session
 from app.extensions import limiter
 from app.models import ResetPasswordCode
@@ -51,6 +52,9 @@ def reset_password():
         # avoid user reusing the old password
         if user.check_password(new_password):
             error = "You cannot reuse the same password"
+            return render_template("auth/reset_password.html", form=form, error=error)
+        if check_pwnedpasswords(new_password):
+            error = "Password found in a breach, please try a different password."
             return render_template("auth/reset_password.html", form=form, error=error)
 
         user.set_password(new_password)
