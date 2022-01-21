@@ -9,7 +9,7 @@ def check_pwnedpasswords(password, bypass=False):
 
     Returns true if the password is in Pwned Passwords, false otherwise.
     """
-    if bypass is False and DISABLE_PWNEDPASSWORDS:
+    if not bypass and DISABLE_PWNEDPASSWORDS:
         return False
     else:
         sha1_hash = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
