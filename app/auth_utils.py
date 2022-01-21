@@ -7,7 +7,7 @@ def check_pwnedpasswords(password, bypass=False):
     """
     Checks a password against Pwned Passwords using the k-anonymity range endpoint
 
-    Returns true if the password is in Pwned Passwords, false otherwise.
+    Returns the amount of matches if the password is in Pwned Passwords, false otherwise.
     """
     if not bypass and DISABLE_PWNEDPASSWORDS:
         return False
