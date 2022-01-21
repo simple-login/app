@@ -17,6 +17,7 @@ def check_pwnedpasswords(password, bypass=False):
         pwnedpasswords_res = requests.get(
             "https://api.pwnedpasswords.com/range/" + lookup_hash,
             headers={"Add-Padding": "true"},
+            timeout=10,
         ).content.decode("utf-8")
         unpad_matches = list(
             filter(lambda x: int(x.split(":")[1]) > 0, pwnedpasswords_res.splitlines())
