@@ -4,7 +4,9 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
+from app.auth_utils import check_pwnedpasswords
 from app.auth.views.login_utils import after_login
+from app.email_utils import send_pwnedpasswords_email
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
@@ -55,6 +57,8 @@ def login():
                 "error",
             )
         else:
+            if check_pwnedpasswords(form.password.data):
+                send_pwnedpasswords_email(user)
             return after_login(user, next_url)
 
     return render_template(

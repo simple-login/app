@@ -321,6 +321,8 @@ ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS = "from_address_is_reverse_alias"
 
 ALERT_SPF = "spf"
 
+ALERT_PWNEDPASSWORDS = "pwnedpasswords"
+
 # when a mailbox is also an alias
 # happens when user adds a mailbox with their domain
 # then later adds this domain into SimpleLogin

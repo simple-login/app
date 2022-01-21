@@ -50,6 +50,7 @@ from app.config import (
     ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
     TRANSACTIONAL_BOUNCE_EMAIL,
     ALERT_SPF,
+    ALERT_PWNEDPASSWORDS,
     TEMP_DIR,
     ALIAS_AUTOMATIC_DISABLE,
     RSPAMD_SIGN_DKIM,
@@ -170,6 +171,18 @@ def send_change_email(new_email, current_email, link):
             new_email=new_email,
             current_email=current_email,
         ),
+    )
+
+
+def send_pwnedpasswords_email(user):
+    send_email_with_rate_control(
+        user,
+        ALERT_PWNEDPASSWORDS,
+        user.email,
+        "SimpleLogin account alert",
+        render("transactional/pwnedpasswords-notification.txt"),
+        render("transactional/pwnedpasswords-notification.html"),
+        1,
     )
 
 
