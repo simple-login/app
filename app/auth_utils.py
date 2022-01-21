@@ -1,5 +1,6 @@
 import requests
 import hashlib
+
 from app.config import DISABLE_PWNEDPASSWORDS
 from app.log import LOG
 
