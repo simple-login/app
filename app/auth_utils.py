@@ -26,6 +26,7 @@ def check_pwnedpasswords(password, bypass=False):
             return False
         except Exception as e:
             LOG.w("Pwned Passwords error %s", e)
+            return False
         else:
             unpad_matches = list(
                 filter(
