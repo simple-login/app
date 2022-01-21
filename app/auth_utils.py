@@ -21,5 +21,9 @@ def check_pwnedpasswords(password, bypass=False):
         unpad_matches = list(
             filter(lambda x: int(x.split(":")[1]) > 0, pwnedpasswords_res.splitlines())
         )
-        hash_matches = list(map(lambda x: x.split(":")[0], unpad_matches))
-        return sha1_hash[5:] in hash_matches
+
+        found = list(filter(lambda x: sha1_hash[5:] == x.split(":")[0], unpad_matches))
+        if len(found) > 0:
+            return found[0].split(":")[1]
+        else:
+            return False

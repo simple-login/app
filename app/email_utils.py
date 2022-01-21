@@ -174,14 +174,14 @@ def send_change_email(new_email, current_email, link):
     )
 
 
-def send_pwnedpasswords_email(user):
+def send_pwnedpasswords_email(user, amount):
     send_email_with_rate_control(
         user,
         ALERT_PWNEDPASSWORDS,
         user.email,
-        "SimpleLogin account alert",
-        render("transactional/pwnedpasswords-notification.txt"),
-        render("transactional/pwnedpasswords-notification.html"),
+        "SimpleLogin account security alert",
+        render("transactional/pwnedpasswords-notification.txt", amount=amount),
+        render("transactional/pwnedpasswords-notification.html", amount=amount),
         1,
     )
 

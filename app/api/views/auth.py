@@ -65,8 +65,9 @@ def auth_login():
         return jsonify(error="Account disabled"), 400
     elif not user.activated:
         return jsonify(error="Account not activated"), 400
-    if check_pwnedpasswords(password):
-        send_pwnedpasswords_email(user)
+    pwnedpasswords_result = check_pwnedpasswords(password)
+    if pwnedpasswords_result:
+        send_pwnedpasswords_email(user, pwnedpasswords_result)
     if user.fido_enabled():
         # allow user who has TOTP enabled to continue using the mobile app
         if not user.enable_otp:

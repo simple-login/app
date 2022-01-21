@@ -57,8 +57,9 @@ def login():
                 "error",
             )
         else:
-            if check_pwnedpasswords(form.password.data):
-                send_pwnedpasswords_email(user)
+            pwnedpasswords_result = check_pwnedpasswords(form.password.data)
+            if pwnedpasswords_result:
+                send_pwnedpasswords_email(user, pwnedpasswords_result)
             return after_login(user, next_url)
 
     return render_template(
