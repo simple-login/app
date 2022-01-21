@@ -16,12 +16,10 @@ def check_pwnedpasswords(password, bypass=False):
         lookup_hash = sha1_hash[0:5]
         pwnedpasswords_res = requests.get(
             "https://api.pwnedpasswords.com/range/" + lookup_hash,
-            headers={'Add-Padding': 'True'},
+            headers={"Add-Padding": "True"},
         ).content.decode("utf-8")
         unpad_matches = list(
             filter(lambda x: int(x.split(":")[1]) > 0, pwnedpasswords_res.splitlines())
         )
-        hash_matches = list(
-            map(lambda x: x.split(":")[0], unpad_matches)
-        )
+        hash_matches = list(map(lambda x: x.split(":")[0], unpad_matches))
         return sha1_hash[5:] in hash_matches
