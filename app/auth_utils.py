@@ -25,8 +25,8 @@ def check_pwnedpasswords(password, bypass=False):
         except requests.exceptions.Timeout:
             LOG.w("Pwned Passwords timeout")
             return False
-        except Exception as e:
-            LOG.w(f"Pwned Passwords error: {e}")
+        except Exception:
+            LOG.w("Pwned Passwords error")
             return False
         else:
             unpad_matches = list(
