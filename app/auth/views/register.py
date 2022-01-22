@@ -73,35 +73,30 @@ def register():
         email = sanitize_email(form.email.data)
         if not email_can_be_used_as_mailbox(email):
             flash("You cannot use this email address as your personal inbox.", "error")
-
+        elif personal_email_already_used(email):
+            flash(f"Email {email} already used", "error")
+        elif check_pwnedpasswords(form.password.data):
+            flash(
+                "Password found in a breach, please try a different password.",
+                "error",
+            )
         else:
-            if personal_email_already_used(email):
-                flash(f"Email {email} already used", "error")
-            else:
-                if check_pwnedpasswords(form.password.data):
-                    flash(
-                        "Password found in a breach, please try a different password.",
-                        "error",
-                    )
-                else:
-                    LOG.d("create user %s", email)
-                    user = User.create(
-                        email=email,
-                        name="",
-                        password=form.password.data,
-                        referral=get_referral(),
-                    )
-                    Session.commit()
+            LOG.d("create user %s", email)
+            user = User.create(
+                email=email,
+                name="",
+                password=form.password.data,
+                referral=get_referral(),
+            )
+            Session.commit()
 
-                    try:
-                        send_activation_email(user, next_url)
-                    except Exception:
-                        flash(
-                            "Invalid email, are you sure the email is correct?", "error"
-                        )
-                        return redirect(url_for("auth.register"))
+            try:
+                send_activation_email(user, next_url)
+            except Exception:
+                flash("Invalid email, are you sure the email is correct?", "error")
+                return redirect(url_for("auth.register"))
 
-                    return render_template("auth/register_waiting_activation.html")
+            return render_template("auth/register_waiting_activation.html")
 
     return render_template(
         "auth/register.html",
