@@ -77,6 +77,7 @@ def auth_login():
 
 
 @api_bp.route("/auth/register", methods=["POST"])
+@limiter.limit("10/minute")
 def auth_register():
     """
     User signs up - will need to activate their account with an activation code.

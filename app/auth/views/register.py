@@ -14,6 +14,7 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ActivationCode
 from app.utils import random_string, encode_url, sanitize_email
@@ -28,6 +29,7 @@ class RegisterForm(FlaskForm):
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
+@limiter.limit("10/minute")
 def register():
     if current_user.is_authenticated:
         LOG.d("user is already authenticated, redirect to dashboard")
