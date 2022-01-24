@@ -189,6 +189,7 @@ def send_invalid_totp_login_email(user, totp_type):
             "transactional/invalid-totp-login.html",
             type=totp_type,
         ),
+    )
 
 
 def send_pwnedpasswords_email(user, amount):
