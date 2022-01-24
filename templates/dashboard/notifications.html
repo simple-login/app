@@ -1,0 +1,64 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Notifications
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+
+      <h1 class="h3"> Notifications </h1>
+
+      {% for notification in notifications %}
+        <div class="card">
+          <div class="card-body">
+            <div class="h4">
+              {{ notification.title or ""}}
+            </div>
+
+            <div
+                style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden; max-height: 100px; text-overflow: ellipsis;">
+              {{ notification.message | safe }}
+            </div>
+
+            <a href="{{ url_for('dashboard.notification_route', notification_id=notification.id) }}"
+               class="mt-2 btn btn-outline-primary">More ➡</a>
+
+            <div class="small text-muted mt-2">
+              {{ notification.created_at | dt }}
+            </div>
+          </div>
+        </div>
+
+      {% endfor %}
+
+      <!-- Only show pagination control if there are previous/next page -->
+      {% if page > 0 or not last_page %}
+        <div class="row">
+          <div class="col">
+            <nav aria-label="Notification navigation">
+              <ul class="pagination">
+                <li class="page-item mr-1">
+                  <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}"
+                     href="{{ url_for('dashboard.notifications_route', page=page-1) }}">
+                    Previous</a>
+                </li>
+                <li class="page-item">
+                  <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}"
+                     href="{{ url_for('dashboard.notifications_route', page=page+1) }}">
+                    Next</a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+{% endblock %}
+

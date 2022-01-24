@@ -32,6 +32,10 @@
 
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow collapse" id="notifications">
             <div v-if="loading">Loading ...</div>
+            <a href="{{ url_for('dashboard.notifications_route') }}" class="mr-5 mb-2 float-right">
+              See all notifications ➡
+            </a>
+
             <div class="dropdown-item d-flex" v-for="notification in notifications">
               <div class="flex-grow-1">
                 <div v-html="notification.title" class="font-weight-bold" style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden;"></div>
