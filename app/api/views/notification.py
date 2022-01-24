@@ -22,6 +22,7 @@ def get_notifications():
     - notifications: list of notifications.
         - id
         - message
+        - title
         - read
         - created_at
     """
@@ -48,6 +49,7 @@ def get_notifications():
                 {
                     "id": notification.id,
                     "message": notification.message,
+                    "title": notification.title,
                     "read": notification.read,
                     "created_at": notification.created_at.humanize(),
                 }

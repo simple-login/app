@@ -820,6 +820,7 @@ Output:
 - notifications: list of notification, each notification has:
     - id
     - message: the message in html
+    - title: the message title
     - read: whether the user has read the notification
     - created_at: when the notification is created
 
