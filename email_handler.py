@@ -1710,6 +1710,17 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
         alias,
         contact,
     )
+    Notification.create(
+        user_id=user.id,
+        title=f"Email cannot be sent to { contact.email } from your alias { alias.email }",
+        message=Notification.render(
+            "notification/bounce-reply-phase.html",
+            alias=alias,
+            contact=contact,
+            refused_email_url=refused_email.get_url(),
+        ),
+        commit=True,
+    )
     send_email_with_rate_control(
         user,
         ALERT_BOUNCE_EMAIL_REPLY_PHASE,
