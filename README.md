@@ -140,7 +140,7 @@ then the `PUBLIC_KEY` would be `abcdefgh`.
 You can get the `PUBLIC_KEY` by running this command:
 
 ```bash
-sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n' | awk 1
+sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" $(pwd)/dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n' | awk 1
 ```
 
 To verify, the following command
@@ -207,8 +207,7 @@ If you don't already have Docker installed on your server, please follow the ste
 You can also install Docker using the [docker-install](https://github.com/docker/docker-install) script which is
 
 ```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
+curl -fsSL https://get.docker.com | sh
 ```
 
 ### Prepare the Docker network
@@ -372,7 +371,7 @@ sudo systemctl restart postfix
 
 ### Run SimpleLogin Docker containers
 
-To run SimpleLogin, you need a config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to
+To run SimpleLogin, you need a config file at `$(pwd)/simplelogin.env`. Below is an example that you can use right away, make sure to
 
 - replace `mydomain.com` by your domain,
 - set `FLASK_SECRET` to a secret string, 
@@ -515,14 +514,31 @@ sudo systemctl reload nginx
 ```
 
 At this step, you should also setup the SSL for Nginx. 
-[Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
+[Certbot](https://certbot.eff.org/instructions) can be a good option if you want a free SSL certificate.
 
 ### Enjoy!
 
 If all the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
 By default, new accounts are not premium so don't have unlimited alias. To make your account premium,
-please go to the database, table "users" and set "lifetime" column to "1" or "TRUE".
+please go to the database, table "users" and set "lifetime" column to "1" or "TRUE":
+
+```
+docker exec -it sl-db psql -U myuser simplelogin
+UPDATE users SET lifetime = TRUE;
+exit
+```
+
+Once you've created all your desired login accounts, add these lines to `/simplelogin.env` to disable further registrations:
+
+```
+DISABLE_REGISTRATION=1
+DISABLE_ONBOARDING=true
+```
+
+Then restart the web app to apply: `docker restart sl-app`
+
+### Donations Welcome
 
 You don't have to pay anything to SimpleLogin to use all its features.
 If you like the project, you can make a donation on our Open Collective page at https://opencollective.com/simplelogin
