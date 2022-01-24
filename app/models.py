@@ -1,4 +1,5 @@
 import enum
+import os
 import random
 import uuid
 from email.utils import formataddr
@@ -11,6 +12,7 @@ from email_validator import validate_email
 from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
+from jinja2 import FileSystemLoader, Environment
 from sqlalchemy import orm
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
@@ -33,6 +35,7 @@ from app.config import (
     ALIAS_RANDOM_SUFFIX_LENGTH,
     MAX_NB_SUBDOMAIN,
     MAX_NB_DIRECTORY,
+    ROOT_DIR,
 )
 from app.db import Session
 from app.errors import (
@@ -2558,9 +2561,24 @@ class Notification(Base, ModelMixin):
     __tablename__ = "notification"
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     message = sa.Column(sa.Text, nullable=False)
+    title = sa.Column(sa.String(512))
 
     # whether user has marked the notification as read
     read = sa.Column(sa.Boolean, nullable=False, default=False)
+
+    @staticmethod
+    def render(template_name, **kwargs) -> str:
+        templates_dir = os.path.join(ROOT_DIR, "templates")
+        env = Environment(loader=FileSystemLoader(templates_dir))
+
+        template = env.get_template(template_name)
+
+        return template.render(
+            URL=URL,
+            LANDING_PAGE_URL=LANDING_PAGE_URL,
+            YEAR=arrow.now().year,
+            **kwargs,
+        )
 
 
 class SLDomain(Base, ModelMixin):

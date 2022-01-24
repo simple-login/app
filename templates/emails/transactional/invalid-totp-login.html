@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{ render_text("There has been an unsuccessful attempt to login to your SimpleLogin account.") }}
+  {{ render_text("An invalid " ~ type ~ " code was provided <b>but the email and password were correct.</b>") }}
+
+  {{ render_text("This request has been blocked. However, if this was <b>not</b> you, please <b>change your password immediately.</b>") }}
+  {{ render_button("Change your password", URL ~ "/dashboard/setting#change_password") }}
+
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ raw_url(URL ~ "/dashboard/setting#change_password") }}
+{% endblock %}

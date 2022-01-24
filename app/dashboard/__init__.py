@@ -30,4 +30,5 @@ from .views import (
     alias_transfer,
     app,
     delete_account,
+    notification,
 )

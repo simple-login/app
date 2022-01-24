@@ -50,6 +50,7 @@ from app.config import (
     ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
     TRANSACTIONAL_BOUNCE_EMAIL,
     ALERT_SPF,
+    ALERT_INVALID_TOTP_LOGIN,
     ALERT_PWNEDPASSWORDS,
     TEMP_DIR,
     ALIAS_AUTOMATIC_DISABLE,
@@ -172,6 +173,22 @@ def send_change_email(new_email, current_email, link):
             current_email=current_email,
         ),
     )
+
+
+def send_invalid_totp_login_email(user, totp_type):
+    send_email_with_rate_control(
+        user,
+        ALERT_INVALID_TOTP_LOGIN,
+        user.email,
+        "Unsuccessful attempt to login to your SimpleLogin account",
+        render(
+            "transactional/invalid-totp-login.txt",
+            type=totp_type,
+        ),
+        render(
+            "transactional/invalid-totp-login.html",
+            type=totp_type,
+        ),
 
 
 def send_pwnedpasswords_email(user, amount):

@@ -149,6 +149,7 @@ from app.models import (
     MessageIDMatching,
     DeletedAlias,
     DomainDeletedAlias,
+    Notification,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -1396,6 +1397,21 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         )
         disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
         block_sender_link = f"{URL}/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
+
+        Notification.create(
+            user_id=user.id,
+            title=f"Email from {contact.website_email} to {alias.email} cannot be delivered to {mailbox.email}",
+            message=Notification.render(
+                "notification/bounce-forward-phase.html",
+                alias=alias,
+                website_email=contact.website_email,
+                disable_alias_link=disable_alias_link,
+                refused_email_url=refused_email.get_url(),
+                mailbox_email=mailbox.email,
+                block_sender_link=block_sender_link,
+            ),
+            commit=True,
+        )
         send_email_with_rate_control(
             user,
             ALERT_BOUNCE_EMAIL,
@@ -1693,6 +1709,17 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
         user,
         alias,
         contact,
+    )
+    Notification.create(
+        user_id=user.id,
+        title=f"Email cannot be sent to { contact.email } from your alias { alias.email }",
+        message=Notification.render(
+            "notification/bounce-reply-phase.html",
+            alias=alias,
+            contact=contact,
+            refused_email_url=refused_email.get_url(),
+        ),
+        commit=True,
     )
     send_email_with_rate_control(
         user,

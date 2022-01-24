@@ -20,7 +20,7 @@ def test_get_notifications(flask_client):
     Session.commit()
 
     r = flask_client.get(
-        url_for("api.get_notifications", page=0),
+        "/api/notifications?page=0",
         headers={"Authentication": api_key.code},
     )
 
@@ -30,6 +30,7 @@ def test_get_notifications(flask_client):
     for n in r.json["notifications"]:
         assert n["id"] > 0
         assert n["message"]
+        assert "title" in n
         assert n["read"] is False
         assert n["created_at"]
 
