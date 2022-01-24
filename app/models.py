@@ -2558,6 +2558,7 @@ class Notification(Base, ModelMixin):
     __tablename__ = "notification"
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     message = sa.Column(sa.Text, nullable=False)
+    title = sa.Column(sa.String(512))
 
     # whether user has marked the notification as read
     read = sa.Column(sa.Boolean, nullable=False, default=False)
