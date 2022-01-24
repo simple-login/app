@@ -34,12 +34,23 @@
             <div v-if="loading">Loading ...</div>
             <div class="dropdown-item d-flex" v-for="notification in notifications">
               <div class="flex-grow-1">
+                <div v-html="notification.title" class="font-weight-bold" />
+                </div>
+
                 <div v-html="notification.message"
-                     style="width: 40em; word-wrap:break-word; white-space: normal"></div>
+                     style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden; max-height: 100px; text-overflow: ellipsis;">
+                </div>
+
+                <div>
+                  <a :href="'/dashboard/notification/' + notification.id">More</a>
+                </div>
+
+
                 <div class="small text-muted">
                   [[notification.created_at]]
                 </div>
               </div>
+
               <div v-if="!notification.read">
                 <i class="fe fe-check"
                    @click="markAsRead(notification)"
