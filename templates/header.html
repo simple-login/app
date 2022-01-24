@@ -34,8 +34,9 @@
             <div v-if="loading">Loading ...</div>
             <div class="dropdown-item d-flex" v-for="notification in notifications">
               <div class="flex-grow-1">
-                <div v-html="notification.title" class="font-weight-bold" />
-                </div>
+                <div v-html="notification.title" class="font-weight-bold" style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden;"></div>
+
+
 
                 <div v-html="notification.message"
                      style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden; max-height: 100px; text-overflow: ellipsis;">
