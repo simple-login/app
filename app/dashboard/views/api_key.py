@@ -50,7 +50,7 @@ def api_key():
                 flash(f"New API Key {new_api_key.name} has been created", "success")
 
         elif request.form.get("form-name") == "delete-all":
-            ApiKey.deleteall(current_user.id)
+            ApiKey.delete_all(current_user.id)
             Session.commit()
             flash("All API Keys have been deleted", "success")
 

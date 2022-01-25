@@ -1967,7 +1967,7 @@ class ApiKey(Base, ModelMixin):
         return super().create(user_id=user_id, name=name, code=code, **kwargs)
 
     @classmethod
-    def deleteall(cls, user_id):
+    def delete_all(cls, user_id):
         Session.query(cls).filter(cls.user_id == user_id).delete()
 
 
