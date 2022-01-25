@@ -334,7 +334,7 @@ def custom_alias():
                 Session.commit()
                 flash(f"Alias {full_alias} has been created", "success")
 
-                return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))
+                return redirect(url_for("dashboard.index", highlight_alias_id=alias.id, copy_alias_text=True))
         # only happen if the request has been "hacked"
         else:
             flash("something went wrong", "warning")

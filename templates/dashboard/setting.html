@@ -400,6 +400,26 @@
     </div>
     <!-- END Always expand alias info -->
 
+    <!-- Automatic alias copy -->
+    <div class="card" id="automatic-alias-copy-section">
+      <div class="card-body">
+        <div class="card-title">Automatically copy alias after creation</div>
+        <div class="mb-3">
+          Automatically copy the alias address after creation.
+        </div>
+        <form method="post" action="#automatic-alias-copy-section">
+          <input type="hidden" name="form-name" value="automatic-alias-copy">
+          <div class="form-check">
+            <input type="checkbox" id="automatic-alias-copy" name="enable"
+                    {% if current_user.automatic_alias_copy %} checked {% endif %} class="form-check-input">
+            <label for="automatic-alias-copy">Automatically copy</label>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Update</button>
+        </form>
+      </div>
+    </div>
+    <!-- END Automatic alias copy -->
+
     <!-- Include website address in alias -->
     <div class="card" id="include_website_in_one_click_alias">
       <div class="card-body">

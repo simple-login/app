@@ -276,6 +276,17 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
+
+        elif request.form.get("form-name") == "automatic-alias-copy":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.automatic_alias_copy = True
+            else:
+                current_user.automatic_alias_copy = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "ignore-loop-email":
             choose = request.form.get("enable")
             if choose == "on":
@@ -285,6 +296,7 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "one-click-unsubscribe":
             choose = request.form.get("enable")
             if choose == "on":
@@ -294,6 +306,7 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "include_website_in_one_click_alias":
             choose = request.form.get("enable")
             if choose == "on":
@@ -306,6 +319,7 @@ def setting():
 
         elif request.form.get("form-name") == "export-data":
             return redirect(url_for("api.export_data"))
+
         elif request.form.get("form-name") == "export-alias":
             return redirect(url_for("api.export_aliases"))
 

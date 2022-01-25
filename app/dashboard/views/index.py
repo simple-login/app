@@ -61,6 +61,7 @@ def index():
     query = request.args.get("query") or ""
     sort = request.args.get("sort") or ""
     alias_filter = request.args.get("filter") or ""
+    copy_alias_text = request.args.get("copy_alias_text") or ""
 
     page = 0
     if request.args.get("page"):
@@ -106,6 +107,7 @@ def index():
                         query=query,
                         sort=sort,
                         filter=alias_filter,
+                        copy_alias_text=True,
                     )
                 )
             else:
@@ -195,6 +197,7 @@ def index():
         "dashboard/index.html",
         alias_infos=alias_infos,
         highlight_alias_id=highlight_alias_id,
+        copy_alias_text=copy_alias_text,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
         mailboxes=mailboxes,

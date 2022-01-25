@@ -401,6 +401,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # automatically copy new aliases after creation
+    automatic_alias_copy = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     # By default, the one-click unsubscribe disable the alias
     # If set to true, it will block the sender instead
     one_click_unsubscribe_block_sender = sa.Column(
