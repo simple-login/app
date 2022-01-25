@@ -590,11 +590,11 @@
 
     {% if current_user.automatic_alias_copy %}
       {% if copy_alias_text %}
-          {% for alias_info in alias_infos %}
-            {% if alias_info.alias.id == highlight_alias_id %}
-              navigator.clipboard.writeText("{{alias_info.alias.email}}").catch(() => console.log('Failed to automatically copy alias address to clipboard.'));
-            {% endif %}
-          {% endfor %}
+        {% for alias_info in alias_infos %}
+          {% if alias_info.alias.id == highlight_alias_id %}
+            navigator.clipboard.writeText("{{alias_info.alias.email}}").catch(() => console.log('Failed to automatically copy alias address to clipboard.'));
+          {% endif %}
+        {% endfor %}
       {% endif %}
     {% endif %}
   </script>
