@@ -22,16 +22,6 @@
         ️API Keys should be kept secret and treated like passwords, they can be used to gain access to your account.
       </div>
 
-      {% if api_keys|length > 0 %}
-      <form method="post">
-        <input type="hidden" name="form-name" value="delete-all">
-          <span class="delete btn btn-danger delete-all-api-keys">
-              Delete All &nbsp; &nbsp; <i class="fe fe-trash"></i>
-          </span>
-      </form>
-      <br>
-      {% endif %}
-
       <div class="row">
         {% for api_key in api_keys %}
           <div class="col-12 col-lg-6">
@@ -84,6 +74,16 @@
           </div>
         {% endfor %}
       </div>
+
+      {% if api_keys|length > 0 %}
+        <form method="post">
+          <input type="hidden" name="form-name" value="delete-all">
+          <span class="delete btn btn-danger delete-all-api-keys">
+              Delete All &nbsp; &nbsp; <i class="fe fe-trash"></i>
+          </span>
+        </form>
+        <br>
+      {% endif %}
 
       <form method="post">
         {{ new_api_key_form.csrf_token }}
