@@ -1,3 +1,5 @@
+import re
+
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
@@ -6,6 +8,9 @@ from app.dashboard.base import dashboard_bp
 from app.errors import SubdomainInTrashError
 from app.log import LOG
 from app.models import CustomDomain, Mailbox, SLDomain
+
+# Only lowercase letters, numbers, dashes (-)  are currently supported
+_SUBDOMAIN_PATTERN = r"[0-9a-z-]{1,}"
 
 
 @dashboard_bp.route("/subdomain", methods=["GET", "POST"])
@@ -36,6 +41,21 @@ def subdomain_route():
 
             subdomain = request.form.get("subdomain").lower().strip()
             domain = request.form.get("domain").lower().strip()
+
+            if len(subdomain) < 3:
+                flash("Subdomain must have at least 3 characters", "error")
+                return redirect(request.url)
+
+            if re.fullmatch(_SUBDOMAIN_PATTERN, subdomain) is None:
+                flash(
+                    "Subdomain can only contain lowercase letters, numbers and dashes (-)",
+                    "error",
+                )
+                return redirect(request.url)
+
+            if subdomain.endswith("-"):
+                flash("Subdomain can't end with dash (-)", "error")
+                return redirect(request.url)
 
             if domain not in [sl_domain.domain for sl_domain in sl_domains]:
                 LOG.e("Domain %s is tampered by %s", domain, current_user)
