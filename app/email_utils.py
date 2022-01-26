@@ -284,7 +284,7 @@ def send_email(
         )
         return
 
-    LOG.d("send email to %s, subject %s", to_email, subject)
+    LOG.d("send email to %s, subject '%s'", to_email, subject)
 
     if html:
         msg = MIMEMultipart("alternative")
