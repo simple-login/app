@@ -198,8 +198,16 @@ def send_pwnedpasswords_email(user, amount):
         ALERT_PWNEDPASSWORDS,
         user.email,
         "SimpleLogin account security alert",
-        render("transactional/pwnedpasswords-notification.txt", amount=amount),
-        render("transactional/pwnedpasswords-notification.html", amount=amount),
+        render(
+            "transactional/pwnedpasswords-notification.txt",
+            name=user.name,
+            amount=amount,
+        ),
+        render(
+            "transactional/pwnedpasswords-notification.html",
+            name=user.name,
+            amount=amount,
+        ),
         1,
     )
 
