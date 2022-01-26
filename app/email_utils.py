@@ -182,13 +182,13 @@ def send_invalid_totp_login_email(user, totp_type):
         "Unsuccessful attempt to login to your SimpleLogin account",
         render(
             "transactional/invalid-totp-login.txt",
+            name=user.name,
             type=totp_type,
-            name=user.name
         ),
         render(
             "transactional/invalid-totp-login.html",
+            name=user.name,
             type=totp_type,
-            name=user.name
         ),
         1,
     )
