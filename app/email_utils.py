@@ -183,10 +183,12 @@ def send_invalid_totp_login_email(user, totp_type):
         render(
             "transactional/invalid-totp-login.txt",
             type=totp_type,
+            name=user.name
         ),
         render(
             "transactional/invalid-totp-login.html",
             type=totp_type,
+            name=user.name
         ),
         1,
     )

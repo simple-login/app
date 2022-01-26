@@ -1,3 +1,5 @@
+Hello, {{name}},
+
 There has been an unsuccessful attempt to login to your SimpleLogin account.
 An invalid {{type}} code was provided but the email and password were correct.
 
