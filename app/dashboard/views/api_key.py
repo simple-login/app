@@ -41,17 +41,18 @@ def api_key():
             Session.commit()
             flash(f"API Key {name} has been deleted", "success")
 
-            return redirect(url_for("dashboard.api_key"))
-
         elif request.form.get("form-name") == "create":
             if new_api_key_form.validate():
                 new_api_key = ApiKey.create(
                     name=new_api_key_form.name.data, user_id=current_user.id
                 )
                 Session.commit()
-
                 flash(f"New API Key {new_api_key.name} has been created", "success")
-                return redirect(url_for("dashboard.api_key"))
+
+        elif request.form.get("form-name") == "delete-all":
+            ApiKey.delete_all(current_user.id)
+            Session.commit()
+            flash("All API Keys have been deleted", "success")
 
         return redirect(url_for("dashboard.api_key"))
 

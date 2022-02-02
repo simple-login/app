@@ -1969,6 +1969,10 @@ class ApiKey(Base, ModelMixin):
 
         return super().create(user_id=user_id, name=name, code=code, **kwargs)
 
+    @classmethod
+    def delete_all(cls, user_id):
+        Session.query(cls).filter(cls.user_id == user_id).delete()
+
 
 class CustomDomain(Base, ModelMixin):
     __tablename__ = "custom_domain"

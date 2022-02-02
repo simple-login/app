@@ -75,6 +75,16 @@
         {% endfor %}
       </div>
 
+      {% if api_keys|length > 0 %}
+        <form method="post">
+          <input type="hidden" name="form-name" value="delete-all">
+          <span class="delete btn btn-danger delete-all-api-keys">
+              Delete All &nbsp; &nbsp; <i class="fe fe-trash"></i>
+          </span>
+        </form>
+        <br>
+      {% endif %}
+
       <form method="post">
         {{ new_api_key_form.csrf_token }}
         <input type="hidden" name="form-name" value="create">
@@ -116,6 +126,31 @@
           }
         }
       })
+
+
+    });
+
+    $(".delete-all-api-keys").on("click", function (e) {
+        let that = $(this);
+
+        bootbox.confirm({
+            message: "This will delete all API Keys, they will all stop working, are you sure?",
+            buttons: {
+                confirm: {
+                    label: 'Delete All',
+                    className: 'btn-danger'
+                },
+                cancel: {
+                    label: 'Cancel',
+                    className: 'btn-outline-primary'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    that.closest("form").submit();
+                }
+            }
+        })
 
 
     });
