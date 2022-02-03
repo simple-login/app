@@ -34,15 +34,17 @@ def test_delete_all_api_key(flask_client):
     # create api_key for both users
     ApiKey.create(user_1.id, "for test")
     Session.commit()
+    ApiKey.create(user_1.id, "for test 2")
+    Session.commit()
 
     ApiKey.create(user_2.id, "for test")
     Session.commit()
 
     assert (
-        ApiKey.count() == 2
-    )  # assert that the total number of API keys for all users is 2.
-    # assert that each user has a single API key
-    assert ApiKey.filter(ApiKey.user_id == user_1.id).count() == 1
+        ApiKey.count() == 3
+    )  # assert that the total number of API keys for all users is 3.
+    # assert that each user has the API keys created
+    assert ApiKey.filter(ApiKey.user_id == user_1.id).count() == 2
     assert ApiKey.filter(ApiKey.user_id == user_2.id).count() == 1
 
     # delete all of user 1's API keys
