@@ -16,7 +16,7 @@ def test_create_delete_api_key(flask_client):
         follow_redirects=True,
     )
     assert create_r.status_code == 200
-    api_key = ApiKey.get_by(user_id=user.id, name="for test")
+    api_key = ApiKey.get_by(user_id=user.id)
     assert ApiKey.count() == 1
     assert api_key.name == "for test"
 
