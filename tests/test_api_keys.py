@@ -1,11 +1,10 @@
 from app.db import Session
 from app.models import User, ApiKey
+from tests.utils import login
 
 
 def test_create_delete_api_key(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
+    user = login(flask_client)
     Session.commit()
 
     # create api_key
