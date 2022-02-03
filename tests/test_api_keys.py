@@ -24,8 +24,6 @@ def test_delete_all_api_key(flask_client):
     user_1 = User.create(
         email="a1@b.c", password="password", name="Test User 1", activated=True
     )
-    Session.commit()
-
     user_2 = User.create(
         email="a2@b.c", password="password", name="Test User 2", activated=True
     )
@@ -33,10 +31,7 @@ def test_delete_all_api_key(flask_client):
 
     # create api_key for both users
     ApiKey.create(user_1.id, "for test")
-    Session.commit()
     ApiKey.create(user_1.id, "for test 2")
-    Session.commit()
-
     ApiKey.create(user_2.id, "for test")
     Session.commit()
 
