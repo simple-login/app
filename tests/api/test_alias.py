@@ -1,3 +1,5 @@
+from deprecated import deprecated
+
 from flask import url_for
 
 from app.config import PAGE_LIMIT
@@ -7,6 +9,7 @@ from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
 from tests.utils import login
 
 
+@deprecated
 def test_get_aliases_error_without_pagination(flask_client):
     user = User.create(
         email="a@b.c",
@@ -28,6 +31,7 @@ def test_get_aliases_error_without_pagination(flask_client):
     assert r.json["error"]
 
 
+@deprecated
 def test_get_aliases_with_pagination(flask_client):
     user = User.create(
         email="a@b.c",
@@ -75,6 +79,7 @@ def test_get_aliases_with_pagination(flask_client):
     assert len(r.json["aliases"]) == 2
 
 
+@deprecated
 def test_get_aliases_query(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
@@ -108,24 +113,14 @@ def test_get_aliases_query(flask_client):
 
 
 def test_get_aliases_v2(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user = login(flask_client)
 
     a0 = Alias.create_new(user, "prefix0")
     a1 = Alias.create_new(user, "prefix1")
     Session.commit()
 
     # << Aliases have no activity >>
-    r = flask_client.get(
-        url_for("api.get_aliases_v2", page_id=0),
-        headers={"Authentication": api_key.code},
-    )
+    r = flask_client.get("/api/v2/aliases?page_id=0")
     assert r.status_code == 200
 
     r0 = r.json["aliases"][0]
@@ -153,14 +148,11 @@ def test_get_aliases_v2(flask_client):
         alias_id=a0.id,
         website_email="c0@example.com",
         reply_email="re0@SL",
+        commit=True,
     )
-    Session.commit()
     EmailLog.create(
-        contact_id=c0.id,
-        user_id=user.id,
-        alias_id=c0.alias_id,
+        contact_id=c0.id, user_id=user.id, alias_id=c0.alias_id, commit=True
     )
-    Session.commit()
 
     # a1 has more recent activity
     c1 = Contact.create(
@@ -168,20 +160,13 @@ def test_get_aliases_v2(flask_client):
         alias_id=a1.id,
         website_email="c1@example.com",
         reply_email="re1@SL",
+        commit=True,
     )
-    Session.commit()
     EmailLog.create(
-        contact_id=c1.id,
-        user_id=user.id,
-        alias_id=c1.alias_id,
+        contact_id=c1.id, user_id=user.id, alias_id=c1.alias_id, commit=True
     )
-    Session.commit()
 
-    # get aliases v2
-    r = flask_client.get(
-        url_for("api.get_aliases_v2", page_id=0),
-        headers={"Authentication": api_key.code},
-    )
+    r = flask_client.get("/api/v2/aliases?page_id=0")
     assert r.status_code == 200
 
     r0 = r.json["aliases"][0]
