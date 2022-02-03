@@ -1,3 +1,5 @@
+from flask import url_for
+
 from app.db import Session
 from app.models import User, ApiKey
 from tests.utils import login
@@ -20,9 +22,7 @@ def test_create_delete_api_key(flask_client):
 
 def test_delete_all_api_key(flask_client):
     # create two test users
-    user_1 = User.create(
-        email="a1@b.c", password="password", name="Test User 1", activated=True
-    )
+    user_1 = login(flask_client)
     user_2 = User.create(
         email="a2@b.c", password="password", name="Test User 2", activated=True
     )
@@ -42,8 +42,12 @@ def test_delete_all_api_key(flask_client):
     assert ApiKey.filter(ApiKey.user_id == user_2.id).count() == 1
 
     # delete all of user 1's API keys
-    ApiKey.delete_all(user_1.id)
-    Session.commit()
+    r = flask_client.post(
+        url_for("dashboard.api_key"),
+        data={"form-name": "delete-all"},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
     assert (
         ApiKey.count() == 1
     )  # assert that the total number of API keys for all users is now 1.
