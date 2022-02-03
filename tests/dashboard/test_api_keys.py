@@ -10,17 +10,26 @@ def test_create_delete_api_key(flask_client):
     Session.commit()
 
     # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
-
+    create_r = flask_client.post(
+        url_for("dashboard.api_key"),
+        data={"form-name": "create", "name": "for test"},
+        follow_redirects=True,
+    )
+    assert create_r.status_code == 200
+    api_key = ApiKey.get_by(user_id=user.id, name="for test")
     assert ApiKey.count() == 1
     assert api_key.name == "for test"
 
-    ApiKey.delete(api_key.id)
+    delete_r = flask_client.post(
+        url_for("dashboard.api_key"),
+        data={"form-name": "delete", "api-key-id": api_key.id},
+        follow_redirects=True,
+    )
+    assert delete_r.status_code == 200
     assert ApiKey.count() == 0
 
 
-def test_delete_all_api_key(flask_client):
+def test_delete_all_api_keys(flask_client):
     # create two test users
     user_1 = login(flask_client)
     user_2 = User.create(
