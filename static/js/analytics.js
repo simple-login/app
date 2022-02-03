@@ -21,6 +21,6 @@
   plausibleScript.src = 'https://plausible.simplelogin.io/js/index.js';
 
   var ins = document.getElementsByTagName('script')[0];
-  ins.parentNode.insertBefore(plausibleScript, ins)
+  ins.parentNode.insertBefore(plausibleScript, ins);
 
 })();
