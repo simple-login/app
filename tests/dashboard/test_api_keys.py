@@ -20,6 +20,7 @@ def test_create_delete_api_key(flask_client):
     assert ApiKey.count() == 1
     assert api_key.name == "for test"
 
+    # delete api key
     delete_r = flask_client.post(
         url_for("dashboard.api_key"),
         data={"form-name": "delete", "api-key-id": api_key.id},
