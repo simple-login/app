@@ -1,3 +1,4 @@
+from deprecated import deprecated
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from flask import g
@@ -27,6 +28,7 @@ from app.models import Alias, Contact, Mailbox, AliasMailbox
 from app.utils import sanitize_email
 
 
+@deprecated
 @api_bp.route("/aliases", methods=["GET", "POST"])
 @require_api_auth
 def get_aliases():
@@ -76,6 +78,7 @@ def get_aliases_v2():
     Get aliases
     Input:
         page_id: in query
+        pinned: in query
     Output:
         - aliases: list of alias:
             - id
@@ -106,13 +109,15 @@ def get_aliases_v2():
     except (ValueError, TypeError):
         return jsonify(error="page_id must be provided in request query"), 400
 
+    pinned = "pinned" in request.args
+
     query = None
     data = request.get_json(silent=True)
     if data:
         query = data.get("query")
 
     alias_infos: [AliasInfo] = get_alias_infos_with_pagination_v3(
-        user, page_id=page_id, query=query
+        user, page_id=page_id, query=query, alias_filter="pinned" if pinned else None
     )
 
     return (
