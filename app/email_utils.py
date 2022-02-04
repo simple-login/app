@@ -199,7 +199,7 @@ def send_pwnedpasswords_email(user, amount):
         user.email,
         "SimpleLogin account security alert",
         render(
-            "transactional/pwnedpasswords-notification.txt",
+            "transactional/pwnedpasswords-notification.txt.jinja2",
             name=user.name,
             amount=amount,
         ),
