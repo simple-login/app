@@ -68,6 +68,8 @@ EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"].lower()
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
 SUPPORT_NAME = os.environ.get("SUPPORT_NAME", "Son from SimpleLogin")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+# to receive monitoring daily report
+MONITORING_EMAIL = os.environ.get("MONITORING_EMAIL")
 
 # VERP: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
 BOUNCE_PREFIX = os.environ.get("BOUNCE_PREFIX") or "bounce+"
