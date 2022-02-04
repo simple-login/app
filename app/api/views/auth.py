@@ -8,6 +8,7 @@ from flask_login import login_user
 from itsdangerous import Signer
 
 from app import email_utils
+from app.auth_utils import check_pwnedpasswords
 from app.api.base import api_bp
 from app.config import FLASK_SECRET, DISABLE_REGISTRATION
 from app.dashboard.views.setting import send_reset_password_email
@@ -17,6 +18,7 @@ from app.email_utils import (
     personal_email_already_used,
     send_email,
     render,
+    send_pwnedpasswords_email,
 )
 from app.extensions import limiter
 from app.log import LOG
@@ -63,7 +65,10 @@ def auth_login():
         return jsonify(error="Account disabled"), 400
     elif not user.activated:
         return jsonify(error="Account not activated"), 400
-    elif user.fido_enabled():
+    pwnedpasswords_result = check_pwnedpasswords(password)
+    if pwnedpasswords_result:
+        send_pwnedpasswords_email(user, pwnedpasswords_result)
+    if user.fido_enabled():
         # allow user who has TOTP enabled to continue using the mobile app
         if not user.enable_otp:
             return jsonify(error="Currently we don't support FIDO on mobile yet"), 403
@@ -72,6 +77,7 @@ def auth_login():
 
 
 @api_bp.route("/auth/register", methods=["POST"])
+@limiter.limit("10/minute")
 def auth_register():
     """
     User signs up - will need to activate their account with an activation code.
@@ -99,6 +105,9 @@ def auth_register():
 
     if len(password) > 100:
         return jsonify(error="password too long"), 400
+
+    if check_pwnedpasswords(password):
+        return jsonify(error="password found in breach"), 400
 
     LOG.d("create user %s", email)
     user = User.create(email=email, name="", password=password)

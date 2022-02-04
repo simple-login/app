@@ -320,6 +320,8 @@ ALERT_SPF = "spf"
 
 ALERT_INVALID_TOTP_LOGIN = "invalid_totp_login"
 
+ALERT_PWNEDPASSWORDS = "pwnedpasswords"
+
 # when a mailbox is also an alias
 # happens when user adds a mailbox with their domain
 # then later adds this domain into SimpleLogin
@@ -339,6 +341,8 @@ ALERT_YAHOO_COMPLAINT = "alert_yahoo_complaint"
 
 # Disable onboarding emails
 DISABLE_ONBOARDING = "DISABLE_ONBOARDING" in os.environ
+
+DISABLE_PWNEDPASSWORDS = "DISABLE_PWNEDPASSWORDS" in os.environ
 
 HCAPTCHA_SECRET = os.environ.get("HCAPTCHA_SECRET")
 HCAPTCHA_SITEKEY = os.environ.get("HCAPTCHA_SITEKEY")

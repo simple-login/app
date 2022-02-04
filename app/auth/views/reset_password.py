@@ -1,11 +1,12 @@
 import uuid
 
-from flask import request, flash, render_template, url_for, g
+from flask import request, flash, render_template, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
+from app.auth_utils import check_pwnedpasswords
 from app.db import Session
 from app.extensions import limiter
 from app.models import ResetPasswordCode
@@ -19,9 +20,7 @@ class ResetPasswordForm(FlaskForm):
 
 
 @auth_bp.route("/reset_password", methods=["GET", "POST"])
-@limiter.limit(
-    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
-)
+@limiter.limit("10/minute")
 def reset_password():
     form = ResetPasswordForm(request.form)
 
@@ -32,8 +31,6 @@ def reset_password():
     )
 
     if not reset_password_code:
-        # Trigger rate limiter
-        g.deduct_limit = True
         error = (
             "The reset password link can be used only once. "
             "Please request a new link to reset password."
@@ -51,6 +48,9 @@ def reset_password():
         # avoid user reusing the old password
         if user.check_password(new_password):
             error = "You cannot reuse the same password"
+            return render_template("auth/reset_password.html", form=form, error=error)
+        if check_pwnedpasswords(new_password):
+            error = "Password found in a breach, please try a different password."
             return render_template("auth/reset_password.html", form=form, error=error)
 
         user.set_password(new_password)

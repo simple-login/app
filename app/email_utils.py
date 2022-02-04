@@ -51,6 +51,7 @@ from app.config import (
     TRANSACTIONAL_BOUNCE_EMAIL,
     ALERT_SPF,
     ALERT_INVALID_TOTP_LOGIN,
+    ALERT_PWNEDPASSWORDS,
     TEMP_DIR,
     ALIAS_AUTOMATIC_DISABLE,
     RSPAMD_SIGN_DKIM,
@@ -187,6 +188,25 @@ def send_invalid_totp_login_email(user, totp_type):
         render(
             "transactional/invalid-totp-login.html",
             type=totp_type,
+        ),
+    )
+
+
+def send_pwnedpasswords_email(user, amount):
+    send_email_with_rate_control(
+        user,
+        ALERT_PWNEDPASSWORDS,
+        user.email,
+        "SimpleLogin account security alert",
+        render(
+            "transactional/pwnedpasswords-notification.txt.jinja2",
+            name=user.name,
+            amount=amount,
+        ),
+        render(
+            "transactional/pwnedpasswords-notification.html",
+            name=user.name,
+            amount=amount,
         ),
         1,
     )
