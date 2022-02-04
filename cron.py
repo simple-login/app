@@ -23,6 +23,7 @@ from app.config import (
     AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
     HIBP_API_KEYS,
     HIBP_SCAN_INTERVAL_DAYS,
+    MONITORING_EMAIL,
 )
 from app.db import Session
 from app.dns_utils import get_mx_domains, is_mx_equivalent
@@ -464,10 +465,10 @@ def alias_creation_report() -> List[Tuple[str, int]]:
     return res
 
 
-def stats():
+def growth_stats():
     """send admin stats everyday"""
     if not ADMIN_EMAIL:
-        # nothing to do
+        LOG.w("ADMIN_EMAIL not set, nothing to do")
         return
 
     stats_today = compute_metric2()
@@ -477,16 +478,10 @@ def stats():
         .first()
     )
 
-    nb_user_increase = increase_percent(stats_yesterday.nb_user, stats_today.nb_user)
-    nb_alias_increase = increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)
-    nb_forward_increase = increase_percent(
-        stats_yesterday.nb_forward, stats_today.nb_forward
-    )
-
     today = arrow.now().format()
 
     report = f"""
-Stats for {today}
+Growth Stats for {today}
 
 nb_user: {stats_today.nb_user} - {increase_percent(stats_yesterday.nb_user, stats_today.nb_user)}
 nb_premium: {stats_today.nb_premium} - {increase_percent(stats_yesterday.nb_premium, stats_today.nb_premium)}
@@ -500,7 +495,6 @@ nb_forward_last_24h: {stats_today.nb_forward_last_24h} - {increase_percent(stats
 nb_reply_last_24h: {stats_today.nb_reply_last_24h} - {increase_percent(stats_yesterday.nb_reply_last_24h, stats_today.nb_reply_last_24h)}
 nb_block_last_24h: {stats_today.nb_block_last_24h} - {increase_percent(stats_yesterday.nb_block_last_24h, stats_today.nb_block_last_24h)}
 nb_bounced_last_24h: {stats_today.nb_bounced_last_24h} - {increase_percent(stats_yesterday.nb_bounced_last_24h, stats_today.nb_bounced_last_24h)}
-nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_percent(stats_yesterday.nb_total_bounced_last_24h, stats_today.nb_total_bounced_last_24h)}
 
 nb_custom_domain: {stats_today.nb_verified_custom_domain} - {increase_percent(stats_yesterday.nb_verified_custom_domain, stats_today.nb_verified_custom_domain)}
 nb_subdomain: {stats_today.nb_subdomain} - {increase_percent(stats_yesterday.nb_subdomain, stats_today.nb_subdomain)}
@@ -511,6 +505,44 @@ nb_deleted_subdomain: {stats_today.nb_deleted_subdomain} - {increase_percent(sta
 nb_app: {stats_today.nb_app} - {increase_percent(stats_yesterday.nb_app, stats_today.nb_app)}
 nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yesterday.nb_referred_user, stats_today.nb_referred_user)}
 nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percent(stats_yesterday.nb_referred_user_paid, stats_today.nb_referred_user_paid)}
+    """
+
+    LOG.d("report email: %s", report)
+
+    send_email(
+        ADMIN_EMAIL,
+        subject=f"SimpleLogin Growth Stats for {today}",
+        plaintext=report,
+        retries=3,
+    )
+
+
+def daily_monitoring_report():
+    """send monitoring stats of the previous day"""
+    if not MONITORING_EMAIL:
+        LOG.w("MONITORING_EMAIL not set, nothing to do")
+        return
+
+    stats_today = compute_metric2()
+    stats_yesterday = (
+        Metric2.filter(Metric2.date < stats_today.date)
+        .order_by(Metric2.date.desc())
+        .first()
+    )
+
+    today = arrow.now().format()
+
+    report = f"""
+Monitoring Stats for {today}
+
+nb_alias: {stats_today.nb_alias} - {increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)}
+
+nb_forward_last_24h: {stats_today.nb_forward_last_24h} - {increase_percent(stats_yesterday.nb_forward_last_24h, stats_today.nb_forward_last_24h)}
+nb_reply_last_24h: {stats_today.nb_reply_last_24h} - {increase_percent(stats_yesterday.nb_reply_last_24h, stats_today.nb_reply_last_24h)}
+nb_block_last_24h: {stats_today.nb_block_last_24h} - {increase_percent(stats_yesterday.nb_block_last_24h, stats_today.nb_block_last_24h)}
+nb_bounced_last_24h: {stats_today.nb_bounced_last_24h} - {increase_percent(stats_yesterday.nb_bounced_last_24h, stats_today.nb_bounced_last_24h)}
+nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_percent(stats_yesterday.nb_total_bounced_last_24h, stats_today.nb_total_bounced_last_24h)}
+
     """
 
     report += "\n====================================\n"
@@ -536,8 +568,8 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
     LOG.d("report email: %s", report)
 
     send_email(
-        ADMIN_EMAIL,
-        subject=f"SimpleLogin Stats for {today}, {nb_user_increase} users, {nb_alias_increase} aliases, {nb_forward_increase} forwards",
+        MONITORING_EMAIL,
+        subject=f"SimpleLogin Monitoring Report for {today}",
         plaintext=report,
         retries=3,
     )
@@ -1009,6 +1041,7 @@ if __name__ == "__main__":
         type=str,
         choices=[
             "stats",
+            "daily_monitoring_report",
             "notify_trial_end",
             "notify_manual_subscription_end",
             "notify_premium_end",
@@ -1026,7 +1059,10 @@ if __name__ == "__main__":
     with create_light_app().app_context():
         if args.job == "stats":
             LOG.d("Compute Stats")
-            stats()
+            growth_stats()
+        if args.job == "daily_monitoring_report":
+            LOG.d("Send out daily monitoring stats")
+            daily_monitoring_report()
         elif args.job == "notify_trial_end":
             LOG.d("Notify users with trial ending soon")
             notify_trial_end()
