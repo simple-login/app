@@ -1,5 +1,3 @@
-from deprecated import deprecated
-
 from flask import url_for
 
 from app.config import PAGE_LIMIT
@@ -9,7 +7,6 @@ from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
 from tests.utils import login
 
 
-@deprecated
 def test_get_aliases_error_without_pagination(flask_client):
     user = User.create(
         email="a@b.c",
@@ -31,7 +28,6 @@ def test_get_aliases_error_without_pagination(flask_client):
     assert r.json["error"]
 
 
-@deprecated
 def test_get_aliases_with_pagination(flask_client):
     user = User.create(
         email="a@b.c",
@@ -79,7 +75,6 @@ def test_get_aliases_with_pagination(flask_client):
     assert len(r.json["aliases"]) == 2
 
 
-@deprecated
 def test_get_aliases_query(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True

@@ -23,7 +23,7 @@ def get_ns(hostname) -> [str]:
 def get_cname_record(hostname) -> Optional[str]:
     """Return the CNAME record if exists for a domain, WITHOUT the trailing period at the end"""
     try:
-        answers = _get_dns_resolver().query(hostname, "CNAME")
+        answers = _get_dns_resolver().resolve(hostname, "CNAME")
     except Exception:
         return None
 
@@ -39,7 +39,7 @@ def get_mx_domains(hostname) -> [(int, str)]:
     domain name ends with a "." at the end.
     """
     try:
-        answers = _get_dns_resolver().query(hostname, "MX")
+        answers = _get_dns_resolver().resolve(hostname, "MX")
     except Exception:
         return []
 
@@ -60,7 +60,7 @@ _include_spf = "include:"
 def get_spf_domain(hostname) -> [str]:
     """return all domains listed in *include:*"""
     try:
-        answers = _get_dns_resolver().query(hostname, "TXT")
+        answers = _get_dns_resolver().resolve(hostname, "TXT")
     except Exception:
         return []
 
@@ -82,7 +82,7 @@ def get_spf_domain(hostname) -> [str]:
 def get_txt_record(hostname) -> [str]:
     """return all domains listed in *include:*"""
     try:
-        answers = _get_dns_resolver().query(hostname, "TXT")
+        answers = _get_dns_resolver().resolve(hostname, "TXT")
     except Exception:
         return []
 
