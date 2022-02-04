@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hello, " ~ name ~ ",") }}
+  {{ render_text("Hello," ~ (" " ~ name ~ "," if name)) }}
   {{ render_text("There has been an unsuccessful attempt to login to your SimpleLogin account.") }}
   {{ render_text("An invalid " ~ type ~ " code was provided <b>but the email and password were correct.</b>") }}
 

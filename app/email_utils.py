@@ -181,7 +181,7 @@ def send_invalid_totp_login_email(user, totp_type):
         user.email,
         "Unsuccessful attempt to login to your SimpleLogin account",
         render(
-            "transactional/invalid-totp-login.txt",
+            "transactional/invalid-totp-login.txt.jinja2",
             name=user.name,
             type=totp_type,
         ),
