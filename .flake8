@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 88
-select = C,E,F,W,B,B950
+select = C,E,F,W,B,B902,B903,B904,B950
 extend-ignore =
     # For black compatibility
     E203,
