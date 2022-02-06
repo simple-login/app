@@ -30,7 +30,7 @@ def random_words():
 
 
 def random_string(length=10, include_digits=False):
-    """Generate a random string of fixed length """
+    """Generate a random string of fixed length"""
     letters = string.ascii_lowercase
     if include_digits:
         letters += string.digits

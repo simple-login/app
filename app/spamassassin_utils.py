@@ -10,8 +10,8 @@ import select
 
 from app.log import LOG
 
-divider_pattern = re.compile(br"^(.*?)\r?\n(.*?)\r?\n\r?\n", re.DOTALL)
-first_line_pattern = re.compile(br"^SPAMD/[^ ]+ 0 EX_OK$")
+divider_pattern = re.compile(rb"^(.*?)\r?\n(.*?)\r?\n\r?\n", re.DOTALL)
+first_line_pattern = re.compile(rb"^SPAMD/[^ ]+ 0 EX_OK$")
 
 
 class SpamAssassin(object):
