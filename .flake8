@@ -1,10 +1,10 @@
 [flake8]
-ignore =
-    # line length is handled by black
-    E501,
-    # W503 & E203 are not PEP 8 compliant and conflicts with black
-    W503,
+max-line-length = 88
+select = C,E,F,W,B,B950
+extend-ignore =
+    # For black compatibility
     E203,
+    E501,
     # Ignore "f-string is missing placeholders"
     F541,
     # allow bare "except"
