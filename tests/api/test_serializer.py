@@ -179,7 +179,7 @@ def test_get_alias_infos_pinned_alias(flask_client):
     )
 
     # to have 3 pages: 2*PAGE_LIMIT + the alias automatically created for a new account
-    for i in range(2 * PAGE_LIMIT):
+    for _ in range(2 * PAGE_LIMIT):
         Alias.create_new_random(user)
 
     first_alias = Alias.order_by(Alias.id).first()

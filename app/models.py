@@ -1323,7 +1323,7 @@ class Alias(Base, ModelMixin):
             raise Exception("alias prefix cannot be empty")
 
         # find the right suffix - avoid infinite loop by running this at max 1000 times
-        for i in range(1000):
+        for _ in range(1000):
             suffix = user.get_random_alias_suffix()
             email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
 

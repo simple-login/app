@@ -823,7 +823,7 @@ def copy(msg: Message) -> Message:
         LOG.w("deepcopy fails, try string parsing")
         try:
             return message_from_string(msg.as_string())
-        except (UnicodeEncodeError, KeyError, LookupError):
+        except (UnicodeEncodeError, LookupError):
             LOG.w("as_string() fails, try bytes parsing")
             return message_from_bytes(to_bytes(msg))
 

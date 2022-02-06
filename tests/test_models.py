@@ -52,7 +52,7 @@ def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
     )
 
     # make sure user runs out of quota to create new email
-    for i in range(MAX_NB_EMAIL_FREE_PLAN):
+    for _ in range(MAX_NB_EMAIL_FREE_PLAN):
         Alias.create_new(user=user, prefix="test")
     Session.commit()
 

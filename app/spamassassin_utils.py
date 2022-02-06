@@ -95,7 +95,7 @@ class SpamAssassin(object):
         # join line when current one is only wrap of previous
         tablelists_temp = []
         if tablelists:
-            for counter, tablelist in enumerate(tablelists):
+            for _, tablelist in enumerate(tablelists):
                 if len(tablelist) > 1:
                     if (tablelist[0].isnumeric() or tablelist[0] == "-") and (
                         tablelist[1].isnumeric() or tablelist[1] == "."

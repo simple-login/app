@@ -23,7 +23,7 @@ def test_too_many_requests(flask_client):
     login(flask_client)
 
     # can't create more than 5 aliases in 1 minute
-    for i in range(7):
+    for _ in range(7):
         r = flask_client.post(
             url_for("dashboard.index"),
             data={"form-name": "create-random-email"},
