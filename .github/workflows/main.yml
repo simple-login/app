@@ -66,6 +66,8 @@ jobs:
       - name: Test with pytest
         run: |
           pytest
+        env:
+          GITHUB_ACTIONS_TEST: true
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v2
