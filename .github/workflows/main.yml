@@ -61,7 +61,7 @@ jobs:
       - name: Check formatting & linting
         run: |
           poetry run black --check .
-          flake8
+          poetry run flake8
 
       - name: Test with pytest
         run: |
