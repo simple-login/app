@@ -31,4 +31,5 @@ from .views import (
     app,
     delete_account,
     notification,
+    support,
 )
