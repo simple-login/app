@@ -20,7 +20,7 @@ VALID_MIME_TYPES = ['text/plain', 'message/rfc822']
 def show_support_dialog():
     if not ZENDESK_HOST:
         return render_template("dashboard/support_disabled.html")
-    return render_template("dashboard/support.html", ticketEmail=current_user.email)
+    return render_template("dashboard/support.html", ticket_email=current_user.email)
 
 
 def check_zendesk_response_status(response_code: int) -> bool:
@@ -33,7 +33,7 @@ def check_zendesk_response_status(response_code: int) -> bool:
     return True
 
 
-def upload_file_to_zendesk(file: FileStorage) -> Union[None, str]:
+def upload_file_to_zendesk_and_get_upload_token(file: FileStorage) -> Union[None, str]:
     if file.mimetype not in VALID_MIME_TYPES and not file.mimetype.startswith('image/'):
         flash('File {} is not an image, text or an email'.format(file.filename), "warning")
         return
@@ -47,10 +47,12 @@ def upload_file_to_zendesk(file: FileStorage) -> Union[None, str]:
     return data['upload']['token']
 
 
-def create_zendesk_request(email: str, contents: str, files: [FileStorage]) -> bool:
+def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bool:
     tokens = []
     for file in files:
-        token = upload_file_to_zendesk(file)
+        if not file.filename:
+            continue
+        token = upload_file_to_zendesk_and_get_upload_token(file)
         if token is None:
             return False
         tokens.append(token)
@@ -59,7 +61,7 @@ def create_zendesk_request(email: str, contents: str, files: [FileStorage]) -> b
             'subject': 'Ticket created for user {}'.format(current_user.id),
             'comment': {
                 'type': 'Comment',
-                'body': contents,
+                'body': content,
                 'uploads': tokens
             },
             'requester': {
@@ -83,14 +85,14 @@ def create_zendesk_request(email: str, contents: str, files: [FileStorage]) -> b
 def process_support_dialog():
     if not ZENDESK_HOST:
         return render_template("dashboard/support_disabled.html")
-    contents = request.form.get("ticketContents") or ""
-    email = request.form.get("ticketEmail") or ""
-    if not contents:
+    content = request.form.get("ticket_content") or ""
+    email = request.form.get("ticket_email") or ""
+    if not content:
         flash("Please add a description", "warning")
-        return render_template("dashboard/support.html", ticketEmail=email)
+        return render_template("dashboard/support.html", ticket_email=email)
     if not email:
         flash("Please add an email", "warning")
-        return render_template("dashboard/support.html", ticketContents=contents)
-    if create_zendesk_request(email, contents, request.files.getlist('ticketFiles')):
-        return render_template("dashboard/support_ticket_created.html", ticketEmail=email)
-    return render_template("dashboard/support.html", ticketEmail=email, ticketContents=contents)
+        return render_template("dashboard/support.html", ticket_content=content)
+    if create_zendesk_request(email, content, request.files.getlist('ticket_files')):
+        return render_template("dashboard/support_ticket_created.html", ticket_email=email)
+    return render_template("dashboard/support.html", ticket_email=email, ticket_content=content)
