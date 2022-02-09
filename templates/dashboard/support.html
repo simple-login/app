@@ -19,7 +19,7 @@
     <script>
         $( document ).ready(function() {
             var app = new Vue({
-                el: '#supportZendeskForm',
+                el: '#aliasGroup',
                 data: {
                     ticketEmail: document.querySelector("input[name=ticketEmail]").value
                 },
@@ -33,6 +33,16 @@
                     }
                 }
             });
+
+            $('.custom-file input').change(function (e) {
+                var files = [];
+                for (var i = 0; i < $(this)[0].files.length; i++) {
+                    files.push($(this)[0].files[i].name);
+                }
+                $(this).next('.custom-file-label').html(files.join(', '));
+            });
+
+
         })
     </script>
 {% endblock %}
@@ -50,7 +60,7 @@
                 <div class="mt-2">
                     A support ticket will be created in Zendesk. Please do not include any sensitive information in the ticket.
                 </div>
-                <form id="supportZendeskForm" method="post">
+                <form id="supportZendeskForm" method="post" enctype="multipart/form-data">
                     <div class="mt-4 mb-5">
                         <label for="issueDescription" class="form-label">What happened?</label>
                         <textarea class="form-control" name="ticketContents" id="issueDescription" rows="3" placeholder="Please provide as much information as possible. For example which alias(es), mailbox(es) ar affected, if this is a persistent issue...">{{- ticketContents or '' -}}</textarea>
@@ -58,8 +68,9 @@
                     <div class="mt-5 font-weight-bold">
                         Attach files to support request
                     </div>
+                    <div class="mt-1 text-muted">Only images, text and emails are accepted</div>
                     <div class="custom-file mt-2">
-                        <input type="file" class="custom-file-input" name="ticketFiles" id="ticketFileGroup" multiple>
+                        <input type="file" class="custom-file-input" name="ticketFiles" id="ticketFileGroup" multiple="multiple">
                         <label class="custom-file-label" for="ticketFileGroup">Choose file</label>
                     </div>
                     <div class="mt-5 font-weight-bold">
@@ -68,7 +79,7 @@
                     <div class="mt-2">
                         Conversations related to this ticket will be sent to this address. Feel free to use an alias here.
                     </div>
-                    <div class="input-group mb-3">
+                    <div class="input-group mb-3" id="aliasGroup">
                         <input type="text" class="form-control" placeholder="Email" value="{{ ticketEmail }}" name="ticketEmail" v-model='ticketEmail' aria-label="Email to send responses to" aria-describedby="button-addon2">
                         <div class="input-group-append">
                             <button class="btn btn-outline-primary" type="button" @click="generateRandomAlias" id="button-addon2">Generate a random alias</button>

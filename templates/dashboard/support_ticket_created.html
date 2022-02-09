@@ -1,0 +1,37 @@
+{% extends 'default.html' %}
+
+{% set active_page = None %}
+
+{% block title %}
+    Support
+{% endblock %}
+
+{% block head %}
+    <style>
+        .card-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+    </style>
+{% endblock %}
+
+{% block default_content %}
+
+    <div class="col pb-3">
+        <!-- Current plan -->
+        <div class="card">
+            <div class="card-body">
+                <div class="card-title mb-3">Support ticket has been created for {{ ticketEmail }}</div>
+                <div class="mt-2">
+                    Head back to <a href="/dashboard">your dashboard</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+{% endblock %}
+
+
+
