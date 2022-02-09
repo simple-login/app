@@ -18,25 +18,31 @@ VALID_MIME_TYPES = ['text/plain', 'message/rfc822']
 @dashboard_bp.route("/support", methods=["GET"])
 @login_required
 def show_support_dialog():
-    mailbox = Mailbox.get(current_user.default_mailbox_id)
-    return render_template("dashboard/support.html", ticketEmail=mailbox.email)
+    if not ZENDESK_HOST:
+        return render_template("dashboard/support_disabled.html")
+    return render_template("dashboard/support.html", ticketEmail=current_user.email)
+
+
+def check_zendesk_response_status(response_code: int) -> bool:
+    if response_code != 201:
+        if response_code in (401 or 422):
+            LOG.debug('Could not authenticate')
+        else:
+            LOG.debug('Problem with the request. Status {}'.format(response_code))
+        return False
+    return True
 
 
 def upload_file_to_zendesk(file: FileStorage) -> Union[None, str]:
     if file.mimetype not in VALID_MIME_TYPES and not file.mimetype.startswith('image/'):
         flash('File {} is not an image, text or an email'.format(file.filename), "warning")
-        return None
+        return
     escaped_filename = urllib.parse.urlencode({'filename': file.filename})
     url = 'https://{}/api/v2/uploads?{}'.format(ZENDESK_HOST, escaped_filename)
     headers = {'content-type': file.mimetype}
     response = requests.post(url, headers=headers, data=file.stream)
-    if response.status_code != 201:
-        if response.status_code == 401 or 422:
-            LOG.debug('Could not authenticate')
-            return None
-        else:
-            LOG.debug('Problem with the request. Status ' + str(response.status_code))
-            return None
+    if not check_zendesk_response_status(response.status_code):
+        return
     data = response.json()
     return data['upload']['token']
 
@@ -64,14 +70,9 @@ def create_zendesk_request(email: str, contents: str, files: [FileStorage]) -> b
     }
     url = 'https://{}/api/v2/requests.json'.format(ZENDESK_HOST)
     headers = {'content-type': 'application/json'}
-    r = requests.post(url, data=json.dumps(data), headers=headers)
-    if r.status_code != 201:
-        if r.status_code == 401 or 422:
-            LOG.debug('Could not authenticate')
-            return False
-        else:
-            LOG.debug('Problem with the request. Status ' + str(r.status_code))
-            return False
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+    if not check_zendesk_response_status(response.status_code):
+        return False
     flash("Ticket was created. You should receive an email notification", "success")
     LOG.debug('Ticket created')
     return True
@@ -80,6 +81,8 @@ def create_zendesk_request(email: str, contents: str, files: [FileStorage]) -> b
 @dashboard_bp.route("/support", methods=["POST"])
 @login_required
 def process_support_dialog():
+    if not ZENDESK_HOST:
+        return render_template("dashboard/support_disabled.html")
     contents = request.form.get("ticketContents") or ""
     email = request.form.get("ticketEmail") or ""
     if not contents:

@@ -1,6 +1,6 @@
 {% extends 'default.html' %}
 
-{% set active_page = None %}
+{% set active_page = 'dashboard' %}
 
 {% block title %}
     Support
@@ -14,14 +14,15 @@
             margin-bottom: 3px;
         }
     </style>
+{% endblock %}
 
-    <script src="{{ url_for('static', filename='node_modules/vue/dist/vue.min.js') }}"></script>
+{% block script %}
     <script>
         $( document ).ready(function() {
             var app = new Vue({
                 el: '#aliasGroup',
                 data: {
-                    ticketEmail: document.querySelector("input[name=ticketEmail]").value
+                    ticketEmail: '{{ ticketEmail }}'
                 },
                 methods: {
                     generateRandomAlias: async function(event){
@@ -80,7 +81,7 @@
                         Conversations related to this ticket will be sent to this address. Feel free to use an alias here.
                     </div>
                     <div class="input-group mb-3" id="aliasGroup">
-                        <input type="text" class="form-control" placeholder="Email" value="{{ ticketEmail }}" name="ticketEmail" v-model='ticketEmail' aria-label="Email to send responses to" aria-describedby="button-addon2">
+                        <input type="text" class="form-control" placeholder="Email" name="ticketEmail" v-model='ticketEmail' aria-label="Email to send responses to" aria-describedby="button-addon2">
                         <div class="input-group-append">
                             <button class="btn btn-outline-primary" type="button" @click="generateRandomAlias" id="button-addon2">Generate a random alias</button>
                         </div>
