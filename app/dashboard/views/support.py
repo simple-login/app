@@ -75,7 +75,6 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
     response = requests.post(url, data=json.dumps(data), headers=headers)
     if not check_zendesk_response_status(response.status_code):
         return False
-    flash("Ticket was created. You should receive an email notification", "success")
     LOG.debug("Ticket created")
     return True
 
@@ -103,4 +102,5 @@ def process_support_dialog():
             "dashboard/support.html", ticket_email=email, ticket_content=content
         )
     g.deduct_limit = True
-    return render_template("dashboard/support_ticket_created.html", ticket_email=email)
+    flash("Ticket created. You should have received an email notification.", "success")
+    return redirect(url_for("dashboard.index"))
