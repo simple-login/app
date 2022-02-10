@@ -661,7 +661,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             return url_for("static", filename="default-avatar.png")
 
     def suggested_emails(self, website_name) -> (str, [str]):
-        """return suggested email and other email choices """
+        """return suggested email and other email choices"""
         website_name = convert_to_id(website_name)
 
         all_aliases = [
@@ -679,7 +679,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         )
 
     def suggested_names(self) -> (str, [str]):
-        """return suggested name and other name choices """
+        """return suggested name and other name choices"""
         other_name = convert_to_id(self.name)
 
         return self.name, [other_name, "Anonymous", "whoami"]
@@ -1323,7 +1323,7 @@ class Alias(Base, ModelMixin):
             raise Exception("alias prefix cannot be empty")
 
         # find the right suffix - avoid infinite loop by running this at max 1000 times
-        for i in range(1000):
+        for _ in range(1000):
             suffix = user.get_random_alias_suffix()
             email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
 

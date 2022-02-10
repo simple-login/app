@@ -10,8 +10,8 @@ import select
 
 from app.log import LOG
 
-divider_pattern = re.compile(br"^(.*?)\r?\n(.*?)\r?\n\r?\n", re.DOTALL)
-first_line_pattern = re.compile(br"^SPAMD/[^ ]+ 0 EX_OK$")
+divider_pattern = re.compile(rb"^(.*?)\r?\n(.*?)\r?\n\r?\n", re.DOTALL)
+first_line_pattern = re.compile(rb"^SPAMD/[^ ]+ 0 EX_OK$")
 
 
 class SpamAssassin(object):
@@ -95,7 +95,7 @@ class SpamAssassin(object):
         # join line when current one is only wrap of previous
         tablelists_temp = []
         if tablelists:
-            for counter, tablelist in enumerate(tablelists):
+            for _, tablelist in enumerate(tablelists):
                 if len(tablelist) > 1:
                     if (tablelist[0].isnumeric() or tablelist[0] == "-") and (
                         tablelist[1].isnumeric() or tablelist[1] == "."

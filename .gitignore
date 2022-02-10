@@ -11,6 +11,7 @@ db.sqlite-journal
 static/upload
 venv/
 .venv
+.python-version
 .coverage
 htmlcov
 adhoc

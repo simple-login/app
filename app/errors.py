@@ -5,19 +5,19 @@ class SLException(Exception):
 
 
 class AliasInTrashError(SLException):
-    """raised when alias is deleted before """
+    """raised when alias is deleted before"""
 
     pass
 
 
 class DirectoryInTrashError(SLException):
-    """raised when a directory is deleted before """
+    """raised when a directory is deleted before"""
 
     pass
 
 
 class SubdomainInTrashError(SLException):
-    """raised when a subdomain is deleted before """
+    """raised when a subdomain is deleted before"""
 
     pass
 

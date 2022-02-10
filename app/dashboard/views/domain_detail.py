@@ -440,7 +440,7 @@ def domain_detail_auto_create(custom_domain_id):
 
                     try:
                         re.compile(new_auto_create_rule_form.regex.data)
-                    except:
+                    except Exception:
                         flash(
                             f"Invalid regex {new_auto_create_rule_form.regex.data}",
                             "error",
