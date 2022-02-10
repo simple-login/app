@@ -28,9 +28,9 @@ def show_support_dialog():
 def check_zendesk_response_status(response_code: int) -> bool:
     if response_code != 201:
         if response_code in (401 or 422):
-            LOG.debug("Could not authenticate")
+            LOG.error("Could not authenticate")
         else:
-            LOG.debug("Problem with the request. Status {}".format(response_code))
+            LOG.error("Problem with the request. Status {}".format(response_code))
         return False
     return True
 

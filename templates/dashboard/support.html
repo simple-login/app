@@ -19,7 +19,7 @@
 {% block script %}
     <script>
         new Vue({
-            el: '#aliasGroup',
+            el: '#alias-group',
             data: {
                 ticket_email: '{{ ticket_email }}'
             },
@@ -35,8 +35,8 @@
         });
 
         $('.custom-file input').change(function (e) {
-            var files = [];
-            for (var i = 0; i < $(this)[0].files.length; i++) {
+            let files = [];
+            for (let i = 0; i < $(this)[0].files.length; i++) {
                 files.push($(this)[0].files[i].name);
             }
             $(this).next('.custom-file-label').html(files.join(', '));
@@ -47,7 +47,6 @@
 {% block default_content %}
 
     <div class="col pb-3">
-        <!-- Current plan -->
         <div class="card">
             <div class="card-body">
                 <div class="card-title mb-3">Report a problem</div>
@@ -76,7 +75,7 @@
                     <div class="mt-2">
                         Conversations related to this ticket will be sent to this address. Feel free to use an alias here.
                     </div>
-                    <div class="input-group mb-3" id="aliasGroup">
+                    <div class="input-group mb-3" id="alias-group">
                         <input type="text" class="form-control" placeholder="Email" name="ticket_email" v-model='ticket_email' aria-label="Email to send responses to" aria-describedby="button-addon2">
                         <div class="input-group-append">
                             <button class="btn btn-outline-primary" type="button" @click="generateRandomAlias" id="button-addon2">Generate a random alias</button>
