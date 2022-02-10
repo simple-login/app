@@ -19,7 +19,8 @@ VALID_MIME_TYPES = ["text/plain", "message/rfc822"]
 @login_required
 def show_support_dialog():
     if not ZENDESK_HOST:
-        return render_template("dashboard/support_disabled.html")
+        flash("Support form is not enabled", "warning")
+        return redirect(url_for("dashboard.index"))
     return render_template("dashboard/support.html", ticket_email=current_user.email)
 
 
