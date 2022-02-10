@@ -51,6 +51,12 @@ For Ubuntu, we point postfix to the CA Certs;
 sudo postconf -e 'smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt'
 ```
 
+Also make sure that Postfix is able to authenticate successfully by installing the SASL package:
+
+```bash
+sudo apt install libsasl2-modules
+```
+
 Then restart postfix 
 
 ```bash
