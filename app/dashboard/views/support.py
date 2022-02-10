@@ -3,11 +3,12 @@ import urllib.parse
 from typing import Union
 
 import requests
-from flask import render_template, request, flash, url_for, redirect
+from flask import render_template, request, flash, url_for, redirect, g
 from flask_login import login_required, current_user
 from werkzeug.datastructures import FileStorage
 
 from app.dashboard.base import dashboard_bp
+from app.extensions import limiter
 from app.log import LOG
 from app.models import Mailbox
 from app.config import ZENDESK_HOST
@@ -81,6 +82,9 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
 
 @dashboard_bp.route("/support", methods=["POST"])
 @login_required
+@limiter.limit(
+    "2/hour", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def process_support_dialog():
     if not ZENDESK_HOST:
         return render_template("dashboard/support_disabled.html")
@@ -92,10 +96,11 @@ def process_support_dialog():
     if not email:
         flash("Please add an email", "warning")
         return render_template("dashboard/support.html", ticket_content=content)
-    if create_zendesk_request(email, content, request.files.getlist("ticket_files")):
+    if not create_zendesk_request(
+        email, content, request.files.getlist("ticket_files")
+    ):
         return render_template(
-            "dashboard/support_ticket_created.html", ticket_email=email
+            "dashboard/support.html", ticket_email=email, ticket_content=content
         )
-    return render_template(
-        "dashboard/support.html", ticket_email=email, ticket_content=content
-    )
+    g.deduct_limit = True
+    return render_template("dashboard/support_ticket_created.html", ticket_email=email)
