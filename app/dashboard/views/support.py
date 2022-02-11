@@ -27,7 +27,7 @@ def show_support_dialog():
 
 def check_zendesk_response_status(response_code: int) -> bool:
     if response_code != 201:
-        if response_code in (401 or 422):
+        if response_code in (401, 422):
             LOG.error("Could not authenticate")
         else:
             LOG.error("Problem with the request. Status {}".format(response_code))
@@ -91,13 +91,13 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
 def process_support_dialog():
     if not ZENDESK_HOST:
         return render_template("dashboard/support_disabled.html")
-    content = request.form.get("ticket_content") or ""
-    email = request.form.get("ticket_email") or ""
+    content = request.form.get("ticket_content")
+    email = request.form.get("ticket_email")
     if not content:
-        flash("Please add a description", "warning")
+        flash("Please add a description", "error")
         return render_template("dashboard/support.html", ticket_email=email)
     if not email:
-        flash("Please add an email", "warning")
+        flash("Please add an email", "error")
         return render_template("dashboard/support.html", ticket_content=content)
     if not create_zendesk_request(
         email, content, request.files.getlist("ticket_files")
