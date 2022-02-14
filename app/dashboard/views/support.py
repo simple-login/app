@@ -85,27 +85,40 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
     methods=["POST"],
     deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit,
 )
-def process_support_dialog():
+def support_route():
     if not ZENDESK_HOST:
-        return render_template("dashboard/support_disabled.html")
-    if request.method == "GET":
-        return render_template(
-            "dashboard/support.html", ticket_email=current_user.email
+        flash("Support isn't enabled", "error")
+        return redirect(url_for("dashboard.index"))
+
+    if request.method == "POST":
+        content = request.form.get("ticket_content")
+        email = request.form.get("ticket_email")
+
+        if not content:
+            flash("Please add a description", "error")
+            return render_template("dashboard/support.html", ticket_email=email)
+
+        if not email:
+            flash("Please provide an email address", "error")
+            return render_template("dashboard/support.html", ticket_content=content)
+
+        if not create_zendesk_request(
+            email, content, request.files.getlist("ticket_files")
+        ):
+            flash(
+                "Cannot create a Zendesk ticket, sorry for the inconvenience! Please retry later.",
+                "error",
+            )
+            return render_template(
+                "dashboard/support.html", ticket_email=email, ticket_content=content
+            )
+
+        # only enable rate limiting for successful Zendesk ticket creation
+        g.deduct_limit = True
+        flash(
+            "Support ticket is created. You will receive an email about its status.",
+            "success",
         )
-    content = request.form.get("ticket_content")
-    email = request.form.get("ticket_email")
-    if not content:
-        flash("Please add a description", "error")
-        return render_template("dashboard/support.html", ticket_email=email)
-    if not email:
-        flash("Please add an email", "error")
-        return render_template("dashboard/support.html", ticket_content=content)
-    if not create_zendesk_request(
-        email, content, request.files.getlist("ticket_files")
-    ):
-        return render_template(
-            "dashboard/support.html", ticket_email=email, ticket_content=content
-        )
-    g.deduct_limit = True
-    flash("Ticket created. You should have received an email notification.", "success")
-    return redirect(url_for("dashboard.index"))
+        return redirect(url_for("dashboard.index"))
+
+    return render_template("dashboard/support.html", ticket_email=current_user.email)
