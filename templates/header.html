@@ -71,11 +71,25 @@
 
         </div>
 
-        <div class="nav-item">
-          <a href="https://simplelogin.io/docs/" target="_blank">
-            Docs
-            <i class="fa fa-external-link" aria-hidden="true"></i>
-          </a>
+        <div class="dropdown nav-item d-flex align-items-center">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Help</a>
+            <div class="dropdown-menu dropdown-menu-left dropdown-menu-arrow">
+                <div class="dropdown-item">
+                    <a href="https://simplelogin.io/docs/" target="_blank">
+                        Docs
+                        <i class="fa fa-external-link" aria-hidden="true"></i>
+                    </a>
+                </div>
+                <div class="dropdown-item">
+                    <a href="https://github.com/simple-login/app/discussions" target="_blank">
+                        Forum
+                        <i class="fa fa-external-link" aria-hidden="true"></i>
+                    </a>
+                </div>
+                <div class="dropdown-item">
+                    <a href="/dashboard/support">Support</a>
+                </div>
+            </div>
         </div>
 
         {% if current_user.should_show_upgrade_button() %}
@@ -108,7 +122,7 @@
                 </small>
               {% endif %}
 
-						</span>
+            </span>
           </a>
 
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
