@@ -16,33 +16,7 @@
   </style>
 {% endblock %}
 
-{% block script %}
-  <script>
-    new Vue({
-      el: '#alias-group',
-      data: {
-        ticket_email: '{{ ticket_email }}'
-      },
-      methods: {
-        generateRandomAlias: async function (event) {
-          let result = await fetch('/api/alias/random/new', {method: 'POST'})
-          if (result.ok) {
-            let data = await result.json();
-            this.ticket_email = data.alias;
-          }
-        }
-      }
-    });
 
-    $('.custom-file input').change(function (e) {
-      let files = [];
-      for (let i = 0; i < $(this)[0].files.length; i++) {
-        files.push($(this)[0].files[i].name);
-      }
-      $(this).next('.custom-file-label').html(files.join(', '));
-    });
-  </script>
-{% endblock %}
 
 {% block default_content %}
 
@@ -98,5 +72,31 @@
 
 {% endblock %}
 
+{% block script %}
+  <script>
+    new Vue({
+      el: '#alias-group',
+      data: {
+        ticket_email: '{{ ticket_email }}'
+      },
+      methods: {
+        generateRandomAlias: async function (event) {
+          let result = await fetch('/api/alias/random/new', {method: 'POST'})
+          if (result.ok) {
+            let data = await result.json();
+            this.ticket_email = data.alias;
+          }
+        }
+      }
+    });
 
+    $('.custom-file input').change(function (e) {
+      let files = [];
+      for (let i = 0; i < $(this)[0].files.length; i++) {
+        files.push($(this)[0].files[i].name);
+      }
+      $(this).next('.custom-file-label').html(files.join(', '));
+    });
+  </script>
+{% endblock %}
 
