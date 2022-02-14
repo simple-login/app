@@ -15,15 +15,6 @@ from app.config import ZENDESK_HOST, ZENDESK_API_TOKEN
 VALID_MIME_TYPES = ["text/plain", "message/rfc822"]
 
 
-@dashboard_bp.route("/support", methods=["GET"])
-@login_required
-def show_support_dialog():
-    if not ZENDESK_HOST:
-        flash("Support form is not enabled", "warning")
-        return redirect(url_for("dashboard.index"))
-    return render_template("dashboard/support.html", ticket_email=current_user.email)
-
-
 def check_zendesk_response_status(response_code: int) -> bool:
     if response_code != 201:
         if response_code in (401, 422):
@@ -82,14 +73,20 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
     return True
 
 
-@dashboard_bp.route("/support", methods=["POST"])
+@dashboard_bp.route("/support", methods=["GET", "POST"])
 @login_required
 @limiter.limit(
-    "2/hour", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+    "2/hour",
+    methods=["POST"],
+    deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit,
 )
 def process_support_dialog():
     if not ZENDESK_HOST:
         return render_template("dashboard/support_disabled.html")
+    if request.method == "GET":
+        return render_template(
+            "dashboard/support.html", ticket_email=current_user.email
+        )
     content = request.form.get("ticket_content")
     email = request.form.get("ticket_email")
     if not content:
