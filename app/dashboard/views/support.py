@@ -7,10 +7,10 @@ from flask import render_template, request, flash, url_for, redirect, g
 from flask_login import login_required, current_user
 from werkzeug.datastructures import FileStorage
 
+from app.config import ZENDESK_HOST, ZENDESK_API_TOKEN
 from app.dashboard.base import dashboard_bp
 from app.extensions import limiter
 from app.log import LOG
-from app.config import ZENDESK_HOST, ZENDESK_API_TOKEN
 
 VALID_MIME_TYPES = ["text/plain", "message/rfc822"]
 
@@ -18,9 +18,11 @@ VALID_MIME_TYPES = ["text/plain", "message/rfc822"]
 def check_zendesk_response_status(response_code: int) -> bool:
     if response_code != 201:
         if response_code in (401, 422):
-            LOG.e("Could not authenticate")
+            LOG.error("Could not authenticate to Zendesk")
         else:
-            LOG.e("Problem with the request. Status {}".format(response_code))
+            LOG.error(
+                "Problem with the Zendesk request. Status {}".format(response_code)
+            )
         return False
     return True
 
@@ -33,6 +35,7 @@ def upload_file_to_zendesk_and_get_upload_token(
             "File {} is not an image, text or an email".format(file.filename), "warning"
         )
         return
+
     escaped_filename = urllib.parse.urlencode({"filename": file.filename})
     url = "https://{}/api/v2/uploads?{}".format(ZENDESK_HOST, escaped_filename)
     headers = {"content-type": file.mimetype}
@@ -40,6 +43,7 @@ def upload_file_to_zendesk_and_get_upload_token(
     response = requests.post(url, headers=headers, data=file.stream, auth=auth)
     if not check_zendesk_response_status(response.status_code):
         return
+
     data = response.json()
     return data["upload"]["token"]
 
@@ -53,6 +57,7 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
         if token is None:
             return False
         tokens.append(token)
+
     data = {
         "request": {
             "subject": "Ticket created for user {}".format(current_user.id),
@@ -65,11 +70,11 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
     }
     url = "https://{}/api/v2/requests.json".format(ZENDESK_HOST)
     headers = {"content-type": "application/json"}
-    auth = ("{}/token".format(email), ZENDESK_API_TOKEN)
+    auth = (f"{email}/token", ZENDESK_API_TOKEN)
     response = requests.post(url, data=json.dumps(data), headers=headers, auth=auth)
     if not check_zendesk_response_status(response.status_code):
         return False
-    LOG.d("Ticket created")
+
     return True
 
 
