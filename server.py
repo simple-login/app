@@ -69,6 +69,7 @@ from app.config import (
     COINBASE_WEBHOOK_SECRET,
     PAGE_LIMIT,
     PADDLE_COUPON_ID,
+    ZENDESK_ENABLED,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -400,6 +401,7 @@ def jinja2_filter(app):
             PGP_SIGNER=PGP_SIGNER,
             CANONICAL_URL=f"{URL}{request.path}",
             PAGE_LIMIT=PAGE_LIMIT,
+            ZENDESK_ENABLED=ZENDESK_ENABLED,
         )
 
 
