@@ -135,6 +135,8 @@ The code is also checked with `flake8`, make sure to run `flake8` before creatin
 poetry run flake8
 ```
 
+Nice to have: as we haven't found a good enough HTML code formatter, please reformat any HTML code with PyCharm. 
+
 ## Test sending email
 
 [swaks](http://www.jetmore.org/john/code/swaks/) is used for sending test emails to the `email_handler`.
