@@ -10,7 +10,6 @@ from werkzeug.datastructures import FileStorage
 from app.dashboard.base import dashboard_bp
 from app.extensions import limiter
 from app.log import LOG
-from app.models import Mailbox
 from app.config import ZENDESK_HOST, ZENDESK_API_TOKEN
 
 VALID_MIME_TYPES = ["text/plain", "message/rfc822"]
@@ -28,9 +27,9 @@ def show_support_dialog():
 def check_zendesk_response_status(response_code: int) -> bool:
     if response_code != 201:
         if response_code in (401, 422):
-            LOG.error("Could not authenticate")
+            LOG.e("Could not authenticate")
         else:
-            LOG.error("Problem with the request. Status {}".format(response_code))
+            LOG.e("Problem with the request. Status {}".format(response_code))
         return False
     return True
 
@@ -79,7 +78,7 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
     response = requests.post(url, data=json.dumps(data), headers=headers, auth=auth)
     if not check_zendesk_response_status(response.status_code):
         return False
-    LOG.debug("Ticket created")
+    LOG.d("Ticket created")
     return True
 
 

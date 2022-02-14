@@ -50,16 +50,16 @@
         <div class="card">
             <div class="card-body">
                 <div class="card-title mb-3">Report a problem</div>
-                <div class="card-subtitle mt-2 mb-2 pl-3 border-left border-warning" style="border-left-width: 5px !important;" >
+                <div class="alert alert-info">
                     If an email cannot be delivered to your mailbox, please check <a href="/dashboard/notifications">your notifications</a> for error messages
                 </div>
-                <div class="mt-2">
+                <div class="alert alert-warning">
                     A support ticket will be created in Zendesk. Please do not include any sensitive information in the ticket.
                 </div>
                 <form id="supportZendeskForm" method="post" enctype="multipart/form-data">
                     <div class="mt-4 mb-5">
                         <label for="issueDescription" class="form-label">What happened?</label>
-                        <textarea class="form-control" name="ticket_content" id="issueDescription" rows="3" placeholder="Please provide as much information as possible. For example which alias(es), mailbox(es) ar affected, if this is a persistent issue...">{{- ticket_content or '' -}}</textarea>
+                        <textarea class="form-control" required name="ticket_content" id="issueDescription" rows="3" placeholder="Please provide as much information as possible. For example which alias(es), mailbox(es) ar affected, if this is a persistent issue...">{{- ticket_content or '' -}}</textarea>
                     </div>
                     <div class="mt-5 font-weight-bold">
                         Attach files to support request
@@ -76,7 +76,7 @@
                         Conversations related to this ticket will be sent to this address. Feel free to use an alias here.
                     </div>
                     <div class="input-group mb-3" id="alias-group">
-                        <input type="text" class="form-control" placeholder="Email" name="ticket_email" v-model='ticket_email' aria-label="Email to send responses to" aria-describedby="button-addon2">
+                        <input type="text" required class="form-control" placeholder="Email" name="ticket_email" v-model='ticket_email' aria-label="Email to send responses to" aria-describedby="button-addon2">
                         <div class="input-group-append">
                             <button class="btn btn-outline-primary" type="button" @click="generateRandomAlias" id="button-addon2">Generate a random alias</button>
                         </div>
