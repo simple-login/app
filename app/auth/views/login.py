@@ -8,7 +8,7 @@ from app.auth.views.login_utils import after_login
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
-from app.utils import sanitize_email
+from app.utils import sanitize_email, sanitize_next_url
 
 
 class LoginForm(FlaskForm):
@@ -21,7 +21,7 @@ class LoginForm(FlaskForm):
     "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
 )
 def login():
-    next_url = request.args.get("next")
+    next_url = sanitize_next_url(request.args.get("next"))
 
     if current_user.is_authenticated:
         if next_url:

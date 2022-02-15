@@ -3,6 +3,7 @@ import string
 import time
 import urllib.parse
 from functools import wraps
+from typing import Optional
 
 from unidecode import unidecode
 
@@ -72,6 +73,14 @@ def sanitize_email(email_address: str, not_lower=False) -> str:
         if not not_lower:
             email_address = email_address.lower()
     return email_address
+
+
+def sanitize_next_url(url: Optional[str]) -> Optional[str]:
+    if url is None or len(url) == 0:
+        return None
+    if url[0] != "/":
+        return None
+    return url
 
 
 def query2str(query):

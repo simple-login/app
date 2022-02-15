@@ -7,6 +7,7 @@ from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
 from app.models import ActivationCode
+from app.utils import sanitize_next_url
 
 
 @auth_bp.route("/activate", methods=["GET", "POST"])
@@ -58,7 +59,7 @@ def activate():
 
     # The activation link contains the original page, for ex authorize page
     if "next" in request.args:
-        next_url = request.args.get("next")
+        next_url = sanitize_next_url(request.args.get("next"))
         LOG.d("redirect user to %s", next_url)
         return redirect(next_url)
     else:
