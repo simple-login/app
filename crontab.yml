@@ -1,11 +1,11 @@
 jobs:
-  - name: SimpleLogin stats
-    command: python /code/cron.py -j stats
+  - name: SimpleLogin growth stats
+    command: python /code/cron.py -j growth_stats
     shell: /bin/bash
     schedule: "0 1 * * *"
     captureStderr: true
 
-  - name: SimpleLogin stats
+  - name: SimpleLogin monitoring stats
     command: python /code/cron.py -j daily_monitoring_report
     shell: /bin/bash
     schedule: "0 0 * * *"

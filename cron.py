@@ -1040,7 +1040,7 @@ if __name__ == "__main__":
         help="Choose a cron job to run",
         type=str,
         choices=[
-            "stats",
+            "growth_stats",
             "daily_monitoring_report",
             "notify_trial_end",
             "notify_manual_subscription_end",
@@ -1057,8 +1057,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
     with create_light_app().app_context():
-        if args.job == "stats":
-            LOG.d("Compute Stats")
+        if args.job == "growth_stats":
+            LOG.d("Compute growth Stats")
             growth_stats()
         if args.job == "daily_monitoring_report":
             LOG.d("Send out daily monitoring stats")
