@@ -76,7 +76,7 @@ def sanitize_email(email_address: str, not_lower=False) -> str:
 
 
 def sanitize_next_url(url: Optional[str]) -> Optional[str]:
-    if url is None or len(url) == 0:
+    if not url:
         return None
     if url[0] != "/":
         return None
