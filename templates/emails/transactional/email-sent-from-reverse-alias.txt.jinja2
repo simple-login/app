@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 We have detected that SimpleLogin is probably used along with another forwarding email service.
 
 Please note that the following use cases aren't supported by SimpleLogin:
@@ -10,6 +13,4 @@ As different email forwarding systems are usually incompatible, using several fo
 with email delivery.
 
 Please let us know if you have any question.
-
-Best,
-SimpleLogin team.
+{% endblock %}

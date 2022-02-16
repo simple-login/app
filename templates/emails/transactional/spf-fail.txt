@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 We have recorded an attempt to send the following email from your alias {{ alias }} from an unknown IP address {{ ip }}.
 
 - From: {{alias}}
@@ -11,6 +14,4 @@ Emails sent from an IP address that is unknown by your email service are refused
 However you can turn off this option by going to {{mailbox_url}}.
 
 Please only turn this protection off this if you know what you're doing :).
-
-Best,
-SimpleLogin team.
+{% endblock %}

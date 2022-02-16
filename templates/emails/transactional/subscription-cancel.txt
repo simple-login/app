@@ -12,5 +12,3 @@ Best,
 Son.
 
 -----------------------------------------
-Son NK - SimpleLogin founder.
-https://simplelogin.io

@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 Your trial will end {{ user.trial_end.humanize() }}.
 
 When the trial ends:
@@ -11,6 +14,4 @@ When the trial ends:
 You can upgrade today to continue using all these Premium features (and much more coming).
 
 Let me know if you need to extend your trial period.
-
-Best,
-SimpleLogin Team.
+{% endblock %}

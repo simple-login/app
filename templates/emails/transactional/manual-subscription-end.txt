@@ -1,6 +1,5 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 Your subscription will end on {{ manual_sub.end_at.format("YYYY-MM-DD") }}
-
-Please contact us at hi@simplelogin.io to renew your subscription.
-
-Best,
-SimpleLogin Team.
+{% endblock %}

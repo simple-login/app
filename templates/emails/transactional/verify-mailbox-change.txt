@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 Hi
 
 You recently requested to change mailbox {{mailbox_email}} to {{mailbox_new_email}}
@@ -5,6 +8,4 @@ You recently requested to change mailbox {{mailbox_email}} to {{mailbox_new_emai
 To confirm, please click on this link:
 
 {{link}}
-
-Regards,
-SimpleLogin Team.
+{% endblock %}

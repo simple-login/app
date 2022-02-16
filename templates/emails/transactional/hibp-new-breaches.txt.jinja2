@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 {{ breached_aliases|count }} of your aliases are found in data breaches.
 
 {% for alias in breached_aliases[:10] %}
@@ -18,6 +21,4 @@
 {%- endif %}
 
 For more information, please check https://haveibeenpwned.com/.
-
-Best,
-SimpleLogin Team.
+{% endblock %}
