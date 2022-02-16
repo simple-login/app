@@ -2089,6 +2089,8 @@ def send_no_reply_response(mail_from: str, msg: Message):
             "Auto: {}".format(msg[headers.SUBJECT] or "No subject"),
             render("transactional/noreply.text.jinja2"),
         )
+    else:
+        LOG.d("Unknown sender. Skipping reply from {}".format(NOREPLY))
 
 
 def handle(envelope: Envelope, msg: Message) -> str:
