@@ -3,11 +3,11 @@ import string
 import time
 import urllib.parse
 from functools import wraps
-from typing import Optional
+from typing import List, Optional
 
 from unidecode import unidecode
 
-from .config import WORDS_FILE_PATH
+from .config import WORDS_FILE_PATH, ALLOWED_REDIRECT_DOMAINS
 from .log import LOG
 
 with open(WORDS_FILE_PATH) as f:
@@ -75,12 +75,37 @@ def sanitize_email(email_address: str, not_lower=False) -> str:
     return email_address
 
 
+class NextUrlSanitizer:
+    def __init__(self, allowed_domains: List[str]):
+        self.allowed_domains = allowed_domains
+
+    def sanitize(self, url: Optional[str]) -> Optional[str]:
+        if not url:
+            return None
+        # Relative redirect
+        if url[0] == "/":
+            return url
+        return self.__handle_absolute_redirect(url)
+
+    def __handle_absolute_redirect(self, url: str) -> Optional[str]:
+        if not self.__is_absolute_url(url):
+            # Unknown url, something like &next=something.example.com
+            return None
+        parsed = urllib.parse.urlparse(url)
+        if parsed.hostname in self.allowed_domains:
+            return url
+        # Not allowed domain
+        return None
+
+    def __is_absolute_url(self, url: str) -> bool:
+        return url.startswith(
+            ("http://", "https://", "http%3A%2F%2F", "https%3A%2F%2F")
+        )
+
+
 def sanitize_next_url(url: Optional[str]) -> Optional[str]:
-    if not url:
-        return None
-    if url[0] != "/":
-        return None
-    return url
+    sanitizer = NextUrlSanitizer(ALLOWED_REDIRECT_DOMAINS)
+    return sanitizer.sanitize(url)
 
 
 def query2str(query):
