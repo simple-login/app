@@ -98,9 +98,7 @@ class NextUrlSanitizer:
         return None
 
     def __is_absolute_url(self, url: str) -> bool:
-        return url.startswith(
-            ("http://", "https://", "http%3A%2F%2F", "https%3A%2F%2F")
-        )
+        return url.startswith(("http://", "https://"))
 
 
 def sanitize_next_url(url: Optional[str]) -> Optional[str]:
