@@ -76,34 +76,35 @@ def sanitize_email(email_address: str, not_lower=False) -> str:
 
 
 class NextUrlSanitizer:
-    def __init__(self, allowed_domains: List[str]):
-        self.allowed_domains = allowed_domains
-
-    def sanitize(self, url: Optional[str]) -> Optional[str]:
+    @staticmethod
+    def sanitize(url: Optional[str], allowed_domains: List[str]) -> Optional[str]:
         if not url:
             return None
         # Relative redirect
         if url[0] == "/":
             return url
-        return self.__handle_absolute_redirect(url)
+        return NextUrlSanitizer.__handle_absolute_redirect(url, allowed_domains)
 
-    def __handle_absolute_redirect(self, url: str) -> Optional[str]:
-        if not self.__is_absolute_url(url):
+    @staticmethod
+    def __handle_absolute_redirect(
+        url: str, allowed_domains: List[str]
+    ) -> Optional[str]:
+        if not NextUrlSanitizer.__is_absolute_url(url):
             # Unknown url, something like &next=something.example.com
             return None
         parsed = urllib.parse.urlparse(url)
-        if parsed.hostname in self.allowed_domains:
+        if parsed.hostname in allowed_domains:
             return url
         # Not allowed domain
         return None
 
-    def __is_absolute_url(self, url: str) -> bool:
+    @staticmethod
+    def __is_absolute_url(url: str) -> bool:
         return url.startswith(("http://", "https://"))
 
 
 def sanitize_next_url(url: Optional[str]) -> Optional[str]:
-    sanitizer = NextUrlSanitizer(ALLOWED_REDIRECT_DOMAINS)
-    return sanitizer.sanitize(url)
+    return NextUrlSanitizer.sanitize(url, ALLOWED_REDIRECT_DOMAINS)
 
 
 def query2str(query):
