@@ -199,3 +199,12 @@
     </div>
   </form>
 {% endblock %}
+{% block script %}
+<script>
+    if ("getEntriesByType" in performance) {
+        if (performance.getEntriesByType("navigation").find(nav => nav.type === 'reload')) {
+            $('form').parsley().validate();
+        }
+    }
+</script>
+{% endblock %}
