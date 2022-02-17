@@ -1,7 +1,7 @@
 from typing import Dict
 from urllib.parse import urlparse
 
-from flask import request, render_template, redirect, flash
+from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user
 from itsdangerous import SignatureExpired
 
@@ -144,6 +144,12 @@ def authorize():
                 Scope=Scope,
             )
     else:  # POST - user allows or denies
+        if not current_user.is_authenticated or not current_user.is_enabled:
+            LOG.i(
+                "Attempt to validate a OAUth allow request by an unauthenticated user"
+            )
+            return redirect(url_for("auth.login", next=request.url))
+
         if request.form.get("button") == "deny":
             LOG.d("User %s denies Client %s", current_user, client)
             final_redirect_uri = f"{redirect_uri}?error=deny&state={state}"
