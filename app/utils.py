@@ -3,10 +3,11 @@ import string
 import time
 import urllib.parse
 from functools import wraps
+from typing import List, Optional
 
 from unidecode import unidecode
 
-from .config import WORDS_FILE_PATH
+from .config import WORDS_FILE_PATH, ALLOWED_REDIRECT_DOMAINS
 from .log import LOG
 
 with open(WORDS_FILE_PATH) as f:
@@ -72,6 +73,38 @@ def sanitize_email(email_address: str, not_lower=False) -> str:
         if not not_lower:
             email_address = email_address.lower()
     return email_address
+
+
+class NextUrlSanitizer:
+    @staticmethod
+    def sanitize(url: Optional[str], allowed_domains: List[str]) -> Optional[str]:
+        if not url:
+            return None
+        # Relative redirect
+        if url[0] == "/":
+            return url
+        return NextUrlSanitizer.__handle_absolute_redirect(url, allowed_domains)
+
+    @staticmethod
+    def __handle_absolute_redirect(
+        url: str, allowed_domains: List[str]
+    ) -> Optional[str]:
+        if not NextUrlSanitizer.__is_absolute_url(url):
+            # Unknown url, something like &next=something.example.com
+            return None
+        parsed = urllib.parse.urlparse(url)
+        if parsed.hostname in allowed_domains:
+            return url
+        # Not allowed domain
+        return None
+
+    @staticmethod
+    def __is_absolute_url(url: str) -> bool:
+        return url.startswith(("http://", "https://"))
+
+
+def sanitize_next_url(url: Optional[str]) -> Optional[str]:
+    return NextUrlSanitizer.sanitize(url, ALLOWED_REDIRECT_DOMAINS)
 
 
 def query2str(query):

@@ -13,7 +13,7 @@ from app.db import Session
 from app.log import LOG
 from app.models import User, SocialAuth
 from .login_utils import after_login
-from ...utils import sanitize_email
+from ...utils import sanitize_email, sanitize_next_url
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"
@@ -30,7 +30,7 @@ def facebook_login():
     # to avoid flask-login displaying the login error message
     session.pop("_flashes", None)
 
-    next_url = request.args.get("next")
+    next_url = sanitize_next_url(request.args.get("next"))
 
     # Facebook does not allow to append param to redirect_uri
     # we need to pass the next url by session

@@ -4,7 +4,7 @@ import socket
 import string
 import subprocess
 from ast import literal_eval
-from typing import Callable
+from typing import Callable, List
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -418,3 +418,14 @@ PHONE_PROVIDER_2_SECRET = os.environ.get("PHONE_PROVIDER_2_SECRET")
 ZENDESK_HOST = os.environ.get("ZENDESK_HOST")
 ZENDESK_API_TOKEN = os.environ.get("ZENDESK_API_TOKEN")
 ZENDESK_ENABLED = "ZENDESK_ENABLED" in os.environ
+
+
+def get_allowed_redirect_domains() -> List[str]:
+    allowed_domains = sl_getenv("ALLOWED_REDIRECT_DOMAINS", list)
+    if allowed_domains:
+        return allowed_domains
+    parsed_url = urlparse(URL)
+    return [parsed_url.hostname]
+
+
+ALLOWED_REDIRECT_DOMAINS = get_allowed_redirect_domains()
