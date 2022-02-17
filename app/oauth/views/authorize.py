@@ -144,7 +144,7 @@ def authorize():
                 Scope=Scope,
             )
     else:  # POST - user allows or denies
-        if not current_user.is_authenticated or not current_user.is_enabled:
+        if not current_user.is_authenticated or not current_user.is_active:
             LOG.i(
                 "Attempt to validate a OAUth allow request by an unauthenticated user"
             )
