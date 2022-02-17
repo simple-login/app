@@ -32,7 +32,6 @@ from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import func
 
 from app.config import (
-    SUPPORT_EMAIL,
     ROOT_DIR,
     POSTFIX_SERVER,
     NOT_SEND_EMAIL,
