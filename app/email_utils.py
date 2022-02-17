@@ -54,6 +54,7 @@ from app.config import (
     TEMP_DIR,
     ALIAS_AUTOMATIC_DISABLE,
     RSPAMD_SIGN_DKIM,
+    NOREPLY,
 )
 from app.db import Session
 from app.dns_utils import get_mx_domains
@@ -296,7 +297,7 @@ def send_email(
         msg[headers.CONTENT_TYPE] = "text/plain"
 
     msg[headers.SUBJECT] = subject
-    msg[headers.FROM] = f"{SUPPORT_NAME} <{SUPPORT_EMAIL}>"
+    msg[headers.FROM] = f"{SUPPORT_NAME} <{NOREPLY}>"
     msg[headers.TO] = to_email
 
     msg_id_header = make_msgid()
@@ -313,7 +314,7 @@ def send_email(
             )
 
     # add DKIM
-    email_domain = SUPPORT_EMAIL[SUPPORT_EMAIL.find("@") + 1 :]
+    email_domain = NOREPLY[NOREPLY.find("@") + 1 :]
     add_dkim_signature(msg, email_domain)
 
     transaction = TransactionalEmail.create(email=to_email, commit=True)
