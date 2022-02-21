@@ -28,6 +28,7 @@ from app.email_utils import (
 )
 from app.log import LOG
 from app.models import (
+    BlockBehaviourEnum,
     PlanEnum,
     File,
     ResetPasswordCode,
@@ -303,7 +304,17 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
-
+        elif request.form.get("form-name") == "change-blocked-behaviour":
+            choose = request.form.get("blocked-behaviour")
+            if choose == str(BlockBehaviourEnum.return_2xx.value):
+                current_user.block_behaviour = BlockBehaviourEnum.return_2xx.name
+            elif choose == str(BlockBehaviourEnum.return_5xx.value):
+                current_user.block_behaviour = BlockBehaviourEnum.return_5xx.name
+            else:
+                flash("There was an error. Please try again", "warning")
+                return redirect(url_for("dashboard.setting"))
+            Session.commit()
+            flash("Your preference has been updated", "success")
         elif request.form.get("form-name") == "export-data":
             return redirect(url_for("api.export_data"))
         elif request.form.get("form-name") == "export-alias":
@@ -318,6 +329,7 @@ def setting():
         form=form,
         PlanEnum=PlanEnum,
         SenderFormatEnum=SenderFormatEnum,
+        BlockBehaviourEnum=BlockBehaviourEnum,
         promo_form=promo_form,
         change_email_form=change_email_form,
         pending_email=pending_email,

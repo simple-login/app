@@ -221,6 +221,11 @@ class AliasSuffixEnum(EnumE):
     random_string = 1  # Completely random string
 
 
+class BlockBehaviourEnum(EnumE):
+    return_2xx = 0
+    return_5xx = 1
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)
@@ -437,6 +442,13 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     # in minutes
     phone_quota = sa.Column(sa.Integer, nullable=True)
+
+    # Status code to return if is blocked
+    block_behaviour = sa.Column(
+        sa.Enum(BlockBehaviourEnum),
+        nullable=False,
+        server_default=BlockBehaviourEnum.return_2xx.name,
+    )
 
     @property
     def directory_quota(self):
