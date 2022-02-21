@@ -318,6 +318,8 @@ ALERT_NON_REVERSE_ALIAS_REPLY_PHASE = "non_reverse_alias_reply_phase"
 
 ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS = "from_address_is_reverse_alias"
 
+ALERT_TO_NOREPLY = "to_noreply"
+
 ALERT_SPF = "spf"
 
 ALERT_INVALID_TOTP_LOGIN = "invalid_totp_login"

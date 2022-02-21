@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 We have recorded an attempt to send an email from your alias {{ alias.email }} using {{ sender }}.
 
 Please note that sending from this alias only works from alias's owning mailboxes, that are
@@ -5,8 +8,4 @@ Please note that sending from this alias only works from alias's owning mailboxe
 
 This is to protect against "email spoofing", i.e. someone else sending emails from your mailbox.
 If {{ sender }} can indeed send emails from your alias, you can add it to the allow list on {{authorize_address_link}}
-If you think this is a wrong alert, please let us know by replying to this email.
-
-
-Best,
-SimpleLogin team.
+{% endblock %}

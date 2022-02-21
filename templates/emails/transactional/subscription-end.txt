@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 Hi
 
 Your subscription will end on {{ next_bill_date }}.
@@ -11,6 +14,4 @@ When the subscription ends:
 - You cannot add new domain or directory.
 
 You can upgrade today to continue using all these Premium features (and much more coming).
-
-Best,
-SimpleLogin Team.
+{% endblock %}

@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 Hi,
 
 This is an automated email from SimpleLogin.
@@ -9,5 +12,4 @@ This user has been also informed of this incident.
 
 If you have any question, you can contact us by replying to this email or consult our website at {{LANDING_PAGE_URL}}.
 
-Regards,
-SimpleLogin team.
+{% endblock %}

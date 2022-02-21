@@ -1,8 +1,11 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 Hi {{name}}
 
 This is a test to make sure that you receive emails sent to your alias {{alias}}.
 
 If you have any questions, feel free to reply to this email.
 
-Have a nice day!
-SimpleLogin Team.
+{% endblock %}
+

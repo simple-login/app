@@ -86,6 +86,7 @@ from app.config import (
     ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
+    ALERT_TO_NOREPLY,
 )
 from app.db import Session
 from app.email import status, headers
@@ -2078,6 +2079,20 @@ def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:
     return False
 
 
+def send_no_reply_response(mail_from: str, msg: Message):
+    mailbox = Mailbox.get_by(email=mail_from)
+    if not mailbox:
+        LOG.d("Unknown sender. Skipping reply from {}".format(NOREPLY))
+        return
+    send_email_at_most_times(
+        mailbox.user,
+        ALERT_TO_NOREPLY,
+        mailbox.user.email,
+        "Auto: {}".format(msg[headers.SUBJECT] or "No subject"),
+        render("transactional/noreply.text.jinja2"),
+    )
+
+
 def handle(envelope: Envelope, msg: Message) -> str:
     """Return SMTP status"""
 
@@ -2300,8 +2315,9 @@ def handle(envelope: Envelope, msg: Message) -> str:
     nb_rcpt_tos = len(rcpt_tos)
     for rcpt_index, rcpt_to in enumerate(rcpt_tos):
         if rcpt_to == NOREPLY:
-            LOG.e("email sent to noreply address from %s", mail_from)
-            return status.E514
+            LOG.i("email sent to {} address from {}".format(NOREPLY, mail_from))
+            send_no_reply_response(mail_from, msg)
+            return status.E200
 
         # create a copy of msg for each recipient except the last one
         # as copy() is a slow function

@@ -1,3 +1,6 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
 Hi
 
 Your alias {{alias}} has been disabled successfully.
@@ -11,6 +14,4 @@ If this is a mistake, you can re-enable the alias on the dashboard via
 {{ enable_alias_url }}
 
 Please let us know if you have any question.
-
-Best,
-SimpleLogin team.
+{% endblock %}
