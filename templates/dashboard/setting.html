@@ -492,11 +492,13 @@
 
     <div class="card" id="blocked-behaviour">
       <div class="card-body">
-        <div class="card-title">Blocked contact behaviour</div>
+        <div class="card-title">Disabled alias/Blocked contact</div>
         <div class="mb-3">
-          When an email is sent to one of your blocked contacts you can decide what response they should see. <br>
-          If you select "Ignore", they will see the message as delivered, but we won't actually forward it to you. <br>
-          If you select "Reject", we will tell them that the alias they have does not exist.
+          When an email is sent to a <b>disabled</b> alias or sent from a <b>blocked</b> contact, you can decide what response the sender should see. <br>
+          <b>Ignore</b> means they will see the message as delivered, but SimpleLogin won't actually forward it to you.
+          This is the default option as you can start receiving the emails again
+          by re-enabling the alias or unblocking a contact.<br>
+          <b>Reject</b> means SimpleLogin will tell them that the alias does not exist. <br>
         </div>
         <form method="post" action="#blocked-behaviour" class="form-inline">
           <input type="hidden" name="form-name" value="change-blocked-behaviour">
