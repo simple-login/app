@@ -509,7 +509,7 @@ def setup_paddle_callback(app: Flask):
 
                 send_email(
                     user.email,
-                    "SimpleLogin - what can we do to improve the product?",
+                    "SimpleLogin - your subscription is canceled",
                     render(
                         "transactional/subscription-cancel.txt",
                         end_date=request.form.get("cancellation_effective_date"),
