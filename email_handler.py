@@ -2081,14 +2081,13 @@ def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:
 
 def send_no_reply_response(mail_from: str, msg: Message):
     mailbox = Mailbox.get_by(email=mail_from)
-    user = User.get(mailbox.user_id)
-    if not user:
+    if not mailbox:
         LOG.d("Unknown sender. Skipping reply from {}".format(NOREPLY))
         return
     send_email_at_most_times(
-        user,
+        mailbox.user,
         ALERT_TO_NOREPLY,
-        user.email,
+        mailbox.user.email,
         "Auto: {}".format(msg[headers.SUBJECT] or "No subject"),
         render("transactional/noreply.text.jinja2"),
     )

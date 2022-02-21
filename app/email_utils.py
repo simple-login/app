@@ -38,7 +38,6 @@ from app.config import (
     DKIM_SELECTOR,
     DKIM_PRIVATE_KEY,
     ALIAS_DOMAINS,
-    SUPPORT_NAME,
     POSTFIX_SUBMISSION_TLS,
     MAX_NB_EMAIL_FREE_PLAN,
     MAX_ALERT_24H,
@@ -296,7 +295,7 @@ def send_email(
         msg[headers.CONTENT_TYPE] = "text/plain"
 
     msg[headers.SUBJECT] = subject
-    msg[headers.FROM] = f"{SUPPORT_NAME} <{NOREPLY}>"
+    msg[headers.FROM] = f"{NOREPLY} <{NOREPLY}>"
     msg[headers.TO] = to_email
 
     msg_id_header = make_msgid()

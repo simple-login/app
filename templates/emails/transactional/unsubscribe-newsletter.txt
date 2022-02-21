@@ -2,6 +2,4 @@
 
 {% block content %}
 You have been unsubscribed from SimpleLogin newsletter.
-
-We would love to know why do you want to unsubscribe from our communication.
 {% endblock %}
