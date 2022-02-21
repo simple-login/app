@@ -490,6 +490,34 @@
       </div>
     </div>
 
+    <div class="card" id="blocked-behaviour">
+      <div class="card-body">
+        <div class="card-title">Blocked contact behaviour</div>
+        <div class="mb-3">
+          When an email is sent to one of your blocked contacts you can decide what response they should see. <br>
+          If you select "Ignore", they will see the message as delivered, but we won't actually forward it to you. <br>
+          If you select "Reject", we will tell them that the alias they have does not exist.
+        </div>
+        <form method="post" action="#blocked-behaviour" class="form-inline">
+          <input type="hidden" name="form-name" value="change-blocked-behaviour">
+
+          <select class="form-control mr-sm-2" name="blocked-behaviour">
+              <option value="{{ BlockBehaviourEnum.return_2xx.value }}"
+                      {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_2xx.value %} selected="selected" {% endif %}>
+                  Ignore (the sender will see the email as delivered, but you won't receive anything).
+              </option>
+              <option value="{{ BlockBehaviourEnum.return_5xx.value }}"
+                      {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_5xx.value %} selected="selected" {% endif %}>
+                  Reject (the sender will be told that your alias does not exist).
+              </option>
+
+          </select>
+
+          <button class="btn btn-outline-primary">Update</button>
+        </form>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-body">
         <div class="card-title">Alias Import</div>

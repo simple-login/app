@@ -139,6 +139,7 @@ from app.log import LOG, set_message_id
 from app.models import (
     Alias,
     Contact,
+    BlockBehaviourEnum,
     EmailLog,
     User,
     RefusedEmail,
@@ -606,8 +607,13 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             alias_id=contact.alias_id,
             commit=True,
         )
+
+        res_status = status.E200
+        if user.block_behaviour == BlockBehaviourEnum.return_5xx:
+            res_status = status.E502
+
         # do not return 5** to allow user to receive emails later when alias is enabled or contact is unblocked
-        return [(True, status.E200)]
+        return [(True, res_status)]
 
     ret = []
     mailboxes = alias.mailboxes
