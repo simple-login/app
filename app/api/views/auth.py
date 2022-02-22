@@ -62,7 +62,7 @@ def auth_login():
     elif user.disabled:
         return jsonify(error="Account disabled"), 400
     elif not user.activated:
-        return jsonify(error="Account not activated"), 400
+        return jsonify(error="Account not activated"), 422
     elif user.fido_enabled():
         # allow user who has TOTP enabled to continue using the mobile app
         if not user.enable_otp:

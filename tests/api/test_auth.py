@@ -22,7 +22,7 @@ def test_auth_login_success(flask_client, mfa: bool):
     Session.commit()
 
     r = flask_client.post(
-        url_for("api.auth_login"),
+        "/api/auth/login",
         json={
             "email": "abcd@gmail.com",
             "password": PASSWORD_2,
