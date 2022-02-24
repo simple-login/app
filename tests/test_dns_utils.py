@@ -39,8 +39,10 @@ def test_is_mx_equivalent():
         [(5, "domain1"), (10, "domain2")], [(10, "domain1"), (20, "domain2")]
     )
     assert is_mx_equivalent(
-        [(5, "domain1"), (10, "domain2"), (20, "domain3")], [(10, "domain1"), (20, "domain2")]
+        [(5, "domain1"), (10, "domain2"), (20, "domain3")],
+        [(10, "domain1"), (20, "domain2")],
     )
     assert not is_mx_equivalent(
-        [(5, "domain1"), (10, "domain2")], [(10, "domain1"), (20, "domain2"), (20, "domain3")]
+        [(5, "domain1"), (10, "domain2")],
+        [(10, "domain1"), (20, "domain2"), (20, "domain3")],
     )
