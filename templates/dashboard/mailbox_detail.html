@@ -123,8 +123,9 @@
 
               <textarea name="pgp"
                   {% if not current_user.is_premium() %} disabled {% endif %}
-                        class="form-control" rows=10
+                        class="form-control" rows=10 id="pgp-public-key"
                         placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
+              <div class="text-body p-2">You can drag and drop the pgp key into the text area</div>
             </div>
 
             <input type="hidden" name="form-name" value="pgp">
@@ -263,10 +264,44 @@
 {% endblock %}
 
 {% block script %}
-  <script>
+  <oscript>
     $(".custom-switch-input").change(function (e) {
       $(this).closest("form").submit();
     });
+
   </script>
+
+    {% if current_user.is_premium() %}
+    <script>
+        const MAX_BYTES = 2048; // 2KiB
+
+        function drop(event) {
+            event.stopPropagation();
+            event.preventDefault();
+
+            let files = event.dataTransfer.files;
+            for (let i = 0; i < files.length; i++) {
+                let file = files[i];
+                console.log(file, file.name);
+                if(file.type !== 'text/plain'){
+                    toastr.warning(`File ${file.name} is not a public key file`);
+                    continue;
+                }
+                let reader = new FileReader();
+                reader.onloadend = onFileLoaded;
+                reader.readAsBinaryString(file);
+            }
+        }
+
+        function onFileLoaded(event) {
+            const initialData = event.currentTarget.result.substr(0, MAX_BYTES);
+            $('#pgp-public-key').val(initialData);
+            console.log($('#pgp-public-key'));
+        }
+
+        const dropArea = $("#pgp-public-key").get(0);
+        dropArea.addEventListener("drop", drop, false);
+    </script>
+    {% endif %}
 {% endblock %}
 
