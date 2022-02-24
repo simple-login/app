@@ -4,7 +4,7 @@ import socket
 import string
 import subprocess
 from ast import literal_eval
-from typing import Callable, List
+from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -35,6 +35,13 @@ def sl_getenv(env_var: str, default_factory: Callable = None):
         return default_factory()
 
     return literal_eval(value)
+
+
+def env(var: str, default: Optional[str] = None) -> Optional[str]:
+    if var in os.environ:
+        return os.environ[var]
+    else:
+        return default
 
 
 config_file = os.environ.get("CONFIG")
@@ -431,3 +438,11 @@ def get_allowed_redirect_domains() -> List[str]:
 
 
 ALLOWED_REDIRECT_DOMAINS = get_allowed_redirect_domains()
+
+
+def setup_nameservers():
+    nameservers = env("NAMESERVERS", "1.1.1.1")
+    return nameservers.split(",")
+
+
+NAMESERVERS = setup_nameservers()
