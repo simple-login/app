@@ -112,10 +112,10 @@ def is_mx_equivalent(
         ref_mx_domains, key=lambda priority_domain: priority_domain[0]
     )
 
-    if len(mx_domains) != len(ref_mx_domains):
+    if len(mx_domains) < len(ref_mx_domains):
         return False
 
-    for i in range(0, len(mx_domains)):
+    for i in range(0, len(ref_mx_domains)):
         if mx_domains[i][1] != ref_mx_domains[i][1]:
             return False
 
