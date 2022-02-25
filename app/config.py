@@ -431,3 +431,11 @@ def get_allowed_redirect_domains() -> List[str]:
 
 
 ALLOWED_REDIRECT_DOMAINS = get_allowed_redirect_domains()
+
+
+def setup_nameservers():
+    nameservers = os.environ.get("NAMESERVERS", "1.1.1.1")
+    return nameservers.split(",")
+
+
+NAMESERVERS = setup_nameservers()
