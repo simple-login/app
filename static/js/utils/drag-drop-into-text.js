@@ -1,4 +1,4 @@
-const MAX_BYTES = 1240; // 10KiB
+const MAX_BYTES = 10240; // 10KiB
 
 function enableDragDropForPGPKeys(inputID) {
     function drop(event) {
