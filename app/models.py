@@ -1160,7 +1160,7 @@ class Alias(Base, ModelMixin):
     enabled = sa.Column(sa.Boolean(), default=True, nullable=False)
 
     custom_domain_id = sa.Column(
-        sa.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
+        sa.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True, index=True
     )
 
     custom_domain = orm.relationship("CustomDomain", foreign_keys=[custom_domain_id])
@@ -1172,7 +1172,7 @@ class Alias(Base, ModelMixin):
 
     # to know whether an alias belongs to a directory
     directory_id = sa.Column(
-        sa.ForeignKey("directory.id", ondelete="cascade"), nullable=True
+        sa.ForeignKey("directory.id", ondelete="cascade"), nullable=True, index=True
     )
 
     note = sa.Column(sa.Text, default=None, nullable=True)
