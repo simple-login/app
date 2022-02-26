@@ -284,7 +284,7 @@
                 </a>
               {% endif %}
 
-              {% if alias_info.custom_domain and not alias_info.custom_domain.verified %}
+              {% if alias.custom_domain and not alias.custom_domain.verified %}
                 <span class="fa fa-warning text-warning" data-toggle="tooltip"
                       title="Alias can't receive emails as its domain doesn't have MX records set up."></span>
               {% endif %}
