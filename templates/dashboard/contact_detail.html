@@ -44,6 +44,7 @@
               </div>
             {% endif %}
 
+            <div class="alert alert-info mt-2">You can drag and drop the pgp key file into the text area</div>
             <div class="form-group">
               <label class="form-label">PGP Public Key</label>
 
@@ -51,7 +52,7 @@
                   {% if not current_user.is_premium() %} disabled {% endif %}
                         class="form-control" rows=10 id="pgp-public-key"
                         placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ contact.pgp_public_key or "" }}</textarea>
-              <div class="alert alert-info mt-2">You can drag and drop the pgp key file into the text area</div>
+
 
             </div>
 
