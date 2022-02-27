@@ -7,7 +7,7 @@ Sometimes upgrading to a major version might require running a manual migration.
 If you are running versions prior to 3x, please:
 
 1. first upgrade to 2.1.2 then
-2. upgrade to the latest version which is 3.2.2
+2. upgrade to the latest version which is 3.4.0
 
 <details>
 <summary>After upgrade to 3x from 2x</summary>
@@ -119,20 +119,32 @@ for user in User.query.all():
 </p>
 </details>
 
-## Upgrade to the latest version 3.2.2
+## Upgrade to the latest version 3.4.0
 
 ```bash
 # Pull the latest version
-sudo docker pull simplelogin/app:3.2.2
+sudo docker pull simplelogin/app:3.4.0
 
 # Stop SimpleLogin containers
-sudo docker stop sl-email sl-migration sl-app
+sudo docker stop sl-email sl-migration sl-app sl-db sl-job-runner
 
 # Make sure to remove these containers to avoid conflict
-sudo docker rm -f sl-email sl-migration sl-app
+sudo docker rm -f sl-email sl-migration sl-app sl-db
 
 # create ./sl/upload/ if not exist
 mkdir -p ./sl/upload/
+
+# Run the database container. Make sure to replace `myuser` and `mypassword`
+docker run -d \
+    --name sl-db \
+    -e POSTGRES_PASSWORD=mypassword \
+    -e POSTGRES_USER=myuser \
+    -e POSTGRES_DB=simplelogin \
+    -p 127.0.0.1:5432:5432 \
+    -v $(pwd)/sl/db:/var/lib/postgresql/data \
+    --restart always \
+    --network="sl-network" \
+    postgres:12.1
 
 # Run the database migration
 sudo docker run --rm \
@@ -143,7 +155,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:3.2.2 flask db upgrade
+    simplelogin/app:3.4.0 flask db upgrade
 
 # Run init data
 sudo docker run --rm \
@@ -154,7 +166,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
-    simplelogin/app:3.2.2 python init_app.py
+    simplelogin/app:3.4.0 python init_app.py
 
 # Run the webapp container
 sudo docker run -d \
@@ -164,10 +176,10 @@ sudo docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 7777:7777 \
+    -p 127.0.0.1:7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.2.2
+    simplelogin/app:3.4.0
 
 # Run the email handler container
 sudo docker run -d \
@@ -177,9 +189,22 @@ sudo docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 20381:20381 \
+    -p 127.0.0.1:20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.2.2 python email_handler.py
+    simplelogin/app:3.4.0 python email_handler.py
+    
+# Run the job runner
+docker run -d \
+    --name sl-job-runner \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:3.4.0 python job_runner.py
+    
 ```
 

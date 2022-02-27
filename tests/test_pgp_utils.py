@@ -1,107 +1,65 @@
+import os
 from io import BytesIO
 
-from app.pgp_utils import load_public_key, gpg, encrypt_file
+import pgpy
+from pgpy import PGPMessage
 
-pubkey = """-----BEGIN PGP PUBLIC KEY BLOCK-----
-Version: Keybase OpenPGP v1.0.0
-Comment: https://keybase.io/crypto
-
-xo0EXlqP9wEEALoJsLHZA5W4yGQf+TIlIuYjj72SGEXbZyvMJxDk89YE8SWHAP+L
-+GkyNBfiPidJ1putLBOTDuxjDroDa6zMmjxCORUYdtq35RIDo/raamAaYg32X/TI
-3WyL3lgVf7K+VhXntG2V3OfM1r5nt3C1sy8Rsvzbih3p+eHpE3xCImg7ABEBAAHN
-FFRlc3QgPHRlc3RAc2wubG9jYWw+wq0EEwEKABcFAl5aj/cCGy8DCwkHAxUKCAIe
-AQIXgAAKCRCtrxG3FC3nSGhDA/wMT4PM8pWCsbsGA32SMN0j0MRsmc6KT4BGX8qd
-CwTv7s5DvZlkFL9uJQxcKFe+yYpjnrPvW0p81ispj7pVJqUTyx4brZHiWFi/vODz
-YyzTXNJvWJOp27G4YzWPeEeSKuGjF1CQScmZJA5luay7mkI5gttw4q3iqJlcDDFq
-1sz2486NBF5aj/cBBADA7KbOa8klxOC8Oact0zzc30SCGxtCLuFQCBI/dIrnv2KC
-lIbUd+CDlmD+cKCIu7MlrYPhCLF24MYnUXVFDbT3fP8YVy2HZTfk4Q64tj0S17ve
-E9H1G1W6FqdDUhMCU1EmJgd8sKOrNOFtz4+b3IHJhtJIoUILDkiMjfUCHmQaqQAR
-AQABwsCDBBgBCgAPBQJeWo/3BQkPCZwAAhsuAKgJEK2vEbcULedInSAEGQEKAAYF
-Al5aj/cACgkQDjygQt7BuGFtPQQAmzUJqXB4UWo9HPZfutqSU6GElSMwZq1Dlf8S
-Stjq7cYK+HSfcyw4wSBMRxMtG2zmbyhWlYTqx3fAAjgE32dBI/Rq8ku60u6SGEiE
-egKCcm0lyR1TVUTYEsfjiYD5AmGWng8tTavz1ANdEoE66wGApkETfmTM7hOuQrKm
-BjXpmembUQP5AXln8rWuDkeXVXhBa5RR3NgoD/fos2QJ5NxkZdfPmM57EwQkEXKv
-S3c5rlvvhIupElSyJkxOzfykNlJewVrLxCicj+JPSt7ly6YlkMQglyevntI46y1l
-2Msf0oeQZ3uedURGQiGQalC7nzPFnOARbNffFEJI3cJhcLkr2UFdL0rOjQReWo/3
-AQQA+MJeovqVVVrE1Vsc3M/BuG5ao7xyP1y7YhgmJg3gi8HR7b4/ySJtKnCYAmLg
-wwjfCUWed/GZ+3bGw48x8Fmn+6QTPG04j8RUOMUgVt9jc+TxC8VWSvqH1Taho3MK
-6ZQpCwXPO0FmWc5ybp0AJzqy2YS4eZwue1WH3zFzjXrOBd0AEQEAAcLAgwQYAQoA
-DwUCXlqP9wUJDwmcAAIbLgCoCRCtrxG3FC3nSJ0gBBkBCgAGBQJeWo/3AAoJEFJq
-ki+hZCNMgH4EAPiamTuezRtMIEWpjEjYGjpRF+2uj5VmU6N2E6+5Nh73HUKNCVRj
-AWeRarplye/CqZyhzPgotDNzAPzE4smo0N0vvc4zi6toqMiO4ODjR313d0y0v4iP
-+n576QwpfGw/ddlTEL7Iv28dzdKJArjNc2/jRxefHrAYSzjEunl/GUq+ToQD/izQ
-mPo6SWhlODsIy4eR/u3NpKtQQcs40XWLVci6M66ntyl5XmBGgFFu0WHIYeDOnTRc
-qL1W5yEYaaJhaEbmNGk3tf26Ns9cTl91S2eylO9nWGOnqFg58jP63TZVR7q3jIq1
-e5DKgszG2Vvye+bbK6qMKmaIXEMhnjw9eZuW6MGf
-=yDVI
------END PGP PUBLIC KEY BLOCK-----
-"""
-
-private_key = """-----BEGIN PGP PRIVATE KEY BLOCK-----
-Version: Keybase OpenPGP v1.0.0
-Comment: https://keybase.io/crypto
-
-xcFGBF5aj/cBBAC6CbCx2QOVuMhkH/kyJSLmI4+9khhF22crzCcQ5PPWBPElhwD/
-i/hpMjQX4j4nSdabrSwTkw7sYw66A2uszJo8QjkVGHbat+USA6P62mpgGmIN9l/0
-yN1si95YFX+yvlYV57RtldznzNa+Z7dwtbMvEbL824od6fnh6RN8QiJoOwARAQAB
-/gkDCNuXlmZeDGRjYOMJh8PUtjI8OWA/YK3JwPM2RX7pIXGFeSFb6Jgh0tRtPDQU
-YsiII6OQoHBINItD/ktcbbC+eBSAbfIygskwNeIoUB0eR4LHuX3nVDliHOVJFcAJ
-7y1qn1TiYMwawG6LyfJgx1sXB3EVsOCaB2EirsIwi5spwgy/JXb6c3YXP4MOvMD+
-fNRkTSigBighR9ytcrdHSvhY6PtLUlUeJHz8EA4NxbwTWVkLNtrnRqp6c6SZf+cI
-w5LD1jCj6/09TqCgmGJiXn9tjVox8P1aJmzYq9H6yyzVOgTl+JSiOmm/ejPEmMu3
-d2rzIFR7CSeS/KSXW06sOsxNc1uvwZJybW3CWxo3e/MXXcB2pDE85rsF9yNMAqsA
-/C+vG5HzNvyVOcx0N0+DY4rizz8i1eC4roELfsmV/9WMDg3heA0KAQItvloBNqHT
-VZG3Ol/fuFeR5WZjZQF3Q94APG/mKR5Uqyk/uKBJ3yTiMmC+MLjhSR3NFFRlc3Qg
-PHRlc3RAc2wubG9jYWw+wq0EEwEKABcFAl5aj/cCGy8DCwkHAxUKCAIeAQIXgAAK
-CRCtrxG3FC3nSGhDA/wMT4PM8pWCsbsGA32SMN0j0MRsmc6KT4BGX8qdCwTv7s5D
-vZlkFL9uJQxcKFe+yYpjnrPvW0p81ispj7pVJqUTyx4brZHiWFi/vODzYyzTXNJv
-WJOp27G4YzWPeEeSKuGjF1CQScmZJA5luay7mkI5gttw4q3iqJlcDDFq1sz248fB
-RQReWo/3AQQAwOymzmvJJcTgvDmnLdM83N9EghsbQi7hUAgSP3SK579igpSG1Hfg
-g5Zg/nCgiLuzJa2D4QixduDGJ1F1RQ2093z/GFcth2U35OEOuLY9Ete73hPR9RtV
-uhanQ1ITAlNRJiYHfLCjqzThbc+Pm9yByYbSSKFCCw5IjI31Ah5kGqkAEQEAAf4J
-AwghyL9imPxF5GD+IenwrCMTJqUjS9k1evoPHB58uk+qg8G3W2B21KQKhC0T+zg0
-EurgzSNk6Bgan1UcwqesOD7oSc7sETfve4dUA4ymN57NC+KO3MVHp25CURf4zJ8h
-rsg/XxiW+OYc9VJs4HakcHt95QcDtOM7bv0UcPORHb4FlpICHxCb65e8hCGe1kFN
-e4BSSa7P/oZmzb4nUiOFcTLhrA1E2/CRQcXGvC61StsdBP3BHVb9n6Y8/vXZnX+I
-9UTowvUW73I5I7fAbGRVRCkt+ZuJvKK8TdfmrB+SLCny1ERh8KKvGqB4a+NqMSXa
-xsvpY292/AAwX/d/UbIxkz/Rn9WD9r5a8LhOQmM7+YXfgk97mCPEJ3ZfDOsE0wuC
-2MB1Pg1W3rduiQ0VO0f2dY/pk25XJQkEiV+vDpkZwEN4OFD4rNL3FxCKA4+Ae+Ef
-Q0mNqnrTNvEBtcqlg5CSqGvRiDHgg+E2R66FWeD2yddInvgtqjrCwIMEGAEKAA8F
-Al5aj/cFCQ8JnAACGy4AqAkQra8RtxQt50idIAQZAQoABgUCXlqP9wAKCRAOPKBC
-3sG4YW09BACbNQmpcHhRaj0c9l+62pJToYSVIzBmrUOV/xJK2Ortxgr4dJ9zLDjB
-IExHEy0bbOZvKFaVhOrHd8ACOATfZ0Ej9GryS7rS7pIYSIR6AoJybSXJHVNVRNgS
-x+OJgPkCYZaeDy1Nq/PUA10SgTrrAYCmQRN+ZMzuE65CsqYGNemZ6ZtRA/kBeWfy
-ta4OR5dVeEFrlFHc2CgP9+izZAnk3GRl18+YznsTBCQRcq9LdzmuW++Ei6kSVLIm
-TE7N/KQ2Ul7BWsvEKJyP4k9K3uXLpiWQxCCXJ6+e0jjrLWXYyx/Sh5Bne551REZC
-IZBqULufM8Wc4BFs198UQkjdwmFwuSvZQV0vSsfBRgReWo/3AQQA+MJeovqVVVrE
-1Vsc3M/BuG5ao7xyP1y7YhgmJg3gi8HR7b4/ySJtKnCYAmLgwwjfCUWed/GZ+3bG
-w48x8Fmn+6QTPG04j8RUOMUgVt9jc+TxC8VWSvqH1Taho3MK6ZQpCwXPO0FmWc5y
-bp0AJzqy2YS4eZwue1WH3zFzjXrOBd0AEQEAAf4JAwgBEUceLwHUd2CIZ5hb9Y52
-LAOHbWPp6bSG5dkxYUxMr1gSqwL934fBpZmIBG/6ZwlwWt/c2bspW0ucREqiwMbF
-yZK2SpCN4GJ3VnFOxg2hmBfA1j3Ro5FnsO1t06wf1UhcP1MZLXh/z90bg1R5NFQJ
-U9jtqNTsHrr0XFzA2zno+zcopiZZOoPXcwxLf+pCetjN5EOkpMgqZTtV2nCppQRB
-d3ZpsguOO4OVexEW6gWGOuas5+/qa846it9VMo+nlqtLyIAFbj2P02Zk/QrUnPF3
-PEjKDJssrOEnZWlpAdEDfFhC1OrBVlG0lkD1qHDCNO9MTeT2dRMghbFGxlno9z2K
-wnnB+Ep4UULuvbh08GsVflQPaA0a59IFDbOzYc7puS5kpJ5fQWwdXZvjNc/jOeQX
-BHaLfQKmWYW3pCxs0BqKRhAnZ9E+kkIL6xU6MlJPs/NGO7aAykrFv8BdmBJQ8s00
-9LGlgSUhdEdIsn5h3Kdn0f/7FXXWwsCDBBgBCgAPBQJeWo/3BQkPCZwAAhsuAKgJ
-EK2vEbcULedInSAEGQEKAAYFAl5aj/cACgkQUmqSL6FkI0yAfgQA+JqZO57NG0wg
-RamMSNgaOlEX7a6PlWZTo3YTr7k2HvcdQo0JVGMBZ5FqumXJ78KpnKHM+Ci0M3MA
-/MTiyajQ3S+9zjOLq2ioyI7g4ONHfXd3TLS/iI/6fnvpDCl8bD912VMQvsi/bx3N
-0okCuM1zb+NHF58esBhLOMS6eX8ZSr5OhAP+LNCY+jpJaGU4OwjLh5H+7c2kq1BB
-yzjRdYtVyLozrqe3KXleYEaAUW7RYchh4M6dNFyovVbnIRhpomFoRuY0aTe1/bo2
-z1xOX3VLZ7KU72dYY6eoWDnyM/rdNlVHureMirV7kMqCzMbZW/J75tsrqowqZohc
-QyGePD15m5bowZ8=
-=4OSo
------END PGP PRIVATE KEY BLOCK-----"""
+from app.config import ROOT_DIR
+from app.pgp_utils import (
+    load_public_key,
+    gpg,
+    encrypt_file,
+    encrypt_file_with_pgpy,
+    sign_data,
+    sign_data_with_pgpy,
+)
 
 
 def test_load_public_key():
-    load_public_key(pubkey)
+    public_key_path = os.path.join(ROOT_DIR, "local_data/public-pgp.asc")
+    public_key = open(public_key_path).read()
+    load_public_key(public_key)
     assert len(gpg.list_keys()) == 1
 
 
 def test_encrypt():
-    fingerprint = load_public_key(pubkey)
+    public_key_path = os.path.join(ROOT_DIR, "local_data/public-pgp.asc")
+    public_key = open(public_key_path).read()
+    fingerprint = load_public_key(public_key)
     secret = encrypt_file(BytesIO(b"abcd"), fingerprint)
     assert secret != ""
+
+
+def test_encrypt_file_with_pgpy():
+    encrypt_decrypt_text("heyhey")
+    encrypt_decrypt_text("👍💪")
+    encrypt_decrypt_text("éèù")
+    encrypt_decrypt_text("片仮名")
+
+
+def encrypt_decrypt_text(text: str):
+    public_key_path = os.path.join(ROOT_DIR, "local_data/public-pgp.asc")
+    public_key = open(public_key_path).read()
+
+    encrypted: PGPMessage = encrypt_file_with_pgpy(text.encode(), public_key)
+
+    # decrypt
+    private_key_path = os.path.join(ROOT_DIR, "local_data/private-pgp.asc")
+    private_key = open(private_key_path).read()
+    priv = pgpy.PGPKey()
+    priv.parse(private_key)
+    decrypted = priv.decrypt(encrypted).message
+    if type(decrypted) == str:
+        assert decrypted == text
+    elif type(decrypted) == bytearray:
+        assert decrypted.decode() == text
+
+
+def test_sign_data():
+    assert sign_data("heyhey")
+    assert sign_data(b"bytes")
+
+
+def test_sign_data_with_pgpy():
+    assert sign_data_with_pgpy("unicode")
+    assert sign_data_with_pgpy(b"bytes")

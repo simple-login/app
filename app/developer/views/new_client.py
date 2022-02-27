@@ -3,13 +3,14 @@ from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
+from app.db import Session
 from app.developer.base import developer_bp
-from app.extensions import db
 from app.models import Client
 
 
 class NewClientForm(FlaskForm):
     name = StringField("Name", validators=[validators.DataRequired()])
+    url = StringField("Url", validators=[validators.DataRequired()])
 
 
 @developer_bp.route("/new_client", methods=["GET", "POST"])
@@ -19,9 +20,10 @@ def new_client():
 
     if form.validate_on_submit():
         client = Client.create_new(form.name.data, current_user.id)
-        db.session.commit()
+        client.home_url = form.url.data
+        Session.commit()
 
-        flash("Your app has been created", "success")
+        flash("Your website has been created", "success")
 
         return redirect(
             url_for("developer.client_detail", client_id=client.id, is_new=1)

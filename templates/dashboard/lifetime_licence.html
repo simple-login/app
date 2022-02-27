@@ -1,0 +1,28 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Lifetime Licence
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h2">Lifetime Licence</h1>
+
+      <div class="mb-4">
+        If you have a lifetime licence, please paste it here. <br>
+      </div>
+
+      <form method="post">
+        {{ coupon_form.csrf_token }}
+
+        {{ coupon_form.code(class="form-control", placeholder="Licence Code") }}
+        {{ render_field_errors(coupon_form.code) }}
+        <button class="btn btn-success mt-2">Apply</button>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}

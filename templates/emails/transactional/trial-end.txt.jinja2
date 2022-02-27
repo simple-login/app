@@ -1,0 +1,17 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Your trial will end {{ user.trial_end.humanize() }}.
+
+When the trial ends:
+
+- All aliases/domains/directories you have created are kept and continue working.
+- You cannot create new aliases if you exceed the free plan limit, i.e. have more than {{MAX_NB_EMAIL_FREE_PLAN}} aliases.
+- You cannot add new domain or directory.
+- You cannot add new mailbox.
+- If you enable PGP Encryption, forwarded emails are not encrypted anymore.
+
+You can upgrade today to continue using all these Premium features (and much more coming).
+
+Let me know if you need to extend your trial period.
+{% endblock %}

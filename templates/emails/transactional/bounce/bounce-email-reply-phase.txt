@@ -1,0 +1,16 @@
+Email cannot be sent to {{ contact.email }} from your alias {{ alias.email }}
+
+This might mean {{ contact.email }}
+- is not a valid address, or
+- doesn't exist, or
+- its mail server refuses your email.
+
+You can view the email at {{refused_email_url}}.
+This email is automatically deleted in 7 days.
+
+Best,
+SimpleLogin Team.
+
+
+
+

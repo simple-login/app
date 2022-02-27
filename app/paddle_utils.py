@@ -19,6 +19,7 @@ from app.config import PADDLE_PUBLIC_KEY_PATH, PADDLE_VENDOR_ID, PADDLE_AUTH_COD
 
 # Your Paddle public key.
 from app.log import LOG
+from app.models import User
 
 with open(PADDLE_PUBLIC_KEY_PATH) as f:
     public_key = f.read()
@@ -60,7 +61,7 @@ def verify_incoming_request(form_data: dict) -> bool:
     return False
 
 
-def cancel_subscription(subscription_id: int) -> bool:
+def cancel_subscription(subscription_id: str) -> bool:
     r = requests.post(
         "https://vendors.paddle.com/api/2.0/subscription/users_cancel",
         data={
@@ -71,14 +72,12 @@ def cancel_subscription(subscription_id: int) -> bool:
     )
     res = r.json()
     if not res["success"]:
-        LOG.exception(
-            f"cannot cancel subscription {subscription_id}, paddle response: {res}"
-        )
+        LOG.e(f"cannot cancel subscription {subscription_id}, paddle response: {res}")
 
     return res["success"]
 
 
-def change_plan(subscription_id: str, plan_id) -> (bool, str):
+def change_plan(user: User, subscription_id: str, plan_id) -> (bool, str):
     """return whether the operation is successful and an optional error message"""
     r = requests.post(
         "https://vendors.paddle.com/api/2.0/subscription/users/update",
@@ -91,15 +90,19 @@ def change_plan(subscription_id: str, plan_id) -> (bool, str):
     )
     res = r.json()
     if not res["success"]:
-        LOG.exception(
-            f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
-        )
         try:
             # "unable to complete the resubscription because we could not charge the customer for the resubscription"
             if res["error"]["code"] == 147:
+                LOG.w(
+                    "could not charge the customer for the resubscription error %s,%s",
+                    subscription_id,
+                    user,
+                )
                 return False, "Your card cannot be charged"
-        except:
-            LOG.warning("Cannot parse error code from %s", res)
+        except KeyError:
+            LOG.e(
+                f"cannot change subscription {subscription_id} to {plan_id}, paddle response: {res}"
+            )
             return False, ""
 
         return False, ""

@@ -1,11 +1,13 @@
 import json
 import os
-import ssl
+import time
 from datetime import timedelta
 
 import arrow
 import flask_profiler
 import sentry_sdk
+from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
+from coinbase_commerce.webhook import Webhook
 from flask import (
     Flask,
     redirect,
@@ -15,17 +17,30 @@ from flask import (
     jsonify,
     flash,
     session,
+    g,
 )
 from flask_admin import Admin
 from flask_cors import cross_origin, CORS
-from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app import paddle_utils
-from app.admin_model import SLModelView, SLAdminIndexView
+from app import paddle_utils, config
+from app.admin_model import (
+    SLAdminIndexView,
+    UserAdmin,
+    EmailLogAdmin,
+    AliasAdmin,
+    MailboxAdmin,
+    LifetimeCouponAdmin,
+    ManualSubscriptionAdmin,
+    ClientAdmin,
+    ReferralAdmin,
+    PayoutAdmin,
+    CouponAdmin,
+    CustomDomainAdmin,
+)
 from app.api.base import api_bp
 from app.auth.base import auth_bp
 from app.config import (
@@ -35,7 +50,6 @@ from app.config import (
     URL,
     SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
-    RESET_DB,
     FLASK_PROFILER_PATH,
     FLASK_PROFILER_PASSWORD,
     SENTRY_FRONT_END_DSN,
@@ -49,46 +63,57 @@ from app.config import (
     LANDING_PAGE_URL,
     STATUS_PAGE_URL,
     SUPPORT_EMAIL,
+    PADDLE_MONTHLY_PRODUCT_IDS,
+    PADDLE_YEARLY_PRODUCT_IDS,
+    PGP_SIGNER,
+    COINBASE_WEBHOOK_SECRET,
+    PAGE_LIMIT,
+    PADDLE_COUPON_ID,
+    ZENDESK_ENABLED,
 )
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.developer.base import developer_bp
 from app.discover.base import discover_bp
 from app.email_utils import send_email, render
-from app.extensions import db, login_manager, migrate, limiter
+from app.extensions import login_manager, migrate, limiter
+from app.fake_data import fake_data
 from app.jose_utils import get_jwk_key
 from app.log import LOG
 from app.models import (
     Client,
     User,
-    ClientUser,
     Alias,
-    RedirectUri,
     Subscription,
     PlanEnum,
-    ApiKey,
     CustomDomain,
     LifetimeCoupon,
-    Directory,
     Mailbox,
     Referral,
-    AliasMailbox,
-    Notification,
-    PublicDomain,
+    CoinbaseSubscription,
+    EmailLog,
+    Contact,
+    ManualSubscription,
+    Payout,
+    Coupon,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
+from app.phone.base import phone_bp
+from app.utils import random_string
 
 if SENTRY_DSN:
     LOG.d("enable sentry")
     sentry_sdk.init(
         dsn=SENTRY_DSN,
+        release=f"app@{SHA1}",
         integrations=[
             FlaskIntegration(),
             SqlalchemyIntegration(),
         ],
     )
 
-# the app is served behin nginx which uses http and not https
+# the app is served behind nginx which uses http and not https
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
@@ -97,7 +122,9 @@ def create_light_app() -> Flask:
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    db.init_app(app)
+    @app.teardown_appcontext
+    def shutdown_session(response_or_exc):
+        Session.remove()
 
     return app
 
@@ -119,6 +146,9 @@ def create_app() -> Flask:
 
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
+    # to have a "fluid" layout for admin
+    app.config["FLASK_ADMIN_FLUID_LAYOUT"] = True
+
     # to avoid conflict with other cookie
     app.config["SESSION_COOKIE_NAME"] = SESSION_COOKIE_NAME
     if URL.startswith("https"):
@@ -137,7 +167,9 @@ def create_app() -> Flask:
 
     init_admin(app)
     setup_paddle_callback(app)
+    setup_coinbase_commerce(app)
     setup_do_not_track(app)
+    register_custom_commands(app)
 
     if FLASK_PROFILER_PATH:
         LOG.d("Enable flask-profiler")
@@ -163,154 +195,17 @@ def create_app() -> Flask:
         session.permanent = True
         app.permanent_session_lifetime = timedelta(days=7)
 
+    @app.teardown_appcontext
+    def cleanup(resp_or_exc):
+        Session.remove()
+
     return app
 
 
-def fake_data():
-    LOG.d("create fake data")
-    # Remove db if exist
-    if os.path.exists("db.sqlite"):
-        LOG.d("remove existing db file")
-        os.remove("db.sqlite")
-
-    # Create all tables
-    db.create_all()
-
-    # Create a user
-    user = User.create(
-        email="john@wick.com",
-        name="John Wick",
-        password="password",
-        activated=True,
-        is_admin=True,
-        enable_otp=False,
-        otp_secret="base32secret3232",
-        intro_shown=True,
-        fido_uuid=None,
-    )
-    db.session.commit()
-
-    user.trial_end = None
-
-    LifetimeCoupon.create(code="coupon", nb_used=10)
-    db.session.commit()
-
-    # Create a subscription for user
-    Subscription.create(
-        user_id=user.id,
-        cancel_url="https://checkout.paddle.com/subscription/cancel?user=1234",
-        update_url="https://checkout.paddle.com/subscription/update?user=1234",
-        subscription_id="123",
-        event_time=arrow.now(),
-        next_bill_date=arrow.now().shift(days=10).date(),
-        plan=PlanEnum.monthly,
-    )
-    db.session.commit()
-
-    api_key = ApiKey.create(user_id=user.id, name="Chrome")
-    api_key.code = "code"
-
-    api_key = ApiKey.create(user_id=user.id, name="Firefox")
-    api_key.code = "codeFF"
-
-    m1 = Mailbox.create(
-        user_id=user.id,
-        email="m1@cd.ef",
-        verified=True,
-        pgp_finger_print="fake fingerprint",
-    )
-    db.session.commit()
-
-    for i in range(3):
-        if i % 2 == 0:
-            a = Alias.create(
-                email=f"e{i}@{FIRST_ALIAS_DOMAIN}", user_id=user.id, mailbox_id=m1.id
-            )
-        else:
-            a = Alias.create(
-                email=f"e{i}@{FIRST_ALIAS_DOMAIN}",
-                user_id=user.id,
-                mailbox_id=user.default_mailbox_id,
-            )
-        db.session.commit()
-
-        if i % 5 == 0:
-            if i % 2 == 0:
-                AliasMailbox.create(alias_id=a.id, mailbox_id=user.default_mailbox_id)
-            else:
-                AliasMailbox.create(alias_id=a.id, mailbox_id=m1.id)
-        db.session.commit()
-
-        # some aliases don't have any activity
-        # if i % 3 != 0:
-        #     contact = Contact.create(
-        #         user_id=user.id,
-        #         alias_id=a.id,
-        #         website_email=f"contact{i}@example.com",
-        #         reply_email=f"rep{i}@sl.local",
-        #     )
-        #     db.session.commit()
-        #     for _ in range(3):
-        #         EmailLog.create(user_id=user.id, contact_id=contact.id)
-        #         db.session.commit()
-
-        # have some disabled alias
-        if i % 5 == 0:
-            a.enabled = False
-            db.session.commit()
-
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
-    CustomDomain.create(
-        user_id=user.id, domain="very-long-domain.com.net.org", verified=True
-    )
-    db.session.commit()
-
-    Directory.create(user_id=user.id, name="abcd")
-    Directory.create(user_id=user.id, name="xyzt")
-    db.session.commit()
-
-    # Create a client
-    client1 = Client.create_new(name="Demo", user_id=user.id)
-    client1.oauth_client_id = "client-id"
-    client1.oauth_client_secret = "client-secret"
-    client1.published = True
-    db.session.commit()
-
-    RedirectUri.create(client_id=client1.id, uri="https://ab.com")
-
-    client2 = Client.create_new(name="Demo 2", user_id=user.id)
-    client2.oauth_client_id = "client-id2"
-    client2.oauth_client_secret = "client-secret2"
-    client2.published = True
-    db.session.commit()
-
-    ClientUser.create(user_id=user.id, client_id=client1.id, name="Fake Name")
-
-    referral = Referral.create(user_id=user.id, code="REFCODE", name="First referral")
-    db.session.commit()
-
-    for i in range(6):
-        Notification.create(user_id=user.id, message=f"""Hey hey <b>{i}</b> """ * 10)
-    db.session.commit()
-
-    User.create(
-        email="winston@continental.com",
-        name="Winston",
-        password="password",
-        activated=True,
-        referral_id=referral.id,
-    )
-    db.session.commit()
-
-    for d in ["d1.localhost", "d2.localhost"]:
-        PublicDomain.create(domain=d)
-    db.session.commit()
-
-
 @login_manager.user_loader
-def load_user(user_id):
-    user = User.get(user_id)
-    if user.disabled:
+def load_user(alternative_id):
+    user = User.get_by(alternative_id=alternative_id)
+    if user and user.disabled:
         return None
 
     return user
@@ -321,6 +216,7 @@ def register_blueprints(app: Flask):
     app.register_blueprint(monitor_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(developer_bp)
+    app.register_blueprint(phone_bp)
 
     app.register_blueprint(oauth_bp, url_prefix="/oauth")
     app.register_blueprint(oauth_bp, url_prefix="/oauth2")
@@ -337,6 +233,21 @@ def set_index_page(app):
         else:
             return redirect(url_for("auth.login"))
 
+    @app.before_request
+    def before_request():
+        # not logging /static call
+        if (
+            not request.path.startswith("/static")
+            and not request.path.startswith("/admin/static")
+            and not request.path.startswith("/_debug_toolbar")
+        ):
+            g.start_time = time.time()
+
+            # to handle the referral url that has ?slref=code part
+            ref_code = request.args.get("slref")
+            if ref_code:
+                session["slref"] = ref_code
+
     @app.after_request
     def after_request(res):
         # not logging /static call
@@ -344,14 +255,17 @@ def set_index_page(app):
             not request.path.startswith("/static")
             and not request.path.startswith("/admin/static")
             and not request.path.startswith("/_debug_toolbar")
+            and not request.path.startswith("/git")
+            and not request.path.startswith("/favicon.ico")
         ):
-            LOG.debug(
-                "%s %s %s %s %s",
+            LOG.d(
+                "%s %s %s %s %s, takes %s",
                 request.remote_addr,
                 request.method,
                 request.path,
                 request.args,
                 res.status_code,
+                time.time() - g.start_time,
             )
 
         return res
@@ -390,6 +304,13 @@ def setup_openid_metadata(app):
         return jsonify(res)
 
 
+def get_current_user():
+    try:
+        return g.user
+    except AttributeError:
+        return current_user
+
+
 def setup_error_page(app):
     @app.errorhandler(400)
     def bad_request(e):
@@ -414,8 +335,12 @@ def setup_error_page(app):
             return render_template("error/403.html"), 403
 
     @app.errorhandler(429)
-    def forbidden(e):
-        LOG.warning("Client hit rate limit on path %s", request.path)
+    def rate_limited(e):
+        LOG.w(
+            "Client hit rate limit on path %s, user:%s",
+            request.path,
+            get_current_user(),
+        )
         if request.path.startswith("/api/"):
             return jsonify(error="Rate limit exceeded"), 429
         else:
@@ -437,7 +362,7 @@ def setup_error_page(app):
 
     @app.errorhandler(Exception)
     def error_handler(e):
-        LOG.exception(e)
+        LOG.e(e)
         if request.path.startswith("/api/"):
             return jsonify(error="Internal error"), 500
         else:
@@ -473,19 +398,21 @@ def jinja2_filter(app):
             LANDING_PAGE_URL=LANDING_PAGE_URL,
             STATUS_PAGE_URL=STATUS_PAGE_URL,
             SUPPORT_EMAIL=SUPPORT_EMAIL,
+            PGP_SIGNER=PGP_SIGNER,
+            CANONICAL_URL=f"{URL}{request.path}",
+            PAGE_LIMIT=PAGE_LIMIT,
+            ZENDESK_ENABLED=ZENDESK_ENABLED,
         )
 
 
 def setup_paddle_callback(app: Flask):
     @app.route("/paddle", methods=["GET", "POST"])
     def paddle():
-        LOG.debug(f"paddle callback {request.form.get('alert_name')} {request.form}")
+        LOG.d(f"paddle callback {request.form.get('alert_name')} {request.form}")
 
         # make sure the request comes from Paddle
         if not paddle_utils.verify_incoming_request(dict(request.form)):
-            LOG.exception(
-                "request not coming from paddle. Request data:%s", dict(request.form)
-            )
+            LOG.e("request not coming from paddle. Request data:%s", dict(request.form))
             return "KO", 400
 
         if (
@@ -497,13 +424,19 @@ def setup_paddle_callback(app: Flask):
             user_id = passthrough.get("user_id")
             user = User.get(user_id)
 
-            if (
-                int(request.form.get("subscription_plan_id"))
-                == PADDLE_MONTHLY_PRODUCT_ID
-            ):
+            subscription_plan_id = int(request.form.get("subscription_plan_id"))
+
+            if subscription_plan_id in PADDLE_MONTHLY_PRODUCT_IDS:
                 plan = PlanEnum.monthly
-            else:
+            elif subscription_plan_id in PADDLE_YEARLY_PRODUCT_IDS:
                 plan = PlanEnum.yearly
+            else:
+                LOG.e(
+                    "Unknown subscription_plan_id %s %s",
+                    subscription_plan_id,
+                    request.form,
+                )
+                return "No such subscription", 400
 
             sub = Subscription.get_by(user_id=user.id)
 
@@ -535,13 +468,13 @@ def setup_paddle_callback(app: Flask):
                 # in case user cancels a plan and subscribes a new plan
                 sub.cancelled = False
 
-            LOG.debug("User %s upgrades!", user)
+            LOG.d("User %s upgrades!", user)
 
-            db.session.commit()
+            Session.commit()
 
         elif request.form.get("alert_name") == "subscription_payment_succeeded":
             subscription_id = request.form.get("subscription_id")
-            LOG.debug("Update subscription %s", subscription_id)
+            LOG.d("Update subscription %s", subscription_id)
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             # when user subscribes, the "subscription_payment_succeeded" can arrive BEFORE "subscription_created"
@@ -552,7 +485,7 @@ def setup_paddle_callback(app: Flask):
                     request.form.get("next_bill_date"), "YYYY-MM-DD"
                 ).date()
 
-                db.session.commit()
+                Session.commit()
 
         elif request.form.get("alert_name") == "subscription_cancelled":
             subscription_id = request.form.get("subscription_id")
@@ -560,7 +493,7 @@ def setup_paddle_callback(app: Flask):
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
                 # cancellation_effective_date should be the same as next_bill_date
-                LOG.warning(
+                LOG.w(
                     "Cancel subscription %s %s on %s, next bill date %s",
                     subscription_id,
                     sub.user,
@@ -570,16 +503,15 @@ def setup_paddle_callback(app: Flask):
                 sub.event_time = arrow.now()
 
                 sub.cancelled = True
-                db.session.commit()
+                Session.commit()
 
                 user = sub.user
 
                 send_email(
                     user.email,
-                    f"SimpleLogin - what can we do to improve the product?",
+                    "SimpleLogin - your subscription is canceled",
                     render(
                         "transactional/subscription-cancel.txt",
-                        name=user.name or "",
                         end_date=request.form.get("cancellation_effective_date"),
                     ),
                 )
@@ -591,7 +523,7 @@ def setup_paddle_callback(app: Flask):
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
-                LOG.debug(
+                LOG.d(
                     "Update subscription %s %s on %s, next bill date %s",
                     subscription_id,
                     sub.user,
@@ -617,26 +549,195 @@ def setup_paddle_callback(app: Flask):
                 # make sure to set the new plan as not-cancelled
                 sub.cancelled = False
 
-                db.session.commit()
+                Session.commit()
             else:
                 return "No such subscription", 400
+        elif request.form.get("alert_name") == "payment_refunded":
+            subscription_id = request.form.get("subscription_id")
+            LOG.d("Refund request for subscription %s", subscription_id)
+
+            sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
+
+            if sub:
+                user = sub.user
+                Subscription.delete(sub.id)
+                Session.commit()
+                LOG.e("%s requests a refund", user)
+
         return "OK"
+
+    @app.route("/paddle_coupon", methods=["GET", "POST"])
+    def paddle_coupon():
+        LOG.d(f"paddle coupon callback %s", request.form)
+
+        if not paddle_utils.verify_incoming_request(dict(request.form)):
+            LOG.e("request not coming from paddle. Request data:%s", dict(request.form))
+            return "KO", 400
+
+        product_id = request.form.get("p_product_id")
+        if product_id != PADDLE_COUPON_ID:
+            LOG.e("product_id %s not match with %s", product_id, PADDLE_COUPON_ID)
+            return "KO", 400
+
+        email = request.form.get("email")
+        LOG.d("Paddle coupon request for %s", email)
+
+        coupon = Coupon.create(
+            code=random_string(30),
+            comment="For 1-year coupon",
+            expires_date=arrow.now().shift(years=1, days=-1),
+            commit=True,
+        )
+
+        return (
+            f"Your 1-year coupon is <b>{coupon.code}</b> <br> "
+            f"It's valid until <b>{coupon.expires_date.date().isoformat()}</b>"
+        )
+
+
+def setup_coinbase_commerce(app):
+    @app.route("/coinbase", methods=["POST"])
+    def coinbase_webhook():
+        # event payload
+        request_data = request.data.decode("utf-8")
+        # webhook signature
+        request_sig = request.headers.get("X-CC-Webhook-Signature", None)
+
+        try:
+            # signature verification and event object construction
+            event = Webhook.construct_event(
+                request_data, request_sig, COINBASE_WEBHOOK_SECRET
+            )
+        except (WebhookInvalidPayload, SignatureVerificationError) as e:
+            LOG.e("Invalid Coinbase webhook")
+            return str(e), 400
+
+        LOG.d("Coinbase event %s", event)
+
+        if event["type"] == "charge:confirmed":
+            if handle_coinbase_event(event):
+                return "success", 200
+            else:
+                return "error", 400
+
+        return "success", 200
+
+
+def handle_coinbase_event(event) -> bool:
+    user_id = int(event["data"]["metadata"]["user_id"])
+    code = event["data"]["code"]
+    user = User.get(user_id)
+    if not user:
+        LOG.e("User not found %s", user_id)
+        return False
+
+    coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+        user_id=user_id
+    )
+
+    if not coinbase_subscription:
+        LOG.d("Create a coinbase subscription for %s", user)
+        coinbase_subscription = CoinbaseSubscription.create(
+            user_id=user_id, end_at=arrow.now().shift(years=1), code=code, commit=True
+        )
+        send_email(
+            user.email,
+            "Your SimpleLogin account has been upgraded",
+            render(
+                "transactional/coinbase/new-subscription.txt",
+                coinbase_subscription=coinbase_subscription,
+            ),
+            render(
+                "transactional/coinbase/new-subscription.html",
+                coinbase_subscription=coinbase_subscription,
+            ),
+        )
+    else:
+        if coinbase_subscription.code != code:
+            LOG.d("Update code from %s to %s", coinbase_subscription.code, code)
+            coinbase_subscription.code = code
+
+        if coinbase_subscription.is_active():
+            coinbase_subscription.end_at = coinbase_subscription.end_at.shift(years=1)
+        else:  # already expired subscription
+            coinbase_subscription.end_at = arrow.now().shift(years=1)
+
+        Session.commit()
+
+        send_email(
+            user.email,
+            "Your SimpleLogin account has been extended",
+            render(
+                "transactional/coinbase/extend-subscription.txt",
+                coinbase_subscription=coinbase_subscription,
+            ),
+            render(
+                "transactional/coinbase/extend-subscription.html",
+                coinbase_subscription=coinbase_subscription,
+            ),
+        )
+
+    return True
 
 
 def init_extensions(app: Flask):
     login_manager.init_app(app)
-    db.init_app(app)
     migrate.init_app(app)
 
 
 def init_admin(app):
-    admin = Admin(name="SimpleLogin", template_mode="bootstrap3")
+    admin = Admin(name="SimpleLogin", template_mode="bootstrap4")
 
     admin.init_app(app, index_view=SLAdminIndexView())
-    admin.add_view(SLModelView(User, db.session))
-    admin.add_view(SLModelView(Client, db.session))
-    admin.add_view(SLModelView(Alias, db.session))
-    admin.add_view(SLModelView(ClientUser, db.session))
+    admin.add_view(UserAdmin(User, Session))
+    admin.add_view(AliasAdmin(Alias, Session))
+    admin.add_view(MailboxAdmin(Mailbox, Session))
+    admin.add_view(EmailLogAdmin(EmailLog, Session))
+    admin.add_view(LifetimeCouponAdmin(LifetimeCoupon, Session))
+    admin.add_view(CouponAdmin(Coupon, Session))
+    admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
+    admin.add_view(ClientAdmin(Client, Session))
+    admin.add_view(CustomDomainAdmin(CustomDomain, Session))
+    admin.add_view(ReferralAdmin(Referral, Session))
+    admin.add_view(PayoutAdmin(Payout, Session))
+
+
+def register_custom_commands(app):
+    """
+    Adhoc commands run during data migration.
+    Registered as flask command, so it can run as:
+
+    > flask {task-name}
+    """
+
+    @app.cli.command("fill-up-email-log-alias")
+    def fill_up_email_log_alias():
+        """Fill up email_log.alias_id column"""
+        # split all emails logs into 1000-size trunks
+        nb_email_log = EmailLog.count()
+        LOG.d("total trunks %s", nb_email_log // 1000 + 2)
+        for trunk in reversed(range(1, nb_email_log // 1000 + 2)):
+            nb_update = 0
+            for email_log, contact in (
+                Session.query(EmailLog, Contact)
+                .filter(EmailLog.contact_id == Contact.id)
+                .filter(EmailLog.id <= trunk * 1000)
+                .filter(EmailLog.id > (trunk - 1) * 1000)
+                .filter(EmailLog.alias_id.is_(None))
+            ):
+                email_log.alias_id = contact.alias_id
+                nb_update += 1
+
+            LOG.d("finish trunk %s, update %s email logs", trunk, nb_update)
+            Session.commit()
+
+    @app.cli.command("dummy-data")
+    def dummy_data():
+        from init_app import add_sl_domains
+
+        LOG.w("reset db, add fake data")
+        fake_data()
+        add_sl_domains()
 
 
 def setup_do_not_track(app):
@@ -646,11 +747,11 @@ def setup_do_not_track(app):
         <script src="/static/local-storage-polyfill.js"></script>
 
         <script>
-// Disable GoatCounter if this script is called
+// Disable Analytics if this script is called
 
-store.set('goatcounter-ignore', 't');
+store.set('analytics-ignore', 't');
 
-alert("GoatCounter disabled");
+alert("Analytics disabled");
 
 window.location.href = "/";
 
@@ -659,28 +760,29 @@ window.location.href = "/";
 
 
 def local_main():
+    config.COLOR_LOG = True
     app = create_app()
 
     # enable flask toolbar
+    from flask_debugtoolbar import DebugToolbarExtension
+
     app.config["DEBUG_TB_PROFILER_ENABLED"] = True
     app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
     app.debug = True
     DebugToolbarExtension(app)
 
-    # warning: only used in local
-    if RESET_DB:
-        LOG.warning("reset db, add fake data")
-        with app.app_context():
-            fake_data()
+    # disable the sqlalchemy debug panels because of "IndexError: pop from empty list" from:
+    # duration = time.time() - conn.info['query_start_time'].pop(-1)
+    # app.config["DEBUG_TB_PANELS"] += ("flask_debugtoolbar_sqlalchemy.SQLAlchemyPanel",)
 
-    if URL.startswith("https"):
-        LOG.d("enable https")
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        context.load_cert_chain("local_data/cert.pem", "local_data/key.pem")
+    app.run(debug=True, port=7777)
 
-        app.run(debug=True, port=7777, ssl_context=context)
-    else:
-        app.run(debug=True, port=7777)
+    # uncomment to run https locally
+    # LOG.d("enable https")
+    # import ssl
+    # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    # context.load_cert_chain("local_data/cert.pem", "local_data/key.pem")
+    # app.run(debug=True, port=7777, ssl_context=context)
 
 
 if __name__ == "__main__":

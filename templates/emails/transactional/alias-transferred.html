@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    <h1>
+      {{ alias.email }} has been transferred.
+    </h1>
+  {% endcall %}
+
+  {% call text() %}
+    Your (previously) alias {{  alias.email }} has been received by another user.
+  {% endcall %}
+
+  {% call text() %}
+    Best, <br/>
+    SimpleLogin Team.
+  {% endcall %}
+
+{% endblock %}
+
+

@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from operator import or_
 
@@ -9,13 +8,17 @@ from flask_wtf import FlaskForm
 from sqlalchemy import and_, func, case
 from wtforms import StringField, validators, ValidationError
 
-from app.config import EMAIL_DOMAIN, PAGE_LIMIT
+from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
-from app.email_utils import parseaddr_unicode
-from app.extensions import db
+from app.db import Session
+from app.email_utils import (
+    is_valid_email,
+    generate_reply_email,
+    parse_full_address,
+)
+from app.errors import CannotCreateContactForReverseAlias
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
-from app.utils import random_string
 
 
 def email_validator():
@@ -35,10 +38,8 @@ def email_validator():
             if email.find("<") + 1 < email.find(">"):
                 email_part = email[email.find("<") + 1 : email.find(">")].strip()
 
-        if re.match(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$", email_part):
-            return
-
-        raise ValidationError(message)
+        if not is_valid_email(email_part):
+            raise ValidationError(message)
 
     return _check
 
@@ -59,10 +60,12 @@ class ContactInfo(object):
     latest_email_log: EmailLog
 
 
-def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
+def get_contact_infos(
+    alias: Alias, page=0, contact_id=None, query: str = ""
+) -> [ContactInfo]:
     """if contact_id is set, only return the contact info for this contact"""
     sub = (
-        db.session.query(
+        Session.query(
             Contact.id,
             func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
             func.sum(
@@ -70,8 +73,8 @@ def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
                     [
                         (
                             and_(
-                                EmailLog.is_reply == False,
-                                EmailLog.blocked == False,
+                                EmailLog.is_reply.is_(False),
+                                EmailLog.blocked.is_(False),
                             ),
                             1,
                         )
@@ -92,7 +95,7 @@ def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
     )
 
     q = (
-        db.session.query(
+        Session.query(
             Contact,
             EmailLog,
             sub.c.nb_reply,
@@ -109,10 +112,18 @@ def get_contact_infos(alias: Alias, page=0, contact_id=None) -> [ContactInfo]:
             or_(
                 EmailLog.created_at == sub.c.max_email_log_created_at,
                 # no email log yet for this contact
-                sub.c.max_email_log_created_at == None,
+                sub.c.max_email_log_created_at.is_(None),
             )
         )
     )
+
+    if query:
+        q = q.filter(
+            or_(
+                Contact.website_email.ilike(f"%{query}%"),
+                Contact.name.ilike(f"%{query}%"),
+            )
+        )
 
     if contact_id:
         q = q.filter(Contact.id == contact_id)
@@ -152,6 +163,8 @@ def alias_contact_manager(alias_id):
     if request.args.get("page"):
         page = int(request.args.get("page"))
 
+    query = request.args.get("query") or ""
+
     # sanity check
     if not alias:
         flash("You do not have access to this page", "warning")
@@ -166,49 +179,43 @@ def alias_contact_manager(alias_id):
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             if new_contact_form.validate():
-                contact_addr = new_contact_form.email.data.strip().lower()
-
-                # generate a reply_email, make sure it is unique
-                # not use while to avoid infinite loop
-                reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
-                for _ in range(1000):
-                    reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
-                    if not Contact.get_by(reply_email=reply_email):
-                        break
+                contact_addr = new_contact_form.email.data.strip()
 
                 try:
-                    contact_name, contact_email = parseaddr_unicode(contact_addr)
+                    contact_name, contact_email = parse_full_address(contact_addr)
                 except Exception:
                     flash(f"{contact_addr} is invalid", "error")
-                    return redirect(
-                        url_for(
-                            "dashboard.alias_contact_manager",
-                            alias_id=alias_id,
-                        )
-                    )
+                    return redirect(request.url)
+
+                if not is_valid_email(contact_email):
+                    flash(f"{contact_email} is invalid", "error")
+                    return redirect(request.url)
 
                 contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
                 # already been added
                 if contact:
                     flash(f"{contact_email} is already added", "error")
-                    return redirect(
-                        url_for(
-                            "dashboard.alias_contact_manager",
-                            alias_id=alias_id,
-                            highlight_contact_id=contact.id,
-                        )
+                    return redirect(request.url)
+
+                try:
+                    contact = Contact.create(
+                        user_id=alias.user_id,
+                        alias_id=alias.id,
+                        website_email=contact_email,
+                        name=contact_name,
+                        reply_email=generate_reply_email(contact_email, current_user),
                     )
+                except CannotCreateContactForReverseAlias:
+                    flash("You can't create contact for a reverse alias", "error")
+                    return redirect(request.url)
 
-                contact = Contact.create(
-                    user_id=alias.user_id,
-                    alias_id=alias.id,
-                    website_email=contact_email,
-                    name=contact_name,
-                    reply_email=reply_email,
+                LOG.d(
+                    "create reverse-alias for %s %s, reverse alias:%s",
+                    contact_addr,
+                    alias,
+                    contact.reply_email,
                 )
-
-                LOG.d("create reverse-alias for %s", contact_addr)
-                db.session.commit()
+                Session.commit()
                 flash(f"Reverse alias for {contact_addr} is created", "success")
 
                 return redirect(
@@ -235,7 +242,7 @@ def alias_contact_manager(alias_id):
 
             delete_contact_email = contact.website_email
             Contact.delete(contact_id)
-            db.session.commit()
+            Session.commit()
 
             flash(
                 f"Reverse-alias for {delete_contact_email} has been deleted", "success"
@@ -245,15 +252,28 @@ def alias_contact_manager(alias_id):
                 url_for("dashboard.alias_contact_manager", alias_id=alias_id)
             )
 
-    contact_infos = get_contact_infos(alias, page)
+        elif request.form.get("form-name") == "search":
+            query = request.form.get("query")
+            return redirect(
+                url_for(
+                    "dashboard.alias_contact_manager",
+                    alias_id=alias_id,
+                    query=query,
+                    highlight_contact_id=highlight_contact_id,
+                )
+            )
+
+    contact_infos = get_contact_infos(alias, page, query=query)
     last_page = len(contact_infos) < PAGE_LIMIT
+    nb_contact = Contact.filter(Contact.alias_id == alias.id).count()
 
     # if highlighted contact isn't included, fetch it
     # make sure highlighted contact is at array start
     contact_ids = [contact_info.contact.id for contact_info in contact_infos]
     if highlight_contact_id and highlight_contact_id not in contact_ids:
         contact_infos = (
-            get_contact_infos(alias, contact_id=highlight_contact_id) + contact_infos
+            get_contact_infos(alias, contact_id=highlight_contact_id, query=query)
+            + contact_infos
         )
 
     return render_template(
@@ -264,4 +284,6 @@ def alias_contact_manager(alias_id):
         highlight_contact_id=highlight_contact_id,
         page=page,
         last_page=last_page,
+        query=query,
+        nb_contact=nb_contact,
     )

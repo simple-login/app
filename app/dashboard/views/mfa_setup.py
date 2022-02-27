@@ -5,9 +5,9 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
-from app.log import LOG
 from app.dashboard.views.enter_sudo import sudo_required
+from app.db import Session
+from app.log import LOG
 
 
 class OtpTokenForm(FlaskForm):
@@ -27,7 +27,7 @@ def mfa_setup():
     if not current_user.otp_secret:
         LOG.d("Generate otp_secret for user %s", current_user)
         current_user.otp_secret = pyotp.random_base32()
-        db.session.commit()
+        Session.commit()
 
     totp = pyotp.TOTP(current_user.otp_secret)
 
@@ -37,7 +37,7 @@ def mfa_setup():
         if totp.verify(token) and current_user.last_otp != token:
             current_user.enable_otp = True
             current_user.last_otp = token
-            db.session.commit()
+            Session.commit()
             flash("MFA has been activated", "success")
 
             return redirect(url_for("dashboard.recovery_code_route"))

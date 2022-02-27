@@ -1,3 +1,4 @@
+import arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -5,17 +6,18 @@ from itsdangerous import Signer
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
-from app.config import EMAIL_DOMAIN, ALIAS_DOMAINS, MAILBOX_SECRET, URL
+from app.config import MAILBOX_SECRET, URL, JOB_DELETE_MAILBOX
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import (
-    email_domain_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox,
     mailbox_already_used,
     render,
     send_email,
+    is_valid_email,
 )
-from app.extensions import db
 from app.log import LOG
-from app.models import Mailbox
+from app.models import Mailbox, Job
 
 
 class NewMailboxForm(FlaskForm):
@@ -28,7 +30,7 @@ class NewMailboxForm(FlaskForm):
 @login_required
 def mailbox_route():
     mailboxes = (
-        Mailbox.query.filter_by(user_id=current_user.id)
+        Mailbox.filter_by(user_id=current_user.id)
         .order_by(Mailbox.created_at.desc())
         .all()
     )
@@ -48,10 +50,20 @@ def mailbox_route():
                 flash("You cannot delete default mailbox", "error")
                 return redirect(url_for("dashboard.mailbox_route"))
 
-            email = mailbox.email
-            Mailbox.delete(mailbox_id)
-            db.session.commit()
-            flash(f"Mailbox {email} has been deleted", "success")
+            # Schedule delete account job
+            LOG.w("schedule delete mailbox job for %s", mailbox)
+            Job.create(
+                name=JOB_DELETE_MAILBOX,
+                payload={"mailbox_id": mailbox.id},
+                run_at=arrow.now(),
+                commit=True,
+            )
+
+            flash(
+                f"Mailbox {mailbox.email} scheduled for deletion."
+                f"You will receive a confirmation email when the deletion is finished",
+                "success",
+            )
 
             return redirect(url_for("dashboard.mailbox_route"))
         if request.form.get("form-name") == "set-default":
@@ -71,7 +83,7 @@ def mailbox_route():
                 return redirect(url_for("dashboard.mailbox_route"))
 
             current_user.default_mailbox_id = mailbox.id
-            db.session.commit()
+            Session.commit()
             flash(f"Mailbox {mailbox.email} is set as Default Mailbox", "success")
 
             return redirect(url_for("dashboard.mailbox_route"))
@@ -86,15 +98,17 @@ def mailbox_route():
                     new_mailbox_form.email.data.lower().strip().replace(" ", "")
                 )
 
-                if mailbox_already_used(mailbox_email, current_user):
+                if not is_valid_email(mailbox_email):
+                    flash(f"{mailbox_email} invalid", "error")
+                elif mailbox_already_used(mailbox_email, current_user):
                     flash(f"{mailbox_email} already used", "error")
-                elif not email_domain_can_be_used_as_mailbox(mailbox_email):
+                elif not email_can_be_used_as_mailbox(mailbox_email):
                     flash(f"You cannot use {mailbox_email}.", "error")
                 else:
                     new_mailbox = Mailbox.create(
                         email=mailbox_email, user_id=current_user.id
                     )
-                    db.session.commit()
+                    Session.commit()
 
                     send_verification_email(current_user, new_mailbox)
 
@@ -113,9 +127,33 @@ def mailbox_route():
         "dashboard/mailbox.html",
         mailboxes=mailboxes,
         new_mailbox_form=new_mailbox_form,
-        EMAIL_DOMAIN=EMAIL_DOMAIN,
-        ALIAS_DOMAINS=ALIAS_DOMAINS,
     )
+
+
+def delete_mailbox(mailbox_id: int):
+    from server import create_light_app
+
+    with create_light_app().app_context():
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox:
+            return
+
+        mailbox_email = mailbox.email
+        user = mailbox.user
+
+        Mailbox.delete(mailbox_id)
+        Session.commit()
+        LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
+
+        send_email(
+            user.email,
+            f"Your mailbox {mailbox_email} has been deleted",
+            f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
+
+Regards,
+SimpleLogin team.
+        """,
+        )
 
 
 def send_verification_email(user, mailbox):
@@ -159,7 +197,7 @@ def mailbox_verify():
             return redirect(url_for("dashboard.mailbox_route"))
 
         mailbox.verified = True
-        db.session.commit()
+        Session.commit()
 
         LOG.d("Mailbox %s is verified", mailbox)
 

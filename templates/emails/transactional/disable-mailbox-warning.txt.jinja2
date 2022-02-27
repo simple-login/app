@@ -1,0 +1,10 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Issues with {{ mailbox.email }}.
+
+We have detected that your mailbox cannot reliably receive emails from SimpleLogin for a consecutive period of time.
+The mailbox will be disabled in 5 days if the problem isn't solved by then.
+
+Please note that a mailbox can't be a disposable or forwarding email address.
+{% endblock %}

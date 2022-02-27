@@ -1,0 +1,114 @@
+{% extends 'default.html' %}
+
+{% block title %}
+  Billing
+{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3 mb-5"> Billing </h1>
+
+      {% if sub.cancelled %}
+        <p>
+          You are on the <b>{{ sub.plan_name() }}</b> plan. <br>
+          You have canceled your subscription and it will end on {{ sub.next_bill_date.strftime("%Y-%m-%d") }}
+        </p>
+
+        <p class="alert alert-info">
+          If you change your mind you can subscribe again to SimpleLogin but
+          please note that this will be a completely
+          new subscription and
+          your payment method will be charged <b>immediately</b>. <br>
+          The period left in the current subscription isn't taken into account.
+          <br>
+
+          <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-primary mt-2">Re-subscribe</a>
+        </p>
+
+      {% else %}
+        <p>
+          You are on the <b>{{ sub.plan_name() }}</b> plan. Thank you very much for supporting
+          SimpleLogin. 🙌 <br>
+          The next billing cycle starts at {{ sub.next_bill_date.strftime("%Y-%m-%d") }}.
+        </p>
+
+        <div class="mt-3">
+          Click here to update billing information on Paddle, our payment partner: <br>
+          <a class="btn btn-outline-success mt-2" href="{{ sub.update_url }}"> Update billing information </a>
+        </div>
+        <hr>
+        <div class="mt-6">
+          <h4>Change Plan</h4>
+          You can change the plan at any moment. <br>
+          Please note that the new billing cycle starts instantly
+          i.e. you will be charged <b>immediately</b> the annual fee ($30) when switching from monthly plan or vice-versa
+          <b>without pro rata computation </b>. <br>
+
+          To change the plan you can also cancel the current one and subscribe a new one <b>by the end</b> of this plan.
+
+          {% if sub.plan == PlanEnum.yearly %}
+            <form method="post" onsubmit="return confirm('This will change your current subscription plan, please confirm');">
+              <input type="hidden" name="form-name" value="change-monthly">
+              <button class="btn btn-outline-primary mt-2">Change to Monthly Plan</button>
+            </form>
+          {% else %}
+            <form method="post" onsubmit="return confirm('This will change your current subscription plan, please confirm');">
+              <input type="hidden" name="form-name" value="change-yearly">
+              <button class="btn btn-outline-primary mt-2">Change to Yearly Plan</button>
+            </form>
+          {% endif %}
+        </div>
+
+        <hr>
+
+        <div>
+          <h4>Cancel subscription</h4>
+          Don't want to protect your inbox anymore? <br>
+
+          <form method="post">
+            <input type="hidden" name="form-name" value="cancel">
+
+            <span class="cancel btn btn-outline-danger mt-2">
+            Cancel subscription <i class="fe fe-alert-triangle text-danger"></i>
+          </span>
+          </form>
+
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block script %}
+  <script>
+
+    $(".cancel").on("click", function (e) {
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "This operation is irreversible, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Cancel subscription',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Close',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+    });
+
+  </script>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Custom Alias
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">New Custom Alias</h1>
+
+      {% if  user_custom_domains|length == 0 and not DISABLE_ALIAS_SUFFIX %}
+        <div class="row">
+          <div class="col p-1">
+            <div class="alert alert-primary" role="alert">
+              You might notice a random word after the dot(<em>.</em>) in the alias.
+              This part is to avoid a person taking all the "nice" aliases like
+              <b>hello@{{ FIRST_ALIAS_DOMAIN }}</b>,
+              <b>me@{{ FIRST_ALIAS_DOMAIN }}</b>, etc. <br>
+              If you add your own domain, this restriction is removed, and you can fully customize the alias. <br>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <form method="post" data-parsley-validate>
+        <div class="row mb-2">
+          <div class="col-sm-6 mb-1 p-1" style="min-width: 4em">
+            <input name="prefix" class="form-control"
+                   id="prefix"
+                   type="text"
+                   data-parsley-pattern="[0-9a-z-_.]{1,}"
+                   data-parsley-trigger="change"
+                   data-parsley-error-message="Only lowercase letters, dots, numbers, dashes (-) and underscores (_) are currently supported."
+                   maxlength="40"
+                   placeholder="Alias prefix, for example newsletter.com-123_xyz"
+                   autofocus required>
+
+          </div>
+
+
+          <div class="col-sm-6 p-1">
+            <select class="form-control" name="signed-alias-suffix">
+              {% for suffix_info in alias_suffixes_with_signature %}
+                {% set alias_suffix = suffix_info[0] %}
+                <option value="{{ suffix_info[1] }}"
+                    {% if alias_suffix.is_premium %}
+                        title="Only available to Premium accounts"
+                    {% elif not alias_suffix.is_custom and at_least_a_premium_domain %}
+                        title="Available to all accounts"
+                    {% endif %}
+                >
+                  {% if alias_suffix.is_custom %}
+                    {% if alias_suffix.mx_verified %}
+                      {{ alias_suffix.suffix }} (your domain)
+                    {% else %}
+                      {{ alias_suffix.suffix }} (your domain, not MX verified yet)
+                    {% endif %}
+                  {% else %}
+                    {% if alias_suffix.is_premium %}
+                      {{ alias_suffix.suffix }} (Premium domain)
+                    {% else %}
+                      {{ alias_suffix.suffix }} (Public domain)
+                    {% endif %}
+                  {% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="row mb-2">
+          <div class="col p-1">
+            <select data-width="100%"
+                    class="mailbox-select" id="mailboxes" multiple name="mailboxes" required>
+              {% for mailbox in mailboxes %}
+                <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
+                        selected {% endif %}>
+                  {{ mailbox.email }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="small-text">
+              The mailbox(es) that owns this alias.
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-2">
+          <div class="col p-1">
+            <textarea name="note"
+                      class="form-control"
+                      rows="3"
+                      placeholder="Note, can be anything to help you remember why you created this alias. This field is optional."></textarea>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col p-1">
+            <button type="submit" id="create" class="btn btn-primary mt-1">Create</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block script %}
+  <script>
+    $('.mailbox-select').multipleSelect();
+
+    // Ctrl-enter submit the form
+    $('form').keydown(function (event) {
+      if (event.ctrlKey && event.keyCode === 13) {
+        $("#submit").click();
+      }
+    })
+
+    $("#create").on("click", async function () {
+      let that = $(this);
+      let mailbox_ids = $(`#mailboxes`).val();
+      let prefix = $('#prefix').val();
+
+      if (mailbox_ids.length == 0) {
+        toastr.error("You must select at least a mailbox", "Error");
+        return;
+      }
+
+      if (!prefix) {
+        toastr.error("Alias cannot be empty", "Error");
+        return;
+      }
+
+      that.closest("form").submit();
+
+    })
+  </script>
+{% endblock %}
+

@@ -15,7 +15,9 @@ from wtforms import BooleanField, StringField, validators
 
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID, URL
-from app.extensions import db, limiter
+from app.db import Session
+from app.email_utils import send_invalid_totp_login_email
+from app.extensions import limiter
 from app.models import User, MfaBrowser
 
 
@@ -52,7 +54,7 @@ def mfa():
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
         if browser and not browser.is_expired() and browser.user_id == user.id:
             login_user(user)
-            flash(f"Welcome back {user.name}!", "success")
+            flash(f"Welcome back!", "success")
             # Redirect user to correct page
             return redirect(next_url or url_for("dashboard.index"))
         else:
@@ -67,17 +69,17 @@ def mfa():
         if totp.verify(token) and user.last_otp != token:
             del session[MFA_USER_ID]
             user.last_otp = token
-            db.session.commit()
+            Session.commit()
 
             login_user(user)
-            flash(f"Welcome back {user.name}!", "success")
+            flash(f"Welcome back!", "success")
 
             # Redirect user to correct page
             response = make_response(redirect(next_url or url_for("dashboard.index")))
 
             if otp_token_form.remember.data:
                 browser = MfaBrowser.create_new(user=user)
-                db.session.commit()
+                Session.commit()
                 response.set_cookie(
                     "mfa",
                     value=browser.token,
@@ -94,6 +96,7 @@ def mfa():
             # Trigger rate limiter
             g.deduct_limit = True
             otp_token_form.token.data = None
+            send_invalid_totp_login_email(user, "TOTP")
 
     return render_template(
         "auth/mfa.html",

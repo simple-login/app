@@ -11,15 +11,17 @@ from app import email_utils
 from app.api.base import api_bp
 from app.config import FLASK_SECRET, DISABLE_REGISTRATION
 from app.dashboard.views.setting import send_reset_password_email
+from app.db import Session
 from app.email_utils import (
-    email_domain_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox,
     personal_email_already_used,
     send_email,
     render,
 )
-from app.extensions import db, limiter
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
+from app.utils import sanitize_email
 
 
 @api_bp.route("/auth/login", methods=["POST"])
@@ -47,7 +49,7 @@ def auth_login():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
     password = data.get("password")
     device = data.get("device")
 
@@ -60,7 +62,7 @@ def auth_login():
     elif user.disabled:
         return jsonify(error="Account disabled"), 400
     elif not user.activated:
-        return jsonify(error="Account not activated"), 400
+        return jsonify(error="Account not activated"), 422
     elif user.fido_enabled():
         # allow user who has TOTP enabled to continue using the mobile app
         if not user.enable_otp:
@@ -70,6 +72,9 @@ def auth_login():
 
 
 @api_bp.route("/auth/register", methods=["POST"])
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def auth_register():
     """
     User signs up - will need to activate their account with an activation code.
@@ -84,32 +89,33 @@ def auth_register():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
     password = data.get("password")
 
     if DISABLE_REGISTRATION:
         return jsonify(error="registration is closed"), 400
-    if not email_domain_can_be_used_as_mailbox(email) or personal_email_already_used(
-        email
-    ):
+    if not email_can_be_used_as_mailbox(email) or personal_email_already_used(email):
         return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
     if not password or len(password) < 8:
         return jsonify(error="password too short"), 400
 
-    LOG.debug("create user %s", email)
+    if len(password) > 100:
+        return jsonify(error="password too long"), 400
+
+    LOG.d("create user %s", email)
     user = User.create(email=email, name="", password=password)
-    db.session.flush()
+    Session.flush()
 
     # create activation code
     code = "".join([str(random.randint(0, 9)) for _ in range(6)])
     AccountActivation.create(user_id=user.id, code=code)
-    db.session.commit()
+    Session.commit()
 
     send_email(
         email,
-        f"Just one more step to join SimpleLogin",
-        render("transactional/code-activation.txt", code=code),
+        "Just one more step to join SimpleLogin",
+        render("transactional/code-activation.txt.jinja2", code=code),
         render("transactional/code-activation.html", code=code),
     )
 
@@ -136,7 +142,7 @@ def auth_activate():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
     code = data.get("code")
 
     user = User.get_by(email=email)
@@ -156,21 +162,21 @@ def auth_activate():
     if account_activation.code != code:
         # decrement nb tries
         account_activation.tries -= 1
-        db.session.commit()
+        Session.commit()
         # Trigger rate limiter
         g.deduct_limit = True
 
         if account_activation.tries == 0:
             AccountActivation.delete(account_activation.id)
-            db.session.commit()
+            Session.commit()
             return jsonify(error="Too many wrong tries"), 410
 
         return jsonify(error="Wrong email or code"), 400
 
-    LOG.debug("activate user %s", user)
+    LOG.d("activate user %s", user)
     user.activated = True
     AccountActivation.delete(account_activation.id)
-    db.session.commit()
+    Session.commit()
 
     return jsonify(msg="Account is activated, user can login now"), 200
 
@@ -189,7 +195,7 @@ def auth_reactivate():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
     user = User.get_by(email=email)
 
     # do not use a different message to avoid exposing existing email
@@ -199,17 +205,17 @@ def auth_reactivate():
     account_activation = AccountActivation.get_by(user_id=user.id)
     if account_activation:
         AccountActivation.delete(account_activation.id)
-        db.session.commit()
+        Session.commit()
 
     # create activation code
     code = "".join([str(random.randint(0, 9)) for _ in range(6)])
     AccountActivation.create(user_id=user.id, code=code)
-    db.session.commit()
+    Session.commit()
 
     send_email(
         email,
-        f"Just one more step to join SimpleLogin",
-        render("transactional/code-activation.txt", code=code),
+        "Just one more step to join SimpleLogin",
+        render("transactional/code-activation.txt.jinja2", code=code),
         render("transactional/code-activation.html", code=code),
     )
 
@@ -242,26 +248,26 @@ def auth_facebook():
 
     graph = facebook.GraphAPI(access_token=facebook_token)
     user_info = graph.get_object("me", fields="email,name")
-    email = user_info.get("email").strip().lower()
+    email = sanitize_email(user_info.get("email"))
 
     user = User.get_by(email=email)
 
     if not user:
         if DISABLE_REGISTRATION:
             return jsonify(error="registration is closed"), 400
-        if not email_domain_can_be_used_as_mailbox(
+        if not email_can_be_used_as_mailbox(email) or personal_email_already_used(
             email
-        ) or personal_email_already_used(email):
+        ):
             return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
         LOG.d("create facebook user with %s", user_info)
-        user = User.create(email=email.lower(), name=user_info["name"], activated=True)
-        db.session.commit()
+        user = User.create(email=email, name=user_info["name"], activated=True)
+        Session.commit()
         email_utils.send_welcome_email(user)
 
     if not SocialAuth.get_by(user_id=user.id, social="facebook"):
         SocialAuth.create(user_id=user.id, social="facebook")
-        db.session.commit()
+        Session.commit()
 
     return jsonify(**auth_payload(user, device)), 200
 
@@ -269,7 +275,7 @@ def auth_facebook():
 @api_bp.route("/auth/google", methods=["POST"])
 def auth_google():
     """
-    Authenticate user with Facebook
+    Authenticate user with Google
     Input:
         google_token: Google access token
         device: to create an ApiKey associated with this device
@@ -295,32 +301,32 @@ def auth_google():
     build = googleapiclient.discovery.build("oauth2", "v2", credentials=cred)
 
     user_info = build.userinfo().get().execute()
-    email = user_info.get("email").strip().lower()
+    email = sanitize_email(user_info.get("email"))
 
     user = User.get_by(email=email)
 
     if not user:
         if DISABLE_REGISTRATION:
             return jsonify(error="registration is closed"), 400
-        if not email_domain_can_be_used_as_mailbox(
+        if not email_can_be_used_as_mailbox(email) or personal_email_already_used(
             email
-        ) or personal_email_already_used(email):
+        ):
             return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
         LOG.d("create Google user with %s", user_info)
-        user = User.create(email=email.lower(), name="", activated=True)
-        db.session.commit()
+        user = User.create(email=email, name="", activated=True)
+        Session.commit()
         email_utils.send_welcome_email(user)
 
     if not SocialAuth.get_by(user_id=user.id, social="google"):
         SocialAuth.create(user_id=user.id, social="google")
-        db.session.commit()
+        Session.commit()
 
     return jsonify(**auth_payload(user, device)), 200
 
 
 def auth_payload(user, device) -> dict:
-    ret = {"name": user.name, "email": user.email, "mfa_enabled": user.enable_otp}
+    ret = {"name": user.name or "", "email": user.email, "mfa_enabled": user.enable_otp}
 
     # do not give api_key, user can only obtain api_key after OTP verification
     if user.enable_otp:
@@ -332,7 +338,7 @@ def auth_payload(user, device) -> dict:
         if not api_key:
             LOG.d("create new api key for %s and %s", user, device)
             api_key = ApiKey.create(user.id, device)
-            db.session.commit()
+            Session.commit()
         ret["mfa_key"] = None
         ret["api_key"] = api_key.code
 
@@ -357,7 +363,7 @@ def forgot_password():
     if not data or not data.get("email"):
         return jsonify(error="request body must contain email"), 400
 
-    email = data.get("email").strip().lower()
+    email = sanitize_email(data.get("email"))
 
     user = User.get_by(email=email)
 

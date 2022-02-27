@@ -1,0 +1,53 @@
+{% extends 'default.html' %}
+{% set active_page = "setting" %}
+{% block title %}
+  Delete account
+{% endblock %}
+
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <div class="h2">Account Deletion</div>
+      <div class="my-3 alert alert-warning">
+        Once an account is deleted, it can't be restored.
+        All its records (aliases, domains, settings, etc.) are immediately deleted.
+      </div>
+
+      <form method="post">
+        <input type="hidden" name="form-name" value="delete-account">
+        <span class="delete-account btn btn-outline-danger">Delete account</span>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-account").on("click", function (e) {
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "All your data including your aliases will be deleted, " +
+          "other people might not be able to reach you after, " +
+          " please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Yes, delete my account',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+
+    });
+  </script>
+{% endblock %}

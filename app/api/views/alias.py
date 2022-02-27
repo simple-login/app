@@ -1,3 +1,6 @@
+from deprecated import deprecated
+from flanker.addresslib import address
+from flanker.addresslib.address import EmailAddress
 from flask import g
 from flask import jsonify
 from flask import request
@@ -14,15 +17,18 @@ from app.api.serializer import (
     get_alias_info_v2,
     get_alias_infos_with_pagination_v3,
 )
-from app.config import EMAIL_DOMAIN
 from app.dashboard.views.alias_log import get_alias_log
-from app.email_utils import parseaddr_unicode
-from app.extensions import db
+from app.db import Session
+from app.email_utils import (
+    generate_reply_email,
+)
+from app.errors import CannotCreateContactForReverseAlias
 from app.log import LOG
 from app.models import Alias, Contact, Mailbox, AliasMailbox
-from app.utils import random_string
+from app.utils import sanitize_email
 
 
+@deprecated
 @api_bp.route("/aliases", methods=["GET", "POST"])
 @require_api_auth
 def get_aliases():
@@ -72,6 +78,7 @@ def get_aliases_v2():
     Get aliases
     Input:
         page_id: in query
+        pinned: in query
     Output:
         - aliases: list of alias:
             - id
@@ -86,7 +93,7 @@ def get_aliases_v2():
             - mailboxes
             - support_pgp
             - disable_pgp
-            - (optional) latest_activity:
+            - latest_activity: null if no activity.
                 - timestamp
                 - action: forward|reply|block|bounced
                 - contact:
@@ -102,13 +109,15 @@ def get_aliases_v2():
     except (ValueError, TypeError):
         return jsonify(error="page_id must be provided in request query"), 400
 
+    pinned = "pinned" in request.args
+
     query = None
     data = request.get_json(silent=True)
     if data:
         query = data.get("query")
 
     alias_infos: [AliasInfo] = get_alias_infos_with_pagination_v3(
-        user, page_id=page_id, query=query
+        user, page_id=page_id, query=query, alias_filter="pinned" if pinned else None
     )
 
     return (
@@ -161,7 +170,7 @@ def toggle_alias(alias_id):
         return jsonify(error="Forbidden"), 403
 
     alias.enabled = not alias.enabled
-    db.session.commit()
+    Session.commit()
 
     return jsonify(enabled=alias.enabled), 200
 
@@ -200,6 +209,7 @@ def get_alias_activities(alias_id):
         activity = {
             "timestamp": alias_log.when.timestamp,
             "reverse_alias": alias_log.reverse_alias,
+            "reverse_alias_address": alias_log.contact.reply_email,
         }
         if alias_log.is_reply:
             activity["from"] = alias_log.alias
@@ -221,7 +231,7 @@ def get_alias_activities(alias_id):
     return jsonify(activities=activities), 200
 
 
-@api_bp.route("/aliases/<int:alias_id>", methods=["PUT"])
+@api_bp.route("/aliases/<int:alias_id>", methods=["PUT", "PATCH"])
 @require_api_auth
 def update_alias(alias_id):
     """
@@ -276,8 +286,8 @@ def update_alias(alias_id):
 
         # <<< update alias mailboxes >>>
         # first remove all existing alias-mailboxes links
-        AliasMailbox.query.filter_by(alias_id=alias.id).delete()
-        db.session.flush()
+        AliasMailbox.filter_by(alias_id=alias.id).delete()
+        Session.flush()
 
         # then add all new mailboxes
         for i, mailbox in enumerate(mailboxes):
@@ -290,7 +300,13 @@ def update_alias(alias_id):
         changed = True
 
     if "name" in data:
+        # to make sure alias name doesn't contain linebreak
         new_name = data.get("name")
+        if new_name and len(new_name) > 128:
+            return jsonify(error="Name can't be longer than 128 characters"), 400
+
+        if new_name:
+            new_name = new_name.replace("\n", "")
         alias.name = new_name
         changed = True
 
@@ -298,8 +314,12 @@ def update_alias(alias_id):
         alias.disable_pgp = data.get("disable_pgp")
         changed = True
 
+    if "pinned" in data:
+        alias.pinned = data.get("pinned")
+        changed = True
+
     if changed:
-        db.session.commit()
+        Session.commit()
 
     return jsonify(ok=True), 200
 
@@ -352,6 +372,9 @@ def get_alias_contacts_route(alias_id):
 
     alias: Alias = Alias.get(alias_id)
 
+    if not alias:
+        return jsonify(error="No such alias"), 404
+
     if alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
@@ -386,30 +409,35 @@ def create_contact_route(alias_id):
 
     contact_addr = data.get("contact")
 
-    # generate a reply_email, make sure it is unique
-    # not use while to avoid infinite loop
-    reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
-    for _ in range(1000):
-        reply_email = f"ra+{random_string(25)}@{EMAIL_DOMAIN}"
-        if not Contact.get_by(reply_email=reply_email):
-            break
+    if not contact_addr:
+        return jsonify(error="Contact cannot be empty"), 400
 
-    contact_name, contact_email = parseaddr_unicode(contact_addr)
+    full_address: EmailAddress = address.parse(contact_addr)
+    if not full_address:
+        return jsonify(error=f"invalid contact email {contact_addr}"), 400
+
+    contact_name, contact_email = full_address.display_name, full_address.address
+
+    contact_email = sanitize_email(contact_email, not_lower=True)
 
     # already been added
-    if Contact.get_by(alias_id=alias.id, website_email=contact_email):
-        return jsonify(error="Contact already added"), 409
+    contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+    if contact:
+        return jsonify(**serialize_contact(contact, existed=True)), 200
 
-    contact = Contact.create(
-        user_id=alias.user_id,
-        alias_id=alias.id,
-        website_email=contact_email,
-        name=contact_name,
-        reply_email=reply_email,
-    )
+    try:
+        contact = Contact.create(
+            user_id=alias.user_id,
+            alias_id=alias.id,
+            website_email=contact_email,
+            name=contact_name,
+            reply_email=generate_reply_email(contact_email, user),
+        )
+    except CannotCreateContactForReverseAlias:
+        return jsonify(error="You can't create contact for a reverse alias"), 400
 
     LOG.d("create reverse-alias for %s %s", contact_addr, alias)
-    db.session.commit()
+    Session.commit()
 
     return jsonify(**serialize_contact(contact)), 201
 
@@ -431,6 +459,28 @@ def delete_contact(contact_id):
         return jsonify(error="Forbidden"), 403
 
     Contact.delete(contact_id)
-    db.session.commit()
+    Session.commit()
 
     return jsonify(deleted=True), 200
+
+
+@api_bp.route("/contacts/<int:contact_id>/toggle", methods=["POST"])
+@require_api_auth
+def toggle_contact(contact_id):
+    """
+    Block/Unblock contact
+    Input:
+        contact_id: in url
+    Output:
+        200
+    """
+    user = g.user
+    contact = Contact.get(contact_id)
+
+    if not contact or contact.alias.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    contact.block_forward = not contact.block_forward
+    Session.commit()
+
+    return jsonify(block_forward=contact.block_forward), 200

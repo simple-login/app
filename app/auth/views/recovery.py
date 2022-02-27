@@ -6,7 +6,9 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID
-from app.extensions import db, limiter
+from app.db import Session
+from app.email_utils import send_invalid_totp_login_email
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User, RecoveryCode
 
@@ -50,22 +52,23 @@ def recovery_route():
                 del session[MFA_USER_ID]
 
                 login_user(user)
-                flash(f"Welcome back {user.name}!", "success")
+                flash(f"Welcome back!", "success")
 
                 recovery_code.used = True
                 recovery_code.used_at = arrow.now()
-                db.session.commit()
+                Session.commit()
 
                 # User comes to login page from another page
                 if next_url:
-                    LOG.debug("redirect user to %s", next_url)
+                    LOG.d("redirect user to %s", next_url)
                     return redirect(next_url)
                 else:
-                    LOG.debug("redirect user to dashboard")
+                    LOG.d("redirect user to dashboard")
                     return redirect(url_for("dashboard.index"))
         else:
             # Trigger rate limiter
             g.deduct_limit = True
             flash("Incorrect code", "error")
+            send_invalid_totp_login_email(user, "recovery")
 
     return render_template("auth/recovery.html", recovery_form=recovery_form)

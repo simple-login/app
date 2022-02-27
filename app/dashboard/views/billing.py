@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 
 from app.config import PADDLE_MONTHLY_PRODUCT_ID, PADDLE_YEARLY_PRODUCT_ID
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import Subscription, PlanEnum
 from app.paddle_utils import cancel_subscription, change_plan
@@ -21,12 +21,12 @@ def billing():
 
     if request.method == "POST":
         if request.form.get("form-name") == "cancel":
-            LOG.warning(f"User {current_user} cancels their subscription")
+            LOG.w(f"User {current_user} cancels their subscription")
             success = cancel_subscription(sub.subscription_id)
 
             if success:
                 sub.cancelled = True
-                db.session.commit()
+                Session.commit()
                 flash("Your subscription has been canceled successfully", "success")
             else:
                 flash(
@@ -37,12 +37,14 @@ def billing():
 
             return redirect(url_for("dashboard.billing"))
         elif request.form.get("form-name") == "change-monthly":
-            LOG.debug(f"User {current_user} changes to monthly plan")
-            success, msg = change_plan(sub.subscription_id, PADDLE_MONTHLY_PRODUCT_ID)
+            LOG.d(f"User {current_user} changes to monthly plan")
+            success, msg = change_plan(
+                current_user, sub.subscription_id, PADDLE_MONTHLY_PRODUCT_ID
+            )
 
             if success:
                 sub.plan = PlanEnum.monthly
-                db.session.commit()
+                Session.commit()
                 flash("Your subscription has been updated", "success")
             else:
                 if msg:
@@ -56,12 +58,14 @@ def billing():
 
             return redirect(url_for("dashboard.billing"))
         elif request.form.get("form-name") == "change-yearly":
-            LOG.debug(f"User {current_user} changes to yearly plan")
-            success, msg = change_plan(sub.subscription_id, PADDLE_YEARLY_PRODUCT_ID)
+            LOG.d(f"User {current_user} changes to yearly plan")
+            success, msg = change_plan(
+                current_user, sub.subscription_id, PADDLE_YEARLY_PRODUCT_ID
+            )
 
             if success:
                 sub.plan = PlanEnum.yearly
-                db.session.commit()
+                Session.commit()
                 flash("Your subscription has been updated", "success")
             else:
                 if msg:

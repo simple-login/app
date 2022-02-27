@@ -1,0 +1,281 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Alias Contact Manager
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+      <h1 class="h3"> {{ alias.email }} contacts
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
+
+      <div class="alert alert-primary collapse" id="howtouse" role="alert">
+        <p>
+          To send an email from your alias to a contact, you need to create a <em>reverse-alias</em>,
+          a special email address. <br>
+          When you send an email to the reverse-alias, the email will be sent <b>from your alias</b> to the contact.
+          <br>
+
+          <img src="/static/images/reverse-alias.svg" style="border: 1px solid" class="my-2 img-fluid">
+        </p>
+
+        <p>
+          This might seem like "magic" but trust us, only the first time is a bit awkward.
+        </p>
+        <p>
+          {% if alias.mailbox_id %}
+            {% if alias.mailboxes | length == 1 %}
+              Make sure you send the email from your mailbox <b>{{ alias.mailbox.email }}</b>.
+            {% else %}
+              Make sure you send the email from one of the following mailboxes: <br>
+              {% for mailbox in alias.mailboxes %}
+                - <b>{{ mailbox.email }}</b> <br>
+              {% endfor %}
+            {% endif %}
+          {% else %}
+            Make sure you send the email from your personal email address ({{ current_user.email }}).
+          {% endif %}
+        </p>
+        <p>
+          This Youtube video can also quickly walk you through the steps:
+          <a href="https://www.youtube.com/watch?v=VsypF-DBaow" target="_blank">
+            How to send emails from an alias <i class="fe fe-external-link"></i>
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-5">
+    <div class="col-12 col-lg-6 pt-1">
+
+      <form method="post">
+        <input type="hidden" name="form-name" value="create">
+        {{ new_contact_form.csrf_token }}
+        {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>", autofocus=True) }}
+        {{ render_field_errors(new_contact_form.email) }}
+        <div class="small-text">
+          Where do you want to send the email?
+        </div>
+        <button class="btn btn-primary mt-2">Create reverse-alias</button>
+      </form>
+    </div>
+
+    <div class="col-12 col-lg-6 pt-1">
+      <div class="float-right d-flex">
+        <form method="post">
+          <input type="hidden" name="form-name" value="search">
+
+          <input type="search" name="query" value="{{ query }}"
+                 placeholder="Enter to search for contacts"
+                 class="form-control shadow mr-2"
+                 style="max-width: 20em"
+          >
+        </form>
+
+        {% if query %}
+          {% if highlight_contact_id %}
+            <a href="{{ url_for("dashboard.alias_contact_manager", alias_id=alias.id, highlight_contact_id=highlight_contact_id) }}"
+               class="btn btn-light">Reset</a>
+          {% else %}
+            <a href="{{ url_for("dashboard.alias_contact_manager", alias_id=alias.id) }}"
+               class="btn btn-light">Reset</a>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    {% for contact_info in contact_infos %}
+      {% set contact = contact_info.contact %}
+      <div class="col-md-6">
+        <div class="my-2 p-2 card {% if contact.id == highlight_contact_id %} highlight-row {% endif %}">
+          <div class="mb-2 row">
+            <div class="col">
+              <span class="font-weight-bold">{{ contact.website_email }}</span>
+              {% if contact.pgp_finger_print %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="PGP Enabled">🗝</span>
+              {% endif %}
+            </div>
+
+            <div class="col text-right">
+              <label class="custom-switch cursor"
+                     data-toggle="tooltip"
+                  {% if contact.block_forward %}
+                     title="Unblock sender - start receiving emails from this sender"
+                  {% else %}
+                     title="Block sender - stop receiving emails from this sender"
+                  {% endif %}
+                     style="padding-left: 0px"
+              >
+                <input type="checkbox" class="enable-disable-contact custom-switch-input"
+                       data-contact="{{ contact.id }}"
+                       data-contact-email="{{ contact.website_email }}"
+                    {{ "checked" if not contact.block_forward else "" }}>
+
+                <span class="custom-switch-indicator"></span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <span>
+              <a href="{{ 'mailto:' + contact.website_send_to() }}"
+                 data-toggle="tooltip"
+                 title="You can click on this to open your email client. Or use the copy button 👉"
+                 class="font-weight-bold">*************************</a>
+
+              <span class="clipboard btn btn-sm btn-success copy-btn" data-toggle="tooltip"
+                    title="Copy the reverse-alias to clipboard"
+                    data-clipboard-text="{{ contact.website_send_to() }}">
+                Copy reverse-alias
+              </span>
+            </span>
+          </div>
+
+
+          <div class="mb-2 text-muted small-text">
+            {% if contact_info.latest_email_log != None %}
+              {% set email_log = contact_info.latest_email_log %}
+
+              {% if email_log.is_reply %}
+                <i class="fa fa-reply mr-2" data-toggle="tooltip" title="Email reply/sent from alias"></i>
+                {{ email_log.created_at | dt }}
+              {% elif email_log.bounced %}
+                <span class="text-danger">
+                  <i class="fa fa-warning mr-2" data-toggle="tooltip"
+                     title="Email bounced and cannot be forwarded to your mailbox"></i>
+                  {{ email_log.created_at | dt }}
+                </span>
+              {% elif email_log.blocked %}
+                <i class="fa fa-ban mr-2 text-danger" data-toggle="tooltip" title="Email blocked"></i>
+                {{ email_log.created_at | dt }}
+              {% else %}
+                <i class="fa fa-paper-plane  mr-2" data-toggle="tooltip" title="Email sent to alias"></i>
+                {{ email_log.created_at | dt }}
+              {% endif %}
+              <br>
+              Contact created {{ contact.created_at | dt }}
+            {% else %}
+              No Activity in the last 14 days. Contact created {{ contact.created_at | dt }}
+            {% endif %}
+
+            <div>
+              <span class="alias-activity">{{ contact_info.nb_forward }}</span> forwards,
+              <span class="alias-activity">{{ contact_info.nb_reply }}</span> sents
+              in the last 14 days.
+            </div>
+          </div>
+
+          <a href="{{ url_for('dashboard.contact_detail_route', contact_id=contact.id) }}">Edit ➡</a>
+
+          <form method="post">
+            <input type="hidden" name="form-name" value="delete">
+            <input type="hidden" name="contact-id" value="{{ contact.id }}">
+            <span class="card-link btn btn-link float-right delete-forward-email text-danger">
+                  Delete
+                </span>
+          </form>
+
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if nb_contact > PAGE_LIMIT or page > 0 %}
+    <div class="row mt-3">
+      <div class="col">
+        <nav aria-label="Contact navigation">
+          <ul class="pagination">
+            <li class="page-item">
+              <a class="btn btn-outline-secondary {% if page == 0 %}disabled{% endif %}"
+                 href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page-1) }}">
+                Previous</a>
+            </li>
+            <li class="page-item">
+              <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}"
+                 href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page+1) }}">
+                Next</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  {% endif %}
+
+{% endblock %}
+
+
+{% block script %}
+  <script>
+    $(".delete-forward-email").on("click", function (e) {
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "All activities associated with this contact will also be deleted, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+    });
+
+    $(".enable-disable-contact").change(async function () {
+      let contactID = $(this).data("contact");
+      let contactEmail = $(this).data("contact-email");
+
+      await blockContact(contactID, contactEmail);
+    })
+
+    async function blockContact(contactID, contactEmail) {
+      let oldValue;
+      try {
+        let res = await fetch(`/api/contacts/${contactID}/toggle`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        });
+
+        if (res.ok) {
+          let json = await res.json();
+
+          if (json.block_forward) {
+            toastr.success(`${contactEmail} is blocked`);
+          } else {
+            toastr.success(`${contactEmail} is unblocked`);
+          }
+        } else {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          oldValue = !$(this).prop("checked");
+          $(this).prop("checked", oldValue);
+        }
+      } catch (e) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+        // reset to the original value
+        oldValue = !$(this).prop("checked");
+        $(this).prop("checked", oldValue);
+      }
+    }
+  </script>
+{% endblock %}

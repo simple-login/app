@@ -1,0 +1,58 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Send {{ alias.email }}
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">Transfer {{ alias.email }}</h1>
+
+      <p>
+        This page allows you to transfer {{ alias.email }} to another person so they can use it to receive and send
+        emails.
+      </p>
+
+      <p>
+        In order to transfer ownership,
+        please create the <b>Share URL</b> 👇 and send it to the other person.
+      </p>
+
+      {% if alias_transfer_url %}
+        <em data-toggle="tooltip"
+            title="Click to copy"
+            class="clipboard"
+            data-clipboard-text="{{ alias_transfer_url }}">
+          {{ alias_transfer_url }}
+        </em>
+
+        <form method="post">
+          <input type="hidden" name="form-name" value="remove">
+          <button class="btn btn-warning mt-2">Remove Share URL</button>
+          <div class="small-text">
+            If you don't want to share this alias anymore, you can remove the share URL.
+          </div>
+        </form>
+      {% else %}
+        <form method="post">
+          <input type="hidden" name="form-name" value="create">
+          <button class="btn btn-primary mt-2">Create Share URL</button>
+        </form>
+      {% endif %}
+
+      <p class="mt-5">
+        This person can then confirm the reception and become the owner of the alias.
+      </p>
+      <div class="alert alert-danger">
+        After the confirmation, you can no longer use this alias.
+      </div>
+
+
+    </div>
+  </div>
+
+{% endblock %}
+

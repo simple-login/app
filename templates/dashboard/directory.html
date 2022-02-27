@@ -1,0 +1,234 @@
+{% extends 'default.html' %}
+{% set active_page = "directory" %}
+
+{% block title %}
+  Directory
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+      <h1 class="h3"> Directories
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
+
+
+      {% if not current_user.is_premium() %}
+        <div class="alert alert-danger" role="alert">
+          This feature is only available in premium plan.
+        </div>
+      {% endif %}
+
+      <div class="alert alert-primary collapse {% if not dirs %} show {% endif %}" id="howtouse" role="alert">
+        <div>
+          Directory allows you to create aliases <b>on the fly</b>.
+        </div>
+        <div class="mt-2 pb-2">
+          1️⃣ Pick a name for your directory, says <em>my_directory</em> <br>
+
+          2️⃣ Quickly use one of the following formats to create an alias on-the-fly <b>without creating this alias
+          beforehand</b>
+        </div>
+        <div class="pl-3 py-2 bg-secondary">
+          <em>my_directory/<b>anything</b>@{{ FIRST_ALIAS_DOMAIN }}</em> or <br>
+          <em>my_directory+<b>anything</b>@{{ FIRST_ALIAS_DOMAIN }}</em> or <br>
+          <em>my_directory#<b>anything</b>@{{ FIRST_ALIAS_DOMAIN }}</em> <br>
+        </div>
+        <em><b>anything</b></em> is any string composed of lowercase characters. <br>
+
+        You can find more info on directory on our <a href="https://simplelogin.io/blog/alias-directory/">blog post</a>.
+
+        <div class="mt-2">
+          You can use this feature on the following domains:
+          {% for alias_domain in ALIAS_DOMAINS %}
+            <div class="font-weight-bold">{{ alias_domain }} </div>
+          {% endfor %}
+        </div>
+
+        <div class="h4 text-primary mt-3">
+          ℹ️
+          The alias will be created the first time it receives an email.
+        </div>
+
+      </div>
+
+      <div class="row">
+        {% for dir in dirs %}
+          <div class="col-12 col-lg-6">
+            <div class="card" style="">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <div class="d-flex">
+                    {{ dir.name }}
+
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="toggle-directory">
+                      <input type="hidden" name="dir-id" value="{{ dir.id }}">
+
+                      <label class="custom-switch cursor" style="padding-left: 1rem"
+                             data-toggle="tooltip"
+                          {% if dir.disabled %}
+                             title="Enable directory on-the-fly alias creation"
+                          {% else %}
+                             title="Disable directory on-the-fly alias creation"
+                          {% endif %}
+                      >
+                        <input type="checkbox" class="custom-switch-input" name="dir-status"
+                            {{ "" if dir.disabled else "checked" }}>
+                        <span class="custom-switch-indicator"></span>
+                      </label>
+                    </form>
+                  </div>
+                </h5>
+
+                <h6 class="card-subtitle mb-2 text-muted">
+                  {% if dir.disabled %}
+                    <div class="mb-3">
+                      ⚠️ On-the-fly alias creation is disabled, you can't create new aliases with this directory.
+                    </div>
+                  {% endif %}
+                  Created {{ dir.created_at | dt }} <br>
+                  <span class="font-weight-bold">{{ dir.nb_alias() }}</span> aliases.
+
+                  <br><br>
+
+                  <b>Mailboxes:</b> <i class="fe fe-info" data-toggle="tooltip"
+                                       title="Aliases created with this directory are automatically owned by these mailboxes"></i>
+                  <br>
+
+                  {% set dir_mailboxes=dir.mailboxes %}
+                  <form method="post" class="mt-2">
+                    <input type="hidden" name="form-name" value="update">
+                    <input type="hidden" name="dir-id" value="{{ dir.id }}">
+
+                    <select data-width="100%" required
+                            class="mailbox-select" multiple name="mailbox_ids">
+                      {% for mailbox in mailboxes %}
+                        <option value="{{ mailbox.id }}" {% if mailbox in dir_mailboxes %}
+                                selected {% endif %}>
+                          {{ mailbox.email }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <button class="mt-2 btn btn-outline-primary btn-sm">Update</button>
+                  </form>
+                </h6>
+              </div>
+
+              <div class="card-footer p-0">
+                <div class="row">
+                  <div class="col">
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="delete">
+                      <input type="hidden" class="dir-name" value="{{ dir.name }}">
+                      <input type="hidden" name="dir-id" value="{{ dir.id }}">
+                      <span class="card-link btn btn-link float-right text-danger delete-dir">
+                    Delete
+                  </span>
+                    </form>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="row {% if current_user.directory_quota <= 0 %} disabled-content {% endif %}">
+        <div class="col">
+          <div class="card">
+            <div class="card-body">
+
+              <form method="post" class="mt-2">
+                {{ new_dir_form.csrf_token }}
+                <input type="hidden" name="form-name" value="create">
+
+                <h2 class="h4 mb-1">New Directory</h2>
+                <div class="small-text mb-4">
+                  You can create up to {{ current_user.directory_quota }} directories.
+                </div>
+
+                {{ new_dir_form.name(class="form-control", placeholder="my-directory",
+            pattern="[0-9a-z-_]{3,}",
+            title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.") }}
+                {{ render_field_errors(new_dir_form.name) }}
+                <div class="small-text">
+                  Directory name must be at least 3 characters.
+                  Only lowercase letters, numbers, dashes (-) and underscores (_) are currently supported.
+                </div>
+
+                <div class="mt-3 small-text alert alert-info">
+                  By default, aliases created with directory are "owned" by your default
+                  mailbox <b>{{ current_user.default_mailbox.email }}</b>. <br>
+                  You can however choose the mailbox(es) that new alias automatically belongs to by setting this below
+                  option.
+
+                </div>
+
+                <select data-width="100%"
+                        class="mailbox-select" multiple name="mailbox_ids">
+                  {% for mailbox in mailboxes %}
+                    <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
+                            selected {% endif %}>
+                      {{ mailbox.email }}
+                    </option>
+                  {% endfor %}
+                </select>
+
+                <button id="btn-create-directory" class="btn btn-primary mt-2">Create</button>
+              </form>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-dir").on("click", function (e) {
+      let directory = $(this).parent().find(".dir-name").val();
+
+      let that = $(this);
+      let message = `All aliases associated with <b>${directory}</b> directory will also be deleted. ` +
+        `As a deleted directory can't be used by someone else, deleting a directory doesn't reset your directory quota. ` +
+        `Your directory quota will be {{ current_user.directory_quota }} after the deletion, ` +
+        " please confirm.";
+
+      bootbox.confirm({
+        message: message,
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+
+    });
+
+    $('.mailbox-select').multipleSelect();
+
+    $(".custom-switch-input").change(function (e) {
+      $(this).closest("form").submit();
+    });
+
+  </script>
+{% endblock %}

@@ -9,7 +9,9 @@ config
 static/node_modules
 db.sqlite-journal
 static/upload
-adhoc_*
-adhoc.py
 venv/
 .venv
+.python-version
+.coverage
+htmlcov
+adhoc

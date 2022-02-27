@@ -2,7 +2,7 @@ This email is sent to {{ user.email }}.
 Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
-Hi {{user.name}}
+Hi
 
 Our most requested feature is finally ready: you can now add several *real* email addresses into SimpleLogin
 and choose which one to use when creating aliases!

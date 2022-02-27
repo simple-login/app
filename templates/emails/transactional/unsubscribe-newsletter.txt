@@ -1,0 +1,5 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+You have been unsubscribed from SimpleLogin newsletter.
+{% endblock %}

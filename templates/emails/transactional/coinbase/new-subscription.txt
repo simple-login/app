@@ -1,0 +1,11 @@
+Your account has been upgraded!
+
+Your payment with cryptocurrency has been successfully processed.
+
+Your account has been upgraded to premium plan until
+{{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}
+
+Thank you a lot for your support!
+
+Best,
+SimpleLogin team.

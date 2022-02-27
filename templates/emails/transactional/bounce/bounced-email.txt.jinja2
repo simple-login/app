@@ -1,0 +1,20 @@
+An email sent to your alias {{alias.email}} from {{website_email}} was bounced by your mailbox {{mailbox_email}}.
+
+This is usually because your mailbox service thinks the email is a spam.
+
+You can view this email on {{ refused_email_url }}
+The email is automatically deleted in 7 days.
+
+Please consider the following options:
+
+1. If the email is not spam at all, you can create a "filter" to explicitly allow all emails from SimpleLogin.
+   We have a small gudie on https://simplelogin.io/docs/getting-started/troubleshooting/
+
+2. If this email is spam, it means your alias {{alias}} is now in the hands of a spammer.
+   You can either disable the alias on {{disable_alias_link}}
+   or block the sender on {{ block_sender_link }} if they send too many spams.
+
+Please note that the alias can be automatically disabled if too many emails sent to it are bounced.
+
+Thanks,
+SimpleLogin team.

@@ -1,0 +1,141 @@
+{% extends 'default.html' %}
+{% set active_page = "subdomain" %}
+
+{% block title %}
+  Subdomains
+{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+      <h1 class="h3"> Subdomains
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
+
+      {% if not current_user.is_premium() %}
+        <div class="alert alert-danger" role="alert">
+          This feature is only available on Premium plan.
+          <a href="{{ url_for('dashboard.pricing') }}" target="_blank" rel="noopener">
+            Upgrade<i class="fe fe-external-link"></i>
+          </a>
+        </div>
+      {% endif %}
+
+      <div class="alert alert-primary collapse {% if not subdomains %} show {% endif %}" id="howtouse" role="alert">
+        You can use subdomain to quickly create email aliases without opening SimpleLogin app. <br>
+        Handy when you need to quickly give out an email address, for example on a phone call, in a meeting or just
+        anywhere you want. <br>
+        After choosing a subdomain, simply use <b>anything@my-subdomain.simplelogin.co</b>
+        next time you need an alias:
+        it'll be <b>automatically created</b> the first time it receives an email. <br>
+      </div>
+
+      <div class="row">
+        {% for subdomain in subdomains %}
+          <div class="col-12 col-lg-6">
+            <div class="card" style="">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=subdomain.id) }}">
+                    {{ subdomain.domain }}
+                  </a>
+                </h5>
+
+                <h6 class="card-subtitle mb-4 text-muted">
+                  Created {{ subdomain.created_at | dt }} <br>
+                  <span class="font-weight-bold">{{ subdomain.nb_alias() }}</span> aliases.
+                  <br>
+                </h6>
+
+                <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=subdomain.id) }}" class="mt-3">
+                  Details ➡
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="row {% if current_user.subdomain_quota <= 0 %} disabled-content {% endif %}" id="new-subdomain">
+        <div class="col">
+          <div class="card">
+            <div class="card-body">
+
+              <h2 class="h4 mb-1">New Subdomain</h2>
+
+
+              <form method="post" class="mt-2" data-parsley-validate>
+                <input type="hidden" name="form-name" value="create">
+
+                <div class="form-group">
+                  <label>Subdomain</label>
+                  <input name="subdomain"
+                         v-model="subdomain"
+                         data-parsley-pattern="[0-9a-z-]{3,}"
+                         data-parsley-trigger="change"
+                         data-parsley-error-message="At least 3 characters. Only lowercase letters, numbers and dashes (-) are supported."
+                         class="form-control" minlength="3" maxlength="32">
+                </div>
+
+                <div class="form-group">
+                  <label>Root domain</label>
+                  <select name="domain" v-model="domain" class="form-control">
+                    {% for sl_domain in sl_domains %}
+                      <option value="{{ sl_domain.domain }}">
+                        {{ sl_domain.domain }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <button class="btn btn-primary">Create</button>
+              </form>
+
+              <div v-if="toShow" class="text-info mt-2">
+                You are about to create <b>[[ subdomain]].[[domain]]</b> subdomain.
+              </div>
+
+              <div class="alert alert-info mt-3" style="font-size: 12px">
+                Deleting a subdomain will <b>not</b> restore the subdomain quota
+                so please make sure
+                to choose the subdomain you want to keep. <br>
+                Currently you can create up to <b style="font-size: 1.5em">{{ current_user.subdomain_quota }}</b>
+                subdomains.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+{% endblock %}
+
+
+{% block script %}
+  <script>
+    new Vue({
+      el: '#new-subdomain',
+      delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
+      data: {
+        subdomain: "",
+        domain: "{{ sl_domains[0].domain }}"
+      },
+      computed: {
+        toShow: function () {
+          if (this.subdomain && this.domain) {
+            return true;
+          }
+          return false;
+        }
+      }
+    });
+  </script>
+{% endblock %}

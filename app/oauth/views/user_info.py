@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from flask_cors import cross_origin
 
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import OauthToken, ClientUser
 from app.oauth.base import oauth_bp
@@ -27,7 +27,7 @@ def user_info():
     elif oauth_token.is_expired():
         LOG.d("delete oauth token %s", oauth_token)
         OauthToken.delete(oauth_token.id)
-        db.session.commit()
+        Session.commit()
         return jsonify(error="Expired access token"), 400
 
     client_user = ClientUser.get_or_create(

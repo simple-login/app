@@ -9,11 +9,18 @@
         <div class="nav-item" data-toggle="dark-mode" title='Toggle bright/dark mode'>
           <i class="fe fe-moon"></i>
         </div>
-        {% if current_user.should_show_upgrade_button() %}
-          <div class="nav-item">
-            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
-          </div>
-        {% endif %}
+
+
+        <div class="nav-item">
+
+          <a onclick="startIntro()"
+             data-intro="Welcome to SimpleLogin! <br><br>
+  It seems that this is the first time you are here,
+  let's walk through some SimpleLogin features together! <br><br>
+             You can always show this tutorial again any time by clicking on this <i class='fe fe-help-circle'></i> icon above 👆"
+             data-step="1"
+          ><i class="fe fe-help-circle"></i></a>
+        </div>
 
 
         <div id="notification-app" class="dropdown d-none d-md-flex" v-if="showNotification">
@@ -25,14 +32,30 @@
 
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow collapse" id="notifications">
             <div v-if="loading">Loading ...</div>
+            <a href="{{ url_for('dashboard.notifications_route') }}" class="mr-5 mb-2 float-right">
+              See all notifications ➡
+            </a>
+
             <div class="dropdown-item d-flex" v-for="notification in notifications">
               <div class="flex-grow-1">
+                <div v-html="notification.title" class="font-weight-bold"
+                     style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden;"></div>
+
+
                 <div v-html="notification.message"
-                     style="width: 40em; word-wrap:break-word; white-space: normal"></div>
+                     style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden; max-height: 100px; text-overflow: ellipsis;">
+                </div>
+
+                <div>
+                  <a :href="'/dashboard/notification/' + notification.id">More</a>
+                </div>
+
+
                 <div class="small text-muted">
                   [[notification.created_at]]
                 </div>
               </div>
+
               <div v-if="!notification.read">
                 <i class="fe fe-check"
                    @click="markAsRead(notification)"
@@ -47,6 +70,43 @@
           </div>
 
         </div>
+
+        {% if ZENDESK_ENABLED %}
+          <div class="dropdown nav-item d-flex align-items-center">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Help</a>
+            <div class="dropdown-menu dropdown-menu-left dropdown-menu-arrow">
+              <div class="dropdown-item">
+                <a href="https://simplelogin.io/docs/" target="_blank">
+                  Docs
+                  <i class="fa fa-external-link" aria-hidden="true"></i>
+                </a>
+              </div>
+              <div class="dropdown-item">
+                <a href="https://github.com/simple-login/app/discussions" target="_blank">
+                  Forum
+                  <i class="fa fa-external-link" aria-hidden="true"></i>
+                </a>
+              </div>
+              <div class="dropdown-item">
+                <a href="/dashboard/support">Support</a>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="nav-item">
+            <a href="https://simplelogin.io/docs/" target="_blank">
+              Docs
+              <i class="fa fa-external-link" aria-hidden="true"></i>
+            </a>
+
+          </div>
+        {% endif %}
+
+        {% if current_user.should_show_upgrade_button() %}
+          <div class="nav-item">
+            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+          </div>
+        {% endif %}
 
         <div class="dropdown">
           <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
@@ -69,23 +129,13 @@
               {% elif current_user.is_premium() %}
 
                 <small class="text-success d-block mt-1">Premium
-                  {% set sub = current_user.get_subscription() %}
-                  {% if sub and sub.cancelled and not current_user.lifetime %}
-                    until {{ sub.next_bill_date.strftime("%Y-%m-%d") }}
-                  {% endif %}
                 </small>
               {% endif %}
 
-						</span>
+            </span>
           </a>
 
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-            <a class="dropdown-item" href="{{ url_for('dashboard.api_key') }}">
-              <i class="dropdown-icon"><img src="/static/key.svg"></i> API Keys
-            </a>
-
-            <hr class="my-2">
-
             <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
               <i class="dropdown-icon fe fe-log-out"></i> Sign out
             </a>

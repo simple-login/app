@@ -1,18 +1,20 @@
-import pytest
 from uuid import UUID
 
+import pytest
+
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
-from app.email_utils import parseaddr_unicode
-from app.extensions import db
+from app.db import Session
+from app.email_utils import parse_full_address
 from app.models import (
     generate_email,
     User,
     Alias,
     Contact,
     Mailbox,
-    AliasMailbox,
     SenderFormatEnum,
+    EnumE,
 )
+from tests.utils import login
 
 
 def test_generate_email(flask_client):
@@ -50,9 +52,9 @@ def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
     )
 
     # make sure user runs out of quota to create new email
-    for i in range(MAX_NB_EMAIL_FREE_PLAN):
+    for _ in range(MAX_NB_EMAIL_FREE_PLAN):
         Alias.create_new(user=user, prefix="test")
-    db.session.commit()
+    Session.commit()
 
     suggested_email, other_emails = user.suggested_emails(website_name="test")
 
@@ -87,7 +89,7 @@ def test_website_send_to(flask_client):
     )
 
     alias = Alias.create_new_random(user)
-    db.session.commit()
+    Session.commit()
 
     # non-empty name
     c1 = Contact.create(
@@ -110,20 +112,11 @@ def test_website_send_to(flask_client):
     assert c1.website_send_to() == '"Nhơn Nguyễn | abcd at example.com" <rep@SL>'
 
 
-def test_new_addr(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+def test_new_addr_default_sender_format(flask_client):
+    user = login(flask_client)
+    alias = Alias.first()
 
-    alias = Alias.create_new_random(user)
-    db.session.commit()
-
-    # default sender_format is 'via'
-    c1 = Contact.create(
+    contact = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
         website_email="abcd@example.com",
@@ -131,34 +124,106 @@ def test_new_addr(flask_client):
         name="First Last",
         commit=True,
     )
-    assert c1.new_addr() == '"abcd@example.com via SimpleLogin" <rep@SL>'
 
-    # set sender format = FULL
-    user.sender_format = SenderFormatEnum.FULL.value
-    db.session.commit()
-    assert c1.new_addr() == '"First Last - abcd@example.com" <rep@SL>'
+    assert contact.new_addr() == '"First Last - abcd at example.com" <rep@SL>'
 
     # Make sure email isn't duplicated if sender name equals email
-    c1.name = "abcd@example.com"
-    db.session.commit()
-    assert c1.new_addr() == '"abcd@example.com" <rep@SL>'
+    contact.name = "abcd@example.com"
+    assert contact.new_addr() == '"abcd at example.com" <rep@SL>'
 
-    # set sender_format = AT
-    user.sender_format = SenderFormatEnum.AT.value
-    c1.name = "First Last"
-    db.session.commit()
-    assert c1.new_addr() == '"First Last - abcd at example.com" <rep@SL>'
 
-    # unicode name
-    c1.name = "Nhơn Nguyễn"
-    db.session.commit()
+def test_new_addr_a_sender_format(flask_client):
+    user = login(flask_client)
+    user.sender_format = SenderFormatEnum.A.value
+    Session.commit()
+    alias = Alias.first()
+
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="abcd@example.com",
+        reply_email="rep@SL",
+        name="First Last",
+        commit=True,
+    )
+
+    assert contact.new_addr() == '"First Last - abcd(a)example.com" <rep@SL>'
+
+
+def test_new_addr_no_name_sender_format(flask_client):
+    user = login(flask_client)
+    user.sender_format = SenderFormatEnum.NO_NAME.value
+    Session.commit()
+    alias = Alias.first()
+
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="abcd@example.com",
+        reply_email="rep@SL",
+        name="First Last",
+        commit=True,
+    )
+
+    assert contact.new_addr() == "rep@SL"
+
+
+def test_new_addr_name_only_sender_format(flask_client):
+    user = login(flask_client)
+    user.sender_format = SenderFormatEnum.NAME_ONLY.value
+    Session.commit()
+    alias = Alias.first()
+
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="abcd@example.com",
+        reply_email="rep@SL",
+        name="First Last",
+        commit=True,
+    )
+
+    assert contact.new_addr() == "First Last <rep@SL>"
+
+
+def test_new_addr_at_only_sender_format(flask_client):
+    user = login(flask_client)
+    user.sender_format = SenderFormatEnum.AT_ONLY.value
+    Session.commit()
+    alias = Alias.first()
+
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="abcd@example.com",
+        reply_email="rep@SL",
+        name="First Last",
+        commit=True,
+    )
+
+    assert contact.new_addr() == '"abcd at example.com" <rep@SL>'
+
+
+def test_new_addr_unicode(flask_client):
+    user = login(flask_client)
+    alias = Alias.first()
+
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="abcd@example.com",
+        reply_email="rep@SL",
+        name="Nhơn Nguyễn",
+        commit=True,
+    )
+
     assert (
-        c1.new_addr()
+        contact.new_addr()
         == "=?utf-8?q?Nh=C6=A1n_Nguy=E1=BB=85n_-_abcd_at_example=2Ecom?= <rep@SL>"
     )
 
-    # sanity check for parseaddr_unicode
-    assert parseaddr_unicode(c1.new_addr()) == (
+    # sanity check
+    assert parse_full_address(contact.new_addr()) == (
         "Nhơn Nguyễn - abcd at example.com",
         "rep@sl",
     )
@@ -185,11 +250,11 @@ def test_mailbox_delete(flask_client):
 
     # alias has 2 mailboxes
     alias = Alias.create_new(user, "prefix", mailbox_id=m1.id)
-    db.session.commit()
+    Session.commit()
 
     alias._mailboxes.append(m2)
     alias._mailboxes.append(m3)
-    db.session.commit()
+    Session.commit()
 
     assert len(alias.mailboxes) == 3
 
@@ -197,3 +262,22 @@ def test_mailbox_delete(flask_client):
     Mailbox.delete(m1.id)
     alias = Alias.get(alias.id)
     assert len(alias.mailboxes) == 2
+
+
+def test_EnumE():
+    class E(EnumE):
+        A = 100
+        B = 200
+
+    assert E.has_value(100)
+    assert not E.has_value(101)
+
+    assert E.get_name(100) == "A"
+    assert E.get_name(200) == "B"
+    assert E.get_name(101) is None
+
+    assert E.has_name("A")
+    assert not E.has_name("Not existent")
+
+    assert E.get_value("A") == 100
+    assert E.get_value("Not existent") is None

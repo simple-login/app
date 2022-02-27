@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    This is SimpleLogin team.
+  {% endcall %}
+
+  {% call text() %}
+    Hotmail has informed us about an email sent to <b>{{ user.email }}</b> that might have been considered as spam,
+    either by you or by Hotmail spam filter.
+  {% endcall %}
+
+  {% call text() %}
+    Please note that explicitly marking a SimpleLogin's forwarded email as Spam
+    affects SimpleLogin email delivery,
+    has a negative effect for all users and is a violation of our terms and condition.
+  {% endcall %}
+
+  {% call text() %}
+    If somehow Hotmail considers a forwarded email as Spam, it helps us if you can move the email
+    out of the Spam folder. You can also set up a filter to avoid this
+    from happening in the future using this guide at
+    https://simplelogin.io/docs/getting-started/troubleshooting/
+
+  {% endcall %}
+
+  {% call text() %}
+    Please don't put our emails into the Spam folder. This can end up in your account being disabled on SimpleLogin.
+  {% endcall %}
+
+  {% call text() %}
+    Looking to hear back from you.
+  {% endcall %}
+
+  {% call text() %}
+    Best, <br/>
+    SimpleLogin Team.
+  {% endcall %}
+
+{% endblock %}
+
+

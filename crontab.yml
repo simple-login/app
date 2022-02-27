@@ -1,6 +1,12 @@
 jobs:
-  - name: SimpleLogin stats
-    command: python /code/cron.py -j stats
+  - name: SimpleLogin growth stats
+    command: python /code/cron.py -j growth_stats
+    shell: /bin/bash
+    schedule: "0 1 * * *"
+    captureStderr: true
+
+  - name: SimpleLogin monitoring stats
+    command: python /code/cron.py -j daily_monitoring_report
     shell: /bin/bash
     schedule: "0 0 * * *"
     captureStderr: true
@@ -23,8 +29,8 @@ jobs:
     schedule: "0 10 * * *"
     captureStderr: true
 
-  - name: SimpleLogin Delete Refused Emails
-    command: python /code/cron.py -j delete_refused_emails
+  - name: SimpleLogin Delete Logs
+    command: python /code/cron.py -j delete_logs
     shell: /bin/bash
     schedule: "0 11 * * *"
     captureStderr: true
@@ -52,3 +58,17 @@ jobs:
     shell: /bin/bash
     schedule: "0 15 * * *"
     captureStderr: true
+
+  - name: SimpleLogin HIBP check
+    command: python /code/cron.py -j check_hibp
+    shell: /bin/bash
+    schedule: "0 18 * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid
+
+  - name: SimpleLogin Notify HIBP breaches
+    command: python /code/cron.py -j notify_hibp
+    shell: /bin/bash
+    schedule: "0 19 * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid

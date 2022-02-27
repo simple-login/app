@@ -1,5 +1,5 @@
-from app.alias_utils import delete_alias
-from app.extensions import db
+from app.alias_utils import delete_alias, check_alias_prefix
+from app.db import Session
 from app.models import User, Alias, DeletedAlias
 
 
@@ -41,8 +41,17 @@ def test_delete_alias_already_in_trash(flask_client):
     )
 
     # add the alias to global trash
-    db.session.add(DeletedAlias(email=alias.email))
-    db.session.commit()
+    Session.add(DeletedAlias(email=alias.email))
+    Session.commit()
 
     delete_alias(alias, user)
     assert Alias.get_by(email="first@d1.test") is None
+
+
+def test_check_alias_prefix(flask_client):
+    assert check_alias_prefix("ab-cd_")
+    assert not check_alias_prefix("")
+    assert not check_alias_prefix("éè")
+    assert not check_alias_prefix("a b")
+    assert not check_alias_prefix("+👌")
+    assert not check_alias_prefix("too-long" * 10)

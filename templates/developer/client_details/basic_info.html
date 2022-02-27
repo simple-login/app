@@ -1,0 +1,83 @@
+{% extends 'developer/client_details/base.html' %}
+
+{% set client_details_page = "basic_info" %}
+
+{% block client_details_content %}
+  {% if is_new %}
+    <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+      <h4 class="alert-heading">Well done!</h4>
+      <p>
+        Please head to our
+        <a href="http://docs.simplelogin.io" target="_blank" rel="noopener">
+        documentation <i class="fe fe-external-link"></i></a>
+        to see how to add SIWSL into your app.
+      </p>
+
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data"
+        action="{{ url_for('developer.client_detail', client_id=client.id, action="edit") }}">
+    {{ form.csrf_token }}
+
+    <h1 class="h2">Info</h1>
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      {{ form.name(class="form-control", value=client.name) }}
+      {{ render_field_errors(form.name) }}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Url</label>
+      {{ form.url(class="form-control", value=client.home_url) }}
+      {{ render_field_errors(form.url) }}
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Icon
+        <span class="text-muted small-text">The icon is displayed on the authorization page</span>
+      </label>
+      {{ form.icon(class="form-control-file") }}
+      {{ render_field_errors(form.icon) }}
+
+      {% if client.icon_id %}
+        <img src="{{ client.icon.get_url() }}" class="client-icon">
+      {% endif %}
+    </div>
+
+    <button type="submit" class="mt-2 btn btn-primary">Update</button>
+  </form>
+
+{#  <hr>#}
+{#  <h3>Submit for approval</h3>#}
+{##}
+{#  <div class="alert alert-info">#}
+{#    Approval is only needed when you deploy the <b>Sign in with SimpleLogin</b> integration#}
+{#    in production. <br>#}
+{#    For local/testing/staging environment, you don't have to submit your app/website for approval. <br>#}
+{#  </div>#}
+{##}
+{#  <form method="post" enctype="multipart/form-data"#}
+{#        action="{{ url_for('developer.client_detail', client_id=client.id, action="submit") }}">#}
+{#    {{ approval_form.csrf_token }}#}
+{##}
+{#    <div class="form-group">#}
+{#      <label class="form-label">Tell us about your app</label>#}
+{#      {{ approval_form.description(#}
+{#          class="form-control", rows="10",#}
+{#          placeholder="This information is used for approving your application. Please give us as much info as you can, for example where you plan to use SimpleLogin, for which community, etc."#}
+{#          ) }}#}
+{#      {{ render_field_errors(approval_form.description) }}#}
+{#    </div>#}
+{##}
+{#    <div class="alert alert-warning">#}
+{#      Don't make this frequent mistake: make sure to add your production URL to the <b>Authorized Redirect URIs</b> on#}
+{#      <a href="{{ url_for('developer.client_detail_oauth_setting', client_id=client.id) }}">OAuth Settings</a>.#}
+{#    </div>#}
+{##}
+{#    <button type="submit" class="btn btn-success">Submit</button>#}
+{#  </form>#}
+{% endblock %}

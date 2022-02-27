@@ -1,0 +1,52 @@
+{% extends 'default.html' %}
+
+{% if custom_domain.is_sl_subdomain %}
+  {% set active_page = "subdomain" %}
+{% else %}
+  {% set active_page = "custom_domain" %}
+{% endif %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-lg-3 order-lg-1 mb-4">
+      <div class="list-group list-group-transparent mb-0">
+        <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'info' }}">
+          <span class="icon mr-3"><i class="fe fe-flag"></i></span>Info
+        </a>
+
+        {% if not custom_domain.is_sl_subdomain %}
+          <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id) }}"
+             class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'dns' }}">
+            <span class="icon mr-3"><i class="fe fe-cloud"></i></span>DNS
+          </a>
+        {% endif %}
+
+        <a href="{{ url_for('dashboard.domain_detail_trash', custom_domain_id=custom_domain.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'trash' }}">
+          <span class="icon mr-3"><i class="fe fe-trash"></i></span>Deleted Alias
+        </a>
+
+        <a href="{{ url_for('dashboard.domain_detail_auto_create', custom_domain_id=custom_domain.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if domain_detail_page == 'auto_create' }}">
+          <span class="icon mr-3"><i class="fe fe-layers"></i></span>Auto Create
+        </a>
+
+      </div>
+    </div>
+
+    <div class="col-lg-9">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-wrap p-lg-6 domain_detail_content">
+            {% block domain_detail_content %}
+            {% endblock %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+

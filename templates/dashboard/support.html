@@ -1,0 +1,97 @@
+{% extends 'default.html' %}
+
+{% set active_page = 'dashboard' %}
+
+{% block title %}
+  Support
+{% endblock %}
+
+
+{% block default_content %}
+
+  <div class="col pb-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title mb-3">Report a problem</div>
+
+        <div class="alert alert-info">
+          If an email cannot be delivered to your mailbox, please check <a href="/dashboard/notifications">your
+          notifications</a> for error messages
+        </div>
+        <div class="alert alert-warning">
+          A support ticket will be created in Zendesk. Please do not include any sensitive information in the ticket.
+        </div>
+
+        <form id="supportZendeskForm" method="post" enctype="multipart/form-data">
+          <div class="mt-4 mb-5">
+            <label for="issueDescription" class="form-label font-weight-bold">What happened?</label>
+            <textarea class="form-control" required name="ticket_content" id="issueDescription" rows="3"
+                      placeholder="Please provide as much information as possible. For example which alias(es), mailbox(es) ar affected, if this is a persistent issue...">{{- ticket_content or '' -}}</textarea>
+          </div>
+          <div class="mt-5 font-weight-bold">
+            Attach files to support request
+          </div>
+          <div class="text-muted">Only images, text and emails are accepted</div>
+          <div class="custom-file">
+            <input type="file" class="custom-file-input" name="ticket_files" id="ticketFileGroup" multiple="multiple">
+            <label class="custom-file-label" for="ticketFileGroup">Choose file</label>
+          </div>
+          <div class="mt-5 font-weight-bold">
+            Where can we reach you?
+          </div>
+          <div class="text-muted">
+            Conversations related to this ticket will be sent to this address. Feel free to use an alias here.
+          </div>
+          <div class="input-group mb-3" id="alias-group">
+            <input type="text" required class="form-control" placeholder="Email" name="ticket_email"
+                   v-model='ticket_email' aria-label="Email to send responses to" aria-describedby="button-addon2">
+            <div class="input-group-append">
+              <button class="btn btn-outline-primary" type="button" @click="generateRandomAlias" id="button-addon2">
+                Generate a random alias
+              </button>
+            </div>
+          </div>
+          <div class="mt-5">
+            <button class="btn btn-primary">Create support ticket</button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+
+{% endblock %}
+
+{% block script %}
+  <script>
+    new Vue({
+      el: '#alias-group',
+      data: {
+        ticket_email: '{{ ticket_email }}'
+      },
+      methods: {
+        generateRandomAlias: async function (event) {
+          let result = await fetch('/api/alias/random/new', {method: 'POST'});
+          if (result.ok) {
+            let data = await result.json();
+            this.ticket_email = data.alias;
+          } else if (result.status === 429 ){
+              toastr.warning("You've created too many aliases recently. Wait a bit before creating more");
+          } else {
+              toastr.warning("You can't create more aliases");
+          }
+        }
+      }
+    });
+
+    $('.custom-file input').change(function (e) {
+      let files = [];
+      for (let i = 0; i < $(this)[0].files.length; i++) {
+        files.push($(this)[0].files[i].name);
+      }
+      $(this).next('.custom-file-label').html(files.join(', '));
+    });
+  </script>
+{% endblock %}
+

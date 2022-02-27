@@ -1,0 +1,85 @@
+{% extends 'default.html' %}
+
+{% set active_page = "app" %}
+
+{% block title %}
+  Sign in with SimpleLogin apps
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+      <h1 class="h3"> Apps </h1>
+      <div class="small-text">
+        List of websites/apps that you have used <b>Sign in with SimpleLogin</b>
+      </div>
+    </div>
+  </div>
+
+  <div class="row row-cards row-deck mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-hover table-outline table-vcenter text-nowrap card-table">
+            <thead>
+            <tr>
+              <th>
+                App
+              </th>
+              <th>
+                Info
+                <i class="fe fe-help-circle" data-toggle="tooltip"
+                   title="Info this app/website receives"></i>
+              </th>
+              <th>
+                First used
+                <i class="fe fe-help-circle" data-toggle="tooltip"
+                   title="The first time you have used the 'Sign in with SimpleLogin' button on this app/website"></i>
+              </th>
+              <th>
+                Actions
+              </th>
+              <!--<th class="text-center">Last used</th>-->
+            </tr>
+            </thead>
+            <tbody>
+            {% for client_user in client_users %}
+              <tr>
+                <td>
+                  {{ client_user.client.name }}
+                </td>
+
+                <td>
+                  {% for scope, val in client_user.get_user_info().items() %}
+                    <div>
+                      {% if scope == "email" %}
+                        Email: <a href="mailto:{{ val }}">{{ val }}</a>
+                      {% elif scope == "name" %}
+                        Name: {{ val }}
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </td>
+
+                <td>
+                  {{ client_user.created_at | dt }}
+                </td>
+
+                <td>
+                  <form method="post">
+                    <input type="hidden" name="client-user-id" value="{{ client_user.id }}">
+                    <button class="btn btn-warning">
+                      Remove
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

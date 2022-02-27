@@ -1,10 +1,10 @@
+from functools import wraps
 from time import time
 
 from flask import render_template, flash, redirect, url_for, session, request
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, validators
-from functools import wraps
 
 from app.dashboard.base import dashboard_bp
 from app.log import LOG
@@ -30,10 +30,10 @@ def enter_sudo():
             # User comes to sudo page from another page
             next_url = request.args.get("next")
             if next_url:
-                LOG.debug("redirect user to %s", next_url)
+                LOG.d("redirect user to %s", next_url)
                 return redirect(next_url)
             else:
-                LOG.debug("redirect user to dashboard")
+                LOG.d("redirect user to dashboard")
                 return redirect(url_for("dashboard.index"))
         else:
             flash("Incorrect password", "warning")

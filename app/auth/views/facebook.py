@@ -9,10 +9,11 @@ from app.config import (
     FACEBOOK_CLIENT_ID,
     FACEBOOK_CLIENT_SECRET,
 )
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import User, SocialAuth
 from .login_utils import after_login
+from ...utils import sanitize_email, sanitize_next_url
 
 _authorization_base_url = "https://www.facebook.com/dialog/oauth"
 _token_url = "https://graph.facebook.com/oauth/access_token"
@@ -29,7 +30,7 @@ def facebook_login():
     # to avoid flask-login displaying the login error message
     session.pop("_flashes", None)
 
-    next_url = request.args.get("next")
+    next_url = sanitize_next_url(request.args.get("next"))
 
     # Facebook does not allow to append param to redirect_uri
     # we need to pass the next url by session
@@ -91,7 +92,7 @@ def facebook_callback():
         )
         return redirect(url_for("auth.register"))
 
-    email = email.strip().lower()
+    email = sanitize_email(email)
     user = User.get_by(email=email)
 
     picture_url = facebook_user_data.get("picture", {}).get("data", {}).get("url")
@@ -101,7 +102,7 @@ def facebook_callback():
             LOG.d("set user profile picture to %s", picture_url)
             file = create_file_from_url(user, picture_url)
             user.profile_picture_id = file.id
-            db.session.commit()
+            Session.commit()
 
     else:
         flash(
@@ -114,13 +115,13 @@ def facebook_callback():
     # The activation link contains the original page, for ex authorize page
     if "facebook_next_url" in session:
         next_url = session["facebook_next_url"]
-        LOG.debug("redirect user to %s", next_url)
+        LOG.d("redirect user to %s", next_url)
 
         # reset the next_url to avoid user getting redirected at each login :)
         session.pop("facebook_next_url", None)
 
     if not SocialAuth.get_by(user_id=user.id, social="facebook"):
         SocialAuth.create(user_id=user.id, social="facebook")
-        db.session.commit()
+        Session.commit()
 
     return after_login(user, next_url)

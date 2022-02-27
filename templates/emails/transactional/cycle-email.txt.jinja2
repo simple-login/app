@@ -1,0 +1,16 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+An email was sent to your alias {{ alias.email }} from its own mailbox {{ from_addr }}.
+
+SimpleLogin doesn't send this email back to your mailbox as it would be refused or hidden anyway by your email service.
+
+So no worries, there's nothing you need to do :).
+
+You can view this email here:
+{{ refused_email_url }}
+
+The email is automatically deleted in 7 days.
+
+Please let us know if you have any question.
+{% endblock %}

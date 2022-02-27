@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from flask_cors import cross_origin
 
-from app.extensions import db
+from app.db import Session
 from app.jose_utils import make_id_token
 from app.log import LOG
 from app.models import Client, AuthorizationCode, OauthToken, ClientUser
@@ -49,16 +49,14 @@ def token():
         return jsonify(error=f"no such authorization code {code}"), 400
     elif auth_code.is_expired():
         AuthorizationCode.delete(auth_code.id)
-        db.session.commit()
+        Session.commit()
         LOG.d("delete expired authorization code:%s", auth_code)
         return jsonify(error=f"{code} already expired"), 400
 
     if auth_code.client_id != client.id:
-        return jsonify(error=f"are you sure this code belongs to you?"), 400
+        return jsonify(error="are you sure this code belongs to you?"), 400
 
-    LOG.debug(
-        "Create Oauth token for user %s, client %s", auth_code.user, auth_code.client
-    )
+    LOG.d("Create Oauth token for user %s, client %s", auth_code.user, auth_code.client)
 
     # Create token
     oauth_token = OauthToken.create(
@@ -69,12 +67,6 @@ def token():
         access_token=generate_access_token(),
         response_type=auth_code.response_type,
     )
-    db.session.add(oauth_token)
-
-    # Auth code can be used only once
-    AuthorizationCode.delete(auth_code.id)
-
-    db.session.commit()
 
     client_user: ClientUser = ClientUser.get_by(
         client_id=auth_code.client_id, user_id=auth_code.user_id
@@ -96,7 +88,12 @@ def token():
     # Also return id_token if the initial flow is "code,id_token"
     # cf https://medium.com/@darutk/diagrams-of-all-the-openid-connect-flows-6968e3990660
     response_types = get_response_types_from_str(auth_code.response_type)
-    if ResponseType.ID_TOKEN in response_types:
-        res["id_token"] = make_id_token(client_user)
+    if ResponseType.ID_TOKEN in response_types or auth_code.scope == "openid":
+        res["id_token"] = make_id_token(client_user, nonce=auth_code.nonce)
+
+    # Auth code can be used only once
+    AuthorizationCode.delete(auth_code.id)
+
+    Session.commit()
 
     return jsonify(res)

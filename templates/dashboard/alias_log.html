@@ -1,0 +1,168 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+{% block head %}
+  <style>
+    {#  https://bootsnipp.com/snippets/rljEW#}
+    .card-counter {
+      box-shadow: 2px 2px 10px #DADADA;
+      margin: 5px;
+      padding: 20px 10px;
+      background-color: #fff;
+      height: 100px;
+      border-radius: 5px;
+      transition: .3s linear all;
+    }
+
+    .card-counter:hover {
+      box-shadow: 4px 4px 20px #DADADA;
+      transition: .3s linear all;
+    }
+
+    .card-counter.primary {
+      background-color: #007bff;
+      color: #FFF;
+    }
+
+    .card-counter.danger {
+      background-color: #ef5350;
+      color: #FFF;
+    }
+
+    .card-counter.success {
+      background-color: #66bb6a;
+      color: #FFF;
+    }
+
+    .card-counter.info {
+      background-color: #26c6da;
+      color: #FFF;
+    }
+
+    .card-counter i {
+      font-size: 2em;
+      opacity: 0.2;
+    }
+
+    .card-counter .count-numbers {
+      position: absolute;
+      right: 35px;
+      top: 20px;
+      font-size: 32px;
+      display: block;
+    }
+
+    .card-counter .count-name {
+      position: absolute;
+      right: 35px;
+      top: 65px;
+      text-transform: capitalize;
+      opacity: 0.5;
+      display: block;
+      font-size: 18px;
+    }
+  </style>
+{% endblock %}
+{% block title %}
+  Alias Activity
+{% endblock %}
+
+{% block default_content %}
+  <h1 class="h3">
+    {{ alias.email }}
+  </h1>
+  <div class="row">
+    <div class="col-md-3 col-sm-6">
+      <div class="card-counter primary">
+        <i class="fa fa-at"></i>
+        <span class="count-numbers">{{ total }}</span>
+        <span class="count-name">Email Handled</span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card-counter primary">
+        <i class="fa fa-paper-plane"></i>
+        <span class="count-numbers">{{ email_forwarded }}</span>
+        <span class="count-name">Email Forwarded</span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card-counter primary">
+        <i class="fa fa-reply"></i>
+        <span class="count-numbers">{{ email_replied }}</span>
+        <span class="count-name">Email Replied</span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card-counter danger">
+        <i class="fa fa-ban"></i>
+        <span class="count-numbers">{{ email_blocked }}</span>
+        <span class="count-name">Email Blocked</span>
+      </div>
+    </div>
+  </div>
+  <div class="row mt-4">
+    {% for log in logs %}
+      <div class="col-lg-6">
+        <div class="my-2 p-2 card border-light">
+
+          <div class="font-weight-bold">{{ log.when | dt }}
+            <div class="float-right pr-3">
+              {% if log.bounced %}
+                ⚠️
+              {% else %}
+                {% if log.is_reply %}
+                  <i class="fa fa-reply"></i>
+                {% elif log.blocked %}
+                  <i class="fa fa-ban text-danger"></i>
+                {% else %}
+                  <i class="fa fa-paper-plane"></i>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+
+          {% if log.bounced and not log.is_reply %}
+            <div>
+              <span class="mr-2">{{ log.website_email }}</span>
+              <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
+              <span class="ml-2">{{ log.alias }}</span>
+              <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
+              <span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
+            </div>
+          {% elif log.bounced and log.is_reply %}
+            <div>
+              <span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
+              <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
+              <span class="ml-2">{{ log.alias }}</span>
+              <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
+              <span class="mr-2">{{ log.website_email }}</span>
+            </div>
+          {% else %}
+            <div>
+              {{ log.website_email }}
+            </div>
+          {% endif %}
+
+
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <nav aria-label="Alias log navigation">
+    <ul class="pagination">
+      <li class="page-item">
+        <a class="btn btn-outline-secondary {% if page_id == 0 %}disabled{% endif %}"
+           href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id-1) }}">Previous</a>
+      </li>
+      <li class="page-item">
+        <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}"
+           href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id+1) }}">Next</a>
+      </li>
+    </ul>
+  </nav>
+{% endblock %}
+
+{% block script %}
+{% endblock %}

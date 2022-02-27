@@ -1,11 +1,10 @@
 import os
 from time import sleep
 
-from app.config import HOST
-from app.extensions import db
+import newrelic.agent
+
+from app.db import Session
 from app.log import LOG
-from app.models import Monitoring
-from server import create_app
 
 # the number of consecutive fails
 # if more than _max_nb_fails, alert
@@ -19,49 +18,38 @@ _max_nb_fails = 10
 _max_incoming = 50
 
 
-def get_stats():
+@newrelic.agent.background_task()
+def log_postfix_metrics():
     """Look at different metrics and alert appropriately"""
     incoming_queue = nb_files("/var/spool/postfix/incoming")
     active_queue = nb_files("/var/spool/postfix/active")
     deferred_queue = nb_files("/var/spool/postfix/deferred")
     LOG.d("postfix queue sizes %s %s %s", incoming_queue, active_queue, deferred_queue)
 
-    Monitoring.create(
-        host=HOST,
-        incoming_queue=incoming_queue,
-        active_queue=active_queue,
-        deferred_queue=deferred_queue,
-    )
-    db.session.commit()
-
-    global _nb_failed
-    # alert when too many emails in incoming + active queue
-    if incoming_queue > _max_incoming:
-        _nb_failed += 1
-
-        if _nb_failed > _max_nb_fails:
-            # reset
-            _nb_failed = 0
-
-            LOG.exception(
-                "Too many emails in incoming & active queue %s %s",
-                incoming_queue,
-                active_queue,
-            )
-    else:
-        _nb_failed = 0
+    newrelic.agent.record_custom_metric("Custom/postfix_incoming_queue", incoming_queue)
+    newrelic.agent.record_custom_metric("Custom/postfix_active_queue", active_queue)
+    newrelic.agent.record_custom_metric("Custom/postfix_deferred_queue", deferred_queue)
 
 
 def nb_files(directory) -> int:
-    """return the number of files in directory and its sub-directories"""
+    """return the number of files in directory and its subdirectories"""
     return sum(len(files) for _, _, files in os.walk(directory))
+
+
+@newrelic.agent.background_task()
+def log_nb_db_connection():
+    # get the number of connections to the DB
+    r = Session.execute("select count(*) from pg_stat_activity;")
+    nb_connection = list(r)[0][0]
+
+    LOG.d("number of db connections %s", nb_connection)
+    newrelic.agent.record_custom_metric("Custom/nb_db_connections", nb_connection)
 
 
 if __name__ == "__main__":
     while True:
-        app = create_app()
-        with app.app_context():
-            get_stats()
+        log_postfix_metrics()
+        log_nb_db_connection()
 
         # 1 min
         sleep(60)

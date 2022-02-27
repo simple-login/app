@@ -5,8 +5,8 @@ from wtforms import StringField, validators
 
 from app.config import ADMIN_EMAIL
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import send_email
-from app.extensions import db
 from app.models import LifetimeCoupon
 
 
@@ -33,17 +33,19 @@ def lifetime_licence():
     if coupon_form.validate_on_submit():
         code = coupon_form.code.data
 
-        coupon = LifetimeCoupon.get_by(code=code)
-
+        coupon: LifetimeCoupon = LifetimeCoupon.get_by(code=code)
         if coupon and coupon.nb_used > 0:
             coupon.nb_used -= 1
             current_user.lifetime = True
-            db.session.commit()
+            current_user.lifetime_coupon_id = coupon.id
+            if coupon.paid:
+                current_user.paid_lifetime = True
+            Session.commit()
 
             # notify admin
             send_email(
                 ADMIN_EMAIL,
-                subject=f"User {current_user} used lifetime coupon. Coupon nb_used: {coupon.nb_used}",
+                subject=f"User {current_user} used lifetime coupon({coupon.comment}). Coupon nb_used: {coupon.nb_used}",
                 plaintext="",
                 html="",
             )

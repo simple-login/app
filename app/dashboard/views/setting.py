@@ -1,6 +1,4 @@
-import csv
-import json
-from io import BytesIO, StringIO
+from io import BytesIO
 
 import arrow
 from flask import (
@@ -9,40 +7,44 @@ from flask import (
     redirect,
     url_for,
     flash,
-    Response,
-    make_response,
 )
-from flask_login import login_required, current_user, logout_user
+from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
 from app import s3, email_utils
-from app.config import URL, FIRST_ALIAS_DOMAIN
+from app.config import (
+    URL,
+    FIRST_ALIAS_DOMAIN,
+    ALIAS_RANDOM_SUFFIX_LENGTH,
+)
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.email_utils import (
-    email_domain_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
-from app.extensions import db
 from app.log import LOG
 from app.models import (
+    BlockBehaviourEnum,
     PlanEnum,
     File,
     ResetPasswordCode,
     EmailChange,
     User,
     Alias,
-    DeletedAlias,
     CustomDomain,
-    Client,
     AliasGeneratorEnum,
+    AliasSuffixEnum,
     ManualSubscription,
     SenderFormatEnum,
-    PublicDomain,
+    SLDomain,
+    CoinbaseSubscription,
+    AppleSubscription,
 )
-from app.utils import random_string
+from app.utils import random_string, sanitize_email
 
 
 class SettingForm(FlaskForm):
@@ -79,10 +81,10 @@ def setting():
                 # whether user can proceed with the email update
                 new_email_valid = True
                 if (
-                    change_email_form.email.data.lower().strip() != current_user.email
+                    sanitize_email(change_email_form.email.data) != current_user.email
                     and not pending_email
                 ):
-                    new_email = change_email_form.email.data.strip().lower()
+                    new_email = sanitize_email(change_email_form.email.data)
 
                     # check if this email is not already used
                     if personal_email_already_used(new_email) or Alias.get_by(
@@ -90,7 +92,7 @@ def setting():
                     ):
                         flash(f"Email {new_email} already used", "error")
                         new_email_valid = False
-                    elif not email_domain_can_be_used_as_mailbox(new_email):
+                    elif not email_can_be_used_as_mailbox(new_email):
                         flash(
                             "You cannot use this email address as your personal inbox.",
                             "error",
@@ -101,7 +103,7 @@ def setting():
                         other_email_change: EmailChange = EmailChange.get_by(
                             new_email=new_email
                         )
-                        LOG.warning(
+                        LOG.w(
                             "Another user has a pending %s with the same email address. Current user:%s",
                             other_email_change,
                             current_user,
@@ -112,7 +114,7 @@ def setting():
                                 "delete the expired email change %s", other_email_change
                             )
                             EmailChange.delete(other_email_change.id)
-                            db.session.commit()
+                            Session.commit()
                         else:
                             flash(
                                 "You cannot use this email address as your personal inbox.",
@@ -128,7 +130,7 @@ def setting():
                             ),  # todo: make sure the code is unique
                             new_email=new_email,
                         )
-                        db.session.commit()
+                        Session.commit()
                         send_change_email_confirmation(current_user, email_change)
                         flash(
                             "A confirmation email is on the way, please check your inbox",
@@ -141,7 +143,7 @@ def setting():
                 # update user info
                 if form.name.data != current_user.name:
                     current_user.name = form.name.data
-                    db.session.commit()
+                    Session.commit()
                     profile_updated = True
 
                 if form.profile_picture.data:
@@ -152,15 +154,15 @@ def setting():
                         file_path, BytesIO(form.profile_picture.data.read())
                     )
 
-                    db.session.flush()
+                    Session.flush()
                     LOG.d("upload file %s to s3", file)
 
                     current_user.profile_picture_id = file.id
-                    db.session.commit()
+                    Session.commit()
                     profile_updated = True
 
                 if profile_updated:
-                    flash(f"Your profile has been updated", "success")
+                    flash("Your profile has been updated", "success")
                     return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "change-password":
@@ -177,23 +179,15 @@ def setting():
                 current_user.notification = True
             else:
                 current_user.notification = False
-            db.session.commit()
+            Session.commit()
             flash("Your notification preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
-
-        elif request.form.get("form-name") == "delete-account":
-            LOG.warning("Delete account %s", current_user)
-            User.delete(current_user.id)
-            db.session.commit()
-            flash("Your account has been deleted", "success")
-            logout_user()
-            return redirect(url_for("auth.register"))
 
         elif request.form.get("form-name") == "change-alias-generator":
             scheme = int(request.form.get("alias-generator-scheme"))
             if AliasGeneratorEnum.has_value(scheme):
                 current_user.alias_generator = scheme
-                db.session.commit()
+                Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -201,13 +195,14 @@ def setting():
             default_domain = request.form.get("random-alias-default-domain")
 
             if default_domain:
-                public_domain = PublicDomain.get_by(domain=default_domain)
-                if public_domain:
-                    # make sure only default_random_alias_domain_id or default_random_alias_public_domain_id is set
-                    current_user.default_random_alias_public_domain_id = (
-                        public_domain.id
-                    )
-                    current_user.default_random_alias_domain_id = None
+                sl_domain: SLDomain = SLDomain.get_by(domain=default_domain)
+                if sl_domain:
+                    if sl_domain.premium_only and not current_user.is_premium():
+                        flash("You cannot use this domain", "error")
+                        return redirect(url_for("dashboard.setting"))
+
+                    current_user.default_alias_public_domain_id = sl_domain.id
+                    current_user.default_alias_custom_domain_id = None
                 else:
                     custom_domain = CustomDomain.get_by(domain=default_domain)
                     if custom_domain:
@@ -216,22 +211,30 @@ def setting():
                             custom_domain.user_id != current_user.id
                             or not custom_domain.verified
                         ):
-                            LOG.exception(
-                                "%s cannot use domain %s", current_user, default_domain
+                            LOG.w(
+                                "%s cannot use domain %s", current_user, custom_domain
                             )
+                            flash(f"Domain {default_domain} can't be used", "error")
+                            return redirect(request.url)
                         else:
-                            # make sure only default_random_alias_domain_id or
-                            # default_random_alias_public_domain_id is set
-                            current_user.default_random_alias_domain_id = (
+                            current_user.default_alias_custom_domain_id = (
                                 custom_domain.id
                             )
-                            current_user.default_random_alias_public_domain_id = None
+                            current_user.default_alias_public_domain_id = None
 
             else:
-                current_user.default_random_alias_domain_id = None
-                current_user.default_random_alias_public_domain_id = None
+                current_user.default_alias_custom_domain_id = None
+                current_user.default_alias_public_domain_id = None
 
-            db.session.commit()
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
+        elif request.form.get("form-name") == "random-alias-suffix":
+            scheme = int(request.form.get("random-alias-suffix-generator"))
+            if AliasSuffixEnum.has_value(scheme):
+                current_user.random_alias_suffix = scheme
+                Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
@@ -239,9 +242,10 @@ def setting():
             sender_format = int(request.form.get("sender-format"))
             if SenderFormatEnum.has_value(sender_format):
                 current_user.sender_format = sender_format
-                db.session.commit()
+                current_user.sender_format_updated_at = arrow.now()
+                Session.commit()
                 flash("Your sender format preference has been updated", "success")
-            db.session.commit()
+            Session.commit()
             return redirect(url_for("dashboard.setting"))
 
         elif request.form.get("form-name") == "replace-ra":
@@ -250,60 +254,91 @@ def setting():
                 current_user.replace_reverse_alias = True
             else:
                 current_user.replace_reverse_alias = False
-            db.session.commit()
+            Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
+        elif request.form.get("form-name") == "sender-in-ra":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.include_sender_in_reverse_alias = True
+            else:
+                current_user.include_sender_in_reverse_alias = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
+        elif request.form.get("form-name") == "expand-alias-info":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.expand_alias_info = True
+            else:
+                current_user.expand_alias_info = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "ignore-loop-email":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.ignore_loop_email = True
+            else:
+                current_user.ignore_loop_email = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "one-click-unsubscribe":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.one_click_unsubscribe_block_sender = True
+            else:
+                current_user.one_click_unsubscribe_block_sender = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "include_website_in_one_click_alias":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.include_website_in_one_click_alias = True
+            else:
+                current_user.include_website_in_one_click_alias = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "change-blocked-behaviour":
+            choose = request.form.get("blocked-behaviour")
+            if choose == str(BlockBehaviourEnum.return_2xx.value):
+                current_user.block_behaviour = BlockBehaviourEnum.return_2xx.name
+            elif choose == str(BlockBehaviourEnum.return_5xx.value):
+                current_user.block_behaviour = BlockBehaviourEnum.return_5xx.name
+            else:
+                flash("There was an error. Please try again", "warning")
+                return redirect(url_for("dashboard.setting"))
+            Session.commit()
+            flash("Your preference has been updated", "success")
         elif request.form.get("form-name") == "export-data":
-            data = {
-                "email": current_user.email,
-                "name": current_user.name,
-                "aliases": [],
-                "apps": [],
-                "custom_domains": [],
-            }
-
-            for alias in Alias.filter_by(user_id=current_user.id).all():  # type: Alias
-                data["aliases"].append(dict(email=alias.email, enabled=alias.enabled))
-
-            for custom_domain in CustomDomain.filter_by(user_id=current_user.id).all():
-                data["custom_domains"].append(custom_domain.domain)
-
-            for app in Client.filter_by(user_id=current_user.id):  # type: Client
-                data["apps"].append(
-                    dict(name=app.name, home_url=app.home_url, published=app.published)
-                )
-
-            return Response(
-                json.dumps(data),
-                mimetype="text/json",
-                headers={"Content-Disposition": "attachment;filename=data.json"},
-            )
+            return redirect(url_for("api.export_data"))
         elif request.form.get("form-name") == "export-alias":
-            data = [["alias", "note", "enabled"]]
-            for alias in Alias.filter_by(user_id=current_user.id).all():  # type: Alias
-                data.append([alias.email, alias.note, alias.enabled])
-
-            si = StringIO()
-            cw = csv.writer(si)
-            cw.writerows(data)
-            output = make_response(si.getvalue())
-            output.headers["Content-Disposition"] = "attachment; filename=aliases.csv"
-            output.headers["Content-type"] = "text/csv"
-            return output
+            return redirect(url_for("api.export_aliases"))
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
+    apple_sub = AppleSubscription.get_by(user_id=current_user.id)
+    coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
+
     return render_template(
         "dashboard/setting.html",
         form=form,
         PlanEnum=PlanEnum,
         SenderFormatEnum=SenderFormatEnum,
+        BlockBehaviourEnum=BlockBehaviourEnum,
         promo_form=promo_form,
         change_email_form=change_email_form,
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
         manual_sub=manual_sub,
+        apple_sub=apple_sub,
+        coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
+        ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
     )
 
 
@@ -315,11 +350,11 @@ def send_reset_password_email(user):
     reset_password_code = ResetPasswordCode.create(
         user_id=user.id, code=random_string(60)
     )
-    db.session.commit()
+    Session.commit()
 
     reset_password_link = f"{URL}/auth/reset_password?code={reset_password_code.code}"
 
-    email_utils.send_reset_password_email(user.email, user.name, reset_password_link)
+    email_utils.send_reset_password_email(user.email, reset_password_link)
 
 
 def send_change_email_confirmation(user: User, email_change: EmailChange):
@@ -329,7 +364,7 @@ def send_change_email_confirmation(user: User, email_change: EmailChange):
 
     link = f"{URL}/auth/change_email?code={email_change.code}"
 
-    email_utils.send_change_email(email_change.new_email, user.email, user.name, link)
+    email_utils.send_change_email(email_change.new_email, user.email, link)
 
 
 @dashboard_bp.route("/resend_email_change", methods=["GET", "POST"])
@@ -339,7 +374,7 @@ def resend_email_change():
     if email_change:
         # extend email change expiration
         email_change.expired = arrow.now().shift(hours=12)
-        db.session.commit()
+        Session.commit()
 
         send_change_email_confirmation(current_user, email_change)
         flash("A confirmation email is on the way, please check your inbox", "success")
@@ -357,7 +392,7 @@ def cancel_email_change():
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
         EmailChange.delete(email_change.id)
-        db.session.commit()
+        Session.commit()
         flash("Your email change is cancelled", "success")
         return redirect(url_for("dashboard.setting"))
     else:

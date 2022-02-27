@@ -1,0 +1,9 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+There has been an unsuccessful attempt to login to your SimpleLogin account.
+An invalid {{type}} code was provided but the email and password were correct.
+
+This request has been blocked. However, if this was not you, please change your password immediately.
+{{URL}}/dashboard/setting#change_password
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+An email has been sent to the alias {{alias}} that would be created automatically as you own the directory {{directory}}.
+
+As the directory has the on-the-fly alias creation disabled, the alias isn't created.
+
+If you aren't aware of this alias, that probably means someone has discovered about your directory and is abusing it.
+{% endblock %}

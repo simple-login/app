@@ -140,7 +140,7 @@ then the `PUBLIC_KEY` would be `abcdefgh`.
 You can get the `PUBLIC_KEY` by running this command:
 
 ```bash
-sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n' | awk 1
+sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" $(pwd)/dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n' | awk 1
 ```
 
 To verify, the following command
@@ -161,7 +161,7 @@ Similar to DKIM, setting up SPF is highly recommended.
 Add a TXT record for `mydomain.com.` with the value:
 
 ```
-v=spf1 mx -all
+v=spf1 mx ~all
 ```
 
 What it means is only your server can send email with `@mydomain.com` domain.
@@ -207,8 +207,7 @@ If you don't already have Docker installed on your server, please follow the ste
 You can also install Docker using the [docker-install](https://github.com/docker/docker-install) script which is
 
 ```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
+curl -fsSL https://get.docker.com | sh 
 ```
 
 ### Prepare the Docker network
@@ -237,7 +236,7 @@ docker run -d \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
-    -p 5432:5432 \
+    -p 127.0.0.1:5432:5432 \
     -v $(pwd)/sl/db:/var/lib/postgresql/data \
     --restart always \
     --network="sl-network" \
@@ -399,7 +398,7 @@ sudo systemctl restart postfix
 
 ### Run SimpleLogin Docker containers
 
-To run SimpleLogin, you need a config file at `~/simplelogin.env`. Below is an example that you can use right away, make sure to
+To run SimpleLogin, you need a config file at `$(pwd)/simplelogin.env`. Below is an example that you can use right away, make sure to
 
 - replace `mydomain.com` by your domain,
 - set `FLASK_SECRET` to a secret string, 
@@ -466,7 +465,8 @@ docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
     simplelogin/app:3.4.0 python init_app.py
-now it time to setup the `webapp` and `email handler` containers
+
+Now, it's time to run the `webapp` and `job_runner` containers!
 
 for docker-compose add this to your file:
 
@@ -485,7 +485,7 @@ for docker-compose add this to your file:
 
     sl-email:
         image: simplelogin/app:3.2.2
-        command: python email_handler.py
+        command: python job_runner.py
         ports:
             - "20381:20381"
         restart: unless-stopped
@@ -509,7 +509,7 @@ docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 7777:7777 \
+    -p 127.0.0.1:7777:7777 \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0
@@ -525,10 +525,25 @@ docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -p 20381:20381 \
+    -p 127.0.0.1:20381:20381 \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0 python email_handler.py
+```
+
+And finally the `job runner`
+
+```bash
+docker run -d \
+    --name sl-job-runner \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:3.4.0 python job_runner.py
 ```
 
 ### Nginx
@@ -592,46 +607,41 @@ sudo apt-get install -y apache2
 
 this will use the default self-signed cert.
 
+[Certbot](https://certbot.eff.org/instructions) can be a good option if you want a free SSL certificate.
+
 ### Enjoy!
 
 If all the above steps are successful, open http://app.mydomain.com/ and create your first account!
 
-By default, new accounts are **not premium** so don't have unlimited alias. To make all accounts premium by default,
-use the following commands:
-
-`sudo docker exec -it sl-db psql -U myuser simplelogin`
-
-then
-
-`ALTER TABLE users ALTER COLUMN lifetime SET DEFAULT TRUE;`
-
-make sure to create your account **after** the changes.
-
-in case this doesnt work try:
-```
-update users
-set lifetime=true;
-```
-this will work on **existing** accounts too.
-
-you can set your self as the admin of the instance by using this:
-
-make sure to replace `{your_email}` with the account email:
+By default, new accounts are not premium so don't have unlimited alias. To make your account premium,
+please go to the database, table "users" and set "lifetime" column to "1" or "TRUE":
 
 ```
-update users
-set is_admin=true
-where email='{your_email}'
+docker exec -it sl-db psql -U myuser simplelogin
+UPDATE users SET lifetime = TRUE;
+exit
 ```
+
+Once you've created all your desired login accounts, add these lines to `/simplelogin.env` to disable further registrations:
+
+```
+DISABLE_REGISTRATION=1
+DISABLE_ONBOARDING=true
+```
+
+Then restart the web app to apply: `docker restart sl-app`
+
+### Donations Welcome
 
 You don't have to pay anything to SimpleLogin to use all its features.
-If you like the project, you can make a donation on our Patreon page at https://www.patreon.com/simplelogin
+If you like the project, you can make a donation on our Open Collective page at https://opencollective.com/simplelogin
 
 ### Misc
 
 The above self-hosting instructions correspond to a freshly Ubuntu server and doesn't cover all possible server configuration.
 Below are pointers to different topics:
 
+- [Troubleshooting](docs/troubleshooting.md)
 - [Enable SSL](docs/ssl.md)
 - [UFW - uncomplicated firewall](docs/ufw.md)
 - [SES - Amazon Simple Email Service](docs/ses.md)

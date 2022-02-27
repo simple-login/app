@@ -1,0 +1,11 @@
+Your subscription has been extended!
+
+Your payment with cryptocurrency has been successfully processed.
+
+Your subscription has been extended to
+{{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}
+
+Thank you a lot for your support!
+
+Best,
+SimpleLogin team.

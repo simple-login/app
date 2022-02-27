@@ -1,5 +1,6 @@
 import json
 import secrets
+
 import webauthn
 from flask import (
     request,
@@ -18,7 +19,8 @@ from wtforms import HiddenField, validators, BooleanField
 from app.auth.base import auth_bp
 from app.config import MFA_USER_ID
 from app.config import RP_ID, URL
-from app.extensions import db, limiter
+from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User, Fido, MfaBrowser
 
@@ -58,7 +60,7 @@ def fido():
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
         if browser and not browser.is_expired() and browser.user_id == user.id:
             login_user(user)
-            flash(f"Welcome back {user.name}!", "success")
+            flash(f"Welcome back!", "success")
             # Redirect user to correct page
             return redirect(next_url or url_for("dashboard.index"))
         else:
@@ -69,7 +71,7 @@ def fido():
     if fido_token_form.validate_on_submit():
         try:
             sk_assertion = json.loads(fido_token_form.sk_assertion.data)
-        except Exception as e:
+        except Exception:
             flash("Key verification failed. Error: Invalid Payload", "warning")
             return redirect(url_for("auth.login"))
 
@@ -94,25 +96,25 @@ def fido():
             )
             new_sign_count = webauthn_assertion_response.verify()
         except Exception as e:
-            LOG.warning(f"An error occurred in WebAuthn verification process: {e}")
+            LOG.w(f"An error occurred in WebAuthn verification process: {e}")
             flash("Key verification failed.", "warning")
             # Trigger rate limiter
             g.deduct_limit = True
             auto_activate = False
         else:
             user.fido_sign_count = new_sign_count
-            db.session.commit()
+            Session.commit()
             del session[MFA_USER_ID]
 
             login_user(user)
-            flash(f"Welcome back {user.name}!", "success")
+            flash(f"Welcome back!", "success")
 
             # Redirect user to correct page
             response = make_response(redirect(next_url or url_for("dashboard.index")))
 
             if fido_token_form.remember.data:
                 browser = MfaBrowser.create_new(user=user)
-                db.session.commit()
+                Session.commit()
                 response.set_cookie(
                     "mfa",
                     value=browser.token,

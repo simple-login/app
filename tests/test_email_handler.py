@@ -1,5 +1,12 @@
-from app.models import User, Alias, AuthorizedAddress
-from email_handler import get_mailbox_from_mail_from
+from email.message import EmailMessage
+
+from app.email import headers
+from app.models import User, Alias, AuthorizedAddress, IgnoredEmail
+from email_handler import (
+    get_mailbox_from_mail_from,
+    should_ignore,
+    is_automatic_out_of_office,
+)
 
 
 def test_get_mailbox_from_mail_from(flask_client):
@@ -32,3 +39,25 @@ def test_get_mailbox_from_mail_from(flask_client):
     )
     mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
     assert mb.email == "a@b.c"
+
+
+def test_should_ignore(flask_client):
+    assert should_ignore("mail_from", []) is False
+
+    assert not should_ignore("mail_from", ["rcpt_to"])
+    IgnoredEmail.create(mail_from="mail_from", rcpt_to="rcpt_to", commit=True)
+    assert should_ignore("mail_from", ["rcpt_to"])
+
+
+def test_is_automatic_out_of_office():
+    msg = EmailMessage()
+    assert not is_automatic_out_of_office(msg)
+
+    msg[headers.AUTO_SUBMITTED] = "auto-replied"
+    assert is_automatic_out_of_office(msg)
+
+    del msg[headers.AUTO_SUBMITTED]
+    assert not is_automatic_out_of_office(msg)
+
+    msg[headers.AUTO_SUBMITTED] = "auto-generated"
+    assert is_automatic_out_of_office(msg)

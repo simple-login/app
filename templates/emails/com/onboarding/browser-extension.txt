@@ -2,7 +2,7 @@ This email is sent to {{ to_email }} and is part of our onboarding series.
 Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
-Hi {{user.name}}
+Hi
 
 If you want to quickly create aliases without going to SimpleLogin website, you can do that with
 SimpleLogin Chrome (or other Chromium-based browsers like Brave or Vivaldi), Firefox and Safari extension.

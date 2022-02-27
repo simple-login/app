@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1467" height="342" viewBox="0 0 1467 342">
+  <defs>
+    <linearGradient id="linear-gradient" y1="0.5" x2="1" y2="0.5" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#e3156a"/>
+      <stop offset="1" stop-color="#91187f"/>
+    </linearGradient>
+    <clipPath id="clip-reverse-alias">
+      <rect width="1467" height="342"/>
+    </clipPath>
+  </defs>
+  <g id="reverse-alias" clip-path="url(#clip-reverse-alias)">
+    <g id="Group_1" data-name="Group 1" transform="translate(689.149 83)">
+      <text id="Simple" transform="translate(-0.149 89.896)" fill="#a0177b" font-size="18" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">Simple</tspan></text>
+      <text id="Login" transform="translate(55.851 89.896)" fill="#ae0721" font-size="18" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">Login</tspan></text>
+      <g id="Group_46" data-name="Group 46" transform="translate(0.476 0)">
+        <g id="Group_45" data-name="Group 45">
+          <g id="Group_42" data-name="Group 42" transform="translate(7.612 19.92)">
+            <path id="Path_170" data-name="Path 170" d="M-1487.468,843.9a40.908,40.908,0,0,1-17.822-10.161,40.939,40.939,0,0,1-17.911,10.186,29,29,0,0,0-.514,5.448,28.985,28.985,0,0,0,18.025,26.714A28.865,28.865,0,0,0-1487,849.112,29.073,29.073,0,0,0-1487.468,843.9Zm-19.174,21.322h-.005l-10.987-10.988,3.377-3.387,7.615,7.615,11.91-11.913,3.382,3.382Zm19.174-21.322a40.908,40.908,0,0,1-17.822-10.161,40.939,40.939,0,0,1-17.911,10.186,29,29,0,0,0-.514,5.448,28.985,28.985,0,0,0,18.025,26.714A28.865,28.865,0,0,0-1487,849.112,29.073,29.073,0,0,0-1487.468,843.9Zm-19.174,21.322h-.005l-10.987-10.988,3.377-3.387,7.615,7.615,11.91-11.913,3.382,3.382Zm1.352-31.484a40.939,40.939,0,0,1-17.911,10.186,29,29,0,0,0-.514,5.448,28.985,28.985,0,0,0,18.025,26.714A28.865,28.865,0,0,0-1487,849.112a29.073,29.073,0,0,0-.47-5.209A40.908,40.908,0,0,1-1505.289,833.742Zm-1.352,31.484h-.005l-10.987-10.988,3.377-3.387,7.615,7.615,11.91-11.913,3.382,3.382Zm19.174-21.322a40.908,40.908,0,0,1-17.822-10.161,40.939,40.939,0,0,1-17.911,10.186,29,29,0,0,0-.514,5.448,28.985,28.985,0,0,0,18.025,26.714A28.865,28.865,0,0,0-1487,849.112,29.073,29.073,0,0,0-1487.468,843.9Zm-19.174,21.322h-.005l-10.987-10.988,3.377-3.387,7.615,7.615,11.91-11.913,3.382,3.382Zm19.174-21.322a40.908,40.908,0,0,1-17.822-10.161,40.939,40.939,0,0,1-17.911,10.186,29,29,0,0,0-.514,5.448,28.985,28.985,0,0,0,18.025,26.714A28.865,28.865,0,0,0-1487,849.112,29.073,29.073,0,0,0-1487.468,843.9Zm-19.174,21.322h-.005l-10.987-10.988,3.377-3.387,7.615,7.615,11.91-11.913,3.382,3.382Z" transform="translate(1523.715 -833.742)" fill="url(#linear-gradient)"/>
+          </g>
+          <g id="Group_44" data-name="Group 44">
+            <g id="Group_43" data-name="Group 43">
+              <path id="Path_171" data-name="Path 171" d="M-1433.675,825.032a7.582,7.582,0,0,0-1.1-1.391c-.129-.13-.267-.254-.405-.373a7.323,7.323,0,0,0-4.363-1.772h-55.866a7.325,7.325,0,0,0-4.363,1.772,3.9,3.9,0,0,0-.4.373,7.19,7.19,0,0,0-1.1,1.381,7.39,7.39,0,0,0-1.094,3.881v2.912l-.926.955-.16.169a47.8,47.8,0,0,1-22.229,13.022c-.213.06-.429.114-.647.169l-.942.233-.208.945c-.073.341-.143.688-.211,1.036a39.135,39.135,0,0,0-.695,7.348,38.732,38.732,0,0,0,7.013,22.3,38.885,38.885,0,0,0,16.261,13.375c.56.247,1.124.48,1.7.7l.54.208.543-.2c.739-.262,1.466-.55,2.185-.851a39,39,0,0,0,18.573-16.574H-1440a7.358,7.358,0,0,0,4.792-1.769c.15-.124.283-.247.421-.385a7.723,7.723,0,0,0,1.1-1.388,7.37,7.37,0,0,0,1.095-3.877V828.9A7.425,7.425,0,0,0-1433.675,825.032Zm-61.68.005c.128-.01.258-.015.392-.015H-1440c.133,0,.262,0,.39.015h.581l-.094.085-27.206,24.07a1.738,1.738,0,0,1-2.3,0l-27.2-24.07-.095-.085Zm-3.481,3.867a3.792,3.792,0,0,1,.288-1.466l23.324,20.644-1.665,1.47q-.127-.861-.3-1.708c-.029-.184-.063-.361-.1-.545l-.2-.955-.947-.233c-.228-.06-.455-.114-.684-.174a47.906,47.906,0,0,1-19.713-10.7Zm-4.005,60.045a36.1,36.1,0,0,1-22.432-33.255,36.069,36.069,0,0,1,.644-6.779,50.867,50.867,0,0,0,22.288-12.682,50.876,50.876,0,0,0,22.179,12.651,35.956,35.956,0,0,1,.589,6.488A35.933,35.933,0,0,1-1502.842,888.949Zm23.05-17.831a38.776,38.776,0,0,0,3.338-15.746c0-.486-.01-.966-.03-1.451l3.925-3.476,3.932,3.476a1.737,1.737,0,0,0,2.3,0l3.931-3.476,23.259,20.574.109.1Zm43.665-3.877a3.8,3.8,0,0,1-.286,1.461l-23.309-20.62,23.313-20.63a3.827,3.827,0,0,1,.281,1.451Z" transform="translate(1528.394 -821.497)" fill="url(#linear-gradient)"/>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+    <path id="Path_215" data-name="Path 215" d="M-148.786,1816s-37.981,103.625,27.487,167.875,90.968,6.887,161.622,14.45,88.056,67.222,88.056,67.222" transform="matrix(0.719, -0.695, 0.695, 0.719, -857.284, -1278.012)" fill="none" stroke="#707070" stroke-width="3" stroke-dasharray="4 6"/>
+    <path id="Path_217" data-name="Path 217" d="M-150.9,1816s-30.663,60.87,22.191,98.61,73.441,4.046,130.483,8.488,71.091,39.486,71.091,39.486" transform="matrix(0.719, -0.695, 0.695, 0.719, -341.284, -1256.012)" fill="none" stroke="#707070" stroke-width="3" stroke-dasharray="4 6"/>
+    <text id="From:_my-email_example.com" data-name="From: my-email@example.com" transform="translate(355 264)" fill="#62657d" font-size="18" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">From: my-email@example.com</tspan></text>
+    <text id="From:_my-alias_SimpleLogin.co" data-name="From: my-alias@SimpleLogin.co" transform="translate(837 254)" fill="#62657d" font-size="18" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">From: </tspan><tspan y="0" font-size="24" font-family="HelveticaNeue-Bold, Helvetica Neue" font-weight="700">my-alias@SimpleLogin.co</tspan></text>
+    <path id="Path_216" data-name="Path 216" d="M152,2077.7l17.913,4.975v-18.042" transform="matrix(0.951, -0.309, 0.309, 0.951, -131.328, -1805.947)" fill="none" stroke="#707070" stroke-width="3" stroke-dasharray="4 3"/>
+    <path id="Path_218" data-name="Path 218" d="M152,2077.7l17.913,4.975v-18.042" transform="translate(-364.536 -1405.762) rotate(-39)" fill="none" stroke="#707070" stroke-width="3" stroke-dasharray="4 3"/>
+    <g id="Group_83" data-name="Group 83" transform="translate(-5211 -3375)">
+      <text id="my-email_example.com" data-name="my-email@example.com" transform="translate(5307 3488)" fill="#ea31a0" font-size="30" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">my-email@example.com</tspan></text>
+      <path id="Icon_material-mail-outline" data-name="Icon material-mail-outline" d="M36.4,6H6.711A3.706,3.706,0,0,0,3.019,9.711L3,31.98a3.722,3.722,0,0,0,3.711,3.711H36.4a3.722,3.722,0,0,0,3.711-3.711V9.711A3.722,3.722,0,0,0,36.4,6Zm0,25.98H6.711V13.423L21.557,22.7,36.4,13.423ZM21.557,18.99,6.711,9.711H36.4Z" transform="translate(5258.327 3458.115)" fill="#f06565"/>
+    </g>
+    <text id="To:_reverse-alias" data-name="To: reverse-alias" transform="translate(355 298)" fill="#ea31a0" font-size="18" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">To: </tspan><tspan y="0" font-size="24" font-family="HelveticaNeue-Bold, Helvetica Neue" font-weight="700">reverse-alias</tspan></text>
+    <text id="To:_my-contact_example.com" data-name="To: my-contact@example.com" transform="translate(837 284)" fill="#62657d" font-size="18" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">To: my-contact@example.com</tspan></text>
+    <path id="Icon_material-mail-outline-2" data-name="Icon material-mail-outline" d="M36.4,6H6.711A3.706,3.706,0,0,0,3.019,9.711L3,31.98a3.722,3.722,0,0,0,3.711,3.711H36.4a3.722,3.722,0,0,0,3.711-3.711V9.711A3.722,3.722,0,0,0,36.4,6Zm0,25.98H6.711V13.423L21.557,22.7,36.4,13.423ZM21.557,18.99,6.711,9.711H36.4Z" transform="translate(1088.016 80.115)" fill="#62657d"/>
+    <text id="my-contact_example.com" data-name="my-contact@example.com" transform="translate(1140 105)" fill="#62657d" font-size="24" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">my-contact@example.com</tspan></text>
+  </g>
+</svg>

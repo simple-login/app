@@ -1,0 +1,201 @@
+{% extends "sign_in_with_sl_base.html" %}
+
+{% block title %}
+  Authorize {{ client.name }} - Sign in with SimpleLogin
+{% endblock %}
+
+{% block head %}
+  <style>
+    /* Inspired from https://stackoverflow.com/a/17541916/1428034 */
+    /* HIDE RADIO */
+    [type=radio] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    /* IMAGE STYLES */
+    [type=radio] + img {
+      cursor: pointer;
+    }
+
+    /* CHECKED STYLES */
+    [type=radio]:checked + img {
+    {#outline: 2px solid #f00;#} display: block;
+      border-radius: 50%;
+      box-sizing: border-box;
+      background-color: #0ff;
+      border: 3px solid #88d748;
+    }
+  </style>
+{% endblock %}
+
+{% block single_content %}
+
+  <form class="card" method="post" data-parsley-validate style="max-width: 40rem; margin: auto; border-radius: 2%">
+    {% if not client.approved %}
+      <div class="alert alert-warning" style="border-bottom: 3px solid;">
+        <b>{{ client.name }}</b> is in Dev Mode and isn't approved (yet) by SimpleLogin.
+      </div>
+    {% endif %}
+
+    <div class="card-body p-6">
+      <!-- User has already authorized this client -->
+      {% if client_user %}
+        <div class="card-title">
+          You have already authorized <b>{{ client.name }}</b>.
+        </div>
+
+        <hr>
+
+        <div class="mb-4">
+          <b>{{ client.name }}</b> has access to the following info:
+        </div>
+        <div>
+          {% for scope in client.get_scopes() %}
+            <div>
+              {% if scope == Scope.AVATAR_URL and user_info[scope.value] %}
+                avatar: <img src="{{ user_info[scope.value] }}" class="avatar">
+              {% elif scope == Scope.EMAIL %}
+                {{ scope.value }}:
+                <a href="mailto:{{ user_info[scope.value] }}">
+                  {{ user_info[scope.value] }}
+                </a>
+              {% elif scope == Scope.NAME %}
+                {{ scope.value }}: <b>{{ user_info[scope.value] }}</b>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        {% if client.icon_id %}
+          <div class="text-center">
+            <img src="{{ client.get_icon_url() }}" class="small-client-icon">
+          </div>
+        {% endif %}
+
+        <div class="text-center" style="font-size: larger">
+          <b>{{ client.name }}</b> will receive the following info
+        </div>
+
+        <hr>
+
+        <div class="row mt-4 md-4">
+          <div class="col-md-3 text-left">
+            <label style="padding-top: .5rem">Email</label>
+          </div>
+          <div class="col-md-9">
+            <select class="form-control" name="suggested-email">
+              <option selected value="{{ suggested_email }}">{{ suggested_email }}</option>
+              <option value="{{ current_user.email }}">{{ current_user.email }} (Personal Email)</option>
+              {% for email in other_emails %}
+                <option value="{{ email }}">{{ email }}</option>
+              {% endfor %}
+            </select>
+
+            {% if current_user.can_create_new_alias() %}
+              <div class="mt-2 mb-2">OR</div>
+
+              <div class="row mb-2">
+                <div class="col-sm-6 pr-1 mb-1" style="min-width: 5em">
+                  <input name="prefix" class="form-control"
+                         type="text"
+                         maxlength="40"
+                         data-parsley-pattern="[0-9a-z-_.]{1,}"
+                         data-parsley-trigger="change"
+                         data-parsley-error-message="Only lowercase letters, dots, numbers, dashes (-) and underscores (_) are currently supported."
+                         placeholder="Alias prefix, for example newsletter.com-123_xyz"
+                         autofocus>
+                </div>
+
+
+                <div class="col-sm-6"
+                     style="padding-left: 5px">
+                  <select class="form-control" name="suffix">
+                    {% for suffix in suffixes %}
+                      <option value="{{ suffix.signed_suffix }}">
+                        {% if suffix.is_custom %}
+                          {{ suffix.suffix }} (your domain)
+                        {% else %}
+                          {{ suffix.suffix }}
+                        {% endif %}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row mt-4 md-4">
+          <div class="col-md-3 text-left">
+            <label style="padding-top: .5rem">Name</label>
+          </div>
+          <div class="col-md-9">
+            <select class="form-control" name="suggested-name">
+              <option selected value="{{ suggested_name }}">{{ suggested_name }}</option>
+              {% for name in other_names %}
+                <option value="{{ name }}">{{ name }}</option>
+              {% endfor %}
+            </select>
+
+            <div class="mt-2">OR</div>
+            <div class="mt-2">
+              <input class="form-control" name="custom-name">
+            </div>
+          </div>
+        </div>
+
+        {% if current_user.profile_picture_id %}
+          <div class="row mt-4 md-4">
+            <div class="col-md-3 text-left">
+              <label style="padding-top: 2rem">Avatar</label>
+            </div>
+            <div class="col-md-9" style="display: flex; align-items: center">
+              <label>
+                <input type="radio" name="avatar-choice" value="real" checked>
+                <img src="{{ current_user.profile_picture_url() }}" class="small-profile-picture">
+              </label>
+
+              <div style="margin: 0 1rem">OR</div>
+
+              <label>
+                <input type="radio" name="avatar-choice" value="default">
+                <img src="{{ url_for('static', filename='default-avatar.png') }}" class="small-profile-picture">
+              </label>
+            </div>
+          </div>
+        {% endif %}
+      {% endif %}
+
+      {% if client_user %}
+        <div class="form-footer">
+          <div class="btn-group" role="group" aria-label="Basic example">
+            <button type="submit" name="button" value="allow"
+                    class="btn btn-success">Allow
+            </button>
+
+            <button type="submit" name="button" value="deny"
+              class="btn btn-light">Cancel
+            </button>
+          </div>
+        </div>
+      {% else %}
+        <div class="form-footer">
+          <div class="btn-group btn-block" role="group" aria-label="Basic example">
+            <button type="submit" name="button" value="allow"
+                    class="btn btn-success">Allow
+            </button>
+
+            <button type="submit" name="button" value="deny"
+                    class="btn btn-light">Deny
+            </button>
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+  </form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Your mailbox {{ mailbox.email }} and alias {{alias.email}} cannot have the same domain.
+
+The alias domain should point to SimpleLogin servers so emails sent to it are forwarded by SimpleLogin.
+
+The mailbox domain should be your "final" email address that can receive emails from SimpleLogin
+    and cannot point to SimpleLogin.
+
+Please either
+- update the mailbox to a final email address on {{ mailbox_url }}
+- remove {{alias.email}} domain from your custom domains
+{% endblock %}

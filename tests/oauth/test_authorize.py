@@ -4,9 +4,9 @@ from urllib.parse import urlparse, parse_qs
 
 from flask import url_for
 
-from app.extensions import db
+from app.db import Session
 from app.jose_utils import verify_id_token, decode_id_token
-from app.models import Client, User
+from app.models import Client, User, ClientUser
 from app.oauth.views.authorize import (
     get_host_name_and_scheme,
     generate_access_token,
@@ -39,10 +39,10 @@ def test_construct_url():
 def test_authorize_page_non_login_user(flask_client):
     """make sure to display login page for non-authenticated user"""
     user = User.create("test@test.com", "test user")
-    db.session.commit()
+    Session.commit()
 
     client = Client.create_new("test client", user.id)
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         url_for(
@@ -56,14 +56,14 @@ def test_authorize_page_non_login_user(flask_client):
 
     html = r.get_data(as_text=True)
     assert r.status_code == 200
-    assert "In order to accept the request, you need to sign in" in html
+    assert "Sign in to accept sharing data with" in html
 
 
 def test_authorize_page_login_user_non_supported_flow(flask_client):
     """return 400 if the flow is not supported"""
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
-    db.session.commit()
+    Session.commit()
 
     # Not provide any flow
     r = flask_client.get(
@@ -102,7 +102,7 @@ def test_authorize_page_login_user(flask_client):
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
 
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         url_for(
@@ -116,7 +116,6 @@ def test_authorize_page_login_user(flask_client):
 
     html = r.get_data(as_text=True)
     assert r.status_code == 200
-    assert "You can customize the info sent to this app" in html
     assert "a@b.c (Personal Email)" in html
 
 
@@ -129,7 +128,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
 
-    db.session.commit()
+    Session.commit()
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -193,14 +192,16 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
     assert not r.json["scope"]
     assert r.json["token_type"] == "Bearer"
 
+    client_user = ClientUser.first()
+
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
         "email": "x@y.z",
         "email_verified": True,
-        "id": 1,
+        "id": client_user.id,
         "name": "AB CD",
-        "sub": "1",
+        "sub": str(client_user.id),
     }
 
 
@@ -216,7 +217,7 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
 
-    db.session.commit()
+    Session.commit()
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -281,14 +282,16 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     assert r.json["scope"] == "openid"
     assert r.json["token_type"] == "Bearer"
 
+    client_user = ClientUser.first()
+
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
         "email": "x@y.z",
         "email_verified": True,
-        "id": 1,
+        "id": client_user.id,
         "name": "AB CD",
-        "sub": "1",
+        "sub": str(client_user.id),
     }
 
     # id_token must be returned
@@ -307,7 +310,7 @@ def test_authorize_token_flow(flask_client):
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
 
-    db.session.commit()
+    Session.commit()
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -354,7 +357,7 @@ def test_authorize_id_token_flow(flask_client):
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
 
-    db.session.commit()
+    Session.commit()
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -403,7 +406,7 @@ def test_authorize_token_id_token_flow(flask_client):
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
 
-    db.session.commit()
+    Session.commit()
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -493,7 +496,7 @@ def test_authorize_code_id_token_flow(flask_client):
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
 
-    db.session.commit()
+    Session.commit()
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -602,14 +605,16 @@ def test_authorize_code_id_token_flow(flask_client):
     assert not r.json["scope"]
     assert r.json["token_type"] == "Bearer"
 
+    client_user = ClientUser.first()
+
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
         "email": "x@y.z",
         "email_verified": True,
-        "id": 1,
+        "id": client_user.id,
         "name": "AB CD",
-        "sub": "1",
+        "sub": str(client_user.id),
     }
 
     # id_token must be returned
@@ -622,9 +627,9 @@ def test_authorize_code_id_token_flow(flask_client):
 def test_authorize_page_invalid_client_id(flask_client):
     """make sure to redirect user to redirect_url?error=invalid_client_id"""
     user = login(flask_client)
-    client = Client.create_new("test client", user.id)
+    Client.create_new("test client", user.id)
 
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         url_for(
@@ -647,8 +652,9 @@ def test_authorize_page_http_not_allowed(flask_client):
     """make sure to redirect user to redirect_url?error=http_not_allowed"""
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
+    client.approved = True
 
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         url_for(
@@ -668,8 +674,9 @@ def test_authorize_page_unknown_redirect_uri(flask_client):
     """make sure to redirect user to redirect_url?error=unknown_redirect_uri"""
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
+    client.approved = True
 
-    db.session.commit()
+    Session.commit()
 
     r = flask_client.get(
         url_for(

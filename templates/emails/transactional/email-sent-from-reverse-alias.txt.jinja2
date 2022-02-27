@@ -1,0 +1,16 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+We have detected that SimpleLogin is probably used along with another forwarding email service.
+
+Please note that the following use cases aren't supported by SimpleLogin:
+
+- your mailbox is an email alias (i.e. not a "final" email address)
+- your mailbox automatic forwarding enabled
+- your alias receives automatic forwarding email from another mailbox
+
+As different email forwarding systems are usually incompatible, using several forwarding services can cause issue
+with email delivery.
+
+Please let us know if you have any question.
+{% endblock %}

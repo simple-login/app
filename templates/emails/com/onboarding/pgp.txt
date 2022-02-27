@@ -2,7 +2,7 @@ This email is sent to {{ to_email }} and is part of our onboarding series.
 Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 ----------------
 
-Hi {{user.name}}
+Hi
 
 If you happen to use Gmail, Yahoo, Outlook, etc, do you know these services can read your emails?
 

@@ -1,0 +1,63 @@
+{% extends 'default.html' %}
+{% set active_page = "setting" %}
+{% block title %}
+  Alias Batch Import
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">Alias Batch Import</h1>
+      <div class="alert alert-primary">
+        Only aliases created with <b>your verified domains</b> can be imported.<br>
+        If mailboxes are set for an alias, they will only be linked if they already exist.<br>
+        Please make sure to use the csv template file.
+      </div>
+
+      <p>
+        The import can take several minutes.
+        Please come back to this page to verify the import status. <br>
+
+        If an alias already exists, it won't be imported.
+      </p>
+
+      <a href="/static/batch_import_template.csv" download>Download CSV Template</a>
+
+      <hr>
+
+      <form method="post" enctype="multipart/form-data" class="mt-4">
+        <input required type="file"
+               name="alias-file"
+               accept=".csv"
+               class="form-control-file">
+        <label>Only <b>.csv</b> file is supported. </label> <br>
+        <button class="btn btn-success mt-2">Upload</button>
+      </form>
+
+      {% if batch_imports %}
+        <hr>
+        <h2 class="h3 mt-7">Batch imports</h2>
+        <table class="table">
+          <thead>
+          <tr>
+            <th scope="col">Uploaded</th>
+            <th scope="col">Number Alias Imported</th>
+            <th scope="col">Status</th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for batch_import in batch_imports %}
+            <tr>
+              <td>{{ batch_import.created_at | dt }}</td>
+              <td>{{ batch_import.nb_alias() }}</td>
+              <td>{% if batch_import.processed %} Processed ✅ {% else %} Pending {% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+
+
+    </div>
+  </div>
+{% endblock %}

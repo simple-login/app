@@ -1,48 +1,59 @@
 import os
 
+# use the tests/test.env config fle
+# flake8: noqa: E402
+
 os.environ["CONFIG"] = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests/test.env")
 )
+import sqlalchemy
 
+from app.db import Session, engine, connection
+from app.models import Base
 
-# use in-memory database
-# need to set before importing any other module as DB_URI is init at import time
-os.environ["DB_URI"] = "sqlite://"
+from psycopg2 import errors
+from psycopg2.errorcodes import DEPENDENT_OBJECTS_STILL_EXIST
 
 import pytest
 
-from app.extensions import db
 from server import create_app
+from init_app import add_sl_domains
+
+app = create_app()
+app.config["TESTING"] = True
+app.config["WTF_CSRF_ENABLED"] = False
+app.config["SERVER_NAME"] = "sl.test"
+
+# enable pg_trgm extension
+with engine.connect() as conn:
+    try:
+        conn.execute("DROP EXTENSION if exists pg_trgm")
+        conn.execute("CREATE EXTENSION pg_trgm")
+    except sqlalchemy.exc.InternalError as e:
+        if isinstance(e.orig, errors.lookup(DEPENDENT_OBJECTS_STILL_EXIST)):
+            print(">>> pg_trgm can't be dropped, ignore")
+        conn.execute("Rollback")
+
+Base.metadata.create_all(engine)
+
+add_sl_domains()
 
 
 @pytest.fixture
 def flask_app():
-    app = create_app()
-
-    # use in-memory database
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
-    app.config["TESTING"] = True
-    app.config["WTF_CSRF_ENABLED"] = False
-    app.config["SERVER_NAME"] = "sl.test"
-
-    with app.app_context():
-        db.create_all()
-
     yield app
 
 
 @pytest.fixture
 def flask_client():
-    app = create_app()
-
-    # use in-memory database
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
-    app.config["TESTING"] = True
-    app.config["WTF_CSRF_ENABLED"] = False
-    app.config["SERVER_NAME"] = "sl.test"
-
-    client = app.test_client()
+    transaction = connection.begin()
 
     with app.app_context():
-        db.create_all()
-        yield client
+        try:
+            client = app.test_client()
+            yield client
+        finally:
+            # roll back all commits made during a test
+            transaction.rollback()
+            Session.rollback()
+            Session.close()

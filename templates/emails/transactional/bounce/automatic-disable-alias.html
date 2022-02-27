@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    <h1>
+      {{ alias.email }} is disabled
+    </h1>
+  {% endcall %}
+
+  {% call text() %}
+    There are several emails sent to your alias {{alias.email}} that have been bounced
+    by your mailbox {{mailbox_email}}.
+  {% endcall %}
+
+  {{ render_button("View the refused email", refused_email_url) }}
+
+  {% call text() %}
+    As security measure, we have disabled the alias.
+  {% endcall %}
+
+  {{ render_text('Please let us know if you have any question.') }}
+
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ raw_url(refused_email_url) }}
+{% endblock %}

@@ -2,7 +2,7 @@ from flask import request, flash, render_template, redirect, url_for
 from flask_login import login_user
 
 from app.auth.base import auth_bp
-from app.extensions import db
+from app.db import Session
 from app.models import EmailChange
 
 
@@ -18,14 +18,14 @@ def change_email():
     if email_change.is_expired():
         # delete the expired email
         EmailChange.delete(email_change.id)
-        db.session.commit()
+        Session.commit()
         return render_template("auth/change_email.html")
 
     user = email_change.user
     user.email = email_change.new_email
 
     EmailChange.delete(email_change.id)
-    db.session.commit()
+    Session.commit()
 
     flash("Your new email has been updated", "success")
 

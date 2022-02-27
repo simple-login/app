@@ -1,0 +1,64 @@
+{% extends 'default.html' %}
+
+{% set active_page = "developer" %}
+
+{% block title %}
+  Developer - App {{ client.name }}
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-lg-3 order-lg-1 mb-4">
+
+
+      <div class="list-group list-group-transparent mb-0">
+        <a href="{{ url_for('developer.client_detail', client_id=client.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'basic_info' }}">
+          <span class="icon mr-3"><i class="fe fe-flag"></i></span>Info
+        </a>
+
+        <a href="{{ url_for('developer.client_detail_oauth_setting', client_id=client.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'oauth_setting' }}">
+          <span class="icon mr-3"><i class="fe fe-settings"></i></span>OAuth Settings
+        </a>
+
+        <a href="{{ url_for('developer.client_detail_oauth_endpoint', client_id=client.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'oauth_endpoint' }}">
+          <span class="icon mr-3"><i class="fe fe-shield"></i></span>OAuth Endpoints
+        </a>
+
+        {% if current_user.referrals|count > 0 %}
+        <a href="{{ url_for('developer.client_detail_referral', client_id=client.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'referral' }}">
+          <span class="icon mr-3"><i class="fe fe-share"></i></span>Referral
+        </a>
+        {% endif %}
+
+        <a href="{{ url_for('developer.client_detail_advanced', client_id=client.id) }}"
+           class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'advanced' }}">
+          <span class="icon mr-3"><i class="fe fe-alert-octagon"></i></span>Danger
+        </a>
+
+      </div>
+
+      <a href="https://docs.simplelogin.io" target="_blank"
+         class="btn btn-block btn-secondary mt-4">
+        Documentation <i class="fe fe-external-link"></i>
+      </a>
+
+    </div>
+    <div class="col-lg-9">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-wrap p-lg-6">
+            {% block client_details_content %}
+            {% endblock %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+

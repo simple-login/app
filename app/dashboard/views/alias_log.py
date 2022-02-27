@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.db import Session
 from app.models import Alias, EmailLog, Contact
 
 
@@ -17,6 +17,7 @@ class AliasLog:
     blocked: bool
     bounced: bool
     email_log: EmailLog
+    contact: Contact
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -42,18 +43,18 @@ def alias_log(alias_id, page_id):
 
     logs = get_alias_log(alias, page_id)
     base = (
-        db.session.query(Contact, EmailLog)
+        Session.query(Contact, EmailLog)
         .filter(Contact.id == EmailLog.contact_id)
         .filter(Contact.alias_id == alias.id)
     )
     total = base.count()
     email_forwarded = (
-        base.filter(EmailLog.is_reply == False)
-        .filter(EmailLog.blocked == False)
+        base.filter(EmailLog.is_reply.is_(False))
+        .filter(EmailLog.blocked.is_(False))
         .count()
     )
-    email_replied = base.filter(EmailLog.is_reply == True).count()
-    email_blocked = base.filter(EmailLog.blocked == True).count()
+    email_replied = base.filter(EmailLog.is_reply.is_(True)).count()
+    email_blocked = base.filter(EmailLog.blocked.is_(True)).count()
     last_page = (
         len(logs) < PAGE_LIMIT
     )  # lightweight pagination without counting all objects
@@ -65,7 +66,7 @@ def get_alias_log(alias: Alias, page_id=0) -> [AliasLog]:
     logs: [AliasLog] = []
 
     q = (
-        db.session.query(Contact, EmailLog)
+        Session.query(Contact, EmailLog)
         .filter(Contact.id == EmailLog.contact_id)
         .filter(Contact.alias_id == alias.id)
         .order_by(EmailLog.id.desc())
@@ -83,6 +84,7 @@ def get_alias_log(alias: Alias, page_id=0) -> [AliasLog]:
             blocked=email_log.blocked,
             bounced=email_log.bounced,
             email_log=email_log,
+            contact=contact,
         )
         logs.append(al)
     logs = sorted(logs, key=lambda l: l.when, reverse=True)

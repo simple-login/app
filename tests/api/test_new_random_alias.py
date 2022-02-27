@@ -1,29 +1,25 @@
 import uuid
 
-from flask import url_for
+from flask import url_for, g
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
-from app.extensions import db
-from app.models import User, ApiKey, Alias
+from app.db import Session
+from app.models import Alias, CustomDomain, AliasUsedOn
+from tests.utils import login
 
 
-def test_success(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+def test_with_hostname(flask_client):
+    login(flask_client)
 
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 201
-    assert r.json["alias"].endswith(EMAIL_DOMAIN)
+    assert r.json["alias"].endswith("d1.test")
+
+    # make sure alias starts with the suggested prefix
+    assert r.json["alias"].startswith("test")
 
     # assert returned field
     res = r.json
@@ -37,21 +33,53 @@ def test_success(flask_client):
     assert "enabled" in res
     assert "note" in res
 
+    alias_used_on: AliasUsedOn = AliasUsedOn.first()
+    assert alias_used_on.hostname == "www.test.com"
+    assert alias_used_on.alias_id == res["id"]
+
+
+def test_with_custom_domain(flask_client):
+    user = login(flask_client)
+    CustomDomain.create(
+        user_id=user.id, domain="ab.cd", ownership_verified=True, commit=True
+    )
+
+    r = flask_client.post(
+        url_for("api.new_random_alias", hostname="www.test.com"),
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"] == "test@ab.cd"
+    assert Alias.count() == 2
+
+    # call the endpoint again, should return the same alias
+    r = flask_client.post(
+        url_for("api.new_random_alias", hostname="www.test.com"),
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"] == "test@ab.cd"
+    # no new alias is created
+    assert Alias.count() == 2
+
+
+def test_without_hostname(flask_client):
+    login(flask_client)
+
+    r = flask_client.post(
+        url_for("api.new_random_alias"),
+    )
+
+    assert r.status_code == 201
+    assert r.json["alias"].endswith(EMAIL_DOMAIN)
+
 
 def test_custom_mode(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    login(flask_client)
 
     # without note
     r = flask_client.post(
-        url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
-        headers={"Authentication": api_key.code},
+        url_for("api.new_random_alias", mode="uuid"),
     )
 
     assert r.status_code == 201
@@ -62,8 +90,7 @@ def test_custom_mode(flask_client):
 
     # with note
     r = flask_client.post(
-        url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
-        headers={"Authentication": api_key.code},
+        url_for("api.new_random_alias", mode="uuid"),
         json={"note": "test note"},
     )
 
@@ -74,15 +101,9 @@ def test_custom_mode(flask_client):
 
 
 def test_out_of_quota(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
+    user = login(flask_client)
     user.trial_end = None
-    db.session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    db.session.commit()
+    Session.commit()
 
     # create MAX_NB_EMAIL_FREE_PLAN random alias to run out of quota
     for _ in range(MAX_NB_EMAIL_FREE_PLAN):
@@ -90,14 +111,30 @@ def test_out_of_quota(flask_client):
 
     r = flask_client.post(
         url_for("api.new_random_alias", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 400
     assert (
-        r.json["error"]
-        == "You have reached the limitation of a free account with the maximum of 3 aliases, please upgrade your plan to create more aliases"
+        r.json["error"] == "You have reached the limitation of a free account with "
+        "the maximum of 3 aliases, please upgrade your plan to create more aliases"
     )
+
+
+def test_too_many_requests(flask_client):
+    login(flask_client)
+
+    # can't create more than 5 aliases in 1 minute
+    for _ in range(7):
+        r = flask_client.post(
+            url_for("api.new_random_alias", hostname="www.test.com", mode="uuid"),
+        )
+        # to make flask-limiter work with unit test
+        # https://github.com/alisaifee/flask-limiter/issues/147#issuecomment-642683820
+        g._rate_limiting_complete = False
+    else:
+        # last request
+        assert r.status_code == 429
+        assert r.json == {"error": "Rate limit exceeded"}
 
 
 def is_valid_uuid(val):

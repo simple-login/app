@@ -1,0 +1,68 @@
+{% extends 'developer/client_details/base.html' %}
+
+{% set client_details_page = "oauth_endpoint" %}
+
+{% block client_details_content %}
+  <h1 class="h2">OAuth2 endpoints</h1>
+
+  <div class="form-group">
+    <label class="form-label">OpenID Connect Discovery Document</label>
+
+    <div class="input-group mt-2">
+      <input type="text" disabled value="{{ URL + "/.well-known/openid-configuration" }}" class="form-control">
+      <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ URL + "/.well-known/openid-configuration" }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Authorization endpoint</label>
+
+    <div class="input-group mt-2">
+      <input type="text" disabled value="{{ URL + "/oauth2/authorize" }}" class="form-control">
+      <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ URL + "/oauth2/authorize" }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Token endpoint</label>
+
+    <div class="input-group mt-2">
+      <input type="text" disabled value="{{ URL + "/oauth2/token" }}" class="form-control">
+      <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ URL + "/oauth2/token" }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">UserInfo endpoint</label>
+
+    <div class="input-group mt-2">
+      <input type="text" disabled value="{{ URL + "/oauth2/userinfo" }}" class="form-control">
+      <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ URL + "/oauth2/userinfo" }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+    </div>
+  </div>
+
+{% endblock %}

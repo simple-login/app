@@ -1,0 +1,92 @@
+{% extends 'default.html' %}
+
+{% set active_page = "developer" %}
+
+{% block title %}
+  Sign in with SimpleLogin
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+      <h1 class="h3">Sign in with SimpleLogin (SIWSL)
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
+
+      <div class="alert alert-primary collapse {% if not clients %} show {% endif %}" id="howtouse" role="alert">
+        If you want to integrate SIWSL into your website,
+        this page is for you.
+        <br><br>
+
+        If you are using a CMS or any system that supports a OpenID Connect plugin, you can just point
+        it to SimpleLogin OpenID Configuration endpoint 👇
+
+        <div class="input-group mt-2">
+          <input type="text" disabled value="{{ URL + "/.well-known/openid-configuration" }}" class="form-control">
+          <span class="input-group-append">
+            <button
+                data-clipboard-text="{{ URL + "/.well-known/openid-configuration" }}"
+                class="clipboard btn btn-primary" type="button">
+              <i class="fe fe-clipboard"></i>
+            </button>
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="btn-group" role="group" aria-label="Basic example">
+        <a href="{{ url_for('developer.new_client') }}" class="btn btn-primary">
+          New website
+        </a>
+        <a href="https://docs.simplelogin.io" target="_blank" class="ml-2 btn btn-secondary">
+          Docs <i class="fe fe-external-link"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row row-cards row-deck mt-4">
+    {% for client in clients %}
+      <div class="col-12 col-lg-6">
+        <div class="card" style="">
+          <div class="card-body">
+            <h5 class="card-title">
+              <a href="{{ url_for('developer.client_detail', client_id=client.id) }}">{{ client.name }}</a>
+              {% if client.approved %}
+                <span class="cursor" data-toggle="tooltip" data-original-title="Approved">✅</span>
+              {% else %}
+                <span class="cursor" data-toggle="tooltip"
+                      data-original-title="In Dev mode. Please contact us to publish your app.">
+                    <a href="{{ url_for('developer.client_detail', client_id=client.id) }}"
+                       class="text-decoration-none">🚫
+                    </a>
+                  </span>
+              {% endif %}
+            </h5>
+
+            <h6 class="card-subtitle mb-4 text-muted">
+              Created {{ client.created_at | dt }} <br>
+              <span class="font-weight-bold">{{ client.nb_user() }}</span> users
+              <br>
+            </h6>
+
+            <a href="{{ url_for('developer.client_detail', client_id=client.id) }}" class="mt-3">
+              Details ➡
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}
+
+
+

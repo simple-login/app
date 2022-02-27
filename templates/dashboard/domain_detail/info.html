@@ -1,0 +1,204 @@
+{% extends 'dashboard/domain_detail/base.html' %}
+
+{% set domain_detail_page = "info" %}
+
+{% block title %}
+  {{ custom_domain.domain }} Info
+{% endblock %}
+
+{% block domain_detail_content %}
+  <h1 class="h2 mb-1"> {{ custom_domain.domain }}  </h1>
+
+  <div class="small-text">Created {{ custom_domain.created_at | dt }}. {{ nb_alias }} aliases</div>
+
+  <hr>
+  <h3 class="mb-1">Auto create/on the fly alias </h3>
+
+
+  <div>
+    <form method="post">
+      <input type="hidden" name="form-name" value="switch-catch-all">
+
+      <label class="custom-switch cursor mt-2 pl-0"
+             data-toggle="tooltip"
+          {% if custom_domain.catch_all %}
+             title="Disable catch-all"
+          {% else %}
+             title="Enable catch-all"
+          {% endif %}
+      >
+        <input type="checkbox" class="custom-switch-input"
+            {{ "checked" if custom_domain.catch_all else "" }}>
+
+        <span class="custom-switch-indicator"></span>
+        <spam class="ml-2">
+          Catch All
+        </spam>
+
+      </label>
+    </form>
+    <div class="">
+      Simply use <b>anything@{{ custom_domain.domain }}</b>
+      next time you need an alias: it'll be <b>automatically</b>
+      created the first time it receives an email.
+      To have more fine-grained control, you can also define
+      <a href="{{ url_for('dashboard.domain_detail_auto_create', custom_domain_id=custom_domain.id) }}">auto create
+        rules
+        <i class="fe fe-chevrons-right"></i></a>.
+    </div>
+
+
+  </div>
+
+  <div class="{% if not custom_domain.catch_all %} disabled-content {% endif %}">
+    <div>Auto-created aliases are automatically owned by the following mailboxes
+      <i class="fe fe-corner-right-down"></i></a>.
+    </div>
+    {% set domain_mailboxes=custom_domain.mailboxes %}
+    <form method="post" class="mt-2">
+      <input type="hidden" name="form-name" value="update">
+      <input type="hidden" name="domain-id" value="{{ custom_domain.id }}">
+
+      <div class="d-flex">
+        <div class="flex-grow-1 mr-2">
+          <select data-width="100%" required
+                  class="mailbox-select" multiple name="mailbox_ids">
+            {% for mailbox in mailboxes %}
+              <option value="{{ mailbox.id }}" {% if mailbox in domain_mailboxes %}
+                      selected {% endif %}>
+                {{ mailbox.email }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <button class="btn btn-outline-primary btn-sm">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+
+  <hr>
+  <h3 class="mb-1">Default Display Name</h3>
+  <div class="">
+    Default display name for aliases created with <b>{{ custom_domain.domain }}</b>
+    unless overwritten by the alias display name.
+  </div>
+
+  <div>
+    <form method="post" class="form-inline">
+      <input type="hidden" name="form-name" value="set-name">
+      <div class="form-group">
+        <input class="form-control mr-2"
+               value="{{ custom_domain.name or "" }}"
+               name="alias-name"
+               placeholder="Alias Display Name">
+      </div>
+      <button class="btn btn-outline-primary" name="action" value="save">Save</button>
+      {% if custom_domain.name %}
+        <button class="btn btn-outline-danger float-right ml-2" name="action" value="remove">Remove</button>
+      {% endif %}
+    </form>
+  </div>
+
+  <hr>
+  <h3 class="mb-1">Random Prefix Generation</h3>
+  <div class="">
+    Add a random prefix for this domain when creating a new alias.
+  </div>
+
+  <div>
+    <form method="post">
+      <input type="hidden" name="form-name" value="switch-random-prefix-generation">
+      <label class="custom-switch cursor mt-2 pl-0"
+             data-toggle="tooltip"
+          {% if custom_domain.random_prefix_generation %}
+             title="Disable random prefix generation"
+          {% else %}
+             title="Enable random prefix generation"
+          {% endif %}
+      >
+        <input type="checkbox" class="custom-switch-input"
+            {{ "checked" if custom_domain.random_prefix_generation else "" }}>
+
+        <span class="custom-switch-indicator"></span>
+      </label>
+    </form>
+  </div>
+
+  <hr>
+  <h3 class="mb-1">
+    {% if custom_domain.is_sl_subdomain %}
+      Delete Subdomain
+    {% else %}
+      Delete Domain
+    {% endif %}
+  </h3>
+
+  <div class="mb-3">
+    {% if custom_domain.is_sl_subdomain %}
+      <div class="alert alert-danger">
+        This operation is <b>irreversible</b>.
+        All aliases associated with this subdomain will be deleted.
+      </div>
+      <div class="alert alert-warning">
+        Because a deleted subdomain can't be recycled, i.e. reused by someone else,
+        deleting a subdomain won't restore the subdomain quota.
+        After deletion, your subdomain quota will still be {{ current_user.subdomain_quota }}.
+        We recommend to disable the <b>catch-all</b> option instead of deleting this subdomain.
+      </div>
+    {% else %}
+      <div class="alert alert-danger">
+        This operation is <b>irreversible</b>.
+        All aliases associated with this domain will be deleted.
+      </div>
+    {% endif %}
+  </div>
+
+
+
+  <form method="post">
+    <input type="hidden" name="form-name" value="delete">
+    <span
+        class="delete-custom-domain btn btn-danger">
+      Delete {{ custom_domain.domain }}
+    </span>
+  </form>
+
+{% endblock %}
+
+{% block script %}
+  <script>
+    $('.mailbox-select').multipleSelect();
+
+    $(".custom-switch-input").change(function (e) {
+      $(this).closest("form").submit();
+    });
+
+    $(".delete-custom-domain").on("click", function (e) {
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "All aliases associated with <b>{{ custom_domain.domain }}</b> will be also deleted. <br>" +
+          "This operation is not reversible, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+    });
+  </script>
+{% endblock %}
+

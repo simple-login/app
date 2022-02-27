@@ -1,0 +1,57 @@
+{% extends "single.html" %}
+
+{% block title %}
+  Register
+{% endblock %}
+
+{% block single_content %}
+  <form class="card" style="border-radius: 2%" method="post">
+    {{ form.csrf_token }}
+    <div class="card-body p-6">
+      <h1 class="card-title">Create new account</h1>
+
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        {{ form.email(class="form-control", type="email") }}
+        <div class="small-text alert alert-info" style="margin-top: 1px">
+          Emails sent to your alias will be forwarded to this email address.
+          It can't be a disposable or forwarding email address.
+        </div>
+        {{ render_field_errors(form.email) }}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        {{ form.password(class="form-control", type="password") }}
+        {{ render_field_errors(form.password) }}
+      </div>
+
+      <!-- TODO: add terms
+      <div class="form-group">
+        <label class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input"/>
+          <span class="custom-control-label">Agree the <a href="terms.html">terms and policy</a></span>
+        </label>
+      </div>
+      -->
+
+      {% if HCAPTCHA_SITEKEY %}
+        <div class="h-captcha" data-sitekey="{{ HCAPTCHA_SITEKEY }}"></div>
+        <script src="https://hcaptcha.com/1/api.js" async defer></script>
+      {% endif %}
+
+      <small class="text-center mt-3">
+        By clicking Create Account, you agree to abide by
+        <a href="https://simplelogin.io/terms">SimpleLogin's Terms and Conditions.</a>
+      </small>
+
+      <div class="mt-2">
+        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+      </div>
+    </div>
+  </form>
+  <div class="text-center text-muted mb-6">
+    Already have account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+  </div>
+
+{% endblock %}

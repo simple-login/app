@@ -1,0 +1,102 @@
+Received: by mx1.sl.co (Postfix)
+	id F09806333D; Thu, 14 Oct 2021 09:14:44 +0000 (UTC)
+Date: Thu, 14 Oct 2021 09:14:44 +0000 (UTC)
+From: mailer-daemon@bounce.sl.co (Mail Delivery System)
+Subject: Undelivered Mail Returned to Sender
+To: bounce+5352+@sl.co
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="8A32A6333B.1634202884/mx1.sl.co"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20211014091444.F09806333D@mx1.sl.co>
+
+This is a MIME-encapsulated message.
+
+--8A32A6333B.1634202884/mx1.sl.co
+Content-Description: Notification
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+This is the mail system at host mx1.sl.co.
+
+I'm sorry to have to inform you that your message could not
+be delivered to one or more recipients. It's attached below.
+
+For further assistance, please send mail to <postmaster@sl.co>
+
+If you do so, please include this problem report. You can
+delete your own text from the attached returned message.
+
+                   The mail system
+
+<not-existing@gmail.com>: host
+    gmail-smtp-in.l.google.com[142.251.5.27] said: 550-5.1.1 The email account
+    that you tried to reach does not exist. Please try 550-5.1.1
+    double-checking the recipient's email address for typos or 550-5.1.1
+    unnecessary spaces. Learn more at 550 5.1.1
+    https://support.google.com/mail/?p=NoSuchUser z127si6173191wmc.132 - gsmtp
+    (in reply to RCPT TO command)
+
+--8A32A6333B.1634202884/mx1.sl.co
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; mx1.sl.co
+X-Postfix-Queue-ID: 8A32A6333B
+X-Postfix-Sender: rfc822; bounce+5352+@sl.co
+Arrival-Date: Thu, 14 Oct 2021 09:14:44 +0000 (UTC)
+
+Final-Recipient: rfc822; not-existing@gmail.com
+Original-Recipient: rfc822;not-existing@gmail.com
+Action: failed
+Status: 5.1.1
+Remote-MTA: dns; gmail-smtp-in.l.google.com
+Diagnostic-Code: smtp;
+ 550-5.1.1 The email account that you tried to reach does
+    not exist. Please try 550-5.1.1 double-checking the recipient's email
+    address for typos or 550-5.1.1 unnecessary spaces. Learn more at 550 5.1.1
+    https://support.google.com/mail/?p=NoSuchUser z127si6173191wmc.132 - gsmtp
+
+--8A32A6333B.1634202884/mx1.sl.co
+Content-Description: Undelivered Message
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+
+Return-Path: <bounce+5352+@sl.co>
+X-SimpleLogin-Client-IP: 90.127.20.84
+Received: from 2a01cb00008c9c001a3eeffffec79eea.ipv6.abo.wanadoo.fr
+ (lfbn-idf1-1-2034-84.w90-127.abo.wanadoo.fr [90.127.20.84])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits))
+	(No client certificate requested)
+	by mx1.sl.co (Postfix) with ESMTPS id 8A32A6333B
+	for <not-existing@gmail.com>;
+ Thu, 14 Oct 2021 09:14:44 +0000 (UTC)
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Mac OS X Mail 14.0 \(3654.120.0.1.13\))
+Subject: bounce 5
+Message-Id: <F2EFE3CE-3967-49EC-8639-9A5900230F2E@gmail.com>
+X-SimpleLogin-Type: Forward
+X-SimpleLogin-EmailLog-ID: 5352
+X-SimpleLogin-Envelope-From: sender@gmail.com
+X-SimpleLogin-Envelope-To: heyheyalo@sl.co
+date: Thu, 14 Oct 2021 09:14:44 -0000
+From: "First Last - sender at gmail.com"
+ <ra+sender.at.gmail.com+bsppvaap@sl.co>
+To: heyheyalo@sl.co
+List-Unsubscribe: <mailto:unsubsribe@sl.co?subject=26561=>
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=sl.co;
+  i=@sl.co; q=dns/txt; s=dkim; t=1634202884;
+ h=message-id : date :  subject : from : to;
+ bh=ktjzaMYZHA8J5baAHC3QyOmFwAAv/MvNtIz1dvmI3V0=;
+  b=mzf2ZDIVshKSSjw4AQnrOttgRRjzYzZ+49PaPRobt0xFH0E02a2C9Rl/qLEshLHA7amba
+  8iNTzdTkp9UJquzjk3NwM9GCakmSzd9DmFsalkgeErDAKWNo2O2c7aYDHZlK/sp2vgsIcSO
+  1w6sp8sVIRr2JrnFPxFOfsOSkSabeOA=
+
+Alo quoi
+
+
+
+--8A32A6333B.1634202884/mx1.sl.co--

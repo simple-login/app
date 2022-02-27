@@ -1,0 +1,14 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Hi
+
+Your email sent to {{ destination }} from {{ alias }} ({{ subject }}) contains an address which isn't a reverse-alias in the To: or Cc: field.
+
+This will reveal your real mailbox address.
+
+Please create a reverse alias for each recipient to make sure your mailbox stays hidden.
+
+More info about reverse-alias can be found on https://simplelogin.io/docs/getting-started/reverse-alias/
+and how to send an email from your alias on https://simplelogin.io/docs/getting-started/send-email/
+{% endblock %}

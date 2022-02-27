@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    This is SimpleLogin team.
+  {% endcall %}
+
+  {% call text() %}
+    Yahoo has informed us about an email sent to <b>{{ alias.email }}</b> that might have been marked as spam.
+  {% endcall %}
+
+  {% call text() %}
+    Please note that explicitly marking a SimpleLogin's forwarded email as Spam affects SimpleLogin email delivery,
+    has a negative effect for all users and
+    is a violation of our terms and condition.
+  {% endcall %}
+
+  {% call text() %}
+    If that’s the case, please disable the alias instead if you don't want to receive the emails sent to this alias.
+  {% endcall %}
+
+  {% call text() %}
+    If SimpleLogin isn’t useful for you, please know that you can simply delete your account on the Settings page.
+  {% endcall %}
+
+  {% call text() %}
+    Looking to hear back from you.
+  {% endcall %}
+
+  {% call text() %}
+    Best, <br/>
+    SimpleLogin Team.
+  {% endcall %}
+
+{% endblock %}
+
+

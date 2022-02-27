@@ -1,21 +1,54 @@
 import email
+import os
 from email.message import EmailMessage
 
-from app.config import MAX_ALERT_24H
+import arrow
+import pytest
+
+from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, BOUNCE_EMAIL, ROOT_DIR
+from app.db import Session
 from app.email_utils import (
     get_email_domain_part,
-    email_belongs_to_alias_domains,
-    email_domain_can_be_used_as_mailbox,
+    can_create_directory_for_address,
+    email_can_be_used_as_mailbox,
     delete_header,
     add_or_replace_header,
-    parseaddr_unicode,
     send_email_with_rate_control,
     copy,
     get_spam_from_header,
     get_header_from_bounce,
+    is_valid_email,
+    add_header,
+    to_bytes,
+    generate_reply_email,
+    normalize_reply_email,
+    get_encoding,
+    encode_text,
+    EmailEncoding,
+    replace,
+    should_disable,
+    decode_text,
+    parse_id_from_bounce,
+    get_queue_id,
+    should_ignore_bounce,
+    get_header_unicode,
+    parse_full_address,
+    get_orig_message_from_bounce,
+    get_mailbox_bounce_info,
+    is_invalid_mailbox_domain,
 )
-from app.extensions import db
-from app.models import User, CustomDomain
+from app.models import (
+    User,
+    CustomDomain,
+    Alias,
+    Contact,
+    EmailLog,
+    IgnoreBounceSender,
+    InvalidMailboxDomain,
+)
+
+# flake8: noqa: E101, W191
+from tests.utils import login
 
 
 def test_get_email_domain_part():
@@ -24,37 +57,41 @@ def test_get_email_domain_part():
 
 def test_email_belongs_to_alias_domains():
     # default alias domain
-    assert email_belongs_to_alias_domains("ab@sl.local")
-    assert not email_belongs_to_alias_domains("ab@not-exist.local")
+    assert can_create_directory_for_address("ab@sl.local")
+    assert not can_create_directory_for_address("ab@not-exist.local")
 
-    assert email_belongs_to_alias_domains("hey@d1.test")
-    assert not email_belongs_to_alias_domains("hey@d3.test")
+    assert can_create_directory_for_address("hey@d1.test")
+    assert not can_create_directory_for_address("hey@d3.test")
 
 
+@pytest.mark.skipif(
+    "GITHUB_ACTIONS_TEST" in os.environ,
+    reason="this test requires DNS lookup that does not work on Github CI",
+)
 def test_can_be_used_as_personal_email(flask_client):
     # default alias domain
-    assert not email_domain_can_be_used_as_mailbox("ab@sl.local")
-    assert not email_domain_can_be_used_as_mailbox("hey@d1.test")
+    assert not email_can_be_used_as_mailbox("ab@sl.local")
+    assert not email_can_be_used_as_mailbox("hey@d1.test")
 
-    assert email_domain_can_be_used_as_mailbox("hey@ab.cd")
     # custom domain
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
-    db.session.commit()
-    assert not email_domain_can_be_used_as_mailbox("hey@ab.cd")
+    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    assert not email_can_be_used_as_mailbox("hey@ab.cd")
 
     # disposable domain
-    assert not email_domain_can_be_used_as_mailbox("abcd@10minutesmail.fr")
-    assert not email_domain_can_be_used_as_mailbox("abcd@temp-mail.com")
+    assert not email_can_be_used_as_mailbox("abcd@10minutesmail.fr")
+    assert not email_can_be_used_as_mailbox("abcd@temp-mail.com")
     # subdomain will not work
-    assert not email_domain_can_be_used_as_mailbox("abcd@sub.temp-mail.com")
+    assert not email_can_be_used_as_mailbox("abcd@sub.temp-mail.com")
     # valid domains should not be affected
-    assert email_domain_can_be_used_as_mailbox("abcd@protonmail.com")
-    assert email_domain_can_be_used_as_mailbox("abcd@gmail.com")
-    assert email_domain_can_be_used_as_mailbox("abcd@example.com")
+    assert email_can_be_used_as_mailbox("abcd@protonmail.com")
+    assert email_can_be_used_as_mailbox("abcd@gmail.com")
 
 
 def test_delete_header():
@@ -80,43 +117,46 @@ def test_add_or_replace_header():
     assert msg._headers == [("H", "new")]
 
 
-def test_parseaddr_unicode():
+def test_parse_full_address():
     # only email
-    assert parseaddr_unicode("abcd@gmail.com") == (
+    assert parse_full_address("abcd@gmail.com") == (
         "",
         "abcd@gmail.com",
     )
 
     # ascii address
-    assert parseaddr_unicode("First Last <abcd@gmail.com>") == (
+    assert parse_full_address("First Last <abcd@gmail.com>") == (
         "First Last",
         "abcd@gmail.com",
     )
 
     # Handle quote
-    assert parseaddr_unicode('"First Last" <abcd@gmail.com>') == (
+    assert parse_full_address('"First Last" <abcd@gmail.com>') == (
         "First Last",
         "abcd@gmail.com",
     )
 
     # UTF-8 charset
-    assert parseaddr_unicode("=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>") == (
+    assert parse_full_address("=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@gmail.com>") == (
         "Nhơn Nguyễn",
         "abcd@gmail.com",
     )
 
     # iso-8859-1 charset
-    assert parseaddr_unicode("=?iso-8859-1?q?p=F6stal?= <abcd@gmail.com>") == (
+    assert parse_full_address("=?iso-8859-1?q?p=F6stal?= <abcd@gmail.com>") == (
         "pöstal",
         "abcd@gmail.com",
     )
+
+    with pytest.raises(ValueError):
+        parse_full_address("https://ab.cd")
 
 
 def test_send_email_with_rate_control(flask_client):
     user = User.create(
         email="a@b.c", password="password", name="Test User", activated=True
     )
-    db.session.commit()
+    Session.commit()
 
     for _ in range(MAX_ALERT_24H):
         assert send_email_with_rate_control(
@@ -132,13 +172,16 @@ def test_copy():
     From: abcd@gmail.com
     To: hey@example.org
     Subject: subject
-    
-    Body    
+
+    Body
     """
     msg = email.message_from_string(email_str)
     msg2 = copy(msg)
+    assert to_bytes(msg) == to_bytes(msg2)
 
-    assert msg.as_bytes() == msg2.as_bytes()
+    msg = email.message_from_string("👌")
+    msg2 = copy(msg)
+    assert to_bytes(msg) == to_bytes(msg2)
 
 
 def test_get_spam_from_header():
@@ -286,3 +329,460 @@ DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=simplelogin.co;
     assert (
         get_header_from_bounce(email.message_from_string(msg_str), "Not-exist") is None
     )
+
+
+def test_is_valid_email():
+    assert is_valid_email("abcd@gmail.com")
+    assert not is_valid_email("")
+    assert not is_valid_email("  ")
+    assert not is_valid_email("with space@gmail.com")
+    assert not is_valid_email("strange char !ç@gmail.com")
+    assert not is_valid_email("emoji👌@gmail.com")
+
+
+def test_add_header_plain_text():
+    msg = email.message_from_string(
+        """Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Test-Header: Test-Value
+
+coucou
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header")
+    assert "text header" in new_msg.as_string()
+    assert "html header" not in new_msg.as_string()
+
+
+def test_add_header_html():
+    msg = email.message_from_string(
+        """Content-Type: text/html; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Test-Header: Test-Value
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+</head>
+<body style="word-wrap: break-word;" class="">
+<b class="">bold</b>
+</body>
+</html>
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header")
+    assert "Test-Header: Test-Value" in new_msg.as_string()
+    assert "<table" in new_msg.as_string()
+    assert "</table>" in new_msg.as_string()
+    assert "html header" in new_msg.as_string()
+    assert "text header" not in new_msg.as_string()
+
+
+def test_add_header_multipart_alternative():
+    msg = email.message_from_string(
+        """Content-Type: multipart/alternative;
+    boundary="foo"
+Content-Transfer-Encoding: 7bit
+Test-Header: Test-Value
+
+--foo
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=us-ascii
+
+bold
+
+--foo
+Content-Transfer-Encoding: 7bit
+Content-Type: text/html;
+	charset=us-ascii
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+</head>
+<body style="word-wrap: break-word;" class="">
+<b class="">bold</b>
+</body>
+</html>
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header")
+    assert "Test-Header: Test-Value" in new_msg.as_string()
+    assert "<table" in new_msg.as_string()
+    assert "</table>" in new_msg.as_string()
+    assert "html header" in new_msg.as_string()
+    assert "text header" in new_msg.as_string()
+
+
+def test_replace_no_encoding():
+    msg = email.message_from_string(
+        """Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Test-Header: Test-Value
+
+old
+"""
+    )
+    new_msg = replace(msg, "old", "new")
+    assert "new" in new_msg.as_string()
+    assert "old" not in new_msg.as_string()
+
+    # headers are not affected
+    assert "Test-Header: Test-Value" in new_msg.as_string()
+
+
+def test_replace_base64_encoding():
+    # "b2xk" is "old" base64-encoded
+    msg = email.message_from_string(
+        """Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: base64
+
+b2xk
+"""
+    )
+    new_msg = replace(msg, "old", "new")
+    # bmV3 is new base64 encoded
+    assert "bmV3" in new_msg.as_string()
+    assert "b2xk" not in new_msg.as_string()
+
+
+def test_replace_multipart_alternative():
+    msg = email.message_from_string(
+        """Content-Type: multipart/alternative;
+    boundary="foo"
+Content-Transfer-Encoding: 7bit
+Test-Header: Test-Value
+
+--foo
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;	charset=us-ascii
+
+old
+
+--foo
+Content-Transfer-Encoding: 7bit
+Content-Type: text/html;	charset=us-ascii
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+</head>
+<body style="word-wrap: break-word;" class="">
+<b class="">old</b>
+</body>
+</html>
+"""
+    )
+    new_msg = replace(msg, "old", "new")
+    # headers are not affected
+    assert "Test-Header: Test-Value" in new_msg.as_string()
+
+    assert "new" in new_msg.as_string()
+    assert "old" not in new_msg.as_string()
+
+
+def test_to_bytes():
+    msg = email.message_from_string("☕️ emoji")
+    assert to_bytes(msg)
+    # \n is appended when message is converted to bytes
+    assert to_bytes(msg).decode() == "\n☕️ emoji"
+
+    msg = email.message_from_string("ascii")
+    assert to_bytes(msg) == b"\nascii"
+
+    msg = email.message_from_string("éèà€")
+    assert to_bytes(msg).decode() == "\néèà€"
+
+
+def test_generate_reply_email(flask_client):
+    user = User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+    )
+    reply_email = generate_reply_email("test@example.org", user)
+    assert reply_email.endswith(EMAIL_DOMAIN)
+
+    reply_email = generate_reply_email("", user)
+    assert reply_email.endswith(EMAIL_DOMAIN)
+
+
+def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
+    # user enables include_sender_in_reverse_alias
+    user = User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        include_sender_in_reverse_alias=True,
+    )
+    reply_email = generate_reply_email("test@example.org", user)
+    assert reply_email.startswith("test.at.example.org")
+    assert reply_email.endswith(EMAIL_DOMAIN)
+
+    reply_email = generate_reply_email("", user)
+    assert reply_email.endswith(EMAIL_DOMAIN)
+
+    reply_email = generate_reply_email("👌汉字@example.org", user)
+    assert reply_email.startswith("yizi.at.example.org")
+
+    # make sure reply_email only contain lowercase
+    reply_email = generate_reply_email("TEST@example.org", user)
+    assert reply_email.startswith("test.at.example.org")
+
+
+def test_normalize_reply_email(flask_client):
+    assert normalize_reply_email("re+abcd@sl.local") == "re+abcd@sl.local"
+    assert normalize_reply_email('re+"ab cd"@sl.local') == "re+_ab_cd_@sl.local"
+
+
+def test_get_encoding():
+    msg = email.message_from_string("")
+    assert get_encoding(msg) == EmailEncoding.NO
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: Invalid")
+    assert get_encoding(msg) == EmailEncoding.NO
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: 7bit")
+    assert get_encoding(msg) == EmailEncoding.NO
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: 8bit")
+    assert get_encoding(msg) == EmailEncoding.NO
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: binary")
+    assert get_encoding(msg) == EmailEncoding.NO
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: quoted-printable")
+    assert get_encoding(msg) == EmailEncoding.QUOTED
+
+    msg = email.message_from_string("Content-TRANSFER-encoding: base64")
+    assert get_encoding(msg) == EmailEncoding.BASE64
+
+
+def test_encode_text():
+    assert encode_text("") == ""
+    assert encode_text("ascii") == "ascii"
+    assert encode_text("ascii", EmailEncoding.BASE64) == "YXNjaWk="
+    assert encode_text("ascii", EmailEncoding.QUOTED) == "ascii"
+
+    assert encode_text("mèo méo") == "mèo méo"
+    assert encode_text("mèo méo", EmailEncoding.BASE64) == "bcOobyBtw6lv"
+    assert encode_text("mèo méo", EmailEncoding.QUOTED) == "m=C3=A8o m=C3=A9o"
+
+
+def test_decode_text():
+    assert decode_text("") == ""
+    assert decode_text("ascii") == "ascii"
+
+    assert (
+        decode_text(encode_text("ascii", EmailEncoding.BASE64), EmailEncoding.BASE64)
+        == "ascii"
+    )
+    assert (
+        decode_text(
+            encode_text("mèo méo 🇪🇺", EmailEncoding.BASE64), EmailEncoding.BASE64
+        )
+        == "mèo méo 🇪🇺"
+    )
+
+    assert (
+        decode_text(encode_text("ascii", EmailEncoding.QUOTED), EmailEncoding.QUOTED)
+        == "ascii"
+    )
+    assert (
+        decode_text(
+            encode_text("mèo méo 🇪🇺", EmailEncoding.QUOTED), EmailEncoding.QUOTED
+        )
+        == "mèo méo 🇪🇺"
+    )
+
+
+def test_should_disable(flask_client):
+    user = User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        include_sender_in_reverse_alias=True,
+    )
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    assert not should_disable(alias)
+
+    # create a lot of bounce on this alias
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+    for _ in range(20):
+        EmailLog.create(
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+            commit=True,
+            bounced=True,
+        )
+
+    assert should_disable(alias)
+
+    # should not affect another alias
+    alias2 = Alias.create_new_random(user)
+    Session.commit()
+    assert not should_disable(alias2)
+
+
+def test_should_disable_bounces_every_day(flask_client):
+    """if an alias has bounces every day at least 9 days in the last 10 days, disable alias"""
+    user = login(flask_client)
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    assert not should_disable(alias)
+
+    # create a lot of bounce on this alias
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+    for i in range(9):
+        EmailLog.create(
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+            commit=True,
+            bounced=True,
+            created_at=arrow.now().shift(days=-i),
+        )
+
+    assert should_disable(alias)
+
+
+def test_should_disable_bounces_account(flask_client):
+    """if an account has more than 10 bounces every day for at least 5 days in the last 10 days, disable alias"""
+    user = login(flask_client)
+    alias = Alias.create_new_random(user)
+
+    Session.commit()
+
+    # create a lot of bounces on alias
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+
+    for day in range(6):
+        for _ in range(10):
+            EmailLog.create(
+                user_id=user.id,
+                contact_id=contact.id,
+                alias_id=contact.alias_id,
+                commit=True,
+                bounced=True,
+                created_at=arrow.now().shift(days=-day),
+            )
+
+    alias2 = Alias.create_new_random(user)
+    assert should_disable(alias2)
+
+
+def test_should_disable_bounce_consecutive_days(flask_client):
+    user = login(flask_client)
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+
+    # create 6 bounce on this alias in the last 24h: alias is not disabled
+    for _ in range(6):
+        EmailLog.create(
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+            commit=True,
+            bounced=True,
+        )
+    assert not should_disable(alias)
+
+    # create 2 bounces in the last 7 days: alias should be disabled
+    for _ in range(2):
+        EmailLog.create(
+            user_id=user.id,
+            contact_id=contact.id,
+            alias_id=contact.alias_id,
+            commit=True,
+            bounced=True,
+            created_at=arrow.now().shift(days=-3),
+        )
+    assert should_disable(alias)
+
+
+def test_parse_id_from_bounce():
+    assert parse_id_from_bounce("bounces+1234+@local") == 1234
+    assert parse_id_from_bounce("anything+1234+@local") == 1234
+    assert parse_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234
+
+
+def test_get_queue_id():
+    msg = email.message_from_string(
+        "Received: from mail-wr1-x434.google.com (mail-wr1-x434.google.com [IPv6:2a00:1450:4864:20::434])\r\n\t(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))\r\n\t(No client certificate requested)\r\n\tby mx1.simplelogin.co (Postfix) with ESMTPS id 4FxQmw1DXdz2vK2\r\n\tfor <jglfdjgld@alias.com>; Fri,  4 Jun 2021 14:55:43 +0000 (UTC)"
+    )
+
+    assert get_queue_id(msg) == "4FxQmw1DXdz2vK2"
+
+
+def test_should_ignore_bounce(flask_client):
+    assert not should_ignore_bounce("not-exist")
+
+    IgnoreBounceSender.create(mail_from="to-ignore@example.com")
+    assert should_ignore_bounce("to-ignore@example.com")
+
+
+def test_get_header_unicode():
+    assert get_header_unicode("ab@cd.com") == "ab@cd.com"
+    assert get_header_unicode("=?utf-8?B?w6nDqQ==?=@example.com") == "éé@example.com"
+
+
+def test_get_orig_message_from_bounce():
+    with open(os.path.join(ROOT_DIR, "local_data", "email_tests", "bounce.eml")) as f:
+        bounce_report = email.message_from_file(f)
+
+    orig_msg = get_orig_message_from_bounce(bounce_report)
+    assert orig_msg["X-SimpleLogin-Type"] == "Forward"
+    assert orig_msg["X-SimpleLogin-Envelope-From"] == "sender@gmail.com"
+
+
+def test_get_mailbox_bounce_info():
+    with open(os.path.join(ROOT_DIR, "local_data", "email_tests", "bounce.eml")) as f:
+        bounce_report = email.message_from_file(f)
+
+    orig_msg = get_mailbox_bounce_info(bounce_report)
+    assert orig_msg["Final-Recipient"] == "rfc822; not-existing@gmail.com"
+    assert orig_msg["Original-Recipient"] == "rfc822;not-existing@gmail.com"
+
+
+def test_is_invalid_mailbox_domain(flask_client):
+    InvalidMailboxDomain.create(domain="ab.cd", commit=True)
+
+    assert is_invalid_mailbox_domain("ab.cd")
+    assert is_invalid_mailbox_domain("sub.ab.cd")
+    assert is_invalid_mailbox_domain("sub1.sub2.ab.cd")
+
+    assert not is_invalid_mailbox_domain("xy.zt")

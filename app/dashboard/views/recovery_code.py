@@ -13,12 +13,12 @@ def recovery_code_route():
         flash("you need to enable either TOTP or WebAuthn", "warning")
         return redirect(url_for("dashboard.index"))
 
-    recovery_codes = RecoveryCode.query.filter_by(user_id=current_user.id).all()
+    recovery_codes = RecoveryCode.filter_by(user_id=current_user.id).all()
     if request.method == "GET" and not recovery_codes:
         # user arrives at this page for the first time
         LOG.d("%s has no recovery keys, generate", current_user)
         RecoveryCode.generate(current_user)
-        recovery_codes = RecoveryCode.query.filter_by(user_id=current_user.id).all()
+        recovery_codes = RecoveryCode.filter_by(user_id=current_user.id).all()
 
     if request.method == "POST":
         RecoveryCode.generate(current_user)

@@ -5,7 +5,8 @@ from itsdangerous import Signer
 
 from app.api.base import api_bp
 from app.config import FLASK_SECRET
-from app.extensions import db
+from app.db import Session
+from app.email_utils import send_invalid_totp_login_email
 from app.log import LOG
 from app.models import User, ApiKey
 
@@ -53,15 +54,16 @@ def auth_mfa():
 
     totp = pyotp.TOTP(user.otp_secret)
     if not totp.verify(mfa_token):
+        send_invalid_totp_login_email(user, "TOTP")
         return jsonify(error="Wrong TOTP Token"), 400
 
-    ret = {"name": user.name, "email": user.email}
+    ret = {"name": user.name or "", "email": user.email}
 
     api_key = ApiKey.get_by(user_id=user.id, name=device)
     if not api_key:
         LOG.d("create new api key for %s and %s", user, device)
         api_key = ApiKey.create(user.id, device)
-        db.session.commit()
+        Session.commit()
 
     ret["api_key"] = api_key.code
 

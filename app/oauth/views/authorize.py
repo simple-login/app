@@ -1,13 +1,14 @@
 from typing import Dict
 from urllib.parse import urlparse
 
-from flask import request, render_template, redirect, flash
+from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user
 from itsdangerous import SignatureExpired
 
+from app.alias_utils import check_alias_prefix
 from app.config import EMAIL_DOMAIN
-from app.dashboard.views.custom_alias import available_suffixes, signer
-from app.extensions import db
+from app.dashboard.views.custom_alias import signer, get_available_suffixes
+from app.db import Session
 from app.jose_utils import make_id_token
 from app.log import LOG
 from app.models import (
@@ -18,7 +19,6 @@ from app.models import (
     RedirectUri,
     OauthToken,
     DeletedAlias,
-    CustomDomain,
     DomainDeletedAlias,
 )
 from app.oauth.base import oauth_bp
@@ -77,8 +77,9 @@ def authorize():
 
     # check if redirect_uri is valid
     # allow localhost by default
+    # allow any redirect_uri if the app isn't approved
     hostname, scheme = get_host_name_and_scheme(redirect_uri)
-    if hostname != "localhost" and hostname != "127.0.0.1":
+    if hostname != "localhost" and hostname != "127.0.0.1" and client.approved:
         # support custom scheme for mobile app
         if scheme == "http":
             final_redirect_uri = f"{redirect_uri}?error=http_not_allowed"
@@ -100,8 +101,23 @@ def authorize():
             )
             user_info = {}
             if client_user:
-                LOG.debug("user %s has already allowed client %s", current_user, client)
+                LOG.d("user %s has already allowed client %s", current_user, client)
                 user_info = client_user.get_user_info()
+
+                # redirect user to the client page
+                redirect_args = construct_redirect_args(
+                    client,
+                    client_user,
+                    nonce,
+                    redirect_uri,
+                    response_types,
+                    scope,
+                    state,
+                )
+                fragment = get_fragment(response_mode, response_types)
+
+                # construct redirect_uri with redirect_args
+                return redirect(construct_url(redirect_uri, redirect_args, fragment))
             else:
                 suggested_email, other_emails = current_user.suggested_emails(
                     client.name
@@ -111,8 +127,7 @@ def authorize():
                 user_custom_domains = [
                     cd.domain for cd in current_user.verified_custom_domains()
                 ]
-                # List of (is_custom_domain, alias-suffix, time-signed alias-suffix)
-                suffixes = available_suffixes(current_user)
+                suffixes = get_available_suffixes(current_user)
 
             return render_template(
                 "oauth/authorize.html",
@@ -129,12 +144,18 @@ def authorize():
                 Scope=Scope,
             )
     else:  # POST - user allows or denies
+        if not current_user.is_authenticated or not current_user.is_active:
+            LOG.i(
+                "Attempt to validate a OAUth allow request by an unauthenticated user"
+            )
+            return redirect(url_for("auth.login", next=request.url))
+
         if request.form.get("button") == "deny":
-            LOG.debug("User %s denies Client %s", current_user, client)
+            LOG.d("User %s denies Client %s", current_user, client)
             final_redirect_uri = f"{redirect_uri}?error=deny&state={state}"
             return redirect(final_redirect_uri)
 
-        LOG.debug("User %s allows Client %s", current_user, client)
+        LOG.d("User %s allows Client %s", current_user, client)
         client_user = ClientUser.get_by(client_id=client.id, user_id=current_user.id)
 
         # user has already allowed this client, user cannot change information
@@ -154,15 +175,23 @@ def authorize():
 
                 alias_prefix = alias_prefix.strip().lower().replace(" ", "")
 
+                if not check_alias_prefix(alias_prefix):
+                    flash(
+                        "Only lowercase letters, numbers, dashes (-), dots (.) and underscores (_) "
+                        "are currently supported for alias prefix. Cannot be more than 40 letters",
+                        "error",
+                    )
+                    return redirect(request.url)
+
                 # hypothesis: user will click on the button in the 600 secs
                 try:
                     alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
                 except SignatureExpired:
-                    LOG.warning("Alias creation time expired for %s", current_user)
+                    LOG.w("Alias creation time expired for %s", current_user)
                     flash("Alias creation time is expired, please retry", "warning")
                     return redirect(request.url)
                 except Exception:
-                    LOG.warning("Alias suffix is tampered, user %s", current_user)
+                    LOG.w("Alias suffix is tampered, user %s", current_user)
                     flash("Unknown error, refresh the page", "error")
                     return redirect(request.url)
 
@@ -180,7 +209,7 @@ def authorize():
                         or DeletedAlias.get_by(email=full_alias)
                         or DomainDeletedAlias.get_by(email=full_alias)
                     ):
-                        LOG.exception("alias %s already used, very rare!", full_alias)
+                        LOG.e("alias %s already used, very rare!", full_alias)
                         flash(f"Alias {full_alias} already used", "error")
                         return redirect(request.url)
                     else:
@@ -190,14 +219,7 @@ def authorize():
                             mailbox_id=current_user.default_mailbox_id,
                         )
 
-                        # get the custom_domain_id if alias is created with a custom domain
-                        if alias_suffix.startswith("@"):
-                            alias_domain = alias_suffix[1:]
-                            domain = CustomDomain.get_by(domain=alias_domain)
-                            if domain:
-                                alias.custom_domain_id = domain.id
-
-                        db.session.flush()
+                        Session.flush()
                         flash(f"Alias {full_alias} has been created", "success")
                 # only happen if the request has been "hacked"
                 else:
@@ -215,7 +237,7 @@ def authorize():
                             user_id=current_user.id,
                             mailbox_id=current_user.default_mailbox_id,
                         )
-                        db.session.flush()
+                        Session.flush()
 
             suggested_name = request.form.get("suggested-name")
             custom_name = request.form.get("custom-name")
@@ -238,73 +260,77 @@ def authorize():
                 LOG.d("use default avatar for user %s client %s", current_user, client)
                 client_user.default_avatar = True
 
-            db.session.flush()
+            Session.flush()
             LOG.d("create client-user for client %s, user %s", client, current_user)
 
-        redirect_args = {}
-
-        if state:
-            redirect_args["state"] = state
-        else:
-            LOG.warning(
-                "more security reason, state should be added. client %s", client
-            )
-
-        if scope:
-            redirect_args["scope"] = scope
-
-        auth_code = None
-        if ResponseType.CODE in response_types:
-            # Create authorization code
-            auth_code = AuthorizationCode.create(
-                client_id=client.id,
-                user_id=current_user.id,
-                code=random_string(),
-                scope=scope,
-                redirect_uri=redirect_uri,
-                response_type=response_types_to_str(response_types),
-            )
-            db.session.add(auth_code)
-            redirect_args["code"] = auth_code.code
-
-        oauth_token = None
-        if ResponseType.TOKEN in response_types:
-            # create access-token
-            oauth_token = OauthToken.create(
-                client_id=client.id,
-                user_id=current_user.id,
-                scope=scope,
-                redirect_uri=redirect_uri,
-                access_token=generate_access_token(),
-                response_type=response_types_to_str(response_types),
-            )
-            db.session.add(oauth_token)
-            redirect_args["access_token"] = oauth_token.access_token
-
-        if ResponseType.ID_TOKEN in response_types:
-            redirect_args["id_token"] = make_id_token(
-                client_user,
-                nonce,
-                oauth_token.access_token if oauth_token else None,
-                auth_code.code if auth_code else None,
-            )
-
-        db.session.commit()
-
-        # should all params appended the url using fragment (#) or query
-        fragment = False
-
-        if response_mode and response_mode == "fragment":
-            fragment = True
-
-        # if response_types contain "token" => implicit flow => should use fragment
-        # except if client sets explicitly response_mode
-        if not response_mode:
-            if ResponseType.TOKEN in response_types:
-                fragment = True
+        redirect_args = construct_redirect_args(
+            client, client_user, nonce, redirect_uri, response_types, scope, state
+        )
+        fragment = get_fragment(response_mode, response_types)
 
         # construct redirect_uri with redirect_args
         return redirect(construct_url(redirect_uri, redirect_args, fragment))
+
+
+def get_fragment(response_mode, response_types):
+    # should all params appended the url using fragment (#) or query
+    fragment = False
+    if response_mode and response_mode == "fragment":
+        fragment = True
+    # if response_types contain "token" => implicit flow => should use fragment
+    # except if client sets explicitly response_mode
+    if not response_mode:
+        if ResponseType.TOKEN in response_types:
+            fragment = True
+    return fragment
+
+
+def construct_redirect_args(
+    client, client_user, nonce, redirect_uri, response_types, scope, state
+) -> dict:
+    redirect_args = {}
+    if state:
+        redirect_args["state"] = state
+    else:
+        LOG.w("more security reason, state should be added. client %s", client)
+    if scope:
+        redirect_args["scope"] = scope
+
+    auth_code = None
+    if ResponseType.CODE in response_types:
+        auth_code = AuthorizationCode.create(
+            client_id=client.id,
+            user_id=current_user.id,
+            code=random_string(),
+            scope=scope,
+            redirect_uri=redirect_uri,
+            response_type=response_types_to_str(response_types),
+            nonce=nonce,
+        )
+        redirect_args["code"] = auth_code.code
+
+    oauth_token = None
+    if ResponseType.TOKEN in response_types:
+        # create access-token
+        oauth_token = OauthToken.create(
+            client_id=client.id,
+            user_id=current_user.id,
+            scope=scope,
+            redirect_uri=redirect_uri,
+            access_token=generate_access_token(),
+            response_type=response_types_to_str(response_types),
+        )
+        Session.add(oauth_token)
+        redirect_args["access_token"] = oauth_token.access_token
+    if ResponseType.ID_TOKEN in response_types:
+        redirect_args["id_token"] = make_id_token(
+            client_user,
+            nonce,
+            oauth_token.access_token if oauth_token else None,
+            auth_code.code if auth_code else None,
+        )
+    Session.commit()
+    return redirect_args
 
 
 def construct_url(url, args: Dict[str, str], fragment: bool = False):
@@ -331,12 +357,12 @@ def generate_access_token() -> str:
         return access_token
 
     # Rerun the function
-    LOG.warning("access token already exists, generate a new one")
+    LOG.w("access token already exists, generate a new one")
     return generate_access_token()
 
 
 def get_host_name_and_scheme(url: str) -> (str, str):
-    """http://localhost:7777?a=b -> (localhost, http) """
+    """http://localhost:7777?a=b -> (localhost, http)"""
     url_comp = urlparse(url)
 
     return url_comp.hostname, url_comp.scheme

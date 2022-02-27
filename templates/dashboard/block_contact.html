@@ -1,0 +1,28 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Block a sender
+{% endblock %}
+
+{% block default_content %}
+
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">
+        Block sender
+      </h1>
+      <p>
+        You are about to block the sender <b>{{ contact.website_email }}</b> from sending emails to
+        <b>{{ contact.alias.email }}</b>
+      </p>
+
+      <form method="post">
+        <button class="btn btn-warning">Confirm</button>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}
+

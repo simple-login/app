@@ -1,0 +1,11 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+{{ mailbox.email }} is disabled.
+
+We have detected that your mailbox cannot reliably receive emails from SimpleLogin for a consecutive period of time.
+The mailbox has been therefore disabled.
+You can re-enable it by going to the mailbox page.
+
+Please note that a mailbox can't be a disposable or forwarding email address.
+{% endblock %}

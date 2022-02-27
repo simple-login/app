@@ -1,0 +1,185 @@
+{% extends 'default.html' %}
+
+{% block title %}
+  Referral
+{% endblock %}
+
+{% set active_page = "setting" %}
+
+{% block default_content %}
+  <div class="col">
+    <h1 class="h3 mb-5"> Referrals
+      <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+         aria-expanded="false" aria-controls="collapseExample">
+        How to use <i class="fe fe-chevrons-down"></i>
+      </a>
+    </h1>
+
+    <div class="alert alert-primary collapse" id="howtouse" role="alert">
+      On this page, you can create a <b>referral code</b> that you can use when referring people to SimpleLogin.
+      For every user who <b>upgrades</b> and stays with us at least 3 months, you'll get $5 :). <br>
+      The payout can be initiated any time, just send us an email at
+      <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a> when you want to receive the payout.
+    </div>
+
+    {% if referrals|length == 0 %}
+      <div class="alert alert-info">
+        You don't have any referral code yet. Let's create the first one and start inviting your friends! <br>
+      </div>
+    {% endif %}
+
+
+    {% for referral in referrals %}
+      <div class="card p-4 shadow-sm {% if referral.id == highlight_id %} highlight-row {% endif %}">
+
+        <form method="post">
+          <input type="hidden" name="form-name" value="update">
+          <input type="hidden" name="referral-id" value="{{ referral.id }}">
+
+          <div class="d-flex mb-3">
+            <div class="mr-2">
+              <input name="name" class="form-control" required value="{{ referral.name or '' }}">
+            </div>
+            <div>
+              <button class="btn btn-outline-success">Update</button>
+            </div>
+          </div>
+        </form>
+
+        {% set nb_user = referral.nb_user %}
+        {% set nb_paid_user = referral.nb_paid_user %}
+        {% if nb_user > 0 %}
+          <div class="mb-3">
+            <b class="h1">{{ nb_user }}</b>
+            {% if nb_user == 1 %} person {% else %} people {% endif %}
+            has their online privacy protected thanks to you! <br>
+
+            Among them, <b class="h1">{{ nb_paid_user }}</b>
+            {% if nb_paid_user == 1 %} person {% else %} people {% endif %}
+            has upgraded their accounts.
+          </div>
+        {% endif %}
+
+        <div class="mt-2">
+          Please use this referral link to invite your friends trying out SimpleLogin: <br>
+
+          <div class="d-flex mb-5 mt-2" style="max-width: 40em">
+            <div class="flex-grow-1 mr-2">
+              <input class="form-control" id="referral-{{ referral.id }}" readonly
+                     value="{{ referral.link() }}">
+            </div>
+
+            <div>
+              <button class="clipboard btn btn-outline-primary" data-clipboard-action="copy"
+                      data-clipboard-text="{{ referral.link() }}"
+                      data-clipboard-target="#referral-{{ referral.id }}">
+                Copy <i class="fe fe-clipboard"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          You can also use the referral code <b>{{ referral.code }}</b> when sharing any link on SimpleLogin. <br>
+          Just append
+          <em data-toggle="tooltip"
+              title="Click to copy"
+              class="clipboard"
+              data-clipboard-text="{{ '?slref=' + referral.code }}" style="overflow-wrap: break-word">
+            ?slref={{ referral.code }}
+          </em>
+          to any link on SimpleLogin website.
+        </div>
+
+        <div>
+          <form method="post">
+            <input type="hidden" name="form-name" value="delete">
+            <input type="hidden" name="referral-id" value="{{ referral.id }}">
+            <span class="delete-referral  float-right btn btn-outline-danger">Delete</span>
+          </form>
+        </div>
+
+      </div>
+    {% endfor %}
+
+    <form method="post" class="mt-6 card p-4 shadow">
+      <input type="hidden" name="form-name" value="create">
+
+      <div class="form-group">
+        <input name="code" class="form-control"
+               pattern="[0-9a-z-_]{3,}"
+               placeholder="Referral Code"
+               title="At least 3 characters. Only lowercase letters, numbers, dashes (-) and underscores (_) are currently supported.">
+        <div class="small-text">
+          At least 3 characters. Only lowercase letters, numbers,
+          dashes (-) and underscores (_) are currently supported.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input name="name" class="form-control" required
+               placeholder="Referral name, something to help you remember why you create it :)">
+      </div>
+
+      <button class="btn btn-success mb-5">Create</button>
+    </form>
+
+    {% if payouts|length > 0 %}
+      <div class="mt-6 card p-4 shadow">
+        <h3 class="h4">Payouts</h3>
+        <table class="table">
+          <thead>
+          <tr>
+            <th>Sent at</th>
+            <th>Amount</th>
+            <th>Payment Method</th>
+            <th>Number of upgraded accounts</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          {% for payout in payouts %}
+            <tr>
+              <td>{{ payout.created_at | dt }}</td>
+              <td>${{ payout.amount }}</td>
+              <td>{{ payout.payment_method }}</td>
+              <td>{{ payout.number_upgraded_account }}</td>
+
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-referral").on("click", function (e) {
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "This operation is irreversible, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+
+
+    });
+  </script>
+{% endblock %}

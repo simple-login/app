@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
-from app.extensions import db
+from app.db import Session
 from app.models import RecoveryCode
 
 
@@ -19,7 +19,7 @@ def mfa_cancel():
     if request.method == "POST":
         current_user.enable_otp = False
         current_user.otp_secret = None
-        db.session.commit()
+        Session.commit()
 
         # user does not have any 2FA enabled left, delete all recovery codes
         if not current_user.two_factor_authentication_enabled():

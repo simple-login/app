@@ -1,0 +1,13 @@
+{% extends 'developer/client_details/base.html' %}
+
+{% set client_details_page = "advanced" %}
+
+{% block client_details_content %}
+  <h1 class="h2">Danger Zone</h1>
+  <form method="post">
+    {{ form.csrf_token }}
+    <div class="alert alert-danger">When your website is deleted, users can no longer log into it. This operation is not reversible!</div>
+    <button type="submit" class="btn btn-danger">Delete "{{ client.name }}"</button>
+
+  </form>
+{% endblock %}

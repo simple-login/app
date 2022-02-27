@@ -1,0 +1,46 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Receive {{ alias.email }}
+{% endblock %}
+
+{% block default_content %}
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">Receive {{ alias.email }}</h1>
+
+      <p>
+        You are invited to become the owner of the alias <b>{{ alias.email }}</b>
+      </p>
+
+      <p>
+        Please choose the mailbox(es) that owns this alias 👇
+      </p>
+
+      <form method="post" class="mt-2">
+        <select data-width="100%"
+                class="mailbox-select" multiple name="mailbox_ids">
+          {% for mailbox in mailboxes %}
+            <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}
+                    selected {% endif %}>
+              {{ mailbox.email }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <button class="btn btn-success mt-2">Confirm</button>
+      </form>
+
+
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block script %}
+  <script>
+    $('.mailbox-select').multipleSelect();
+  </script>
+{% endblock %}

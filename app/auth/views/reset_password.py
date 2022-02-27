@@ -1,16 +1,20 @@
-from flask import request, flash, render_template, redirect, url_for, g
-from flask_login import login_user
+import uuid
+
+from flask import request, flash, render_template, url_for, g
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
-from app.extensions import db, limiter
+from app.auth.views.login_utils import after_login
+from app.db import Session
+from app.extensions import limiter
 from app.models import ResetPasswordCode
 
 
 class ResetPasswordForm(FlaskForm):
     password = StringField(
-        "Password", validators=[validators.DataRequired(), validators.Length(min=8)]
+        "Password",
+        validators=[validators.DataRequired(), validators.Length(min=8, max=100)],
     )
 
 
@@ -50,6 +54,7 @@ def reset_password():
             return render_template("auth/reset_password.html", form=form, error=error)
 
         user.set_password(new_password)
+
         flash("Your new password has been set", "success")
 
         # this can be served to activate user too
@@ -58,9 +63,13 @@ def reset_password():
         # remove the reset password code
         ResetPasswordCode.delete(reset_password_code.id)
 
-        db.session.commit()
-        login_user(user)
+        # change the alternative_id to log user out on other browsers
+        user.alternative_id = str(uuid.uuid4())
 
-        return redirect(url_for("dashboard.index"))
+        Session.commit()
+
+        # do not use login_user(user) here
+        # to make sure user needs to go through MFA if enabled
+        return after_login(user, url_for("dashboard.index"))
 
     return render_template("auth/reset_password.html", form=form)

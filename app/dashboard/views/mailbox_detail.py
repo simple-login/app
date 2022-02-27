@@ -10,13 +10,14 @@ from wtforms.fields.html5 import EmailField
 from app.config import ENFORCE_SPF, MAILBOX_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
-from app.email_utils import email_domain_can_be_used_as_mailbox
+from app.db import Session
+from app.email_utils import email_can_be_used_as_mailbox
 from app.email_utils import mailbox_already_used, render, send_email
-from app.extensions import db
 from app.log import LOG
-from app.models import Alias, DeletedAlias, AuthorizedAddress
+from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
-from app.pgp_utils import PGPException, load_public_key
+from app.pgp_utils import PGPException, load_public_key_and_check
+from app.utils import sanitize_email
 
 
 class ChangeEmailForm(FlaskForm):
@@ -45,18 +46,18 @@ def mailbox_detail_route(mailbox_id):
             request.form.get("form-name") == "update-email"
             and change_email_form.validate_on_submit()
         ):
-            new_email = change_email_form.email.data.lower().strip()
+            new_email = sanitize_email(change_email_form.email.data)
             if new_email != mailbox.email and not pending_email:
                 # check if this email is not already used
                 if mailbox_already_used(new_email, current_user) or Alias.get_by(
                     email=new_email
                 ):
                     flash(f"Email {new_email} already used", "error")
-                elif not email_domain_can_be_used_as_mailbox(new_email):
+                elif not email_can_be_used_as_mailbox(new_email):
                     flash("You cannot use this email address as your mailbox", "error")
                 else:
                     mailbox.new_email = new_email
-                    db.session.commit()
+                    Session.commit()
 
                     try:
                         verify_mailbox_change(current_user, mailbox, new_email)
@@ -81,7 +82,7 @@ def mailbox_detail_route(mailbox_id):
             mailbox.force_spf = (
                 True if request.form.get("spf-status") == "on" else False
             )
-            db.session.commit()
+            Session.commit()
             flash(
                 "SPF enforcement was " + "enabled"
                 if request.form.get("spf-status")
@@ -92,7 +93,7 @@ def mailbox_detail_route(mailbox_id):
                 url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
             )
         elif request.form.get("form-name") == "add-authorized-address":
-            address = request.form.get("email").lower().strip().replace(" ", "")
+            address = sanitize_email(request.form.get("email"))
             if AuthorizedAddress.get_by(mailbox_id=mailbox.id, email=address):
                 flash(f"{address} already added", "error")
             else:
@@ -117,7 +118,7 @@ def mailbox_detail_route(mailbox_id):
             else:
                 address = authorized_address.email
                 AuthorizedAddress.delete(authorized_address_id)
-                db.session.commit()
+                Session.commit()
                 flash(f"{address} has been deleted", "success")
 
             return redirect(
@@ -133,11 +134,13 @@ def mailbox_detail_route(mailbox_id):
 
                 mailbox.pgp_public_key = request.form.get("pgp")
                 try:
-                    mailbox.pgp_finger_print = load_public_key(mailbox.pgp_public_key)
+                    mailbox.pgp_finger_print = load_public_key_and_check(
+                        mailbox.pgp_public_key
+                    )
                 except PGPException:
                     flash("Cannot add the public key, please verify it", "error")
                 else:
-                    db.session.commit()
+                    Session.commit()
                     flash("Your PGP public key is saved successfully", "success")
                     return redirect(
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
@@ -146,8 +149,46 @@ def mailbox_detail_route(mailbox_id):
                 # Free user can decide to remove their added PGP key
                 mailbox.pgp_public_key = None
                 mailbox.pgp_finger_print = None
-                db.session.commit()
+                mailbox.disable_pgp = False
+                Session.commit()
                 flash("Your PGP public key is removed successfully", "success")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                )
+
+        elif request.form.get("form-name") == "toggle-pgp":
+            if request.form.get("pgp-enabled") == "on":
+                mailbox.disable_pgp = False
+                flash(f"PGP is enabled on {mailbox.email}", "success")
+            else:
+                mailbox.disable_pgp = True
+                flash(f"PGP is disabled on {mailbox.email}", "info")
+
+            Session.commit()
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+            )
+        elif request.form.get("form-name") == "generic-subject":
+            if request.form.get("action") == "save":
+                if not mailbox.pgp_enabled():
+                    flash(
+                        "Generic subject can only be used on PGP-enabled mailbox",
+                        "error",
+                    )
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
+
+                mailbox.generic_subject = request.form.get("generic-subject")
+                Session.commit()
+                flash("Generic subject for PGP-encrypted email is enabled", "success")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                )
+            elif request.form.get("action") == "remove":
+                mailbox.generic_subject = None
+                Session.commit()
+                flash("Generic subject for PGP-encrypted email is disabled", "success")
                 return redirect(
                     url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                 )
@@ -160,12 +201,12 @@ def verify_mailbox_change(user, mailbox, new_email):
     s = Signer(MAILBOX_SECRET)
     mailbox_id_signed = s.sign(str(mailbox.id)).decode()
     verification_url = (
-        URL + "/dashboard/mailbox/confirm_change" + f"?mailbox_id={mailbox_id_signed}"
+        f"{URL}/dashboard/mailbox/confirm_change?mailbox_id={mailbox_id_signed}"
     )
 
     send_email(
         new_email,
-        f"Confirm mailbox change on SimpleLogin",
+        "Confirm mailbox change on SimpleLogin",
         render(
             "transactional/verify-mailbox-change.txt",
             user=user,
@@ -195,7 +236,7 @@ def cancel_mailbox_change_route(mailbox_id):
 
     if mailbox.new_email:
         mailbox.new_email = None
-        db.session.commit()
+        Session.commit()
         flash("Your mailbox change is cancelled", "success")
         return redirect(
             url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
@@ -210,24 +251,31 @@ def cancel_mailbox_change_route(mailbox_id):
 @dashboard_bp.route("/mailbox/confirm_change")
 def mailbox_confirm_change_route():
     s = Signer(MAILBOX_SECRET)
-    mailbox_id = request.args.get("mailbox_id")
+    signed_mailbox_id = request.args.get("mailbox_id")
 
     try:
-        r_id = int(s.unsign(mailbox_id))
+        mailbox_id = int(s.unsign(signed_mailbox_id))
     except Exception:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.index"))
     else:
-        mailbox = Mailbox.get(r_id)
+        mailbox = Mailbox.get(mailbox_id)
 
         # new_email can be None if user cancels change in the meantime
         if mailbox and mailbox.new_email:
+            user = mailbox.user
+            if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
+                flash(f"{mailbox.new_email} is already used", "error")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
+                )
+
             mailbox.email = mailbox.new_email
             mailbox.new_email = None
 
             # mark mailbox as verified if the change request is sent from an unverified mailbox
             mailbox.verified = True
-            db.session.commit()
+            Session.commit()
 
             LOG.d("Mailbox change %s is verified", mailbox)
             flash(f"The {mailbox.email} is updated", "success")

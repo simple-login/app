@@ -7,16 +7,33 @@ RUN cd /code/static && npm install
 # Main image
 FROM python:3.7
 
-# install some utility packages
-RUN apt update && apt install -y vim telnet
+# Keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE 1
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED 1
 
-RUN pip3 install poetry==1.0.10
+# Add poetry to PATH
+ENV PATH="${PATH}:/root/.poetry/bin"
 
-# install dependencies
 WORKDIR /code
+
+# Copy poetry files
 COPY poetry.lock pyproject.toml ./
-RUN poetry config virtualenvs.create false \
-  && poetry install
+
+# Install and setup poetry
+RUN pip install -U pip \
+    && apt-get update \
+    && apt install -y curl netcat gcc python3-dev gnupg git libre2-dev \
+    && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python - \
+    # Remove curl and netcat from the image
+    && apt-get purge -y curl netcat \
+    # Run poetry
+    && poetry config virtualenvs.create false \
+    && poetry install  --no-interaction --no-ansi --no-root \
+    # Clear apt cache \
+    && apt-get purge -y libre2-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # copy npm packages
 COPY --from=npm /code /code

@@ -1,0 +1,15 @@
+<button
+    class="btn btn-sm {% if contact.block_forward %} text-primary {% else %} text-warning {% endif %}"
+    hx-post="{{ url_for('dashboard.toggle_contact', contact_id=contact.id) }}" hx-swap="outerHTML">
+  {% if contact.block_forward %}
+    <i class="fe fe-play-circle" data-toggle="tooltip" title="Unblock sender"></i>
+  {% else %}
+    <i class="fe fe-pause-circle" data-toggle="tooltip" title="Block sender"></i>
+  {% endif %}
+</button>
+
+{% if toast_msg %}
+  <script>
+    toastr.success("{{ toast_msg }}");
+  </script>
+{% endif %}

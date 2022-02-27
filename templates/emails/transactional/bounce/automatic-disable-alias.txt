@@ -1,0 +1,13 @@
+{{alias.email}} is disabled.
+
+There are several emails sent to your alias {{alias.email}} that have been bounced by your mailbox {{mailbox_email}}.
+
+You can view this email here:
+{{ refused_email_url }}
+
+As security measure, we have disabled the alias {{alias.email}}.
+
+Please let us know if you have any question.
+
+Best,
+SimpleLogin team.

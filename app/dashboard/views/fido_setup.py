@@ -1,7 +1,6 @@
 import json
 import secrets
 import uuid
-from time import time
 
 import webauthn
 from flask import render_template, flash, redirect, url_for, session
@@ -11,10 +10,10 @@ from wtforms import StringField, HiddenField, validators
 
 from app.config import RP_ID, URL
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.dashboard.views.enter_sudo import sudo_required
+from app.db import Session
 from app.log import LOG
 from app.models import Fido, RecoveryCode
-from app.dashboard.views.enter_sudo import sudo_required
 
 
 class FidoTokenForm(FlaskForm):
@@ -37,7 +36,7 @@ def fido_setup():
     if fido_token_form.validate_on_submit():
         try:
             sk_assertion = json.loads(fido_token_form.sk_assertion.data)
-        except Exception as e:
+        except Exception:
             flash("Key registration failed. Error: Invalid Payload", "warning")
             return redirect(url_for("dashboard.index"))
 
@@ -56,13 +55,13 @@ def fido_setup():
         try:
             fido_credential = fido_reg_response.verify()
         except Exception as e:
-            LOG.warning(f"An error occurred in WebAuthn registration process: {e}")
+            LOG.w(f"An error occurred in WebAuthn registration process: {e}")
             flash("Key registration failed.", "warning")
             return redirect(url_for("dashboard.index"))
 
         if current_user.fido_uuid is None:
             current_user.fido_uuid = fido_uuid
-            db.session.flush()
+            Session.flush()
 
         Fido.create(
             credential_id=str(fido_credential.credential_id, "utf-8"),
@@ -70,15 +69,16 @@ def fido_setup():
             public_key=str(fido_credential.public_key, "utf-8"),
             sign_count=fido_credential.sign_count,
             name=fido_token_form.key_name.data,
+            user_id=current_user.id,
         )
-        db.session.commit()
+        Session.commit()
 
         LOG.d(
             f"credential_id={str(fido_credential.credential_id, 'utf-8')} added for {fido_uuid}"
         )
 
         flash("Security key has been activated", "success")
-        if not RecoveryCode.query.filter_by(user_id=current_user.id).all():
+        if not RecoveryCode.filter_by(user_id=current_user.id).all():
             return redirect(url_for("dashboard.recovery_code_route"))
         else:
             return redirect(url_for("dashboard.fido_manage"))

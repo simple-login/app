@@ -4,10 +4,10 @@ from requests_oauthlib import OAuth2Session
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
 from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
 from app.models import User, SocialAuth
-from app.utils import encode_url
+from app.utils import encode_url, sanitize_email
 
 _authorization_base_url = "https://github.com/login/oauth/authorize"
 _token_url = "https://github.com/login/oauth/access_token"
@@ -75,14 +75,14 @@ def github_callback():
             break
 
     if not email:
-        LOG.exception(f"cannot get email for github user {github_user_data} {emails}")
+        LOG.e(f"cannot get email for github user {github_user_data} {emails}")
         flash(
             "Cannot get a valid email from Github, please another way to login/sign up",
             "error",
         )
         return redirect(url_for("auth.login"))
 
-    email = email.strip().lower()
+    email = sanitize_email(email)
     user = User.get_by(email=email)
 
     if not user:
@@ -94,7 +94,7 @@ def github_callback():
 
     if not SocialAuth.get_by(user_id=user.id, social="github"):
         SocialAuth.create(user_id=user.id, social="github")
-        db.session.commit()
+        Session.commit()
 
     # The activation link contains the original page, for ex authorize page
     next_url = request.args.get("next") if request.args else None

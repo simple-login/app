@@ -6,4 +6,11 @@ db.sqlite
 .vscode
 .DS_Store
 config
-adhoc_*
+adhoc
+static/node_modules
+db.sqlite-journal
+static/upload
+venv/
+.venv
+.coverage
+htmlcov

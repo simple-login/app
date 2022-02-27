@@ -1,0 +1,24 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+{{ breached_aliases|count }} of your aliases are found in data breaches.
+
+{% for alias in breached_aliases[:10] %}
+  {{ loop.index }} )  {{ alias.email }} was found in {{ alias.hibp_breaches|count }} data breaches.
+
+  {%- set breaches = alias.hibp_breaches|sort(attribute='date', reverse=True) %}
+  {% for breach in breaches[:4] %}
+    - {{ breach.name }} {% if breach.date %}({{ breach.date.format('YYYY-MM-DD') }}){% endif %}
+  {%- endfor %}
+
+  {%- if  breaches|length > 4 %}
+    And {{ breaches|length - 4 }} more data breaches...
+  {% endif %}
+{% endfor %}
+
+{%- if  breached_aliases|length > 10 %}
+  And {{ breached_aliases|length - 10 }} more aliases...
+{%- endif %}
+
+For more information, please check https://haveibeenpwned.com/.
+{% endblock %}

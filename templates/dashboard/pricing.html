@@ -1,0 +1,183 @@
+{% extends 'default.html' %}
+
+{% set active_page = "dashboard" %}
+
+{% block title %}
+  Pricing
+{% endblock %}
+
+{% block head %}
+  <script src="https://cdn.paddle.com/paddle/paddle.js"></script>
+  <script>
+    if (window.Paddle === undefined) {
+      console.log("cannot load Paddle from CDN");
+      document.write('<script src="/static/vendor/paddle.js"><\/script>')
+    }
+  </script>
+
+  <style type="text/css">
+      html.mvc__a.mvc__lot.mvc__of.mvc__classes.mvc__to.mvc__increase.mvc__the.mvc__odds.mvc__of.mvc__winning.mvc__specificity, html.mvc__a.mvc__lot.mvc__of.mvc__classes.mvc__to.mvc__increase.mvc__the.mvc__odds.mvc__of.mvc__winning.mvc__specificity > body {
+          position: static;
+      }
+  </style>
+
+{% endblock %}
+
+{% block announcement %}
+  {#  TODO: to remove#}
+  {#  <div class="alert alert-danger text-center mb-0" role="alert">#}
+  {#    Our payment provider Paddle is experiencing#}
+  {#    <a href="https://paddle.status.io" target="_blank">server issue <i class="fe fe-external-link"></i></a>#}
+  {#    that can make our checkout page unusable. <br>#}
+  {#    Please retry later and sorry for this issue!#}
+  {#  </div>#}
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col-sm-6 col-lg-6">
+      <div class="card">
+        <div class="card-body text-center">
+          <div class="h3">Premium</div>
+
+          <ul class="list-unstyled leading-loose mb-3">
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
+              Unlimited aliases
+            </li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
+              Unlimited custom domains
+            </li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
+              Catch-all (or wildcard) aliases
+            </li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
+              Up to 50 directories (or usernames)
+            </li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
+              Unlimited mailboxes
+            </li>
+            <li><i class="fe fe-check text-success mr-2" aria-hidden="true"></i>
+              PGP Encryption
+            </li>
+          </ul>
+
+          <div class="small-text">More information on our <a href="https://simplelogin.io/pricing" target="_blank"
+                                                             rel="noopener">Pricing
+            Page <i class="fe fe-external-link"></i>
+          </a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-6">
+      {% if manual_sub %}
+        <div class="alert alert-info">
+          You currently have a subscription until <b>{{ manual_sub.end_at.format("YYYY-MM-DD") }}</b>
+          ({{ (manual_sub.end_at - now).days }} days left).
+          <br>
+          Please note that the time left will <b>not</b> be taken into account in a new subscription.
+        </div>
+        <hr>
+      {% endif %}
+
+      <div class="display-6 my-3">
+        🔐 Secure payments by
+        <a href="https://paddle.com" target="_blank" rel="noopener">
+          Paddle <i class="fe fe-external-link"></i>
+        </a>
+      </div>
+
+      {% set sub = current_user.get_subscription() %}
+      {% if sub and sub.cancelled %}
+        <div class="alert alert-primary" role="alert">
+          You have an active subscription until {{ sub.next_bill_date.strftime("%Y-%m-%d") }}. <br>
+          Please note that if you re-subscribe now, this will be a completely
+          new subscription and
+          your payment method will be charged <b>immediately</b>.
+        </div>
+      {% endif %}
+
+      {% if coinbase_sub %}
+        <div class="alert alert-info">
+          You currently have a Coinbase subscription until <b>{{ coinbase_sub.end_at.format("YYYY-MM-DD") }}</b>
+          ({{ (coinbase_sub.end_at - now).days }} days left).
+          <br>
+          Please note that the time left will <b>not</b> be taken into account in a new Paddle subscription.
+        </div>
+      {% endif %}
+
+      <div class="mb-3">
+        Paddle supports bank cards
+        (Mastercard, Visa, American Express, etc) and PayPal.
+      </div>
+
+      <button class="btn btn-primary" onclick="upgrade({{ PADDLE_YEARLY_PRODUCT_ID }})">
+        Yearly billing
+        <span class="badge badge-success">Save $18</span>
+        <br>
+        <span style="font-size: 18px">
+          $30/year
+        </span>
+      </button>
+
+      <button class="btn btn-secondary" onclick="upgrade({{ PADDLE_MONTHLY_PRODUCT_ID }})">
+        Monthly billing <br>
+        <b>
+          $4/month
+        </b>
+      </button>
+
+      <hr>
+      <i class="fa fa-bitcoin"></i>
+      Payment via
+      <a href="https://commerce.coinbase.com/?lang=en" target="_blank">
+        Coinbase Commerce<i class="fe fe-external-link"></i>
+      </a> <br>
+      Currently Bitcoin, Bitcoin Cash, Dai, Ethereum, Litecoin and USD Coin are supported. <br>
+
+      <a class="btn btn-outline-primary" href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+         target="_blank">
+        Yearly billing - Crypto <br>
+        $30/year
+        <i class="fe fe-external-link"></i>
+      </a>
+
+      <hr>
+      For other payment options, please send us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a>.
+      <br>
+      If you have bought a coupon, please go to the <a href="{{ url_for('dashboard.coupon_route') }}">coupon page</a> to
+      apply the coupon code.
+
+    </div>
+  </div>
+
+
+  <script type="text/javascript">
+    Paddle.Setup({vendor: {{ PADDLE_VENDOR_ID }}});
+
+    function upgrade(productId) {
+      bootbox.dialog({
+        title: `Payment with credit card or PayPal via Paddle`,
+        message: `Paddle will ask for an email address for sending out the invoices, please feel free to use an alias. <br>
+        You don't have to use your SimpleLogin account email address`,
+        size: 'large',
+        onEscape: true,
+        backdrop: true,
+        buttons: {
+          got_it: {
+            label: 'Got it!',
+            className: 'btn-outline-primary',
+            callback: function () {
+              Paddle.Checkout.open({
+                product: productId,
+                success: "{{ success_url }}",
+                passthrough: "{\"user_id\": {{current_user.id}} }"
+              });
+            }
+          },
+        }
+      });
+    }
+  </script>
+
+{% endblock %}

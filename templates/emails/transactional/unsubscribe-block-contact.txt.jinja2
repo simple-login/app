@@ -1,0 +1,17 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Hi
+
+{{ contact.website_email }} can no longer send emails to {{ alias.email }}
+
+{{ contact.website_email }} is blocked thanks to the "One-click unsubscribe” provided by your mailbox service.
+
+When you click on this button on a forwarded email, the sender will be automatically blocked.
+
+If this is a mistake, you can unblock {{ contact.website_email }} on
+
+{{ unblock_contact_url }}
+
+Please let us know if you have any question.
+{% endblock %}

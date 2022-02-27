@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% call text() %}
+    <h1>
+      Cannot create {{ alias }} on-the-fly
+    </h1>
+  {% endcall %}
+
+  {% call text() %}
+    An email has been sent to the alias <b>{{ alias }}</b> that would be created automatically as you own the directory <b>{{ directory }}</b>
+  {% endcall %}
+
+  {% call text() %}
+    As <b>on-the-fly alias creation is disabled</b> on this directory, the alias isn't created.
+  {% endcall %}
+
+  {% call text() %}
+    If you aren't aware of this alias, that probably means someone has discovered about your directory and is abusing it.
+  {% endcall %}
+
+
+  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+{% endblock %}

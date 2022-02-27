@@ -1,13 +1,17 @@
 """Inspired from
 https://github.com/petermat/spamassassin_client
 """
-import socket, select, re, logging
+import logging
+import socket
 from io import BytesIO
+
+import re2 as re
+import select
 
 from app.log import LOG
 
-divider_pattern = re.compile(br"^(.*?)\r?\n(.*?)\r?\n\r?\n", re.DOTALL)
-first_line_pattern = re.compile(br"^SPAMD/[^ ]+ 0 EX_OK$")
+divider_pattern = re.compile(rb"^(.*?)\r?\n(.*?)\r?\n\r?\n", re.DOTALL)
+first_line_pattern = re.compile(rb"^SPAMD/[^ ]+ 0 EX_OK$")
 
 
 class SpamAssassin(object):
@@ -15,6 +19,9 @@ class SpamAssassin(object):
         self.score = None
         self.symbols = None
         self.spamd_user = spamd_user
+        self.report_json = dict()
+        self.report_fulltext = ""
+        self.score = -999
 
         # Connecting
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -88,7 +95,7 @@ class SpamAssassin(object):
         # join line when current one is only wrap of previous
         tablelists_temp = []
         if tablelists:
-            for counter, tablelist in enumerate(tablelists):
+            for _, tablelist in enumerate(tablelists):
                 if len(tablelist) > 1:
                     if (tablelist[0].isnumeric() or tablelist[0] == "-") and (
                         tablelist[1].isnumeric() or tablelist[1] == "."
@@ -102,14 +109,14 @@ class SpamAssassin(object):
         # create final json
         self.report_json = dict()
         for tablelist in tablelists:
-            wordlist = re.split("\s+", tablelist)
+            wordlist = re.split(r"\s+", tablelist)
             try:
                 self.report_json[wordlist[1]] = {
                     "partscore": float(wordlist[0]),
                     "description": " ".join(wordlist[1:]),
                 }
             except ValueError:
-                LOG.warning("Cannot parse %s %s", wordlist[0], wordlist)
+                LOG.w("Cannot parse %s %s", wordlist[0], wordlist)
 
         headers = (
             headers.decode("utf-8")

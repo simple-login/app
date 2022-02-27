@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi " + name) }}
+  {% call text() %}
+    <h1>
+      Attempt to send an email from your alias <b>{{ alias }}</b> from an unknown IP address
+    </h1>
+  {% endcall %}
 
   {% call text() %}
     We have recorded an attempt to send the following email from your alias <b>{{ alias }}</b> from an unknown IP

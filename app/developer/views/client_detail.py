@@ -4,20 +4,26 @@ from flask import request, render_template, redirect, url_for, flash
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
-from wtforms import StringField, validators
+from wtforms import StringField, validators, TextAreaField
 
 from app import s3
+from app.config import ADMIN_EMAIL
+from app.db import Session
 from app.developer.base import developer_bp
-from app.extensions import db
+from app.email_utils import send_email
 from app.log import LOG
-from app.models import Client, RedirectUri, File
+from app.models import Client, RedirectUri, File, Referral
 from app.utils import random_string
 
 
 class EditClientForm(FlaskForm):
     name = StringField("Name", validators=[validators.DataRequired()])
+    url = StringField("Url", validators=[validators.DataRequired()])
     icon = FileField("Icon")
-    home_url = StringField("Home Url")
+
+
+class ApprovalClientForm(FlaskForm):
+    description = TextAreaField("Description", validators=[validators.DataRequired()])
 
 
 # basic info
@@ -25,21 +31,23 @@ class EditClientForm(FlaskForm):
 @login_required
 def client_detail(client_id):
     form = EditClientForm()
+    approval_form = ApprovalClientForm()
 
     is_new = "is_new" in request.args
+    action = request.args.get("action")
 
     client = Client.get(client_id)
-    if not client:
-        flash("no such client", "warning")
-        return redirect(url_for("developer.index"))
-
-    if client.user_id != current_user.id:
+    if not client or client.user_id != current_user.id:
         flash("you cannot see this app", "warning")
         return redirect(url_for("developer.index"))
 
-    if form.validate_on_submit():
+    # can't set value for a textarea field in jinja
+    if request.method == "GET":
+        approval_form.description.data = client.description
+
+    if action == "edit" and form.validate_on_submit():
         client.name = form.name.data
-        client.home_url = form.home_url.data
+        client.home_url = form.url.data
 
         if form.icon.data:
             # todo: remove current icon if any
@@ -49,21 +57,46 @@ def client_detail(client_id):
 
             s3.upload_from_bytesio(file_path, BytesIO(form.icon.data.read()))
 
-            db.session.flush()
+            Session.flush()
             LOG.d("upload file %s to s3", file)
 
             client.icon_id = file.id
-            db.session.flush()
+            Session.flush()
 
-        db.session.commit()
+        Session.commit()
 
         flash(f"{client.name} has been updated", "success")
+
+        return redirect(url_for("developer.client_detail", client_id=client.id))
+
+    if action == "submit" and approval_form.validate_on_submit():
+        client.description = approval_form.description.data
+        Session.commit()
+
+        send_email(
+            ADMIN_EMAIL,
+            subject=f"{client.name} {client.id} submits for approval",
+            plaintext="",
+            html=f"""
+            name: {client.name} <br>
+            created: {client.created_at} <br>
+            user: {current_user.email} <br>
+            <br>
+            {client.description}
+            """,
+        )
+
+        flash(
+            f"Thanks for submitting, we are informed and will come back to you asap!",
+            "success",
+        )
 
         return redirect(url_for("developer.client_detail", client_id=client.id))
 
     return render_template(
         "developer/client_details/basic_info.html",
         form=form,
+        approval_form=approval_form,
         client=client,
         is_new=is_new,
     )
@@ -96,7 +129,7 @@ def client_detail_oauth_setting(client_id):
         for uri in uris:
             RedirectUri.create(client_id=client_id, uri=uri)
 
-        db.session.commit()
+        Session.commit()
 
         flash(f"{client.name} has been updated", "success")
 
@@ -147,7 +180,7 @@ def client_detail_advanced(client_id):
         # delete client
         client_name = client.name
         Client.delete(client.id)
-        db.session.commit()
+        Session.commit()
         LOG.d("Remove client %s", client)
         flash(f"{client_name} has been deleted", "success")
 
@@ -156,3 +189,34 @@ def client_detail_advanced(client_id):
     return render_template(
         "developer/client_details/advanced.html", form=form, client=client
     )
+
+
+@developer_bp.route("/clients/<client_id>/referral", methods=["GET", "POST"])
+@login_required
+def client_detail_referral(client_id):
+    client = Client.get(client_id)
+    if not client:
+        flash("no such app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if client.user_id != current_user.id:
+        flash("you cannot see this app", "warning")
+        return redirect(url_for("developer.index"))
+
+    if request.method == "POST":
+        referral_id = request.form.get("referral-id")
+        if not referral_id:
+            flash("A referral must be selected", "error")
+            return redirect(request.url)
+
+        referral = Referral.get(referral_id)
+
+        if not referral or referral.user_id != current_user.id:
+            flash("something went wrong, refresh the page", "error")
+            return redirect(request.url)
+
+        client.referral_id = referral.id
+        Session.commit()
+        flash(f"Referral {referral.name} is now attached to {client.name}", "success")
+
+    return render_template("developer/client_details/referral.html", client=client)

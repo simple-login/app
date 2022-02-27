@@ -1,0 +1,111 @@
+{% extends 'default.html' %}
+{% set active_page = "custom_domain" %}
+
+{% block title %}
+  Custom Domains
+{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+      <h1 class="h3"> Custom Domains
+        <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
+           aria-expanded="false" aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
+
+      {% if not current_user.is_premium() %}
+        <div class="alert alert-danger" role="alert">
+          This feature is only available on Premium plan.
+          <a href="{{ URL }}/dashboard/pricing" target="_blank" rel="noopener">
+            Upgrade<i class="fe fe-external-link"></i>
+          </a>
+        </div>
+      {% endif %}
+
+      <div class="alert alert-primary collapse {% if not custom_domains %} show {% endif %}" id="howtouse" role="alert">
+        By adding your domain, you can create aliases like <b>hi@my-domain.com</b> <br>
+
+        You can also enable <b>catch-all</b> to create aliases on-the-fly:
+        simply use <b>anything@my-domain.com</b> and it'll be created when
+        it receives an email.
+      </div>
+
+      <div class="row">
+        {% for custom_domain in custom_domains %}
+          <div class="col-12 col-lg-6">
+            <div class="card" style="">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}">{{ custom_domain.domain }}</a>
+                  {% if custom_domain.ownership_verified and not custom_domain.verified %}
+                    <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id,
+                              _anchor='dns-setup') }}" class="btn btn-info btn-sm">
+                      Ownership verified. Setup the DNS
+                    </a>
+                  {% elif custom_domain.ownership_verified and custom_domain.verified %}
+                    <span class="badge badge-success">Domain ready</span>
+
+                    <!-- custom_domain.ownership_verified is False -->
+                  {% else %}
+                    <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id,
+                              _anchor='ownership-form') }}" class="btn btn-warning btn-sm" role="button">
+                      Verify domain ownership
+                    </a>
+                  {% endif %}
+                </h5>
+
+                <h6 class="card-subtitle mb-4 text-muted">
+                  Created {{ custom_domain.created_at | dt }} <br>
+                  <span class="font-weight-bold">{{ custom_domain.nb_alias() }}</span> aliases.
+                  <br>
+                </h6>
+
+                <a href="{{ url_for('dashboard.domain_detail', custom_domain_id=custom_domain.id) }}" class="mt-3">
+                  Details ➡
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <div class="card">
+            <div class="card-body">
+
+              <form method="post" class="mt-2">
+                {{ new_custom_domain_form.csrf_token }}
+                <input type="hidden" name="form-name" value="create">
+
+                <h2 class="h4">New Domain</h2>
+
+                {{ new_custom_domain_form.domain(class="form-control", placeholder="my-domain.com", maxlength=128) }}
+                {{ render_field_errors(new_custom_domain_form.domain) }}
+                <div class="small-text">
+                  Please use full path domain, for example <b>my-domain.com</b>
+                  or <b>my-subdomain.my-domain.com</b> if you are using a subdomain.
+                </div>
+
+                <button class="btn btn-primary mt-2">Create</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $('.mailbox-select').multipleSelect();
+  </script>
+{% endblock %}

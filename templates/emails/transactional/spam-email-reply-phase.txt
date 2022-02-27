@@ -1,5 +1,6 @@
-Hi {{name}}
+{% extends "base.txt.jinja2" %}
 
+{% block content %}
 An email sent from your alias {{alias.email}} to {{website_email}} is detected as spam by our Spam Detection Engine (SpamAssassin).
 
 In most of the cases, the email will be refused by your contact.
@@ -11,5 +12,4 @@ The email is automatically deleted in 7 days.
 
 Please let us know if you have any question by replying to this email.
 
-Best,
-SimpleLogin team.
+{% endblock %}

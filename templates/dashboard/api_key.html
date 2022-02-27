@@ -1,0 +1,176 @@
+{% extends 'default.html' %}
+
+{% block title %}
+  API Key
+{% endblock %}
+
+{% set active_page = "api_key" %}
+
+{% block head %}
+{% endblock %}
+
+{% block default_content %}
+  <div class="row">
+    <div class="col">
+      <h1 class="h3"> API Keys </h1>
+      <div class="small-text">
+        API keys are used by the SimpleLogin browser extensions or mobile apps.
+      </div>
+
+
+      <div class="alert alert-danger">
+        ️API Keys should be kept secret and treated like passwords, they can be used to gain access to your account.
+      </div>
+
+      <div class="row">
+        {% for api_key in api_keys %}
+          <div class="col-12 col-lg-6">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">{{ api_key.name or "N/A" }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                  {% if api_key.last_used %}
+                    Last used: {{ api_key.last_used | dt }} <br>
+                    Used: {{ api_key.times }} times.
+                  {% else %}
+                    Never used
+                  {% endif %}
+                </h6>
+
+                <div class="input-group">
+                  <input class="form-control" id="apikey-{{ api_key.id }}" readonly value="**********">
+                  <div class="input-group-append">
+                <span class="input-group-text">
+                  <i class="fe fe-eye toggle-api-key" data-show="off" data-secret="{{ api_key.code }}"
+                  ></i>
+                </span>
+                  </div>
+                </div>
+
+                <br>
+
+                <div class="row">
+                  <div class="col">
+                    <button class="clipboard btn btn-primary" data-clipboard-action="copy"
+                            data-clipboard-text="{{ api_key.code }}"
+                            data-clipboard-target="#apikey-{{ api_key.id }}">
+                      Copy &nbsp; &nbsp; <i class="fe fe-clipboard"></i>
+                    </button>
+                  </div>
+
+                  <div class="col">
+                    <form method="post">
+                      <input type="hidden" name="form-name" value="delete">
+                      <input type="hidden" name="api-key-id" value="{{ api_key.id }}">
+                      <span class="card-link btn btn-link float-right text-danger delete-api-key">
+                    Delete
+                  </span>
+                    </form>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if api_keys|length > 0 %}
+        <form method="post">
+          <input type="hidden" name="form-name" value="delete-all">
+          <span class="delete btn btn-danger delete-all-api-keys">
+              Delete All &nbsp; &nbsp; <i class="fe fe-trash"></i>
+          </span>
+        </form>
+        <br>
+      {% endif %}
+
+      <form method="post">
+        {{ new_api_key_form.csrf_token }}
+        <input type="hidden" name="form-name" value="create">
+        <h2 class="h4">New API Key</h2>
+
+        {{ new_api_key_form.name(class="form-control", placeholder="Chrome") }}
+        {{ render_field_errors(new_api_key_form.name) }}
+        <div class="small-text">Name of the api key, e.g. where it will be used.</div>
+
+        <button class="btn btn-success mt-2">Create</button>
+      </form>
+
+
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $(".delete-api-key").on("click", function (e) {
+      let that = $(this);
+
+      bootbox.confirm({
+        message: "If this api key is currently in use, you need to replace it with another api key, please confirm.",
+        buttons: {
+          confirm: {
+            label: 'Yes, delete it',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+
+
+    });
+
+    $(".delete-all-api-keys").on("click", function (e) {
+        let that = $(this);
+
+        bootbox.confirm({
+            message: "This will delete all API Keys, they will all stop working, are you sure?",
+            buttons: {
+                confirm: {
+                    label: 'Delete All',
+                    className: 'btn-danger'
+                },
+                cancel: {
+                    label: 'Cancel',
+                    className: 'btn-outline-primary'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    that.closest("form").submit();
+                }
+            }
+        })
+
+
+    });
+
+    $(".toggle-api-key").on('click', function (event) {
+      let that = $(this);
+      let apiInput = that.parent().parent().parent().find("input");
+      if (that.attr("data-show") === "off") {
+        let apiKey = $(this).attr("data-secret");
+        apiInput.val(apiKey);
+        that.addClass("fe-eye-off");
+        that.removeClass("fe-eye");
+        that.attr("data-show", "on");
+      } else {
+        that.removeClass("fe-eye-off");
+        that.addClass("fe-eye");
+        apiInput.val("**********");
+        that.attr("data-show", "off");
+      }
+
+    });
+  </script>
+{% endblock %}

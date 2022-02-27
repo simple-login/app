@@ -8,6 +8,7 @@ from app.auth.views.login_utils import after_login
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
+from app.utils import sanitize_email, sanitize_next_url
 
 
 class LoginForm(FlaskForm):
@@ -20,16 +21,22 @@ class LoginForm(FlaskForm):
     "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
 )
 def login():
+    next_url = sanitize_next_url(request.args.get("next"))
+
     if current_user.is_authenticated:
-        LOG.d("user is already authenticated, redirect to dashboard")
-        return redirect(url_for("dashboard.index"))
+        if next_url:
+            LOG.d("user is already authenticated, redirect to %s", next_url)
+            return redirect(next_url)
+        else:
+            LOG.d("user is already authenticated, redirect to dashboard")
+            return redirect(url_for("dashboard.index"))
 
     form = LoginForm(request.form)
-    next_url = request.args.get("next")
+
     show_resend_activation = False
 
     if form.validate_on_submit():
-        user = User.filter_by(email=form.email.data.strip().lower()).first()
+        user = User.filter_by(email=sanitize_email(form.email.data)).first()
 
         if not user or not user.check_password(form.password.data):
             # Trigger rate limiter

@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {% if name %}
-    {{ render_text("Hi " + user.name + ",") }}
-  {% else %}
-    {{ render_text("Hi,") }}
-  {% endif %}
+  {{ render_text("Hi") }}
 
   {{ render_text("Your subscription will end on " + next_bill_date + ".") }}
 

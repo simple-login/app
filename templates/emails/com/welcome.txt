@@ -1,23 +1,31 @@
-Hi {{name}}
+Hi!
 
-My name is Son. I’m the founder of SimpleLogin and I wanted to be the first to welcome you on board.
-
-To better secure your account, I recommend enabling Multi-Factor Authentication (MFA) on your setting page at
-{{URL}}/dashboard/setting
-
-If you have any feedback or improvement ideas please let me know by simply replying to this email. Yes, this email is not sent from a no-reply address.
-
-To be informed of SimpleLogin latest features, you can check out our Twitter at https://twitter.com/simple_login or Reddit at https://www.reddit.com/r/Simplelogin/
-
-{% if user.in_trial() %}
-You can use all premium features like custom domain or alias directory during the trial period.
-Your trial will end {{ user.trial_end.humanize() }}.
-All aliases you create during the trial will continue to work normally when the trial ends.
+{% if alias %}
+  This is the first email you receive via your first alias {{ alias }}.
+  This alias is automatically created for receiving SimpleLogin news and tips -
+  feel free to disable it on {{URL}}/dashboard/setting#notification
+  if you don't need any of  these.
 {% endif %}
 
-In the next coming days, you are going to receive some onboarding emails to quickly present some SimpleLogin features. If you don't want to receive these emails, you can disable them in your notification settings on {{URL}}/dashboard/setting#notification.
+To better secure your account, we recommend enabling Multi-Factor Authentication (MFA) or WebAuthn (Yubikey)
+on your setting page at {{URL}}/dashboard/setting
 
 
+If you are using Firefox or a Chromium-browser like Chrome, Edge, Brave, you can
+install our Firefox add-on or Chrome extension
+to create aliases in one click (literally).
 
-Thanks.
-Son.
+Firefox: https://addons.mozilla.org/firefox/addon/simplelogin/
+Chrome: https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn
+
+{% if user.in_trial() and user.trial_end %}
+When you signed up, you can use all premium features like custom domain, alias directory, mailbox, PGP
+without any limit during 7 days (the "trial period").
+No worries: all aliases you create during this period will continue to work normally even if you don't upgrade.
+{% endif %}
+
+At any time, you can reach out to us by simply replying to this email.
+
+For any question, feedback or feature request, please join our GitHub forum at https://github.com/simple-login/app/discussions
+
+You can also join our Reddit at https://www.reddit.com/r/Simplelogin/ follow our Twitter at https://twitter.com/simple_login

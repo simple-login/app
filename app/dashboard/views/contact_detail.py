@@ -2,9 +2,9 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.db import Session
 from app.models import Contact
-from app.pgp_utils import PGPException, load_public_key
+from app.pgp_utils import PGPException, load_public_key_and_check
 
 
 @dashboard_bp.route("/contact/<int:contact_id>/", methods=["GET", "POST"])
@@ -28,11 +28,13 @@ def contact_detail_route(contact_id):
 
                 contact.pgp_public_key = request.form.get("pgp")
                 try:
-                    contact.pgp_finger_print = load_public_key(contact.pgp_public_key)
+                    contact.pgp_finger_print = load_public_key_and_check(
+                        contact.pgp_public_key
+                    )
                 except PGPException:
                     flash("Cannot add the public key, please verify it", "error")
                 else:
-                    db.session.commit()
+                    Session.commit()
                     flash(
                         f"PGP public key for {contact.email} is saved successfully",
                         "success",
@@ -44,7 +46,7 @@ def contact_detail_route(contact_id):
                 # Free user can decide to remove contact PGP key
                 contact.pgp_public_key = None
                 contact.pgp_finger_print = None
-                db.session.commit()
+                Session.commit()
                 flash(f"PGP public key for {contact.email} is removed", "success")
                 return redirect(
                     url_for("dashboard.contact_detail_route", contact_id=contact_id)

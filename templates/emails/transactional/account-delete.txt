@@ -1,0 +1,7 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Your SimpleLogin account has been deleted successfully.
+
+Thank you for having used SimpleLogin.
+{% endblock %}

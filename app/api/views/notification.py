@@ -4,7 +4,7 @@ from flask import request
 
 from app.api.base import api_bp, require_api_auth
 from app.config import PAGE_LIMIT
-from app.extensions import db
+from app.db import Session
 from app.models import Notification
 
 
@@ -22,6 +22,7 @@ def get_notifications():
     - notifications: list of notifications.
         - id
         - message
+        - title
         - read
         - created_at
     """
@@ -32,7 +33,7 @@ def get_notifications():
         return jsonify(error="page must be provided in request query"), 400
 
     notifications = (
-        Notification.query.filter_by(user_id=user.id)
+        Notification.filter_by(user_id=user.id)
         .order_by(Notification.read, Notification.created_at.desc())
         .limit(PAGE_LIMIT + 1)  # load a record more to know whether there's more
         .offset(page * PAGE_LIMIT)
@@ -48,6 +49,7 @@ def get_notifications():
                 {
                     "id": notification.id,
                     "message": notification.message,
+                    "title": notification.title,
                     "read": notification.read,
                     "created_at": notification.created_at.humanize(),
                 }
@@ -76,6 +78,6 @@ def mark_as_read(notification_id):
         return jsonify(error="Forbidden"), 403
 
     notification.read = True
-    db.session.commit()
+    Session.commit()
 
     return jsonify(done=True), 200

@@ -1,0 +1,13 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Hi
+
+Your email cannot be sent to {{contact.email}} from your alias {{alias.email}}.
+
+Can you please verify {{contact.email}} is a valid address?
+
+Usually this is because the DNS record of {{contact_domain}} does not exist.
+
+You can check its DNS record on any DNS checker websites, for example https://mxtoolbox.com/SuperTool.aspx
+{% endblock %}

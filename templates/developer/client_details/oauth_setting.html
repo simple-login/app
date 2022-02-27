@@ -1,0 +1,127 @@
+{% extends 'developer/client_details/base.html' %}
+
+{% set client_details_page = "oauth_setting" %}
+
+{% block client_details_content %}
+  <form method="post">
+    {{ form.csrf_token }}
+    <h1 class="h2">OAuth2 Settings</h1>
+
+    <div class="form-group">
+      <label class="form-label">AppID / OAuth2 Client ID</label>
+
+      <div class="input-group mt-2">
+        <input disabled type="text" value="{{ client.oauth_client_id }}" class="form-control">
+        <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ client.oauth_client_id }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">AppSecret / OAuth2 Client Secret</label>
+
+      <div class="input-group mt-2">
+        <input disabled type="password" value="{{ client.oauth_client_secret }}" class="form-control">
+        <span class="input-group-append">
+          <button
+              data-clipboard-text="{{ client.oauth_client_secret }}"
+              class="clipboard btn btn-primary" type="button">
+            <i class="fe fe-clipboard"></i>
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <hr>
+    <div class="form-group">
+      <label class="form-label">Authorized Redirect URIs</label>
+      <small class="text-muted">
+        By default <b>localhost</b> is whitelisted. <br>
+        A <b>redirect_uri</b> must be <b>HTTPS</b> for security reason.
+      </small>
+
+      {% if not client.redirect_uris %}
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+          <p>
+            You haven't added any <a href="https://www.oauth.com/oauth2-servers/redirect-uris/">redirect_uri</a>,
+            that is the url that will receive the <b>code</b> or <b>access-token</b> in OAuth2 flow.
+          </p>
+          <p>
+            There's NO NEED to add <em>http://localhost:*</em> as by default,
+            SimpleLogin <b>whitelists</b> localhost (unlike Facebook).
+          </p>
+          <p>
+            You DO need to add your <b>redirect_uri</b> once your app goes live (i.e. deployed on production).
+          </p>
+          <p>
+            The <b>redirect_uri</b> needs to be <b>HTTPS</b> for security reason.
+          </p>
+          <p>
+            Start by adding your first <b>redirect_uri</b> here 👇
+          </p>
+        </div>
+      {% endif %}
+
+      {% for redirect_uri in client.redirect_uris %}
+        <div class="input-group mt-2">
+          <input type="url" name="uri" class="form-control" value="{{ redirect_uri.uri }}"
+                 required pattern="^https:\/\/.*"
+                 title="redirect_uri must be https">
+
+          <span class="input-group-append">
+            <button class="remove-uri btn btn-primary" type="button">
+              <i class="fe fe-x"></i>
+            </button>
+          </span>
+
+        </div>
+      {% endfor %}
+
+      <div id="new-uris">
+        <!-- New uri will be put here -->
+      </div>
+
+
+      <button type="button" id="create-new-uri" class="mt-2 btn btn-secondary">Add new uri</button>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update</button>
+  </form>
+
+  <!-- template for new uri -->
+  <div class="input-group mt-2" id="hidden-uri" style="display: none">
+    <input type="url" name="uri" class="form-control"
+           required pattern="^https:\/\/.*"
+           title="redirect_uri must be https">
+
+    <span class="input-group-append">
+      <button class="remove-uri btn btn-primary" type="button">
+        <i class="fe fe-x"></i>
+      </button>
+    </span>
+
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script>
+    $("#create-new-uri").on("click", function (e) {
+      var clone = $("#hidden-uri").clone(true, true); // (true, true) to clone withDataAndEvents, deepWithDataAndEvents
+      clone.removeAttr("id");
+
+      $("#new-uris").append(clone);
+      clone.show();
+    });
+
+    $(".remove-uri").click(function (e) {
+      var currentElement = $(this);
+      currentElement.parent().parent().remove();
+    });
+
+  </script>
+{% endblock %}

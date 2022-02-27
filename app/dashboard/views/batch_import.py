@@ -1,15 +1,13 @@
 import arrow
 from flask import render_template, flash, request, redirect, url_for
 from flask_login import login_required, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, validators
 
 from app import s3
 from app.config import JOB_BATCH_IMPORT
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.db import Session
 from app.log import LOG
-from app.models import CustomDomain, File, BatchImport, Job
+from app.models import File, BatchImport, Job
 from app.utils import random_string
 
 
@@ -20,7 +18,14 @@ def batch_import_route():
     if not current_user.verified_custom_domains():
         flash("Alias batch import is only available for custom domains", "warning")
 
-    batch_imports = BatchImport.query.filter_by(user_id=current_user.id).all()
+    if current_user.disable_import:
+        flash(
+            "you cannot use the import feature, please contact SimpleLogin team",
+            "error",
+        )
+        return redirect(url_for("dashboard.index"))
+
+    batch_imports = BatchImport.filter_by(user_id=current_user.id).all()
 
     if request.method == "POST":
         alias_file = request.files["alias-file"]
@@ -28,12 +33,12 @@ def batch_import_route():
         file_path = random_string(20) + ".csv"
         file = File.create(user_id=current_user.id, path=file_path)
         s3.upload_from_bytesio(file_path, alias_file)
-        db.session.flush()
+        Session.flush()
         LOG.d("upload file %s to s3 at %s", file, file_path)
 
         bi = BatchImport.create(user_id=current_user.id, file_id=file.id)
-        db.session.flush()
-        LOG.debug("Add a batch import job %s for %s", bi, current_user)
+        Session.flush()
+        LOG.d("Add a batch import job %s for %s", bi, current_user)
 
         # Schedule batch import job
         Job.create(
@@ -41,7 +46,7 @@ def batch_import_route():
             payload={"batch_import_id": bi.id},
             run_at=arrow.now(),
         )
-        db.session.commit()
+        Session.commit()
 
         flash(
             "The file has been uploaded successfully and the import will start shortly",

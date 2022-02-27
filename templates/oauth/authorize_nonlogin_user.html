@@ -1,0 +1,67 @@
+{% extends "sign_in_with_sl_base.html" %}
+
+{% block single_content %}
+  <div class="card" style="border-radius: 2%">
+
+    <div class="card-body">
+      <div class="mt-4">
+        <b>{{ client.name }}</b> would like to have access to your following data:
+      </div>
+
+      <div>
+        <ul class="mt-3">
+          {% for scope in client.get_scopes() %}
+            <li>
+              {% if scope == Scope.AVATAR_URL %}
+                avatar
+              {% else %}
+                {{ scope.value }}
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div>
+        Sign in to accept sharing data with <b>{{ client.name }}</b>
+      </div>
+
+      <div class="mt-4">
+        <div class="btn-group w-100">
+
+          <a href="{{ url_for('auth.login', next=next) }}" class="btn btn-success">
+            Login
+          </a>
+          {% if client.referral %}
+            <a href="{{ url_for('auth.register', slref=client.referral.code, next=next) }}" class="btn btn-info">
+              Sign Up
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.register', next=next) }}" class="btn btn-info">
+              Sign Up
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="">
+        <p class="text-center col">Cancel and go back to <b>{{ client.name }}</b></p>
+        <a class="btn btn-block btn-secondary back-or-close">
+          <i class="fe fe-arrow-left mr-2"></i>Cancel
+        </a>
+      </div>
+
+      <div class="small-text mt-4">
+        <a href="https://simplelogin.io">SimpleLogin</a> is an open source social login provider that protects your
+        privacy.
+      </div>
+
+    </div>
+  </div>
+
+{% endblock %}
+
+
+

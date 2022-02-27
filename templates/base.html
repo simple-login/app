@@ -17,8 +17,18 @@
   <meta name="MobileOptimized" content="320">
   <meta name="referrer" content="no-referrer">
 
+  <!-- Bing -->
+  <meta name="msvalidate.01" content="2A313A69CBFD1A378C3B91734DC221A8"/>
+
+  <!-- Yandex -->
+  <meta name="yandex-verification" content="c9e5d4d68bc983a1"/>
+
+  <meta name="description"
+        content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, spams.">
+
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
   <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
+  <link rel="canonical" href="{{ CANONICAL_URL }}">
 
   <title>
     {% block title %}{% endblock %} | SimpleLogin
@@ -68,10 +78,16 @@
   <script
       src="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.js') }}"></script>
 
+  <!-- Parseley library -->
+  <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/parsley.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/i18n/en.js') }}"></script>
+
+  <script src="{{ url_for('static', filename='node_modules/htmx.org/dist/htmx.min.js') }}"></script>
+
 
   {% if PLAUSIBLE_HOST and PLAUSIBLE_DOMAIN %}
-  <!-- Plausible Analytics library -->
-  <script async defer data-domain=”{{PLAUSIBLE_DOMAIN}}” src=”{{PLAUSIBLE_HOST}}/js/plausible.js”></script>
+    <!-- Plausible Analytics library -->
+    <script async defer data-domain=”{{ PLAUSIBLE_DOMAIN }}” src=”{{ PLAUSIBLE_HOST }}/js/plausible.js”></script>
   {% endif %}
 
   <link rel="stylesheet" href="{{ url_for('static', filename='darkmode.css') }}?v={{ VERSION }}">
@@ -89,6 +105,9 @@
 </head>
 <body class="">
 <div class="page">
+  {% block announcement %}
+  {% endblock %}
+
   <div class="container">
     <!-- For flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -183,39 +202,18 @@
     }
   });
 
+  document.body.addEventListener('htmx:responseError', function(evt) {
+    toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+  });
+
 </script>
 
 <script src="{{ url_for('static', filename='local-storage-polyfill.js') }}"></script>
-
 
 <!-- For additional script -->
 {% block script %}
 {% endblock %}
 
-<script>
-  (function () {
-    // only enable on prod
-    if (!window.location.host.endsWith('simplelogin.io')) {
-      console.log("GoatCounter should only be enabled in prod");
-      return;
-    }
-
-    if (store.get('goatcounter-ignore') === 't') {
-      console.log("GoatCounter is disabled");
-      return;
-    }
-
-    console.log("init GoatCounter");
-
-    var script = document.createElement('script');
-    window.counter = 'https://app.goatcounter.com/count'
-    script.async = 1;
-    script.src = '//gc.zgo.at/count.js';
-
-    var ins = document.getElementsByTagName('script')[0];
-    ins.parentNode.insertBefore(script, ins)
-  })();
-</script>
-
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
 </body>
 </html>

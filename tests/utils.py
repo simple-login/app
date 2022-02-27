@@ -1,15 +1,19 @@
+import json
+
 from flask import url_for
 
-from app.extensions import db
 from app.models import User
 
 
 def login(flask_client) -> User:
     # create user, user is activated
     user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
     )
-    db.session.commit()
 
     r = flask_client.post(
         url_for("auth.login"),
@@ -21,3 +25,19 @@ def login(flask_client) -> User:
     assert b"/auth/logout" in r.data
 
     return user
+
+
+def create_user(flask_client) -> User:
+    # create user, user is activated
+    return User.create(
+        email="a@b.c",
+        password="password",
+        name="Test User",
+        activated=True,
+        commit=True,
+    )
+
+
+def pretty(d):
+    """pretty print as json"""
+    print(json.dumps(d, indent=2))

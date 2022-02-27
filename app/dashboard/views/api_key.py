@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.dashboard.base import dashboard_bp
-from app.extensions import db
+from app.db import Session
 from app.models import ApiKey
 
 
@@ -16,7 +16,7 @@ class NewApiKeyForm(FlaskForm):
 @login_required
 def api_key():
     api_keys = (
-        ApiKey.query.filter(ApiKey.user_id == current_user.id)
+        ApiKey.filter(ApiKey.user_id == current_user.id)
         .order_by(ApiKey.created_at.desc())
         .all()
     )
@@ -38,20 +38,21 @@ def api_key():
 
             name = api_key.name
             ApiKey.delete(api_key_id)
-            db.session.commit()
+            Session.commit()
             flash(f"API Key {name} has been deleted", "success")
-
-            return redirect(url_for("dashboard.api_key"))
 
         elif request.form.get("form-name") == "create":
             if new_api_key_form.validate():
                 new_api_key = ApiKey.create(
                     name=new_api_key_form.name.data, user_id=current_user.id
                 )
-                db.session.commit()
-
+                Session.commit()
                 flash(f"New API Key {new_api_key.name} has been created", "success")
-                return redirect(url_for("dashboard.api_key"))
+
+        elif request.form.get("form-name") == "delete-all":
+            ApiKey.delete_all(current_user.id)
+            Session.commit()
+            flash("All API Keys have been deleted", "success")
 
         return redirect(url_for("dashboard.api_key"))
 
