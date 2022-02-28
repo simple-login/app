@@ -3,7 +3,7 @@ from flask import redirect, url_for, request, flash
 from flask_admin import expose, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.contrib import sqla
-from flask_login import current_user, login_user
+from flask_login import current_user
 
 from app.db import Session
 from app.models import User, ManualSubscription, Fido, Subscription, AppleSubscription
@@ -126,20 +126,20 @@ class UserAdmin(SLModelView):
 
         Session.commit()
 
-    @action(
-        "login_as",
-        "Login as this user",
-        "Login as this user?",
-    )
-    def login_as(self, ids):
-        if len(ids) != 1:
-            flash("only 1 user can be selected", "error")
-            return
-
-        for user in User.filter(User.id.in_(ids)):
-            login_user(user)
-            flash(f"Login as user {user}", "success")
-            return redirect("/")
+    # @action(
+    #     "login_as",
+    #     "Login as this user",
+    #     "Login as this user?",
+    # )
+    # def login_as(self, ids):
+    #     if len(ids) != 1:
+    #         flash("only 1 user can be selected", "error")
+    #         return
+    #
+    #     for user in User.filter(User.id.in_(ids)):
+    #         login_user(user)
+    #         flash(f"Login as user {user}", "success")
+    #         return redirect("/")
 
 
 def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
@@ -204,9 +204,9 @@ class MailboxAdmin(SLModelView):
     column_filters = ["id", "user.email", "email"]
 
 
-class LifetimeCouponAdmin(SLModelView):
-    can_edit = True
-    can_create = True
+# class LifetimeCouponAdmin(SLModelView):
+#     can_edit = True
+#     can_create = True
 
 
 class CouponAdmin(SLModelView):
@@ -231,10 +231,10 @@ class ManualSubscriptionAdmin(SLModelView):
         Session.commit()
 
 
-class ClientAdmin(SLModelView):
-    column_searchable_list = ["name", "description", "user.email"]
-    column_exclude_list = ["oauth_client_secret", "home_url"]
-    can_edit = True
+# class ClientAdmin(SLModelView):
+#     column_searchable_list = ["name", "description", "user.email"]
+#     column_exclude_list = ["oauth_client_secret", "home_url"]
+#     can_edit = True
 
 
 class CustomDomainAdmin(SLModelView):
@@ -254,9 +254,9 @@ class ReferralAdmin(SLModelView):
         return ret
 
 
-class PayoutAdmin(SLModelView):
-    column_searchable_list = ["id", "user.email"]
-    column_filters = ["id", "user.email"]
-    can_edit = True
-    can_create = True
-    can_delete = True
+# class PayoutAdmin(SLModelView):
+#     column_searchable_list = ["id", "user.email"]
+#     column_filters = ["id", "user.email"]
+#     can_edit = True
+#     can_create = True
+#     can_delete = True
