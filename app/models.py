@@ -450,6 +450,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         server_default=BlockBehaviourEnum.return_2xx.name,
     )
 
+    # to keep existing behavior, the server default is TRUE whereas for new user, the default value is FALSE
+    include_header_email_header = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="1"
+    )
+
     @property
     def directory_quota(self):
         return min(
