@@ -315,6 +315,15 @@ def setting():
                 return redirect(url_for("dashboard.setting"))
             Session.commit()
             flash("Your preference has been updated", "success")
+        elif request.form.get("form-name") == "sender-header":
+            choose = request.form.get("enable")
+            if choose == "on":
+                current_user.include_header_email_header = True
+            else:
+                current_user.include_header_email_header = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
         elif request.form.get("form-name") == "export-data":
             return redirect(url_for("api.export_data"))
         elif request.form.get("form-name") == "export-alias":

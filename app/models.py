@@ -450,6 +450,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         server_default=BlockBehaviourEnum.return_2xx.name,
     )
 
+    # to keep existing behavior, the server default is TRUE whereas for new user, the default value is FALSE
+    include_header_email_header = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="1"
+    )
+
     @property
     def directory_quota(self):
         return min(
@@ -1160,7 +1165,7 @@ class Alias(Base, ModelMixin):
     enabled = sa.Column(sa.Boolean(), default=True, nullable=False)
 
     custom_domain_id = sa.Column(
-        sa.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True
+        sa.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True, index=True
     )
 
     custom_domain = orm.relationship("CustomDomain", foreign_keys=[custom_domain_id])
@@ -1172,7 +1177,7 @@ class Alias(Base, ModelMixin):
 
     # to know whether an alias belongs to a directory
     directory_id = sa.Column(
-        sa.ForeignKey("directory.id", ondelete="cascade"), nullable=True
+        sa.ForeignKey("directory.id", ondelete="cascade"), nullable=True, index=True
     )
 
     note = sa.Column(sa.Text, default=None, nullable=True)

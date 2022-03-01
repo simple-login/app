@@ -204,7 +204,7 @@ def get_alias_infos_with_pagination_v3(
     q = list(q.limit(page_limit).offset(page_id * page_size))
 
     ret = []
-    for alias, contact, email_log, custom_domain, nb_reply, nb_blocked, nb_forward in q:
+    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in q:
         ret.append(
             AliasInfo(
                 alias=alias,
@@ -215,7 +215,7 @@ def get_alias_infos_with_pagination_v3(
                 nb_reply=nb_reply,
                 latest_email_log=email_log,
                 latest_contact=contact,
-                custom_domain=custom_domain,
+                custom_domain=alias.custom_domain,
             )
         )
 
@@ -318,7 +318,7 @@ def get_alias_info_v3(user: User, alias_id: int) -> AliasInfo:
     q = construct_alias_query(user)
     q = q.filter(Alias.id == alias_id)
 
-    for alias, contact, email_log, custom_domain, nb_reply, nb_blocked, nb_forward in q:
+    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in q:
         return AliasInfo(
             alias=alias,
             mailbox=alias.mailbox,
@@ -328,7 +328,7 @@ def get_alias_info_v3(user: User, alias_id: int) -> AliasInfo:
             nb_reply=nb_reply,
             latest_email_log=email_log,
             latest_contact=contact,
-            custom_domain=custom_domain,
+            custom_domain=alias.custom_domain,
         )
 
 
@@ -379,14 +379,13 @@ def construct_alias_query(user: User):
             Alias,
             Contact,
             EmailLog,
-            CustomDomain,
             alias_activity_subquery.c.nb_reply,
             alias_activity_subquery.c.nb_blocked,
             alias_activity_subquery.c.nb_forward,
         )
         .options(joinedload(Alias.hibp_breaches))
+        .options(joinedload(Alias.custom_domain))
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
-        .join(CustomDomain, Alias.custom_domain_id == CustomDomain.id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
         .filter(Alias.id == alias_activity_subquery.c.id)
         .filter(Alias.id == alias_contact_subquery.c.id)
