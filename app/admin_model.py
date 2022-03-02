@@ -226,7 +226,19 @@ class ManualSubscriptionAdmin(SLModelView):
     def extend_1y(self, ids):
         for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
             ms.end_at = ms.end_at.shift(years=1)
-            flash(f"Extend subscription for {ms.user}", "success")
+            flash(f"Extend subscription for 1 year for {ms.user}", "success")
+
+        Session.commit()
+
+    @action(
+        "extend_1m",
+        "Extend for 1 month",
+        "Extend 1 month more?",
+    )
+    def extend_1m(self, ids):
+        for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
+            ms.end_at = ms.end_at.shift(months=1)
+            flash(f"Extend subscription for 1 month for {ms.user}", "success")
 
         Session.commit()
 
