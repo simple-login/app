@@ -45,7 +45,7 @@ class UserAdmin(SLModelView):
         "fido_uuid",
         "profile_picture",
     ]
-    can_edit = True
+    can_edit = False
 
     def scaffold_list_columns(self):
         ret = super().scaffold_list_columns()
@@ -210,12 +210,12 @@ class MailboxAdmin(SLModelView):
 
 
 class CouponAdmin(SLModelView):
-    can_edit = True
+    can_edit = False
     can_create = True
 
 
 class ManualSubscriptionAdmin(SLModelView):
-    can_edit = True
+    can_edit = False
     column_searchable_list = ["id", "user.email"]
 
     @action(
