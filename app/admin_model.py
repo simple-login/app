@@ -93,6 +93,14 @@ class UserAdmin(SLModelView):
         manual_upgrade("Crypto", ids, is_giveaway=False)
 
     @action(
+        "adhoc_upgrade",
+        "Adhoc upgrade - for exceptional case",
+        "Are you sure you want to crypto-upgrade selected users?",
+    )
+    def action_adhoc_upgrade(self, ids):
+        manual_upgrade("Adhoc", ids, is_giveaway=False)
+
+    @action(
         "extend_trial_1w",
         "Extend trial for 1 week more",
         "Extend trial for 1 week more?",
