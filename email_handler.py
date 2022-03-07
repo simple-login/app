@@ -1397,7 +1397,34 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
 
     # inform user of this bounce
     alias_will_be_disabled, reason = should_disable(alias)
-    if not alias_will_be_disabled:
+    if alias_will_be_disabled:
+        LOG.w(
+            f"Disable alias {alias} because {reason}. {alias.mailboxes} {alias.user}. Last contact {contact}"
+        )
+        alias.enabled = False
+        Session.commit()
+
+        send_email_with_rate_control(
+            user,
+            ALERT_BOUNCE_EMAIL,
+            user.email,
+            f"Alias {alias.email} has been disabled due to multiple bounces",
+            render(
+                "transactional/bounce/automatic-disable-alias.txt",
+                alias=alias,
+                refused_email_url=refused_email_url,
+                mailbox_email=mailbox.email,
+            ),
+            render(
+                "transactional/bounce/automatic-disable-alias.html",
+                alias=alias,
+                refused_email_url=refused_email_url,
+                mailbox_email=mailbox.email,
+            ),
+            max_nb_alert=10,
+            ignore_smtp_error=True,
+        )
+    else:
         LOG.d(
             "Inform user %s about a bounce from contact %s to alias %s",
             user,
@@ -1445,33 +1472,6 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             ),
             max_nb_alert=10,
             # smtp error can happen if user mailbox is unreachable, that might explain the bounce
-            ignore_smtp_error=True,
-        )
-    else:
-        LOG.w(
-            f"Disable alias {alias} because {reason}. {alias.mailboxes} {alias.user}. Last contact {contact}"
-        )
-        alias.enabled = False
-        Session.commit()
-
-        send_email_with_rate_control(
-            user,
-            ALERT_BOUNCE_EMAIL,
-            user.email,
-            f"Alias {alias.email} has been disabled due to multiple bounces",
-            render(
-                "transactional/bounce/automatic-disable-alias.txt",
-                alias=alias,
-                refused_email_url=refused_email_url,
-                mailbox_email=mailbox.email,
-            ),
-            render(
-                "transactional/bounce/automatic-disable-alias.html",
-                alias=alias,
-                refused_email_url=refused_email_url,
-                mailbox_email=mailbox.email,
-            ),
-            max_nb_alert=10,
             ignore_smtp_error=True,
         )
 
