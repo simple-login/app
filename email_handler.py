@@ -1395,7 +1395,6 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
 
     refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
 
-    # inform user of this bounce
     alias_will_be_disabled, reason = should_disable(alias)
     if alias_will_be_disabled:
         LOG.w(

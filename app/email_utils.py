@@ -1143,11 +1143,11 @@ def should_disable(alias: Alias) -> (bool, str):
     )
     # if more than 12 bounces in 24h -> disable alias
     if nb_bounced_last_24h > 12:
-        return True, "more than 12 bounces in the last 24h"
+        return True, "+12 bounces in the last 24h"
 
-    # if more than 5 bounces but has bounces last week -> disable alias
+    # if more than 5 bounces but has +10 bounces last week -> disable alias
     elif nb_bounced_last_24h > 5:
-        one_week_ago = arrow.now().shift(days=-8)
+        one_week_ago = arrow.now().shift(days=-7)
         nb_bounced_7d_1d = (
             Session.query(EmailLog)
             .filter(
@@ -1159,10 +1159,10 @@ def should_disable(alias: Alias) -> (bool, str):
             .filter(EmailLog.alias_id == alias.id)
             .count()
         )
-        if nb_bounced_7d_1d > 1:
+        if nb_bounced_7d_1d > 10:
             return (
                 True,
-                "more than 5 bounces in the last 24h and more than 1 bounces in the last 7 days",
+                "+5 bounces in the last 24h and +10 bounces in the last 7 days",
             )
     else:
         # alias level

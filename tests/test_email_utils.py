@@ -721,8 +721,8 @@ def test_should_disable_bounce_consecutive_days(flask_client):
         )
     assert not should_disable(alias)[0]
 
-    # create 2 bounces in the last 7 days: alias should be disabled
-    for _ in range(2):
+    # create +10 bounces in the last 7 days: alias should be disabled
+    for _ in range(11):
         EmailLog.create(
             user_id=user.id,
             contact_id=contact.id,
