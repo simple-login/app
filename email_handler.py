@@ -1396,7 +1396,8 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
 
     # inform user of this bounce
-    if not should_disable(alias):
+    alias_will_be_disabled, reason = should_disable(alias)
+    if not alias_will_be_disabled:
         LOG.d(
             "Inform user %s about a bounce from contact %s to alias %s",
             user,
@@ -1447,7 +1448,9 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             ignore_smtp_error=True,
         )
     else:
-        LOG.w("Disable alias %s %s. Last contact %s", alias, user, contact)
+        LOG.w(
+            f"Disable alias {alias} because {reason}. {alias.mailboxes} {alias.user}. Last contact {contact}"
+        )
         alias.enabled = False
         Session.commit()
 
