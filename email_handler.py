@@ -1902,11 +1902,11 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
             alias_id = int(subject)
             alias = Alias.get(alias_id)
     except Exception:
-        LOG.w("Cannot parse alias from subject %s", msg[headers.SUBJECT])
+        LOG.w("Wrong format subject %s", msg[headers.SUBJECT])
         return status.E507
 
     if not alias:
-        LOG.w("Cannot parse alias from subject %s", subject)
+        LOG.w("Cannot get alias from subject %s", subject)
         return status.E508
 
     mail_from = envelope.mail_from
