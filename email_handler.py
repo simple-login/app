@@ -1906,7 +1906,7 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
         return status.E507
 
     if not alias:
-        LOG.w("No such alias %s", alias_id)
+        LOG.w("Cannot parse alias from subject %s", subject)
         return status.E508
 
     mail_from = envelope.mail_from
