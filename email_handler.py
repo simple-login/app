@@ -1913,7 +1913,12 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
     # Only alias's owning mailbox can send the unsubscribe request
     mailbox = get_mailbox_from_mail_from(mail_from, alias)
     if not mailbox:
-        LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
+        LOG.d(
+            "%s cannot disable alias %s. Alias authorized addresses:%s",
+            envelope.mail_from,
+            alias,
+            alias.authorized_addresses,
+        )
         return status.E509
 
     user = alias.user
