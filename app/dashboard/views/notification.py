@@ -23,6 +23,10 @@ def notification_route(notification_id):
         )
         return redirect(url_for("dashboard.index"))
 
+    if not notification.read:
+        notification.read = True
+        Session.commit()
+
     if request.method == "POST":
         notification_title = notification.title or notification.message[:20]
         Notification.delete(notification_id)
