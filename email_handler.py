@@ -1403,6 +1403,15 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         alias.enabled = False
         Session.commit()
 
+        Notification.create(
+            user_id=user.id,
+            title=f"{alias.email} has been disabled due to multiple bounces",
+            message=Notification.render(
+                "notification/alias-disable.html", alias=alias, mailbox=mailbox
+            ),
+            commit=True,
+        )
+
         send_email_with_rate_control(
             user,
             ALERT_BOUNCE_EMAIL,
