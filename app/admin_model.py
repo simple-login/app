@@ -7,7 +7,6 @@ from flask_admin.actions import action
 from flask_admin.contrib import sqla
 from flask_login import current_user
 
-from app.log import LOG
 from app.db import Session
 from app.models import (
     User,
@@ -327,12 +326,12 @@ class ReferralAdmin(SLModelView):
         return ret
 
 
-#class PayoutAdmin(SLModelView):
-#    column_searchable_list = ["id", "user.email"]
-#    column_filters = ["id", "user.email"]
-#    can_edit = True
-#    can_create = True
-#    can_delete = True
+# class PayoutAdmin(SLModelView):
+#     column_searchable_list = ["id", "user.email"]
+#     column_filters = ["id", "user.email"]
+#     can_edit = True
+#     can_create = True
+#     can_delete = True
 
 
 class AdminAuditLogAdmin(SLModelView):
