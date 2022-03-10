@@ -87,7 +87,7 @@
 
   {% if PLAUSIBLE_HOST and PLAUSIBLE_DOMAIN %}
     <!-- Plausible Analytics library -->
-    <script async defer data-domain=”{{ PLAUSIBLE_DOMAIN }}” src=”{{ PLAUSIBLE_HOST }}/js/plausible.js”></script>
+    <script async defer data-domain=”{{ PLAUSIBLE_DOMAIN }}” src=”{{ PLAUSIBLE_HOST }}/js/plausible.outbound-links.js”></script>
   {% endif %}
 
   <link rel="stylesheet" href="{{ url_for('static', filename='darkmode.css') }}?v={{ VERSION }}">

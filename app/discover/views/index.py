@@ -8,5 +8,5 @@ from app.models import Client
 @discover_bp.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    clients = Client.filter_by(published=True).all()
+    clients = Client.filter_by(approved=True).all()
     return render_template("discover/index.html", clients=clients)

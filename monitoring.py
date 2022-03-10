@@ -50,6 +50,7 @@ if __name__ == "__main__":
     while True:
         log_postfix_metrics()
         log_nb_db_connection()
+        Session.close()
 
         # 1 min
         sleep(60)

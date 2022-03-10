@@ -801,7 +801,8 @@ def forward_email_to_mailbox(
     add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
 
     msg[headers.SL_EMAIL_LOG_ID] = str(email_log.id)
-    msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+    if user.include_header_email_header:
+        msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
     msg[headers.SL_ENVELOPE_TO] = alias.email
 
@@ -1394,8 +1395,44 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
 
     refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
 
-    # inform user of this bounce
-    if not should_disable(alias):
+    alias_will_be_disabled, reason = should_disable(alias)
+    if alias_will_be_disabled:
+        LOG.w(
+            f"Disable alias {alias} because {reason}. {alias.mailboxes} {alias.user}. Last contact {contact}"
+        )
+        alias.enabled = False
+
+        Notification.create(
+            user_id=user.id,
+            title=f"{alias.email} has been disabled due to multiple bounces",
+            message=Notification.render(
+                "notification/alias-disable.html", alias=alias, mailbox=mailbox
+            ),
+        )
+
+        Session.commit()
+
+        send_email_with_rate_control(
+            user,
+            ALERT_BOUNCE_EMAIL,
+            user.email,
+            f"Alias {alias.email} has been disabled due to multiple bounces",
+            render(
+                "transactional/bounce/automatic-disable-alias.txt",
+                alias=alias,
+                refused_email_url=refused_email_url,
+                mailbox_email=mailbox.email,
+            ),
+            render(
+                "transactional/bounce/automatic-disable-alias.html",
+                alias=alias,
+                refused_email_url=refused_email_url,
+                mailbox_email=mailbox.email,
+            ),
+            max_nb_alert=10,
+            ignore_smtp_error=True,
+        )
+    else:
         LOG.d(
             "Inform user %s about a bounce from contact %s to alias %s",
             user,
@@ -1443,31 +1480,6 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             ),
             max_nb_alert=10,
             # smtp error can happen if user mailbox is unreachable, that might explain the bounce
-            ignore_smtp_error=True,
-        )
-    else:
-        LOG.w("Disable alias %s %s. Last contact %s", alias, user, contact)
-        alias.enabled = False
-        Session.commit()
-
-        send_email_with_rate_control(
-            user,
-            ALERT_BOUNCE_EMAIL,
-            user.email,
-            f"Alias {alias.email} has been disabled due to multiple bounces",
-            render(
-                "transactional/bounce/automatic-disable-alias.txt",
-                alias=alias,
-                refused_email_url=refused_email_url,
-                mailbox_email=mailbox.email,
-            ),
-            render(
-                "transactional/bounce/automatic-disable-alias.html",
-                alias=alias,
-                refused_email_url=refused_email_url,
-                mailbox_email=mailbox.email,
-            ),
-            max_nb_alert=10,
             ignore_smtp_error=True,
         )
 
@@ -1899,18 +1911,23 @@ def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
             alias_id = int(subject)
             alias = Alias.get(alias_id)
     except Exception:
-        LOG.w("Cannot parse alias from subject %s", msg[headers.SUBJECT])
+        LOG.w("Wrong format subject %s", msg[headers.SUBJECT])
         return status.E507
 
     if not alias:
-        LOG.w("No such alias %s", alias_id)
+        LOG.w("Cannot get alias from subject %s", subject)
         return status.E508
 
     mail_from = envelope.mail_from
     # Only alias's owning mailbox can send the unsubscribe request
     mailbox = get_mailbox_from_mail_from(mail_from, alias)
     if not mailbox:
-        LOG.d("%s cannot disable alias %s", envelope.mail_from, alias)
+        LOG.d(
+            "%s cannot disable alias %s. Alias authorized addresses:%s",
+            envelope.mail_from,
+            alias,
+            alias.authorized_addresses,
+        )
         return status.E509
 
     user = alias.user

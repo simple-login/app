@@ -1,3 +1,4 @@
+from app import config
 from typing import Optional, List, Tuple
 
 import dns.resolver
@@ -5,16 +6,14 @@ import dns.resolver
 
 def _get_dns_resolver():
     my_resolver = dns.resolver.Resolver()
-
-    # 1.1.1.1 is CloudFlare's public DNS server
-    my_resolver.nameservers = ["1.1.1.1"]
+    my_resolver.nameservers = config.NAMESERVERS
 
     return my_resolver
 
 
 def get_ns(hostname) -> [str]:
     try:
-        answers = _get_dns_resolver().resolve(hostname, "NS")
+        answers = _get_dns_resolver().resolve(hostname, "NS", search=True)
     except Exception:
         return []
     return [a.to_text() for a in answers]
@@ -23,7 +22,7 @@ def get_ns(hostname) -> [str]:
 def get_cname_record(hostname) -> Optional[str]:
     """Return the CNAME record if exists for a domain, WITHOUT the trailing period at the end"""
     try:
-        answers = _get_dns_resolver().resolve(hostname, "CNAME")
+        answers = _get_dns_resolver().resolve(hostname, "CNAME", search=True)
     except Exception:
         return None
 
@@ -39,7 +38,7 @@ def get_mx_domains(hostname) -> [(int, str)]:
     domain name ends with a "." at the end.
     """
     try:
-        answers = _get_dns_resolver().resolve(hostname, "MX")
+        answers = _get_dns_resolver().resolve(hostname, "MX", search=True)
     except Exception:
         return []
 
@@ -60,7 +59,7 @@ _include_spf = "include:"
 def get_spf_domain(hostname) -> [str]:
     """return all domains listed in *include:*"""
     try:
-        answers = _get_dns_resolver().resolve(hostname, "TXT")
+        answers = _get_dns_resolver().resolve(hostname, "TXT", search=True)
     except Exception:
         return []
 
@@ -82,7 +81,7 @@ def get_spf_domain(hostname) -> [str]:
 def get_txt_record(hostname) -> [str]:
     """return all domains listed in *include:*"""
     try:
-        answers = _get_dns_resolver().resolve(hostname, "TXT")
+        answers = _get_dns_resolver().resolve(hostname, "TXT", search=True)
     except Exception:
         return []
 
@@ -112,10 +111,10 @@ def is_mx_equivalent(
         ref_mx_domains, key=lambda priority_domain: priority_domain[0]
     )
 
-    if len(mx_domains) != len(ref_mx_domains):
+    if len(mx_domains) < len(ref_mx_domains):
         return False
 
-    for i in range(0, len(mx_domains)):
+    for i in range(0, len(ref_mx_domains)):
         if mx_domains[i][1] != ref_mx_domains[i][1]:
             return False
 

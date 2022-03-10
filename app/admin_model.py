@@ -5,7 +5,7 @@ from flask import redirect, url_for, request, flash
 from flask_admin import expose, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.contrib import sqla
-from flask_login import current_user, login_user
+from flask_login import current_user
 
 from app.log import LOG
 from app.db import Session
@@ -91,7 +91,7 @@ class UserAdmin(SLModelView):
         "fido_uuid",
         "profile_picture",
     ]
-    can_edit = True
+    can_edit = False
 
     def scaffold_list_columns(self):
         ret = super().scaffold_list_columns()
@@ -139,6 +139,14 @@ class UserAdmin(SLModelView):
         manual_upgrade("Crypto", ids, is_giveaway=False)
 
     @action(
+        "adhoc_upgrade",
+        "Adhoc upgrade - for exceptional case",
+        "Are you sure you want to crypto-upgrade selected users?",
+    )
+    def action_adhoc_upgrade(self, ids):
+        manual_upgrade("Adhoc", ids, is_giveaway=False)
+
+    @action(
         "extend_trial_1w",
         "Extend trial for 1 week more",
         "Extend trial for 1 week more?",
@@ -178,22 +186,21 @@ class UserAdmin(SLModelView):
 
         Session.commit()
 
-    @action(
-        "login_as",
-        "Login as this user",
-        "Login as this user?",
-    )
-    def login_as(self, ids):
-        if len(ids) != 1:
-            flash("only 1 user can be selected", "error")
-            return
-
-        for user in User.filter(User.id.in_(ids)):
-            AdminAuditLog.logged_as_user(current_user.id, user.id)
-            Session.commit()
-            login_user(user)
-            flash(f"Login as user {user}", "success")
-            return redirect("/")
+    # @action(
+    #     "login_as",
+    #     "Login as this user",
+    #     "Login as this user?",
+    # )
+    # def login_as(self, ids):
+    #     if len(ids) != 1:
+    #         flash("only 1 user can be selected", "error")
+    #         return
+    #
+    #     for user in User.filter(User.id.in_(ids)):
+    #         AdminAuditLog.logged_as_user(current_user.id, user.id)
+    #         login_user(user)
+    #         flash(f"Login as user {user}", "success")
+    #         return redirect("/")
 
 
 def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
@@ -258,18 +265,18 @@ class MailboxAdmin(SLModelView):
     column_filters = ["id", "user.email", "email"]
 
 
-class LifetimeCouponAdmin(SLModelView):
-    can_edit = True
-    can_create = True
+# class LifetimeCouponAdmin(SLModelView):
+#     can_edit = True
+#     can_create = True
 
 
 class CouponAdmin(SLModelView):
-    can_edit = True
+    can_edit = False
     can_create = True
 
 
 class ManualSubscriptionAdmin(SLModelView):
-    can_edit = True
+    can_edit = False
     column_searchable_list = ["id", "user.email"]
 
     @action(
@@ -280,15 +287,27 @@ class ManualSubscriptionAdmin(SLModelView):
     def extend_1y(self, ids):
         for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
             ms.end_at = ms.end_at.shift(years=1)
-            flash(f"Extend subscription for {ms.user}", "success")
+            flash(f"Extend subscription for 1 year for {ms.user}", "success")
+
+        Session.commit()
+
+    @action(
+        "extend_1m",
+        "Extend for 1 month",
+        "Extend 1 month more?",
+    )
+    def extend_1m(self, ids):
+        for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
+            ms.end_at = ms.end_at.shift(months=1)
+            flash(f"Extend subscription for 1 month for {ms.user}", "success")
 
         Session.commit()
 
 
-class ClientAdmin(SLModelView):
-    column_searchable_list = ["name", "description", "user.email"]
-    column_exclude_list = ["oauth_client_secret", "home_url"]
-    can_edit = True
+# class ClientAdmin(SLModelView):
+#     column_searchable_list = ["name", "description", "user.email"]
+#     column_exclude_list = ["oauth_client_secret", "home_url"]
+#     can_edit = True
 
 
 class CustomDomainAdmin(SLModelView):
@@ -308,12 +327,12 @@ class ReferralAdmin(SLModelView):
         return ret
 
 
-class PayoutAdmin(SLModelView):
-    column_searchable_list = ["id", "user.email"]
-    column_filters = ["id", "user.email"]
-    can_edit = True
-    can_create = True
-    can_delete = True
+#class PayoutAdmin(SLModelView):
+#    column_searchable_list = ["id", "user.email"]
+#    column_filters = ["id", "user.email"]
+#    can_edit = True
+#    can_create = True
+#    can_delete = True
 
 
 class AdminAuditLogAdmin(SLModelView):

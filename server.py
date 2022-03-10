@@ -33,11 +33,7 @@ from app.admin_model import (
     EmailLogAdmin,
     AliasAdmin,
     MailboxAdmin,
-    LifetimeCouponAdmin,
     ManualSubscriptionAdmin,
-    ClientAdmin,
-    ReferralAdmin,
-    PayoutAdmin,
     CouponAdmin,
     CustomDomainAdmin,
     AdminAuditLogAdmin,
@@ -82,20 +78,16 @@ from app.fake_data import fake_data
 from app.jose_utils import get_jwk_key
 from app.log import LOG
 from app.models import (
-    Client,
     User,
     Alias,
     Subscription,
     PlanEnum,
     CustomDomain,
-    LifetimeCoupon,
     Mailbox,
-    Referral,
     CoinbaseSubscription,
     EmailLog,
     Contact,
     ManualSubscription,
-    Payout,
     Coupon,
     AdminAuditLog,
 )
@@ -695,13 +687,9 @@ def init_admin(app):
     admin.add_view(AliasAdmin(Alias, Session))
     admin.add_view(MailboxAdmin(Mailbox, Session))
     admin.add_view(EmailLogAdmin(EmailLog, Session))
-    admin.add_view(LifetimeCouponAdmin(LifetimeCoupon, Session))
     admin.add_view(CouponAdmin(Coupon, Session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
-    admin.add_view(ClientAdmin(Client, Session))
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))
-    admin.add_view(ReferralAdmin(Referral, Session))
-    admin.add_view(PayoutAdmin(Payout, Session))
     admin.add_view(AdminAuditLogAdmin(AdminAuditLog, Session))
 
 

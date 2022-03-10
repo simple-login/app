@@ -465,7 +465,7 @@ def alias_creation_report() -> List[Tuple[str, int]]:
     return res
 
 
-def growth_stats():
+def stats():
     """send admin stats everyday"""
     if not ADMIN_EMAIL:
         LOG.w("ADMIN_EMAIL not set, nothing to do")
@@ -480,7 +480,7 @@ def growth_stats():
 
     today = arrow.now().format()
 
-    report = f"""
+    growth_stats = f"""
 Growth Stats for {today}
 
 nb_user: {stats_today.nb_user} - {increase_percent(stats_yesterday.nb_user, stats_today.nb_user)}
@@ -507,32 +507,16 @@ nb_referred_user: {stats_today.nb_referred_user} - {increase_percent(stats_yeste
 nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percent(stats_yesterday.nb_referred_user_paid, stats_today.nb_referred_user_paid)}
     """
 
-    LOG.d("report email: %s", report)
+    LOG.d("growth_stats email: %s", growth_stats)
 
     send_email(
         ADMIN_EMAIL,
         subject=f"SimpleLogin Growth Stats for {today}",
-        plaintext=report,
+        plaintext=growth_stats,
         retries=3,
     )
 
-
-def daily_monitoring_report():
-    """send monitoring stats of the previous day"""
-    if not MONITORING_EMAIL:
-        LOG.w("MONITORING_EMAIL not set, nothing to do")
-        return
-
-    stats_today = compute_metric2()
-    stats_yesterday = (
-        Metric2.filter(Metric2.date < stats_today.date)
-        .order_by(Metric2.date.desc())
-        .first()
-    )
-
-    today = arrow.now().format()
-
-    report = f"""
+    monitoring_report = f"""
 Monitoring Stats for {today}
 
 nb_alias: {stats_today.nb_alias} - {increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)}
@@ -545,32 +529,32 @@ nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_p
 
     """
 
-    report += "\n====================================\n"
-    report += f"""
+    monitoring_report += "\n====================================\n"
+    monitoring_report += f"""
 # Account bounce report:
 """
 
     for email, bounces in bounce_report():
-        report += f"{email}: {bounces}\n"
+        monitoring_report += f"{email}: {bounces}\n"
 
-    report += f"""\n
+    monitoring_report += f"""\n
 # Alias creation report:
 """
 
     for email, nb_alias, date in alias_creation_report():
-        report += f"{email}, {date}: {nb_alias}\n"
+        monitoring_report += f"{email}, {date}: {nb_alias}\n"
 
-    report += f"""\n
+    monitoring_report += f"""\n
 # Full bounce detail report:
 """
-    report += all_bounce_report()
+    monitoring_report += all_bounce_report()
 
-    LOG.d("report email: %s", report)
+    LOG.d("monitoring_report email: %s", monitoring_report)
 
     send_email(
         MONITORING_EMAIL,
         subject=f"SimpleLogin Monitoring Report for {today}",
-        plaintext=report,
+        plaintext=monitoring_report,
         retries=3,
     )
 
@@ -1040,8 +1024,7 @@ if __name__ == "__main__":
         help="Choose a cron job to run",
         type=str,
         choices=[
-            "growth_stats",
-            "daily_monitoring_report",
+            "stats",
             "notify_trial_end",
             "notify_manual_subscription_end",
             "notify_premium_end",
@@ -1057,12 +1040,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
     with create_light_app().app_context():
-        if args.job == "growth_stats":
-            LOG.d("Compute growth Stats")
-            growth_stats()
-        if args.job == "daily_monitoring_report":
-            LOG.d("Send out daily monitoring stats")
-            daily_monitoring_report()
+        if args.job == "stats":
+            LOG.d("Compute growth and daily monitoring stats")
+            stats()
         elif args.job == "notify_trial_end":
             LOG.d("Notify users with trial ending soon")
             notify_trial_end()

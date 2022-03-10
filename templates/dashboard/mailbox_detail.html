@@ -117,14 +117,16 @@
             </div>
           {% endif %}
 
+          <div class="alert alert-info mt-2">You can drag and drop the pgp key file into the text area</div>
           <form method="post">
             <div class="form-group">
               <label class="form-label">PGP Public Key</label>
 
               <textarea name="pgp"
                   {% if not current_user.is_premium() %} disabled {% endif %}
-                        class="form-control" rows=10
+                        class="form-control" rows=10 id="pgp-public-key"
                         placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
+
             </div>
 
             <input type="hidden" name="form-name" value="pgp">
@@ -263,10 +265,12 @@
 {% endblock %}
 
 {% block script %}
+  <script src="/static/js/utils/drag-drop-into-text.js"></script>
   <script>
     $(".custom-switch-input").change(function (e) {
       $(this).closest("form").submit();
     });
+    enableDragDropForPGPKeys('#pgp-public-key');
   </script>
 {% endblock %}
 

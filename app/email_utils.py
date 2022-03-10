@@ -1118,15 +1118,17 @@ def normalize_reply_email(reply_email: str) -> str:
     return "".join(ret)
 
 
-def should_disable(alias: Alias) -> bool:
-    """Disable an alias if it has too many bounces recently"""
+def should_disable(alias: Alias) -> (bool, str):
+    """
+    Return whether an alias should be disabled and if yes, the reason why
+    """
     # Bypass the bounce rule
     if alias.cannot_be_disabled:
         LOG.w("%s cannot be disabled", alias)
-        return False
+        return False, ""
 
     if not ALIAS_AUTOMATIC_DISABLE:
-        return False
+        return False, ""
 
     yesterday = arrow.now().shift(days=-1)
     nb_bounced_last_24h = (
@@ -1141,12 +1143,11 @@ def should_disable(alias: Alias) -> bool:
     )
     # if more than 12 bounces in 24h -> disable alias
     if nb_bounced_last_24h > 12:
-        LOG.d("more than 12 bounces in the last 24h, disable alias %s", alias)
-        return True
+        return True, "+12 bounces in the last 24h"
 
-    # if more than 5 bounces but has bounces last week -> disable alias
+    # if more than 5 bounces but has +10 bounces last week -> disable alias
     elif nb_bounced_last_24h > 5:
-        one_week_ago = arrow.now().shift(days=-8)
+        one_week_ago = arrow.now().shift(days=-7)
         nb_bounced_7d_1d = (
             Session.query(EmailLog)
             .filter(
@@ -1158,16 +1159,14 @@ def should_disable(alias: Alias) -> bool:
             .filter(EmailLog.alias_id == alias.id)
             .count()
         )
-        if nb_bounced_7d_1d > 1:
-            LOG.d(
-                "more than 5 bounces in the last 24h and more than 1 bounces in the last 7 days, "
-                "disable alias %s",
-                alias,
+        if nb_bounced_7d_1d > 10:
+            return (
+                True,
+                "+5 bounces in the last 24h and +10 bounces in the last 7 days",
             )
-            return True
     else:
         # alias level
-        # if bounces at least 9 days in the last 10 days -> disable alias
+        # if bounces happen for at least 9 days in the last 10 days -> disable alias
         query = (
             Session.query(
                 func.date(EmailLog.created_at).label("date"),
@@ -1183,11 +1182,7 @@ def should_disable(alias: Alias) -> bool:
         )
 
         if query.count() >= 9:
-            LOG.d(
-                "Bounces every day for at least 9 days in the last 10 days, disable alias %s",
-                alias,
-            )
-            return True
+            return True, "Bounces every day for at least 9 days in the last 10 days"
 
         # account level
         query = (
@@ -1206,16 +1201,13 @@ def should_disable(alias: Alias) -> bool:
 
         # if an account has more than 10 bounces every day for at least 4 days in the last 10 days, disable alias
         date_bounces: List[Tuple[arrow.Arrow, int]] = list(query)
-        if len(date_bounces) > 4:
-            if all([v > 10 for _, v in date_bounces]):
-                LOG.d(
-                    "+10 bounces for +4 days in the last 10 days on %s, disable alias %s",
-                    alias.user,
-                    alias,
-                )
-            return True
+        more_than_10_bounces = [
+            (d, nb_bounce) for d, nb_bounce in date_bounces if nb_bounce > 10
+        ]
+        if len(more_than_10_bounces) > 4:
+            return True, "+10 bounces for +4 days in the last 10 days"
 
-    return False
+    return False, ""
 
 
 def parse_id_from_bounce(email_address: str) -> int:
