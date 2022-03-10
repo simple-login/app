@@ -314,3 +314,11 @@ class PayoutAdmin(SLModelView):
     can_edit = True
     can_create = True
     can_delete = True
+
+
+class AdminAuditLogAdmin(SLModelView):
+    column_searchable_list = ["admin_user_id"]
+    column_filters = ["admin_user_id"]
+    can_edit = False
+    can_create = False
+    can_delete = False

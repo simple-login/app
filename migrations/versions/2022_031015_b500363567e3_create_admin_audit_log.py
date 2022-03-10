@@ -25,7 +25,7 @@ def upgrade():
         sa.Column("admin_user_id", sa.Integer, nullable=False),
         sa.Column("action", sa.Integer, nullable=False),
         sa.Column("model", sa.String(length=256), nullable=False),
-        sa.Column("model_id", sa.Integer, nullable=False),
+        sa.Column("model_id", sa.Integer, nullable=True),
         sa.Column("data", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.ForeignKeyConstraint(['admin_user_id'], ['users.id'], ondelete='cascade'),
         sa.PrimaryKeyConstraint("id"),

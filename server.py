@@ -40,6 +40,7 @@ from app.admin_model import (
     PayoutAdmin,
     CouponAdmin,
     CustomDomainAdmin,
+    AdminAuditLogAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -96,6 +97,7 @@ from app.models import (
     ManualSubscription,
     Payout,
     Coupon,
+    AdminAuditLog,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -700,6 +702,7 @@ def init_admin(app):
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))
     admin.add_view(ReferralAdmin(Referral, Session))
     admin.add_view(PayoutAdmin(Payout, Session))
+    admin.add_view(AdminAuditLogAdmin(AdminAuditLog, Session))
 
 
 def register_custom_commands(app):

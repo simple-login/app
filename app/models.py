@@ -2881,8 +2881,8 @@ class AdminAuditLog(Base):
     admin_user_id = sa.Column(sa.ForeignKey(User.id), nullable=False)
     action = sa.Column(sa.Integer, nullable=False)
     model = sa.Column(sa.Text, nullable=False)
-    model_id = sa.Column(sa.Integer, nullable=False)
-    data = sa.Column(sa.JSON, nullable=False)
+    model_id = sa.Column(sa.Integer, nullable=True)
+    data = sa.Column(sa.JSON, nullable=True)
 
     ACTION_CREATE_OBJECT = 1
     ACTION_UPDATE_OBJECT = 2
