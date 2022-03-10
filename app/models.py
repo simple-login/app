@@ -2878,11 +2878,13 @@ class AdminAuditLog(Base):
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
     created_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
-    admin_user_id = sa.Column(sa.ForeignKey(User.id), nullable=False)
+    admin_user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
     action = sa.Column(sa.Integer, nullable=False)
     model = sa.Column(sa.Text, nullable=False)
     model_id = sa.Column(sa.Integer, nullable=True)
     data = sa.Column(sa.JSON, nullable=True)
+
+    admin = orm.relationship(User, foreign_keys=[admin_user_id])
 
     ACTION_CREATE_OBJECT = 1
     ACTION_UPDATE_OBJECT = 2

@@ -317,8 +317,9 @@ class PayoutAdmin(SLModelView):
 
 
 class AdminAuditLogAdmin(SLModelView):
-    column_searchable_list = ["admin_user_id"]
-    column_filters = ["admin_user_id"]
+    column_searchable_list = ["admin.id", "admin.email"]
+    column_filters = ["admin.id", "admin.email"]
+    column_hide_backrefs = False
     can_edit = False
     can_create = False
     can_delete = False
