@@ -38,15 +38,13 @@
 
             <div class="dropdown-item d-flex" v-for="notification in notifications">
               <div class="flex-grow-1">
-                <div v-html="notification.title" class="font-weight-bold"
+
+                <div v-html="notification.title || notification.message"
+                     :class="!notification.read && 'font-weight-bold'"
                      style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden;"></div>
 
 
-                <div v-html="notification.message"
-                     style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden; max-height: 100px; text-overflow: ellipsis;">
-                </div>
-
-                <div>
+                <div v-if="notification.title">
                   <a :href="'/dashboard/notification/' + notification.id">More</a>
                 </div>
 
