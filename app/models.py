@@ -2873,4 +2873,77 @@ class PhoneMessage(Base, ModelMixin):
     number = orm.relationship(PhoneNumber)
 
 
+class AdminAuditLog(Base):
+    __tablename__ = "admin_audit_log"
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    created_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
+    admin_user_id = sa.Column(sa.ForeignKey(User.id), nullable=False)
+    action = sa.Column(sa.Integer, nullable=False)
+    model = sa.Column(sa.Text, nullable=False)
+    model_id = sa.Column(sa.Integer, nullable=False)
+    data = sa.Column(sa.JSON, nullable=False)
+
+    ACTION_CREATE_OBJECT = 1
+    ACTION_UPDATE_OBJECT = 2
+    ACTION_DELETE_OBJECT = 3
+    ACTION_MANUAL_UPGRADE = 4
+    ACTION_EXTEND_TRIAL = 5
+    ACTION_DISABLE_2FA = 6
+    ACTION_LOGGED_AS_USER = 7
+
+    @classmethod
+    def create(cls, **kw):
+        r = cls(**kw)
+        Session.add(r)
+
+        return r
+
+    @classmethod
+    def create_manual_upgrade(
+        cls, admin_user_id: int, upgrade_type: str, user_id: int, giveaway: bool
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=cls.ACTION_MANUAL_UPGRADE,
+            model="User",
+            model_id=user_id,
+            data={
+                "upgrade_type": upgrade_type,
+                "giveaway": giveaway,
+            },
+        )
+
+    @classmethod
+    def extend_trial_1w(cls, admin_user_id: int, user_id: int, trial_end: arrow.Arrow):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=cls.ACTION_EXTEND_TRIAL,
+            model="User",
+            model_id=user_id,
+            data={"trial_end": trial_end.format(arrow.FORMAT_RFC3339)},
+        )
+
+    @classmethod
+    def disable_otp_fido(
+        cls, admin_user_id: int, user_id: int, had_otp: bool, had_fido: bool
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=cls.ACTION_DISABLE_2FA,
+            model="User",
+            model_id=user_id,
+            data={"had_otp": had_otp, "had_fido": had_fido},
+        )
+
+    @classmethod
+    def logged_as_user(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=cls.ACTION_LOGGED_AS_USER,
+            model="User",
+            model_id=user_id,
+        )
+
+
 # endregion

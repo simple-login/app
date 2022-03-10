@@ -1,12 +1,22 @@
 import arrow
+import sqlalchemy
+from app import models
 from flask import redirect, url_for, request, flash
 from flask_admin import expose, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.contrib import sqla
 from flask_login import current_user, login_user
 
+from app.log import LOG
 from app.db import Session
-from app.models import User, ManualSubscription, Fido, Subscription, AppleSubscription
+from app.models import (
+    User,
+    ManualSubscription,
+    Fido,
+    Subscription,
+    AppleSubscription,
+    AdminAuditLog,
+)
 
 
 class SLModelView(sqla.ModelView):
@@ -24,6 +34,37 @@ class SLModelView(sqla.ModelView):
     def inaccessible_callback(self, name, **kwargs):
         # redirect to login page if user doesn't have access
         return redirect(url_for("auth.login", next=request.url))
+
+    def on_model_change(self, form, model, is_created):
+        if is_created:
+            action = AdminAuditLog.ACTION_CREATE_OBJECT
+        else:
+            action = AdminAuditLog.ACTION_UPDATE_OBJECT
+        changes = {}
+        for attr in sqlalchemy.inspect(model).attrs:
+            if attr.history.has_changes() and attr.key not in (
+                "created_at",
+                "updated_at",
+            ):
+                value = attr.value
+                if issubclass(type(value), models.Base):
+                    value = value.id
+                changes[attr.key] = value
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model=model.__class__.__name__,
+            model_id=model.id,
+            action=action,
+            data=changes,
+        )
+
+    def on_model_delete(self, model):
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model=model.__class__.__name__,
+            model_id=model.id,
+            action=AdminAuditLog.ACTION_DELETE_OBJECT,
+        )
 
 
 class SLAdminIndexView(AdminIndexView):
@@ -105,6 +146,7 @@ class UserAdmin(SLModelView):
                 user.trial_end = arrow.now().shift(weeks=1)
 
             flash(f"Extend trial for {user} to {user.trial_end}", "success")
+            AdminAuditLog.extend_trial_1w(current_user.id, user.id, user.trial_end)
 
         Session.commit()
 
@@ -115,14 +157,19 @@ class UserAdmin(SLModelView):
     )
     def disable_otp_fido(self, ids):
         for user in User.filter(User.id.in_(ids)):
+            user_had_otp = user.enable_otp
             if user.enable_otp:
                 user.enable_otp = False
                 flash(f"Disable OTP for {user}", "info")
 
+            user_had_fido = user.fido_uuid is not None
             if user.fido_uuid:
                 Fido.filter_by(uuid=user.fido_uuid).delete()
                 user.fido_uuid = None
                 flash(f"Disable FIDO for {user}", "info")
+            AdminAuditLog.disable_otp_fido(
+                current_user.id, user.id, user_had_otp, user_had_fido
+            )
 
         Session.commit()
 
@@ -137,6 +184,8 @@ class UserAdmin(SLModelView):
             return
 
         for user in User.filter(User.id.in_(ids)):
+            AdminAuditLog.logged_as_user(current_user.id, user.id)
+            Session.commit()
             login_user(user)
             flash(f"Login as user {user}", "success")
             return redirect("/")
@@ -164,6 +213,7 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
             )
             continue
 
+        AdminAuditLog.create_manual_upgrade(current_user.id, way, user.id, is_giveaway)
         manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=user.id)
         if manual_sub:
             # renew existing subscription
@@ -171,7 +221,6 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
                 manual_sub.end_at = manual_sub.end_at.shift(years=1)
             else:
                 manual_sub.end_at = arrow.now().shift(years=1, days=1)
-            Session.commit()
             flash(f"Subscription extended to {manual_sub.end_at.humanize()}", "success")
             continue
 
@@ -180,10 +229,10 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
             end_at=arrow.now().shift(years=1, days=1),
             comment=way,
             is_giveaway=is_giveaway,
-            commit=True,
         )
 
         flash(f"New {way} manual subscription for {user} is created", "success")
+    Session.commit()
 
 
 class EmailLogAdmin(SLModelView):
