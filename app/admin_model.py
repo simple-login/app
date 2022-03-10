@@ -36,10 +36,6 @@ class SLModelView(sqla.ModelView):
         return redirect(url_for("auth.login", next=request.url))
 
     def on_model_change(self, form, model, is_created):
-        if is_created:
-            action = AdminAuditLog.ACTION_CREATE_OBJECT
-        else:
-            action = AdminAuditLog.ACTION_UPDATE_OBJECT
         changes = {}
         for attr in sqlalchemy.inspect(model).attrs:
             if attr.history.has_changes() and attr.key not in (
@@ -47,14 +43,23 @@ class SLModelView(sqla.ModelView):
                 "updated_at",
             ):
                 value = attr.value
+                # If it's a model reference, get the source id
                 if issubclass(type(value), models.Base):
                     value = value.id
+                # otherwise, if its a generic object stringify it
+                if issubclass(type(value), object):
+                    value = str(value)
                 changes[attr.key] = value
+        auditAction = (
+            AdminAuditLog.ACTION_CREATE_OBJECT
+            if is_created
+            else AdminAuditLog.ACTION_UPDATE_OBJECT
+        )
         AdminAuditLog.create(
             admin_user_id=current_user.id,
             model=model.__class__.__name__,
             model_id=model.id,
-            action=action,
+            action=auditAction,
             data=changes,
         )
 
