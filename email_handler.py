@@ -539,7 +539,7 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
 def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str]]:
     """return an array of SMTP status (is_success, smtp_status)
     is_success indicates whether an email has been delivered and
-    smtp_status is the SMTP Status ("250 Message accepted", "550 Non-existent email address", etc)
+    smtp_status is the SMTP Status ("250 Message accepted", "550 Non-existent email address", etc.)
     """
     alias_address = rcpt_to  # alias@SL
 
@@ -938,7 +938,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
-        LOG.w(f"No such forward-email with {reply_email} as reply-email")
+        LOG.w(f"No contact with {reply_email} as reverse alias")
         return False, status.E502
 
     alias = contact.alias
@@ -2368,6 +2368,15 @@ def handle(envelope: Envelope, msg: Message) -> str:
                 envelope, copy_msg, rcpt_to
             ):
                 res.append((is_delivered, smtp_status))
+
+    # to know whether both successful and unsuccessful deliveries can happen at the same time
+    nb_success = len([is_success for (is_success, smtp_status) in res if is_success])
+    nb_non_success = len(
+        [is_success for (is_success, smtp_status) in res if not is_success]
+    )
+
+    if nb_success > 0 and nb_non_success:
+        LOG.e(f"some deliveries fail and some success, {mail_from}, {rcpt_tos}")
 
     for (is_success, smtp_status) in res:
         # Consider all deliveries successful if 1 delivery is successful
