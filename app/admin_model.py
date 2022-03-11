@@ -15,6 +15,7 @@ from app.models import (
     Subscription,
     AppleSubscription,
     AdminAuditLog,
+    AuditLogActionEnum,
 )
 
 
@@ -50,9 +51,9 @@ class SLModelView(sqla.ModelView):
                     value = str(value)
                 changes[attr.key] = value
         auditAction = (
-            AdminAuditLog.ACTION_CREATE_OBJECT
+            AuditLogActionEnum.create_object
             if is_created
-            else AdminAuditLog.ACTION_UPDATE_OBJECT
+            else AuditLogActionEnum.update_object
         )
         AdminAuditLog.create(
             admin_user_id=current_user.id,
@@ -67,7 +68,7 @@ class SLModelView(sqla.ModelView):
             admin_user_id=current_user.id,
             model=model.__class__.__name__,
             model_id=model.id,
-            action=AdminAuditLog.ACTION_DELETE_OBJECT,
+            action=AuditLogActionEnum.delete_object,
         )
 
 

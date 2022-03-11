@@ -226,6 +226,16 @@ class BlockBehaviourEnum(EnumE):
     return_5xx = 1
 
 
+class AuditLogActionEnum(EnumE):
+    create_object = 0
+    update_object = 1
+    delete_object = 2
+    manual_upgrade = 3
+    extend_trial = 4
+    disable_2fa = 5
+    logged_as_user = 6
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)
@@ -2891,14 +2901,6 @@ class AdminAuditLog(Base):
 
     admin = orm.relationship(User, foreign_keys=[admin_user_id])
 
-    ACTION_CREATE_OBJECT = 1
-    ACTION_UPDATE_OBJECT = 2
-    ACTION_DELETE_OBJECT = 3
-    ACTION_MANUAL_UPGRADE = 4
-    ACTION_EXTEND_TRIAL = 5
-    ACTION_DISABLE_2FA = 6
-    ACTION_LOGGED_AS_USER = 7
-
     @classmethod
     def create(cls, **kw):
         r = cls(**kw)
@@ -2912,7 +2914,7 @@ class AdminAuditLog(Base):
     ):
         cls.create(
             admin_user_id=admin_user_id,
-            action=cls.ACTION_MANUAL_UPGRADE,
+            action=AuditLogActionEnum.manual_upgrade,
             model="User",
             model_id=user_id,
             data={
@@ -2925,7 +2927,7 @@ class AdminAuditLog(Base):
     def extend_trial_1w(cls, admin_user_id: int, user_id: int, trial_end: arrow.Arrow):
         cls.create(
             admin_user_id=admin_user_id,
-            action=cls.ACTION_EXTEND_TRIAL,
+            action=AuditLogActionEnum.extend_trial,
             model="User",
             model_id=user_id,
             data={"trial_end": trial_end.format(arrow.FORMAT_RFC3339)},
@@ -2937,7 +2939,7 @@ class AdminAuditLog(Base):
     ):
         cls.create(
             admin_user_id=admin_user_id,
-            action=cls.ACTION_DISABLE_2FA,
+            action=AuditLogActionEnum.disable_2fa,
             model="User",
             model_id=user_id,
             data={"had_otp": had_otp, "had_fido": had_fido},
@@ -2947,7 +2949,7 @@ class AdminAuditLog(Base):
     def logged_as_user(cls, admin_user_id: int, user_id: int):
         cls.create(
             admin_user_id=admin_user_id,
-            action=cls.ACTION_LOGGED_AS_USER,
+            action=AuditLogActionEnum.logged_as_user,
             model="User",
             model_id=user_id,
         )
