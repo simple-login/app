@@ -223,7 +223,7 @@ class CouponAdmin(SLModelView):
 
 
 class ManualSubscriptionAdmin(SLModelView):
-    can_edit = False
+    can_edit = True
     column_searchable_list = ["id", "user.email"]
 
     @action(
