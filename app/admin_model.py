@@ -1,6 +1,5 @@
 import arrow
 import sqlalchemy
-from markupsafe import Markup
 
 from app import models
 from flask import redirect, url_for, request, flash
