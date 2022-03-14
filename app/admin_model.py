@@ -350,8 +350,8 @@ def _admin_action_formatter(view, context, model, name):
 
 
 class AdminAuditLogAdmin(SLModelView):
-    column_searchable_list = ["admin.id", "admin.email"]
-    column_filters = ["admin.id", "admin.email"]
+    column_searchable_list = ["admin.id", "admin.email", "model_id"]
+    column_filters = ["admin.id", "admin.email", "model_id"]
     column_exclude_list = ["id"]
     column_hide_backrefs = False
     can_edit = False
