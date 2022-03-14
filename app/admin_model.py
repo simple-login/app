@@ -1,5 +1,7 @@
 import arrow
 import sqlalchemy
+from markupsafe import Markup
+
 from app import models
 from flask import redirect, url_for, request, flash
 from flask_admin import expose, AdminIndexView
@@ -343,10 +345,18 @@ class ReferralAdmin(SLModelView):
 #     can_delete = True
 
 
+def _admin_action_formatter(view, context, model, name):
+    action_name = AuditLogActionEnum.get_name(model.action)
+    return "{} ({})".format(action_name, model.action)
+
+
 class AdminAuditLogAdmin(SLModelView):
     column_searchable_list = ["admin.id", "admin.email"]
     column_filters = ["admin.id", "admin.email"]
+    column_exclude_list = ["id"]
     column_hide_backrefs = False
     can_edit = False
     can_create = False
     can_delete = False
+
+    column_formatters = {"action": _admin_action_formatter}
