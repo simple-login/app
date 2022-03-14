@@ -59,7 +59,7 @@ class SLModelView(sqla.ModelView):
             admin_user_id=current_user.id,
             model=model.__class__.__name__,
             model_id=model.id,
-            action=auditAction,
+            action=auditAction.value,
             data=changes,
         )
 
@@ -68,7 +68,7 @@ class SLModelView(sqla.ModelView):
             admin_user_id=current_user.id,
             model=model.__class__.__name__,
             model_id=model.id,
-            action=AuditLogActionEnum.delete_object,
+            action=AuditLogActionEnum.delete_object.value,
         )
 
 
@@ -159,7 +159,9 @@ class UserAdmin(SLModelView):
                 user.trial_end = arrow.now().shift(weeks=1)
 
             flash(f"Extend trial for {user} to {user.trial_end}", "success")
-            AdminAuditLog.extend_trial_1w(current_user.id, user.id, user.trial_end)
+            AdminAuditLog.extend_trial(
+                current_user.id, user.id, user.trial_end, "1 week"
+            )
 
         Session.commit()
 
@@ -288,6 +290,9 @@ class ManualSubscriptionAdmin(SLModelView):
         for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
             ms.end_at = ms.end_at.shift(years=1)
             flash(f"Extend subscription for 1 year for {ms.user}", "success")
+            AdminAuditLog.extend_subscription(
+                current_user.id, ms.user.id, ms.end_at, "1 year"
+            )
 
         Session.commit()
 
@@ -300,6 +305,9 @@ class ManualSubscriptionAdmin(SLModelView):
         for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
             ms.end_at = ms.end_at.shift(months=1)
             flash(f"Extend subscription for 1 month for {ms.user}", "success")
+            AdminAuditLog.extend_subscription(
+                current_user.id, ms.user.id, ms.end_at, "1 month"
+            )
 
         Session.commit()
 

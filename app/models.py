@@ -234,6 +234,7 @@ class AuditLogActionEnum(EnumE):
     extend_trial = 4
     disable_2fa = 5
     logged_as_user = 6
+    extend_subscription = 7
 
 
 class Hibp(Base, ModelMixin):
@@ -2914,7 +2915,7 @@ class AdminAuditLog(Base):
     ):
         cls.create(
             admin_user_id=admin_user_id,
-            action=AuditLogActionEnum.manual_upgrade,
+            action=AuditLogActionEnum.manual_upgrade.value,
             model="User",
             model_id=user_id,
             data={
@@ -2924,13 +2925,18 @@ class AdminAuditLog(Base):
         )
 
     @classmethod
-    def extend_trial_1w(cls, admin_user_id: int, user_id: int, trial_end: arrow.Arrow):
+    def extend_trial(
+        cls, admin_user_id: int, user_id: int, trial_end: arrow.Arrow, extend_time: str
+    ):
         cls.create(
             admin_user_id=admin_user_id,
-            action=AuditLogActionEnum.extend_trial,
+            action=AuditLogActionEnum.extend_trial.value,
             model="User",
             model_id=user_id,
-            data={"trial_end": trial_end.format(arrow.FORMAT_RFC3339)},
+            data={
+                "trial_end": trial_end.format(arrow.FORMAT_RFC3339),
+                "extend_time": extend_time,
+            },
         )
 
     @classmethod
@@ -2939,7 +2945,7 @@ class AdminAuditLog(Base):
     ):
         cls.create(
             admin_user_id=admin_user_id,
-            action=AuditLogActionEnum.disable_2fa,
+            action=AuditLogActionEnum.disable_2fa.value,
             model="User",
             model_id=user_id,
             data={"had_otp": had_otp, "had_fido": had_fido},
@@ -2949,9 +2955,28 @@ class AdminAuditLog(Base):
     def logged_as_user(cls, admin_user_id: int, user_id: int):
         cls.create(
             admin_user_id=admin_user_id,
-            action=AuditLogActionEnum.logged_as_user,
+            action=AuditLogActionEnum.logged_as_user.value,
             model="User",
             model_id=user_id,
+        )
+
+    @classmethod
+    def extend_subscription(
+        cls,
+        admin_user_id: int,
+        user_id: int,
+        subscription_end: arrow.Arrow,
+        extend_time: str,
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.extend_subscription.value,
+            model="User",
+            model_id=user_id,
+            data={
+                "subscription_end": subscription_end.format(arrow.FORMAT_RFC3339),
+                "extend_time": extend_time,
+            },
         )
 
 
