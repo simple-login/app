@@ -11,6 +11,7 @@ from flask import (
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
+from typing import Optional
 from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
@@ -19,6 +20,7 @@ from app.config import (
     URL,
     FIRST_ALIAS_DOMAIN,
     ALIAS_RANDOM_SUFFIX_LENGTH,
+    CONNECT_WITH_PROTON,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -43,7 +45,9 @@ from app.models import (
     SLDomain,
     CoinbaseSubscription,
     AppleSubscription,
+    PartnerUser,
 )
+from app.proton.proton_callback_handler import get_proton_partner_id
 from app.utils import random_string, sanitize_email
 
 
@@ -60,6 +64,21 @@ class ChangeEmailForm(FlaskForm):
 
 class PromoCodeForm(FlaskForm):
     code = StringField("Name", validators=[validators.DataRequired()])
+
+
+def get_proton_linked_account() -> Optional[str]:
+    # Check if the current user has a partner_id
+    proton_partner_id = get_proton_partner_id()
+    if current_user.partner_id != proton_partner_id:
+        return None
+
+    # It has. Retrieve the information for the PartnerUser
+    proton_linked_account = PartnerUser.get_by(
+        user_id=current_user.id, partner_id=proton_partner_id
+    )
+    if proton_linked_account is None:
+        return None
+    return proton_linked_account.partner_email
 
 
 @dashboard_bp.route("/setting", methods=["GET", "POST"])
@@ -332,6 +351,7 @@ def setting():
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
     coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
+    proton_linked_account = get_proton_linked_account()
 
     return render_template(
         "dashboard/setting.html",
@@ -348,6 +368,8 @@ def setting():
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
+        connect_with_proton=CONNECT_WITH_PROTON,
+        proton_linked_account=proton_linked_account,
     )
 
 
@@ -409,3 +431,18 @@ def cancel_email_change():
             "You have no pending email change. Redirect back to Setting page", "warning"
         )
         return redirect(url_for("dashboard.setting"))
+
+
+@dashboard_bp.route("/unlink_proton_account", methods=["GET", "POST"])
+@login_required
+def unlink_proton_account():
+    current_user.partner_id = None
+    current_user.partner_user_id = None
+    partner_user = PartnerUser.get_by(
+        user_id=current_user.id, partner_id=get_proton_partner_id()
+    )
+    if partner_user is not None:
+        PartnerUser.delete(partner_user.id)
+    Session.commit()
+    flash("Your Proton account has been unlinked", "success")
+    return redirect(url_for("dashboard.setting"))

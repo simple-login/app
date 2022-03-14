@@ -9,6 +9,7 @@ from .views import (
     github,
     google,
     facebook,
+    proton,
     change_email,
     mfa,
     fido,

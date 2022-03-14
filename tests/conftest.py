@@ -16,7 +16,7 @@ from psycopg2.errorcodes import DEPENDENT_OBJECTS_STILL_EXIST
 import pytest
 
 from server import create_app
-from init_app import add_sl_domains
+from init_app import add_sl_domains, add_proton_partner
 
 app = create_app()
 app.config["TESTING"] = True
@@ -34,6 +34,7 @@ with engine.connect() as conn:
         conn.execute("Rollback")
 
 add_sl_domains()
+add_proton_partner()
 
 
 @pytest.fixture

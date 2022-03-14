@@ -187,3 +187,9 @@ textarea.parsley-error {
         display: none;
     }
 }
+
+.proton-button {
+    border-color:#6d4aff;
+    background-color:white;
+    color:#6d4aff;
+}

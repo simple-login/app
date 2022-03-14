@@ -1,4 +1,5 @@
 from typing import List
+from urllib.parse import parse_qs
 
 import pytest
 
@@ -40,3 +41,19 @@ def generate_sanitize_url_cases() -> List:
 def test_sanitize_url(url, expected):
     sanitized = sanitize_next_url(url)
     assert expected == sanitized
+
+
+def test_parse_querystring():
+    cases = [
+        {"input": "", "expected": {}},
+        {"input": "a=b", "expected": {"a": ["b"]}},
+        {"input": "a=b&c=d", "expected": {"a": ["b"], "c": ["d"]}},
+        {"input": "a=b&a=c", "expected": {"a": ["b", "c"]}},
+    ]
+
+    for case in cases:
+        expected = case["expected"]
+        res = parse_qs(case["input"])
+        assert len(res) == len(expected)
+        for k, v in expected.items():
+            assert res[k] == v

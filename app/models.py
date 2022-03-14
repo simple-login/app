@@ -479,6 +479,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="1"
     )
 
+    partner_id = sa.Column(sa.BigInteger, unique=False, nullable=True)
+    partner_user_id = sa.Column(sa.String(128), unique=False, nullable=True)
+
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "partner_id", "partner_user_id", name="uq_partner_id_partner_user_id"
+        ),
+    )
+
     @property
     def directory_quota(self):
         return min(
@@ -3037,3 +3046,42 @@ class ProviderComplaint(Base, ModelMixin):
 
     user = orm.relationship(User, foreign_keys=[user_id])
     refused_email = orm.relationship(RefusedEmail, foreign_keys=[refused_email_id])
+
+
+class Partner(Base, ModelMixin):
+    __tablename__ = "partner"
+
+    name = sa.Column(sa.String(128), unique=True, nullable=False)
+    contact_email = sa.Column(sa.String(128), unique=True, nullable=False)
+
+
+class PartnerApiToken(Base, ModelMixin):
+    __tablename__ = "partner_api_token"
+
+    token = sa.Column(sa.String(32), unique=True, nullable=False, index=True)
+    partner_id = sa.Column(
+        sa.ForeignKey("partner.id", ondelete="cascade"), nullable=False, index=True
+    )
+    expiration_time = sa.Column(ArrowType, unique=False, nullable=True)
+
+
+class PartnerUser(Base, ModelMixin):
+    __tablename__ = "partner_user"
+
+    user_id = sa.Column(
+        sa.ForeignKey("users.id", ondelete="cascade"),
+        unique=False,
+        nullable=False,
+        index=True,
+    )
+    partner_id = sa.Column(
+        sa.ForeignKey("partner.id", ondelete="cascade"), nullable=False, index=True
+    )
+    partner_email = sa.Column(sa.String(255), unique=False, nullable=True)
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "partner_id", name="uq_user_id_partner_id"),
+    )
+
+
+# endregion
