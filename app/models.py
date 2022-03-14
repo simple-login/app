@@ -226,6 +226,17 @@ class BlockBehaviourEnum(EnumE):
     return_5xx = 1
 
 
+class AuditLogActionEnum(EnumE):
+    create_object = 0
+    update_object = 1
+    delete_object = 2
+    manual_upgrade = 3
+    extend_trial = 4
+    disable_2fa = 5
+    logged_as_user = 6
+    extend_subscription = 7
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)
@@ -2876,6 +2887,97 @@ class PhoneMessage(Base, ModelMixin):
     body = sa.Column(sa.Text)
 
     number = orm.relationship(PhoneNumber)
+
+
+class AdminAuditLog(Base):
+    __tablename__ = "admin_audit_log"
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    created_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
+    admin_user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
+    action = sa.Column(sa.Integer, nullable=False)
+    model = sa.Column(sa.Text, nullable=False)
+    model_id = sa.Column(sa.Integer, nullable=True)
+    data = sa.Column(sa.JSON, nullable=True)
+
+    admin = orm.relationship(User, foreign_keys=[admin_user_id])
+
+    @classmethod
+    def create(cls, **kw):
+        r = cls(**kw)
+        Session.add(r)
+
+        return r
+
+    @classmethod
+    def create_manual_upgrade(
+        cls, admin_user_id: int, upgrade_type: str, user_id: int, giveaway: bool
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.manual_upgrade.value,
+            model="User",
+            model_id=user_id,
+            data={
+                "upgrade_type": upgrade_type,
+                "giveaway": giveaway,
+            },
+        )
+
+    @classmethod
+    def extend_trial(
+        cls, admin_user_id: int, user_id: int, trial_end: arrow.Arrow, extend_time: str
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.extend_trial.value,
+            model="User",
+            model_id=user_id,
+            data={
+                "trial_end": trial_end.format(arrow.FORMAT_RFC3339),
+                "extend_time": extend_time,
+            },
+        )
+
+    @classmethod
+    def disable_otp_fido(
+        cls, admin_user_id: int, user_id: int, had_otp: bool, had_fido: bool
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.disable_2fa.value,
+            model="User",
+            model_id=user_id,
+            data={"had_otp": had_otp, "had_fido": had_fido},
+        )
+
+    @classmethod
+    def logged_as_user(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.logged_as_user.value,
+            model="User",
+            model_id=user_id,
+        )
+
+    @classmethod
+    def extend_subscription(
+        cls,
+        admin_user_id: int,
+        user_id: int,
+        subscription_end: arrow.Arrow,
+        extend_time: str,
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.extend_subscription.value,
+            model="User",
+            model_id=user_id,
+            data={
+                "subscription_end": subscription_end.format(arrow.FORMAT_RFC3339),
+                "extend_time": extend_time,
+            },
+        )
 
 
 # endregion
