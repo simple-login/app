@@ -349,13 +349,20 @@ def _admin_action_formatter(view, context, model, name):
     return "{} ({})".format(action_name, model.action)
 
 
+def _admin_created_at_formatter(view, context, model, name):
+    return model.created_at.format()
+
+
 class AdminAuditLogAdmin(SLModelView):
-    column_searchable_list = ["admin.id", "admin.email", "model_id"]
-    column_filters = ["admin.id", "admin.email", "model_id"]
+    column_searchable_list = ["admin.id", "admin.email", "model_id", "created_at"]
+    column_filters = ["admin.id", "admin.email", "model_id", "created_at"]
     column_exclude_list = ["id"]
     column_hide_backrefs = False
     can_edit = False
     can_create = False
     can_delete = False
 
-    column_formatters = {"action": _admin_action_formatter}
+    column_formatters = {
+        "action": _admin_action_formatter,
+        "created_at": _admin_created_at_formatter,
+    }
