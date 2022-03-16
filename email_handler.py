@@ -2130,7 +2130,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     LOG.d(
         "==>> Handle mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, "
-        "cc:%s, reply-to:%s, message_id:%s, mail_options:%s, rcpt_options:%s",
+        "cc:%s, reply-to:%s, message_id:%s, client_ip:%s, headers:%s, mail_options:%s, rcpt_options:%s",
         mail_from,
         rcpt_tos,
         msg[headers.FROM],
@@ -2138,6 +2138,8 @@ def handle(envelope: Envelope, msg: Message) -> str:
         msg[headers.CC],
         msg[headers.REPLY_TO],
         msg[headers.MESSAGE_ID],
+        msg[headers.SL_CLIENT_IP],
+        msg._headers,
         envelope.mail_options,
         envelope.rcpt_options,
     )
