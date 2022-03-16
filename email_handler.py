@@ -978,7 +978,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         else:
             # only mailbox can send email to the reply-email
             handle_unknown_mailbox(envelope, msg, reply_email, user, alias, contact)
-            return False, status.E505
+            # return 2** to avoid Postfix sending out bounces and avoid backscatter issue
+            return False, status.E214
 
     if ENFORCE_SPF and mailbox.force_spf and not alias.disable_email_spoofing_check:
         if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
@@ -1305,24 +1306,6 @@ def handle_unknown_mailbox(
             sender=envelope.mail_from,
             authorize_address_link=authorize_address_link,
             mailbox_emails=mailbox_emails,
-        ),
-    )
-
-    # Notify sender that they cannot send emails to this address
-    send_email_with_rate_control(
-        user,
-        ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
-        envelope.mail_from,
-        f"Your email ({envelope.mail_from}) is not allowed to send emails to {reply_email}",
-        render(
-            "transactional/send-from-alias-from-unknown-sender.txt",
-            sender=envelope.mail_from,
-            reply_email=reply_email,
-        ),
-        render(
-            "transactional/send-from-alias-from-unknown-sender.html",
-            sender=envelope.mail_from,
-            reply_email=reply_email,
         ),
     )
 
