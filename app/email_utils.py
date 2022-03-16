@@ -1216,9 +1216,6 @@ def parse_id_from_bounce(email_address: str) -> int:
     return int(email_address[email_address.find("+") : email_address.rfind("+")])
 
 
-_IP_HEADER = "X-SimpleLogin-Client-IP"
-
-
 def spf_pass(
     envelope,
     mailbox: Mailbox,
@@ -1227,7 +1224,7 @@ def spf_pass(
     contact_email: str,
     msg: Message,
 ) -> bool:
-    ip = msg[_IP_HEADER]
+    ip = msg[headers.SL_CLIENT_IP]
     if ip:
         LOG.d("Enforce SPF on %s %s", ip, envelope.mail_from)
         try:
@@ -1273,7 +1270,7 @@ def spf_pass(
     else:
         LOG.w(
             "Could not find %s header %s -> %s",
-            _IP_HEADER,
+            headers.SL_CLIENT_IP,
             mailbox.email,
             contact_email,
         )
