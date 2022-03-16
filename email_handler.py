@@ -2375,8 +2375,8 @@ def handle(envelope: Envelope, msg: Message) -> str:
         [is_success for (is_success, smtp_status) in res if not is_success]
     )
 
-    if nb_success > 0 and nb_non_success:
-        LOG.e(f"some deliveries fail and some success, {mail_from}, {rcpt_tos}")
+    if nb_success > 0 and nb_non_success > 0:
+        LOG.e(f"some deliveries fail and some success, {mail_from}, {rcpt_tos}, {res}")
 
     for (is_success, smtp_status) in res:
         # Consider all deliveries successful if 1 delivery is successful
