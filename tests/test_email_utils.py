@@ -747,9 +747,11 @@ def test_get_queue_id():
 
     assert get_queue_id(msg) == "4FxQmw1DXdz2vK2"
 
+
 def test_get_queue_id_from_double_header():
     msg = load_eml_file("double_queue_id_header.eml")
     assert get_queue_id(msg) == "6D8C13F069"
+
 
 def test_should_ignore_bounce(flask_client):
     assert not should_ignore_bounce("not-exist")

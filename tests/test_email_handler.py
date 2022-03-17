@@ -65,10 +65,10 @@ def test_is_automatic_out_of_office():
     msg[headers.AUTO_SUBMITTED] = "auto-generated"
     assert is_automatic_out_of_office(msg)
 
+
 def test_process_spoofed():
     msg = load_eml_file("gmail_spoof.eml")
     breakpoint()
-    a = msg['a']
-    b=1
-    c=2
-
+    a = msg["a"]
+    b = 1
+    c = 2

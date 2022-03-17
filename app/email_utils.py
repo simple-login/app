@@ -1371,7 +1371,7 @@ def get_queue_id(msg: Message) -> Optional[str]:
     """Get the Postfix queue-id from a message"""
     header_values = msg.get_all(headers.RSPAM_QUEUE_ID)
     if header_values:
-        #Get last in case somebody tries to inject a header
+        # Get last in case somebody tries to inject a header
         return header_values[-1]
 
     received_header = str(msg[headers.RECEIVED])
