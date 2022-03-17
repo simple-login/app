@@ -1,3 +1,5 @@
+import email
+import os.path
 from email.message import EmailMessage
 
 from app.email import headers
@@ -7,6 +9,7 @@ from email_handler import (
     should_ignore,
     is_automatic_out_of_office,
 )
+from tests.utils import load_eml_file
 
 
 def test_get_mailbox_from_mail_from(flask_client):
@@ -61,3 +64,11 @@ def test_is_automatic_out_of_office():
 
     msg[headers.AUTO_SUBMITTED] = "auto-generated"
     assert is_automatic_out_of_office(msg)
+
+def test_process_spoofed():
+    msg = load_eml_file("gmail_spoof.eml")
+    breakpoint()
+    a = msg['a']
+    b=1
+    c=2
+

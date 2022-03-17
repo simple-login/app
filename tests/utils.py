@@ -1,4 +1,7 @@
+import email
 import json
+import os
+from email.message import EmailMessage
 
 from flask import url_for
 
@@ -41,3 +44,9 @@ def create_user(flask_client) -> User:
 def pretty(d):
     """pretty print as json"""
     print(json.dumps(d, indent=2))
+
+
+def load_eml_file(filename: str) -> EmailMessage:
+    emails_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"example_emls")
+    fullpath = os.path.join(emails_dir, filename)
+    return email.message_from_file(open(fullpath))
