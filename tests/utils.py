@@ -4,6 +4,7 @@ import os
 import random
 import string
 from email.message import EmailMessage
+from typing import Optional, Dict
 
 import jinja2
 from flask import url_for
@@ -64,11 +65,15 @@ def pretty(d):
     print(json.dumps(d, indent=2))
 
 
-def load_eml_file(filename: str, template_values={}) -> EmailMessage:
+def load_eml_file(
+    filename: str, template_values: Optional[Dict[str, str]] = None
+) -> EmailMessage:
     emails_dir = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "example_emls"
     )
     fullpath = os.path.join(emails_dir, filename)
     template = jinja2.Template(open(fullpath).read())
+    if not template_values:
+        template_values = {}
     rendered = template.render(**template_values)
     return email.message_from_string(rendered)
