@@ -2,7 +2,7 @@ from app.api.serializer import get_alias_infos_with_pagination_v3
 from app.config import PAGE_LIMIT
 from app.db import Session
 from app.models import User, Alias, Mailbox, Contact
-from tests.utils import create_user
+from tests.utils import create_random_user
 
 
 def test_get_alias_infos_with_pagination_v3(flask_client):
@@ -147,7 +147,7 @@ def test_get_alias_infos_with_pagination_v3_no_duplicate_when_empty_contact(
     """
     Make sure an alias is returned once when it has 2 contacts that have no email log activity
     """
-    user = create_user(flask_client)
+    user = create_random_user()
     alias = Alias.first()
 
     Contact.create(

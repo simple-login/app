@@ -536,6 +536,55 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     )
 
 
+def apply_dmarc_policy(alias: Alias, contact: Contact, msg: Message) -> Optional[str]:
+    spam_result = msg.get_all(headers.SPAMD_RESULT)
+    if not spam_result:
+        return False
+    spam_entries = [entry.strip() for entry in spam_result[-1].split("\n")]
+    for iPos in range(len(spam_entries)):
+        sep = spam_entries[iPos].find("(")
+        if sep > -1:
+            spam_entries[iPos] = spam_entries[iPos][:sep]
+    if "DMARC_POLICY_REJECT" in spam_entries:
+        return status.E519
+    if (
+        "DMARC_POLICY_SOFTFAIL" in spam_entries
+        or "DMARC_POLICY_QUARANTINE" in spam_entries
+    ):
+        add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
+        msg[headers.SL_ENVELOPE_TO] = alias.email
+        add_or_replace_header(msg, "From", contact.new_addr())
+        # replace CC & To emails by reverse-alias for all emails that are not alias
+        try:
+            replace_header_when_forward(msg, alias, "Cc")
+            replace_header_when_forward(msg, alias, "To")
+        except CannotCreateContactForReverseAlias:
+            Session.commit()
+            raise
+
+        random_name = str(uuid.uuid4())
+        s3_report_path = f"refused-emails/full-{random_name}.eml"
+        s3.upload_email_from_bytesio(
+            s3_report_path, BytesIO(to_bytes(msg)), f"full-{random_name}"
+        )
+        refused_email = RefusedEmail.create(
+            full_report_path=s3_report_path, user_id=alias.user_id, flush=True
+        )
+        EmailLog.create(
+            user_id=alias.user_id,
+            mailbox_id=alias.mailbox_id,
+            contact_id=contact.id,
+            alias_id=alias.id,
+            message_id=str(msg[headers.MESSAGE_ID]),
+            refused_email_id=refused_email.id,
+            is_spam=True,
+            blocked=True,
+            commit=True,
+        )
+        return status.E519
+    return None
+
+
 def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str]]:
     """return an array of SMTP status (is_success, smtp_status)
     is_success indicates whether an email has been delivered and
@@ -615,6 +664,11 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
         # do not return 5** to allow user to receive emails later when alias is enabled or contact is unblocked
         return [(True, res_status)]
+
+    # Check if we need to reject or quarantine based on dmarc
+    dmarc_delivery_status = apply_dmarc_policy(alias, contact, msg)
+    if dmarc_delivery_status is not None:
+        return [(False, dmarc_delivery_status)]
 
     ret = []
     mailboxes = alias.mailboxes

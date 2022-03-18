@@ -8,7 +8,7 @@ Received: from relay.somewhere.net (relay.somewhere.net [34.59.200.130])
         by mx1.sldev.ovh (Postfix) with ESMTPS id 6D8C13F069
         for <wehrman_mannequin@sldev.ovh>; Thu, 17 Mar 2022 16:50:20 +0000 (UTC)
 Date: Thu, 17 Mar 2022 16:50:18 +0000
-To: wehrman_mannequin@sldev.ovh
+To: {{ alias_email }}
 From: spoofedemailsource@gmail.com
 Subject: test Thu, 17 Mar 2022 16:50:18 +0000
 Message-Id: <20220317165018.000191@somewhere-5488dd4b6b-7crp6>

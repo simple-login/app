@@ -2,14 +2,17 @@ import email
 import os.path
 from email.message import EmailMessage
 
-from app.email import headers
-from app.models import User, Alias, AuthorizedAddress, IgnoredEmail
+from aiosmtpd.smtp import Envelope
+
+import email_handler
+from app.email import headers, status
+from app.models import User, Alias, AuthorizedAddress, IgnoredEmail, EmailLog
 from email_handler import (
     get_mailbox_from_mail_from,
     should_ignore,
     is_automatic_out_of_office,
 )
-from tests.utils import load_eml_file
+from tests.utils import load_eml_file, create_random_user, create_random_alias
 
 
 def test_get_mailbox_from_mail_from(flask_client):
@@ -66,9 +69,21 @@ def test_is_automatic_out_of_office():
     assert is_automatic_out_of_office(msg)
 
 
-def test_process_spoofed():
-    msg = load_eml_file("gmail_spoof.eml")
-    breakpoint()
-    a = msg["a"]
-    b = 1
-    c = 2
+def test_process_spoofed(flask_client):
+    user = create_random_user()
+    alias = create_random_alias(user)
+    msg = load_eml_file("gmail_spoof.eml", {"alias_email": alias.email})
+    envelope = Envelope()
+    envelope.mail_from = msg["from"]
+    envelope.rcpt_tos = [msg["to"]]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E519
+    email_logs = (
+        EmailLog.filter_by(user_id=user.id, alias_id=alias.id)
+        .order_by(EmailLog.id.desc())
+        .all()
+    )
+    assert len(email_logs) == 1
+    email_log = email_logs[0]
+    assert email_log.blocked
+    assert email_log.refused_email_id
