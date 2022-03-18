@@ -1,5 +1,3 @@
-import email
-import os.path
 from email.message import EmailMessage
 
 from aiosmtpd.smtp import Envelope
