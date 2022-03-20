@@ -217,8 +217,8 @@ Later, we will setup Postfix to authorize this network.
 
 ```bash
 sudo docker network create -d bridge \
-    --subnet=240.0.0.0/24 \
-    --gateway=240.0.0.1 \
+    --subnet=10.0.0.0/24 \
+    --gateway=10.0.0.1 \
     sl-network
 ```
 
@@ -295,7 +295,7 @@ smtpd_tls_security_level = may
 # information on enabling SSL in the smtp client.
 
 alias_maps = hash:/etc/aliases
-mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 240.0.0.0/24
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 10.0.0.0/24
 
 # Set your domain here
 mydestination =
@@ -408,6 +408,8 @@ FLASK_SECRET=put_something_secret_here
 GNUPGHOME=/sl/pgp
 
 LOCAL_FILE_UPLOAD=1
+
+POSTFIX_SERVER=10.0.0.1
 ```
 
 

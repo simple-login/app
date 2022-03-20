@@ -21,10 +21,10 @@ b) then run the following commands
 ```bash
 apt update
 apt install telnet -y
-telnet 240.0.0.1 25
+telnet 10.0.0.1 25
 ```
 
-If the `telnet 240.0.0.1 25` doesn't work, it means Postfix can't be reached from the docker container. 
+If the `telnet 10.0.0.1 25` doesn't work, it means Postfix can't be reached from the docker container. 
 This means an issue with the Docker network.
 
 You can then try `telnet 172.17.0.1 25` as `172.17.0.1` is *usually* the host IP address. If this works, then you can set
