@@ -1021,6 +1021,12 @@ def replace(msg: Message, old, new) -> Message:
                 clone_msg = copy(msg)
                 clone_msg.set_payload(quopri.encodestring(new_payload.encode()))
                 return clone_msg
+            elif encoding == EmailEncoding.BASE64:
+                new_payload = decode_text(payload, encoding).replace(old, new)
+                new_payload = base64.b64encode(new_payload.encode("utf-8"))
+                clone_msg = copy(msg)
+                clone_msg.set_payload(new_payload)
+                return clone_msg
             else:
                 clone_msg = copy(msg)
                 new_payload = payload.replace(
