@@ -422,6 +422,8 @@ ZENDESK_HOST = os.environ.get("ZENDESK_HOST")
 ZENDESK_API_TOKEN = os.environ.get("ZENDESK_API_TOKEN")
 ZENDESK_ENABLED = "ZENDESK_ENABLED" in os.environ
 
+ENABLE_DMARC_CHECK = os.environ.get("ENABLE_DMARC_CHECK")
+
 
 def get_allowed_redirect_domains() -> List[str]:
     allowed_domains = sl_getenv("ALLOWED_REDIRECT_DOMAINS", list)

@@ -10,7 +10,7 @@ from email_handler import (
     should_ignore,
     is_automatic_out_of_office,
 )
-from tests.utils import load_eml_file, create_random_user, create_random_alias
+from tests.utils import load_eml_file, create_random_user
 
 
 def test_get_mailbox_from_mail_from(flask_client):
@@ -69,7 +69,7 @@ def test_is_automatic_out_of_office():
 
 def test_process_spoofed(flask_client):
     user = create_random_user()
-    alias = create_random_alias(user)
+    alias = Alias.create_new_random(user)
     msg = load_eml_file("gmail_spoof.eml", {"alias_email": alias.email})
     envelope = Envelope()
     envelope.mail_from = msg["from"]

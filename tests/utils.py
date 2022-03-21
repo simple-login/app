@@ -9,7 +9,7 @@ from typing import Optional, Dict
 import jinja2
 from flask import url_for
 
-from app.models import User, Alias
+from app.models import User
 
 
 def login(flask_client) -> User:
@@ -49,17 +49,6 @@ def create_random_user() -> User:
     )
 
 
-def create_random_alias(user: User) -> Alias:
-    alias_email = "{}@{}.com".format(random_token(), random_token())
-    alias = Alias.create(
-        user_id=user.id,
-        email=alias_email,
-        mailbox_id=user.default_mailbox_id,
-        commit=True,
-    )
-    return alias
-
-
 def pretty(d):
     """pretty print as json"""
     print(json.dumps(d, indent=2))
@@ -72,8 +61,9 @@ def load_eml_file(
         os.path.dirname(os.path.realpath(__file__)), "example_emls"
     )
     fullpath = os.path.join(emails_dir, filename)
-    template = jinja2.Template(open(fullpath).read())
-    if not template_values:
-        template_values = {}
-    rendered = template.render(**template_values)
-    return email.message_from_string(rendered)
+    with open(fullpath) as fd:
+        template = jinja2.Template(fd.read())
+        if not template_values:
+            template_values = {}
+        rendered = template.render(**template_values)
+        return email.message_from_string(rendered)

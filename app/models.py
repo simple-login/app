@@ -237,6 +237,26 @@ class AuditLogActionEnum(EnumE):
     extend_subscription = 7
 
 
+class DmarcCheckResult(EnumE):
+    allow = 0
+    soft_fail = 1
+    quarantine = 2
+    reject = 3
+    not_available = 4
+    bad_policy = 5
+
+    @staticmethod
+    def get_string_dict():
+        return {
+            "DMARC_POLICY_ALLOW": DmarcCheckResult.allow,
+            "DMARC_POLICY_SOFTFAIL": DmarcCheckResult.soft_fail,
+            "DMARC_POLICY_QUARANTINE": DmarcCheckResult.quarantine,
+            "DMARC_POLICY_REJECT": DmarcCheckResult.reject,
+            "DMARC_NA": DmarcCheckResult.not_available,
+            "DMARC_BAD_POLICY": DmarcCheckResult.bad_policy,
+        }
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)

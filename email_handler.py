@@ -87,6 +87,7 @@ from app.config import (
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
+    ENABLE_DMARC_CHECK,
 )
 from app.db import Session
 from app.email import status, headers
@@ -128,6 +129,7 @@ from app.email_utils import (
     get_orig_message_from_yahoo_complaint,
     get_mailbox_bounce_info,
     save_email_for_debugging,
+    get_dmarc_status,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -152,6 +154,7 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     Notification,
+    DmarcCheckResult,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -537,19 +540,13 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
 
 
 def apply_dmarc_policy(alias: Alias, contact: Contact, msg: Message) -> Optional[str]:
-    spam_result = msg.get_all(headers.SPAMD_RESULT)
-    if not spam_result:
-        return False
-    spam_entries = [entry.strip() for entry in spam_result[-1].split("\n")]
-    for iPos in range(len(spam_entries)):
-        sep = spam_entries[iPos].find("(")
-        if sep > -1:
-            spam_entries[iPos] = spam_entries[iPos][:sep]
-    if "DMARC_POLICY_REJECT" in spam_entries:
-        return status.E519
-    if (
-        "DMARC_POLICY_SOFTFAIL" in spam_entries
-        or "DMARC_POLICY_QUARANTINE" in spam_entries
+    dmarc_result = get_dmarc_status(msg)
+    newrelic.agent.record_custom_metric("Custom/dmarc_check", dmarc_result)
+    if not ENABLE_DMARC_CHECK:
+        return None
+    if dmarc_result in (
+        DmarcCheckResult.quarantine,
+        DmarcCheckResult.reject,
     ):
         add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
         msg[headers.SL_ENVELOPE_TO] = alias.email
