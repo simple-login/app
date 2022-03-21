@@ -79,7 +79,6 @@ def get_spf_domain(hostname) -> [str]:
 
 
 def get_txt_record(hostname) -> [str]:
-    """return all domains listed in *include:*"""
     try:
         answers = _get_dns_resolver().resolve(hostname, "TXT", search=True)
     except Exception:

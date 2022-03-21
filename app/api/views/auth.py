@@ -3,7 +3,7 @@ import random
 import facebook
 import google.oauth2.credentials
 import googleapiclient.discovery
-from flask import jsonify, request, g
+from flask import jsonify, request
 from flask_login import login_user
 from itsdangerous import Signer
 
@@ -25,9 +25,7 @@ from app.utils import sanitize_email
 
 
 @api_bp.route("/auth/login", methods=["POST"])
-@limiter.limit(
-    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
-)
+@limiter.limit("10/minute")
 def auth_login():
     """
     Authenticate user
@@ -56,8 +54,6 @@ def auth_login():
     user = User.filter_by(email=email).first()
 
     if not user or not user.check_password(password):
-        # Trigger rate limiter
-        g.deduct_limit = True
         return jsonify(error="Email or password incorrect"), 400
     elif user.disabled:
         return jsonify(error="Account disabled"), 400
@@ -72,9 +68,7 @@ def auth_login():
 
 
 @api_bp.route("/auth/register", methods=["POST"])
-@limiter.limit(
-    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
-)
+@limiter.limit("10/minute")
 def auth_register():
     """
     User signs up - will need to activate their account with an activation code.
@@ -123,9 +117,7 @@ def auth_register():
 
 
 @api_bp.route("/auth/activate", methods=["POST"])
-@limiter.limit(
-    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
-)
+@limiter.limit("10/minute")
 def auth_activate():
     """
     User enters the activation code to confirm their account.
@@ -149,22 +141,16 @@ def auth_activate():
 
     # do not use a different message to avoid exposing existing email
     if not user or user.activated:
-        # Trigger rate limiter
-        g.deduct_limit = True
         return jsonify(error="Wrong email or code"), 400
 
     account_activation = AccountActivation.get_by(user_id=user.id)
     if not account_activation:
-        # Trigger rate limiter
-        g.deduct_limit = True
         return jsonify(error="Wrong email or code"), 400
 
     if account_activation.code != code:
         # decrement nb tries
         account_activation.tries -= 1
         Session.commit()
-        # Trigger rate limiter
-        g.deduct_limit = True
 
         if account_activation.tries == 0:
             AccountActivation.delete(account_activation.id)
