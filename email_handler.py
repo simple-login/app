@@ -539,7 +539,9 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     )
 
 
-def apply_dmarc_policy(alias: Alias, contact: Contact, msg: Message) -> Optional[str]:
+def apply_dmarc_policy(
+    alias: Alias, contact: Contact, envelope: Envelope, msg: Message
+) -> Optional[str]:
     dmarc_result = get_dmarc_status(msg)
     newrelic.agent.record_custom_event(
         "Custom/dmarc_check", {"result": dmarc_result.name}
@@ -551,60 +553,67 @@ def apply_dmarc_policy(alias: Alias, contact: Contact, msg: Message) -> Optional
         DmarcCheckResult.reject,
         DmarcCheckResult.soft_fail,
     ):
-        add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
-        msg[headers.SL_ENVELOPE_TO] = alias.email
-        add_or_replace_header(msg, "From", contact.new_addr())
-        # replace CC & To emails by reverse-alias for all emails that are not alias
-        try:
-            replace_header_when_forward(msg, alias, "Cc")
-            replace_header_when_forward(msg, alias, "To")
-        except CannotCreateContactForReverseAlias:
-            Session.commit()
-            raise
-
-        random_name = str(uuid.uuid4())
-        s3_report_path = f"refused-emails/full-{random_name}.eml"
-        s3.upload_email_from_bytesio(
-            s3_report_path, BytesIO(to_bytes(msg)), f"full-{random_name}"
-        )
-        refused_email = RefusedEmail.create(
-            full_report_path=s3_report_path, user_id=alias.user_id, flush=True
-        )
-        EmailLog.create(
-            user_id=alias.user_id,
-            mailbox_id=alias.mailbox_id,
-            contact_id=contact.id,
-            alias_id=alias.id,
-            message_id=str(msg[headers.MESSAGE_ID]),
-            refused_email_id=refused_email.id,
-            is_spam=True,
-            blocked=True,
-            commit=True,
-        )
-
-        notification_title = f"{alias.email} has a new mail in quarantine"
-        notifications = (
-            Notification.filter_by(user_id=alias.user_id)
-            .order_by(Notification.read, Notification.created_at.desc())
-            .limit(10)
-            .all()
-        )  # load a record more to know whether there's more
-        already_notified = False
-        for notification in notifications:
-            if notification.title == notification_title:
-                already_notified = True
-                break
-
-        if not already_notified:
-            Notification.create(
-                user_id=alias.user_id,
-                title=notification_title,
-                message=Notification.render(
-                    "notification/message-quarantine.html", alias=alias
-                ),
-            )
+        quarantine_dmarc_failed_email(alias, contact, envelope, msg)
+        add_quarantine_notification_for_alias(alias)
         return status.E519
     return None
+
+
+def quarantine_dmarc_failed_email(alias, contact, envelope, msg):
+    add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
+    msg[headers.SL_ENVELOPE_TO] = alias.email
+    msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+    add_or_replace_header(msg, "From", contact.new_addr())
+    # replace CC & To emails by reverse-alias for all emails that are not alias
+    try:
+        replace_header_when_forward(msg, alias, "Cc")
+        replace_header_when_forward(msg, alias, "To")
+    except CannotCreateContactForReverseAlias:
+        Session.commit()
+        raise
+    random_name = str(uuid.uuid4())
+    s3_report_path = f"refused-emails/full-{random_name}.eml"
+    s3.upload_email_from_bytesio(
+        s3_report_path, BytesIO(to_bytes(msg)), f"full-{random_name}"
+    )
+    refused_email = RefusedEmail.create(
+        full_report_path=s3_report_path, user_id=alias.user_id, flush=True
+    )
+    EmailLog.create(
+        user_id=alias.user_id,
+        mailbox_id=alias.mailbox_id,
+        contact_id=contact.id,
+        alias_id=alias.id,
+        message_id=str(msg[headers.MESSAGE_ID]),
+        refused_email_id=refused_email.id,
+        is_spam=True,
+        blocked=True,
+        commit=True,
+    )
+
+
+def add_quarantine_notification_for_alias(alias: Alias):
+    notification_title = f"{alias.email} has a new mail in quarantine"
+    notifications = (
+        Notification.filter_by(user_id=alias.user_id)
+        .order_by(Notification.read, Notification.created_at.desc())
+        .limit(10)
+        .all()
+    )  # load a record more to know whether there's more
+    already_notified = False
+    for notification in notifications:
+        if notification.title == notification_title:
+            already_notified = True
+            break
+    if not already_notified:
+        Notification.create(
+            user_id=alias.user_id,
+            title=notification_title,
+            message=Notification.render(
+                "notification/message-quarantine.html", alias=alias
+            ),
+            commit=True,
+        )
 
 
 def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str]]:
@@ -688,7 +697,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
-    dmarc_delivery_status = apply_dmarc_policy(alias, contact, msg)
+    dmarc_delivery_status = apply_dmarc_policy(alias, contact, envelope, msg)
     if dmarc_delivery_status is not None:
         return [(False, dmarc_delivery_status)]
 
