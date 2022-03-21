@@ -85,3 +85,23 @@ def test_dmarc_quarantine(flask_client):
     email_log = email_logs[0]
     assert email_log.blocked
     assert email_log.refused_email_id
+
+
+def test_gmail_dmarc_softfail(flask_client):
+    user = create_random_user()
+    alias = Alias.create_new_random(user)
+    msg = load_eml_file("dmarc_gmail_softfail.eml", {"alias_email": alias.email})
+    envelope = Envelope()
+    envelope.mail_from = msg["from"]
+    envelope.rcpt_tos = [msg["to"]]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E519
+    email_logs = (
+        EmailLog.filter_by(user_id=user.id, alias_id=alias.id)
+        .order_by(EmailLog.id.desc())
+        .all()
+    )
+    assert len(email_logs) == 1
+    email_log = email_logs[0]
+    assert email_log.blocked
+    assert email_log.refused_email_id

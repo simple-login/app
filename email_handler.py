@@ -549,6 +549,7 @@ def apply_dmarc_policy(alias: Alias, contact: Contact, msg: Message) -> Optional
     if dmarc_result in (
         DmarcCheckResult.quarantine,
         DmarcCheckResult.reject,
+        DmarcCheckResult.soft_fail,
     ):
         add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
         msg[headers.SL_ENVELOPE_TO] = alias.email
