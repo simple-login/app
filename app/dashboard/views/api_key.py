@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.dashboard.base import dashboard_bp
+from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.models import ApiKey
 
@@ -14,6 +15,7 @@ class NewApiKeyForm(FlaskForm):
 
 @dashboard_bp.route("/api_key", methods=["GET", "POST"])
 @login_required
+@sudo_required
 def api_key():
     api_keys = (
         ApiKey.filter(ApiKey.user_id == current_user.id)

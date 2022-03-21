@@ -1,13 +1,27 @@
-from flask import url_for
+from time import time
+
+from flask import url_for, request
 
 from app.db import Session
 from app.models import User, ApiKey
 from tests.utils import login
 
 
+def test_api_key_page_requires_password(flask_client):
+    r = flask_client.get(
+        url_for("dashboard.api_key"),
+    )
+
+    assert r.status_code == 302
+
+
 def test_create_delete_api_key(flask_client):
     user = login(flask_client)
     Session.commit()
+
+    # to bypass sudo mode
+    with flask_client.session_transaction() as session:
+        session["sudo_time"] = int(time())
 
     # create api_key
     create_r = flask_client.post(
@@ -50,6 +64,10 @@ def test_delete_all_api_keys(flask_client):
     # assert that each user has the API keys created
     assert ApiKey.filter(ApiKey.user_id == user_1.id).count() == 2
     assert ApiKey.filter(ApiKey.user_id == user_2.id).count() == 1
+
+    # to bypass sudo mode
+    with flask_client.session_transaction() as session:
+        session["sudo_time"] = int(time())
 
     # delete all of user 1's API keys
     r = flask_client.post(
