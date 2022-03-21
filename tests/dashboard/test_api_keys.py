@@ -1,6 +1,6 @@
 from time import time
 
-from flask import url_for, request
+from flask import url_for
 
 from app.db import Session
 from app.models import User, ApiKey
