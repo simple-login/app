@@ -541,7 +541,9 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
 
 def apply_dmarc_policy(alias: Alias, contact: Contact, msg: Message) -> Optional[str]:
     dmarc_result = get_dmarc_status(msg)
-    newrelic.agent.record_custom_metric("Custom/dmarc_check", dmarc_result)
+    newrelic.agent.record_custom_event(
+        "Custom/dmarc_check", {"result": dmarc_result.name}
+    )
     if not ENABLE_DMARC_CHECK:
         return None
     if dmarc_result in (
