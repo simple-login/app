@@ -67,10 +67,10 @@ def test_is_automatic_out_of_office():
     assert is_automatic_out_of_office(msg)
 
 
-def test_process_spoofed(flask_client):
+def test_dmarc_quarantine(flask_client):
     user = create_random_user()
     alias = Alias.create_new_random(user)
-    msg = load_eml_file("gmail_spoof.eml", {"alias_email": alias.email})
+    msg = load_eml_file("dmarc_quarantine.eml", {"alias_email": alias.email})
     envelope = Envelope()
     envelope.mail_from = msg["from"]
     envelope.rcpt_tos = [msg["to"]]
