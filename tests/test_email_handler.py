@@ -4,7 +4,14 @@ from aiosmtpd.smtp import Envelope
 
 import email_handler
 from app.email import headers, status
-from app.models import User, Alias, AuthorizedAddress, IgnoredEmail, EmailLog
+from app.models import (
+    User,
+    Alias,
+    AuthorizedAddress,
+    IgnoredEmail,
+    EmailLog,
+    Notification,
+)
 from email_handler import (
     get_mailbox_from_mail_from,
     should_ignore,
@@ -85,6 +92,9 @@ def test_dmarc_quarantine(flask_client):
     email_log = email_logs[0]
     assert email_log.blocked
     assert email_log.refused_email_id
+    notifications = Notification.filter_by(user_id=user.id).all()
+    assert len(notifications) == 1
+    assert f"{alias.email} has a new mail in quarantine" == notifications[0].title
 
 
 def test_gmail_dmarc_softfail(flask_client):

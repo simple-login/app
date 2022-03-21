@@ -581,6 +581,28 @@ def apply_dmarc_policy(alias: Alias, contact: Contact, msg: Message) -> Optional
             blocked=True,
             commit=True,
         )
+
+        notification_title = f"{alias.email} has a new mail in quarantine"
+        notifications = (
+            Notification.filter_by(user_id=alias.user_id)
+            .order_by(Notification.read, Notification.created_at.desc())
+            .limit(10)
+            .all()
+        )  # load a record more to know whether there's more
+        already_notified = False
+        for notification in notifications:
+            if notification.title == notification_title:
+                already_notified = True
+                break
+
+        if not already_notified:
+            Notification.create(
+                user_id=alias.user_id,
+                title=notification_title,
+                message=Notification.render(
+                    "notification/message-quarantine.html", alias=alias
+                ),
+            )
         return status.E519
     return None
 
