@@ -87,7 +87,7 @@ from app.config import (
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
-    ENABLE_DMARC_CHECK,
+    DMARC_CHECK_ENABLED,
 )
 from app.db import Session
 from app.email import status, headers
@@ -544,7 +544,7 @@ def apply_dmarc_policy(alias: Alias, contact: Contact, msg: Message) -> Optional
     newrelic.agent.record_custom_event(
         "Custom/dmarc_check", {"result": dmarc_result.name}
     )
-    if not ENABLE_DMARC_CHECK:
+    if not DMARC_CHECK_ENABLED:
         return None
     if dmarc_result in (
         DmarcCheckResult.quarantine,
