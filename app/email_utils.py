@@ -298,7 +298,7 @@ def send_email(
     msg[headers.FROM] = f"{NOREPLY} <{NOREPLY}>"
     msg[headers.TO] = to_email
 
-    msg_id_header = make_msgid()
+    msg_id_header = make_msgid(domain=EMAIL_DOMAIN)
     msg[headers.MESSAGE_ID] = msg_id_header
 
     date_header = formatdate()
