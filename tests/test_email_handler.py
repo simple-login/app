@@ -1,12 +1,23 @@
 from email.message import EmailMessage
 
-from app.email import headers
-from app.models import User, Alias, AuthorizedAddress, IgnoredEmail
+from aiosmtpd.smtp import Envelope
+
+import email_handler
+from app.email import headers, status
+from app.models import (
+    User,
+    Alias,
+    AuthorizedAddress,
+    IgnoredEmail,
+    EmailLog,
+    Notification,
+)
 from email_handler import (
     get_mailbox_from_mail_from,
     should_ignore,
     is_automatic_out_of_office,
 )
+from tests.utils import load_eml_file, create_random_user
 
 
 def test_get_mailbox_from_mail_from(flask_client):
@@ -61,3 +72,46 @@ def test_is_automatic_out_of_office():
 
     msg[headers.AUTO_SUBMITTED] = "auto-generated"
     assert is_automatic_out_of_office(msg)
+
+
+def test_dmarc_quarantine(flask_client):
+    user = create_random_user()
+    alias = Alias.create_new_random(user)
+    msg = load_eml_file("dmarc_quarantine.eml", {"alias_email": alias.email})
+    envelope = Envelope()
+    envelope.mail_from = msg["from"]
+    envelope.rcpt_tos = [msg["to"]]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E519
+    email_logs = (
+        EmailLog.filter_by(user_id=user.id, alias_id=alias.id)
+        .order_by(EmailLog.id.desc())
+        .all()
+    )
+    assert len(email_logs) == 1
+    email_log = email_logs[0]
+    assert email_log.blocked
+    assert email_log.refused_email_id
+    notifications = Notification.filter_by(user_id=user.id).all()
+    assert len(notifications) == 1
+    assert f"{alias.email} has a new mail in quarantine" == notifications[0].title
+
+
+def test_gmail_dmarc_softfail(flask_client):
+    user = create_random_user()
+    alias = Alias.create_new_random(user)
+    msg = load_eml_file("dmarc_gmail_softfail.eml", {"alias_email": alias.email})
+    envelope = Envelope()
+    envelope.mail_from = msg["from"]
+    envelope.rcpt_tos = [msg["to"]]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E519
+    email_logs = (
+        EmailLog.filter_by(user_id=user.id, alias_id=alias.id)
+        .order_by(EmailLog.id.desc())
+        .all()
+    )
+    assert len(email_logs) == 1
+    email_log = email_logs[0]
+    assert email_log.blocked
+    assert email_log.refused_email_id

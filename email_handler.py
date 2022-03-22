@@ -87,6 +87,7 @@ from app.config import (
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
+    DMARC_CHECK_ENABLED,
 )
 from app.db import Session
 from app.email import status, headers
@@ -128,6 +129,7 @@ from app.email_utils import (
     get_orig_message_from_yahoo_complaint,
     get_mailbox_bounce_info,
     save_email_for_debugging,
+    get_dmarc_status,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -152,6 +154,7 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     Notification,
+    DmarcCheckResult,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -536,6 +539,83 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     )
 
 
+def apply_dmarc_policy(
+    alias: Alias, contact: Contact, envelope: Envelope, msg: Message
+) -> Optional[str]:
+    dmarc_result = get_dmarc_status(msg)
+    newrelic.agent.record_custom_event(
+        "Custom/dmarc_check", {"result": dmarc_result.name}
+    )
+    if not DMARC_CHECK_ENABLED:
+        return None
+    if dmarc_result in (
+        DmarcCheckResult.quarantine,
+        DmarcCheckResult.reject,
+        DmarcCheckResult.soft_fail,
+    ):
+        quarantine_dmarc_failed_email(alias, contact, envelope, msg)
+        add_quarantine_notification_for_alias(alias)
+        return status.E519
+    return None
+
+
+def quarantine_dmarc_failed_email(alias, contact, envelope, msg):
+    add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
+    msg[headers.SL_ENVELOPE_TO] = alias.email
+    msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+    add_or_replace_header(msg, "From", contact.new_addr())
+    # replace CC & To emails by reverse-alias for all emails that are not alias
+    try:
+        replace_header_when_forward(msg, alias, "Cc")
+        replace_header_when_forward(msg, alias, "To")
+    except CannotCreateContactForReverseAlias:
+        Session.commit()
+        raise
+    random_name = str(uuid.uuid4())
+    s3_report_path = f"refused-emails/full-{random_name}.eml"
+    s3.upload_email_from_bytesio(
+        s3_report_path, BytesIO(to_bytes(msg)), f"full-{random_name}"
+    )
+    refused_email = RefusedEmail.create(
+        full_report_path=s3_report_path, user_id=alias.user_id, flush=True
+    )
+    EmailLog.create(
+        user_id=alias.user_id,
+        mailbox_id=alias.mailbox_id,
+        contact_id=contact.id,
+        alias_id=alias.id,
+        message_id=str(msg[headers.MESSAGE_ID]),
+        refused_email_id=refused_email.id,
+        is_spam=True,
+        blocked=True,
+        commit=True,
+    )
+
+
+def add_quarantine_notification_for_alias(alias: Alias):
+    notification_title = f"{alias.email} has a new mail in quarantine"
+    notifications = (
+        Notification.filter_by(user_id=alias.user_id)
+        .order_by(Notification.read, Notification.created_at.desc())
+        .limit(10)
+        .all()
+    )  # load a record more to know whether there's more
+    already_notified = False
+    for notification in notifications:
+        if notification.title == notification_title:
+            already_notified = True
+            break
+    if not already_notified:
+        Notification.create(
+            user_id=alias.user_id,
+            title=notification_title,
+            message=Notification.render(
+                "notification/message-quarantine.html", alias=alias
+            ),
+            commit=True,
+        )
+
+
 def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str]]:
     """return an array of SMTP status (is_success, smtp_status)
     is_success indicates whether an email has been delivered and
@@ -615,6 +695,11 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
         # do not return 5** to allow user to receive emails later when alias is enabled or contact is unblocked
         return [(True, res_status)]
+
+    # Check if we need to reject or quarantine based on dmarc
+    dmarc_delivery_status = apply_dmarc_policy(alias, contact, envelope, msg)
+    if dmarc_delivery_status is not None:
+        return [(False, dmarc_delivery_status)]
 
     ret = []
     mailboxes = alias.mailboxes

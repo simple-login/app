@@ -70,6 +70,7 @@ from app.models import (
     TransactionalEmail,
     IgnoreBounceSender,
     InvalidMailboxDomain,
+    DmarcCheckResult,
 )
 from app.utils import (
     random_string,
@@ -1375,6 +1376,11 @@ def sl_sendmail(
 
 def get_queue_id(msg: Message) -> Optional[str]:
     """Get the Postfix queue-id from a message"""
+    header_values = msg.get_all(headers.RSPAMD_QUEUE_ID)
+    if header_values:
+        # Get last in case somebody tries to inject a header
+        return header_values[-1]
+
     received_header = str(msg[headers.RECEIVED])
     if not received_header:
         return
@@ -1433,3 +1439,18 @@ def save_email_for_debugging(msg: Message, file_name_prefix=None) -> str:
         return file_name
 
     return ""
+
+
+def get_dmarc_status(msg: Message) -> Optional[DmarcCheckResult]:
+    spam_result = msg.get_all(headers.SPAMD_RESULT)
+    if not spam_result:
+        return None
+    spam_entries = [entry.strip() for entry in spam_result[-1].split("\n")]
+    for entry_pos in range(len(spam_entries)):
+        sep = spam_entries[entry_pos].find("(")
+        if sep > -1:
+            spam_entries[entry_pos] = spam_entries[entry_pos][:sep]
+    for header_value, dmarc_result in DmarcCheckResult.get_string_dict().items():
+        if header_value in spam_entries:
+            return dmarc_result
+    return None

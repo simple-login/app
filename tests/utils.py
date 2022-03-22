@@ -1,5 +1,12 @@
+import email
 import json
+import os
+import random
+import string
+from email.message import EmailMessage
+from typing import Optional, Dict
 
+import jinja2
 from flask import url_for
 
 from app.models import User
@@ -27,10 +34,14 @@ def login(flask_client) -> User:
     return user
 
 
-def create_user(flask_client) -> User:
-    # create user, user is activated
+def random_token(length: int = 10) -> str:
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+
+
+def create_random_user() -> User:
+    email = "{}@{}.com".format(random_token(), random_token())
     return User.create(
-        email="a@b.c",
+        email=email,
         password="password",
         name="Test User",
         activated=True,
@@ -41,3 +52,18 @@ def create_user(flask_client) -> User:
 def pretty(d):
     """pretty print as json"""
     print(json.dumps(d, indent=2))
+
+
+def load_eml_file(
+    filename: str, template_values: Optional[Dict[str, str]] = None
+) -> EmailMessage:
+    emails_dir = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "example_emls"
+    )
+    fullpath = os.path.join(emails_dir, filename)
+    with open(fullpath) as fd:
+        template = jinja2.Template(fd.read())
+        if not template_values:
+            template_values = {}
+        rendered = template.render(**template_values)
+        return email.message_from_string(rendered)

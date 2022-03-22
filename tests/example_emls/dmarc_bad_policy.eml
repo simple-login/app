@@ -1,0 +1,27 @@
+X-SimpleLogin-Client-IP: 54.39.200.130
+Received-SPF: Softfail (mailfrom) identity=mailfrom; client-ip=34.59.200.130;
+ helo=relay.somewhere.net; envelope-from=everwaste@gmail.com;
+ receiver=<UNKNOWN>
+Received: from relay.somewhere.net (relay.somewhere.net [34.59.200.130])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by mx1.sldev.ovh (Postfix) with ESMTPS id 6D8C13F069
+        for <wehrman_mannequin@sldev.ovh>; Thu, 17 Mar 2022 16:50:20 +0000 (UTC)
+Date: Thu, 17 Mar 2022 16:50:18 +0000
+To: {{ alias_email }}
+From: spoofedemailsource@gmail.com
+Subject: test Thu, 17 Mar 2022 16:50:18 +0000
+Message-Id: <20220317165018.000191@somewhere-5488dd4b6b-7crp6>
+X-Mailer: swaks v20201014.0 jetmore.org/john/code/swaks/
+X-Rspamd-Queue-Id: 6D8C13F069
+X-Rspamd-Server: staging1
+X-Spamd-Result: default: False [0.50 / 13.00];
+        MID_RHS_NOT_FQDN(0.50)[];
+        DMARC_BAD_POLICY(0.10);
+        MIME_GOOD(-0.10)[text/plain];
+        MIME_TRACE(0.00)[0:+];
+        TO_DN_NONE(0.00)[];
+        TO_MATCH_ENVRCPT_ALL(0.00)[];
+        ARC_NA(0.00)[]
+
+This is a test mailing
