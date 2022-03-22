@@ -554,8 +554,15 @@ def apply_dmarc_policy(
         DmarcCheckResult.soft_fail,
     ):
         quarantine_dmarc_failed_email(alias, contact, envelope, msg)
-        add_quarantine_notification_for_alias(alias)
-        return status.E519
+        Notification.create(
+            user_id=alias.user_id,
+            title=f"{alias.email} has a new mail in quarantine",
+            message=Notification.render(
+                "notification/message-quarantine.html", alias=alias
+            ),
+            commit=True,
+        )
+        return status.E215
     return None
 
 
@@ -590,30 +597,6 @@ def quarantine_dmarc_failed_email(alias, contact, envelope, msg):
         blocked=True,
         commit=True,
     )
-
-
-def add_quarantine_notification_for_alias(alias: Alias):
-    notification_title = f"{alias.email} has a new mail in quarantine"
-    notifications = (
-        Notification.filter_by(user_id=alias.user_id)
-        .order_by(Notification.read, Notification.created_at.desc())
-        .limit(10)
-        .all()
-    )  # load a record more to know whether there's more
-    already_notified = False
-    for notification in notifications:
-        if notification.title == notification_title:
-            already_notified = True
-            break
-    if not already_notified:
-        Notification.create(
-            user_id=alias.user_id,
-            title=notification_title,
-            message=Notification.render(
-                "notification/message-quarantine.html", alias=alias
-            ),
-            commit=True,
-        )
 
 
 def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str]]:
