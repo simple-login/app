@@ -543,11 +543,12 @@ def apply_dmarc_policy(
     alias: Alias, contact: Contact, envelope: Envelope, msg: Message
 ) -> Optional[str]:
     dmarc_result = get_dmarc_status(msg)
-    newrelic.agent.record_custom_event(
-        "Custom/dmarc_check", {"result": dmarc_result.name}
-    )
+    if dmarc_result:
+        newrelic.agent.record_custom_event(
+            "Custom/dmarc_check", {"result": dmarc_result.name}
+        )
 
-    if not DMARC_CHECK_ENABLED:
+    if not DMARC_CHECK_ENABLED or not dmarc_result:
         return None
 
     if dmarc_result in (
@@ -566,6 +567,7 @@ def apply_dmarc_policy(
             commit=True,
         )
         return status.E215
+
     return None
 
 
