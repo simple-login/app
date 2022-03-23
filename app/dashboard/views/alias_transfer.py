@@ -174,7 +174,11 @@ def alias_transfer_receive_route():
             return redirect(request.url)
 
         LOG.d(
-            "transfer alias from %s to %s with %s", alias.user, current_user, mailboxes
+            "transfer alias %s from %s to %s with %s",
+            alias,
+            alias.user,
+            current_user,
+            mailboxes,
         )
         transfer(alias, current_user, mailboxes)
         flash(f"You are now owner of {alias.email}", "success")
