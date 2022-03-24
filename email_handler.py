@@ -544,9 +544,7 @@ def apply_dmarc_policy(
 ) -> Optional[str]:
     dmarc_result = get_dmarc_status(msg)
     if dmarc_result:
-        newrelic.agent.record_custom_event(
-            "Custom/dmarc_check", {"result": dmarc_result.name}
-        )
+        newrelic.agent.record_custom_event("DmarcCheck", {"result": dmarc_result.name})
 
     if not DMARC_CHECK_ENABLED or not dmarc_result:
         return None
