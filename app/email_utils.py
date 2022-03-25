@@ -1445,7 +1445,8 @@ def get_dmarc_status(msg: Message) -> Optional[DmarcCheckResult]:
     spam_result = msg.get_all(headers.SPAMD_RESULT)
     if not spam_result:
         return None
-    spam_entries = [entry.strip() for entry in spam_result[-1].split("\n")]
+
+    spam_entries = [entry.strip() for entry in str(spam_result[-1]).split("\n")]
     for entry_pos in range(len(spam_entries)):
         sep = spam_entries[entry_pos].find("(")
         if sep > -1:
