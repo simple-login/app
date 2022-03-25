@@ -294,6 +294,12 @@ class SpamdResult:
         return {"header": "present", "dmarc": self.dmarc, "spf": self.spf}
 
 
+class VerpType(EnumE):
+    bounce_forward = 0
+    bounce_reply = 1
+    transactional = 2
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)

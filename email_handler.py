@@ -72,7 +72,6 @@ from app.config import (
     PGP_SENDER_PRIVATE_KEY,
     ALERT_BOUNCE_EMAIL_REPLY_PHASE,
     NOREPLY,
-    BOUNCE_EMAIL,
     BOUNCE_PREFIX,
     BOUNCE_SUFFIX,
     TRANSACTIONAL_BOUNCE_PREFIX,
@@ -131,6 +130,8 @@ from app.email_utils import (
     get_mailbox_bounce_info,
     save_email_for_debugging,
     get_spamd_result,
+    generate_verp_email,
+    get_verp_info_from_email,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -963,7 +964,7 @@ def forward_email_to_mailbox(
     try:
         sl_sendmail(
             # use a different envelope sender for each forward (aka VERP)
-            BOUNCE_EMAIL.format(email_log.id),
+            generate_verp_email(VerpType.bounce_forward, email_log.id),
             mailbox.email,
             msg,
             envelope.mail_options,
@@ -1246,12 +1247,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     if should_add_dkim_signature(alias_domain):
         add_dkim_signature(msg, alias_domain)
 
-    # generate a mail_from for VERP
-    verp_mail_from = f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+{email_log.id}+@{alias_domain}"
-
     try:
         sl_sendmail(
-            verp_mail_from,
+            generate_verp_email(VerpType.bounce_reply, email_log.id, alias_domain),
             contact.website_email,
             msg,
             envelope.mail_options,
@@ -2092,11 +2090,13 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
     return status.E202
 
 
-def handle_transactional_bounce(envelope: Envelope, msg, rcpt_to):
+def handle_transactional_bounce(
+    envelope: Envelope, msg, rcpt_to, transactional_id=None
+):
     LOG.d("handle transactional bounce sent to %s", rcpt_to)
 
     # parse the TransactionalEmail
-    transactional_id = parse_id_from_bounce(rcpt_to)
+    transactional_id = transactional_id or parse_id_from_bounce(rcpt_to)
     transactional = TransactionalEmail.get(transactional_id)
 
     # a transaction might have been deleted in delete_logs()
@@ -2285,15 +2285,18 @@ def handle(envelope: Envelope, msg: Message) -> str:
         return handle_unsubscribe(envelope, msg)
 
     # region mail sent to VERP
+    verp_info = get_verp_info_from_email(rcpt_tos[0])
 
     # sent to transactional VERP. Either bounce emails or out-of-office
     if (
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(TRANSACTIONAL_BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(TRANSACTIONAL_BOUNCE_SUFFIX)
-    ):
+    ) or (verp_info and verp_info[0] == VerpType.transactional):
         if is_bounce(envelope, msg):
-            handle_transactional_bounce(envelope, msg, rcpt_tos[0])
+            handle_transactional_bounce(
+                envelope, msg, rcpt_tos[0], verp_info and verp_info[1]
+            )
             return status.E205
         elif is_automatic_out_of_office(msg):
             LOG.d(
@@ -2308,8 +2311,8 @@ def handle(envelope: Envelope, msg: Message) -> str:
         len(rcpt_tos) == 1
         and rcpt_tos[0].startswith(BOUNCE_PREFIX)
         and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
-    ):
-        email_log_id = parse_id_from_bounce(rcpt_tos[0])
+    ) or (verp_info and verp_info[0] == VerpType.bounce_forward):
+        email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
 
         if not email_log:
@@ -2324,10 +2327,12 @@ def handle(envelope: Envelope, msg: Message) -> str:
             raise VERPForward
 
     # sent to reply VERP, can be either bounce or out-of-office
-    if len(rcpt_tos) == 1 and rcpt_tos[0].startswith(
-        f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+"
+    if (
+        len(rcpt_tos) == 1
+        and rcpt_tos[0].startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+")
+        or (verp_info and verp_info[0] == VerpType.bounce_reply)
     ):
-        email_log_id = parse_id_from_bounce(rcpt_tos[0])
+        email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
 
         if not email_log:
@@ -2346,12 +2351,13 @@ def handle(envelope: Envelope, msg: Message) -> str:
             )
 
     # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
+    verp_info = get_verp_info_from_email(mail_from[0])
     if (
         len(rcpt_tos) == 1
         and mail_from.startswith(BOUNCE_PREFIX)
         and mail_from.endswith(BOUNCE_SUFFIX)
-    ):
-        email_log_id = parse_id_from_bounce(mail_from)
+    ) or (verp_info and verp_info[0] == VerpType.bounce_forward):
+        email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(mail_from)
         email_log = EmailLog.get(email_log_id)
         alias = Alias.get_by(email=rcpt_tos[0])
         LOG.w(

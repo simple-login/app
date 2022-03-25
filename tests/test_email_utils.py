@@ -5,7 +5,7 @@ from email.message import EmailMessage
 import arrow
 import pytest
 
-from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, BOUNCE_EMAIL, ROOT_DIR
+from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, ROOT_DIR
 from app.db import Session
 from app.email_utils import (
     get_email_domain_part,
@@ -37,6 +37,8 @@ from app.email_utils import (
     get_mailbox_bounce_info,
     is_invalid_mailbox_domain,
     get_spamd_result,
+    generate_verp_email,
+    get_verp_info_from_email,
 )
 from app.models import (
     User,
@@ -47,6 +49,7 @@ from app.models import (
     IgnoreBounceSender,
     InvalidMailboxDomain,
     DmarcCheckResult,
+    VerpType,
 )
 
 # flake8: noqa: E101, W191
@@ -739,7 +742,6 @@ def test_should_disable_bounce_consecutive_days(flask_client):
 def test_parse_id_from_bounce():
     assert parse_id_from_bounce("bounces+1234+@local") == 1234
     assert parse_id_from_bounce("anything+1234+@local") == 1234
-    assert parse_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234
 
 
 def test_get_queue_id():
@@ -823,3 +825,11 @@ def test_dmarc_result_na():
 def test_dmarc_result_bad_policy():
     msg = load_eml_file("dmarc_bad_policy.eml")
     assert DmarcCheckResult.bad_policy == get_spamd_result(msg).dmarc
+
+
+def test_generate_verp_email():
+    generated_email = generate_verp_email(VerpType.bounce_forward, 1, "somewhere.net")
+    print(generated_email)
+    info = get_verp_info_from_email(generated_email.lower())
+    assert info[0] == VerpType.bounce_forward
+    assert info[1] == 1
