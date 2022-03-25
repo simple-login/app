@@ -596,7 +596,7 @@ def apply_dmarc_policy(
     # todo: remove when soft_fail email is put into quarantine
     elif dmarc_result == DmarcCheckResult.soft_fail:
         LOG.w(
-            f"might put email from {contact} to {alias} to quarantine. {dmarc_result}, "
+            f"dmarc soft_fail from {contact} to {alias}."
             f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
         )
 
