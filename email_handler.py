@@ -548,9 +548,7 @@ def apply_dmarc_policy(
             "Custom/dmarc_check", {"result": dmarc_result.name}
         )
     else:
-        newrelic.agent.record_custom_event(
-            "Custom/dmarc_check", {"result": "N/A"}
-        )
+        newrelic.agent.record_custom_event("Custom/dmarc_check", {"result": "N/A"})
 
     if not DMARC_CHECK_ENABLED or not dmarc_result:
         return None
@@ -560,7 +558,10 @@ def apply_dmarc_policy(
         DmarcCheckResult.reject,
         DmarcCheckResult.soft_fail,
     ):
-        LOG.w(f"put email from {contact} to {alias} to quarantine. {dmarc_result}")
+        LOG.w(
+            f"put email from {contact} to {alias} to quarantine. {dmarc_result}, "
+            f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
+        )
         quarantine_dmarc_failed_email(alias, contact, envelope, msg)
         Notification.create(
             user_id=alias.user_id,
