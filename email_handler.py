@@ -555,7 +555,8 @@ def apply_dmarc_policy(
     if dmarc_result in (
         DmarcCheckResult.quarantine,
         DmarcCheckResult.reject,
-        DmarcCheckResult.soft_fail,
+        # todo: disable soft_fail for now
+        # DmarcCheckResult.soft_fail,
     ):
         LOG.w(
             f"put email from {contact} to {alias} to quarantine. {dmarc_result}, "
@@ -592,6 +593,12 @@ def apply_dmarc_policy(
             ignore_smtp_error=True,
         )
         return status.E215
+    # todo: remove when soft_fail email is put into quarantine
+    elif dmarc_result == DmarcCheckResult.soft_fail:
+        LOG.w(
+            f"might put email from {contact} to {alias} to quarantine. {dmarc_result}, "
+            f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
+        )
 
     return None
 
