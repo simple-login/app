@@ -552,7 +552,6 @@ def apply_dmarc_policy(
     if dmarc_result in (
         DmarcCheckResult.quarantine,
         DmarcCheckResult.reject,
-        DmarcCheckResult.soft_fail,
     ):
         LOG.w(f"put email from {contact} to {alias} to quarantine. {dmarc_result}")
         quarantine_dmarc_failed_email(alias, contact, envelope, msg)
