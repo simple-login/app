@@ -547,6 +547,10 @@ def apply_dmarc_policy(
         newrelic.agent.record_custom_event(
             "Custom/dmarc_check", {"result": dmarc_result.name}
         )
+    else:
+        newrelic.agent.record_custom_event(
+            "Custom/dmarc_check", {"result": "N/A"}
+        )
 
     if not DMARC_CHECK_ENABLED or not dmarc_result:
         return None
