@@ -88,6 +88,7 @@ from app.config import (
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
     DMARC_CHECK_ENABLED,
+    ALERT_QUARANTINE_DMARC,
 )
 from app.db import Session
 from app.email import status, headers
@@ -540,7 +541,7 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
 
 
 def apply_dmarc_policy(
-    alias: Alias, contact: Contact, envelope: Envelope, msg: Message
+    alias: Alias, contact: Contact, envelope: Envelope, msg: Message, from_header
 ) -> Optional[str]:
     dmarc_result = get_dmarc_status(msg)
     if dmarc_result:
@@ -554,13 +555,14 @@ def apply_dmarc_policy(
     if dmarc_result in (
         DmarcCheckResult.quarantine,
         DmarcCheckResult.reject,
-        DmarcCheckResult.soft_fail,
+        # todo: disable soft_fail for now
+        # DmarcCheckResult.soft_fail,
     ):
         LOG.w(
             f"put email from {contact} to {alias} to quarantine. {dmarc_result}, "
             f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
         )
-        quarantine_dmarc_failed_email(alias, contact, envelope, msg)
+        email_log = quarantine_dmarc_failed_email(alias, contact, envelope, msg)
         Notification.create(
             user_id=alias.user_id,
             title=f"{alias.email} has a new mail in quarantine",
@@ -569,12 +571,39 @@ def apply_dmarc_policy(
             ),
             commit=True,
         )
+        user = alias.user
+        send_email_with_rate_control(
+            user,
+            ALERT_QUARANTINE_DMARC,
+            user.email,
+            f"An email sent to {alias.email} has been quarantined",
+            render(
+                "transactional/message-quarantine-dmarc.txt.jinja2",
+                from_header=from_header,
+                alias=alias,
+                refused_email_url=email_log.get_dashboard_url(),
+            ),
+            render(
+                "transactional/message-quarantine-dmarc.html",
+                from_header=from_header,
+                alias=alias,
+                refused_email_url=email_log.get_dashboard_url(),
+            ),
+            max_nb_alert=10,
+            ignore_smtp_error=True,
+        )
         return status.E215
+    # todo: remove when soft_fail email is put into quarantine
+    elif dmarc_result == DmarcCheckResult.soft_fail:
+        LOG.w(
+            f"might put email from {contact} to {alias} to quarantine. {dmarc_result}, "
+            f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
+        )
 
     return None
 
 
-def quarantine_dmarc_failed_email(alias, contact, envelope, msg):
+def quarantine_dmarc_failed_email(alias, contact, envelope, msg) -> EmailLog:
     add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
     msg[headers.SL_ENVELOPE_TO] = alias.email
     msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
@@ -586,6 +615,7 @@ def quarantine_dmarc_failed_email(alias, contact, envelope, msg):
     except CannotCreateContactForReverseAlias:
         Session.commit()
         raise
+
     random_name = str(uuid.uuid4())
     s3_report_path = f"refused-emails/full-{random_name}.eml"
     s3.upload_email_from_bytesio(
@@ -594,7 +624,7 @@ def quarantine_dmarc_failed_email(alias, contact, envelope, msg):
     refused_email = RefusedEmail.create(
         full_report_path=s3_report_path, user_id=alias.user_id, flush=True
     )
-    EmailLog.create(
+    return EmailLog.create(
         user_id=alias.user_id,
         mailbox_id=alias.mailbox_id,
         contact_id=contact.id,
@@ -688,7 +718,9 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
-    dmarc_delivery_status = apply_dmarc_policy(alias, contact, envelope, msg)
+    dmarc_delivery_status = apply_dmarc_policy(
+        alias, contact, envelope, msg, from_header
+    )
     if dmarc_delivery_status is not None:
         return [(False, dmarc_delivery_status)]
 
