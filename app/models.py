@@ -1819,6 +1819,9 @@ class EmailLog(Base, ModelMixin):
         else:
             return "forward"
 
+    def get_dashboard_url(self):
+        return f"{URL}/dashboard/refused_email?highlight_id={self.id}"
+
     def __repr__(self):
         return f"<EmailLog {self.id}>"
 

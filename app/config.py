@@ -340,6 +340,8 @@ ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE = "alert_hotmail_complaint_reply_phase"
 ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL = "alert_hotmail_complaint_transactional"
 ALERT_YAHOO_COMPLAINT = "alert_yahoo_complaint"
 
+ALERT_QUARANTINE_DMARC = "alert_quarantine_dmarc"
+
 # <<<<< END ALERT EMAIL >>>>
 
 # Disable onboarding emails

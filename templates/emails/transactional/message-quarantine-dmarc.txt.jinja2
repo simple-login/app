@@ -1,0 +1,8 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+  An email from {{ from_header }} to {{ alias.email }} is put into Quarantine as it fails DMARC check.
+
+  You can view the email at {{ refused_email_url }}.
+  This email is automatically deleted in 7 days.
+{% endblock %}
