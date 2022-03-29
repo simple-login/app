@@ -168,6 +168,7 @@ def auth_activate():
 
 
 @api_bp.route("/auth/reactivate", methods=["POST"])
+@limiter.limit('10/minute')
 def auth_reactivate():
     """
     User asks for another activation code
@@ -209,6 +210,7 @@ def auth_reactivate():
 
 
 @api_bp.route("/auth/facebook", methods=["POST"])
+@limiter.limit('10/minute')
 def auth_facebook():
     """
     Authenticate user with Facebook
@@ -259,6 +261,7 @@ def auth_facebook():
 
 
 @api_bp.route("/auth/google", methods=["POST"])
+@limiter.limit('10/minute')
 def auth_google():
     """
     Authenticate user with Google
@@ -335,6 +338,7 @@ def auth_payload(user, device) -> dict:
 
 
 @api_bp.route("/auth/forgot_password", methods=["POST"])
+@limiter.limit('10/minute')
 def forgot_password():
     """
     User forgot password
