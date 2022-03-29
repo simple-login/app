@@ -45,8 +45,6 @@ def authorize():
     oauth_client_id = request.args.get("client_id")
     state = request.args.get("state")
     scope = request.args.get("scope")
-    # TODO need to sensure this redirect_url has previously been validated by the client by setting a list
-    # of valid urls to use
     redirect_uri = request.args.get("redirect_uri")
     response_mode = request.args.get("response_mode")
     nonce = request.args.get("nonce")
@@ -72,10 +70,7 @@ def authorize():
 
     client = Client.get_by(oauth_client_id=oauth_client_id)
     if not client:
-        final_redirect_uri = (
-            f"{redirect_uri}?error=invalid_client_id&client_id={oauth_client_id}"
-        )
-        return redirect(final_redirect_uri)
+        redirect(url_for("auth.login"))
 
     # check if redirect_uri is valid
     # allow localhost by default
