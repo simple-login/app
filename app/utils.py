@@ -80,27 +80,16 @@ class NextUrlSanitizer:
     def sanitize(url: Optional[str], allowed_domains: List[str]) -> Optional[str]:
         if not url:
             return None
-        # Relative redirect
-        if url[0] == "/":
-            return url
-        return NextUrlSanitizer.__handle_absolute_redirect(url, allowed_domains)
+        result = urllib.parse.urlparse(url)
+        if result.hostname:
+            if result.hostname in allowed_domains:
+                return url
+            else:
+                return None
+        if result.path and result.path[0] == "/":
+            return result.path
 
-    @staticmethod
-    def __handle_absolute_redirect(
-        url: str, allowed_domains: List[str]
-    ) -> Optional[str]:
-        if not NextUrlSanitizer.__is_absolute_url(url):
-            # Unknown url, something like &next=something.example.com
-            return None
-        parsed = urllib.parse.urlparse(url)
-        if parsed.hostname in allowed_domains:
-            return url
-        # Not allowed domain
         return None
-
-    @staticmethod
-    def __is_absolute_url(url: str) -> bool:
-        return url.startswith(("http://", "https://"))
 
 
 def sanitize_next_url(url: Optional[str]) -> Optional[str]:
