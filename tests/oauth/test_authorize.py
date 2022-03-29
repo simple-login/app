@@ -4,6 +4,7 @@ from urllib.parse import urlparse, parse_qs
 
 from flask import url_for
 
+from app.config import ALLOWED_REDIRECT_DOMAINS
 from app.db import Session
 from app.jose_utils import verify_id_token, decode_id_token
 from app.models import Client, User, ClientUser
@@ -49,7 +50,7 @@ def test_authorize_page_non_login_user(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri="http://localhost",
+            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
             response_type="code",
         )
     )
@@ -109,7 +110,7 @@ def test_authorize_page_login_user(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri="http://localhost",
+            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
             response_type="code",
         )
     )
@@ -136,7 +137,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri="http://localhost",
+            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
             response_type="code",
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -149,7 +150,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == "localhost"
+    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
     assert not o.fragment
 
     # parse the query, should return something like
@@ -225,7 +226,7 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri="http://localhost",
+            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
             response_type="code",
             scope="openid",  # openid is in scope
         ),
@@ -239,7 +240,7 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == "localhost"
+    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
     assert not o.fragment
 
     # parse the query, should return something like
@@ -318,7 +319,7 @@ def test_authorize_token_flow(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri="http://localhost",
+            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
             response_type="token",  # token flow
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -331,7 +332,7 @@ def test_authorize_token_flow(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == "localhost"
+    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
 
     # in token flow, access_token is in fragment and not query
     assert o.fragment
@@ -365,7 +366,7 @@ def test_authorize_id_token_flow(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri="http://localhost",
+            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
             response_type="id_token",  # id_token flow
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -378,7 +379,7 @@ def test_authorize_id_token_flow(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == "localhost"
+    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
     assert not o.fragment
     assert o.query
 
@@ -414,7 +415,7 @@ def test_authorize_token_id_token_flow(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri="http://localhost",
+            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
             response_type="id_token token",  # id_token,token flow
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -427,7 +428,7 @@ def test_authorize_token_id_token_flow(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == "localhost"
+    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
     assert o.fragment
     assert not o.query
 
@@ -504,7 +505,7 @@ def test_authorize_code_id_token_flow(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri="http://localhost",
+            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
             response_type="id_token code",  # id_token,code flow
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -517,7 +518,7 @@ def test_authorize_code_id_token_flow(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == "localhost"
+    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
     assert not o.fragment
     assert o.query
 
