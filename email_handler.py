@@ -563,7 +563,7 @@ def apply_dmarc_policy(
         # DmarcCheckResult.soft_fail,
     ):
         LOG.w(
-            f"put email from {contact} to {alias} to quarantine. {spam_result}, "
+            f"put email from {contact} to {alias} to quarantine. {spam_result.event_data()}, "
             f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
         )
         email_log = quarantine_dmarc_failed_email(alias, contact, envelope, msg)
@@ -2595,7 +2595,8 @@ class MailHandler:
             return_status = handle(envelope, msg)
             elapsed = time.time() - start
             if return_status[0] == "5":
-                if get_spamd_result(msg).spf in (
+                spamd_result = get_spamd_result(msg)
+                if spamd_result and get_spamd_result(msg).spf in (
                     SPFCheckResult.fail,
                     SPFCheckResult.soft_fail,
                 ):

@@ -145,3 +145,17 @@ def test_preserve_5xx_with_valid_spf(flask_client):
     envelope.rcpt_tos = [msg["to"]]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert result == status.E512
+
+
+def test_preserve_5xx_with_no_header(flask_client):
+    user = create_random_user()
+    alias = Alias.create_new_random(user)
+    msg = load_eml_file(
+        "no_spamd_header.eml",
+        {"alias_email": alias.email},
+    )
+    envelope = Envelope()
+    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
+    envelope.rcpt_tos = [msg["to"]]
+    result = email_handler.MailHandler()._handle(envelope, msg)
+    assert result == status.E512
