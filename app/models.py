@@ -257,6 +257,28 @@ class DmarcCheckResult(EnumE):
         }
 
 
+class SPFCheckResult(EnumE):
+    allow = 0
+    fail = 1
+    soft_fail = 1
+    neutral = 2
+    temp_error = 3
+    none = 4
+    perm_error = 5
+
+    @staticmethod
+    def get_string_dict():
+        return {
+            "R_SPF_ALLOW": SPFCheckResult.allow,
+            "R_SPF_FAIL": SPFCheckResult.fail,
+            "R_SPF_SOFTFAIL": SPFCheckResult.soft_fail,
+            "R_SPF_NEUTRAL": SPFCheckResult.neutral,
+            "R_SPF_DNSFAIL": SPFCheckResult.temp_error,
+            "R_SPF_NA": SPFCheckResult.none,
+            "R_SPF_PERMFAIL": SPFCheckResult.perm_error,
+        }
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)

@@ -2601,10 +2601,11 @@ class MailHandler:
             elapsed = time.time() - start
 
             LOG.i(
-                "Finish mail_from %s, rcpt_tos %s, takes %s seconds <<===",
+                "Finish mail_from %s, rcpt_tos %s, takes %s seconds with return code '%s'<<===",
                 envelope.mail_from,
                 envelope.rcpt_tos,
                 elapsed,
+                ret,
             )
             newrelic.agent.record_custom_metric("Custom/email_handler_time", elapsed)
             newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
