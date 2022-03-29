@@ -1,4 +1,3 @@
-import random
 import secrets
 import string
 import time
@@ -17,7 +16,7 @@ with open(WORDS_FILE_PATH) as f:
 
 
 def random_word():
-    return random.choice(_words)
+    return secrets.choice(_words)
 
 
 def word_exist(word):
