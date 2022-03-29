@@ -70,7 +70,7 @@ def authorize():
 
     client = Client.get_by(oauth_client_id=oauth_client_id)
     if not client:
-        redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login"))
 
     # check if redirect_uri is valid
     # allow localhost by default

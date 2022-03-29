@@ -643,10 +643,7 @@ def test_authorize_page_invalid_client_id(flask_client):
     )
 
     assert r.status_code == 302
-    assert (
-        r.location
-        == "http://localhost?error=invalid_client_id&client_id=invalid_client_id"
-    )
+    assert r.location == url_for("auth.login")
 
 
 def test_authorize_page_http_not_allowed(flask_client):
