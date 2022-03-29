@@ -23,6 +23,7 @@ from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, Fido, MfaBrowser
+from app.utils import sanitize_next_url
 
 
 class FidoTokenForm(FlaskForm):
@@ -54,7 +55,7 @@ def fido():
     auto_activate = True
     fido_token_form = FidoTokenForm()
 
-    next_url = request.args.get("next")
+    next_url = sanitize_next_url(request.args.get("next"))
 
     if request.cookies.get("mfa"):
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))

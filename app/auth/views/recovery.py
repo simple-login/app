@@ -11,6 +11,7 @@ from app.email_utils import send_invalid_totp_login_email
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, RecoveryCode
+from app.utils import sanitize_next_url
 
 
 class RecoveryForm(FlaskForm):
@@ -37,7 +38,7 @@ def recovery_route():
         return redirect(url_for("auth.login"))
 
     recovery_form = RecoveryForm()
-    next_url = request.args.get("next")
+    next_url = sanitize_next_url(request.args.get("next"))
 
     if recovery_form.validate_on_submit():
         code = recovery_form.code.data

@@ -30,7 +30,7 @@ from app.oauth_models import (
     SUPPORTED_OPENID_FLOWS_STR,
     response_types_to_str,
 )
-from app.utils import random_string, encode_url
+from app.utils import random_string, encode_url, sanitize_next_url
 
 
 @oauth_bp.route("/authorize", methods=["GET", "POST"])
@@ -45,7 +45,7 @@ def authorize():
     oauth_client_id = request.args.get("client_id")
     state = request.args.get("state")
     scope = request.args.get("scope")
-    redirect_uri = request.args.get("redirect_uri")
+    redirect_uri = sanitize_next_url(request.args.get("redirect_uri"))
     response_mode = request.args.get("response_mode")
     nonce = request.args.get("nonce")
 
