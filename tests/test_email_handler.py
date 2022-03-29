@@ -3,6 +3,7 @@ from email.message import EmailMessage
 from aiosmtpd.smtp import Envelope
 
 import email_handler
+from app.config import BOUNCE_EMAIL
 from app.email import headers, status
 from app.models import (
     User,
@@ -116,3 +117,31 @@ def test_dmarc_quarantine(flask_client):
 #     email_log = email_logs[0]
 #     assert email_log.blocked
 #     assert email_log.refused_email_id
+
+
+def test_prevent_5xx_from_spf(flask_client):
+    user = create_random_user()
+    alias = Alias.create_new_random(user)
+    msg = load_eml_file(
+        "5xx_overwrite_spf.eml",
+        {"alias_email": alias.email, "spf_result": "R_SPF_FAIL"},
+    )
+    envelope = Envelope()
+    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
+    envelope.rcpt_tos = [msg["to"]]
+    result = email_handler.MailHandler()._handle(envelope, msg)
+    assert result == status.E216
+
+
+def test_preserve_5xx_with_valid_spf(flask_client):
+    user = create_random_user()
+    alias = Alias.create_new_random(user)
+    msg = load_eml_file(
+        "5xx_overwrite_spf.eml",
+        {"alias_email": alias.email, "spf_result": "R_SPF_ALLOW"},
+    )
+    envelope = Envelope()
+    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
+    envelope.rcpt_tos = [msg["to"]]
+    result = email_handler.MailHandler()._handle(envelope, msg)
+    assert result == status.E512

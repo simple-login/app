@@ -130,7 +130,7 @@ from app.email_utils import (
     get_orig_message_from_yahoo_complaint,
     get_mailbox_bounce_info,
     save_email_for_debugging,
-    get_dmarc_status,
+    get_spamd_result,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -156,6 +156,7 @@ from app.models import (
     DomainDeletedAlias,
     Notification,
     DmarcCheckResult,
+    SPFCheckResult,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -541,25 +542,28 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
 
 
 def apply_dmarc_policy(
-    alias: Alias, contact: Contact, envelope: Envelope, msg: Message, from_header
+    alias: Alias, contact: Contact, envelope: Envelope, msg: Message
 ) -> Optional[str]:
-    dmarc_result = get_dmarc_status(msg)
-    if dmarc_result:
-        newrelic.agent.record_custom_event("DmarcCheck", {"result": dmarc_result.name})
-    else:
-        newrelic.agent.record_custom_event("DmarcCheck", {"result": "unknown"})
-
-    if not DMARC_CHECK_ENABLED or not dmarc_result:
+    spam_result = get_spamd_result(msg)
+    if not DMARC_CHECK_ENABLED or not spam_result:
         return None
 
-    if dmarc_result in (
+    from_header = get_header_unicode(msg[headers.FROM])
+    # todo: remove when soft_fail email is put into quarantine
+    if spam_result.dmarc == DmarcCheckResult.soft_fail:
+        LOG.w(
+            f"dmarc soft_fail from contact {contact.email} to alias {alias.email}."
+            f"mail_from:{envelope.mail_from}, from_header: {from_header}"
+        )
+        return None
+    if spam_result.dmarc in (
         DmarcCheckResult.quarantine,
         DmarcCheckResult.reject,
         # todo: disable soft_fail for now
         # DmarcCheckResult.soft_fail,
     ):
         LOG.w(
-            f"put email from {contact} to {alias} to quarantine. {dmarc_result}, "
+            f"put email from {contact} to {alias} to quarantine. {spam_result}, "
             f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
         )
         email_log = quarantine_dmarc_failed_email(alias, contact, envelope, msg)
@@ -593,13 +597,6 @@ def apply_dmarc_policy(
             ignore_smtp_error=True,
         )
         return status.E215
-    # todo: remove when soft_fail email is put into quarantine
-    elif dmarc_result == DmarcCheckResult.soft_fail:
-        LOG.w(
-            f"dmarc soft_fail from {contact} to {alias}."
-            f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
-        )
-
     return None
 
 
@@ -718,9 +715,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
-    dmarc_delivery_status = apply_dmarc_policy(
-        alias, contact, envelope, msg, from_header
-    )
+    dmarc_delivery_status = apply_dmarc_policy(alias, contact, envelope, msg)
     if dmarc_delivery_status is not None:
         return [(False, dmarc_delivery_status)]
 
@@ -2597,19 +2592,28 @@ class MailHandler:
         )
 
         with create_light_app().app_context():
-            ret = handle(envelope, msg)
+            return_status = handle(envelope, msg)
             elapsed = time.time() - start
+            if return_status[0] == "5":
+                if get_spamd_result(msg).spf in (
+                    SPFCheckResult.fail,
+                    SPFCheckResult.soft_fail,
+                ):
+                    LOG.i(
+                        "Replacing 5XX to 216 status because the return-path failed the spf check"
+                    )
+                    return_status = status.E216
 
             LOG.i(
                 "Finish mail_from %s, rcpt_tos %s, takes %s seconds with return code '%s'<<===",
                 envelope.mail_from,
                 envelope.rcpt_tos,
                 elapsed,
-                ret,
+                return_status,
             )
             newrelic.agent.record_custom_metric("Custom/email_handler_time", elapsed)
             newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
-            return ret
+            return return_status
 
 
 def main(port: int):
