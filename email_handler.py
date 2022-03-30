@@ -157,7 +157,8 @@ from app.models import (
     DomainDeletedAlias,
     Notification,
     DmarcCheckResult,
-    SPFCheckResult, VerpType,
+    SPFCheckResult,
+    VerpType,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email

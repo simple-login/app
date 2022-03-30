@@ -3,15 +3,15 @@ from email.message import EmailMessage
 from aiosmtpd.smtp import Envelope
 
 import email_handler
-from app.config import BOUNCE_EMAIL
 from app.email import headers, status
+from app.email_utils import generate_verp_email
 from app.models import (
     User,
     Alias,
     AuthorizedAddress,
     IgnoredEmail,
     EmailLog,
-    Notification,
+    Notification, VerpType,
 )
 from email_handler import (
     get_mailbox_from_mail_from,
@@ -127,7 +127,7 @@ def test_prevent_5xx_from_spf(flask_client):
         {"alias_email": alias.email, "spf_result": "R_SPF_FAIL"},
     )
     envelope = Envelope()
-    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
+    envelope.mail_from = generate_verp_email(VerpType.bounce_forward, 99999999999999)
     envelope.rcpt_tos = [msg["to"]]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert result == status.E216
@@ -141,7 +141,7 @@ def test_preserve_5xx_with_valid_spf(flask_client):
         {"alias_email": alias.email, "spf_result": "R_SPF_ALLOW"},
     )
     envelope = Envelope()
-    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
+    envelope.mail_from = generate_verp_email(VerpType.bounce_forward, 99999999999999)
     envelope.rcpt_tos = [msg["to"]]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert result == status.E512
@@ -155,7 +155,7 @@ def test_preserve_5xx_with_no_header(flask_client):
         {"alias_email": alias.email},
     )
     envelope = Envelope()
-    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
+    envelope.mail_from = generate_verp_email(VerpType.bounce_forward, 99999999999999)
     envelope.rcpt_tos = [msg["to"]]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert result == status.E512

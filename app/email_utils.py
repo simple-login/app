@@ -1474,7 +1474,7 @@ def get_spamd_result(msg: Message) -> Optional[SpamdResult]:
 
 
 def generate_verp_email(
-    verp_type: VerpType, object_id: int, sender_domain: Optional[str]
+    verp_type: VerpType, object_id: int, sender_domain: Optional[str] = None
 ) -> str:
     # Encoded as a list to minimize size of email address
     data = [verp_type.bounce_forward.value, object_id, int(time.time())]
