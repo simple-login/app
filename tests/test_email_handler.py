@@ -129,7 +129,7 @@ def test_prevent_5xx_from_spf(flask_client):
     )
     envelope = Envelope()
     envelope.mail_from = msg["from"]
-    #Ensure invalid email log
+    # Ensure invalid email log
     envelope.rcpt_tos = [generate_verp_email(VerpType.bounce_forward, 99999999999999)]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert status.E216 == result
@@ -144,7 +144,7 @@ def test_preserve_5xx_with_valid_spf(flask_client):
     )
     envelope = Envelope()
     envelope.mail_from = msg["from"]
-    #Ensure invalid email log
+    # Ensure invalid email log
     envelope.rcpt_tos = [generate_verp_email(VerpType.bounce_forward, 99999999999999)]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert status.E512 == result
@@ -159,7 +159,7 @@ def test_preserve_5xx_with_no_header(flask_client):
     )
     envelope = Envelope()
     envelope.mail_from = msg["from"]
-    #Ensure invalid email log
+    # Ensure invalid email log
     envelope.rcpt_tos = [generate_verp_email(VerpType.bounce_forward, 99999999999999)]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert status.E512 == result
