@@ -2594,6 +2594,7 @@ class MailHandler:
         with create_light_app().app_context():
             return_status = handle(envelope, msg)
             elapsed = time.time() - start
+            # Only bounce messages if the return-path passes the spf check. Otherwise black-hole it.
             if return_status[0] == "5":
                 spamd_result = get_spamd_result(msg)
                 if spamd_result and get_spamd_result(msg).spf in (

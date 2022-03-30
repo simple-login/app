@@ -283,7 +283,6 @@ class SpamdResult:
     def __init__(self):
         self.dmarc: DmarcCheckResult = DmarcCheckResult.not_available
         self.spf: SPFCheckResult = SPFCheckResult.not_available
-        self.domain = "unknown"
 
     def set_dmarc_result(self, dmarc_result: DmarcCheckResult):
         self.dmarc = dmarc_result
