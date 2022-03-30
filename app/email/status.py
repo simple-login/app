@@ -21,6 +21,7 @@ E212 = "250 SL E212 Bounce Reply phase handled"
 E213 = "250 SL E213 Unknown email ignored"
 E214 = "250 SL E214 Unauthorized for using reverse alias"
 E215 = "250 SL E215 Handled dmarc policy"
+E216 = "250 SL E216 Handled spf policy"
 
 # endregion
 

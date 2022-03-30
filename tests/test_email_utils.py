@@ -36,7 +36,7 @@ from app.email_utils import (
     get_orig_message_from_bounce,
     get_mailbox_bounce_info,
     is_invalid_mailbox_domain,
-    get_dmarc_status,
+    get_spamd_result,
 )
 from app.models import (
     User,
@@ -797,29 +797,29 @@ def test_is_invalid_mailbox_domain(flask_client):
 
 def test_dmarc_result_softfail():
     msg = load_eml_file("dmarc_gmail_softfail.eml")
-    assert DmarcCheckResult.soft_fail == get_dmarc_status(msg)
+    assert DmarcCheckResult.soft_fail == get_spamd_result(msg).dmarc
 
 
 def test_dmarc_result_quarantine():
     msg = load_eml_file("dmarc_quarantine.eml")
-    assert DmarcCheckResult.quarantine == get_dmarc_status(msg)
+    assert DmarcCheckResult.quarantine == get_spamd_result(msg).dmarc
 
 
 def test_dmarc_result_reject():
     msg = load_eml_file("dmarc_reject.eml")
-    assert DmarcCheckResult.reject == get_dmarc_status(msg)
+    assert DmarcCheckResult.reject == get_spamd_result(msg).dmarc
 
 
 def test_dmarc_result_allow():
     msg = load_eml_file("dmarc_allow.eml")
-    assert DmarcCheckResult.allow == get_dmarc_status(msg)
+    assert DmarcCheckResult.allow == get_spamd_result(msg).dmarc
 
 
 def test_dmarc_result_na():
     msg = load_eml_file("dmarc_na.eml")
-    assert DmarcCheckResult.not_available == get_dmarc_status(msg)
+    assert DmarcCheckResult.not_available == get_spamd_result(msg).dmarc
 
 
 def test_dmarc_result_bad_policy():
     msg = load_eml_file("dmarc_bad_policy.eml")
-    assert DmarcCheckResult.bad_policy == get_dmarc_status(msg)
+    assert DmarcCheckResult.bad_policy == get_spamd_result(msg).dmarc

@@ -3,7 +3,7 @@ import os
 import random
 import uuid
 from email.utils import formataddr
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 import arrow
 import sqlalchemy as sa
@@ -255,6 +255,43 @@ class DmarcCheckResult(EnumE):
             "DMARC_NA": DmarcCheckResult.not_available,
             "DMARC_BAD_POLICY": DmarcCheckResult.bad_policy,
         }
+
+
+class SPFCheckResult(EnumE):
+    allow = 0
+    fail = 1
+    soft_fail = 1
+    neutral = 2
+    temp_error = 3
+    not_available = 4
+    perm_error = 5
+
+    @staticmethod
+    def get_string_dict():
+        return {
+            "R_SPF_ALLOW": SPFCheckResult.allow,
+            "R_SPF_FAIL": SPFCheckResult.fail,
+            "R_SPF_SOFTFAIL": SPFCheckResult.soft_fail,
+            "R_SPF_NEUTRAL": SPFCheckResult.neutral,
+            "R_SPF_DNSFAIL": SPFCheckResult.temp_error,
+            "R_SPF_NA": SPFCheckResult.not_available,
+            "R_SPF_PERMFAIL": SPFCheckResult.perm_error,
+        }
+
+
+class SpamdResult:
+    def __init__(self):
+        self.dmarc: DmarcCheckResult = DmarcCheckResult.not_available
+        self.spf: SPFCheckResult = SPFCheckResult.not_available
+
+    def set_dmarc_result(self, dmarc_result: DmarcCheckResult):
+        self.dmarc = dmarc_result
+
+    def set_spf_result(self, spf_result: SPFCheckResult):
+        self.spf = spf_result
+
+    def event_data(self) -> Dict:
+        return {"header": "present", "dmarc": self.dmarc, "spf": self.spf}
 
 
 class Hibp(Base, ModelMixin):
