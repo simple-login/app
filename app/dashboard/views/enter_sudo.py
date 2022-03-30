@@ -8,6 +8,7 @@ from wtforms import PasswordField, validators
 
 from app.dashboard.base import dashboard_bp
 from app.log import LOG
+from app.utils import sanitize_next_url
 
 _SUDO_GAP = 900
 
@@ -28,7 +29,7 @@ def enter_sudo():
             session["sudo_time"] = int(time())
 
             # User comes to sudo page from another page
-            next_url = request.args.get("next")
+            next_url = sanitize_next_url(request.args.get("next"))
             if next_url:
                 LOG.d("redirect user to %s", next_url)
                 return redirect(next_url)

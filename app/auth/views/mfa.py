@@ -19,6 +19,7 @@ from app.db import Session
 from app.email_utils import send_invalid_totp_login_email
 from app.extensions import limiter
 from app.models import User, MfaBrowser
+from app.utils import sanitize_next_url
 
 
 class OtpTokenForm(FlaskForm):
@@ -48,7 +49,7 @@ def mfa():
         return redirect(url_for("auth.login"))
 
     otp_token_form = OtpTokenForm()
-    next_url = request.args.get("next")
+    next_url = sanitize_next_url(request.args.get("next"))
 
     if request.cookies.get("mfa"):
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))

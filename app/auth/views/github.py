@@ -7,7 +7,7 @@ from app.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, URL
 from app.db import Session
 from app.log import LOG
 from app.models import User, SocialAuth
-from app.utils import encode_url, sanitize_email
+from app.utils import encode_url, sanitize_email, sanitize_next_url
 
 _authorization_base_url = "https://github.com/login/oauth/authorize"
 _token_url = "https://github.com/login/oauth/access_token"
@@ -19,7 +19,7 @@ _redirect_uri = URL + "/auth/github/callback"
 
 @auth_bp.route("/github/login")
 def github_login():
-    next_url = request.args.get("next")
+    next_url = sanitize_next_url(request.args.get("next"))
     if next_url:
         redirect_uri = _redirect_uri + "?next=" + encode_url(next_url)
     else:
@@ -97,6 +97,6 @@ def github_callback():
         Session.commit()
 
     # The activation link contains the original page, for ex authorize page
-    next_url = request.args.get("next") if request.args else None
+    next_url = sanitize_next_url(request.args.get("next")) if request.args else None
 
     return after_login(user, next_url)
