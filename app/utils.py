@@ -1,4 +1,4 @@
-import random
+import secrets
 import string
 import time
 import urllib.parse
@@ -16,7 +16,7 @@ with open(WORDS_FILE_PATH) as f:
 
 
 def random_word():
-    return random.choice(_words)
+    return secrets.choice(_words)
 
 
 def word_exist(word):
@@ -27,7 +27,7 @@ def random_words():
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
     # nb_words = random.randint(2, 3)
     nb_words = 2
-    return "_".join([random.choice(_words) for i in range(nb_words)])
+    return "_".join([secrets.choice(_words) for i in range(nb_words)])
 
 
 def random_string(length=10, include_digits=False):
@@ -36,7 +36,7 @@ def random_string(length=10, include_digits=False):
     if include_digits:
         letters += string.digits
 
-    return "".join(random.choice(letters) for _ in range(length))
+    return "".join(secrets.choice(letters) for _ in range(length))
 
 
 def convert_to_id(s: str):

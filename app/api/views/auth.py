@@ -1,4 +1,5 @@
-import random
+import secrets
+import string
 
 import facebook
 import google.oauth2.credentials
@@ -102,7 +103,7 @@ def auth_register():
     Session.flush()
 
     # create activation code
-    code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    code = "".join([str(secrets.choice(string.digits)) for _ in range(6)])
     AccountActivation.create(user_id=user.id, code=code)
     Session.commit()
 
@@ -195,7 +196,7 @@ def auth_reactivate():
         Session.commit()
 
     # create activation code
-    code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    code = "".join([str(secrets.choice(string.digits)) for _ in range(6)])
     AccountActivation.create(user_id=user.id, code=code)
     Session.commit()
 
