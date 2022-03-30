@@ -56,3 +56,8 @@ class MailSentFromReverseAlias(SLException):
     """raised when receiving an email sent from a reverse alias"""
 
     pass
+
+
+class DmarcSoftFail(SLException):
+
+    pass

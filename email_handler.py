@@ -138,6 +138,7 @@ from app.errors import (
     VERPForward,
     VERPReply,
     CannotCreateContactForReverseAlias,
+    DmarcSoftFail,
 )
 from app.log import LOG, set_message_id
 from app.models import (
@@ -549,18 +550,17 @@ def apply_dmarc_policy(
         return None
 
     from_header = get_header_unicode(msg[headers.FROM])
-    # todo: remove when soft_fail email is put into quarantine
+
     if spam_result.dmarc == DmarcCheckResult.soft_fail:
         LOG.w(
             f"dmarc soft_fail from contact {contact.email} to alias {alias.email}."
             f"mail_from:{envelope.mail_from}, from_header: {from_header}"
         )
-        return None
+        raise DmarcSoftFail
+
     if spam_result.dmarc in (
         DmarcCheckResult.quarantine,
         DmarcCheckResult.reject,
-        # todo: disable soft_fail for now
-        # DmarcCheckResult.soft_fail,
     ):
         LOG.w(
             f"put email from {contact} to {alias} to quarantine. {spam_result.event_data()}, "
@@ -597,6 +597,7 @@ def apply_dmarc_policy(
             ignore_smtp_error=True,
         )
         return status.E215
+
     return None
 
 
@@ -715,9 +716,20 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
-    dmarc_delivery_status = apply_dmarc_policy(alias, contact, envelope, msg)
-    if dmarc_delivery_status is not None:
-        return [(False, dmarc_delivery_status)]
+    try:
+        dmarc_delivery_status = apply_dmarc_policy(alias, contact, envelope, msg)
+        if dmarc_delivery_status is not None:
+            return [(False, dmarc_delivery_status)]
+    except DmarcSoftFail:
+        msg = add_header(
+            msg,
+            f"""This email failed anti-phishing checks when it’s received by SimpleLogin, be careful with its content.""",
+            f"""
+<p style="color:red">
+    This email failed anti-phishing checks when it’s received by SimpleLogin, be careful with its content.
+</p>
+""",
+        )
 
     ret = []
     mailboxes = alias.mailboxes
