@@ -775,6 +775,11 @@ def forward_email_to_mailbox(
         else:
             return False, status.E518
 
+    # check if alias has SMTP enabled
+    is_SMTP_enabled_for_alias = False
+    if user.enable_SMTP_aliases and alias.SMTP_enabled():
+        is_SMTP_enabled_for_alias = True
+
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
         LOG.w(
@@ -927,28 +932,30 @@ def forward_email_to_mailbox(
 
     replace_sl_message_id_by_original_message_id(msg)
 
-    # change the from_header so the email comes from a reverse-alias
-    # replace the email part in from: header
-    old_from_header = msg[headers.FROM]
-    new_from_header = contact.new_addr()
-    add_or_replace_header(msg, "From", new_from_header)
-    LOG.d("From header, new:%s, old:%s", new_from_header, old_from_header)
+    # Don't Change Headers when SMTP is enabled for alias
+    if not is_SMTP_enabled_for_alias:
+        # change the from_header so the email comes from a reverse-alias
+        # replace the email part in from: header
+        old_from_header = msg[headers.FROM]
+        new_from_header = contact.new_addr()
+        add_or_replace_header(msg, "From", new_from_header)
+        LOG.d("From header, new:%s, old:%s", new_from_header, old_from_header)
 
-    if reply_to_contact:
-        reply_to_header = msg[headers.REPLY_TO]
-        new_reply_to_header = reply_to_contact.new_addr()
-        add_or_replace_header(msg, "Reply-To", new_reply_to_header)
-        LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header)
+        if reply_to_contact:
+            reply_to_header = msg[headers.REPLY_TO]
+            new_reply_to_header = reply_to_contact.new_addr()
+            add_or_replace_header(msg, "Reply-To", new_reply_to_header)
+            LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header)
 
-    # replace CC & To emails by reverse-alias for all emails that are not alias
-    try:
-        replace_header_when_forward(msg, alias, "Cc")
-        replace_header_when_forward(msg, alias, "To")
-    except CannotCreateContactForReverseAlias:
-        LOG.d("CannotCreateContactForReverseAlias error, delete %s", email_log)
-        EmailLog.delete(email_log.id)
-        Session.commit()
-        raise
+        # replace CC & To emails by reverse-alias for all emails that are not alias
+        try:
+            replace_header_when_forward(msg, alias, "Cc")
+            replace_header_when_forward(msg, alias, "To")
+        except CannotCreateContactForReverseAlias:
+            LOG.d("CannotCreateContactForReverseAlias error, delete %s", email_log)
+            EmailLog.delete(email_log.id)
+            Session.commit()
+            raise
 
     # add List-Unsubscribe header
     if user.one_click_unsubscribe_block_sender:
@@ -1866,6 +1873,7 @@ def handle_spam(
     mailbox: Mailbox,
     email_log: EmailLog,
     is_reply=False,  # whether the email is in forward or reply phase
+    is_SMTP=False,  # whether the email is sent via SMTP
 ):
     # Store the report & original email
     orig_msg = get_orig_message_from_spamassassin_report(msg)
@@ -1895,7 +1903,7 @@ def handle_spam(
     refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
-    if is_reply:
+    if is_reply or is_SMTP:
         LOG.d(
             "Inform %s (%s) about spam email sent from alias %s to %s. %s",
             mailbox,
