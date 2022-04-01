@@ -27,11 +27,6 @@
       }
 
   </style>
-
-    <!-- NanoID -->
-  <script src="{{ url_for('static', filename='node_modules/nanoid/nanoid.js') }}">
-  </script>
-
 {% endblock %}
 
 {% block title %}
@@ -625,7 +620,10 @@
     $('.highlighted').tooltip("show");
   </script>
     {%  if current_user.enable_SMTP_aliases %}
-        <script>
+        <script type="module">
+
+        import { nanoid } from "{{ url_for('static', filename='node_modules/nanoid/nanoid.js') }}"
+
         $(".enable-disable-smtp").change(async function () {
           let aliasId = $(this).data("alias");
           let alias = $(this).data("alias-email");
