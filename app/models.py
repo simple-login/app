@@ -2583,10 +2583,27 @@ class SMTPCredentials(Base, ModelMixin, PasswordOracle):
         sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
     )
 
-    # override, SMTP password should not be null
-    password = sa.Column(sa.String(128), nullable=False)
-
     alias = orm.relationship(Alias)
+
+    @classmethod
+    def create(cls, alias_id, password, **kwargs):
+        smtp_cred: SMTPCredentials = super(SMTPCredentials, cls).create(alias_id=alias_id, **kwargs)
+
+        if password and len(password) == 21:
+            smtp_cred.set_password(password)
+        else:
+            return None
+
+        Session.flush()
+
+        return smtp_cred
+
+    @classmethod
+    def delete_by_alias_id(cls, alias_id, commit=False):
+        Session.query(cls).filter(cls.alias_id == alias_id).delete()
+
+        if commit:
+            Session.commit()
 
 
 class AliasHibp(Base, ModelMixin):
