@@ -2608,6 +2608,9 @@ class SMTPCredentials(Base, ModelMixin, PasswordOracle):
         if commit:
             Session.commit()
 
+    def __repr__(self):
+        return f"<SMTPCredentials {self.id}>"
+
 
 class AliasHibp(Base, ModelMixin):
     __tablename__ = "alias_hibp"
