@@ -1875,7 +1875,6 @@ def handle_spam(
     mailbox: Mailbox,
     email_log: EmailLog,
     is_reply=False,  # whether the email is in forward or reply phase
-    is_SMTP=False,  # whether the email is sent via SMTP
 ):
     # Store the report & original email
     orig_msg = get_orig_message_from_spamassassin_report(msg)
@@ -1905,7 +1904,7 @@ def handle_spam(
     refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
     disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
 
-    if is_reply or is_SMTP:
+    if is_reply:
         LOG.d(
             "Inform %s (%s) about spam email sent from alias %s to %s. %s",
             mailbox,

@@ -1799,9 +1799,6 @@ class EmailLog(Base, ModelMixin):
     # whether this is a reply
     is_reply = sa.Column(sa.Boolean, nullable=False, default=False)
 
-    # whether this is sent from SMTP
-    is_SMTP = sa.Column(sa.Boolean, nullable=False, default=False)
-
     # for ex if alias is disabled, this forwarding is blocked
     blocked = sa.Column(sa.Boolean, nullable=False, default=False)
 

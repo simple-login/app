@@ -120,7 +120,7 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     email_log = EmailLog.create(
         contact_id=contact.id,
         alias_id=contact.alias_id,
-        is_SMTP=True,
+        is_reply=True,
         user_id=contact.user_id,
         mailbox_id=mailbox.id,
         message_id=msg[headers.MESSAGE_ID],
@@ -168,7 +168,7 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             email_log.spam_status = spam_status
             Session.commit()
 
-            handle_spam(contact, alias, msg, user, mailbox, email_log, is_SMTP=True)
+            handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
             return False, status.E506
 
     delete_all_headers_except(
