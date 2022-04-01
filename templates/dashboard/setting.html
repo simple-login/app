@@ -351,6 +351,34 @@
     </div>
     <!-- END Reverse-alias -->
 
+  <!-- SMTP for Aliases -->
+    <div class="card" id="smtp-for-aliases-section">
+      <div class="card-body">
+        <div class="card-title">SMTP for Aliases
+          <div class="badge badge-warning">Experimental</div>
+        </div>
+        <div class="mb-3">
+          This will enable <b>SMTP access for aliases</b>.
+          If this option is enabled, emails can be sent directly from aliases via SMTP without the need for creation of reverse-alias.
+          <br>
+            Note: After enabling this, you would still need to enable SMTP individually per alias.
+          <br>
+            This will also disable receiving via reverse-alias for that particular alias. i.e. Sender's original address will be displayed in "From:".
+          <br>
+        </div>
+        <form method="post" action="#smtp-for-aliases-section">
+          <input type="hidden" name="form-name" value="smtp-for-aliases">
+          <div class="form-check">
+            <input type="checkbox" id="smtp-for-aliases" name="smtp-for-aliases"
+                {% if current_user.enable_SMTP_aliases %} checked {% endif %} class="form-check-input">
+            <label for="replace-ra">Enable SMTP for aliases</label>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Update</button>
+        </form>
+      </div>
+    </div>
+    <!-- END SMTP for Aliases -->
+
     <!-- Sender included in reverse-alias -->
     <div class="card" id="sender-in-ra">
       <div class="card-body">

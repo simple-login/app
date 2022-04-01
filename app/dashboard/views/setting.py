@@ -258,6 +258,16 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
 
+        elif request.form.get("form-name") == "smtp-for-aliases":
+            choose = request.form.get("smtp-for-aliases")
+            if choose == "on":
+                current_user.enable_SMTP_aliases = True
+            else:
+                current_user.enable_SMTP_aliases = False
+            Session.commit()
+            flash("Your preference has been updated", "success")
+            return redirect(url_for("dashboard.setting"))
+
         elif request.form.get("form-name") == "sender-in-ra":
             choose = request.form.get("enable")
             if choose == "on":
