@@ -305,8 +305,8 @@ class SMTPAuthenticator:
             LOG.e("Incorrect Format for Credentials")
             return self.fail_nothandled(status.E501)
 
-        username = auth_data.login
-        password = auth_data.password
+        username = (auth_data.login).decode("utf-8")
+        password = (auth_data.password).decode("utf-8")
 
         alias = Alias.get_by(email=username)
         if not alias:
@@ -417,7 +417,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
 class SMTPHandler:
     async def handle_DATA(self, server, session, envelope: Envelope):
-        username = session.auth_data.login
+        username = (session.auth_data.login).decode("utf-8")
         msg = email.message_from_bytes(envelope.original_content)
         try:
             ret = self.check_and_handle(envelope, msg, username)
