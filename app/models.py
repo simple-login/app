@@ -1310,7 +1310,9 @@ class Alias(Base, ModelMixin):
     )
 
     # Enable SMTP for alias
-    enable_SMTP = sa.Column(sa.Boolean(), default=False, nullable=False, server_default="0")
+    enable_SMTP = sa.Column(
+        sa.Boolean(), default=False, nullable=False, server_default="0"
+    )
 
     __table_args__ = (
         Index("ix_video___ts_vector__", ts_vector, postgresql_using="gin"),
@@ -2575,9 +2577,7 @@ class AliasMailbox(Base, ModelMixin):
 
 class SMTPCredentials(Base, ModelMixin, PasswordOracle):
     __tablename__ = "SMTP_credentials"
-    __table_args__ = (
-        sa.UniqueConstraint("alias_id", name="uq_alias"),
-    )
+    __table_args__ = (sa.UniqueConstraint("alias_id", name="uq_alias"),)
 
     alias_id = sa.Column(
         sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
@@ -2594,10 +2594,12 @@ class SMTPCredentials(Base, ModelMixin, PasswordOracle):
             pass_oracle = PasswordOracle()
             pass_oracle.set_password(password)
             password = pass_oracle.password
-            smtp_cred: SMTPCredentials = super(SMTPCredentials, cls).create(alias_id=alias_id, password=password, **kwargs)
+            smtp_cred: SMTPCredentials = super(SMTPCredentials, cls).create(
+                alias_id=alias_id, password=password, **kwargs
+            )
             del pass_oracle
         else:
-             return None
+            return None
         Session.flush()
         return smtp_cred
 

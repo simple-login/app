@@ -945,7 +945,9 @@ def forward_email_to_mailbox(
             reply_to_header = msg[headers.REPLY_TO]
             new_reply_to_header = reply_to_contact.new_addr()
             add_or_replace_header(msg, "Reply-To", new_reply_to_header)
-            LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header)
+            LOG.d(
+                "Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header
+            )
 
         # replace CC & To emails by reverse-alias for all emails that are not alias
         try:

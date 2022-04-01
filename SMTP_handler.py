@@ -18,22 +18,16 @@ from aiosmtpd.smtp import AuthResult, LoginPassword, Envelope
 
 from sqlalchemy.orm.exc import ObjectDeletedError
 from email.message import Message
-from email.utils import formataddr,  formatdate
+from email.utils import formataddr, formatdate
 from init_app import load_pgp_public_keys
 from server import create_light_app
 from app.db import Session
-from app.log import LOG,set_message_id
+from app.log import LOG, set_message_id
 from app.email import status, headers
 from app.utils import sanitize_email
 from app.email.spam import get_spam_score
 from app.pgp_utils import PGPException
-from app.models import (
-    Alias,
-    SMTPCredentials,
-    EmailLog,
-    Contact,
-    Mailbox
-)
+from app.models import Alias, SMTPCredentials, EmailLog, Contact, Mailbox
 from app.config import (
     SMTP_SSL_KEY_FILE,
     SMTP_SSL_CERT_FILE,
@@ -68,7 +62,7 @@ from email_handler import (
     get_or_create_contact,
     handle_spam,
     prepare_pgp_message,
-    replace_original_message_id
+    replace_original_message_id,
 )
 
 
@@ -86,7 +80,7 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         LOG.e("Alias: %s isn't known", alias_address)
         return False, status.E503
 
-    alias_domain = alias_address[alias_address.find("@") + 1:]
+    alias_domain = alias_address[alias_address.find("@") + 1 :]
 
     # Sanity check: verify alias domain is managed by SimpleLogin
     # scenario: a user have removed a domain but due to a bug, the aliases are still there
@@ -290,15 +284,12 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
 
 class SMTPAuthenticator:
-    def fail_nothandled(self,message=None) -> AuthResult:
+    def fail_nothandled(self, message=None) -> AuthResult:
         return AuthResult(success=False, handled=False, message=message)
 
     def __call__(self, server, session, envelope, mechanism, auth_data):
         if mechanism not in ("LOGIN", "PLAIN"):
-            LOG.e(
-                "mechanism %s not supported.",
-                mechanism
-            )
+            LOG.e("mechanism %s not supported.", mechanism)
             return self.fail_nothandled("550 Mechanism not supported")
 
         if not isinstance(auth_data, LoginPassword):
@@ -310,19 +301,13 @@ class SMTPAuthenticator:
 
         alias = Alias.get_by(email=username)
         if not alias:
-            LOG.e(
-                "alias %s does not exist.",
-                alias.email
-            )
+            LOG.e("alias %s does not exist.", alias.email)
             return self.fail_nothandled(status.E502)
 
         user = alias.user
 
         if not user or user.disabled:
-            LOG.e(
-                "User for alias %s is disabled",
-                username
-            )
+            LOG.e("User for alias %s is disabled", username)
             return self.fail_nothandled(status.E504)
 
         is_smtp_enabled_for_aliases = user.enable_SMTP_aliases
@@ -339,7 +324,7 @@ class SMTPAuthenticator:
             )
             return self.fail_nothandled("535 5.7.8 Authentication credentials invalid")
 
-        return AuthResult(success=True,auth_data=auth_data)
+        return AuthResult(success=True, auth_data=auth_data)
 
 
 def handle(envelope: Envelope, msg: Message) -> str:
@@ -391,9 +376,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
             copy_msg = msg
 
         # SMTP case
-        LOG.d(
-            "SMTP phase %s(%s) -> %s", mail_from, copy_msg[headers.FROM], rcpt_to
-        )
+        LOG.d("SMTP phase %s(%s) -> %s", mail_from, copy_msg[headers.FROM], rcpt_to)
         is_delivered, smtp_status = handle_SMTP(envelope, copy_msg, rcpt_to)
         res.append((is_delivered, smtp_status))
 
@@ -452,13 +435,14 @@ class SMTPHandler:
                 _, from_header_address = parse_full_address(from_header)
             except ValueError:
                 LOG.w("cannot parse the From header %s", from_header)
-                return status.E501 # Could be changed
+                return status.E501  # Could be changed
             else:
                 if mail_from != username or from_header_address != username:
                     LOG.e(
                         "Mail_From: '%s' , From Header: '%s' and username '%s' does not match",
                         mail_from,
-                        msg[headers.FROM], username
+                        msg[headers.FROM],
+                        username,
                     )
                     return status.E509
 
@@ -497,24 +481,20 @@ class SMTPHandler:
             return ret
 
 
-
 def main(port: int):
     """Use aiosmtpd Controller"""
     handler = SMTPHandler()
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.load_cert_chain(
-        certfile=SMTP_SSL_CERT_FILE,
-        keyfile=SMTP_SSL_KEY_FILE
-    )
+    ssl_context.load_cert_chain(certfile=SMTP_SSL_CERT_FILE, keyfile=SMTP_SSL_KEY_FILE)
     controller = Controller(
         handler,
         hostname="0.0.0.0",
         port=port,
-        ssl_context=ssl_context, # Implicit SSL/TLS
+        ssl_context=ssl_context,  # Implicit SSL/TLS
         authenticator=SMTPAuthenticator(),
         auth_required=True,
         # Below param needs to be set in case of implicit SSL/TLS as per (https://github.com/aio-libs/aiosmtpd/issues/281)
-        auth_require_tls=False
+        auth_require_tls=False,
     )
 
     controller.start()
