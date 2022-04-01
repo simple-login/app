@@ -531,7 +531,7 @@ def main(port: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--port", help="SMTP port to listen for", type=int, default=8465
+        "-p", "--port", help="SMTP port to listen for", type=int, default=465
     )
     args = parser.parse_args()
 
