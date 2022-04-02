@@ -723,10 +723,10 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     except DmarcSoftFail:
         msg = add_header(
             msg,
-            f"""This email failed anti-phishing checks when it’s received by SimpleLogin, be careful with its content.""",
+            f"""This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content.""",
             f"""
 <p style="color:red">
-    This email failed anti-phishing checks when it’s received by SimpleLogin, be careful with its content.
+    This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content.
 </p>
 """,
         )
