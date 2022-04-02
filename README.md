@@ -489,6 +489,32 @@ docker run -d \
     simplelogin/app:3.4.0 python job_runner.py
 ```
 
+#### Enable Sending via SMTP
+
+For sending via SMTP  you need to make sure you have the required SSL certificate and key at following, as SMTP requires SSL.
+
+- `$(pwd)/smtp_ssl_cert.pem` for SSL Certificate file,
+- `$(pwd)/smtp_ssl_privkey.key` for Key file.
+- adjust this according to where you have the files present.
+
+then run `SMTP handler`
+
+```bash
+docker run -d \
+    --name sl-smtp \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -v $(pwd)/smtp_ssl_cert.pem:/smtp_ssl_cert.pem
+    -v $(pwd)/smtp_ssl_privkey.key:/smtp_ssl_privkey.key
+    -p 465:465 \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:3.4.0 python SMTP_handler.py
+```
+
 ### Nginx
 
 Install Nginx and make sure to replace `mydomain.com` by your domain
