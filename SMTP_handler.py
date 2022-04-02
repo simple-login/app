@@ -121,6 +121,7 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         contact_id=contact.id,
         alias_id=contact.alias_id,
         is_reply=True,
+        is_SMTP=True,
         user_id=contact.user_id,
         mailbox_id=mailbox.id,
         message_id=msg[headers.MESSAGE_ID],
