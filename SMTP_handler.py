@@ -73,14 +73,23 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     """
     website_email = rcpt_to
 
-    # region Create variables For Logging Purpose
     alias_address: str = envelope.mail_from
     alias = Alias.get_by(email=alias_address)
     if not alias:
         LOG.e("Alias: %s isn't known", alias_address)
         return False, status.E503
 
-    alias_domain = alias_address[alias_address.find("@") + 1 :]
+    user = alias.user
+    if user.disabled:
+        LOG.e(
+            "User %s disabled, disable sending emails from %s to %s",
+            user,
+            alias,
+            website_email,
+        )
+        return [(False, status.E504)]
+
+    alias_domain = get_email_domain_part(alias_address)
 
     # Sanity check: verify alias domain is managed by SimpleLogin
     # scenario: a user have removed a domain but due to a bug, the aliases are still there
@@ -99,23 +108,9 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         alias = Alias.get_by(email=alias_address)
         if not alias:
             LOG.i("Alias %s was deleted in the meantime", alias_address)
-            if should_ignore_bounce(envelope.mail_from):
-                return [(True, status.E207)]
-            else:
-                return [(False, status.E515)]
+            return [(False, status.E515)]
 
-    user = alias.user
     mailbox = Mailbox.get_by(id=alias.mailbox_id)
-    # endregion
-
-    if user.disabled:
-        LOG.e(
-            "User %s disabled, disable sending emails from %s to %s",
-            user,
-            alias,
-            contact,
-        )
-        return [(False, status.E504)]
 
     email_log = EmailLog.create(
         contact_id=contact.id,
@@ -297,8 +292,8 @@ class SMTPAuthenticator:
             LOG.e("Incorrect Format for Credentials")
             return self.fail_nothandled(status.E501)
 
-        username = (auth_data.login).decode("utf-8")
-        password = (auth_data.password).decode("utf-8")
+        username = auth_data.login.decode("utf-8")
+        password = auth_data.password.decode("utf-8")
 
         alias = Alias.get_by(email=username)
         if not alias:
@@ -401,7 +396,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
 class SMTPHandler:
     async def handle_DATA(self, server, session, envelope: Envelope):
-        username = (session.auth_data.login).decode("utf-8")
+        username = session.auth_data.login.decode("utf-8")
         msg = email.message_from_bytes(envelope.original_content)
         try:
             ret = self.check_and_handle(envelope, msg, username)
