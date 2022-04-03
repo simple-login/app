@@ -632,11 +632,11 @@
         let newValue = !oldValue;
 
         if(newValue) {
-          var smtp_generated_password = nanoid(21);
+          var smtpGeneratedPassword = nanoid(21);
 
           var message = `SMTP credentials for alias (<b>This will be visible only once, so please save it</b>):
                         <br><br>Username (same as alias): ${alias}
-                        <br>Password: ${smtp_generated_password}<br>
+                        <br>Password: ${smtpGeneratedPassword}<br>
                       `;
         }
         try {
@@ -648,7 +648,7 @@
               },
               body: JSON.stringify({
                 enable_SMTP: newValue,
-                smtp_password: smtp_generated_password,
+                smtp_password: smtpGeneratedPassword,
               }),
             });
           }
@@ -680,7 +680,7 @@
                   toastr.success(`SMTP Enabled for ${alias}`);
                 }
               });
-              smtp_generated_password = null; // Clear the password.
+              smtpGeneratedPassword = null; // Clear the password.
             } else {
               toastr.info(`SMTP Disabled for ${alias}`);
             }
