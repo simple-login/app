@@ -497,6 +497,14 @@ For sending via SMTP  you need to make sure you have the required SSL certificat
 - `$(pwd)/smtp_ssl_privkey.key` for Key file.
 - adjust this according to where you have the files present.
 
+You can use the following command to generate a self-signed certificate for testing.
+
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout smtp_ssl_privkey.key \
+  -out smtp_ssl_cert.pem -sha256 -days 3650 -nodes \
+  -subj "/C=US/ST=Oregon/L=Portland/O=My Company/OU=Org/CN=mydomain.com"
+```
+
 then run `SMTP handler`
 
 ```bash
