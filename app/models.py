@@ -2580,7 +2580,7 @@ class SMTPCredentials(Base, ModelMixin, PasswordOracle):
     __table_args__ = (sa.UniqueConstraint("alias_id", name="uq_alias"),)
 
     alias_id = sa.Column(
-        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey(Alias.id, ondelete="cascade"), unique=True, nullable=False, index=True
     )
 
     # override, SMTP password should not be null
