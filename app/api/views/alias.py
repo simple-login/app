@@ -328,7 +328,9 @@ def update_alias(alias_id):
                     smtp_password and len(smtp_password) != 21
                 ):  # 21 is default password length set for nanoid.
                     return jsonify(error="Invalid SMTP Password Length"), 400
-                SMTPCredentials.create(alias_id=alias.id, password=smtp_password)
+                smtp_cred = SMTPCredentials.create(alias_id=alias.id, password=smtp_password)
+                if not smtp_cred:
+                    return jsonify(error="Error Saving SMTP Password"), 400
             else:
                 return jsonify(error="SMTP password not supplied"), 400
         else:
