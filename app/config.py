@@ -446,5 +446,5 @@ def setup_nameservers():
 NAMESERVERS = setup_nameservers()
 
 # For SMTP support
-SMTP_SSL_CERT_FILE = os.environ.get("SMTP_SSL_CERT_FILE") or "/smtp_ssl_cert.pem"
-SMTP_SSL_KEY_FILE = os.environ.get("SMTP_SSL_KEY_FILE") or "/smtp_ssl_privkey.key"
+SMTP_SSL_CERT_FILEPATH = os.environ.get("SMTP_SSL_CERT_FILEPATH") or "/smtp_ssl_cert.pem"
+SMTP_SSL_KEY_FILEPATH = os.environ.get("SMTP_SSL_KEY_FILEPATH") or "/smtp_ssl_privkey.key"

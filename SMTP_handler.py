@@ -29,8 +29,8 @@ from app.email.spam import get_spam_score
 from app.pgp_utils import PGPException
 from app.models import Alias, SMTPCredentials, EmailLog, Contact, Mailbox
 from app.config import (
-    SMTP_SSL_KEY_FILE,
-    SMTP_SSL_CERT_FILE,
+    SMTP_SSL_KEY_FILEPATH,
+    SMTP_SSL_CERT_FILEPATH,
     NOREPLY,
     ENABLE_SPAM_ASSASSIN,
     SPAMASSASSIN_HOST,
@@ -486,7 +486,7 @@ def main(port: int):
     """Use aiosmtpd Controller"""
     handler = SMTPHandler()
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.load_cert_chain(certfile=SMTP_SSL_CERT_FILE, keyfile=SMTP_SSL_KEY_FILE)
+    ssl_context.load_cert_chain(certfile=SMTP_SSL_CERT_FILEPATH, keyfile=SMTP_SSL_KEY_FILEPATH)
     controller = Controller(
         handler,
         hostname="0.0.0.0",
