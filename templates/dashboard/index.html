@@ -191,11 +191,11 @@
               Pinned Aliases
             </option>
 
-          {%  if current_user.enable_SMTP_aliases %}
-            <option value="enable_SMTP" {% if filter == "enable_SMTP" %} selected {% endif %}>
-              Only SMTP Enabled Aliases
-            </option>
-          {% endif %}
+            {% if current_user.enable_SMTP_aliases %}
+              <option value="enable_SMTP" {% if filter == "enable_SMTP" %} selected {% endif %}>
+                Only SMTP Enabled Aliases
+              </option>
+            {% endif %}
 
             <option value="enabled" {% if filter == "enabled" %} selected {% endif %}>
               Only Enabled Aliases
@@ -284,12 +284,12 @@
                       title="This alias is pinned"></span>
               {% endif %}
 
-            {%  if current_user.enable_SMTP_aliases %}
-              {% if alias.enable_SMTP %}
-                <span class="fa fa-id-card" data-toggle="tooltip"
-                      title="SMTP is enabled for this alias"></span>
+              {%  if current_user.enable_SMTP_aliases %}
+                {% if alias.enable_SMTP %}
+                  <span class="fa fa-id-card" data-toggle="tooltip"
+                        title="SMTP is enabled for this alias"></span>
+                {% endif %}
               {% endif %}
-            {% endif %}
 
               {% if alias.hibp_breaches | length > 0 %}
                 <a href="https://haveibeenpwned.com/account/{{ alias.email }}">
@@ -528,7 +528,7 @@
             </div>
 
           {%  if current_user.enable_SMTP_aliases %}
-          <div class="small-text mt-2" data-toogle="tooltip"
+            <div class="small-text mt-2" data-toogle="tooltip"
                  title="This enables sending via SMTP for alias">
               Enable SMTP for this alias
               <i class="fe fe-help-circle"></i>
@@ -538,12 +538,12 @@
                 <input type="checkbox" class="enable-disable-smtp custom-switch-input"
                        data-alias="{{ alias.id }}"
                        data-alias-email="{{ alias.email }}"
-                    {{ "checked" if alias.enable_SMTP else "" }}>
-
-                <span class="custom-switch-indicator"></span>
+                     {{ "checked" if alias.enable_SMTP else "" }}>
+                  <span class="custom-switch-indicator"></span>
               </label>
             </div>
-            {% endif %}
+          {% endif %}
+
             <div>
               <div class="btn-group float-right" role="group" aria-label="Basic example">
                 <a href="{{ url_for('dashboard.alias_transfer_send_route', alias_id=alias.id) }}"
@@ -619,81 +619,82 @@
 
     $('.highlighted').tooltip("show");
   </script>
-    {%  if current_user.enable_SMTP_aliases %}
-        <script type="module">
 
-        import { nanoid } from "{{ url_for('static', filename='node_modules/nanoid/nanoid.js') }}"
+  {%  if current_user.enable_SMTP_aliases %}
+    <script type="module">
 
-        $(".enable-disable-smtp").change(async function () {
-          let aliasId = $(this).data("alias");
-          let alias = $(this).data("alias-email");
-          const oldValue = !$(this).prop("checked");
-          let newValue = !oldValue;
+      import { nanoid } from "{{ url_for('static', filename='node_modules/nanoid/nanoid.js') }}"
 
-          if(newValue) {
-            var smtp_generated_password = nanoid(21);
+      $(".enable-disable-smtp").change(async function () {
+        let aliasId = $(this).data("alias");
+        let alias = $(this).data("alias-email");
+        const oldValue = !$(this).prop("checked");
+        let newValue = !oldValue;
 
-            var message = `SMTP credentials for alias (<b>This will be visible only once, so please save it</b>):
+        if(newValue) {
+          var smtp_generated_password = nanoid(21);
+
+          var message = `SMTP credentials for alias (<b>This will be visible only once, so please save it</b>):
                         <br><br>Username (same as alias): ${alias}
                         <br>Password: ${smtp_generated_password}<br>
-                        `;
+                      `;
+        }
+        try {
+          if(newValue) {
+            var res = await fetch(`/api/aliases/${aliasId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                enable_SMTP: newValue,
+                smtp_password: smtp_generated_password,
+              }),
+            });
           }
-          try {
-            if(newValue) {
-              var res = await fetch(`/api/aliases/${aliasId}`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  enable_SMTP: newValue,
-                  smtp_password: smtp_generated_password,
-                }),
-              });
-            }
-            else {
-              var res = await fetch(`/api/aliases/${aliasId}`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  enable_SMTP: newValue,
-                }),
-              });
-            }
-            if (res.ok) {
-              if (newValue) {
-                bootbox.alert({
-                  title: `SMTP Credentials for ${alias}`,
-                  message: message,
-                  size: 'large',
-                  onEscape: false,
-                  buttons: {
-                    ok: {
-                      label: 'Ok, I have saved them',
-                      className: 'btn-primary',
-                    },
+          else {
+            var res = await fetch(`/api/aliases/${aliasId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                enable_SMTP: newValue,
+              }),
+            });
+          }
+          if (res.ok) {
+            if (newValue) {
+              bootbox.alert({
+                title: `SMTP Credentials for ${alias}`,
+                message: message,
+                size: 'large',
+                onEscape: false,
+                buttons: {
+                  ok: {
+                    label: 'Ok, I have saved them',
+                    className: 'btn-primary',
                   },
-                  callback: function () {
-                    toastr.success(`SMTP Enabled for ${alias}`);
-                  }
-                });
-                smtp_generated_password = null; // Clear the password.
-              } else {
-                toastr.info(`SMTP Disabled for ${alias}`);
-              }
+                },
+                callback: function () {
+                  toastr.success(`SMTP Enabled for ${alias}`);
+                }
+              });
+              smtp_generated_password = null; // Clear the password.
             } else {
-              toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-              // reset to the original value
-              $(this).prop("checked", oldValue);
+              toastr.info(`SMTP Disabled for ${alias}`);
             }
-          } catch (e) {
+          } else {
             toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
             // reset to the original value
             $(this).prop("checked", oldValue);
           }
-        });
-        </script>
-    {% endif %}
+        } catch (e) {
+          toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+          // reset to the original value
+          $(this).prop("checked", oldValue);
+        }
+      });
+    </script>
+  {% endif %}
 {% endblock %}
