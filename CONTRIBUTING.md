@@ -174,4 +174,11 @@ python email_handler.py
 swaks --to e1@sl.local --from hey@google.com --server 127.0.0.1:20381
 ```
 
+4) Send a test email via SMTP 
+   * Make sure SMTP is enabled in settings and password is generated for the alias
+
+```bash
+swaks --to hey@google.com --from e1@sl.local --server 127.0.0.1:465 --tls-on-connect --auth --auth-user e1@sl.local
+```
+
 Now open http://localhost:1080/ (or http://localhost:1080/ for MailHog), you should see the forwarded email.
