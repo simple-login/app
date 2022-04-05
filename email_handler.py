@@ -2223,6 +2223,11 @@ def handle(envelope: Envelope, msg: Message) -> str:
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
 
+    # some emails don't have this header, set the default value (7bit) in this case
+    if headers.CONTENT_TRANSFER_ENCODING not in msg:
+        LOG.i("Set CONTENT_TRANSFER_ENCODING")
+        msg[headers.CONTENT_TRANSFER_ENCODING] = "7bit"
+
     postfix_queue_id = get_queue_id(msg)
     if postfix_queue_id:
         set_message_id(postfix_queue_id)
