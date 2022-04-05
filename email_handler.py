@@ -2367,10 +2367,10 @@ def handle(envelope: Envelope, msg: Message) -> str:
         email_log = EmailLog.get(email_log_id)
         alias = Alias.get_by(email=rcpt_tos[0])
         LOG.w(
-            "iCloud bounces %s %s msg=%s",
+            "iCloud bounces %s %s, saved to%s",
             email_log,
             alias,
-            msg.as_string(),
+            save_email_for_debugging(msg, file_name_prefix="icloud_bounce_"),
         )
         return handle_bounce(envelope, email_log, msg)
 
