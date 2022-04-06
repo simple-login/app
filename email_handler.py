@@ -1119,14 +1119,14 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             alias,
             contact,
         )
-        return (False, status.E504)
+        return False, status.E504
 
     # Check if we need to reject or quarantine based on dmarc
     dmarc_delivery_status = apply_dmarc_policy_for_reply_phase(
         alias, contact, envelope, msg
     )
     if dmarc_delivery_status is not None:
-        return (False, dmarc_delivery_status)
+        return False, dmarc_delivery_status
 
     # Anti-spoofing
     mailbox = get_mailbox_from_mail_from(mail_from, alias)

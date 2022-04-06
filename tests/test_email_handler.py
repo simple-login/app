@@ -182,7 +182,6 @@ def test_dmarc_reply_quarantine(flask_client, dmarc_result):
         website_email="random-{}@nowhere.net".format(int(random.random())),
         name="Name {}".format(int(random.random())),
         reply_email="random-{}@{}".format(random.random(), EMAIL_DOMAIN),
-        automatic_created=True,
     )
     Session.commit()
     msg = load_eml_file(
