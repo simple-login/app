@@ -39,11 +39,11 @@ def random_token(length: int = 10) -> str:
 
 
 def create_random_user() -> User:
-    email = "{}@{}.com".format(random_token(), random_token())
+    random_email = "{}@{}.com".format(random_token(), random_token())
     return User.create(
-        email=email,
+        email=random_email,
         password="password",
-        name="Test User",
+        name="Test {}".format(random_token()),
         activated=True,
         commit=True,
     )

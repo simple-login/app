@@ -172,7 +172,7 @@ def generate_dmarc_result() -> List:
 
 
 @pytest.mark.parametrize("dmarc_result", generate_dmarc_result())
-def test_dmarc_reply_quarantine(dmarc_result: str):
+def test_dmarc_reply_quarantine(flask_client, dmarc_result):
     user = create_random_user()
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -183,9 +183,8 @@ def test_dmarc_reply_quarantine(dmarc_result: str):
         name="Name {}".format(int(random.random())),
         reply_email="random-{}@{}".format(random.random(), EMAIL_DOMAIN),
         automatic_created=True,
-        flush=True,
-        commit=True,
     )
+    Session.commit()
     msg = load_eml_file(
         "dmarc_reply_check.eml",
         {
