@@ -89,6 +89,7 @@ from app.config import (
     ALERT_TO_NOREPLY,
     DMARC_CHECK_ENABLED,
     ALERT_QUARANTINE_DMARC,
+    ALERT_DMARC_FAILED_REPLY_PHASE,
 )
 from app.db import Session
 from app.email import status, headers
@@ -158,6 +159,7 @@ from app.models import (
     Notification,
     DmarcCheckResult,
     SPFCheckResult,
+    Phase,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -542,10 +544,10 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     )
 
 
-def apply_dmarc_policy(
+def apply_dmarc_policy_for_forward_phase(
     alias: Alias, contact: Contact, envelope: Envelope, msg: Message
 ) -> Optional[str]:
-    spam_result = get_spamd_result(msg)
+    spam_result = get_spamd_result(msg, Phase.forward)
     if not DMARC_CHECK_ENABLED or not spam_result:
         return None
 
@@ -553,7 +555,7 @@ def apply_dmarc_policy(
 
     if spam_result.dmarc == DmarcCheckResult.soft_fail:
         LOG.w(
-            f"dmarc soft_fail from contact {contact.email} to alias {alias.email}."
+            f"dmarc forward: dmarc soft_fail from contact {contact.email} to alias {alias.email}."
             f"mail_from:{envelope.mail_from}, from_header: {from_header}"
         )
         raise DmarcSoftFail
@@ -563,10 +565,10 @@ def apply_dmarc_policy(
         DmarcCheckResult.reject,
     ):
         LOG.w(
-            f"put email from {contact} to {alias} to quarantine. {spam_result.event_data()}, "
+            f"dmarc forward: put email from {contact} to {alias} to quarantine. {spam_result.event_data()}, "
             f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
         )
-        email_log = quarantine_dmarc_failed_email(alias, contact, envelope, msg)
+        email_log = quarantine_dmarc_failed_forward_email(alias, contact, envelope, msg)
         Notification.create(
             user_id=alias.user_id,
             title=f"{alias.email} has a new mail in quarantine",
@@ -601,7 +603,7 @@ def apply_dmarc_policy(
     return None
 
 
-def quarantine_dmarc_failed_email(alias, contact, envelope, msg) -> EmailLog:
+def quarantine_dmarc_failed_forward_email(alias, contact, envelope, msg) -> EmailLog:
     add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
     msg[headers.SL_ENVELOPE_TO] = alias.email
     msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
@@ -633,6 +635,44 @@ def quarantine_dmarc_failed_email(alias, contact, envelope, msg) -> EmailLog:
         blocked=True,
         commit=True,
     )
+
+
+def apply_dmarc_policy_for_reply_phase(
+    alias_from: Alias, contact_recipient: Contact, envelope: Envelope, msg: Message
+) -> Optional[str]:
+    spam_result = get_spamd_result(msg, Phase.reply)
+    if not DMARC_CHECK_ENABLED or not spam_result:
+        return None
+
+    if spam_result.dmarc not in (
+        DmarcCheckResult.quarantine,
+        DmarcCheckResult.reject,
+        DmarcCheckResult.soft_fail,
+    ):
+        return None
+    LOG.w(
+        f"dmarc reply: Put email from {alias_from.email} to {contact_recipient} into quarantine. {spam_result.event_data()}, "
+        f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
+    )
+    send_email_with_rate_control(
+        alias_from.user,
+        ALERT_DMARC_FAILED_REPLY_PHASE,
+        alias_from.user.email,
+        f"Attempt to send an email to your contact {contact_recipient.email} from {envelope.mail_from}",
+        render(
+            "transactional/spoof-reply.txt",
+            contact=contact_recipient,
+            alias=alias_from,
+            sender=envelope.mail_from,
+        ),
+        render(
+            "transactional/spoof-reply.html",
+            contact=contact_recipient,
+            alias=alias_from,
+            sender=envelope.mail_from,
+        ),
+    )
+    return status.E215
 
 
 def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str]]:
@@ -717,7 +757,9 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     # Check if we need to reject or quarantine based on dmarc
     try:
-        dmarc_delivery_status = apply_dmarc_policy(alias, contact, envelope, msg)
+        dmarc_delivery_status = apply_dmarc_policy_for_forward_phase(
+            alias, contact, envelope, msg
+        )
         if dmarc_delivery_status is not None:
             return [(False, dmarc_delivery_status)]
     except DmarcSoftFail:
@@ -1041,6 +1083,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     Return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
     """
+
     reply_email = rcpt_to
 
     # reply_email must end with EMAIL_DOMAIN
@@ -1076,7 +1119,14 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             alias,
             contact,
         )
-        return [(False, status.E504)]
+        return (False, status.E504)
+
+    # Check if we need to reject or quarantine based on dmarc
+    dmarc_delivery_status = apply_dmarc_policy_for_reply_phase(
+        alias, contact, envelope, msg
+    )
+    if dmarc_delivery_status is not None:
+        return (False, dmarc_delivery_status)
 
     # Anti-spoofing
     mailbox = get_mailbox_from_mail_from(mail_from, alias)
@@ -2608,7 +2658,7 @@ class MailHandler:
             elapsed = time.time() - start
             # Only bounce messages if the return-path passes the spf check. Otherwise black-hole it.
             if return_status[0] == "5":
-                spamd_result = get_spamd_result(msg)
+                spamd_result = get_spamd_result(msg, send_event=False)
                 if spamd_result and get_spamd_result(msg).spf in (
                     SPFCheckResult.fail,
                     SPFCheckResult.soft_fail,

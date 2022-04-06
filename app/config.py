@@ -304,6 +304,9 @@ MAX_ALERT_24H = 4
 # When a reverse-alias receives emails from un unknown mailbox
 ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX = "reverse_alias_unknown_mailbox"
 
+# When somebody is trying to spoof a reply
+ALERT_DMARC_FAILED_REPLY_PHASE = "dmarc_failed_reply_phase"
+
 # When a forwarding email is bounced
 ALERT_BOUNCE_EMAIL = "bounce"
 

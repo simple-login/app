@@ -1,9 +1,13 @@
+import random
 from email.message import EmailMessage
+from typing import List
 
+import pytest
 from aiosmtpd.smtp import Envelope
 
 import email_handler
-from app.config import BOUNCE_EMAIL
+from app.config import BOUNCE_EMAIL, EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHASE
+from app.db import Session
 from app.email import headers, status
 from app.models import (
     User,
@@ -12,6 +16,8 @@ from app.models import (
     IgnoredEmail,
     EmailLog,
     Notification,
+    Contact,
+    SentAlert,
 )
 from email_handler import (
     get_mailbox_from_mail_from,
@@ -75,7 +81,7 @@ def test_is_automatic_out_of_office():
     assert is_automatic_out_of_office(msg)
 
 
-def test_dmarc_quarantine(flask_client):
+def test_dmarc_forward_quarantine(flask_client):
     user = create_random_user()
     alias = Alias.create_new_random(user)
     msg = load_eml_file("dmarc_quarantine.eml", {"alias_email": alias.email})
@@ -159,3 +165,41 @@ def test_preserve_5xx_with_no_header(flask_client):
     envelope.rcpt_tos = [msg["to"]]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert result == status.E512
+
+
+def generate_dmarc_result() -> List:
+    return ["DMARC_POLICY_QUARANTINE", "DMARC_POLICY_REJECT", "DMARC_POLICY_SOFTFAIL"]
+
+
+@pytest.mark.parametrize("dmarc_result", generate_dmarc_result())
+def test_dmarc_reply_quarantine(dmarc_result: str):
+    user = create_random_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact = Contact.create(
+        user_id=alias.user_id,
+        alias_id=alias.id,
+        website_email="random-{}@nowhere.net".format(int(random.random())),
+        name="Name {}".format(int(random.random())),
+        reply_email="random-{}@{}".format(random.random(), EMAIL_DOMAIN),
+        automatic_created=True,
+        flush=True,
+        commit=True,
+    )
+    msg = load_eml_file(
+        "dmarc_reply_check.eml",
+        {
+            "alias_email": alias.email,
+            "contact_email": contact.reply_email,
+            "dmarc_result": dmarc_result,
+        },
+    )
+    envelope = Envelope()
+    envelope.mail_from = msg["from"]
+    envelope.rcpt_tos = [msg["to"]]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E215
+    alerts = SentAlert.filter_by(
+        user_id=user.id, alert_type=ALERT_DMARC_FAILED_REPLY_PHASE
+    ).all()
+    assert len(alerts) == 1

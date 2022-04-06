@@ -237,6 +237,12 @@ class AuditLogActionEnum(EnumE):
     extend_subscription = 7
 
 
+class Phase(EnumE):
+    unknown = 0
+    forward = 1
+    reply = 2
+
+
 class DmarcCheckResult(EnumE):
     allow = 0
     soft_fail = 1
@@ -280,7 +286,8 @@ class SPFCheckResult(EnumE):
 
 
 class SpamdResult:
-    def __init__(self):
+    def __init__(self, phase: Phase = Phase.unknown):
+        self.phase: Phase = phase
         self.dmarc: DmarcCheckResult = DmarcCheckResult.not_available
         self.spf: SPFCheckResult = SPFCheckResult.not_available
 
@@ -291,7 +298,12 @@ class SpamdResult:
         self.spf = spf_result
 
     def event_data(self) -> Dict:
-        return {"header": "present", "dmarc": self.dmarc, "spf": self.spf}
+        return {
+            "header": "present",
+            "dmarc": self.dmarc,
+            "spf": self.spf,
+            "phase": self.phase,
+        }
 
 
 class Hibp(Base, ModelMixin):

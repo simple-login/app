@@ -73,6 +73,7 @@ from app.models import (
     DmarcCheckResult,
     SpamdResult,
     SPFCheckResult,
+    Phase,
 )
 from app.utils import (
     random_string,
@@ -1443,7 +1444,9 @@ def save_email_for_debugging(msg: Message, file_name_prefix=None) -> str:
     return ""
 
 
-def get_spamd_result(msg: Message) -> Optional[SpamdResult]:
+def get_spamd_result(
+    msg: Message, send_event: bool = True, phase: Phase = Phase.unknown
+) -> Optional[SpamdResult]:
     spam_result_header = msg.get_all(headers.SPAMD_RESULT)
     if not spam_result_header:
         newrelic.agent.record_custom_event("SpamdCheck", {"header": "missing"})
@@ -1455,7 +1458,7 @@ def get_spamd_result(msg: Message) -> Optional[SpamdResult]:
         if sep > -1:
             spam_entries[entry_pos] = spam_entries[entry_pos][:sep]
 
-    spamd_result = SpamdResult()
+    spamd_result = SpamdResult(phase)
 
     for header_value, dmarc_result in DmarcCheckResult.get_string_dict().items():
         if header_value in spam_entries:
@@ -1464,5 +1467,6 @@ def get_spamd_result(msg: Message) -> Optional[SpamdResult]:
         if header_value in spam_entries:
             spamd_result.set_spf_result(spf_result)
 
-    newrelic.agent.record_custom_event("SpamdCheck", spamd_result.event_data())
+    if send_event:
+        newrelic.agent.record_custom_event("SpamdCheck", spamd_result.event_data())
     return spamd_result
