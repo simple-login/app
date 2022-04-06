@@ -555,7 +555,7 @@ def apply_dmarc_policy_for_forward_phase(
 
     if spam_result.dmarc == DmarcCheckResult.soft_fail:
         LOG.w(
-            f"dmarc forward: dmarc soft_fail from contact {contact.email} to alias {alias.email}."
+            f"dmarc forward: soft_fail from contact {contact.email} to alias {alias.email}."
             f"mail_from:{envelope.mail_from}, from_header: {from_header}"
         )
         raise DmarcSoftFail
