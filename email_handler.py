@@ -131,6 +131,7 @@ from app.email_utils import (
     get_mailbox_bounce_info,
     save_email_for_debugging,
     get_spamd_result,
+    save_envelope_for_debugging,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -2584,8 +2585,8 @@ class MailHandler:
                 envelope.rcpt_tos,
                 msg[headers.FROM],
                 msg[headers.TO],
-                save_email_for_debugging(
-                    msg, file_name_prefix=e.__class__.__name__
+                save_envelope_for_debugging(
+                    envelope, file_name_prefix=e.__class__.__name__
                 ),  # todo: remove
             )
             return status.E404
