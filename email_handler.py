@@ -92,6 +92,12 @@ from app.config import (
     ALERT_DMARC_FAILED_REPLY_PHASE,
 )
 from app.db import Session
+from app.handler.spamd_result import (
+    SpamdResult,
+    Phase,
+    DmarcCheckResult,
+    SPFCheckResult,
+)
 from app.email import status, headers
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
@@ -131,7 +137,6 @@ from app.email_utils import (
     get_orig_message_from_yahoo_complaint,
     get_mailbox_bounce_info,
     save_email_for_debugging,
-    get_spamd_result,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -157,9 +162,6 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     Notification,
-    DmarcCheckResult,
-    SPFCheckResult,
-    Phase,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
 from app.utils import sanitize_email
@@ -547,7 +549,7 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
 def apply_dmarc_policy_for_forward_phase(
     alias: Alias, contact: Contact, envelope: Envelope, msg: Message
 ) -> Optional[str]:
-    spam_result = get_spamd_result(msg, Phase.forward)
+    spam_result = SpamdResult.extract_from_headers(msg, Phase.forward)
     if not DMARC_CHECK_ENABLED or not spam_result:
         return None
 
@@ -640,7 +642,7 @@ def quarantine_dmarc_failed_forward_email(alias, contact, envelope, msg) -> Emai
 def apply_dmarc_policy_for_reply_phase(
     alias_from: Alias, contact_recipient: Contact, envelope: Envelope, msg: Message
 ) -> Optional[str]:
-    spam_result = get_spamd_result(msg, Phase.reply)
+    spam_result = SpamdResult.extract_from_headers(msg, Phase.reply)
     if not DMARC_CHECK_ENABLED or not spam_result:
         return None
 
@@ -2657,9 +2659,9 @@ class MailHandler:
             return_status = handle(envelope, msg)
             elapsed = time.time() - start
             # Only bounce messages if the return-path passes the spf check. Otherwise black-hole it.
+            spamd_result = SpamdResult.extract_from_headers(msg)
             if return_status[0] == "5":
-                spamd_result = get_spamd_result(msg, send_event=False)
-                if spamd_result and get_spamd_result(msg).spf in (
+                if spamd_result and spamd_result.spf in (
                     SPFCheckResult.fail,
                     SPFCheckResult.soft_fail,
                 ):
@@ -2675,6 +2677,8 @@ class MailHandler:
                 elapsed,
                 return_status,
             )
+
+            SpamdResult.send_to_new_relic(msg)
             newrelic.agent.record_custom_metric("Custom/email_handler_time", elapsed)
             newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
             return return_status
