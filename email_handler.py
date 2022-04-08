@@ -2565,7 +2565,7 @@ class MailHandler:
                 msg[headers.TO],
             )
             return status.E524
-        except (VERPReply, VERPForward) as e:
+        except (VERPReply, VERPForward, VERPTransactional) as e:
             LOG.w(
                 "email handling fail with error:%s "
                 "mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s",
