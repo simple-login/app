@@ -136,6 +136,7 @@ from app.email_utils import (
     get_orig_message_from_yahoo_complaint,
     get_mailbox_bounce_info,
     save_email_for_debugging,
+    save_envelope_for_debugging,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -2131,6 +2132,11 @@ def handle(envelope: Envelope, msg: Message) -> str:
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
 
+    # some emails don't have this header, set the default value (7bit) in this case
+    if headers.CONTENT_TRANSFER_ENCODING not in msg:
+        LOG.i("Set CONTENT_TRANSFER_ENCODING")
+        msg[headers.CONTENT_TRANSFER_ENCODING] = "7bit"
+
     postfix_queue_id = get_queue_id(msg)
     if postfix_queue_id:
         set_message_id(postfix_queue_id)
@@ -2467,7 +2473,7 @@ class MailHandler:
                 msg[headers.TO],
             )
             return status.E524
-        except (VERPReply, VERPForward) as e:
+        except (VERPReply, VERPForward, VERPTransactional) as e:
             LOG.w(
                 "email handling fail with error:%s "
                 "mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s",
@@ -2487,8 +2493,8 @@ class MailHandler:
                 envelope.rcpt_tos,
                 msg[headers.FROM],
                 msg[headers.TO],
-                save_email_for_debugging(
-                    msg, file_name_prefix=e.__class__.__name__
+                save_envelope_for_debugging(
+                    envelope, file_name_prefix=e.__class__.__name__
                 ),  # todo: remove
             )
             return status.E404

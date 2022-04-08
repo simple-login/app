@@ -6,6 +6,9 @@ import random
 import time
 import uuid
 from copy import deepcopy
+
+from aiosmtpd.smtp import Envelope
+
 from email import policy, message_from_bytes, message_from_string
 from email.header import decode_header, Header
 from email.message import Message, EmailMessage
@@ -1429,7 +1432,7 @@ def save_email_for_debugging(msg: Message, file_name_prefix=None) -> str:
     if TEMP_DIR:
         file_name = str(uuid.uuid4()) + ".eml"
         if file_name_prefix:
-            file_name = file_name_prefix + file_name
+            file_name = "{}-{}".format(file_name_prefix, file_name)
 
         with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
             f.write(msg.as_bytes())
@@ -1438,3 +1441,22 @@ def save_email_for_debugging(msg: Message, file_name_prefix=None) -> str:
         return file_name
 
     return ""
+
+
+def save_envelope_for_debugging(envelope: Envelope, file_name_prefix=None) -> str:
+    """Save envelope for debugging to temporary location
+    Return the file path
+    """
+    if TEMP_DIR:
+        file_name = str(uuid.uuid4()) + ".eml"
+        if file_name_prefix:
+            file_name = "{}-{}".format(file_name_prefix, file_name)
+
+        with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
+            f.write(envelope.original_content)
+
+        LOG.d("envelope saved to %s", file_name)
+        return file_name
+
+    return ""
+
