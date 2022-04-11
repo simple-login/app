@@ -1,6 +1,6 @@
 import uuid
 from io import BytesIO
-from typing import Optional
+from typing import Optional, Tuple, Union
 
 from aiosmtpd.handlers import Message
 from aiosmtpd.smtp import Envelope
@@ -27,10 +27,10 @@ from app.models import Alias, Contact, Notification, EmailLog, RefusedEmail
 
 def apply_dmarc_policy_for_forward_phase(
     alias: Alias, contact: Contact, envelope: Envelope, msg: Message
-) -> Optional[str]:
+) -> Tuple[Message, Optional[str]]:
     spam_result = SpamdResult.extract_from_headers(msg, Phase.forward)
     if not DMARC_CHECK_ENABLED or not spam_result:
-        return None
+        return msg, None
 
     from_header = get_header_unicode(msg[headers.FROM])
 
@@ -48,9 +48,7 @@ def apply_dmarc_policy_for_forward_phase(
         </p>
         """,
         )
-        # Change the payload inline
-        msg.set_payload(changed_msg.get_payload())
-        return None
+        return changed_msg, None
 
     if spam_result.dmarc in (
         DmarcCheckResult.quarantine,
@@ -90,9 +88,9 @@ def apply_dmarc_policy_for_forward_phase(
             max_nb_alert=10,
             ignore_smtp_error=True,
         )
-        return status.E215
+        return msg, status.E215
 
-    return None
+    return msg, None
 
 
 def quarantine_dmarc_failed_forward_email(alias, contact, envelope, msg) -> EmailLog:

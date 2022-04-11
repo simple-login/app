@@ -626,7 +626,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
-    dmarc_delivery_status = apply_dmarc_policy_for_forward_phase(
+    msg, dmarc_delivery_status = apply_dmarc_policy_for_forward_phase(
         alias, contact, envelope, msg
     )
     if dmarc_delivery_status is not None:

@@ -101,9 +101,11 @@ class SpamdResult:
         for header_value, dmarc_result in DmarcCheckResult.get_string_dict().items():
             if header_value in spam_entries:
                 spamd_result.set_dmarc_result(dmarc_result)
+                break
         for header_value, spf_result in SPFCheckResult.get_string_dict().items():
             if header_value in spam_entries:
                 spamd_result.set_spf_result(spf_result)
+                break
 
         cls._store_in_message(spamd_result, msg)
         return spamd_result
