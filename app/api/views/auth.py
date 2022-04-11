@@ -19,6 +19,7 @@ from app.email_utils import (
     send_email,
     render,
 )
+from app.events.auth_event import LoginEvent, RegisterEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
@@ -55,16 +56,20 @@ def auth_login():
     user = User.filter_by(email=email).first()
 
     if not user or not user.check_password(password):
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
         return jsonify(error="Email or password incorrect"), 400
     elif user.disabled:
+        LoginEvent(LoginEvent.ActionType.disabled_login, LoginEvent.Source.api).send()
         return jsonify(error="Account disabled"), 400
     elif not user.activated:
+        LoginEvent(LoginEvent.ActionType.not_activated, LoginEvent.Source.api).send()
         return jsonify(error="Account not activated"), 422
     elif user.fido_enabled():
         # allow user who has TOTP enabled to continue using the mobile app
         if not user.enable_otp:
             return jsonify(error="Currently we don't support FIDO on mobile yet"), 403
 
+    LoginEvent(LoginEvent.ActionType.success, LoginEvent.Source.api).send()
     return jsonify(**auth_payload(user, device)), 200
 
 
@@ -88,14 +93,20 @@ def auth_register():
     password = data.get("password")
 
     if DISABLE_REGISTRATION:
+        RegisterEvent(RegisterEvent.ActionType.failed, RegisterEvent.Source.api).send()
         return jsonify(error="registration is closed"), 400
     if not email_can_be_used_as_mailbox(email) or personal_email_already_used(email):
+        RegisterEvent(
+            RegisterEvent.ActionType.invalid_email, RegisterEvent.Source.api
+        ).send()
         return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
     if not password or len(password) < 8:
+        RegisterEvent(RegisterEvent.ActionType.failed, RegisterEvent.Source.api).send()
         return jsonify(error="password too short"), 400
 
     if len(password) > 100:
+        RegisterEvent(RegisterEvent.ActionType.failed, RegisterEvent.Source.api).send()
         return jsonify(error="password too long"), 400
 
     LOG.d("create user %s", email)
@@ -114,6 +125,7 @@ def auth_register():
         render("transactional/code-activation.html", code=code),
     )
 
+    RegisterEvent(RegisterEvent.ActionType.success, RegisterEvent.Source.api).send()
     return jsonify(msg="User needs to confirm their account"), 200
 
 

@@ -10,22 +10,37 @@ class LoginEvent:
         disabled_login = 2
         not_activated = 3
 
-    def __init__(self, action: ActionType):
+    class Source(EnumE):
+        web = 0
+        api = 1
+
+    def __init__(self, action: ActionType, source: Source = Source.web):
         self.action = action
+        self.source = source
 
     def send(self):
-        newrelic.agent.record_custom_event("LoginEvent", {"action": self.action})
+        newrelic.agent.record_custom_event(
+            "LoginEvent", {"action": self.action, "source": self.source}
+        )
 
 
 class RegisterEvent:
     class ActionType(EnumE):
         success = 0
-        catpcha_failed = 1
-        email_in_use = 2
-        invalid_email = 3
+        failed = 1
+        catpcha_failed = 2
+        email_in_use = 3
+        invalid_email = 4
 
-    def __init__(self, action: ActionType):
+    class Source(EnumE):
+        web = 0
+        api = 1
+
+    def __init__(self, action: ActionType, source: Source = Source.web):
         self.action = action
+        self.source = source
 
     def send(self):
-        newrelic.agent.record_custom_event("RegisterEvent", {"action": self.action})
+        newrelic.agent.record_custom_event(
+            "RegisterEvent", {"action": self.action, "source": self.source}
+        )
