@@ -61,7 +61,7 @@ def register():
                     hcaptcha_res,
                 )
                 flash("Wrong Captcha", "error")
-                RegisterEvent(RegisterEvent.ActionType.regsiter_catpcha_failed).send()
+                RegisterEvent(RegisterEvent.ActionType.catpcha_failed).send()
                 return render_template(
                     "auth/register.html",
                     form=form,
