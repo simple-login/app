@@ -65,7 +65,7 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
     LOG.d("mem_usage %s", mem_usage)
 
     r = gpg.encrypt_file(data, fingerprint, always_trust=True)
-    if not r.success:
+    if not r.ok:
         # maybe the fingerprint is not loaded on this host, try to load it
         found = False
         # searching for the key in mailbox
@@ -87,7 +87,7 @@ def encrypt_file(data: BytesIO, fingerprint: str) -> str:
             data.seek(0)
             r = gpg.encrypt_file(data, fingerprint, always_trust=True)
 
-        if not r.success:
+        if not r.ok:
             raise PGPException(f"Cannot encrypt, status: {r.status}")
 
     return str(r)
