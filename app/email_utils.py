@@ -970,7 +970,10 @@ def add_header(msg: Message, text_header, html_header) -> Message:
     elif content_type in ("multipart/alternative", "multipart/related"):
         new_parts = []
         for part in msg.get_payload():
-            new_parts.append(add_header(part, text_header, html_header))
+            if isinstance(part, Message):
+                new_parts.append(add_header(part, text_header, html_header))
+            else:
+                new_parts.append(part)
         clone_msg = copy(msg)
         clone_msg.set_payload(new_parts)
         return clone_msg

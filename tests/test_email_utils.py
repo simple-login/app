@@ -823,3 +823,15 @@ def test_dmarc_result_na():
 def test_dmarc_result_bad_policy():
     msg = load_eml_file("dmarc_bad_policy.eml")
     assert DmarcCheckResult.bad_policy == get_spamd_result(msg).dmarc
+
+
+def test_add_header_multipart_with_invalid_part():
+    msg = load_eml_file("multipart_alternative.eml")
+    parts = msg.get_payload() + ["invalid"]
+    msg.set_payload(parts)
+    msg = add_header(msg, "INJECT", "INJECT")
+    for i, part in enumerate(msg.get_payload()):
+        if i < 2:
+            assert part.get_payload().index("INJECT") > -1
+        else:
+            assert part == "invalid"
