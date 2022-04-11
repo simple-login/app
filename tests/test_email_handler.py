@@ -159,3 +159,12 @@ def test_preserve_5xx_with_no_header(flask_client):
     envelope.rcpt_tos = [msg["to"]]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert result == status.E512
+
+def test_lol():
+    msg = load_eml_file("KeyErrorbf6219c1-3bed-419f-ae40-bec264204e2d.eml")
+    msg.as_string()
+    envelope = Envelope()
+    envelope.mail_from = msg[headers.FROM]
+    envelope.rcpt_tos = [msg["to"]]
+    envelope.original_content = msg.as_string()
+    result = email_handler.MailHandler()._handle(envelope, msg)

@@ -1450,6 +1450,7 @@ def save_envelope_for_debugging(envelope: Envelope, file_name_prefix=None) -> st
     """Save envelope for debugging to temporary location
     Return the file path
     """
+    LOG.d("TE {}".format( TEMP_DIR))
     if TEMP_DIR:
         file_name = str(uuid.uuid4()) + ".eml"
         if file_name_prefix:
