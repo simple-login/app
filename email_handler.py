@@ -2083,7 +2083,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
         return status.E510
 
     if mail_from != user.email:
-        LOG.e("Unauthorized mail_from %s %s", user, mail_from)
+        LOG.w("Unauthorized mail_from %s %s", user, mail_from)
         return status.E511
 
     user.notification = False
