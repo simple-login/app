@@ -13,6 +13,7 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
+from app.events.auth_event import RegisterEvent
 from app.log import LOG
 from app.models import User, ActivationCode
 from app.utils import random_string, encode_url, sanitize_email
@@ -60,6 +61,7 @@ def register():
                     hcaptcha_res,
                 )
                 flash("Wrong Captcha", "error")
+                RegisterEvent(RegisterEvent.ActionType.regsiter_catpcha_failed).send()
                 return render_template(
                     "auth/register.html",
                     form=form,
@@ -70,10 +72,11 @@ def register():
         email = sanitize_email(form.email.data)
         if not email_can_be_used_as_mailbox(email):
             flash("You cannot use this email address as your personal inbox.", "error")
-
+            RegisterEvent(RegisterEvent.ActionType.email_in_use).send()
         else:
             if personal_email_already_used(email):
                 flash(f"Email {email} already used", "error")
+                RegisterEvent(RegisterEvent.ActionType.email_in_use).send()
             else:
                 LOG.d("create user %s", email)
                 user = User.create(
@@ -86,8 +89,10 @@ def register():
 
                 try:
                     send_activation_email(user, next_url)
+                    RegisterEvent(RegisterEvent.ActionType.success).send()
                 except Exception:
                     flash("Invalid email, are you sure the email is correct?", "error")
+                    RegisterEvent(RegisterEvent.ActionType.invalid_email).send()
                     return redirect(url_for("auth.register"))
 
                 return render_template("auth/register_waiting_activation.html")
