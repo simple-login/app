@@ -283,7 +283,7 @@ def get_or_create_reply_to_contact(
         return contact
     else:
         LOG.d(
-            "create contact %s for alias %s via reply-to header",
+            "create contact %s for alias %s via reply-to header %s",
             contact_address,
             alias,
             reply_to_header,
