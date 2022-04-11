@@ -1,6 +1,6 @@
 import uuid
 from io import BytesIO
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 from aiosmtpd.handlers import Message
 from aiosmtpd.smtp import Envelope
