@@ -285,7 +285,7 @@ def get_or_create_reply_to_contact(
         return contact
     else:
         LOG.d(
-            "create contact %s for alias %s via reply-to header",
+            "create contact %s for alias %s via reply-to header %s",
             contact_address,
             alias,
             reply_to_header,
@@ -1991,7 +1991,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
         return status.E510
 
     if mail_from != user.email:
-        LOG.e("Unauthorized mail_from %s %s", user, mail_from)
+        LOG.w("Unauthorized mail_from %s %s", user, mail_from)
         return status.E511
 
     user.notification = False
