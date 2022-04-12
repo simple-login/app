@@ -36,7 +36,6 @@ from app.email_utils import (
     get_orig_message_from_bounce,
     get_mailbox_bounce_info,
     is_invalid_mailbox_domain,
-    get_spamd_result,
 )
 from app.models import (
     User,
@@ -46,7 +45,6 @@ from app.models import (
     EmailLog,
     IgnoreBounceSender,
     InvalidMailboxDomain,
-    DmarcCheckResult,
 )
 
 # flake8: noqa: E101, W191
@@ -793,36 +791,6 @@ def test_is_invalid_mailbox_domain(flask_client):
     assert is_invalid_mailbox_domain("sub1.sub2.ab.cd")
 
     assert not is_invalid_mailbox_domain("xy.zt")
-
-
-def test_dmarc_result_softfail():
-    msg = load_eml_file("dmarc_gmail_softfail.eml")
-    assert DmarcCheckResult.soft_fail == get_spamd_result(msg).dmarc
-
-
-def test_dmarc_result_quarantine():
-    msg = load_eml_file("dmarc_quarantine.eml")
-    assert DmarcCheckResult.quarantine == get_spamd_result(msg).dmarc
-
-
-def test_dmarc_result_reject():
-    msg = load_eml_file("dmarc_reject.eml")
-    assert DmarcCheckResult.reject == get_spamd_result(msg).dmarc
-
-
-def test_dmarc_result_allow():
-    msg = load_eml_file("dmarc_allow.eml")
-    assert DmarcCheckResult.allow == get_spamd_result(msg).dmarc
-
-
-def test_dmarc_result_na():
-    msg = load_eml_file("dmarc_na.eml")
-    assert DmarcCheckResult.not_available == get_spamd_result(msg).dmarc
-
-
-def test_dmarc_result_bad_policy():
-    msg = load_eml_file("dmarc_bad_policy.eml")
-    assert DmarcCheckResult.bad_policy == get_spamd_result(msg).dmarc
 
 
 def test_add_header_multipart_with_invalid_part():

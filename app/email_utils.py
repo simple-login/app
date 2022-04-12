@@ -73,9 +73,6 @@ from app.models import (
     TransactionalEmail,
     IgnoreBounceSender,
     InvalidMailboxDomain,
-    DmarcCheckResult,
-    SpamdResult,
-    SPFCheckResult,
 )
 from app.utils import (
     random_string,
@@ -1465,28 +1462,3 @@ def save_envelope_for_debugging(envelope: Envelope, file_name_prefix=None) -> st
         return file_name
 
     return ""
-
-
-def get_spamd_result(msg: Message) -> Optional[SpamdResult]:
-    spam_result_header = msg.get_all(headers.SPAMD_RESULT)
-    if not spam_result_header:
-        newrelic.agent.record_custom_event("SpamdCheck", {"header": "missing"})
-        return None
-
-    spam_entries = [entry.strip() for entry in str(spam_result_header[-1]).split("\n")]
-    for entry_pos in range(len(spam_entries)):
-        sep = spam_entries[entry_pos].find("(")
-        if sep > -1:
-            spam_entries[entry_pos] = spam_entries[entry_pos][:sep]
-
-    spamd_result = SpamdResult()
-
-    for header_value, dmarc_result in DmarcCheckResult.get_string_dict().items():
-        if header_value in spam_entries:
-            spamd_result.set_dmarc_result(dmarc_result)
-    for header_value, spf_result in SPFCheckResult.get_string_dict().items():
-        if header_value in spam_entries:
-            spamd_result.set_spf_result(spf_result)
-
-    newrelic.agent.record_custom_event("SpamdCheck", spamd_result.event_data())
-    return spamd_result
