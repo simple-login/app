@@ -20,7 +20,7 @@ class LoginEvent:
 
     def send(self):
         newrelic.agent.record_custom_event(
-            "LoginEvent", {"action": self.action, "source": self.source}
+            "LoginEvent", {"action": self.action.name, "source": self.source.name}
         )
 
 
@@ -42,5 +42,5 @@ class RegisterEvent:
 
     def send(self):
         newrelic.agent.record_custom_event(
-            "RegisterEvent", {"action": self.action, "source": self.source}
+            "RegisterEvent", {"action": self.action.name, "source": self.source.name}
         )
