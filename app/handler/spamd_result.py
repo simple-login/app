@@ -71,9 +71,9 @@ class SpamdResult:
     def event_data(self) -> Dict:
         return {
             "header": "present",
-            "dmarc": self.dmarc,
-            "spf": self.spf,
-            "phase": self.phase,
+            "dmarc": self.dmarc.name,
+            "spf": self.spf.name,
+            "phase": self.phase.name,
         }
 
     @classmethod
