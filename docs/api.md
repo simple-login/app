@@ -231,7 +231,8 @@ Input:
 Output: a json with the following field:
 
 - can_create: boolean. Whether user can create new alias
-- suffixes: list of dictionary with `suffix` and `signed-suffix`. List of alias `suffix` that user can use.
+- suffixes: list of alias suffix that user can use. 
+  Each item is a dictionary with `suffix`, `signed-suffix`, `is_custom`, `is_premium` as keys.
   The `signed-suffix` is necessary to avoid request tampering.
 - prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted
   from `hostname`. If no `hostname`, then the `prefix_suggestion` is empty.
@@ -248,15 +249,21 @@ For ex:
   "suffixes": [
     {
       "signed_suffix": ".cat@d1.test.X6_7OQ.0e9NbZHE_bQvuAapT6NdBml9m6Q",
-      "suffix": ".cat@d1.test"
+      "suffix": ".cat@d1.test",
+      "is_custom": true,
+      "is_premium": false
     },
     {
       "signed_suffix": ".chat@d2.test.X6_7OQ.TTgCrfqPj7UmlY723YsDTHhkess",
-      "suffix": ".chat@d2.test"
+      "suffix": ".chat@d2.test",
+      "is_custom": false,
+      "is_premium": false
     },
     {
       "signed_suffix": ".yeah@sl.local.X6_7OQ.i8XL4xsMsn7dxDEWU8eF-Zap0qo",
-      "suffix": ".yeah@sl.local"
+      "suffix": ".yeah@sl.local",
+      "is_custom": true,
+      "is_premium": false
     }
   ]
 }

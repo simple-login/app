@@ -90,7 +90,9 @@ def options_v5():
         suffixes: [
             {
                 suffix: "suffix",
-                signed_suffix: "signed_suffix"
+                signed_suffix: "signed_suffix",
+                is_custom: true,
+                is_premium: false
             }
         ]
         prefix_suggestion: str
@@ -141,7 +143,12 @@ def options_v5():
 
     # custom domain should be put first
     ret["suffixes"] = [
-        {"suffix": suffix.suffix, "signed_suffix": suffix.signed_suffix}
+        {
+            "suffix": suffix.suffix,
+            "signed_suffix": suffix.signed_suffix,
+            "is_custom": suffix.is_custom,
+            "is_premium": suffix.is_premium,
+        }
         for suffix in suffixes
     ]
 

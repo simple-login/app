@@ -124,6 +124,8 @@ def test_different_scenarios_v5(flask_client):
             suffix_payload["signed_suffix"],
         )
         assert signed_suffix.startswith(suffix)
+        assert "is_custom" in suffix_payload
+        assert "is_premium" in suffix_payload
 
     # <<< with hostname >>>
     r = flask_client.get(
