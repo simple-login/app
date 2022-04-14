@@ -1468,6 +1468,7 @@ def save_envelope_for_debugging(envelope: Envelope, file_name_prefix=None) -> st
 
     return ""
 
+
 def generate_verp_email(
     verp_type: VerpType, object_id: int, sender_domain: Optional[str] = None
 ) -> str:

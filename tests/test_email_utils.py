@@ -802,6 +802,7 @@ def test_generate_verp_email():
     assert info[0] == VerpType.bounce_forward
     assert info[1] == 1
 
+
 def test_add_header_multipart_with_invalid_part():
     msg = load_eml_file("multipart_alternative.eml")
     parts = msg.get_payload() + ["invalid"]
