@@ -699,30 +699,6 @@ def get_mailbox_bounce_info(bounce_report: Message) -> Optional[Message]:
                 return part
 
 
-def get_orig_message_from_hotmail_complaint(msg: Message) -> Optional[Message]:
-    i = 0
-    for part in msg.walk():
-        i += 1
-
-        # 1st part is the container
-        # 2nd part is the empty body
-        # 3rd is original message
-        if i == 3:
-            return part
-
-
-def get_orig_message_from_yahoo_complaint(msg: Message) -> Optional[Message]:
-    i = 0
-    for part in msg.walk():
-        i += 1
-
-        # 1st part is the container
-        # 2nd part is the empty body
-        # 6th is original message
-        if i == 6:
-            return part
-
-
 def get_header_from_bounce(msg: Message, header: str) -> str:
     """using regex to get header value from bounce message
     get_orig_message_from_bounce is better. This should be the last option

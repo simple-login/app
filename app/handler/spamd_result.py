@@ -4,14 +4,8 @@ from typing import Dict, Optional
 import newrelic
 
 from app.email import headers
-from app.models import EnumE
+from app.models import EnumE, Phase
 from email.message import Message
-
-
-class Phase(EnumE):
-    unknown = 0
-    forward = 1
-    reply = 2
 
 
 class DmarcCheckResult(EnumE):

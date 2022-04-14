@@ -235,6 +235,13 @@ class AuditLogActionEnum(EnumE):
     disable_2fa = 5
     logged_as_user = 6
     extend_subscription = 7
+    download_transactional_complaint = 8
+
+
+class Phase(EnumE):
+    unknown = 0
+    forward = 1
+    reply = 2
 
 
 class VerpType(EnumE):
@@ -2967,6 +2974,7 @@ class AdminAuditLog(Base):
             action=AuditLogActionEnum.logged_as_user.value,
             model="User",
             model_id=user_id,
+            data={},
         )
 
     @classmethod
@@ -2988,5 +2996,32 @@ class AdminAuditLog(Base):
             },
         )
 
+    @classmethod
+    def downloaded_transactional_complaint(cls, admin_user_id: int, complaint_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.download_transactional_complaint.value,
+            model="TransactionalComplaint",
+            model_id=complaint_id,
+            data={},
+        )
 
-# endregion
+
+class TransactionalComplaintState(EnumE):
+    new = 0
+    reviewed = 1
+
+
+class TransactionalComplaint(Base, ModelMixin):
+    __tablename__ = "transactional_complaint"
+
+    user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
+    state = sa.Column(sa.Integer, nullable=False)
+    phase = sa.Column(sa.Integer, nullable=False)
+    # Point to the email that has been refused
+    refused_email_id = sa.Column(
+        sa.ForeignKey("refused_email.id", ondelete="cascade"), nullable=True
+    )
+
+    user = orm.relationship(User, foreign_keys=[user_id])
+    refused_email = orm.relationship(RefusedEmail, foreign_keys=[refused_email_id])
