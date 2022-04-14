@@ -140,7 +140,7 @@ def apply_dmarc_policy_for_reply_phase(
         alias_from.user.email,
         f"Attempt to send an email to your contact {contact_recipient.email} from {envelope.mail_from}",
         render(
-            "transactional/spoof-reply.txt",
+            "transactional/spoof-reply.txt.jinja2",
             contact=contact_recipient,
             alias=alias_from,
             sender=envelope.mail_from,

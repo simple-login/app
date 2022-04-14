@@ -1,8 +1,0 @@
-{% extends "base.txt.jinja2" %}
-
-{% block content %}
-An attempt to send a fake email to {{ contact.email  }} from your alias {{ alias.email }} using {{ sender }} has been blocked.
-
-As a measure to protect against email spoofing, we have blocked an attempt to send an email from your alias {{ alias.email }} using {{ sender }}.
-{% endblock %}
-
