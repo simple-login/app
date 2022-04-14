@@ -2,6 +2,7 @@ from flask import url_for
 
 from app.db import Session
 from app.models import User, ApiKey, AliasUsedOn, Alias
+from tests.utils import login
 
 
 def test_different_scenarios_v4(flask_client):
@@ -98,18 +99,11 @@ def test_different_scenarios_v4_2(flask_client):
 
 
 def test_different_scenarios_v5(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user = login(flask_client)
 
     # <<< without hostname >>>
     r = flask_client.get(
-        "/api/v5/alias/options", headers={"Authentication": api_key.code}
+        "/api/v5/alias/options"
     )
 
     assert r.status_code == 200
@@ -129,15 +123,13 @@ def test_different_scenarios_v5(flask_client):
 
     # <<< with hostname >>>
     r = flask_client.get(
-        "/api/v5/alias/options?hostname=www.test.com",
-        headers={"Authentication": api_key.code},
+        "/api/v5/alias/options?hostname=www.test.com"
     )
     assert r.json["prefix_suggestion"] == "test"
 
     # <<< with hostname with 2 parts TLD, for example wwww.numberoneshoes.co.nz >>>
     r = flask_client.get(
-        "/api/v5/alias/options?hostname=wwww.numberoneshoes.co.nz",
-        headers={"Authentication": api_key.code},
+        "/api/v5/alias/options?hostname=wwww.numberoneshoes.co.nz"
     )
     assert r.json["prefix_suggestion"] == "numberoneshoes"
 
@@ -150,8 +142,7 @@ def test_different_scenarios_v5(flask_client):
     Session.commit()
 
     r = flask_client.get(
-        url_for("api.options_v4", hostname="www.test.com"),
-        headers={"Authentication": api_key.code},
+        url_for("api.options_v4", hostname="www.test.com")
     )
     assert r.json["recommendation"]["alias"] == alias.email
     assert r.json["recommendation"]["hostname"] == "www.test.com"
