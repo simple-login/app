@@ -102,9 +102,7 @@ def test_different_scenarios_v5(flask_client):
     user = login(flask_client)
 
     # <<< without hostname >>>
-    r = flask_client.get(
-        "/api/v5/alias/options"
-    )
+    r = flask_client.get("/api/v5/alias/options")
 
     assert r.status_code == 200
 
@@ -122,15 +120,11 @@ def test_different_scenarios_v5(flask_client):
         assert "is_premium" in suffix_payload
 
     # <<< with hostname >>>
-    r = flask_client.get(
-        "/api/v5/alias/options?hostname=www.test.com"
-    )
+    r = flask_client.get("/api/v5/alias/options?hostname=www.test.com")
     assert r.json["prefix_suggestion"] == "test"
 
     # <<< with hostname with 2 parts TLD, for example wwww.numberoneshoes.co.nz >>>
-    r = flask_client.get(
-        "/api/v5/alias/options?hostname=wwww.numberoneshoes.co.nz"
-    )
+    r = flask_client.get("/api/v5/alias/options?hostname=wwww.numberoneshoes.co.nz")
     assert r.json["prefix_suggestion"] == "numberoneshoes"
 
     # <<< with recommendation >>>
@@ -141,8 +135,6 @@ def test_different_scenarios_v5(flask_client):
     )
     Session.commit()
 
-    r = flask_client.get(
-        url_for("api.options_v4", hostname="www.test.com")
-    )
+    r = flask_client.get(url_for("api.options_v4", hostname="www.test.com"))
     assert r.json["recommendation"]["alias"] == alias.email
     assert r.json["recommendation"]["hostname"] == "www.test.com"
