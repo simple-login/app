@@ -46,7 +46,7 @@ More info on https://simplelogin.io/docs/getting-started/anti-phishing/
             """,
             f"""
         <p style="color:red">
-            This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content. 
+            This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content.
             More info on <a href="https://simplelogin.io/docs/getting-started/anti-phishing/">anti-phishing measure</a>
         </p>
         """,
