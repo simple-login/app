@@ -494,7 +494,8 @@
       <div class="card-body">
         <div class="card-title">Disabled alias/Blocked contact</div>
         <div class="mb-3">
-          When an email is sent to a <b>disabled</b> alias or sent from a <b>blocked</b> contact, you can decide what response the sender should see. <br>
+          When an email is sent to a <b>disabled</b> alias or sent from a <b>blocked</b> contact, you can decide what
+          response the sender should see. <br>
           <b>Ignore</b> means they will see the message as delivered, but SimpleLogin won't actually forward it to you.
           This is the default option as you can start receiving the emails again
           by re-enabling the alias or unblocking a contact.<br>
@@ -504,14 +505,16 @@
           <input type="hidden" name="form-name" value="change-blocked-behaviour">
 
           <select class="form-control mr-sm-2" name="blocked-behaviour">
-              <option value="{{ BlockBehaviourEnum.return_2xx.value }}"
-                      {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_2xx.value %} selected="selected" {% endif %}>
-                  Ignore (the sender will see the email as delivered, but you won't receive anything).
-              </option>
-              <option value="{{ BlockBehaviourEnum.return_5xx.value }}"
-                      {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_5xx.value %} selected="selected" {% endif %}>
-                  Reject (the sender will be told that your alias does not exist).
-              </option>
+            <option value="{{ BlockBehaviourEnum.return_2xx.value }}"
+                {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_2xx.value %}
+                    selected="selected" {% endif %}>
+              Ignore (the sender will see the email as delivered, but you won't receive anything).
+            </option>
+            <option value="{{ BlockBehaviourEnum.return_5xx.value }}"
+                {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_5xx.value %}
+                    selected="selected" {% endif %}>
+              Reject (the sender will be told that your alias does not exist).
+            </option>
 
           </select>
 
@@ -525,7 +528,8 @@
         <div class="card-title">Include original sender in email headers
         </div>
         <div class="mb-3">
-          SimpleLogin forwards emails to your mailbox from the <b>reverse-alias</b> and not from the <b>original</b> sender address. <br>
+          SimpleLogin forwards emails to your mailbox from the <b>reverse-alias</b> and not from the <b>original</b>
+          sender address. <br>
           If this option is enabled, the original sender addresses is stored in the email header <b>X-SimpleLogin-Envelope-From</b>.
           You can choose to display this header in your email client. <br>
           As email headers aren't encrypted, your mailbox service can know the sender address via this header.

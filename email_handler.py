@@ -86,10 +86,16 @@ from app.config import (
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
-    DMARC_CHECK_ENABLED,
-    ALERT_QUARANTINE_DMARC,
 )
 from app.db import Session
+from app.handler.dmarc import (
+    apply_dmarc_policy_for_reply_phase,
+    apply_dmarc_policy_for_forward_phase,
+)
+from app.handler.spamd_result import (
+    SpamdResult,
+    SPFCheckResult,
+)
 from app.email import status, headers
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
@@ -129,9 +135,9 @@ from app.email_utils import (
     get_orig_message_from_yahoo_complaint,
     get_mailbox_bounce_info,
     save_email_for_debugging,
-    get_spamd_result,
-    generate_verp_email,
+    save_envelope_for_debugging,
     get_verp_info_from_email,
+    generate_verp_email,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -156,8 +162,6 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     Notification,
-    DmarcCheckResult,
-    SPFCheckResult,
     VerpType,
 )
 from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
@@ -283,7 +287,7 @@ def get_or_create_reply_to_contact(
         return contact
     else:
         LOG.d(
-            "create contact %s for alias %s via reply-to header",
+            "create contact %s for alias %s via reply-to header %s",
             contact_address,
             alias,
             reply_to_header,
@@ -543,99 +547,6 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     )
 
 
-def apply_dmarc_policy(
-    alias: Alias, contact: Contact, envelope: Envelope, msg: Message
-) -> Optional[str]:
-    spam_result = get_spamd_result(msg)
-    if not DMARC_CHECK_ENABLED or not spam_result:
-        return None
-
-    from_header = get_header_unicode(msg[headers.FROM])
-    # todo: remove when soft_fail email is put into quarantine
-    if spam_result.dmarc == DmarcCheckResult.soft_fail:
-        LOG.w(
-            f"dmarc soft_fail from contact {contact.email} to alias {alias.email}."
-            f"mail_from:{envelope.mail_from}, from_header: {from_header}"
-        )
-        return None
-    if spam_result.dmarc in (
-        DmarcCheckResult.quarantine,
-        DmarcCheckResult.reject,
-        # todo: disable soft_fail for now
-        # DmarcCheckResult.soft_fail,
-    ):
-        LOG.w(
-            f"put email from {contact} to {alias} to quarantine. {spam_result.event_data()}, "
-            f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
-        )
-        email_log = quarantine_dmarc_failed_email(alias, contact, envelope, msg)
-        Notification.create(
-            user_id=alias.user_id,
-            title=f"{alias.email} has a new mail in quarantine",
-            message=Notification.render(
-                "notification/message-quarantine.html", alias=alias
-            ),
-            commit=True,
-        )
-        user = alias.user
-        send_email_with_rate_control(
-            user,
-            ALERT_QUARANTINE_DMARC,
-            user.email,
-            f"An email sent to {alias.email} has been quarantined",
-            render(
-                "transactional/message-quarantine-dmarc.txt.jinja2",
-                from_header=from_header,
-                alias=alias,
-                refused_email_url=email_log.get_dashboard_url(),
-            ),
-            render(
-                "transactional/message-quarantine-dmarc.html",
-                from_header=from_header,
-                alias=alias,
-                refused_email_url=email_log.get_dashboard_url(),
-            ),
-            max_nb_alert=10,
-            ignore_smtp_error=True,
-        )
-        return status.E215
-    return None
-
-
-def quarantine_dmarc_failed_email(alias, contact, envelope, msg) -> EmailLog:
-    add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
-    msg[headers.SL_ENVELOPE_TO] = alias.email
-    msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
-    add_or_replace_header(msg, "From", contact.new_addr())
-    # replace CC & To emails by reverse-alias for all emails that are not alias
-    try:
-        replace_header_when_forward(msg, alias, "Cc")
-        replace_header_when_forward(msg, alias, "To")
-    except CannotCreateContactForReverseAlias:
-        Session.commit()
-        raise
-
-    random_name = str(uuid.uuid4())
-    s3_report_path = f"refused-emails/full-{random_name}.eml"
-    s3.upload_email_from_bytesio(
-        s3_report_path, BytesIO(to_bytes(msg)), f"full-{random_name}"
-    )
-    refused_email = RefusedEmail.create(
-        full_report_path=s3_report_path, user_id=alias.user_id, flush=True
-    )
-    return EmailLog.create(
-        user_id=alias.user_id,
-        mailbox_id=alias.mailbox_id,
-        contact_id=contact.id,
-        alias_id=alias.id,
-        message_id=str(msg[headers.MESSAGE_ID]),
-        refused_email_id=refused_email.id,
-        is_spam=True,
-        blocked=True,
-        commit=True,
-    )
-
-
 def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str]]:
     """return an array of SMTP status (is_success, smtp_status)
     is_success indicates whether an email has been delivered and
@@ -717,7 +628,9 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
-    dmarc_delivery_status = apply_dmarc_policy(alias, contact, envelope, msg)
+    msg, dmarc_delivery_status = apply_dmarc_policy_for_forward_phase(
+        alias, contact, envelope, msg
+    )
     if dmarc_delivery_status is not None:
         return [(False, dmarc_delivery_status)]
 
@@ -1031,6 +944,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     Return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
     """
+
     reply_email = rcpt_to
 
     # reply_email must end with EMAIL_DOMAIN
@@ -1066,7 +980,14 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             alias,
             contact,
         )
-        return [(False, status.E504)]
+        return False, status.E504
+
+    # Check if we need to reject or quarantine based on dmarc
+    dmarc_delivery_status = apply_dmarc_policy_for_reply_phase(
+        alias, contact, envelope, msg
+    )
+    if dmarc_delivery_status is not None:
+        return False, dmarc_delivery_status
 
     # Anti-spoofing
     mailbox = get_mailbox_from_mail_from(mail_from, alias)
@@ -2069,7 +1990,7 @@ def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
         return status.E510
 
     if mail_from != user.email:
-        LOG.e("Unauthorized mail_from %s %s", user, mail_from)
+        LOG.w("Unauthorized mail_from %s %s", user, mail_from)
         return status.E511
 
     user.notification = False
@@ -2211,6 +2132,11 @@ def handle(envelope: Envelope, msg: Message) -> str:
     rcpt_tos = [sanitize_email(rcpt_to) for rcpt_to in envelope.rcpt_tos]
     envelope.mail_from = mail_from
     envelope.rcpt_tos = rcpt_tos
+
+    # some emails don't have this header, set the default value (7bit) in this case
+    if headers.CONTENT_TRANSFER_ENCODING not in msg:
+        LOG.i("Set CONTENT_TRANSFER_ENCODING")
+        msg[headers.CONTENT_TRANSFER_ENCODING] = "7bit"
 
     postfix_queue_id = get_queue_id(msg)
     if postfix_queue_id:
@@ -2362,10 +2288,10 @@ def handle(envelope: Envelope, msg: Message) -> str:
         email_log = EmailLog.get(email_log_id)
         alias = Alias.get_by(email=rcpt_tos[0])
         LOG.w(
-            "iCloud bounces %s %s msg=%s",
+            "iCloud bounces %s %s, saved to%s",
             email_log,
             alias,
-            msg.as_string(),
+            save_email_for_debugging(msg, file_name_prefix="icloud_bounce_"),
         )
         return handle_bounce(envelope, email_log, msg)
 
@@ -2554,7 +2480,7 @@ class MailHandler:
                 msg[headers.TO],
             )
             return status.E524
-        except (VERPReply, VERPForward) as e:
+        except (VERPReply, VERPForward, VERPTransactional) as e:
             LOG.w(
                 "email handling fail with error:%s "
                 "mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s",
@@ -2574,8 +2500,8 @@ class MailHandler:
                 envelope.rcpt_tos,
                 msg[headers.FROM],
                 msg[headers.TO],
-                save_email_for_debugging(
-                    msg, file_name_prefix=e.__class__.__name__
+                save_envelope_for_debugging(
+                    envelope, file_name_prefix=e.__class__.__name__
                 ),  # todo: remove
             )
             return status.E404
@@ -2602,9 +2528,9 @@ class MailHandler:
             return_status = handle(envelope, msg)
             elapsed = time.time() - start
             # Only bounce messages if the return-path passes the spf check. Otherwise black-hole it.
+            spamd_result = SpamdResult.extract_from_headers(msg)
             if return_status[0] == "5":
-                spamd_result = get_spamd_result(msg)
-                if spamd_result and get_spamd_result(msg).spf in (
+                if spamd_result and spamd_result.spf in (
                     SPFCheckResult.fail,
                     SPFCheckResult.soft_fail,
                 ):
@@ -2620,6 +2546,8 @@ class MailHandler:
                 elapsed,
                 return_status,
             )
+
+            SpamdResult.send_to_new_relic(msg)
             newrelic.agent.record_custom_metric("Custom/email_handler_time", elapsed)
             newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
             return return_status

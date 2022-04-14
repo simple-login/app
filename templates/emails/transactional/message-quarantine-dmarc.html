@@ -8,8 +8,8 @@
   {% endcall %}
 
   {% call text() %}
-    An email from {{ from_header }} to {{ alias.email }} is put into Quarantine as it fails DMARC check.
-    DMARC is an email authentication protocol designed for detecting phishing.
+    An email from {{ from_header }} to {{ alias.email }} is put into Quarantine as it fails
+    <a href="https://simplelogin.io/docs/getting-started/anti-phishing/">anti-phishing measure</a> check.
   {% endcall %}
 
   {{ render_button("View the original email", refused_email_url) }}

@@ -8,6 +8,9 @@ import random
 import time
 import uuid
 from copy import deepcopy
+
+from aiosmtpd.smtp import Envelope
+
 from email import policy, message_from_bytes, message_from_string
 from email.header import decode_header, Header
 from email.message import Message, EmailMessage
@@ -74,10 +77,7 @@ from app.models import (
     TransactionalEmail,
     IgnoreBounceSender,
     InvalidMailboxDomain,
-    DmarcCheckResult,
     VerpType,
-    SpamdResult,
-    SPFCheckResult,
 )
 from app.utils import (
     random_string,
@@ -972,7 +972,10 @@ def add_header(msg: Message, text_header, html_header) -> Message:
     elif content_type in ("multipart/alternative", "multipart/related"):
         new_parts = []
         for part in msg.get_payload():
-            new_parts.append(add_header(part, text_header, html_header))
+            if isinstance(part, Message):
+                new_parts.append(add_header(part, text_header, html_header))
+            else:
+                new_parts.append(part)
         clone_msg = copy(msg)
         clone_msg.set_payload(new_parts)
         return clone_msg
@@ -1437,7 +1440,7 @@ def save_email_for_debugging(msg: Message, file_name_prefix=None) -> str:
     if TEMP_DIR:
         file_name = str(uuid.uuid4()) + ".eml"
         if file_name_prefix:
-            file_name = file_name_prefix + file_name
+            file_name = "{}-{}".format(file_name_prefix, file_name)
 
         with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
             f.write(msg.as_bytes())
@@ -1448,30 +1451,22 @@ def save_email_for_debugging(msg: Message, file_name_prefix=None) -> str:
     return ""
 
 
-def get_spamd_result(msg: Message) -> Optional[SpamdResult]:
-    spam_result_header = msg.get_all(headers.SPAMD_RESULT)
-    if not spam_result_header:
-        newrelic.agent.record_custom_event("SpamdCheck", {"header": "missing"})
-        return None
+def save_envelope_for_debugging(envelope: Envelope, file_name_prefix=None) -> str:
+    """Save envelope for debugging to temporary location
+    Return the file path
+    """
+    if TEMP_DIR:
+        file_name = str(uuid.uuid4()) + ".eml"
+        if file_name_prefix:
+            file_name = "{}-{}".format(file_name_prefix, file_name)
 
-    spam_entries = [entry.strip() for entry in str(spam_result_header[-1]).split("\n")]
-    for entry_pos in range(len(spam_entries)):
-        sep = spam_entries[entry_pos].find("(")
-        if sep > -1:
-            spam_entries[entry_pos] = spam_entries[entry_pos][:sep]
+        with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
+            f.write(envelope.original_content)
 
-    spamd_result = SpamdResult()
+        LOG.d("envelope saved to %s", file_name)
+        return file_name
 
-    for header_value, dmarc_result in DmarcCheckResult.get_string_dict().items():
-        if header_value in spam_entries:
-            spamd_result.set_dmarc_result(dmarc_result)
-    for header_value, spf_result in SPFCheckResult.get_string_dict().items():
-        if header_value in spam_entries:
-            spamd_result.set_spf_result(spf_result)
-
-    newrelic.agent.record_custom_event("SpamdCheck", spamd_result.event_data())
-    return spamd_result
-
+    return ""
 
 def generate_verp_email(
     verp_type: VerpType, object_id: int, sender_domain: Optional[str] = None
