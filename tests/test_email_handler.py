@@ -187,3 +187,15 @@ def test_dmarc_reply_quarantine(flask_client, dmarc_result):
         user_id=user.id, alert_type=ALERT_DMARC_FAILED_REPLY_PHASE
     ).all()
     assert len(alerts) == 1
+
+
+def test_add_alias_to_header_if_needed():
+    msg = EmailMessage()
+    create_random_user()
+    alias = Alias.first()
+
+    assert msg[headers.TO] is None
+
+    email_handler.add_alias_to_header_if_needed(msg, alias)
+
+    assert msg[headers.TO] == alias.email
