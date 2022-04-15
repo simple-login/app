@@ -1,18 +1,12 @@
 from flask import url_for
 
 from app.db import Session
-from app.models import User, ApiKey, Notification
+from app.models import Notification
+from tests.api.utils import get_new_user_and_api_key
 
 
 def test_get_notifications(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     # create some notifications
     Notification.create(user_id=user.id, message="Test message 1")
@@ -44,14 +38,7 @@ def test_get_notifications(flask_client):
 
 
 def test_mark_notification_as_read(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     Notification.create(id=1, user_id=user.id, message="Test message 1")
     Session.commit()

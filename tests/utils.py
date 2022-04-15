@@ -11,20 +11,32 @@ from flask import url_for
 
 from app.models import User
 
+# keep track of the number of user
+_nb_user = 0
 
-def login(flask_client) -> User:
-    # create user, user is activated
+
+def create_new_user() -> User:
+    global _nb_user
+    _nb_user += 1
+
+    # new user has a different email address
     user = User.create(
-        email="a@b.c",
+        email=f"{_nb_user}@mailbox.test",
         password="password",
         name="Test User",
         activated=True,
-        commit=True,
+        flush=True,
     )
+
+    return user
+
+
+def login(flask_client) -> User:
+    user = create_new_user()
 
     r = flask_client.post(
         url_for("auth.login"),
-        data={"email": "a@b.c", "password": "password"},
+        data={"email": user.email, "password": "password"},
         follow_redirects=True,
     )
 
@@ -36,17 +48,6 @@ def login(flask_client) -> User:
 
 def random_token(length: int = 10) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
-
-
-def create_random_user() -> User:
-    random_email = "{}@{}.com".format(random_token(), random_token())
-    return User.create(
-        email=random_email,
-        password="password",
-        name="Test {}".format(random_token()),
-        activated=True,
-        commit=True,
-    )
 
 
 def pretty(d):

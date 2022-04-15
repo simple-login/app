@@ -38,7 +38,6 @@ from app.email_utils import (
     is_invalid_mailbox_domain,
 )
 from app.models import (
-    User,
     CustomDomain,
     Alias,
     Contact,
@@ -48,7 +47,7 @@ from app.models import (
 )
 
 # flake8: noqa: E101, W191
-from tests.utils import login, load_eml_file
+from tests.utils import login, load_eml_file, create_new_user
 
 
 def test_get_email_domain_part():
@@ -74,13 +73,7 @@ def test_can_be_used_as_personal_email(flask_client):
     assert not email_can_be_used_as_mailbox("hey@d1.test")
 
     # custom domain
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
     CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
     assert not email_can_be_used_as_mailbox("hey@ab.cd")
 
@@ -153,10 +146,7 @@ def test_parse_full_address():
 
 
 def test_send_email_with_rate_control(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user = create_new_user()
 
     for _ in range(MAX_ALERT_24H):
         assert send_email_with_rate_control(
@@ -496,12 +486,7 @@ def test_to_bytes():
 
 
 def test_generate_reply_email(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-    )
+    user = create_new_user()
     reply_email = generate_reply_email("test@example.org", user)
     assert reply_email.endswith(EMAIL_DOMAIN)
 
@@ -511,13 +496,9 @@ def test_generate_reply_email(flask_client):
 
 def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
     # user enables include_sender_in_reverse_alias
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        include_sender_in_reverse_alias=True,
-    )
+    user = create_new_user()
+    user.include_sender_in_reverse_alias = True
+
     reply_email = generate_reply_email("test@example.org", user)
     assert reply_email.startswith("test.at.example.org")
     assert reply_email.endswith(EMAIL_DOMAIN)
@@ -600,13 +581,7 @@ def test_decode_text():
 
 
 def test_should_disable(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        include_sender_in_reverse_alias=True,
-    )
+    user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
 

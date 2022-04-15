@@ -1,19 +1,12 @@
 from flask import url_for
 
-from app.db import Session
-from app.models import User, ApiKey
+from app.models import User
+from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login
 
 
 def test_user_in_trial(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     r = flask_client.get(
         url_for("api.user_info"), headers={"Authentication": api_key.code}
@@ -23,7 +16,7 @@ def test_user_in_trial(flask_client):
     assert r.json == {
         "is_premium": True,
         "name": "Test User",
-        "email": "a@b.c",
+        "email": user.email,
         "in_trial": True,
         "profile_picture_url": None,
     }
@@ -40,16 +33,7 @@ def test_wrong_api_key(flask_client):
 
 
 def test_create_api_key(flask_client):
-    # create user, user is activated
-    User.create(email="a@b.c", password="password", name="Test User", activated=True)
-    Session.commit()
-
-    # login user
-    flask_client.post(
-        url_for("auth.login"),
-        data={"email": "a@b.c", "password": "password"},
-        follow_redirects=True,
-    )
+    login(flask_client)
 
     # create api key
     r = flask_client.post(url_for("api.create_api_key"), json={"device": "Test device"})
@@ -59,16 +43,7 @@ def test_create_api_key(flask_client):
 
 
 def test_logout(flask_client):
-    # create user, user is activated
-    User.create(email="a@b.c", password="password", name="Test User", activated=True)
-    Session.commit()
-
-    # login user
-    flask_client.post(
-        url_for("auth.login"),
-        data={"email": "a@b.c", "password": "password"},
-        follow_redirects=True,
-    )
+    login(flask_client)
 
     # logout
     r = flask_client.get(

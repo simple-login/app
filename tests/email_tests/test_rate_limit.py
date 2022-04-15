@@ -9,14 +9,12 @@ from app.email.rate_limit import (
     rate_limited_for_mailbox,
     rate_limited_reply_phase,
 )
-from app.models import User, Alias, EmailLog, Contact
+from app.models import Alias, EmailLog, Contact
+from tests.utils import create_new_user
 
 
 def test_rate_limited_forward_phase_for_alias(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user = create_new_user()
 
     # no rate limiting for a new alias
     alias = Alias.create_new_random(user)
@@ -43,10 +41,7 @@ def test_rate_limited_forward_phase_for_alias(flask_client):
 
 
 def test_rate_limited_forward_phase_for_mailbox(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user = create_new_user()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -88,10 +83,7 @@ def test_rate_limited_reply_phase(flask_client):
     # no rate limiting when reply_email does not exist
     assert not rate_limited_reply_phase("not-exist-reply@alias.com")
 
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user = create_new_user()
 
     alias = Alias.create_new_random(user)
     Session.commit()
