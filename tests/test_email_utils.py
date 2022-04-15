@@ -500,18 +500,18 @@ def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
     user.include_sender_in_reverse_alias = True
 
     reply_email = generate_reply_email("test@example.org", user)
-    assert reply_email.startswith("test.at.example.org")
+    assert reply_email.startswith("test_at_example_org")
     assert reply_email.endswith(EMAIL_DOMAIN)
 
     reply_email = generate_reply_email("", user)
     assert reply_email.endswith(EMAIL_DOMAIN)
 
     reply_email = generate_reply_email("👌汉字@example.org", user)
-    assert reply_email.startswith("yizi.at.example.org")
+    assert reply_email.startswith("yizi_at_example_org")
 
     # make sure reply_email only contain lowercase
     reply_email = generate_reply_email("TEST@example.org", user)
-    assert reply_email.startswith("test.at.example.org")
+    assert reply_email.startswith("test_at_example_org")
 
 
 def test_normalize_reply_email(flask_client):

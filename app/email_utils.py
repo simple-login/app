@@ -1078,7 +1078,9 @@ def generate_reply_email(contact_email: str, user: User) -> str:
         contact_email = convert_to_id(contact_email)
         contact_email = sanitize_email(contact_email)
         contact_email = contact_email[:45]
-        contact_email = contact_email.replace("@", ".at.")
+        # use _ instead of . to avoid AC_FROM_MANY_DOTS SpamAssassin rule
+        contact_email = contact_email.replace("@", "_at_")
+        contact_email = contact_email.replace(".", "_")
         contact_email = convert_to_alphanumeric(contact_email)
 
     # not use while to avoid infinite loop
