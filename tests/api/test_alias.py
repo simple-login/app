@@ -4,6 +4,7 @@ from app.config import PAGE_LIMIT
 from app.db import Session
 from app.email_utils import is_reverse_alias
 from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
+from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login
 
 
@@ -209,14 +210,7 @@ def test_delete_alias(flask_client):
 
 
 def test_toggle_alias(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -231,14 +225,7 @@ def test_toggle_alias(flask_client):
 
 
 def test_alias_activities(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -292,14 +279,7 @@ def test_alias_activities(flask_client):
 
 
 def test_update_alias(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -314,16 +294,9 @@ def test_update_alias(flask_client):
 
 
 def test_update_alias_mailbox(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     mb = Mailbox.create(user_id=user.id, email="ab@cd.com", verified=True)
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -346,14 +319,7 @@ def test_update_alias_mailbox(flask_client):
 
 
 def test_update_alias_name(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -379,17 +345,10 @@ def test_update_alias_name(flask_client):
 
 
 def test_update_alias_mailboxes(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     mb1 = Mailbox.create(user_id=user.id, email="ab1@cd.com", verified=True)
     mb2 = Mailbox.create(user_id=user.id, email="ab2@cd.com", verified=True)
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -416,14 +375,7 @@ def test_update_alias_mailboxes(flask_client):
 
 
 def test_update_disable_pgp(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -564,14 +516,7 @@ def test_create_contact_route_invalid_contact_email(flask_client):
 
 
 def test_delete_contact(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -594,14 +539,7 @@ def test_delete_contact(flask_client):
 
 
 def test_get_alias(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     # create more aliases than PAGE_LIMIT
     alias = Alias.create_new_random(user)

@@ -117,7 +117,7 @@ def test_authorize_page_login_user(flask_client):
 
     html = r.get_data(as_text=True)
     assert r.status_code == 200
-    assert "a@b.c (Personal Email)" in html
+    assert f"{user.email} (Personal Email)" in html
 
 
 def test_authorize_code_flow_no_openid_scope(flask_client):

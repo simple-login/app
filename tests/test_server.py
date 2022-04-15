@@ -1,8 +1,9 @@
 import arrow
 
 from app.db import Session
-from app.models import User, CoinbaseSubscription
+from app.models import CoinbaseSubscription
 from server import handle_coinbase_event
+from tests.utils import create_new_user
 
 
 def test_redirect_login_page(flask_client):
@@ -19,13 +20,7 @@ def test_coinbase_webhook(flask_client):
 
 
 def test_handle_coinbase_event_new_subscription(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
     handle_coinbase_event(
         {"data": {"code": "AAAAAA", "metadata": {"user_id": str(user.id)}}}
     )
@@ -37,12 +32,7 @@ def test_handle_coinbase_event_new_subscription(flask_client):
 
 
 def test_handle_coinbase_event_extend_subscription(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-    )
+    user = create_new_user()
     user.trial_end = None
     Session.commit()
 

@@ -10,7 +10,6 @@ from app.config import BOUNCE_EMAIL, EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHAS
 from app.db import Session
 from app.email import headers, status
 from app.models import (
-    User,
     Alias,
     AuthorizedAddress,
     IgnoredEmail,
@@ -24,17 +23,11 @@ from email_handler import (
     should_ignore,
     is_automatic_out_of_office,
 )
-from tests.utils import load_eml_file, create_random_user
+from tests.utils import load_eml_file, create_new_user
 
 
 def test_get_mailbox_from_mail_from(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
     alias = Alias.create(
         user_id=user.id,
         email="first@d1.test",
@@ -42,8 +35,8 @@ def test_get_mailbox_from_mail_from(flask_client):
         commit=True,
     )
 
-    mb = get_mailbox_from_mail_from("a@b.c", alias)
-    assert mb.email == "a@b.c"
+    mb = get_mailbox_from_mail_from(user.email, alias)
+    assert mb.email == user.email
 
     mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
     assert mb is None
@@ -56,7 +49,7 @@ def test_get_mailbox_from_mail_from(flask_client):
         commit=True,
     )
     mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
-    assert mb.email == "a@b.c"
+    assert mb.email == user.email
 
 
 def test_should_ignore(flask_client):
@@ -82,7 +75,7 @@ def test_is_automatic_out_of_office():
 
 
 def test_dmarc_forward_quarantine(flask_client):
-    user = create_random_user()
+    user = create_new_user()
     alias = Alias.create_new_random(user)
     msg = load_eml_file("dmarc_quarantine.eml", {"alias_email": alias.email})
     envelope = Envelope()
@@ -105,7 +98,7 @@ def test_dmarc_forward_quarantine(flask_client):
 
 
 def test_gmail_dmarc_softfail(flask_client):
-    user = create_random_user()
+    user = create_new_user()
     alias = Alias.create_new_random(user)
     msg = load_eml_file("dmarc_gmail_softfail.eml", {"alias_email": alias.email})
     envelope = Envelope()
@@ -119,7 +112,7 @@ def test_gmail_dmarc_softfail(flask_client):
 
 
 def test_prevent_5xx_from_spf(flask_client):
-    user = create_random_user()
+    user = create_new_user()
     alias = Alias.create_new_random(user)
     msg = load_eml_file(
         "5xx_overwrite_spf.eml",
@@ -133,7 +126,7 @@ def test_prevent_5xx_from_spf(flask_client):
 
 
 def test_preserve_5xx_with_valid_spf(flask_client):
-    user = create_random_user()
+    user = create_new_user()
     alias = Alias.create_new_random(user)
     msg = load_eml_file(
         "5xx_overwrite_spf.eml",
@@ -147,7 +140,7 @@ def test_preserve_5xx_with_valid_spf(flask_client):
 
 
 def test_preserve_5xx_with_no_header(flask_client):
-    user = create_random_user()
+    user = create_new_user()
     alias = Alias.create_new_random(user)
     msg = load_eml_file(
         "no_spamd_header.eml",
@@ -166,7 +159,7 @@ def generate_dmarc_result() -> List:
 
 @pytest.mark.parametrize("dmarc_result", generate_dmarc_result())
 def test_dmarc_reply_quarantine(flask_client, dmarc_result):
-    user = create_random_user()
+    user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
     contact = Contact.create(

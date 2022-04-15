@@ -7,14 +7,13 @@ from app.db import Session
 from app.email_utils import parse_full_address
 from app.models import (
     generate_email,
-    User,
     Alias,
     Contact,
     Mailbox,
     SenderFormatEnum,
     EnumE,
 )
-from tests.utils import login
+from tests.utils import login, create_new_user
 
 
 def test_generate_email(flask_client):
@@ -29,27 +28,15 @@ def test_generate_email(flask_client):
 
 
 def test_profile_picture_url(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
     assert user.profile_picture_url() == "http://sl.test/static/default-avatar.png"
 
 
 def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
     # make sure user is not in trial
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        trial_end=None,
-        commit=True,
-    )
+    user = create_new_user()
+    user.trial_end = None
 
     # make sure user runs out of quota to create new email
     for _ in range(MAX_NB_EMAIL_FREE_PLAN):
@@ -67,26 +54,14 @@ def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
 
 
 def test_alias_create_random(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
     alias = Alias.create_new_random(user)
     assert alias.email.endswith(EMAIL_DOMAIN)
 
 
 def test_website_send_to(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -230,13 +205,7 @@ def test_new_addr_unicode(flask_client):
 
 
 def test_mailbox_delete(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
     m1 = Mailbox.create(
         user_id=user.id, email="m1@example.com", verified=True, commit=True

@@ -1,19 +1,13 @@
 from flask import url_for
 
 from app.db import Session
-from app.models import User, ApiKey, AliasUsedOn, Alias
+from app.models import AliasUsedOn, Alias
+from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login
 
 
 def test_different_scenarios_v4(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     # <<< without hostname >>>
     r = flask_client.get(
@@ -51,14 +45,7 @@ def test_different_scenarios_v4(flask_client):
 
 
 def test_different_scenarios_v4_2(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     # <<< without hostname >>>
     r = flask_client.get(

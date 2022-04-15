@@ -1,16 +1,11 @@
 from app.alias_utils import delete_alias, check_alias_prefix
 from app.db import Session
-from app.models import User, Alias, DeletedAlias
+from app.models import Alias, DeletedAlias
+from tests.utils import create_new_user
 
 
 def test_delete_alias(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
     alias = Alias.create(
         user_id=user.id,
         email="first@d1.test",
@@ -26,13 +21,7 @@ def test_delete_alias(flask_client):
 
 def test_delete_alias_already_in_trash(flask_client):
     """delete an alias that's already in alias trash"""
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
     alias = Alias.create(
         user_id=user.id,
         email="first@d1.test",
