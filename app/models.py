@@ -2577,7 +2577,6 @@ class AliasMailbox(Base, ModelMixin):
 
 class SMTPCredentials(Base, ModelMixin, PasswordOracle):
     __tablename__ = "SMTP_credentials"
-    __table_args__ = (sa.UniqueConstraint("alias_id", name="uq_alias"),)
 
     alias_id = sa.Column(
         sa.ForeignKey(Alias.id, ondelete="cascade"), unique=True, nullable=False, index=True
