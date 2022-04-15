@@ -191,7 +191,7 @@ def test_dmarc_reply_quarantine(flask_client, dmarc_result):
 
 def test_add_alias_to_header_if_needed():
     msg = EmailMessage()
-    create_random_user()
+    create_new_user()
     alias = Alias.first()
 
     assert msg[headers.TO] is None
