@@ -1467,7 +1467,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             user,
             ALERT_BOUNCE_EMAIL,
             user.email,
-            f"Email from {contact.website_email} to {alias.email} cannot be delivered to your mailbox",
+            f"An email sent to {alias.email} cannot be delivered to your mailbox",
             render(
                 "transactional/bounce/bounced-email.txt.jinja2",
                 alias=alias,
