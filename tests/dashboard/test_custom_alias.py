@@ -19,7 +19,7 @@ from app.models import (
     SLDomain,
 )
 from app.utils import random_word
-from tests.utils import login
+from tests.utils import login, random_domain
 
 
 def test_add_alias_success(flask_client):
@@ -258,14 +258,15 @@ def test_add_alias_in_global_trash(flask_client):
 def test_add_alias_in_custom_domain_trash(flask_client):
     user = login(flask_client)
 
+    domain = random_domain()
     custom_domain = CustomDomain.create(
-        user_id=user.id, domain="ab.cd", ownership_verified=True, commit=True
+        user_id=user.id, domain=domain, ownership_verified=True, commit=True
     )
 
     # delete a custom-domain alias: alias should go the DomainDeletedAlias
     alias = Alias.create(
         user_id=user.id,
-        email="prefix@ab.cd",
+        email=f"prefix@{domain}",
         custom_domain_id=custom_domain.id,
         mailbox_id=user.default_mailbox_id,
         commit=True,
@@ -276,7 +277,7 @@ def test_add_alias_in_custom_domain_trash(flask_client):
     assert DomainDeletedAlias.count() == 1
 
     # create the same alias, should return error
-    suffix = "@ab.cd"
+    suffix = f"@{domain}"
 
     alias_suffix = AliasSuffix(
         is_custom=False, suffix=suffix, is_premium=False, domain=EMAIL_DOMAIN
@@ -302,11 +303,12 @@ def test_too_many_requests(flask_client):
     user = login(flask_client)
 
     # create a custom domain
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    domain = random_domain()
+    CustomDomain.create(user_id=user.id, domain=domain, verified=True, commit=True)
 
     # can't create more than 5 aliases in 1 minute
     for i in range(7):
-        signed_suffix = signer.sign("@ab.cd").decode()
+        signed_suffix = signer.sign(f"@{domain}").decode()
 
         r = flask_client.post(
             url_for("dashboard.custom_alias"),

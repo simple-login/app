@@ -46,6 +46,10 @@ def login(flask_client) -> User:
     return user
 
 
+def random_domain() -> str:
+    return random_token() + ".test"
+
+
 def random_token(length: int = 10) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
