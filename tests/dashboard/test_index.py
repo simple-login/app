@@ -7,8 +7,8 @@ from tests.utils import login
 
 
 def test_create_random_alias_success(flask_client):
-    login(flask_client)
-    assert Alias.count() == 1
+    user = login(flask_client)
+    assert Alias.filter(Alias.user_id == user.id).count() == 1
 
     r = flask_client.post(
         url_for("dashboard.index"),
