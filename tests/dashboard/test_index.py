@@ -16,7 +16,7 @@ def test_create_random_alias_success(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert Alias.count() == 2
+    assert Alias.filter(Alias.user_id == user.id).count() == 2
 
 
 def test_too_many_requests(flask_client):

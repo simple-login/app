@@ -50,7 +50,7 @@ def test_with_custom_domain(flask_client):
 
     assert r.status_code == 201
     assert r.json["alias"] == "test@ab.cd"
-    assert Alias.count() == 2
+    assert Alias.filter_by(user_id=user.id).count() == 2
 
     # call the endpoint again, should return the same alias
     r = flask_client.post(
@@ -60,7 +60,7 @@ def test_with_custom_domain(flask_client):
     assert r.status_code == 201
     assert r.json["alias"] == "test@ab.cd"
     # no new alias is created
-    assert Alias.count() == 2
+    assert Alias.filter_by(user_id=user.id).count() == 2
 
 
 def test_without_hostname(flask_client):

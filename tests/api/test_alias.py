@@ -393,9 +393,9 @@ def test_update_disable_pgp(flask_client):
 
 
 def test_update_pinned(flask_client):
-    login(flask_client)
+    user = login(flask_client)
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     assert not alias.pinned
 
     r = flask_client.patch(
@@ -490,8 +490,8 @@ def test_create_contact_route(flask_client):
 
 
 def test_create_contact_route_empty_contact_address(flask_client):
-    login(flask_client)
-    alias = Alias.first()
+    user = login(flask_client)
+    alias = Alias.filter_by(user_id=user.id).first()
 
     r = flask_client.post(
         url_for("api.create_contact_route", alias_id=alias.id),
@@ -503,8 +503,8 @@ def test_create_contact_route_empty_contact_address(flask_client):
 
 
 def test_create_contact_route_invalid_contact_email(flask_client):
-    login(flask_client)
-    alias = Alias.first()
+    user = login(flask_client)
+    alias = Alias.filter_by(user_id=user.id).first()
 
     r = flask_client.post(
         url_for("api.create_contact_route", alias_id=alias.id),
