@@ -406,9 +406,9 @@ def add_alias_to_header_if_needed(msg, alias):
     LOG.d(f"add {alias} to To: header {to_header}")
 
     if to_header:
-        msg[headers.TO] = f"{to_header},{alias.email}"
+        add_or_replace_header(msg, headers.TO, f"{to_header},{alias.email}")
     else:
-        msg[headers.TO] = alias.email
+        add_or_replace_header(msg, headers.TO, alias.email)
 
 
 def replace_header_when_reply(msg: Message, alias: Alias, header: str):
