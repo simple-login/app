@@ -6,15 +6,17 @@ import pytest
 from aiosmtpd.smtp import Envelope
 
 import email_handler
-from app.config import BOUNCE_EMAIL, EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHASE
+from app.config import EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHASE
 from app.db import Session
 from app.email import headers, status
+from app.email_utils import generate_verp_email
 from app.models import (
     Alias,
     AuthorizedAddress,
     IgnoredEmail,
     EmailLog,
     Notification,
+    VerpType,
     Contact,
     SentAlert,
 )
@@ -119,10 +121,11 @@ def test_prevent_5xx_from_spf(flask_client):
         {"alias_email": alias.email, "spf_result": "R_SPF_FAIL"},
     )
     envelope = Envelope()
-    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
-    envelope.rcpt_tos = [msg["to"]]
+    envelope.mail_from = msg["from"]
+    # Ensure invalid email log
+    envelope.rcpt_tos = [generate_verp_email(VerpType.bounce_forward, 99999999999999)]
     result = email_handler.MailHandler()._handle(envelope, msg)
-    assert result == status.E216
+    assert status.E216 == result
 
 
 def test_preserve_5xx_with_valid_spf(flask_client):
@@ -133,10 +136,11 @@ def test_preserve_5xx_with_valid_spf(flask_client):
         {"alias_email": alias.email, "spf_result": "R_SPF_ALLOW"},
     )
     envelope = Envelope()
-    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
-    envelope.rcpt_tos = [msg["to"]]
+    envelope.mail_from = msg["from"]
+    # Ensure invalid email log
+    envelope.rcpt_tos = [generate_verp_email(VerpType.bounce_forward, 99999999999999)]
     result = email_handler.MailHandler()._handle(envelope, msg)
-    assert result == status.E512
+    assert status.E512 == result
 
 
 def test_preserve_5xx_with_no_header(flask_client):
@@ -147,10 +151,11 @@ def test_preserve_5xx_with_no_header(flask_client):
         {"alias_email": alias.email},
     )
     envelope = Envelope()
-    envelope.mail_from = BOUNCE_EMAIL.format(999999999999999999)
-    envelope.rcpt_tos = [msg["to"]]
+    envelope.mail_from = msg["from"]
+    # Ensure invalid email log
+    envelope.rcpt_tos = [generate_verp_email(VerpType.bounce_forward, 99999999999999)]
     result = email_handler.MailHandler()._handle(envelope, msg)
-    assert result == status.E512
+    assert status.E512 == result
 
 
 def generate_dmarc_result() -> List:

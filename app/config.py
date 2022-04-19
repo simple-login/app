@@ -74,7 +74,6 @@ MONITORING_EMAIL = os.environ.get("MONITORING_EMAIL")
 # VERP: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
 BOUNCE_PREFIX = os.environ.get("BOUNCE_PREFIX") or "bounce+"
 BOUNCE_SUFFIX = os.environ.get("BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
-BOUNCE_EMAIL = BOUNCE_PREFIX + "{}" + BOUNCE_SUFFIX
 
 # Used for VERP during reply phase. It's similar to BOUNCE_PREFIX.
 # It's needed when sending emails from custom domain to respect DMARC.
@@ -92,9 +91,6 @@ TRANSACTIONAL_BOUNCE_PREFIX = (
 )
 TRANSACTIONAL_BOUNCE_SUFFIX = (
     os.environ.get("TRANSACTIONAL_BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
-)
-TRANSACTIONAL_BOUNCE_EMAIL = (
-    TRANSACTIONAL_BOUNCE_PREFIX + "{}" + TRANSACTIONAL_BOUNCE_SUFFIX
 )
 
 try:
@@ -169,6 +165,8 @@ DB_URI = os.environ["DB_URI"]
 
 # Flask secret
 FLASK_SECRET = os.environ["FLASK_SECRET"]
+if not FLASK_SECRET:
+    raise RuntimeError("FLASK_SECRET is empty. Please define it.")
 SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
@@ -428,6 +426,18 @@ ZENDESK_API_TOKEN = os.environ.get("ZENDESK_API_TOKEN")
 ZENDESK_ENABLED = "ZENDESK_ENABLED" in os.environ
 
 DMARC_CHECK_ENABLED = "DMARC_CHECK_ENABLED" in os.environ
+
+# Bounces can happen after 5 days
+VERP_MESSAGE_LIFETIME = 5 * 86400
+VERP_PREFIX = os.environ.get("VERP_PREFIX") or "sl"
+# Generate with python3 -c 'import secrets; print(secrets.token_hex(28))'
+VERP_EMAIL_SECRET = os.environ.get("VERP_EMAIL_SECRET") or (
+    FLASK_SECRET + "pleasegenerateagoodrandomtoken"
+)
+if len(VERP_EMAIL_SECRET) < 32:
+    raise RuntimeError(
+        "Please, set VERP_EMAIL_SECRET to a random string at least 32 chars long"
+    )
 
 
 def get_allowed_redirect_domains() -> List[str]:
