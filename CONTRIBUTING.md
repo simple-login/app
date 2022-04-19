@@ -1,5 +1,8 @@
 Thanks for taking the time to contribute! 🎉👍
 
+Before working on a new feature, please get in touch with us at dev[at]simplelogin.io to avoid duplication. 
+We can also discuss the best way to implement. 
+
 The project uses Flask, Python3.7+ and requires Postgres 12+ as dependency. 
 
 ## General Architecture
@@ -120,8 +123,6 @@ Here are the small sum-ups of the directory structures and their roles:
 - tests/: tests. We don't really distinguish unit, functional or integration test. A test is simply here to make sure a feature works correctly.
 
 ## Pull request
-
-Please contact us if you want to work on a new feature.  
 
 The code is formatted using https://github.com/psf/black, to format the code, simply run
 
