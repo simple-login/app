@@ -86,6 +86,10 @@ from app.utils import (
     sanitize_email,
 )
 
+# 2022-01-01 00:00:00
+VERP_TIME_START = 1640995200
+VERP_HMAC_ALGO = "sha3-224"
+
 
 def render(template_name, **kwargs) -> str:
     templates_dir = os.path.join(ROOT_DIR, "templates", "emails")
@@ -1473,13 +1477,18 @@ def generate_verp_email(
     verp_type: VerpType, object_id: int, sender_domain: Optional[str] = None
 ) -> str:
     # Encoded as a list to minimize size of email address
-    data = [verp_type.bounce_forward.value, object_id, int(time.time())]
+    # Time is in minutes granularity and start counting on 2022-01-01 to reduce bytes to represent time
+    data = [
+        verp_type.bounce_forward.value,
+        object_id,
+        int((time.time() - VERP_TIME_START) / 60),
+    ]
     json_payload = json.dumps(data).encode("utf-8")
     # Signing without itsdangereous because it uses base64 that includes +/= symbols and lower and upper case letters.
     # We need to encode in base32
     payload_hmac = hmac.new(
-        VERP_EMAIL_SECRET.encode("utf-8"), json_payload, "shake128"
-    ).digest()
+        VERP_EMAIL_SECRET.encode("utf-8"), json_payload, VERP_HMAC_ALGO
+    ).digest()[:8]
     encoded_payload = base64.b32encode(json_payload).rstrip(b"=").decode("utf-8")
     encoded_signature = base64.b32encode(payload_hmac).rstrip(b"=").decode("utf-8")
     return "{}.{}.{}@{}".format(
@@ -1502,14 +1511,14 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     padding = (8 - (len(fields[2]) % 8)) % 8
     signature = base64.b32decode(fields[2].encode("utf-8").upper() + (b"=" * padding))
     expected_signature = hmac.new(
-        VERP_EMAIL_SECRET.encode("utf-8"), payload, "shake128"
-    ).digest()
+        VERP_EMAIL_SECRET.encode("utf-8"), payload, VERP_HMAC_ALGO
+    ).digest()[:8]
     if expected_signature != signature:
         return None
     data = json.loads(payload)
     # verp type, object_id, time
     if len(data) != 3:
         return None
-    if data[2] > time.time() + VERP_MESSAGE_LIFETIME:
+    if data[2] > (time.time() + VERP_MESSAGE_LIFETIME - VERP_TIME_START) / 60:
         return None
     return VerpType(data[0]), data[1]
