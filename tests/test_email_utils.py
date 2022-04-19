@@ -770,12 +770,14 @@ def test_is_invalid_mailbox_domain(flask_client):
     assert not is_invalid_mailbox_domain("xy.zt")
 
 
-def test_generate_verp_email():
-    generated_email = generate_verp_email(VerpType.bounce_forward, 1, "somewhere.net")
-    print(generated_email)
+@pytest.mark.parametrize("object_id", [10**i for i in range(0, 5)])
+def test_generate_verp_email(object_id):
+    generated_email = generate_verp_email(
+        VerpType.bounce_forward, object_id, "somewhere.net"
+    )
     info = get_verp_info_from_email(generated_email.lower())
     assert info[0] == VerpType.bounce_forward
-    assert info[1] == 1
+    assert info[1] == object_id
 
 
 def test_add_header_multipart_with_invalid_part():
