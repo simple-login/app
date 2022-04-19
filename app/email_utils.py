@@ -1497,9 +1497,9 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     fields = username.split(".")
     if len(fields) != 3 or fields[0] != VERP_PREFIX:
         return None
-    padding = 8 - (len(fields[1]) % 8)
+    padding = (8 - (len(fields[1]) % 8)) % 8
     payload = base64.b32decode(fields[1].encode("utf-8").upper() + (b"=" * padding))
-    padding = 8 - (len(fields[2]) % 8)
+    padding = (8 - (len(fields[2]) % 8)) % 8
     signature = base64.b32decode(fields[2].encode("utf-8").upper() + (b"=" * padding))
     expected_signature = hmac.new(
         VERP_EMAIL_SECRET.encode("utf-8"), payload, "shake128"
