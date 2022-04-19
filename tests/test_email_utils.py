@@ -513,6 +513,9 @@ def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
     reply_email = generate_reply_email("TEST@example.org", user)
     assert reply_email.startswith("test_at_example_org")
 
+    reply_email = generate_reply_email("test.dot@example.org", user)
+    assert reply_email.startswith("test_dot_at_example_org")
+
 
 def test_normalize_reply_email(flask_client):
     assert normalize_reply_email("re+abcd@sl.local") == "re+abcd@sl.local"
