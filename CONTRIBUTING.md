@@ -1,7 +1,7 @@
 Thanks for taking the time to contribute! 🎉👍
 
 Before working on a new feature, please get in touch with us at dev[at]simplelogin.io to avoid duplication. 
-We can also discuss the best way to implement. 
+We can also discuss the best way to implement it. 
 
 The project uses Flask, Python3.7+ and requires Postgres 12+ as dependency. 
 
