@@ -73,7 +73,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          poetry run pytest
+          poetry run pytest --cov=./ --cov-report=xml
         env:
           GITHUB_ACTIONS_TEST: true
 
@@ -82,6 +82,11 @@ jobs:
         with:
           name: code-coverage-report
           path: htmlcov
+
+      - name: "Upload coverage to Codecov"
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
 
       - name: upload to codecov
         run: curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov && ./codecov
