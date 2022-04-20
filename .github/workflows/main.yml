@@ -83,6 +83,9 @@ jobs:
           name: code-coverage-report
           path: htmlcov
 
+      - name: upload to codecov
+        run: curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov && ./codecov
+
       - name: Publish to Docker Registry
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v1
