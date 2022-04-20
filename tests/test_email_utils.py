@@ -50,7 +50,7 @@ from app.models import (
 )
 
 # flake8: noqa: E101, W191
-from tests.utils import login, load_eml_file, create_new_user
+from tests.utils import login, load_eml_file, create_new_user, random_domain
 
 
 def test_get_email_domain_part():
@@ -76,9 +76,10 @@ def test_can_be_used_as_personal_email(flask_client):
     assert not email_can_be_used_as_mailbox("hey@d1.test")
 
     # custom domain
+    domain = random_domain()
     user = create_new_user()
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
-    assert not email_can_be_used_as_mailbox("hey@ab.cd")
+    CustomDomain.create(user_id=user.id, domain=domain, verified=True, commit=True)
+    assert not email_can_be_used_as_mailbox(f"hey@{domain}")
 
     # disposable domain
     assert not email_can_be_used_as_mailbox("abcd@10minutesmail.fr")
@@ -764,11 +765,12 @@ def test_get_mailbox_bounce_info():
 
 
 def test_is_invalid_mailbox_domain(flask_client):
-    InvalidMailboxDomain.create(domain="ab.cd", commit=True)
+    domain = random_domain()
+    InvalidMailboxDomain.create(domain=domain, commit=True)
 
-    assert is_invalid_mailbox_domain("ab.cd")
-    assert is_invalid_mailbox_domain("sub.ab.cd")
-    assert is_invalid_mailbox_domain("sub1.sub2.ab.cd")
+    assert is_invalid_mailbox_domain(domain)
+    assert is_invalid_mailbox_domain(f"sub.{domain}")
+    assert is_invalid_mailbox_domain(f"sub1.sub2.{domain}")
 
     assert not is_invalid_mailbox_domain("xy.zt")
 

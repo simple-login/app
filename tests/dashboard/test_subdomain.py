@@ -96,7 +96,7 @@ def test_create_subdomain_out_of_quota(flask_client):
             commit=True,
         )
 
-    assert CustomDomain.count() == MAX_NB_SUBDOMAIN
+    assert CustomDomain.filter_by(user_id=user.id).count() == MAX_NB_SUBDOMAIN
 
     flask_client.post(
         url_for("dashboard.subdomain_route"),
@@ -105,11 +105,11 @@ def test_create_subdomain_out_of_quota(flask_client):
     )
 
     # no new subdomain is created
-    assert CustomDomain.count() == MAX_NB_SUBDOMAIN
+    assert CustomDomain.filter_by(user_id=user.id).count() == MAX_NB_SUBDOMAIN
 
 
 def test_create_subdomain_invalid(flask_client):
-    login(flask_client)
+    user = login(flask_client)
     sl_domain = setup_sl_domain()
 
     # subdomain can't end with dash (-)
@@ -118,7 +118,7 @@ def test_create_subdomain_invalid(flask_client):
         data={"form-name": "create", "subdomain": "test-", "domain": sl_domain.domain},
         follow_redirects=True,
     )
-    assert CustomDomain.count() == 0
+    assert CustomDomain.filter_by(user_id=user.id).count() == 0
 
     # subdomain can't contain underscore (_)
     flask_client.post(
@@ -130,7 +130,7 @@ def test_create_subdomain_invalid(flask_client):
         },
         follow_redirects=True,
     )
-    assert CustomDomain.count() == 0
+    assert CustomDomain.filter_by(user_id=user.id).count() == 0
 
     # subdomain must have at least 3 characters
     flask_client.post(
@@ -138,4 +138,4 @@ def test_create_subdomain_invalid(flask_client):
         data={"form-name": "create", "subdomain": "te", "domain": sl_domain.domain},
         follow_redirects=True,
     )
-    assert CustomDomain.count() == 0
+    assert CustomDomain.filter_by(user_id=user.id).count() == 0

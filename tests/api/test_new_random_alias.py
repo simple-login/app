@@ -5,7 +5,7 @@ from flask import url_for, g
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
 from app.models import Alias, CustomDomain, AliasUsedOn
-from tests.utils import login
+from tests.utils import login, random_domain
 
 
 def test_with_hostname(flask_client):
@@ -40,8 +40,9 @@ def test_with_hostname(flask_client):
 
 def test_with_custom_domain(flask_client):
     user = login(flask_client)
+    domain = random_domain()
     CustomDomain.create(
-        user_id=user.id, domain="ab.cd", ownership_verified=True, commit=True
+        user_id=user.id, domain=domain, ownership_verified=True, commit=True
     )
 
     r = flask_client.post(
@@ -49,8 +50,8 @@ def test_with_custom_domain(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["alias"] == "test@ab.cd"
-    assert Alias.count() == 2
+    assert r.json["alias"] == f"test@{domain}"
+    assert Alias.filter_by(user_id=user.id).count() == 2
 
     # call the endpoint again, should return the same alias
     r = flask_client.post(
@@ -58,9 +59,9 @@ def test_with_custom_domain(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["alias"] == "test@ab.cd"
+    assert r.json["alias"] == f"test@{domain}"
     # no new alias is created
-    assert Alias.count() == 2
+    assert Alias.filter_by(user_id=user.id).count() == 2
 
 
 def test_without_hostname(flask_client):

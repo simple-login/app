@@ -388,6 +388,31 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
         delete_header(msg, header)
 
 
+def add_alias_to_header_if_needed(msg, alias):
+    """
+    During the forward phase, add alias to To: header if it isn't included in To and Cc header
+    It can happen that the alias isn't included in To: and CC: header, for example if this is a BCC email
+    :return:
+    """
+    to_header = str(msg[headers.TO]) if msg[headers.TO] else None
+    cc_header = str(msg[headers.CC]) if msg[headers.CC] else None
+
+    # nothing to do
+    if to_header and alias.email in to_header:
+        return
+
+    # nothing to do
+    if cc_header and alias.email in cc_header:
+        return
+
+    LOG.d(f"add {alias} to To: header {to_header}")
+
+    if to_header:
+        add_or_replace_header(msg, headers.TO, f"{to_header},{alias.email}")
+    else:
+        add_or_replace_header(msg, headers.TO, alias.email)
+
+
 def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     """
     Replace CC or To Reply emails by original emails
@@ -845,13 +870,16 @@ def forward_email_to_mailbox(
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
     try:
-        replace_header_when_forward(msg, alias, "Cc")
-        replace_header_when_forward(msg, alias, "To")
+        replace_header_when_forward(msg, alias, headers.CC)
+        replace_header_when_forward(msg, alias, headers.TO)
     except CannotCreateContactForReverseAlias:
         LOG.d("CannotCreateContactForReverseAlias error, delete %s", email_log)
         EmailLog.delete(email_log.id)
         Session.commit()
         raise
+
+    # add alias to To: header if it isn't included in To and Cc header
+    add_alias_to_header_if_needed(msg, alias)
 
     # add List-Unsubscribe header
     if user.one_click_unsubscribe_block_sender:

@@ -13,7 +13,7 @@ def test_get_alias_infos_with_pagination_v3(flask_client):
     assert len(alias_infos) == 1
     alias_info = alias_infos[0]
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     assert alias_info.alias == alias
     assert alias_info.mailbox == user.default_mailbox
     assert alias_info.mailboxes == [user.default_mailbox]
@@ -28,7 +28,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_email(flask_client):
     """test the query on the alias email"""
     user = create_new_user()
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
 
     alias_infos = get_alias_infos_with_pagination_v3(user, query=alias.email)
     assert len(alias_infos) == 1
@@ -40,7 +40,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_email(flask_client):
 def test_get_alias_infos_with_pagination_v3_query_alias_mailbox(flask_client):
     """test the query on the alias mailbox email"""
     user = create_new_user()
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     alias_infos = get_alias_infos_with_pagination_v3(user, mailbox_id=alias.mailbox_id)
     assert len(alias_infos) == 1
 
@@ -48,7 +48,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_mailbox(flask_client):
 def test_get_alias_infos_with_pagination_v3_query_alias_mailboxes(flask_client):
     """test the query on the alias additional mailboxes"""
     user = create_new_user()
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
     alias._mailboxes.append(mb)
     Session.commit()
@@ -64,7 +64,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_note(flask_client):
     """test the query on the alias note"""
     user = create_new_user()
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     alias.note = "test note"
     Session.commit()
 
@@ -76,7 +76,7 @@ def test_get_alias_infos_with_pagination_v3_query_alias_name(flask_client):
     """test the query on the alias name"""
     user = create_new_user()
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     alias.name = "Test Name"
     Session.commit()
 
@@ -134,7 +134,7 @@ def test_get_alias_infos_pinned_alias(flask_client):
     for _ in range(2 * PAGE_LIMIT):
         Alias.create_new_random(user)
 
-    first_alias = Alias.order_by(Alias.id).first()
+    first_alias = Alias.filter_by(user_id=user.id).order_by(Alias.id).first()
 
     # should return PAGE_LIMIT alias
     alias_infos = get_alias_infos_with_pagination_v3(user)

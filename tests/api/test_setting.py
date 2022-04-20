@@ -4,7 +4,7 @@ from app.models import (
     SenderFormatEnum,
     AliasSuffixEnum,
 )
-from tests.utils import login
+from tests.utils import login, random_domain
 
 
 def test_get_setting(flask_client):
@@ -76,7 +76,8 @@ def test_update_settings_sender_format(flask_client):
 
 def test_get_setting_domains(flask_client):
     user = login(flask_client)
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    domain = random_domain()
+    CustomDomain.create(user_id=user.id, domain=domain, verified=True, commit=True)
 
     r = flask_client.get("/api/setting/domains")
     assert r.status_code == 200
@@ -84,7 +85,8 @@ def test_get_setting_domains(flask_client):
 
 def test_get_setting_domains_v2(flask_client):
     user = login(flask_client)
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    domain = random_domain()
+    CustomDomain.create(user_id=user.id, domain=domain, verified=True, commit=True)
 
     r = flask_client.get("/api/v2/setting/domains")
     assert r.status_code == 200

@@ -192,3 +192,44 @@ def test_dmarc_reply_quarantine(flask_client, dmarc_result):
         user_id=user.id, alert_type=ALERT_DMARC_FAILED_REPLY_PHASE
     ).all()
     assert len(alerts) == 1
+
+
+def test_add_alias_to_header_if_needed():
+    msg = EmailMessage()
+    user = create_new_user()
+    alias = Alias.filter_by(user_id=user.id).first()
+
+    assert msg[headers.TO] is None
+
+    email_handler.add_alias_to_header_if_needed(msg, alias)
+
+    assert msg[headers.TO] == alias.email
+
+
+def test_append_alias_to_header_if_needed_existing_to():
+    msg = EmailMessage()
+    original_to = "noone@nowhere.no"
+    msg[headers.TO] = original_to
+    user = create_new_user()
+    alias = Alias.filter_by(user_id=user.id).first()
+    email_handler.add_alias_to_header_if_needed(msg, alias)
+    assert msg[headers.TO] == f"{original_to}, {alias.email}"
+
+
+def test_avoid_add_to_header_already_present():
+    msg = EmailMessage()
+    user = create_new_user()
+    alias = Alias.filter_by(user_id=user.id).first()
+    msg[headers.TO] = alias.email
+    email_handler.add_alias_to_header_if_needed(msg, alias)
+    assert msg[headers.TO] == alias.email
+
+
+def test_avoid_add_to_header_already_present_in_cc():
+    msg = EmailMessage()
+    create_new_user()
+    alias = Alias.first()
+    msg[headers.CC] = alias.email
+    email_handler.add_alias_to_header_if_needed(msg, alias)
+    assert msg[headers.TO] is None
+    assert msg[headers.CC] == alias.email
