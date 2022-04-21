@@ -6,6 +6,7 @@ import pytest
 from aiosmtpd.smtp import Envelope
 
 import email_handler
+from app import config
 from app.config import EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHASE
 from app.db import Session
 from app.email import headers, status
@@ -233,3 +234,28 @@ def test_avoid_add_to_header_already_present_in_cc():
     email_handler.add_alias_to_header_if_needed(msg, alias)
     assert msg[headers.TO] is None
     assert msg[headers.CC] == alias.email
+
+
+def test_email_sent_to_noreply(flask_client):
+    msg = EmailMessage()
+    envelope = Envelope()
+    envelope.mail_from = "from@domain.test"
+    envelope.rcpt_tos = [config.NOREPLY]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+
+
+def test_email_sent_to_noreplies(flask_client):
+    msg = EmailMessage()
+    envelope = Envelope()
+    envelope.mail_from = "from@domain.test"
+    config.NOREPLIES = ["other-no-reply@sl.test"]
+
+    envelope.rcpt_tos = ["other-no-reply@sl.test"]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+
+    # NOREPLY isn't used anymore
+    envelope.rcpt_tos = [config.NOREPLY]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E515

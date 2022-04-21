@@ -53,7 +53,7 @@ from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import ObjectDeletedError
 
-from app import pgp_utils, s3
+from app import pgp_utils, s3, config
 from app.alias_utils import try_auto_create
 from app.config import (
     EMAIL_DOMAIN,
@@ -88,14 +88,6 @@ from app.config import (
     ALERT_TO_NOREPLY,
 )
 from app.db import Session
-from app.handler.dmarc import (
-    apply_dmarc_policy_for_reply_phase,
-    apply_dmarc_policy_for_forward_phase,
-)
-from app.handler.spamd_result import (
-    SpamdResult,
-    SPFCheckResult,
-)
 from app.email import status, headers
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
@@ -145,6 +137,14 @@ from app.errors import (
     VERPForward,
     VERPReply,
     CannotCreateContactForReverseAlias,
+)
+from app.handler.dmarc import (
+    apply_dmarc_policy_for_reply_phase,
+    apply_dmarc_policy_for_forward_phase,
+)
+from app.handler.spamd_result import (
+    SpamdResult,
+    SPFCheckResult,
 )
 from app.log import LOG, set_message_id
 from app.models import (
@@ -2386,7 +2386,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     nb_rcpt_tos = len(rcpt_tos)
     for rcpt_index, rcpt_to in enumerate(rcpt_tos):
-        if rcpt_to == NOREPLY:
+        if rcpt_to in config.NOREPLIES:
             LOG.i("email sent to {} address from {}".format(NOREPLY, mail_from))
             send_no_reply_response(mail_from, msg)
             return status.E200

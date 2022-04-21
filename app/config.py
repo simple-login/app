@@ -382,6 +382,9 @@ PGP_SIGNER = os.environ.get("PGP_SIGNER")
 # emails that have empty From address is sent from this special reverse-alias
 NOREPLY = os.environ.get("NOREPLY", f"noreply@{EMAIL_DOMAIN}")
 
+# list of no reply addresses
+NOREPLIES = sl_getenv("NOREPLIES", list) or [NOREPLY]
+
 COINBASE_WEBHOOK_SECRET = os.environ.get("COINBASE_WEBHOOK_SECRET")
 COINBASE_CHECKOUT_ID = os.environ.get("COINBASE_CHECKOUT_ID")
 COINBASE_API_KEY = os.environ.get("COINBASE_API_KEY")
