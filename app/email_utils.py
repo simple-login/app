@@ -841,20 +841,20 @@ def to_bytes(msg: Message):
     """replace Message.as_bytes() method by trying different policies"""
     try:
         return msg.as_bytes()
-    except UnicodeEncodeError:
+    except (UnicodeEncodeError, AttributeError):
         LOG.w("as_bytes fails with default policy, try SMTP policy")
         try:
             return msg.as_bytes(policy=policy.SMTP)
-        except UnicodeEncodeError:
+        except (UnicodeEncodeError, AttributeError):
             LOG.w("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
             try:
                 return msg.as_bytes(policy=policy.SMTPUTF8)
-            except UnicodeEncodeError:
+            except (UnicodeEncodeError, AttributeError):
                 LOG.w("as_bytes fails with SMTPUTF8 policy, try converting to string")
                 msg_string = msg.as_string()
                 try:
                     return msg_string.encode()
-                except UnicodeEncodeError as e:
+                except (UnicodeEncodeError, AttributeError) as e:
                     LOG.w("can't encode msg, err:%s", e)
                     return msg_string.encode(errors="replace")
 
