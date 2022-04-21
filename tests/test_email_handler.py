@@ -7,7 +7,7 @@ from aiosmtpd.smtp import Envelope
 
 import email_handler
 from app import config
-from app.config import EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHASE, NOREPLY
+from app.config import EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHASE
 from app.db import Session
 from app.email import headers, status
 from app.email_utils import generate_verp_email

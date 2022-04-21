@@ -86,17 +86,8 @@ from app.config import (
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
-    NOREPLIES,
 )
 from app.db import Session
-from app.handler.dmarc import (
-    apply_dmarc_policy_for_reply_phase,
-    apply_dmarc_policy_for_forward_phase,
-)
-from app.handler.spamd_result import (
-    SpamdResult,
-    SPFCheckResult,
-)
 from app.email import status, headers
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
@@ -146,6 +137,14 @@ from app.errors import (
     VERPForward,
     VERPReply,
     CannotCreateContactForReverseAlias,
+)
+from app.handler.dmarc import (
+    apply_dmarc_policy_for_reply_phase,
+    apply_dmarc_policy_for_forward_phase,
+)
+from app.handler.spamd_result import (
+    SpamdResult,
+    SPFCheckResult,
 )
 from app.log import LOG, set_message_id
 from app.models import (
