@@ -16,9 +16,14 @@ from app.email_utils import (
     generate_reply_email,
     parse_full_address,
 )
-from app.errors import CannotCreateContactForReverseAlias
+from app.errors import (
+    CannotCreateContactForReverseAlias,
+    ErrContactErrorUpgradeNeeded,
+    ErrAddressInvalid,
+    ErrContactAlreadyExists,
+)
 from app.log import LOG
-from app.models import Alias, Contact, EmailLog
+from app.models import Alias, Contact, EmailLog, User
 
 
 def email_validator():
@@ -42,6 +47,47 @@ def email_validator():
             raise ValidationError(message)
 
     return _check
+
+
+def create_contact(
+    user: User, alias: Alias, contact_address: str, fail_if_already_exist: bool = True
+) -> Contact:
+    if not contact_address:
+        raise ErrAddressInvalid("Empty address")
+    try:
+        contact_name, contact_email = parse_full_address(contact_address)
+    except ValueError:
+        raise ErrAddressInvalid(contact_address)
+
+    if not is_valid_email(contact_email):
+        raise ErrAddressInvalid(contact_email)
+
+    contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+    if contact:
+        if fail_if_already_exist:
+            raise ErrContactAlreadyExists(contact)
+        return contact
+
+    if not user.is_premium() and user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS > 0:
+        raise ErrContactErrorUpgradeNeeded()
+
+    contact = Contact.create(
+        user_id=alias.user_id,
+        alias_id=alias.id,
+        website_email=contact_email,
+        name=contact_name,
+        reply_email=generate_reply_email(contact_email, user),
+    )
+
+    LOG.d(
+        "create reverse-alias for %s %s, reverse alias:%s",
+        contact_address,
+        alias,
+        contact.reply_email,
+    )
+    Session.commit()
+
+    return contact
 
 
 class NewContactForm(FlaskForm):
@@ -150,6 +196,21 @@ def get_contact_infos(
     return ret
 
 
+def delete_contact(alias: Alias, contact_id: int):
+    contact = Contact.get(contact_id)
+
+    if not contact:
+        flash("Unknown error. Refresh the page", "warning")
+    elif contact.alias_id != alias.id:
+        flash("You cannot delete reverse-alias", "warning")
+    else:
+        delete_contact_email = contact.website_email
+        Contact.delete(contact_id)
+        Session.commit()
+
+        flash(f"Reverse-alias for {delete_contact_email} has been deleted", "success")
+
+
 @dashboard_bp.route("/alias_contact_manager/<alias_id>/", methods=["GET", "POST"])
 @login_required
 def alias_contact_manager(alias_id):
@@ -179,45 +240,18 @@ def alias_contact_manager(alias_id):
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             if new_contact_form.validate():
-                contact_addr = new_contact_form.email.data.strip()
-
+                contact_address = new_contact_form.email.data.strip()
                 try:
-                    contact_name, contact_email = parse_full_address(contact_addr)
-                except Exception:
-                    flash(f"{contact_addr} is invalid", "error")
+                    contact = create_contact(current_user, alias, contact_address)
+                except (
+                    ErrContactErrorUpgradeNeeded,
+                    ErrAddressInvalid,
+                    ErrContactAlreadyExists,
+                    CannotCreateContactForReverseAlias,
+                ) as excp:
+                    flash(excp.error_for_user(), "error")
                     return redirect(request.url)
-
-                if not is_valid_email(contact_email):
-                    flash(f"{contact_email} is invalid", "error")
-                    return redirect(request.url)
-
-                contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-                # already been added
-                if contact:
-                    flash(f"{contact_email} is already added", "error")
-                    return redirect(request.url)
-
-                try:
-                    contact = Contact.create(
-                        user_id=alias.user_id,
-                        alias_id=alias.id,
-                        website_email=contact_email,
-                        name=contact_name,
-                        reply_email=generate_reply_email(contact_email, current_user),
-                    )
-                except CannotCreateContactForReverseAlias:
-                    flash("You can't create contact for a reverse alias", "error")
-                    return redirect(request.url)
-
-                LOG.d(
-                    "create reverse-alias for %s %s, reverse alias:%s",
-                    contact_addr,
-                    alias,
-                    contact.reply_email,
-                )
-                Session.commit()
-                flash(f"Reverse alias for {contact_addr} is created", "success")
-
+                flash(f"Reverse alias for {contact_address} is created", "success")
                 return redirect(
                     url_for(
                         "dashboard.alias_contact_manager",
@@ -227,27 +261,7 @@ def alias_contact_manager(alias_id):
                 )
         elif request.form.get("form-name") == "delete":
             contact_id = request.form.get("contact-id")
-            contact = Contact.get(contact_id)
-
-            if not contact:
-                flash("Unknown error. Refresh the page", "warning")
-                return redirect(
-                    url_for("dashboard.alias_contact_manager", alias_id=alias_id)
-                )
-            elif contact.alias_id != alias.id:
-                flash("You cannot delete reverse-alias", "warning")
-                return redirect(
-                    url_for("dashboard.alias_contact_manager", alias_id=alias_id)
-                )
-
-            delete_contact_email = contact.website_email
-            Contact.delete(contact_id)
-            Session.commit()
-
-            flash(
-                f"Reverse-alias for {delete_contact_email} has been deleted", "success"
-            )
-
+            delete_contact(alias, contact_id)
             return redirect(
                 url_for("dashboard.alias_contact_manager", alias_id=alias_id)
             )

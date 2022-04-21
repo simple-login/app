@@ -64,7 +64,11 @@
         <div class="small-text">
           Where do you want to send the email?
         </div>
-        <button class="btn btn-primary mt-2">Create reverse-alias</button>
+          {% if alias.user.is_premium() %}
+            <button class="btn btn-primary mt-2">Create reverse-alias</button>
+          {% else %}
+            <button disabled title='Upgrade to premium to create reverse-aliases' class="btn btn-primary mt-2">Create reverse-alias</button>
+          {%  endif %}
       </form>
     </div>
 

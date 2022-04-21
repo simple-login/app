@@ -1,6 +1,4 @@
 from deprecated import deprecated
-from flanker.addresslib import address
-from flanker.addresslib.address import EmailAddress
 from flask import g
 from flask import jsonify
 from flask import request
@@ -17,15 +15,16 @@ from app.api.serializer import (
     get_alias_info_v2,
     get_alias_infos_with_pagination_v3,
 )
+from app.dashboard.views.alias_contact_manager import create_contact
 from app.dashboard.views.alias_log import get_alias_log
 from app.db import Session
-from app.email_utils import (
-    generate_reply_email,
+from app.errors import (
+    CannotCreateContactForReverseAlias,
+    ErrContactErrorUpgradeNeeded,
+    ErrContactAlreadyExists,
+    ErrAddressInvalid,
 )
-from app.errors import CannotCreateContactForReverseAlias
-from app.log import LOG
 from app.models import Alias, Contact, Mailbox, AliasMailbox
-from app.utils import sanitize_email
 
 
 @deprecated
@@ -407,50 +406,26 @@ def create_contact_route(alias_id):
     Output:
         201 if success
         409 if contact already added
-
-
     """
     data = request.get_json()
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    user = g.user
     alias: Alias = Alias.get(alias_id)
 
-    if alias.user_id != user.id:
+    if alias.user_id != g.user.id:
         return jsonify(error="Forbidden"), 403
 
-    contact_addr = data.get("contact")
-
-    if not contact_addr:
-        return jsonify(error="Contact cannot be empty"), 400
-
-    full_address: EmailAddress = address.parse(contact_addr)
-    if not full_address:
-        return jsonify(error=f"invalid contact email {contact_addr}"), 400
-
-    contact_name, contact_email = full_address.display_name, full_address.address
-
-    contact_email = sanitize_email(contact_email, not_lower=True)
-
-    # already been added
-    contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-    if contact:
-        return jsonify(**serialize_contact(contact, existed=True)), 200
+    contact_address = data.get("contact")
 
     try:
-        contact = Contact.create(
-            user_id=alias.user_id,
-            alias_id=alias.id,
-            website_email=contact_email,
-            name=contact_name,
-            reply_email=generate_reply_email(contact_email, user),
-        )
-    except CannotCreateContactForReverseAlias:
-        return jsonify(error="You can't create contact for a reverse alias"), 400
-
-    LOG.d("create reverse-alias for %s %s", contact_addr, alias)
-    Session.commit()
+        contact = create_contact(g.user, alias, contact_address)
+    except ErrContactErrorUpgradeNeeded as err:
+        return jsonify(error=err.error_for_user()), 403
+    except (ErrAddressInvalid, CannotCreateContactForReverseAlias) as err:
+        return jsonify(error=err.error_for_user()), 400
+    except ErrContactAlreadyExists as err:
+        return jsonify(**serialize_contact(err.contact, existed=True)), 200
 
     return jsonify(**serialize_contact(contact)), 201
 
