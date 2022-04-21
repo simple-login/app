@@ -53,7 +53,7 @@ from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import ObjectDeletedError
 
-from app import pgp_utils, s3
+from app import pgp_utils, s3, config
 from app.alias_utils import try_auto_create
 from app.config import (
     EMAIL_DOMAIN,
@@ -86,6 +86,7 @@ from app.config import (
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
+    NOREPLIES,
 )
 from app.db import Session
 from app.handler.dmarc import (
@@ -2386,7 +2387,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     nb_rcpt_tos = len(rcpt_tos)
     for rcpt_index, rcpt_to in enumerate(rcpt_tos):
-        if rcpt_to == NOREPLY:
+        if rcpt_to in config.NOREPLIES:
             LOG.i("email sent to {} address from {}".format(NOREPLY, mail_from))
             send_no_reply_response(mail_from, msg)
             return status.E200

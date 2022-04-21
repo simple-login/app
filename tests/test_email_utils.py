@@ -775,7 +775,7 @@ def test_is_invalid_mailbox_domain(flask_client):
     assert not is_invalid_mailbox_domain("xy.zt")
 
 
-@pytest.mark.parametrize("object_id", [10**i for i in range(0, 5)])
+@pytest.mark.parametrize("object_id", [10 ** i for i in range(0, 5)])
 def test_generate_verp_email(object_id):
     generated_email = generate_verp_email(
         VerpType.bounce_forward, object_id, "somewhere.net"
