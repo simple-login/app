@@ -2914,7 +2914,7 @@ class AdminAuditLog(Base):
     action = sa.Column(sa.Integer, nullable=False)
     model = sa.Column(sa.Text, nullable=False)
     model_id = sa.Column(sa.Integer, nullable=True)
-    data = sa.Column(sa.JSON, nullable=True)
+    data = sa.Column(sa.JSON, nullable=False)
 
     admin = orm.relationship(User, foreign_keys=[admin_user_id])
 
@@ -2974,6 +2974,7 @@ class AdminAuditLog(Base):
             action=AuditLogActionEnum.logged_as_user.value,
             model="User",
             model_id=user_id,
+            data={},
         )
 
     @classmethod
