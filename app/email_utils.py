@@ -8,9 +8,6 @@ import random
 import time
 import uuid
 from copy import deepcopy
-
-from aiosmtpd.smtp import Envelope
-
 from email import policy, message_from_bytes, message_from_string
 from email.header import decode_header, Header
 from email.message import Message, EmailMessage
@@ -25,6 +22,7 @@ import dkim
 import newrelic.agent
 import re2 as re
 import spf
+from aiosmtpd.smtp import Envelope
 from cachetools import cached, TTLCache
 from email_validator import (
     validate_email,
@@ -843,24 +841,19 @@ def copy(msg: Message) -> Message:
 
 def to_bytes(msg: Message):
     """replace Message.as_bytes() method by trying different policies"""
-    try:
-        return msg.as_bytes()
-    except UnicodeEncodeError:
-        LOG.w("as_bytes fails with default policy, try SMTP policy")
+    for generator_policy in [None, policy.SMTP, policy.SMTPUTF8]:
         try:
-            return msg.as_bytes(policy=policy.SMTP)
-        except UnicodeEncodeError:
-            LOG.w("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
-            try:
-                return msg.as_bytes(policy=policy.SMTPUTF8)
-            except UnicodeEncodeError:
-                LOG.w("as_bytes fails with SMTPUTF8 policy, try converting to string")
-                msg_string = msg.as_string()
-                try:
-                    return msg_string.encode()
-                except UnicodeEncodeError as e:
-                    LOG.w("can't encode msg, err:%s", e)
-                    return msg_string.encode(errors="replace")
+            return msg.as_bytes(policy=generator_policy)
+        except:
+            LOG.w("as_bytes() fails with %s policy", policy, exc_info=True)
+
+    msg_string = msg.as_string()
+    try:
+        return msg_string.encode()
+    except:
+        LOG.w("as_string().encode() fails", exc_info=True)
+
+    return msg_string.encode(errors="replace")
 
 
 def should_add_dkim_signature(domain: str) -> bool:
