@@ -48,10 +48,13 @@ class TransactionalComplaintOrigin(ABC):
 class TransactionalYahooOrigin(TransactionalComplaintOrigin):
     @classmethod
     def get_original_message(cls, message: Message) -> Optional[Message]:
-        wanted_part = 6
+        # 1st part is the container
+        # 2nd has empty body
+        # 6th is the original message
+        current_part = 0
         for part in message.walk():
-            wanted_part -= 1
-            if wanted_part == 0:
+            current_part += 1
+            if current_part == 6:
                 return part
         return None
 
@@ -63,10 +66,13 @@ class TransactionalYahooOrigin(TransactionalComplaintOrigin):
 class TransactionalHotmailOrigin(TransactionalComplaintOrigin):
     @classmethod
     def get_original_message(cls, message: Message) -> Optional[Message]:
-        wanted_part = 3
+        # 1st part is the container
+        # 2nd has empty body
+        # 3rd is the original message
+        current_part = 0
         for part in message.walk():
-            wanted_part -= 1
-            if wanted_part == 0:
+            current_part += 1
+            if current_part == 3:
                 return part
         return None
 
@@ -103,12 +109,12 @@ def handle_complaint(message: Message, origin: TransactionalComplaintOrigin) -> 
         )
     except ValueError:
         saved_file = save_email_for_debugging(message, "FromParseFailed")
-        LOG.w("Cannot parse from header. Saved to {}".format(saved_file or "nowhere"))
-        return True
+        LOG.w(f"Cannot parse from header. Saved to {saved_file or 'nowhere'}")
+        return False
 
     user = User.get_by(email=to_address)
     if user:
-        LOG.d("Handle transactional {} complaint for {}".format(origin.name(), user))
+        LOG.d(f"Handle transactional {origin.name()} complaint for {user}")
         report_complaint_to_user(user, origin)
         return True
 
@@ -116,9 +122,7 @@ def handle_complaint(message: Message, origin: TransactionalComplaintOrigin) -> 
     # the email is during a reply phase, from=alias and to=destination
     if alias:
         LOG.i(
-            "Complaint from {} during reply phase {} -> {}, {}".format(
-                origin.name(), alias, to_address, user
-            )
+            f"Complaint from {origin.name} during reply phase {alias} -> {to_address}, {user}"
         )
         report_complaint_to_user_in_reply_phase(alias, to_address, origin)
         store_transactional_complaint(alias, message)

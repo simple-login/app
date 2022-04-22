@@ -2974,7 +2974,6 @@ class AdminAuditLog(Base):
             action=AuditLogActionEnum.logged_as_user.value,
             model="User",
             model_id=user_id,
-            data={},
         )
 
     @classmethod
