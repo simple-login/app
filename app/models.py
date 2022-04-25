@@ -235,7 +235,7 @@ class AuditLogActionEnum(EnumE):
     disable_2fa = 5
     logged_as_user = 6
     extend_subscription = 7
-    download_transactional_complaint = 8
+    download_provider_complaint = 8
 
 
 class Phase(EnumE):
@@ -2997,23 +2997,23 @@ class AdminAuditLog(Base):
         )
 
     @classmethod
-    def downloaded_transactional_complaint(cls, admin_user_id: int, complaint_id: int):
+    def downloaded_provider_complaint(cls, admin_user_id: int, complaint_id: int):
         cls.create(
             admin_user_id=admin_user_id,
-            action=AuditLogActionEnum.download_transactional_complaint.value,
-            model="TransactionalComplaint",
+            action=AuditLogActionEnum.download_provider_complaint.value,
+            model="ProviderComplaint",
             model_id=complaint_id,
             data={},
         )
 
 
-class TransactionalComplaintState(EnumE):
+class ProviderComplaintState(EnumE):
     new = 0
     reviewed = 1
 
 
-class TransactionalComplaint(Base, ModelMixin):
-    __tablename__ = "transactional_complaint"
+class ProviderComplaint(Base, ModelMixin):
+    __tablename__ = "provider_complaint"
 
     user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
     state = sa.Column(sa.Integer, nullable=False)

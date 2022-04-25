@@ -26,14 +26,14 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     Contact,
-    TransactionalComplaint,
+    ProviderComplaint,
     Phase,
-    TransactionalComplaintState,
+    ProviderComplaintState,
     RefusedEmail,
 )
 
 
-class TransactionalComplaintOrigin(ABC):
+class ProviderComplaintOrigin(ABC):
     @classmethod
     @abstractmethod
     def get_original_message(cls, message: Message) -> Optional[Message]:
@@ -45,7 +45,7 @@ class TransactionalComplaintOrigin(ABC):
         pass
 
 
-class TransactionalYahooOrigin(TransactionalComplaintOrigin):
+class TransactionalYahooOrigin(ProviderComplaintOrigin):
     @classmethod
     def get_original_message(cls, message: Message) -> Optional[Message]:
         # 1st part is the container
@@ -63,7 +63,7 @@ class TransactionalYahooOrigin(TransactionalComplaintOrigin):
         return "yahoo"
 
 
-class TransactionalHotmailOrigin(TransactionalComplaintOrigin):
+class TransactionalHotmailOrigin(ProviderComplaintOrigin):
     @classmethod
     def get_original_message(cls, message: Message) -> Optional[Message]:
         # 1st part is the container
@@ -97,7 +97,7 @@ def find_alias_with_address(address: str) -> Optional[Alias]:
     )
 
 
-def handle_complaint(message: Message, origin: TransactionalComplaintOrigin) -> bool:
+def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
     original_message = origin.get_original_message(message)
 
     try:
@@ -114,7 +114,7 @@ def handle_complaint(message: Message, origin: TransactionalComplaintOrigin) -> 
 
     user = User.get_by(email=to_address)
     if user:
-        LOG.d(f"Handle transactional {origin.name()} complaint for {user}")
+        LOG.d(f"Handle provider {origin.name()} complaint for {user}")
         report_complaint_to_user(user, origin)
         return True
 
@@ -125,7 +125,7 @@ def handle_complaint(message: Message, origin: TransactionalComplaintOrigin) -> 
             f"Complaint from {origin.name} during reply phase {alias} -> {to_address}, {user}"
         )
         report_complaint_to_user_in_reply_phase(alias, to_address, origin)
-        store_transactional_complaint(alias, message)
+        store_provider_complaint(alias, message)
         return True
 
     contact = Contact.get_by(reply_email=from_address)
@@ -145,7 +145,7 @@ def handle_complaint(message: Message, origin: TransactionalComplaintOrigin) -> 
 
 
 def report_complaint_to_user_in_reply_phase(
-    alias: Alias, to_address: str, origin: TransactionalComplaintOrigin
+    alias: Alias, to_address: str, origin: ProviderComplaintOrigin
 ):
     capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
@@ -154,7 +154,7 @@ def report_complaint_to_user_in_reply_phase(
         alias.user.email,
         f"Abuse report from {capitalized_name}",
         render(
-            "transactional/transactional-complaint-reply-phase.txt.jinja2",
+            "transactional/provider-complaint-reply-phase.txt.jinja2",
             user=alias.user,
             alias=alias,
             destination=to_address,
@@ -165,7 +165,7 @@ def report_complaint_to_user_in_reply_phase(
     )
 
 
-def report_complaint_to_user(user: User, origin: TransactionalComplaintOrigin):
+def report_complaint_to_user(user: User, origin: ProviderComplaintOrigin):
     capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
         user,
@@ -173,12 +173,12 @@ def report_complaint_to_user(user: User, origin: TransactionalComplaintOrigin):
         user.email,
         f"Abuse report from {capitalized_name}",
         render(
-            "transactional/transactional-complaint-to-user.txt.jinja2",
+            "transactional/provider-complaint-to-user.txt.jinja2",
             user=user,
             provider=capitalized_name,
         ),
         render(
-            "transactional/transactional-complaint-to-user.html",
+            "transactional/provider-complaint-to-user.html",
             user=user,
             provider=capitalized_name,
         ),
@@ -188,7 +188,7 @@ def report_complaint_to_user(user: User, origin: TransactionalComplaintOrigin):
 
 
 def report_complaint_to_user_in_forward_phase(
-    alias: Alias, origin: TransactionalComplaintOrigin
+    alias: Alias, origin: ProviderComplaintOrigin
 ):
     capitalized_name = origin.name().capitalize()
     user = alias.user
@@ -198,12 +198,12 @@ def report_complaint_to_user_in_forward_phase(
         user.email,
         f"Abuse report from {capitalized_name}",
         render(
-            "transactional/transactional-complaint-forward-phase.txt.jinja2",
+            "transactional/provider-complaint-forward-phase.txt.jinja2",
             user=user,
             provider=capitalized_name,
         ),
         render(
-            "transactional/transactional-complaint-forward-phase.html",
+            "transactional/provider-complaint-forward-phase.html",
             user=user,
             provider=capitalized_name,
         ),
@@ -212,9 +212,9 @@ def report_complaint_to_user_in_forward_phase(
     )
 
 
-def store_transactional_complaint(alias, message):
+def store_provider_complaint(alias, message):
     email_name = f"reply-{uuid.uuid4().hex}.eml"
-    full_report_path = f"transactional_complaint/{email_name}"
+    full_report_path = f"provider_complaint/{email_name}"
     s3.upload_email_from_bytesio(
         full_report_path, BytesIO(to_bytes(message)), email_name
     )
@@ -224,9 +224,9 @@ def store_transactional_complaint(alias, message):
         path=email_name,
         commit=True,
     )
-    TransactionalComplaint.create(
+    ProviderComplaint.create(
         user_id=alias.user_id,
-        state=TransactionalComplaintState.new.value,
+        state=ProviderComplaintState.new.value,
         phase=Phase.reply.value,
         refused_email_id=refused_email.id,
         commit=True,

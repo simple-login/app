@@ -140,7 +140,7 @@ from app.handler.spamd_result import (
     SpamdResult,
     SPFCheckResult,
 )
-from app.handler.transactional_complaint import (
+from app.handler.provider_complaint import (
     handle_hotmail_complaint,
     handle_yahoo_complaint,
 )

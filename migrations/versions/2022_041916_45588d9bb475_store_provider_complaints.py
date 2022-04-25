@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade():
     op.create_table(
-        "transactional_complaint",
+        "provider_complaint",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("created_at", sqlalchemy_utils.types.arrow.ArrowType(), nullable=False),
         sa.Column("updated_at", sqlalchemy_utils.types.arrow.ArrowType(), nullable=True),
@@ -33,4 +33,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table("transactional_complaint")
+    op.drop_table("provider_complaint")

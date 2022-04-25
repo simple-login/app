@@ -12,11 +12,11 @@ from app.config import (
 )
 from app.db import Session
 from app.email import headers
-from app.handler.transactional_complaint import (
+from app.handler.provider_complaint import (
     handle_hotmail_complaint,
     handle_yahoo_complaint,
 )
-from app.models import Alias, TransactionalComplaint, SentAlert
+from app.models import Alias, ProviderComplaint, SentAlert
 from tests.utils import create_new_user
 
 origins = [
@@ -38,7 +38,7 @@ def prepare_complaint(message: Message, part_num: int) -> Message:
 
 
 @pytest.mark.parametrize("handle_ftor,provider,part_num", origins)
-def test_transactional_to_user(flask_client, handle_ftor, provider, part_num):
+def test_provider_to_user(flask_client, handle_ftor, provider, part_num):
     user = create_new_user()
     original_message = Message()
     original_message[headers.TO] = user.email
@@ -47,7 +47,7 @@ def test_transactional_to_user(flask_client, handle_ftor, provider, part_num):
 
     complaint = prepare_complaint(original_message, part_num)
     assert handle_ftor(complaint)
-    found = TransactionalComplaint.filter_by(user_id=user.id).all()
+    found = ProviderComplaint.filter_by(user_id=user.id).all()
     assert len(found) == 0
     alerts = SentAlert.filter_by(user_id=user.id).all()
     assert len(alerts) == 1
@@ -55,7 +55,7 @@ def test_transactional_to_user(flask_client, handle_ftor, provider, part_num):
 
 
 @pytest.mark.parametrize("handle_ftor,provider,part_num", origins)
-def test_transactional_forward_phase(flask_client, handle_ftor, provider, part_num):
+def test_provider_forward_phase(flask_client, handle_ftor, provider, part_num):
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -66,7 +66,7 @@ def test_transactional_forward_phase(flask_client, handle_ftor, provider, part_n
 
     complaint = prepare_complaint(original_message, part_num)
     assert handle_ftor(complaint)
-    found = TransactionalComplaint.filter_by(user_id=user.id).all()
+    found = ProviderComplaint.filter_by(user_id=user.id).all()
     assert len(found) == 1
     alerts = SentAlert.filter_by(user_id=user.id).all()
     assert len(alerts) == 1
@@ -74,7 +74,7 @@ def test_transactional_forward_phase(flask_client, handle_ftor, provider, part_n
 
 
 @pytest.mark.parametrize("handle_ftor,provider,part_num", origins)
-def test_transactional_reply_phase(flask_client, handle_ftor, provider, part_num):
+def test_provider_reply_phase(flask_client, handle_ftor, provider, part_num):
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -85,7 +85,7 @@ def test_transactional_reply_phase(flask_client, handle_ftor, provider, part_num
 
     complaint = prepare_complaint(original_message, part_num)
     assert handle_ftor(complaint)
-    found = TransactionalComplaint.filter_by(user_id=user.id).all()
+    found = ProviderComplaint.filter_by(user_id=user.id).all()
     assert len(found) == 0
     alerts = SentAlert.filter_by(user_id=user.id).all()
     assert len(alerts) == 1

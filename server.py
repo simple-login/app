@@ -37,7 +37,7 @@ from app.admin_model import (
     CouponAdmin,
     CustomDomainAdmin,
     AdminAuditLogAdmin,
-    TransactionalComplaintAdmin,
+    ProviderComplaintAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -91,7 +91,7 @@ from app.models import (
     ManualSubscription,
     Coupon,
     AdminAuditLog,
-    TransactionalComplaint,
+    ProviderComplaint,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -693,7 +693,7 @@ def init_admin(app):
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))
     admin.add_view(AdminAuditLogAdmin(AdminAuditLog, Session))
-    admin.add_view(TransactionalComplaintAdmin(TransactionalComplaint, Session))
+    admin.add_view(ProviderComplaintAdmin(ProviderComplaint, Session))
 
 
 def register_custom_commands(app):

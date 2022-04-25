@@ -21,9 +21,9 @@ from app.models import (
     AppleSubscription,
     AdminAuditLog,
     AuditLogActionEnum,
-    TransactionalComplaintState,
+    ProviderComplaintState,
     Phase,
-    TransactionalComplaint,
+    ProviderComplaint,
 )
 
 
@@ -376,7 +376,7 @@ class AdminAuditLogAdmin(SLModelView):
 
 
 def _transactionalcomplaint_state_formatter(view, context, model, name):
-    return "{} ({})".format(TransactionalComplaintState(model.state).name, model.state)
+    return "{} ({})".format(ProviderComplaintState(model.state).name, model.state)
 
 
 def _transactionalcomplaint_phase_formatter(view, context, model, name):
@@ -390,7 +390,7 @@ def _transactionalcomplaint_refused_email_id_formatter(view, context, model, nam
     return Markup(markupstring)
 
 
-class TransactionalComplaintAdmin(SLModelView):
+class ProviderComplaintAdmin(SLModelView):
     column_searchable_list = ["id", "user.id", "created_at"]
     column_filters = ["user.id", "state"]
     column_hide_backrefs = False
@@ -410,12 +410,12 @@ class TransactionalComplaintAdmin(SLModelView):
         EndpointLinkRowAction("fa fa-check-square", ".mark_ok"),
     ]
 
-    def _get_complaint(self) -> Optional[TransactionalComplaint]:
+    def _get_complaint(self) -> Optional[ProviderComplaint]:
         complain_id = request.args.get("id")
         if complain_id is None:
             flash("Missing id", "error")
             return None
-        complaint = TransactionalComplaint.get_by(id=complain_id)
+        complaint = ProviderComplaint.get_by(id=complain_id)
         if not complaint:
             flash("Could not find complaint", "error")
             return None
@@ -426,7 +426,7 @@ class TransactionalComplaintAdmin(SLModelView):
         complaint = self._get_complaint()
         if not complaint:
             return redirect("/admin/transactionalcomplaint/")
-        complaint.state = TransactionalComplaintState.reviewed.value
+        complaint.state = ProviderComplaintState.reviewed.value
         Session.commit()
         return redirect("/admin/transactionalcomplaint/")
 
@@ -437,7 +437,7 @@ class TransactionalComplaintAdmin(SLModelView):
             return redirect("/admin/transactionalcomplaint/")
         eml_path = complaint.refused_email.full_report_path
         eml_data = s3.download_email(eml_path)
-        AdminAuditLog.downloaded_transactional_complaint(current_user.id, complaint.id)
+        AdminAuditLog.downloaded_provider_complaint(current_user.id, complaint.id)
         Session.commit()
         return Response(
             eml_data,
