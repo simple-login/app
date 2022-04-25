@@ -312,6 +312,8 @@ Input:
 - `page_id` in query. Used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts
   at 0.
 - (Optional) `pinned` in query. If set, only pinned aliases are returned.
+- (Optional) `disabled` in query. If set, only disabled aliases are returned. 
+  Please note `pinned` and `disabled` can't be both present.
 - (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this
   case this endpoint also supports POST.
 
