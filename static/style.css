@@ -182,4 +182,8 @@ textarea.parsley-error {
     #help-btn {
         display: flex;
     }
+
+    #help-menu-item {
+        display: none;
+    }
 }
