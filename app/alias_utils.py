@@ -14,7 +14,6 @@ from app.db import Session
 from app.email_utils import (
     get_email_domain_part,
     send_cannot_create_directory_alias,
-    send_cannot_create_domain_alias,
     can_create_directory_for_address,
     send_cannot_create_directory_alias_disabled,
     get_email_local_part,
