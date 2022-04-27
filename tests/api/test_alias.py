@@ -612,3 +612,22 @@ def test_toggle_contact(flask_client):
 
     assert r.status_code == 200
     assert r.json == {"block_forward": True}
+
+
+def test_get_aliases_disabled_account(flask_client):
+    user, api_key = get_new_user_and_api_key()
+
+    r = flask_client.get(
+        "/api/v2/aliases?page_id=0",
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 200
+
+    user.disabled = True
+    Session.commit()
+
+    r = flask_client.get(
+        "/api/v2/aliases?page_id=0",
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 403
