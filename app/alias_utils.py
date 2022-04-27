@@ -17,6 +17,7 @@ from app.email_utils import (
     can_create_directory_for_address,
     send_cannot_create_directory_alias_disabled,
     get_email_local_part,
+    send_cannot_create_domain_alias,
 )
 from app.errors import AliasInTrashError
 from app.log import LOG
@@ -48,7 +49,7 @@ def check_if_alias_can_be_auto_created(address: str) -> bool:
     except EmailNotValidError:
         return False
 
-    if check_if_alias_can_be_auto_created_for_custom_domain(address):
+    if check_if_alias_can_be_auto_created_for_custom_domain(address, notify_user=False):
         return True
     if check_if_alias_can_be_auto_created_for_a_directory(address, notify_user=False):
         return True
@@ -57,7 +58,7 @@ def check_if_alias_can_be_auto_created(address: str) -> bool:
 
 
 def check_if_alias_can_be_auto_created_for_custom_domain(
-    address: str,
+    address: str, notify_user: bool = True
 ) -> Optional[Tuple[CustomDomain, Optional[AutoCreateRule]]]:
     """
     Check if this address would generate an auto created alias.
@@ -71,6 +72,8 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
         return None
 
     if not custom_domain.user.can_create_new_alias():
+        if notify_user:
+            send_cannot_create_domain_alias(custom_domain.user, address, alias_domain)
         return None
 
     if not custom_domain.catch_all:
