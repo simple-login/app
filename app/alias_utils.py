@@ -49,9 +49,12 @@ def check_if_alias_can_be_auto_created(address: str) -> bool:
     except EmailNotValidError:
         return False
 
-    return check_if_alias_can_be_auto_created_for_custom_domain(
-        address
-    ) or check_if_alias_can_be_auto_created_for_a_directory(address, notify_user=False)
+    if check_if_alias_can_be_auto_created_for_custom_domain(address):
+        return True
+    if check_if_alias_can_be_auto_created_for_a_directory(address, notify_user=False):
+        return True
+
+    return False
 
 
 def check_if_alias_can_be_auto_created_for_custom_domain(
