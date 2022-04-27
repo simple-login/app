@@ -2,7 +2,14 @@
   <div class="container">
     <div class="d-flex">
       <a class="header-brand" href="{{ url_for('dashboard.index') }}">
-        <img src="/static/logo.svg" class="header-brand-img" style="max-width: 8rem" alt="logo">
+        <picture>
+          <source
+              media="(max-width: 650px)"
+              srcset="/static/logo-without-text.svg"
+          >
+
+          <img src="/static/logo.svg" class="header-brand-img" style="max-width: 8rem" alt="logo">
+        </picture>
       </a>
 
       <div class="d-flex order-lg-2 ml-auto">
@@ -70,7 +77,7 @@
         </div>
 
         {% if ZENDESK_ENABLED %}
-          <div class="dropdown nav-item d-flex align-items-center">
+          <div id="help-btn" class="dropdown nav-item align-items-center">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Help</a>
             <div class="dropdown-menu dropdown-menu-left dropdown-menu-arrow">
               <div class="dropdown-item">

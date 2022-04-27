@@ -170,3 +170,20 @@ textarea.parsley-error {
 .domain_detail_content {
     font-size: 15px;
 }
+
+/* Only show the help button on desktop */
+@media only screen and (max-width: 500px) {
+    #help-btn {
+        display: none;
+    }
+}
+
+@media only screen and (min-width: 500px) {
+    #help-btn {
+        display: flex;
+    }
+
+    #help-menu-item {
+        display: none;
+    }
+}
