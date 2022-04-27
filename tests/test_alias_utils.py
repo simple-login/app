@@ -118,7 +118,7 @@ def test_can_auto_create_alias(flask_client):
         if expected_ok:
             assert result, f"Case {test_id} - Failed address {address}"
         else:
-            assert result is None, f"Case {test_id} - Failed address {address}"
+            assert not result, f"Case {test_id} - Failed address {address}"
 
 
 def test_auto_create_alias(flask_client):
