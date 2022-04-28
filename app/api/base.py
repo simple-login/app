@@ -30,6 +30,9 @@ def require_api_auth(f):
 
             g.user = api_key.user
 
+        if g.user.disabled:
+            return jsonify(error="Disabled account"), 403
+
         return f(*args, **kwargs)
 
     return decorated
