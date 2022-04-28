@@ -37,7 +37,9 @@ from app.models import (
 from app.regex_utils import regex_match
 
 
-def get_user_if_alias_would_auto_create(address: str) -> Optional[User]:
+def get_user_if_alias_would_auto_create(
+    address: str, notify_user: bool = False
+) -> Optional[User]:
     banned_prefix = f"{VERP_PREFIX}."
     if address.startswith(banned_prefix):
         LOG.w("alias %s can't start with %s", address, banned_prefix)
@@ -50,12 +52,12 @@ def get_user_if_alias_would_auto_create(address: str) -> Optional[User]:
         return None
 
     will_create = check_if_alias_can_be_auto_created_for_custom_domain(
-        address, notify_user=False
+        address, notify_user=notify_user
     )
     if will_create:
         return will_create[0].user
     directory = check_if_alias_can_be_auto_created_for_a_directory(
-        address, notify_user=False
+        address, notify_user=notify_user
     )
     if directory:
         return directory.user
