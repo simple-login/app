@@ -37,24 +37,30 @@ from app.models import (
 from app.regex_utils import regex_match
 
 
-def check_if_alias_can_be_auto_created(address: str) -> bool:
+def get_user_if_alias_would_auto_create(address: str) -> Optional[User]:
     banned_prefix = f"{VERP_PREFIX}."
     if address.startswith(banned_prefix):
         LOG.w("alias %s can't start with %s", address, banned_prefix)
-        return False
+        return None
 
     try:
         # Prevent addresses with unicode characters (🤯) in them for now.
         validate_email(address, check_deliverability=False, allow_smtputf8=False)
     except EmailNotValidError:
-        return False
+        return None
 
-    if check_if_alias_can_be_auto_created_for_custom_domain(address, notify_user=False):
-        return True
-    if check_if_alias_can_be_auto_created_for_a_directory(address, notify_user=False):
-        return True
+    will_create = check_if_alias_can_be_auto_created_for_custom_domain(
+        address, notify_user=False
+    )
+    if will_create:
+        return will_create[0].user
+    directory = check_if_alias_can_be_auto_created_for_a_directory(
+        address, notify_user=False
+    )
+    if directory:
+        return directory.user
 
-    return False
+    return None
 
 
 def check_if_alias_can_be_auto_created_for_custom_domain(

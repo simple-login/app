@@ -3,7 +3,7 @@ from typing import List
 from app.alias_utils import (
     delete_alias,
     check_alias_prefix,
-    check_if_alias_can_be_auto_created,
+    get_user_if_alias_would_auto_create,
     try_auto_create,
 )
 from app.config import ALIAS_DOMAINS
@@ -15,6 +15,7 @@ from app.models import (
     AutoCreateRule,
     Directory,
     DirectoryMailbox,
+    User,
 )
 from tests.utils import create_new_user, random_domain, random_token
 
@@ -61,8 +62,7 @@ def test_check_alias_prefix(flask_client):
     assert not check_alias_prefix("too-long" * 10)
 
 
-def get_auto_create_alias_tests() -> List:
-    user = create_new_user()
+def get_auto_create_alias_tests(user: User) -> List:
     user.lifetime = True
     catchall = CustomDomain.create(
         user_id=user.id,
@@ -112,17 +112,21 @@ def get_auto_create_alias_tests() -> List:
     ]
 
 
-def test_can_auto_create_alias(flask_client):
-    for test_id, (address, expected_ok) in enumerate(get_auto_create_alias_tests()):
-        result = check_if_alias_can_be_auto_created(address)
+def test_get_user_if_alias_would_auto_create(flask_client):
+    user = create_new_user()
+    for test_id, (address, expected_ok) in enumerate(get_auto_create_alias_tests(user)):
+        result = get_user_if_alias_would_auto_create(address)
         if expected_ok:
-            assert result, f"Case {test_id} - Failed address {address}"
+            assert (
+                isinstance(result, User) and result.id == user.id
+            ), f"Case {test_id} - Failed address {address}"
         else:
             assert not result, f"Case {test_id} - Failed address {address}"
 
 
 def test_auto_create_alias(flask_client):
-    for test_id, (address, expected_ok) in enumerate(get_auto_create_alias_tests()):
+    user = create_new_user()
+    for test_id, (address, expected_ok) in enumerate(get_auto_create_alias_tests(user)):
         result = try_auto_create(address)
         if expected_ok:
             assert result, f"Case {test_id} - Failed address {address}"
