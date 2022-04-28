@@ -51,11 +51,11 @@ def get_user_if_alias_would_auto_create(
     except EmailNotValidError:
         return None
 
-    will_create = check_if_alias_can_be_auto_created_for_custom_domain(
+    domain_and_rule = check_if_alias_can_be_auto_created_for_custom_domain(
         address, notify_user=notify_user
     )
-    if will_create:
-        return will_create[0].user
+    if domain_and_rule:
+        return domain_and_rule[0].user
     directory = check_if_alias_can_be_auto_created_for_a_directory(
         address, notify_user=notify_user
     )
@@ -116,6 +116,7 @@ def check_if_alias_can_be_auto_created_for_a_directory(
 ) -> Optional[Directory]:
     """
     Try to create an alias with directory
+    If an alias would be created, return the dictionary that would trigger the creation. Otherwise, return None.
     """
     # check if alias belongs to a directory, ie having directory/anything@EMAIL_DOMAIN format
     if not can_create_directory_for_address(address):
