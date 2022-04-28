@@ -79,11 +79,12 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
     if not custom_domain:
         return None
 
-    if custon_domain.user.disabled:
-        LOG.i("Disabled user %s can't create new alias via custom domain", domain_user)
+    user: User = custom_domain.user
+    if user.disabled:
+        LOG.i("Disabled user %s can't create new alias via custom domain", user)
         return None
 
-    if not custom_domain.user.can_create_new_alias():
+    if not user.can_create_new_alias():
         if notify_user:
             send_cannot_create_domain_alias(custom_domain.user, address, alias_domain)
         return None
@@ -244,8 +245,13 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
 
     # a rule can have 0 mailboxes. Happened when a mailbox is deleted
     if not mailboxes:
-        LOG.d("use %s default mailbox for %s %s", domain_user, address, custom_domain)
-        mailboxes = [domain_user.default_mailbox]
+        LOG.d(
+            "use %s default mailbox for %s %s",
+            custom_domain.user,
+            address,
+            custom_domain,
+        )
+        mailboxes = [custom_domain.user.default_mailbox]
 
     try:
         LOG.d("create alias %s for domain %s", address, custom_domain)
@@ -271,7 +277,7 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
             "Alias %s was deleted before, cannot auto-create using domain catch-all %s, user %s",
             address,
             custom_domain,
-            domain_user,
+            custom_domain.user,
         )
         return None
     except IntegrityError:
