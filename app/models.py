@@ -2905,6 +2905,9 @@ class PhoneMessage(Base, ModelMixin):
     number = orm.relationship(PhoneNumber)
 
 
+# endregion
+
+
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_log"
 
@@ -3017,7 +3020,7 @@ class ProviderComplaint(Base, ModelMixin):
 
     user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
     state = sa.Column(sa.Integer, nullable=False)
-    phase = sa.Column(sa.Integer, nullable=False)
+    phase = sa.Column(sa.Integer, nullable=False, server_default=Phase.unknown.value)
     # Point to the email that has been refused
     refused_email_id = sa.Column(
         sa.ForeignKey("refused_email.id", ondelete="cascade"), nullable=True

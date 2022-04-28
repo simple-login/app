@@ -45,7 +45,7 @@ class ProviderComplaintOrigin(ABC):
         pass
 
 
-class TransactionalYahooOrigin(ProviderComplaintOrigin):
+class ProviderComplaintYahoo(ProviderComplaintOrigin):
     @classmethod
     def get_original_message(cls, message: Message) -> Optional[Message]:
         # 1st part is the container
@@ -63,7 +63,7 @@ class TransactionalYahooOrigin(ProviderComplaintOrigin):
         return "yahoo"
 
 
-class TransactionalHotmailOrigin(ProviderComplaintOrigin):
+class ProviderComplaintHotmail(ProviderComplaintOrigin):
     @classmethod
     def get_original_message(cls, message: Message) -> Optional[Message]:
         # 1st part is the container
@@ -82,11 +82,11 @@ class TransactionalHotmailOrigin(ProviderComplaintOrigin):
 
 
 def handle_hotmail_complaint(message: Message) -> bool:
-    return handle_complaint(message, TransactionalHotmailOrigin())
+    return handle_complaint(message, ProviderComplaintHotmail())
 
 
 def handle_yahoo_complaint(message: Message) -> bool:
-    return handle_complaint(message, TransactionalYahooOrigin())
+    return handle_complaint(message, ProviderComplaintYahoo())
 
 
 def find_alias_with_address(address: str) -> Optional[Alias]:
