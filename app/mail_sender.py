@@ -4,7 +4,7 @@ from mailbox import Message
 from smtplib import SMTP, SMTPServerDisconnected, SMTPRecipientsRefused
 from typing import Optional, Dict
 
-import newrelic
+import newrelic.agent
 from attr import dataclass
 
 from app.config import (
@@ -20,8 +20,8 @@ from app.message_utils import message_to_bytes
 
 @dataclass
 class SendRequest:
-    from_address: str
-    to_address: str
+    envelope_from: str
+    envelope_to: str
     msg: Message
     mail_options: Dict = {}
     rcpt_options: Dict = {}
@@ -73,15 +73,15 @@ class MailSender:
                 # encode message raw directly instead
                 LOG.d(
                     "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
-                    send_request.from_address,
-                    send_request.to_address,
+                    send_request.envelope_from,
+                    send_request.envelope_to,
                     send_request.msg[headers.FROM],
                     send_request.msg[headers.TO],
                     send_request.msg[headers.CC],
                 )
                 smtp.sendmail(
-                    send_request.from_address,
-                    send_request.to_address,
+                    send_request.envelope_from,
+                    send_request.envelope_to,
                     message_to_bytes(send_request.msg),
                     send_request.mail_options,
                     send_request.rcpt_options,
@@ -110,8 +110,8 @@ mail_sender = MailSender()
 
 
 def sl_sendmail(
-    from_address: str,
-    to_address: str,
+    envelope_from: str,
+    envelope_to: str,
     msg: Message,
     mail_options=(),
     rcpt_options=(),
@@ -120,8 +120,8 @@ def sl_sendmail(
     ignore_smtp_error=False,
 ):
     send_request = SendRequest(
-        from_address,
-        to_address,
+        envelope_from,
+        envelope_to,
         msg,
         mail_options,
         rcpt_options,
