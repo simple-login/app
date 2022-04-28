@@ -14,12 +14,11 @@ from email.message import Message, EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate
-from smtplib import SMTP, SMTPServerDisconnected, SMTPException, SMTPRecipientsRefused
+from smtplib import SMTP, SMTPException
 from typing import Tuple, List, Optional, Union
 
 import arrow
 import dkim
-import newrelic.agent
 import re2 as re
 import spf
 from aiosmtpd.smtp import Envelope
@@ -63,6 +62,8 @@ from app.db import Session
 from app.dns_utils import get_mx_domains
 from app.email import headers
 from app.log import LOG
+from app.mail_sender import sl_sendmail
+from app.message_utils import message_to_bytes
 from app.models import (
     Mailbox,
     User,
@@ -477,7 +478,7 @@ def add_dkim_signature_with_header(
     # Generate message signature
     if DKIM_PRIVATE_KEY:
         sig = dkim.sign(
-            to_bytes(msg),
+            message_to_bytes(msg),
             DKIM_SELECTOR,
             email_domain.encode(),
             DKIM_PRIVATE_KEY.encode(),
@@ -836,7 +837,7 @@ def copy(msg: Message) -> Message:
             return message_from_string(msg.as_string())
         except (UnicodeEncodeError, LookupError):
             LOG.w("as_string() fails, try bytes parsing")
-            return message_from_bytes(to_bytes(msg))
+            return message_from_bytes(message_to_bytes(msg))
 
 
 def to_bytes(msg: Message):
@@ -1305,82 +1306,6 @@ def get_smtp_server():
         smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT)
 
     return smtp
-
-
-def sl_sendmail(
-    from_addr,
-    to_addr,
-    msg: Message,
-    mail_options=(),
-    rcpt_options=(),
-    is_forward: bool = False,
-    retries=2,
-    ignore_smtp_error=False,
-):
-    """replace smtp.sendmail"""
-    if NOT_SEND_EMAIL:
-        LOG.d(
-            "send email with subject '%s', from '%s' to '%s'",
-            msg[headers.SUBJECT],
-            msg[headers.FROM],
-            msg[headers.TO],
-        )
-        return
-
-    try:
-        start = time.time()
-        if POSTFIX_SUBMISSION_TLS:
-            smtp_port = 587
-        else:
-            smtp_port = POSTFIX_PORT
-
-        with SMTP(POSTFIX_SERVER, smtp_port) as smtp:
-            if POSTFIX_SUBMISSION_TLS:
-                smtp.starttls()
-
-            elapsed = time.time() - start
-            LOG.d("getting a smtp connection takes seconds %s", elapsed)
-            newrelic.agent.record_custom_metric("Custom/smtp_connection_time", elapsed)
-
-            # smtp.send_message has UnicodeEncodeError
-            # encode message raw directly instead
-            LOG.d(
-                "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
-                from_addr,
-                to_addr,
-                msg[headers.FROM],
-                msg[headers.TO],
-                msg[headers.CC],
-            )
-            smtp.sendmail(
-                from_addr,
-                to_addr,
-                to_bytes(msg),
-                mail_options,
-                rcpt_options,
-            )
-    except (SMTPServerDisconnected, SMTPRecipientsRefused) as e:
-        if retries > 0:
-            LOG.w(
-                "SMTPServerDisconnected or SMTPRecipientsRefused error %s, retry",
-                e,
-                exc_info=True,
-            )
-            time.sleep(0.3 * retries)
-            sl_sendmail(
-                from_addr,
-                to_addr,
-                msg,
-                mail_options,
-                rcpt_options,
-                is_forward,
-                retries=retries - 1,
-            )
-        else:
-            if ignore_smtp_error:
-                LOG.w("Ignore smtp error %s", e)
-            else:
-                raise
 
 
 def get_queue_id(msg: Message) -> Optional[str]:
