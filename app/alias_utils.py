@@ -79,6 +79,10 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
     if not custom_domain:
         return None
 
+    if custon_domain.user.disabled:
+        LOG.i("Disabled user %s can't create new alias via custom domain", domain_user)
+        return None
+
     if not custom_domain.user.can_create_new_alias():
         if notify_user:
             send_cannot_create_domain_alias(custom_domain.user, address, alias_domain)
@@ -135,6 +139,9 @@ def check_if_alias_can_be_auto_created_for_a_directory(
         return None
 
     user: User = directory.user
+    if user.disabled:
+        LOG.i("Disabled %s can't create new alias with directory", user)
+        return None
 
     if not user.can_create_new_alias():
         if notify_user:
@@ -227,14 +234,13 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
     if not can_create:
         return None
     custom_domain, rule = can_create
+
     if rule:
         alias_note = f"Created by rule {rule.order} with regex {rule.regex}"
         mailboxes = rule.mailboxes
     else:
         alias_note = "Created by catchall option"
         mailboxes = custom_domain.mailboxes
-
-    domain_user: User = custom_domain.user
 
     # a rule can have 0 mailboxes. Happened when a mailbox is deleted
     if not mailboxes:
