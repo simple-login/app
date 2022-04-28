@@ -115,7 +115,7 @@ def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
     user = User.get_by(email=to_address)
     if user:
         LOG.d(f"Handle provider {origin.name()} complaint for {user}")
-        report_complaint_to_user(user, origin)
+        report_complaint_to_user_in_transactional_phase(user, origin)
         return True
 
     alias = find_alias_with_address(from_address)
@@ -165,7 +165,7 @@ def report_complaint_to_user_in_reply_phase(
     )
 
 
-def report_complaint_to_user(user: User, origin: ProviderComplaintOrigin):
+def report_complaint_to_user_in_transactional_phase(user: User, origin: ProviderComplaintOrigin):
     capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
         user,
