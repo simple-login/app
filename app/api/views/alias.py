@@ -80,6 +80,7 @@ def get_aliases_v2():
         page_id: in query
         pinned: in query
         disabled: in query
+        enabled: in query
     Output:
         - aliases: list of alias:
             - id
@@ -112,11 +113,14 @@ def get_aliases_v2():
 
     pinned = "pinned" in request.args
     disabled = "disabled" in request.args
+    enabled = "enabled" in request.args
 
     if pinned:
         alias_filter = "pinned"
     elif disabled:
         alias_filter = "disabled"
+    elif enabled:
+        alias_filter = "enabled"
     else:
         alias_filter = None
 
