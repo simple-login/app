@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Optional
 
-import newrelic
+import newrelic.agent
 
 from app.email import headers
 from app.models import EnumE
