@@ -17,11 +17,11 @@ from app.email_utils import (
     send_email_with_rate_control,
     render,
     add_or_replace_header,
-    to_bytes,
     add_header,
 )
 from app.handler.spamd_result import SpamdResult, Phase, DmarcCheckResult
 from app.log import LOG
+from app.message_utils import message_to_bytes
 from app.models import Alias, Contact, Notification, EmailLog, RefusedEmail
 
 
@@ -102,7 +102,7 @@ def quarantine_dmarc_failed_forward_email(alias, contact, envelope, msg) -> Emai
     random_name = str(uuid.uuid4())
     s3_report_path = f"refused-emails/full-{random_name}.eml"
     s3.upload_email_from_bytesio(
-        s3_report_path, BytesIO(to_bytes(msg)), f"full-{random_name}"
+        s3_report_path, BytesIO(message_to_bytes(msg)), f"full-{random_name}"
     )
     refused_email = RefusedEmail.create(
         full_report_path=s3_report_path, user_id=alias.user_id, flush=True
