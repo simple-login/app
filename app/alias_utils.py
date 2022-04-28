@@ -82,6 +82,9 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             return None
 
         user: User = directory.user
+        if user.disabled:
+            LOG.i("Disabled %s can't create new alias with directory", user)
+            return None
 
         if not user.can_create_new_alias():
             send_cannot_create_directory_alias(user, address, directory_name)
@@ -139,6 +142,11 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
     if not custom_domain:
         return None
 
+    domain_user: User = custom_domain.user
+    if domain_user.disabled:
+        LOG.i("Disabled user %s can't create new alias via custom domain", domain_user)
+        return None
+
     if not custom_domain.catch_all and len(custom_domain.auto_create_rules) == 0:
         return None
     elif not custom_domain.catch_all and len(custom_domain.auto_create_rules) > 0:
@@ -161,8 +169,6 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
     else:  # catch-all is enabled
         mailboxes = custom_domain.mailboxes
         alias_note = "Created by catch-all option"
-
-    domain_user: User = custom_domain.user
 
     if not domain_user.can_create_new_alias():
         send_cannot_create_domain_alias(domain_user, address, alias_domain)
