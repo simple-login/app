@@ -313,7 +313,8 @@ Input:
   at 0.
 - (Optional) `pinned` in query. If set, only pinned aliases are returned.
 - (Optional) `disabled` in query. If set, only disabled aliases are returned. 
-  Please note `pinned` and `disabled` can't be both present.
+- (Optional) `enabled` in query. If set, only enabled aliases are returned. 
+  Please note `pinned`, `disabled`, `enabled` are exclusive, i.e. only one can be present.
 - (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this
   case this endpoint also supports POST.
 
