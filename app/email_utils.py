@@ -8,23 +8,20 @@ import random
 import time
 import uuid
 from copy import deepcopy
-
-from aiosmtpd.smtp import Envelope
-
 from email import policy, message_from_bytes, message_from_string
 from email.header import decode_header, Header
 from email.message import Message, EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate
-from smtplib import SMTP, SMTPServerDisconnected, SMTPException, SMTPRecipientsRefused
+from smtplib import SMTP, SMTPException
 from typing import Tuple, List, Optional, Union
 
 import arrow
 import dkim
-import newrelic.agent
 import re2 as re
 import spf
+from aiosmtpd.smtp import Envelope
 from cachetools import cached, TTLCache
 from email_validator import (
     validate_email,
@@ -65,6 +62,8 @@ from app.db import Session
 from app.dns_utils import get_mx_domains
 from app.email import headers
 from app.log import LOG
+from app.mail_sender import sl_sendmail
+from app.message_utils import message_to_bytes
 from app.models import (
     Mailbox,
     User,
@@ -85,6 +84,10 @@ from app.utils import (
     convert_to_alphanumeric,
     sanitize_email,
 )
+
+# 2022-01-01 00:00:00
+VERP_TIME_START = 1640995200
+VERP_HMAC_ALGO = "sha3-224"
 
 
 def render(template_name, **kwargs) -> str:
@@ -475,7 +478,7 @@ def add_dkim_signature_with_header(
     # Generate message signature
     if DKIM_PRIVATE_KEY:
         sig = dkim.sign(
-            to_bytes(msg),
+            message_to_bytes(msg),
             DKIM_SELECTOR,
             email_domain.encode(),
             DKIM_PRIVATE_KEY.encode(),
@@ -810,29 +813,24 @@ def copy(msg: Message) -> Message:
             return message_from_string(msg.as_string())
         except (UnicodeEncodeError, LookupError):
             LOG.w("as_string() fails, try bytes parsing")
-            return message_from_bytes(to_bytes(msg))
+            return message_from_bytes(message_to_bytes(msg))
 
 
 def to_bytes(msg: Message):
     """replace Message.as_bytes() method by trying different policies"""
-    try:
-        return msg.as_bytes()
-    except UnicodeEncodeError:
-        LOG.w("as_bytes fails with default policy, try SMTP policy")
+    for generator_policy in [None, policy.SMTP, policy.SMTPUTF8]:
         try:
-            return msg.as_bytes(policy=policy.SMTP)
-        except UnicodeEncodeError:
-            LOG.w("as_bytes fails with SMTP policy, try SMTPUTF8 policy")
-            try:
-                return msg.as_bytes(policy=policy.SMTPUTF8)
-            except UnicodeEncodeError:
-                LOG.w("as_bytes fails with SMTPUTF8 policy, try converting to string")
-                msg_string = msg.as_string()
-                try:
-                    return msg_string.encode()
-                except UnicodeEncodeError as e:
-                    LOG.w("can't encode msg, err:%s", e)
-                    return msg_string.encode(errors="replace")
+            return msg.as_bytes(policy=generator_policy)
+        except:
+            LOG.w("as_bytes() fails with %s policy", policy, exc_info=True)
+
+    msg_string = msg.as_string()
+    try:
+        return msg_string.encode()
+    except:
+        LOG.w("as_string().encode() fails", exc_info=True)
+
+    return msg_string.encode(errors="replace")
 
 
 def should_add_dkim_signature(domain: str) -> bool:
@@ -1286,82 +1284,6 @@ def get_smtp_server():
     return smtp
 
 
-def sl_sendmail(
-    from_addr,
-    to_addr,
-    msg: Message,
-    mail_options=(),
-    rcpt_options=(),
-    is_forward: bool = False,
-    retries=2,
-    ignore_smtp_error=False,
-):
-    """replace smtp.sendmail"""
-    if NOT_SEND_EMAIL:
-        LOG.d(
-            "send email with subject '%s', from '%s' to '%s'",
-            msg[headers.SUBJECT],
-            msg[headers.FROM],
-            msg[headers.TO],
-        )
-        return
-
-    try:
-        start = time.time()
-        if POSTFIX_SUBMISSION_TLS:
-            smtp_port = 587
-        else:
-            smtp_port = POSTFIX_PORT
-
-        with SMTP(POSTFIX_SERVER, smtp_port) as smtp:
-            if POSTFIX_SUBMISSION_TLS:
-                smtp.starttls()
-
-            elapsed = time.time() - start
-            LOG.d("getting a smtp connection takes seconds %s", elapsed)
-            newrelic.agent.record_custom_metric("Custom/smtp_connection_time", elapsed)
-
-            # smtp.send_message has UnicodeEncodeError
-            # encode message raw directly instead
-            LOG.d(
-                "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
-                from_addr,
-                to_addr,
-                msg[headers.FROM],
-                msg[headers.TO],
-                msg[headers.CC],
-            )
-            smtp.sendmail(
-                from_addr,
-                to_addr,
-                to_bytes(msg),
-                mail_options,
-                rcpt_options,
-            )
-    except (SMTPServerDisconnected, SMTPRecipientsRefused) as e:
-        if retries > 0:
-            LOG.w(
-                "SMTPServerDisconnected or SMTPRecipientsRefused error %s, retry",
-                e,
-                exc_info=True,
-            )
-            time.sleep(0.3 * retries)
-            sl_sendmail(
-                from_addr,
-                to_addr,
-                msg,
-                mail_options,
-                rcpt_options,
-                is_forward,
-                retries=retries - 1,
-            )
-        else:
-            if ignore_smtp_error:
-                LOG.w("Ignore smtp error %s", e)
-            else:
-                raise
-
-
 def get_queue_id(msg: Message) -> Optional[str]:
     """Get the Postfix queue-id from a message"""
     header_values = msg.get_all(headers.RSPAMD_QUEUE_ID)
@@ -1450,14 +1372,22 @@ def save_envelope_for_debugging(envelope: Envelope, file_name_prefix=None) -> st
 def generate_verp_email(
     verp_type: VerpType, object_id: int, sender_domain: Optional[str] = None
 ) -> str:
+    """Generates an email address with the verp type, object_id and domain encoded in the address
+    and signed with hmac to prevent tampering
+    """
     # Encoded as a list to minimize size of email address
-    data = [verp_type.bounce_forward.value, object_id, int(time.time())]
+    # Time is in minutes granularity and start counting on 2022-01-01 to reduce bytes to represent time
+    data = [
+        verp_type.bounce_forward.value,
+        object_id,
+        int((time.time() - VERP_TIME_START) / 60),
+    ]
     json_payload = json.dumps(data).encode("utf-8")
     # Signing without itsdangereous because it uses base64 that includes +/= symbols and lower and upper case letters.
     # We need to encode in base32
     payload_hmac = hmac.new(
-        VERP_EMAIL_SECRET.encode("utf-8"), json_payload, "shake128"
-    ).digest()
+        VERP_EMAIL_SECRET.encode("utf-8"), json_payload, VERP_HMAC_ALGO
+    ).digest()[:8]
     encoded_payload = base64.b32encode(json_payload).rstrip(b"=").decode("utf-8")
     encoded_signature = base64.b32encode(payload_hmac).rstrip(b"=").decode("utf-8")
     return "{}.{}.{}@{}".format(
@@ -1465,9 +1395,8 @@ def generate_verp_email(
     ).lower()
 
 
-# This method processes the email address, checks if it's a signed verp email generated by us to receive bounces
-# and extracts the type of verp email and associated email log id/transactional email id stored as object_id
-def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
+# Remove this method after 2022-05-20. Just for backwards compat.
+def deprecated_get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     idx = email.find("@")
     if idx == -1:
         return None
@@ -1491,3 +1420,39 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     if data[2] > time.time() + VERP_MESSAGE_LIFETIME:
         return None
     return VerpType(data[0]), data[1]
+
+
+def new_get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
+    """This method processes the email address, checks if it's a signed verp email generated by us to receive bounces
+    and extracts the type of verp email and associated email log id/transactional email id stored as object_id
+    """
+    idx = email.find("@")
+    if idx == -1:
+        return None
+    username = email[:idx]
+    fields = username.split(".")
+    if len(fields) != 3 or fields[0] != VERP_PREFIX:
+        return None
+    padding = (8 - (len(fields[1]) % 8)) % 8
+    payload = base64.b32decode(fields[1].encode("utf-8").upper() + (b"=" * padding))
+    padding = (8 - (len(fields[2]) % 8)) % 8
+    signature = base64.b32decode(fields[2].encode("utf-8").upper() + (b"=" * padding))
+    expected_signature = hmac.new(
+        VERP_EMAIL_SECRET.encode("utf-8"), payload, VERP_HMAC_ALGO
+    ).digest()[:8]
+    if expected_signature != signature:
+        return None
+    data = json.loads(payload)
+    # verp type, object_id, time
+    if len(data) != 3:
+        return None
+    if data[2] > (time.time() + VERP_MESSAGE_LIFETIME - VERP_TIME_START) / 60:
+        return None
+    return VerpType(data[0]), data[1]
+
+
+# Replace with new_get_verp_info_from_email when deprecated_get_verp_info_from_email is removed
+def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
+    return new_get_verp_info_from_email(email) or deprecated_get_verp_info_from_email(
+        email
+    )

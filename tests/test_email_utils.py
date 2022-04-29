@@ -19,7 +19,6 @@ from app.email_utils import (
     get_header_from_bounce,
     is_valid_email,
     add_header,
-    to_bytes,
     generate_reply_email,
     normalize_reply_email,
     get_encoding,
@@ -159,23 +158,6 @@ def test_send_email_with_rate_control(flask_client):
     assert not send_email_with_rate_control(
         user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
     )
-
-
-def test_copy():
-    email_str = """
-    From: abcd@gmail.com
-    To: hey@example.org
-    Subject: subject
-
-    Body
-    """
-    msg = email.message_from_string(email_str)
-    msg2 = copy(msg)
-    assert to_bytes(msg) == to_bytes(msg2)
-
-    msg = email.message_from_string("👌")
-    msg2 = copy(msg)
-    assert to_bytes(msg) == to_bytes(msg2)
 
 
 def test_get_spam_from_header():
@@ -474,19 +456,6 @@ Content-Type: text/html;	charset=us-ascii
 
     assert "new" in new_msg.as_string()
     assert "old" not in new_msg.as_string()
-
-
-def test_to_bytes():
-    msg = email.message_from_string("☕️ emoji")
-    assert to_bytes(msg)
-    # \n is appended when message is converted to bytes
-    assert to_bytes(msg).decode() == "\n☕️ emoji"
-
-    msg = email.message_from_string("ascii")
-    assert to_bytes(msg) == b"\nascii"
-
-    msg = email.message_from_string("éèà€")
-    assert to_bytes(msg).decode() == "\néèà€"
 
 
 def test_generate_reply_email(flask_client):

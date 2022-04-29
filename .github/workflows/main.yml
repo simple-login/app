@@ -8,7 +8,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.7]
+        python-version: [3.7, "3.10"]
 
     # service containers to run with `postgres-job`
     services:
@@ -58,6 +58,12 @@ jobs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install OS dependencies
+        if: ${{ matrix.python-version }} == '3.10'
+        run: |
+          sudo apt update
+          sudo apt install -y libre2-dev libpq-dev
 
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'

@@ -153,6 +153,13 @@ def fido():
         webauthn_users, challenge
     )
     webauthn_assertion_options = webauthn_assertion_options.assertion_dict
+    try:
+        # HACK: We need to upgrade to webauthn > 1 so it can support specifying the transports
+        for credential in webauthn_assertion_options["allowCredentials"]:
+            del credential["transports"]
+    except KeyError:
+        # Should never happen but...
+        pass
 
     return render_template(
         "auth/fido.html",

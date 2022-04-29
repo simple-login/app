@@ -195,6 +195,44 @@ def test_get_pinned_aliases_v2(flask_client):
     assert r.json["aliases"][0]["id"] == a0.id
 
 
+def test_get_disabled_aliases_v2(flask_client):
+    user = login(flask_client)
+
+    a0 = Alias.create_new(user, "prefix0")
+    a0.enabled = False
+    Session.commit()
+
+    r = flask_client.get("/api/v2/aliases?page_id=0")
+    assert r.status_code == 200
+    # the default alias (created when user is created) and a0 are returned
+    assert len(r.json["aliases"]) == 2
+
+    r = flask_client.get("/api/v2/aliases?page_id=0&disabled=true")
+    assert r.status_code == 200
+    # only a0 is returned
+    assert len(r.json["aliases"]) == 1
+    assert r.json["aliases"][0]["id"] == a0.id
+
+
+def test_get_enabled_aliases_v2(flask_client):
+    user = login(flask_client)
+
+    a0 = Alias.create_new(user, "prefix0")
+    a0.enabled = False
+    Session.commit()
+
+    r = flask_client.get("/api/v2/aliases?page_id=0")
+    assert r.status_code == 200
+    # the default alias (created when user is created) and a0 are returned
+    assert len(r.json["aliases"]) == 2
+
+    r = flask_client.get("/api/v2/aliases?page_id=0&enabled=true")
+    assert r.status_code == 200
+    # only the first alias is returned
+    assert len(r.json["aliases"]) == 1
+    assert r.json["aliases"][0]["id"] != a0.id
+
+
 def test_delete_alias(flask_client):
     user = login(flask_client)
 
@@ -593,3 +631,22 @@ def test_toggle_contact(flask_client):
 
     assert r.status_code == 200
     assert r.json == {"block_forward": True}
+
+
+def test_get_aliases_disabled_account(flask_client):
+    user, api_key = get_new_user_and_api_key()
+
+    r = flask_client.get(
+        "/api/v2/aliases?page_id=0",
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 200
+
+    user.disabled = True
+    Session.commit()
+
+    r = flask_client.get(
+        "/api/v2/aliases?page_id=0",
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 403

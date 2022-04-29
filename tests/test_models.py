@@ -250,3 +250,11 @@ def test_EnumE():
 
     assert E.get_value("A") == 100
     assert E.get_value("Not existent") is None
+
+
+def test_can_create_new_alias_disabled_user():
+    user = create_new_user()
+    assert user.can_create_new_alias()
+
+    user.disabled = True
+    assert not user.can_create_new_alias()

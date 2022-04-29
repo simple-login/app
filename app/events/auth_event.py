@@ -1,4 +1,4 @@
-import newrelic
+import newrelic.agent
 
 from app.models import EnumE
 

@@ -26,6 +26,9 @@ authors = ["SimpleLogin <dev@simplelogin.io>"]
 license = "MIT"
 repository = "https://github.com/simple-login/app"
 keywords = ["email", "alias", "privacy", "oauth2", "openid"]
+packages = [
+  { include = "app/" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -39,7 +42,7 @@ bcrypt = "^3.2.0"
 python-dotenv = "^0.14.0"
 ipython = "^7.31.1"
 sqlalchemy_utils = "^0.36.8"
-psycopg2-binary = "^2.8.6"
+psycopg2-binary = "^2.9.3"
 sentry_sdk = "^1.4.3"
 blinker = "^1.4"
 arrow = "^0.16.0"
@@ -71,10 +74,10 @@ webauthn = "^0.4.7"
 pyspf = "^2.0.14"
 Flask-Limiter = "^1.4"
 memory_profiler = "^0.57.0"
-gevent = "^20.9.0"
+gevent = "^21.12.0"
 aiospamc = "^0.6.1"
 email_validator = "^1.1.1"
-PGPy = "^0.5.3"
+PGPy = "0.5.4"
 coinbase-commerce = "^1.0.1"
 requests = "^2.25.1"
 newrelic = "^6.4.4"

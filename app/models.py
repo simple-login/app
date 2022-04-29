@@ -690,6 +690,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         Whether user can create a new alias. User can't create a new alias if
         - has more than 15 aliases in the free plan, *even in the free trial*
         """
+        if self.disabled:
+            return False
+
         if self.lifetime_or_active_subscription():
             return True
         else:
