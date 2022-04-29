@@ -165,7 +165,9 @@ def report_complaint_to_user_in_reply_phase(
     )
 
 
-def report_complaint_to_user_in_transactional_phase(user: User, origin: ProviderComplaintOrigin):
+def report_complaint_to_user_in_transactional_phase(
+    user: User, origin: ProviderComplaintOrigin
+):
     capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
         user,
