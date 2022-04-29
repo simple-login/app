@@ -3023,7 +3023,9 @@ class ProviderComplaint(Base, ModelMixin):
 
     user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
     state = sa.Column(sa.Integer, nullable=False)
-    phase = sa.Column(sa.Integer, nullable=False, server_default=str(Phase.unknown.value))
+    phase = sa.Column(
+        sa.Integer, nullable=False, server_default=str(Phase.unknown.value)
+    )
     # Point to the email that has been refused
     refused_email_id = sa.Column(
         sa.ForeignKey("refused_email.id", ondelete="cascade"), nullable=True
