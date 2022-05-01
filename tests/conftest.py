@@ -9,7 +9,6 @@ os.environ["CONFIG"] = os.path.abspath(
 import sqlalchemy
 
 from app.db import Session, engine, connection
-from app.models import Base
 
 from psycopg2 import errors
 from psycopg2.errorcodes import DEPENDENT_OBJECTS_STILL_EXIST
@@ -33,8 +32,6 @@ with engine.connect() as conn:
         if isinstance(e.orig, errors.lookup(DEPENDENT_OBJECTS_STILL_EXIST)):
             print(">>> pg_trgm can't be dropped, ignore")
         conn.execute("Rollback")
-
-# Base.metadata.create_all(engine)
 
 add_sl_domains()
 
