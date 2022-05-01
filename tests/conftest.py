@@ -34,7 +34,7 @@ with engine.connect() as conn:
             print(">>> pg_trgm can't be dropped, ignore")
         conn.execute("Rollback")
 
-Base.metadata.create_all(engine)
+# Base.metadata.create_all(engine)
 
 add_sl_domains()
 
