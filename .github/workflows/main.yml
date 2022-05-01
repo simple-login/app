@@ -79,7 +79,7 @@ jobs:
 
       - name: Run db migration
         run: |
-          poetry run alembic upgrade head
+          CONFIG=tests/test.env poetry run alembic upgrade head
 
       - name: Test with pytest
         run: |
