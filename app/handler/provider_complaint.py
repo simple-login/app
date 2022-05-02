@@ -7,7 +7,7 @@ from typing import Optional
 from app import s3
 from app.config import (
     ALERT_COMPLAINT_REPLY_PHASE,
-    ALERT_COMPLAINT_TO_USER,
+    ALERT_COMPLAINT_TRANSACTIONAL_PHASE,
     ALERT_COMPLAINT_FORWARD_PHASE,
 )
 from app.email import headers
@@ -171,7 +171,7 @@ def report_complaint_to_user_in_transactional_phase(
     capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
         user,
-        f"{ALERT_COMPLAINT_TO_USER}_{origin.name()}",
+        f"{ALERT_COMPLAINT_TRANSACTIONAL_PHASE}_{origin.name()}",
         user.email,
         f"Abuse report from {capitalized_name}",
         render(

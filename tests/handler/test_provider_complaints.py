@@ -8,7 +8,7 @@ import pytest
 from app.config import (
     ALERT_COMPLAINT_FORWARD_PHASE,
     ALERT_COMPLAINT_REPLY_PHASE,
-    ALERT_COMPLAINT_TO_USER,
+    ALERT_COMPLAINT_TRANSACTIONAL_PHASE,
 )
 from app.db import Session
 from app.email import headers
@@ -51,7 +51,7 @@ def test_provider_to_user(flask_client, handle_ftor, provider, part_num):
     assert len(found) == 0
     alerts = SentAlert.filter_by(user_id=user.id).all()
     assert len(alerts) == 1
-    assert alerts[0].alert_type == f"{ALERT_COMPLAINT_TO_USER}_{provider}"
+    assert alerts[0].alert_type == f"{ALERT_COMPLAINT_TRANSACTIONAL_PHASE}_{provider}"
 
 
 @pytest.mark.parametrize("handle_ftor,provider,part_num", origins)

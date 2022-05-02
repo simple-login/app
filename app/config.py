@@ -338,7 +338,7 @@ ALERT_DIRECTORY_DISABLED_ALIAS_CREATION = "alert_directory_disabled_alias_creati
 
 ALERT_COMPLAINT_REPLY_PHASE = "alert_complaint_reply_phase"
 ALERT_COMPLAINT_FORWARD_PHASE = "alert_complaint_forward_phase"
-ALERT_COMPLAINT_TO_USER = "alert_complaint_to_user"
+ALERT_COMPLAINT_TRANSACTIONAL_PHASE = "alert_complaint_transactional_phase"
 
 ALERT_QUARANTINE_DMARC = "alert_quarantine_dmarc"
 
