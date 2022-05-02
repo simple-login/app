@@ -77,6 +77,10 @@ jobs:
           poetry run black --check .
           poetry run flake8
 
+      - name: Run db migration
+        run: |
+          CONFIG=tests/test.env poetry run alembic upgrade head
+
       - name: Test with pytest
         run: |
           poetry run pytest
