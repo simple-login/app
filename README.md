@@ -207,7 +207,7 @@ If you don't already have Docker installed on your server, please follow the ste
 You can also install Docker using the [docker-install](https://github.com/docker/docker-install) script which is
 
 ```bash
-curl -fsSL https://get.docker.com | sh
+curl -fsSL https://get.docker.com | sh 
 ```
 
 ### Prepare the Docker network
@@ -241,6 +241,33 @@ docker run -d \
     --restart always \
     --network="sl-network" \
     postgres:12.1
+```
+
+if you want to use docker-compose you can paste this inside your `docker-compose.yml` file
+
+```
+version: "3"
+#connecting to the pre made sl-network.
+networks:
+    default:
+        external:
+            name: sl-network
+
+# all file paths are relative to the docker-compose file
+
+services:
+    postgres:
+        image: postgres:12.1
+        container_name: sl-db
+        ports:
+            - "127.0.0.1:5432:5432"
+        volumes:
+            - ./sl/db:/var/lib/postgresql/data
+        environment:
+            - POSTGRES_PASSWORD=mypassword
+            - POSTGRES_USER=myuser
+            - POSTGRES_DB=simplelogin
+        restart: unless-stopped
 ```
 
 To test whether the database operates correctly or not, run the following command:
@@ -440,9 +467,41 @@ docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
     simplelogin/app:3.4.0 python init_app.py
-```
 
-Now, it's time to run the `webapp` container!
+Now, it's time to run the `webapp` and `job_runner` containers!
+
+for docker-compose add this to your file:
+
+```
+    sl-app:
+        image: simplelogin/app:3.2.2
+        ports:
+            - "7777:7777"
+        restart: unless-stopped
+        volumes:
+        - ./sl:/sl
+        - ./sl/upload:/code/static/upload
+        - ./simplelogin.env:/code/.env
+        - ./dkim.key:/dkim.key
+        - ./dkim.pub.key:/dkim.pub.key
+
+    sl-email:
+        image: simplelogin/app:3.2.2
+        command: python job_runner.py
+        ports:
+            - "20381:20381"
+        restart: unless-stopped
+        volumes:
+        - ./sl:/sl
+        - ./sl/upload:/code/static/upload
+        - ./simplelogin.env:/code/.env
+        - ./dkim.key:/dkim.key
+        - ./dkim.pub.key:/dkim.pub.key
+
+```
+docker-cli:
+
+`webapp` container:
 
 ```bash
 docker run -d \
@@ -516,6 +575,40 @@ sudo systemctl reload nginx
 ```
 
 At this step, you should also setup the SSL for Nginx. 
+[Certbot](https://certbot.eff.org/lets-encrypt/ubuntuxenial-nginx) can be a good option if you want a free SSL certificate.
+
+### Apache
+
+Install Apache and make sure to replace `mydomain.com` by your domain
+
+```bash
+sudo apt-get install -y apache2
+```
+```
+<IfModule mod_ssl.c>
+  <VirtualHost _default_:443>
+    ServerName mydomain.com
+    DocumentRoot /var/www/html
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    SSLEngine on
+    SSLCertificateFile      /etc/ssl/certs/ssl-cert-snakeoil.pem
+    SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:7777/
+    ProxyPassReverse / http://127.0.0.1:7777/
+    <FilesMatch "\.(cgi|shtml|phtml|php)$">
+      SSLOptions +StdEnvVars
+    </FilesMatch>
+    <Directory /usr/lib/cgi-bin>
+      SSLOptions +StdEnvVars
+    </Directory>
+  </VirtualHost>
+</IfModule>
+```
+
+this will use the default self-signed cert.
+
 [Certbot](https://certbot.eff.org/instructions) can be a good option if you want a free SSL certificate.
 
 ### Enjoy!
