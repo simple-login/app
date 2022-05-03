@@ -11,17 +11,11 @@ from flask import url_for
 
 from app.models import User
 
-# keep track of the number of user
-_nb_user = 0
-
 
 def create_new_user() -> User:
-    global _nb_user
-    _nb_user += 1
-
     # new user has a different email address
     user = User.create(
-        email=f"{_nb_user}@mailbox.test",
+        email=f"user{random.random()}@mailbox.test",
         password="password",
         name="Test User",
         activated=True,

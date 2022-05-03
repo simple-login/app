@@ -336,10 +336,9 @@ AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN = "custom_domain_mx_record_issue"
 # alert when a new alias is about to be created on a disabled directory
 ALERT_DIRECTORY_DISABLED_ALIAS_CREATION = "alert_directory_disabled_alias_creation"
 
-ALERT_HOTMAIL_COMPLAINT = "alert_hotmail_complaint"
-ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE = "alert_hotmail_complaint_reply_phase"
-ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL = "alert_hotmail_complaint_transactional"
-ALERT_YAHOO_COMPLAINT = "alert_yahoo_complaint"
+ALERT_COMPLAINT_REPLY_PHASE = "alert_complaint_reply_phase"
+ALERT_COMPLAINT_FORWARD_PHASE = "alert_complaint_forward_phase"
+ALERT_COMPLAINT_TRANSACTIONAL_PHASE = "alert_complaint_transactional_phase"
 
 ALERT_QUARANTINE_DMARC = "alert_quarantine_dmarc"
 

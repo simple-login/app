@@ -1,0 +1,15 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Hi,
+
+This is SimpleLogin team.
+
+We have received a report from {{ provider }} informing us about an email sent from your alias {{ alias.email }} to {{ destination }} that might have been considered as spam, either by the recipient or by their spam filter.
+
+Please note that sending non-solicited email from a SimpleLogin alias infringes our terms and condition as it severely affects SimpleLogin email delivery.
+
+If somehow the recipient's provider considers a forwarded email as Spam, it helps us a lot if you can ask them to move the email out of their Spam folder.
+
+Don't hesitate to get in touch with us if you need more information.
+{% endblock %}

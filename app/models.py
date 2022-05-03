@@ -235,6 +235,13 @@ class AuditLogActionEnum(EnumE):
     disable_2fa = 5
     logged_as_user = 6
     extend_subscription = 7
+    download_provider_complaint = 8
+
+
+class Phase(EnumE):
+    unknown = 0
+    forward = 1
+    reply = 2
 
 
 class VerpType(EnumE):
@@ -2901,6 +2908,9 @@ class PhoneMessage(Base, ModelMixin):
     number = orm.relationship(PhoneNumber)
 
 
+# endregion
+
+
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_log"
 
@@ -2910,7 +2920,7 @@ class AdminAuditLog(Base):
     action = sa.Column(sa.Integer, nullable=False)
     model = sa.Column(sa.Text, nullable=False)
     model_id = sa.Column(sa.Integer, nullable=True)
-    data = sa.Column(sa.JSON, nullable=True)
+    data = sa.Column(sa.JSON, nullable=False)
 
     admin = orm.relationship(User, foreign_keys=[admin_user_id])
 
@@ -2970,6 +2980,7 @@ class AdminAuditLog(Base):
             action=AuditLogActionEnum.logged_as_user.value,
             model="User",
             model_id=user_id,
+            data={},
         )
 
     @classmethod
@@ -2991,5 +3002,36 @@ class AdminAuditLog(Base):
             },
         )
 
+    @classmethod
+    def downloaded_provider_complaint(cls, admin_user_id: int, complaint_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.download_provider_complaint.value,
+            model="ProviderComplaint",
+            model_id=complaint_id,
+            data={},
+        )
 
-# endregion
+
+class ProviderComplaintState(EnumE):
+    new = 0
+    reviewed = 1
+
+
+class ProviderComplaint(Base, ModelMixin):
+    __tablename__ = "provider_complaint"
+
+    user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
+    state = sa.Column(
+        sa.Integer, nullable=False, server_default=str(ProviderComplaintState.new.value)
+    )
+    phase = sa.Column(
+        sa.Integer, nullable=False, server_default=str(Phase.unknown.value)
+    )
+    # Point to the email that has been refused
+    refused_email_id = sa.Column(
+        sa.ForeignKey("refused_email.id", ondelete="cascade"), nullable=True
+    )
+
+    user = orm.relationship(User, foreign_keys=[user_id])
+    refused_email = orm.relationship(RefusedEmail, foreign_keys=[refused_email_id])

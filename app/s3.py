@@ -1,5 +1,6 @@
 import os
 from io import BytesIO
+from typing import Optional
 
 import boto3
 import requests
@@ -59,6 +60,23 @@ def upload_email_from_bytesio(path: str, bs: BytesIO, filename):
             # https://github.com/eligrey/FileSaver.js/wiki/Saving-a-remote-file#using-http-header
             ContentDisposition=f'attachment; filename="{filename}.eml";',
         )
+
+
+def download_email(path: str) -> Optional[str]:
+    if LOCAL_FILE_UPLOAD:
+        file_path = os.path.join(UPLOAD_DIR, path)
+        with open(file_path, "rb") as f:
+            return f.read()
+    resp = (
+        _session.resource("s3")
+        .Bucket(BUCKET)
+        .get_object(
+            Key=path,
+        )
+    )
+    if not resp or "Body" not in resp:
+        return None
+    return resp["Body"].read
 
 
 def upload_from_url(url: str, upload_path):

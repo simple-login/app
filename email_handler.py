@@ -79,10 +79,6 @@ from app.config import (
     ENABLE_SPAM_ASSASSIN,
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
     POSTMASTER,
-    ALERT_HOTMAIL_COMPLAINT,
-    ALERT_YAHOO_COMPLAINT,
-    ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL,
-    ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
@@ -120,9 +116,7 @@ from app.email_utils import (
     sanitize_header,
     get_queue_id,
     should_ignore_bounce,
-    get_orig_message_from_hotmail_complaint,
     parse_full_address,
-    get_orig_message_from_yahoo_complaint,
     get_mailbox_bounce_info,
     save_email_for_debugging,
     save_envelope_for_debugging,
@@ -144,6 +138,10 @@ from app.handler.spamd_result import (
     SpamdResult,
     SPFCheckResult,
 )
+from app.handler.provider_complaint import (
+    handle_hotmail_complaint,
+    handle_yahoo_complaint,
+)
 from app.log import LOG, set_message_id
 from app.mail_sender import sl_sendmail
 from app.message_utils import message_to_bytes
@@ -159,8 +157,6 @@ from app.models import (
     TransactionalEmail,
     IgnoredEmail,
     MessageIDMatching,
-    DeletedAlias,
-    DomainDeletedAlias,
     Notification,
     VerpType,
 )
@@ -1518,191 +1514,6 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             # smtp error can happen if user mailbox is unreachable, that might explain the bounce
             ignore_smtp_error=True,
         )
-
-
-def handle_hotmail_complaint(msg: Message) -> bool:
-    """
-    Handle hotmail complaint sent to postmaster
-    Return True if the complaint can be handled, False otherwise
-    """
-    orig_msg = get_orig_message_from_hotmail_complaint(msg)
-    to_header = orig_msg[headers.TO]
-    from_header = orig_msg[headers.FROM]
-
-    user = User.get_by(email=to_header)
-    if user:
-        LOG.d("Handle transactional hotmail complaint for %s", user)
-        handle_hotmail_complain_for_transactional_email(user)
-        return True
-
-    try:
-        _, from_address = parse_full_address(get_header_unicode(from_header))
-        alias = Alias.get_by(email=from_address)
-
-        # the email is during a reply phase, from=alias and to=destination
-        if alias:
-            user = alias.user
-            LOG.i(
-                "Hotmail complaint during reply phase %s -> %s, %s",
-                alias,
-                to_header,
-                user,
-            )
-            send_email_with_rate_control(
-                user,
-                ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE,
-                user.email,
-                f"Hotmail abuse report",
-                render(
-                    "transactional/hotmail-complaint-reply-phase.txt.jinja2",
-                    user=user,
-                    alias=alias,
-                    destination=to_header,
-                ),
-                max_nb_alert=1,
-                nb_day=7,
-            )
-            return True
-
-    except ValueError:
-        LOG.w("Cannot parse %s", from_header)
-
-    alias = None
-
-    # try parsing the from_header which might contain the reverse alias
-    try:
-        _, reverse_alias = parse_full_address(get_header_unicode(from_header))
-        contact = Contact.get_by(reply_email=reverse_alias)
-        if contact:
-            alias = contact.alias
-            LOG.d("find %s through %s", alias, contact)
-        else:
-            LOG.d("No contact found for %s", reverse_alias)
-    except ValueError:
-        LOG.w("Cannot parse %s", from_header)
-
-    # try parsing the to_header which is usually the alias
-    if not alias:
-        try:
-            _, alias_address = parse_full_address(get_header_unicode(to_header))
-        except ValueError:
-            LOG.w("Cannot parse %s", to_header)
-        else:
-            alias = Alias.get_by(email=alias_address)
-            if not alias:
-                if DeletedAlias.get_by(
-                    email=alias_address
-                ) or DomainDeletedAlias.get_by(email=alias_address):
-                    LOG.w("Alias %s is deleted", alias_address)
-                    return True
-
-    if not alias:
-        LOG.e(
-            "Cannot parse alias from to header %s and from header %s",
-            to_header,
-            from_header,
-        )
-        return False
-
-    user = alias.user
-    LOG.d("Handle hotmail complaint for %s %s %s", alias, user, alias.mailboxes)
-
-    send_email_with_rate_control(
-        user,
-        ALERT_HOTMAIL_COMPLAINT,
-        user.email,
-        f"Hotmail abuse report",
-        render(
-            "transactional/hotmail-complaint.txt.jinja2",
-            alias=alias,
-        ),
-        render(
-            "transactional/hotmail-complaint.html",
-            alias=alias,
-        ),
-        max_nb_alert=1,
-        nb_day=7,
-    )
-
-    return True
-
-
-def handle_hotmail_complain_for_transactional_email(user):
-    """Handle the case when a transactional email is set as Spam by user or by HotMail"""
-    send_email_with_rate_control(
-        user,
-        ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL,
-        user.email,
-        f"Hotmail abuse report",
-        render("transactional/hotmail-transactional-complaint.txt.jinja2", user=user),
-        render("transactional/hotmail-transactional-complaint.html", user=user),
-        max_nb_alert=1,
-        nb_day=7,
-    )
-
-    return True
-
-
-def handle_yahoo_complaint(msg: Message) -> bool:
-    """
-    Handle yahoo complaint sent to postmaster
-    Return True if the complaint can be handled, False otherwise
-    """
-    orig_msg = get_orig_message_from_yahoo_complaint(msg)
-    to_header = orig_msg[headers.TO]
-    if not to_header:
-        LOG.e("cannot find the alias")
-        return False
-
-    user = User.get_by(email=to_header)
-    if user:
-        LOG.d("Handle transactional yahoo complaint for %s", user)
-        handle_yahoo_complain_for_transactional_email(user)
-        return True
-
-    _, alias_address = parse_full_address(get_header_unicode(to_header))
-    alias = Alias.get_by(email=alias_address)
-
-    if not alias:
-        LOG.w("No alias for %s", alias_address)
-        return False
-
-    user = alias.user
-    LOG.w("Handle yahoo complaint for %s %s %s", alias, user, alias.mailboxes)
-
-    send_email_with_rate_control(
-        user,
-        ALERT_YAHOO_COMPLAINT,
-        user.email,
-        f"Yahoo abuse report",
-        render(
-            "transactional/yahoo-complaint.txt.jinja2",
-            alias=alias,
-        ),
-        render(
-            "transactional/yahoo-complaint.html",
-            alias=alias,
-        ),
-        max_nb_alert=2,
-    )
-
-    return True
-
-
-def handle_yahoo_complain_for_transactional_email(user):
-    """Handle the case when a transactional email is set as Spam by user or by Yahoo"""
-    send_email_with_rate_control(
-        user,
-        ALERT_YAHOO_COMPLAINT,
-        user.email,
-        f"Yahoo abuse report",
-        render("transactional/yahoo-transactional-complaint.txt.jinja2", user=user),
-        render("transactional/yahoo-transactional-complaint.html", user=user),
-        max_nb_alert=1,
-        nb_day=7,
-    )
-
-    return True
 
 
 def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
