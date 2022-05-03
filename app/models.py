@@ -3022,7 +3022,9 @@ class ProviderComplaint(Base, ModelMixin):
     __tablename__ = "provider_complaint"
 
     user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
-    state = sa.Column(sa.Integer, nullable=False)
+    state = sa.Column(
+        sa.Integer, nullable=False, server_default=str(ProviderComplaintState.new.value)
+    )
     phase = sa.Column(
         sa.Integer, nullable=False, server_default=str(Phase.unknown.value)
     )
