@@ -2916,7 +2916,9 @@ class AdminAuditLog(Base):
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
     created_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
-    admin_user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
+    admin_user_id = sa.Column(
+        sa.ForeignKey("users.id", ondelete="cascade"), nullable=False, index=True
+    )
     action = sa.Column(sa.Integer, nullable=False)
     model = sa.Column(sa.Text, nullable=False)
     model_id = sa.Column(sa.Integer, nullable=True)
