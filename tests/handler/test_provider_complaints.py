@@ -1,5 +1,5 @@
+import base64
 import email
-import random
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -57,7 +57,7 @@ def test_provider_to_user(flask_client, handle_ftor, provider, part_num):
 
 
 @pytest.mark.parametrize("handle_ftor,provider,part_num", origins)
-def test_provider_forward_phase(flask_client, handle_ftor, provider, part_num):
+def test_provider_reply_phase(flask_client, handle_ftor, provider, part_num):
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -80,34 +80,45 @@ def test_provider_forward_phase_multiple_mailboxes(
     flask_client, handle_ftor, provider, part_num
 ):
     mail_sender.purge_stored_send_requests()
+    mail_sender.store_requests_not_sent()
     user = create_new_user()
-    email = create_random_email()
-    mbox = Mailbox.create(user_id=user.id, email=email, verified=True, commit=True)
+    mbox_email = create_random_email("mbox")
+    mbox = Mailbox.create(user_id=user.id, email=mbox_email, verified=True, commit=True)
     alias = Alias.create(
-        user_id=user.id, email=create_random_email(), mailbox_id=mbox.id, commit=True
+        user_id=user.id,
+        email=create_random_email("alias"),
+        mailbox_id=mbox.id,
+        commit=True,
     )
     Session.commit()
     original_message = Message()
-    original_message[headers.TO] = "nobody@nowhere.net"
-    original_message[headers.FROM] = alias.email
+    original_message[headers.TO] = alias.email
+    original_message[headers.FROM] = "nobody@nowhere.net"
     original_message.set_payload("Contents")
 
     complaint = prepare_complaint(original_message, part_num)
     assert handle_ftor(complaint)
     found = ProviderComplaint.filter_by(user_id=user.id).all()
-    assert len(found) == 1
+    assert len(found) == 0
     alerts = SentAlert.filter_by(user_id=user.id).all()
     assert len(alerts) == 1
-    assert alerts[0].alert_type == f"{ALERT_COMPLAINT_REPLY_PHASE}_{provider}"
+    assert alerts[0].alert_type == f"{ALERT_COMPLAINT_FORWARD_PHASE}_{provider}"
     send_requests = mail_sender.get_stored_send_requests()
     assert len(send_requests) == 1
     request = send_requests[0]
-    assert email == request.envelope_to
-    assert request.get_payload().find(email) > -1
+    assert mbox_email == request.envelope_to
+    for part in request.msg.get_payload():
+        if part["content-transfer-encoding"] == "base64":
+            assert (
+                base64.b64decode(part.get_payload()).decode("utf-8").find(mbox_email)
+                > -1
+            )
+        else:
+            assert part.get_payload().find(mbox_email) > -1
 
 
 @pytest.mark.parametrize("handle_ftor,provider,part_num", origins)
-def test_provider_reply_phase(flask_client, handle_ftor, provider, part_num):
+def test_provider_forward_phase(flask_client, handle_ftor, provider, part_num):
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()

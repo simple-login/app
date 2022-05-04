@@ -33,9 +33,13 @@ class MailSender:
     def __init__(self):
         self._pool: Optional[ThreadPoolExecutor] = None
         self._send_requests = []
+        self._keep_send_requests = False
 
     def enable_background_pool(self, max_workers=10):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
+
+    def store_requests_not_sent(self):
+        self._keep_send_requests = True
 
     def get_stored_send_requests(self) -> List[SendRequest]:
         return self._send_requests
@@ -52,7 +56,8 @@ class MailSender:
                 send_request.msg[headers.FROM],
                 send_request.msg[headers.TO],
             )
-            self._send_requests.append(send_request)
+            if self._keep_send_requests:
+                self._send_requests.append(send_request)
             return
         if not self._pool:
             self._send_to_smtp(send_request, retries)

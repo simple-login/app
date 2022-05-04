@@ -151,7 +151,7 @@ def report_complaint_to_user_in_reply_phase(
     send_email_with_rate_control(
         alias.user,
         f"{ALERT_COMPLAINT_REPLY_PHASE}_{origin.name()}",
-        alias.user.email,
+        alias.mailbox.email,
         f"Abuse report from {capitalized_name}",
         render(
             "transactional/provider-complaint-reply-phase.txt.jinja2",
@@ -197,16 +197,16 @@ def report_complaint_to_user_in_forward_phase(
     send_email_with_rate_control(
         user,
         f"{ALERT_COMPLAINT_FORWARD_PHASE}_{origin.name()}",
-        user.email,
+        alias.mailbox.email,
         f"Abuse report from {capitalized_name}",
         render(
             "transactional/provider-complaint-forward-phase.txt.jinja2",
-            user=user,
+            email=alias.mailbox.email,
             provider=capitalized_name,
         ),
         render(
             "transactional/provider-complaint-forward-phase.html",
-            user=user,
+            email=alias.mailbox.email,
             provider=capitalized_name,
         ),
         max_nb_alert=1,

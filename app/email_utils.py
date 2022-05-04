@@ -36,7 +36,6 @@ from sqlalchemy import func
 from app.config import (
     ROOT_DIR,
     POSTFIX_SERVER,
-    NOT_SEND_EMAIL,
     DKIM_SELECTOR,
     DKIM_PRIVATE_KEY,
     ALIAS_DOMAINS,
