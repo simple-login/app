@@ -167,6 +167,7 @@ if not FLASK_SECRET:
 SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
+UNSUBSCRIBE_SECRET = FLASK_SECRET + "unsubscribe"
 
 # AWS
 AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"

@@ -27,25 +27,7 @@ from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
 from app import s3
-from app.config import (
-    MAX_NB_EMAIL_FREE_PLAN,
-    URL,
-    AVATAR_URL_EXPIRATION,
-    JOB_ONBOARDING_1,
-    JOB_ONBOARDING_2,
-    JOB_ONBOARDING_4,
-    LANDING_PAGE_URL,
-    FIRST_ALIAS_DOMAIN,
-    DISABLE_ONBOARDING,
-    UNSUBSCRIBER,
-    ALIAS_RANDOM_SUFFIX_LENGTH,
-    MAX_NB_SUBDOMAIN,
-    MAX_NB_DIRECTORY,
-    ROOT_DIR,
-    NOREPLY,
-    PARTNER_API_TOKEN_SECRET,
-    JOB_SEND_PROTON_WELCOME_1,
-)
+from app import config
 from app.db import Session
 from app.errors import (
     AliasInTrashError,
@@ -236,6 +218,11 @@ class AliasSuffixEnum(EnumE):
 class BlockBehaviourEnum(EnumE):
     return_2xx = 0
     return_5xx = 1
+
+
+class UnsubscribeBehaviourEnum(EnumE):
+    DisableAlias = 0
+    PreserveOriginal = 1
 
 
 class AuditLogActionEnum(EnumE):
@@ -507,14 +494,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def directory_quota(self):
         return min(
             self._directory_quota,
-            MAX_NB_DIRECTORY - Directory.filter_by(user_id=self.id).count(),
+            config.MAX_NB_DIRECTORY - Directory.filter_by(user_id=self.id).count(),
         )
 
     @property
     def subdomain_quota(self):
         return min(
             self._subdomain_quota,
-            MAX_NB_SUBDOMAIN
+            config.MAX_NB_SUBDOMAIN
             - CustomDomain.filter_by(user_id=self.id, is_sl_subdomain=True).count(),
         )
 
@@ -566,30 +553,30 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             user.notification = False
             user.trial_end = None
             Job.create(
-                name=JOB_SEND_PROTON_WELCOME_1,
+                name=config.JOB_SEND_PROTON_WELCOME_1,
                 payload={"user_id": user.id},
                 run_at=arrow.now(),
             )
             Session.flush()
             return user
 
-        if DISABLE_ONBOARDING:
+        if config.DISABLE_ONBOARDING:
             LOG.d("Disable onboarding emails")
             return user
 
         # Schedule onboarding emails
         Job.create(
-            name=JOB_ONBOARDING_1,
+            name=config.JOB_ONBOARDING_1,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=1),
         )
         Job.create(
-            name=JOB_ONBOARDING_2,
+            name=config.JOB_ONBOARDING_2,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=2),
         )
         Job.create(
-            name=JOB_ONBOARDING_4,
+            name=config.JOB_ONBOARDING_4,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=3),
         )
@@ -743,7 +730,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if self.lifetime_or_active_subscription():
             return True
         else:
-            return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
+            return (
+                Alias.filter_by(user_id=self.id).count() < config.MAX_NB_EMAIL_FREE_PLAN
+            )
 
     def profile_picture_url(self):
         if self.profile_picture_id:
@@ -849,7 +838,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                 or custom_domain.user_id != self.id
             ):
                 LOG.w("Problem with %s default random alias domain", self)
-                return FIRST_ALIAS_DOMAIN
+                return config.FIRST_ALIAS_DOMAIN
 
             return custom_domain.domain
 
@@ -858,7 +847,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             # sanity check
             if not sl_domain:
                 LOG.e("Problem with %s public random alias domain", self)
-                return FIRST_ALIAS_DOMAIN
+                return config.FIRST_ALIAS_DOMAIN
 
             if sl_domain.premium_only and not self.is_premium():
                 LOG.w(
@@ -869,11 +858,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                 self.default_alias_custom_domain_id = None
                 self.default_alias_public_domain_id = None
                 Session.commit()
-                return FIRST_ALIAS_DOMAIN
+                return config.FIRST_ALIAS_DOMAIN
 
             return sl_domain.domain
 
-        return FIRST_ALIAS_DOMAIN
+        return config.FIRST_ALIAS_DOMAIN
 
     def fido_enabled(self) -> bool:
         if self.fido_uuid is not None:
@@ -901,9 +890,13 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                     return None, None, False
             else:
                 # do not handle http POST unsubscribe
-                if UNSUBSCRIBER:
+                if config.UNSUBSCRIBER:
                     # use * as suffix instead of = as for alias unsubscribe
-                    return self.email, f"mailto:{UNSUBSCRIBER}?subject={self.id}*", True
+                    return (
+                        self.email,
+                        f"mailto:{config.UNSUBSCRIBER}?subject={self.id}*",
+                        True,
+                    )
 
         return None, None, False
 
@@ -956,7 +949,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             str: the random suffix generated
         """
         if self.random_alias_suffix == AliasSuffixEnum.random_string.value:
-            return random_string(ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
+            return random_string(config.ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
         return random_word()
 
     def __repr__(self):
@@ -1132,7 +1125,7 @@ class Client(Base, ModelMixin):
         if self.icon_id:
             return self.icon.get_url()
         else:
-            return URL + "/static/default-icon.svg"
+            return config.URL + "/static/default-icon.svg"
 
     def last_user_login(self) -> "ClientUser":
         client_user = (
@@ -1205,7 +1198,7 @@ class OauthToken(Base, ModelMixin):
 def generate_email(
     scheme: int = AliasGeneratorEnum.word.value,
     in_hex: bool = False,
-    alias_domain=FIRST_ALIAS_DOMAIN,
+    alias_domain=config.FIRST_ALIAS_DOMAIN,
 ) -> str:
     """generate an email address that does not exist before
     :param alias_domain: the domain used to generate the alias.
@@ -1425,7 +1418,7 @@ class Alias(Base, ModelMixin):
         # find the right suffix - avoid infinite loop by running this at max 1000 times
         for _ in range(1000):
             suffix = user.get_random_alias_suffix()
-            email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
+            email = f"{prefix}.{suffix}@{config.FIRST_ALIAS_DOMAIN}"
 
             if not cls.get_by(email=email) and not DeletedAlias.get_by(email=email):
                 break
@@ -1495,15 +1488,15 @@ class Alias(Base, ModelMixin):
         The mailto: method is preferred
         """
         if contact:
-            if UNSUBSCRIBER:
-                return f"mailto:{UNSUBSCRIBER}?subject={contact.id}_", True
+            if config.UNSUBSCRIBER:
+                return f"mailto:{config.UNSUBSCRIBER}?subject={contact.id}_", True
             else:
-                return f"{URL}/dashboard/block_contact/{contact.id}", False
+                return f"{config.URL}/dashboard/block_contact/{contact.id}", False
         else:
-            if UNSUBSCRIBER:
-                return f"mailto:{UNSUBSCRIBER}?subject={self.id}=", True
+            if config.UNSUBSCRIBER:
+                return f"mailto:{config.UNSUBSCRIBER}?subject={self.id}=", True
             else:
-                return f"{URL}/dashboard/unsubscribe/{self.id}", False
+                return f"{config.URL}/dashboard/unsubscribe/{self.id}", False
 
     def __repr__(self):
         return f"<Alias {self.id} {self.email}>"
@@ -1575,10 +1568,12 @@ class ClientUser(Base, ModelMixin):
             elif scope == Scope.AVATAR_URL:
                 if self.user.profile_picture_id:
                     if self.default_avatar:
-                        res[Scope.AVATAR_URL.value] = URL + "/static/default-avatar.png"
+                        res[Scope.AVATAR_URL.value] = (
+                            config.URL + "/static/default-avatar.png"
+                        )
                     else:
                         res[Scope.AVATAR_URL.value] = self.user.profile_picture.get_url(
-                            AVATAR_URL_EXPIRATION
+                            config.AVATAR_URL_EXPIRATION
                         )
                 else:
                     res[Scope.AVATAR_URL.value] = None
@@ -1675,7 +1670,7 @@ class Contact(Base, ModelMixin):
         website_email = sanitize_email(website_email)
 
         # make sure contact.website_email isn't a reverse alias
-        if website_email != NOREPLY:
+        if website_email != config.NOREPLY:
             orig_contact = Contact.get_by(reply_email=website_email)
             if orig_contact:
                 raise CannotCreateContactForReverseAlias(str(orig_contact))
@@ -1873,7 +1868,7 @@ class EmailLog(Base, ModelMixin):
             return "forward"
 
     def get_dashboard_url(self):
-        return f"{URL}/dashboard/refused_email?highlight_id={self.id}"
+        return f"{config.URL}/dashboard/refused_email?highlight_id={self.id}"
 
     def __repr__(self):
         return f"<EmailLog {self.id}>"
@@ -2153,7 +2148,7 @@ class CustomDomain(Base, ModelMixin):
         return Alias.filter_by(custom_domain_id=self.id).count()
 
     def get_trash_url(self):
-        return URL + f"/dashboard/domains/{self.id}/trash"
+        return config.URL + f"/dashboard/domains/{self.id}/trash"
 
     def get_ownership_dns_txt_value(self):
         return f"sl-verification={self.ownership_txt_token}"
@@ -2531,7 +2526,7 @@ class Referral(Base, ModelMixin):
         return res
 
     def link(self):
-        return f"{LANDING_PAGE_URL}?slref={self.code}"
+        return f"{config.LANDING_PAGE_URL}?slref={self.code}"
 
     def __repr__(self):
         return f"<Referral {self.code}>"
@@ -2676,14 +2671,14 @@ class Notification(Base, ModelMixin):
 
     @staticmethod
     def render(template_name, **kwargs) -> str:
-        templates_dir = os.path.join(ROOT_DIR, "templates")
+        templates_dir = os.path.join(config.ROOT_DIR, "templates")
         env = Environment(loader=FileSystemLoader(templates_dir))
 
         template = env.get_template(template_name)
 
         return template.render(
-            URL=URL,
-            LANDING_PAGE_URL=LANDING_PAGE_URL,
+            URL=config.URL,
+            LANDING_PAGE_URL=config.LANDING_PAGE_URL,
             YEAR=arrow.now().year,
             **kwargs,
         )
@@ -3151,7 +3146,7 @@ class PartnerApiToken(Base, ModelMixin):
     def hmac_token(token: str) -> str:
         as_str = base64.b64encode(
             hmac.new(
-                PARTNER_API_TOKEN_SECRET.encode("utf-8"),
+                config.PARTNER_API_TOKEN_SECRET.encode("utf-8"),
                 token.encode("utf-8"),
                 hashlib.sha3_256,
             ).digest()
