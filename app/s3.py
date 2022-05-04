@@ -1,3 +1,4 @@
+import io
 import os
 from io import BytesIO
 from typing import Optional
@@ -67,16 +68,10 @@ def download_email(path: str) -> Optional[str]:
         file_path = os.path.join(UPLOAD_DIR, path)
         with open(file_path, "rb") as f:
             return f.read()
-    resp = (
-        _session.resource("s3")
-        .Bucket(BUCKET)
-        .get_object(
-            Key=path,
-        )
-    )
-    if not resp or "Body" not in resp:
-        return None
-    return resp["Body"].read
+    memobj = io.BytesIO()
+    _session.resource("s3").Bucket(BUCKET).download_fileobj(Key=path, Fileobj=memobj)
+    memobj.seek(0)
+    return memobj.read()
 
 
 def upload_from_url(url: str, upload_path):
