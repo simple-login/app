@@ -284,16 +284,6 @@ def send_email(
     ignore_smtp_error=False,
 ):
     to_email = sanitize_email(to_email)
-    if NOT_SEND_EMAIL:
-        LOG.d(
-            "send email with subject '%s' to '%s', plaintext: %s, html: %s",
-            subject,
-            to_email,
-            plaintext,
-            html,
-        )
-        return
-
     LOG.d("send email to %s, subject '%s'", to_email, subject)
 
     if html:

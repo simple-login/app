@@ -12,10 +12,14 @@ from flask import url_for
 from app.models import User
 
 
+def create_random_email() -> str:
+    return f"user{random.random()}@{random.random()}.domain.test"
+
+
 def create_new_user() -> User:
     # new user has a different email address
     user = User.create(
-        email=f"user{random.random()}@mailbox.test",
+        email=create_random_email(),
         password="password",
         name="Test User",
         activated=True,

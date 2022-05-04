@@ -2,7 +2,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from mailbox import Message
 from smtplib import SMTP, SMTPServerDisconnected, SMTPRecipientsRefused
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import newrelic.agent
 from attr import dataclass
@@ -32,9 +32,16 @@ class SendRequest:
 class MailSender:
     def __init__(self):
         self._pool: Optional[ThreadPoolExecutor] = None
+        self._send_requests = []
 
     def enable_background_pool(self, max_workers=10):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
+
+    def get_stored_send_requests(self) -> List[SendRequest]:
+        return self._send_requests
+
+    def purge_stored_send_requests(self):
+        self._send_requests = []
 
     def send(self, send_request: SendRequest, retries: int = 2):
         """replace smtp.sendmail"""
@@ -45,6 +52,7 @@ class MailSender:
                 send_request.msg[headers.FROM],
                 send_request.msg[headers.TO],
             )
+            self._send_requests.append(send_request)
             return
         if not self._pool:
             self._send_to_smtp(send_request, retries)
