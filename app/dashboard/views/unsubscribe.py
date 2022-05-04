@@ -9,6 +9,7 @@ from flask import redirect, url_for, flash, request, render_template
 from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
+from app.handler.unsubscribe_handler import UnsubscribeHandler, UnsubscribeAction
 from app.models import Alias, Contact
 
 
@@ -68,3 +69,46 @@ def block_contact(contact_id):
         )
     else:  # ask user confirmation
         return render_template("dashboard/block_contact.html", contact=contact)
+
+
+@dashboard_bp.route("/encoded_unsubscribe", methods=["GET"])
+@login_required
+def encoded_unsubscribe():
+    if "request" not in request.args:
+        return redirect(url_for("dashboard"))
+
+    unsub_data = UnsubscribeHandler().handle_unsubscribe_from_request(
+        current_user, request.args.get("request")
+    )
+    if not unsub_data:
+        flash(f"Invalid unsuscribe request", "error")
+        return redirect(url_for("dashboard.index"))
+    if unsub_data.action == UnsubscribeAction.DisableAlias:
+        alias = Alias.get(unsub_data.data)
+        flash(f"Alias {alias.email} has been blocked", "success")
+        return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))
+    if unsub_data.action == UnsubscribeAction.DisableContact:
+        contact = Contact.get(unsub_data.data)
+        flash(f"Emails sent from {contact.website_email} are now blocked", "success")
+        return redirect(
+            url_for(
+                "dashboard.alias_contact_manager",
+                alias_id=contact.alias_id,
+                highlight_contact_id=contact.id,
+            )
+        )
+    if unsub_data.action == UnsubscribeAction.UnsubscribeNewsletter:
+        flash(f"You've unsubscribed from the newsletter", "success")
+        return redirect(
+            url_for(
+                "dashboard.index",
+            )
+        )
+    if unsub_data.action == UnsubscribeAction.OriginalUnsubscribeMailto:
+        flash(f"The original unsubscribe request has been forwarded", "success")
+        return redirect(
+            url_for(
+                "dashboard.index",
+            )
+        )
+    return redirect(url_for("dashboard.index"))
