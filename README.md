@@ -515,8 +515,7 @@ Reload Nginx with the command below
 sudo systemctl reload nginx
 ```
 
-At this step, you should also setup the SSL for Nginx. 
-[Certbot](https://certbot.eff.org/instructions) can be a good option if you want a free SSL certificate.
+At this step, you should also setup the SSL for Nginx. [Here's our guide how](./docs/ssl.md).
 
 ### Enjoy!
 
