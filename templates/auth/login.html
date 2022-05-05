@@ -13,36 +13,43 @@
     </div>
   {% endif %}
 
-  <form class="card" style="border-radius: 2%" method="post">
-    {{ form.csrf_token }}
+  <div class="card" style="border-radius: 2%">
     <div class="card-body p-6">
       <h1 class="card-title">Welcome back!</h1>
-      <div class="form-group">
-        <label class="form-label">Email address</label>
-        {{ form.email(class="form-control", type="email", autofocus="true") }}
-        {{ render_field_errors(form.email) }}
-      </div>
+      <form method="post">
+        {{ form.csrf_token }}
 
-      <div class="form-group">
-        <label class="form-label">
-          Password
-        </label>
-        {{ form.password(class="form-control", type="password") }}
-        {{ render_field_errors(form.password) }}
-        <div class="text-muted">
-          <a href="{{ url_for('auth.forgot_password') }}" class="small">
-            I forgot my password
-          </a>
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          {{ form.email(class="form-control", type="email", autofocus="true") }}
+          {{ render_field_errors(form.email) }}
         </div>
-      </div>
 
-      <div class="form-footer">
-        <button type="submit" class="btn btn-primary btn-block">Log in</button>
-      </div>
+        <div class="form-group">
+          <label class="form-label">
+            Password
+          </label>
+          {{ form.password(class="form-control", type="password") }}
+          {{ render_field_errors(form.password) }}
+          <div class="text-muted">
+            <a href="{{ url_for('auth.forgot_password') }}" class="small">
+              I forgot my password
+            </a>
+          </div>
+        </div>
 
+        <div class="form-footer">
+          <button type="submit" class="btn btn-primary btn-block">Log in</button>
+        </div>
 
+      </form>
+      {% if connect_with_proton %}
+        <div class="text-center my-2 text-gray"><span>or</span></div>
+        <a class="btn btn-primary btn-block mt-2 proton-button" href="{{ url_for("auth.proton_login") }}">Log in with Proton</a>
+      {% endif %}
     </div>
-  </form>
+
+  </div>
 
   <div class="text-center text-muted mt-2">
     Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>

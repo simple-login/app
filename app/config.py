@@ -84,7 +84,6 @@ BOUNCE_PREFIX_FOR_REPLY_PHASE = (
     os.environ.get("BOUNCE_PREFIX_FOR_REPLY_PHASE") or "bounce_reply"
 )
 
-
 # VERP for transactional email: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
 TRANSACTIONAL_BOUNCE_PREFIX = (
     os.environ.get("TRANSACTIONAL_BOUNCE_PREFIX") or "transactional+"
@@ -158,7 +157,6 @@ if "DKIM_PRIVATE_KEY_PATH" in os.environ:
     DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
     with open(DKIM_PRIVATE_KEY_PATH) as f:
         DKIM_PRIVATE_KEY = f.read()
-
 
 # Database
 DB_URI = os.environ["DB_URI"]
@@ -240,6 +238,14 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 FACEBOOK_CLIENT_ID = os.environ.get("FACEBOOK_CLIENT_ID")
 FACEBOOK_CLIENT_SECRET = os.environ.get("FACEBOOK_CLIENT_SECRET")
 
+PROTON_CLIENT_ID = os.environ.get("PROTON_CLIENT_ID")
+PROTON_CLIENT_SECRET = os.environ.get("PROTON_CLIENT_SECRET")
+PROTON_BASE_URL = os.environ.get(
+    "PROTON_BASE_URL", "https://account.protonmail.com/api"
+)
+PROTON_VALIDATE_CERTS = "PROTON_VALIDATE_CERTS" in os.environ
+CONNECT_WITH_PROTON = "CONNECT_WITH_PROTON" in os.environ
+
 # in seconds
 AVATAR_URL_EXPIRATION = 3600 * 24 * 7  # 1h*24h/d*7d=1week
 
@@ -286,7 +292,6 @@ STATUS_PAGE_URL = os.environ.get("STATUS_PAGE_URL") or "https://status.simplelog
 
 # Loading PGP keys when mail_handler runs. To be used locally when init_app is not called.
 LOAD_PGP_EMAIL_HANDLER = "LOAD_PGP_EMAIL_HANDLER" in os.environ
-
 
 # Used when querying info on Apple API
 # for iOS App

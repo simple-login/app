@@ -208,6 +208,32 @@
     </div>
     <!-- END Change email -->
 
+    <!-- Connect with Proton -->
+    {% if connect_with_proton %}
+      <div class="card">
+        <div class="card-body">
+          <div class="card-title">
+            Connect with Proton
+          </div>
+          {% if proton_linked_account != None %}
+            <div class="mb-3">
+              You have linked your Proton account: {{ proton_linked_account }} <br>
+            </div>
+            <a
+                    class="btn btn-primary mt-2 proton-button"
+                    href="{{ url_for('dashboard.unlink_proton_account') }}"
+            >Unlink account</a>
+          {% else %}
+            <div class="mb-3">
+              You can connect your Proton account with your SimpleLogin one. <br>
+            </div>
+            <a class="btn btn-primary mt-2 proton-button" href="{{ url_for("auth.proton_login", action="link") }}">Connect with Proton</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- END Connect with Proton -->
+
     <!-- Change password -->
     <div class="card" id="change_password">
       <div class="card-body">
@@ -539,7 +565,7 @@
 
           <div class="form-check">
             <input type="checkbox" id="include-sender-header" name="enable"
-                {% if current_user.include_header_email_header %} checked {% endif %} class="form-check-input">
+                    {% if current_user.include_header_email_header %} checked {% endif %} class="form-check-input">
             <label for="include-sender-header">Include sender address in email headers</label>
           </div>
 

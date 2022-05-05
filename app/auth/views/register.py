@@ -6,6 +6,7 @@ from wtforms import StringField, validators
 
 from app import email_utils, config
 from app.auth.base import auth_bp
+from app.config import CONNECT_WITH_PROTON
 from app.auth.views.login_utils import get_referral
 from app.config import URL, HCAPTCHA_SECRET, HCAPTCHA_SITEKEY
 from app.db import Session
@@ -102,6 +103,7 @@ def register():
         form=form,
         next_url=next_url,
         HCAPTCHA_SITEKEY=HCAPTCHA_SITEKEY,
+        connect_with_proton=CONNECT_WITH_PROTON,
     )
 
 
