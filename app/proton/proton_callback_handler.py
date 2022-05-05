@@ -5,6 +5,7 @@ from flask import url_for
 from typing import Optional
 
 from app.db import Session
+from app.errors import ProtonPartnerNotSetUp
 from app.models import User, PartnerUser, Partner
 from app.proton.proton_client import ProtonClient, ProtonUser
 from app.utils import random_string
@@ -18,7 +19,7 @@ def get_proton_partner_id() -> int:
     if _PROTON_PARTNER_ID is None:
         partner = Partner.get_by(name=PROTON_PARTNER_NAME)
         if partner is None:
-            raise Exception("Could not find Proton Partner instance")
+            raise ProtonPartnerNotSetUp
         _PROTON_PARTNER_ID = partner.id
 
     return _PROTON_PARTNER_ID
