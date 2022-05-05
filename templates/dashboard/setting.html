@@ -274,12 +274,21 @@
         <form method="post" action="#random-alias" class="form-inline">
           <input type="hidden" name="form-name" value="change-random-alias-default-domain">
           <select class="form-control mr-sm-2" name="random-alias-default-domain">
-            {% for is_public, domain in current_user.available_domains_for_random_alias() %}
-              <option value="{{ domain }}"
-                  {% if current_user.default_random_alias_domain() == domain %} selected {% endif %} >
-                {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
-              </option>
-            {% endfor %}
+            <option value="">Not Selected</option>
+            {% if current_user.default_alias_custom_domain_id or current_user.default_alias_public_domain_id %}
+              {% for is_public, domain in current_user.available_domains_for_random_alias() %}
+                <option value="{{ domain }}"
+                    {% if current_user.default_random_alias_domain() == domain %} selected {% endif %} >
+                  {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
+                </option>
+              {% endfor %}
+            {% else %}
+              {% for is_public, domain in current_user.available_domains_for_random_alias() %}
+                <option value="{{ domain }}">
+                  {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
+                </option>
+              {% endfor %}
+            {% endif %}
           </select>
           <button class="btn btn-outline-primary">Update</button>
         </form>
@@ -565,7 +574,7 @@
 
           <div class="form-check">
             <input type="checkbox" id="include-sender-header" name="enable"
-                    {% if current_user.include_header_email_header %} checked {% endif %} class="form-check-input">
+                {% if current_user.include_header_email_header %} checked {% endif %} class="form-check-input">
             <label for="include-sender-header">Include sender address in email headers</label>
           </div>
 
