@@ -1,3 +1,4 @@
+import requests
 from flask import request, session, redirect, flash, url_for
 from flask_limiter.util import get_remote_address
 from flask_login import current_user
@@ -78,6 +79,15 @@ def proton_callback():
         state=session["oauth_state"],
         redirect_uri=_redirect_uri,
     )
+
+    def check_status_code(response: requests.Response) -> requests.Response:
+        if response.status_code != 200:
+            raise Exception(
+                f"Bad Proton API response [status={response.status_code}]: {response.json()}"
+            )
+        return response
+
+    proton.register_compliance_hook("access_token_response", check_status_code)
     token = proton.fetch_token(
         _token_url,
         client_secret=PROTON_CLIENT_SECRET,
