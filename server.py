@@ -95,6 +95,7 @@ from app.models import (
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
+from app.onboarding.base import onboarding_bp
 from app.phone.base import phone_bp
 from app.utils import random_string
 
@@ -216,6 +217,7 @@ def register_blueprints(app: Flask):
 
     app.register_blueprint(oauth_bp, url_prefix="/oauth")
     app.register_blueprint(oauth_bp, url_prefix="/oauth2")
+    app.register_blueprint(onboarding_bp)
 
     app.register_blueprint(discover_bp)
     app.register_blueprint(api_bp)
