@@ -28,6 +28,7 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
+from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
 from app.models import (
     BlockBehaviourEnum,
@@ -68,7 +69,11 @@ class PromoCodeForm(FlaskForm):
 
 def get_proton_linked_account() -> Optional[str]:
     # Check if the current user has a partner_id
-    proton_partner_id = get_proton_partner_id()
+    try:
+        proton_partner_id = get_proton_partner_id()
+    except ProtonPartnerNotSetUp:
+        return None
+
     if current_user.partner_id != proton_partner_id:
         return None
 
