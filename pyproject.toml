@@ -87,6 +87,7 @@ tldextract = "^3.1.2"
 flask-debugtoolbar-sqlalchemy = "^0.2.0"
 twilio = "^7.3.2"
 Deprecated = "^1.2.13"
+cryptography = "37.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0.0"
