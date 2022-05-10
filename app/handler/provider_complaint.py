@@ -1,8 +1,9 @@
 import uuid
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from io import BytesIO
 from mailbox import Message
-from typing import Optional
+from typing import Optional, List
 
 from app import s3
 from app.config import (
@@ -18,6 +19,7 @@ from app.email_utils import (
     to_bytes,
     render,
     send_email_with_rate_control,
+    parse_address_list,
 )
 from app.log import LOG
 from app.models import (
@@ -33,10 +35,21 @@ from app.models import (
 )
 
 
+@dataclass
+class OriginalAddresses:
+    sender: str
+    recipient: str
+
+
 class ProviderComplaintOrigin(ABC):
     @classmethod
     @abstractmethod
     def get_original_message(cls, message: Message) -> Optional[Message]:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
         pass
 
     @classmethod
@@ -59,6 +72,33 @@ class ProviderComplaintYahoo(ProviderComplaintOrigin):
         return None
 
     @classmethod
+    def get_feedback_report(cls, message: Message) -> Optional[Message]:
+        for part in message.walk():
+            if part["content-type"] == "message/feedback-report":
+                content = part.get_payload()
+                if not content:
+                    continue
+                return content[0]
+        return None
+
+    @classmethod
+    def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
+        report = cls.get_feedback_report(message)
+        original = cls.get_original_message(message)
+        rcpt_address = report["original-rcpt-to"]
+        try:
+            if rcpt_address:
+                _, rcpt_address = parse_full_address(rcpt_address)
+            else:
+                rcpt_address = parse_address_list(original[headers.TO])[0]
+            _, sender_address = parse_full_address(original[headers.FROM])
+            return OriginalAddresses(sender_address, rcpt_address)
+        except ValueError:
+            saved_file = save_email_for_debugging(message, "ComplaintOriginalAddress")
+            LOG.w(f"Cannot parse from header. Saved to {saved_file or 'nowhere'}")
+            return False
+
+    @classmethod
     def name(cls):
         return "yahoo"
 
@@ -75,6 +115,22 @@ class ProviderComplaintHotmail(ProviderComplaintOrigin):
             if current_part == 3:
                 return part
         return None
+
+    @classmethod
+    def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
+        try:
+            part = cls.get_original_message(message)
+            rcpt_address = part["x-simplelogin-envelope-to"]
+            if rcpt_address:
+                _, rcpt_address = parse_full_address(rcpt_address)
+            else:
+                rcpt_address = parse_address_list(part[headers.TO])[0]
+            _, sender_address = parse_full_address(part[headers.FROM])
+            return OriginalAddresses(sender_address, rcpt_address)
+        except ValueError:
+            saved_file = save_email_for_debugging(message, "ComplaintOriginalAddress")
+            LOG.w(f"Cannot parse from header. Saved to {saved_file or 'nowhere'}")
+            return False
 
     @classmethod
     def name(cls):
@@ -98,45 +154,35 @@ def find_alias_with_address(address: str) -> Optional[Alias]:
 
 
 def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
-    original_message = origin.get_original_message(message)
-
-    try:
-        _, to_address = parse_full_address(
-            get_header_unicode(original_message[headers.TO])
-        )
-        _, from_address = parse_full_address(
-            get_header_unicode(original_message[headers.FROM])
-        )
-    except ValueError:
-        saved_file = save_email_for_debugging(message, "FromParseFailed")
-        LOG.w(f"Cannot parse from header. Saved to {saved_file or 'nowhere'}")
+    addresses = origin.get_original_addresses(message)
+    if not addresses:
         return False
 
-    user = User.get_by(email=to_address)
+    user = User.get_by(email=addresses.recipient)
     if user:
         LOG.d(f"Handle provider {origin.name()} complaint for {user}")
         report_complaint_to_user_in_transactional_phase(user, origin)
         return True
 
-    alias = find_alias_with_address(from_address)
+    alias = find_alias_with_address(addresses.sender)
     # the email is during a reply phase, from=alias and to=destination
     if alias:
         LOG.i(
-            f"Complaint from {origin.name} during reply phase {alias} -> {to_address}, {user}"
+            f"Complaint from {origin.name} during reply phase {alias} -> {addresses.recipient}, {user}"
         )
-        report_complaint_to_user_in_reply_phase(alias, to_address, origin)
+        report_complaint_to_user_in_reply_phase(alias, addresses.recipient, origin)
         store_provider_complaint(alias, message)
         return True
 
-    contact = Contact.get_by(reply_email=from_address)
+    contact = Contact.get_by(reply_email=addresses.sender)
     if contact:
         alias = contact.alias
     else:
-        alias = find_alias_with_address(to_address)
+        alias = find_alias_with_address(addresses.recipient)
 
     if not alias:
         LOG.e(
-            f"Cannot find alias from address {to_address} or contact with reply {from_address}"
+            f"Cannot find alias for address {addresses.recipient} or contact with reply {addresses.sender}"
         )
         return False
 

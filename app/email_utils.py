@@ -1314,6 +1314,20 @@ def should_ignore_bounce(mail_from: str) -> bool:
     return False
 
 
+def parse_address_list(address_list: str) -> List[Tuple[str, str]]:
+    """
+    Parse a list of email addresses from a header in the form "ab <ab@sd.com>, cd <cd@cd.com>"
+    and return a list [("ab", "ab@sd.com"),("cd", "cd@cd.com")]
+    """
+    processed_addresses = []
+    for split_address in address_list.split(","):
+        split_address = split_address.strip()
+        if not split_address:
+            continue
+        processed_addresses.append(parse_full_address(split_address))
+    return processed_addresses
+
+
 def parse_full_address(full_address) -> (str, str):
     """
     parse the email address full format and return the display name and address
