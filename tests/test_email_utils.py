@@ -754,6 +754,13 @@ def test_generate_verp_email(object_id):
     assert info[1] == object_id
 
 
+def test_generate_verp_email_forward_reply_phase():
+    # make sure the verp type is taken into account in verp generation
+    assert generate_verp_email(VerpType.bounce_forward, 1) != generate_verp_email(
+        VerpType.bounce_reply, 1
+    )
+
+
 def test_add_header_multipart_with_invalid_part():
     msg = load_eml_file("multipart_alternative.eml")
     parts = msg.get_payload() + ["invalid"]
