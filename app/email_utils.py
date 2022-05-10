@@ -1378,7 +1378,7 @@ def generate_verp_email(
     # Encoded as a list to minimize size of email address
     # Time is in minutes granularity and start counting on 2022-01-01 to reduce bytes to represent time
     data = [
-        verp_type.bounce_forward.value,
+        verp_type.value,
         object_id,
         int((time.time() - VERP_TIME_START) / 60),
     ]
