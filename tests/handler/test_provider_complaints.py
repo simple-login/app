@@ -8,7 +8,7 @@ from app.config import (
     POSTMASTER,
 )
 from app.db import Session
-from app.email import headers, status
+from app.email import headers
 from app.handler.provider_complaint import (
     handle_hotmail_complaint,
     handle_yahoo_complaint,

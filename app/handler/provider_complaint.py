@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from io import BytesIO
 from mailbox import Message
-from typing import Optional, List
+from typing import Optional
 
 from app import s3
 from app.config import (
@@ -13,13 +13,13 @@ from app.config import (
 )
 from app.email import headers
 from app.email_utils import (
-    get_header_unicode,
     parse_full_address,
     save_email_for_debugging,
     to_bytes,
     render,
     send_email_with_rate_control,
     parse_address_list,
+    get_header_unicode,
 )
 from app.log import LOG
 from app.models import (
@@ -44,13 +44,28 @@ class OriginalAddresses:
 class ProviderComplaintOrigin(ABC):
     @classmethod
     @abstractmethod
-    def get_original_message(cls, message: Message) -> Optional[Message]:
+    def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
         pass
 
     @classmethod
-    @abstractmethod
-    def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
-        pass
+    def sanitize_addresses(
+        cls, rcpt_header: Optional[str], message: Message
+    ) -> Optional[OriginalAddresses]:
+        try:
+            if not rcpt_header:
+                rcpt_header = message[headers.TO]
+            rcpt_list = parse_address_list(get_header_unicode(rcpt_header))
+            if not rcpt_list:
+                saved_file = save_email_for_debugging(message, "NoRecipientComplaint")
+                LOG.w(f"Cannot find rcpt. Saved to {saved_file or 'nowhere'}")
+                return None
+            rcpt_address = rcpt_list[0][1]
+            _, sender_address = parse_full_address(message[headers.FROM])
+            return OriginalAddresses(sender_address, rcpt_address)
+        except ValueError:
+            saved_file = save_email_for_debugging(message, "ComplaintOriginalAddress")
+            LOG.w(f"Cannot parse from header. Saved to {saved_file or 'nowhere'}")
+            return None
 
     @classmethod
     @abstractmethod
@@ -73,6 +88,9 @@ class ProviderComplaintYahoo(ProviderComplaintOrigin):
 
     @classmethod
     def get_feedback_report(cls, message: Message) -> Optional[Message]:
+        """
+        Find a report that yahoo embeds in the complaint. It has content type 'message/feedback-report'
+        """
         for part in message.walk():
             if part["content-type"] == "message/feedback-report":
                 content = part.get_payload()
@@ -83,20 +101,14 @@ class ProviderComplaintYahoo(ProviderComplaintOrigin):
 
     @classmethod
     def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
+        """
+        Try to get the proper recipient from the report that yahoo adds as a port of the complaint. If we cannot find
+        the rcpt in the report or we can't find the report, use the first address in the original message from
+        """
         report = cls.get_feedback_report(message)
         original = cls.get_original_message(message)
-        rcpt_address = report["original-rcpt-to"]
-        try:
-            if rcpt_address:
-                _, rcpt_address = parse_full_address(rcpt_address)
-            else:
-                rcpt_address = parse_address_list(original[headers.TO])[0]
-            _, sender_address = parse_full_address(original[headers.FROM])
-            return OriginalAddresses(sender_address, rcpt_address)
-        except ValueError:
-            saved_file = save_email_for_debugging(message, "ComplaintOriginalAddress")
-            LOG.w(f"Cannot parse from header. Saved to {saved_file or 'nowhere'}")
-            return False
+        rcpt_header = report["original-rcpt-to"]
+        return cls.sanitize_addresses(rcpt_header, original)
 
     @classmethod
     def name(cls):
@@ -118,19 +130,12 @@ class ProviderComplaintHotmail(ProviderComplaintOrigin):
 
     @classmethod
     def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
-        try:
-            part = cls.get_original_message(message)
-            rcpt_address = part["x-simplelogin-envelope-to"]
-            if rcpt_address:
-                _, rcpt_address = parse_full_address(rcpt_address)
-            else:
-                rcpt_address = parse_address_list(part[headers.TO])[0]
-            _, sender_address = parse_full_address(part[headers.FROM])
-            return OriginalAddresses(sender_address, rcpt_address)
-        except ValueError:
-            saved_file = save_email_for_debugging(message, "ComplaintOriginalAddress")
-            LOG.w(f"Cannot parse from header. Saved to {saved_file or 'nowhere'}")
-            return False
+        """
+        Try to get the proper recipient from original x-simplelogin-envelope-to header we add on delivery.
+        If we can't find the header, use the first address in the original message from"""
+        original = cls.get_original_message(message)
+        rcpt_header = original["x-simplelogin-envelope-to"]
+        return cls.sanitize_addresses(rcpt_header, original)
 
     @classmethod
     def name(cls):
