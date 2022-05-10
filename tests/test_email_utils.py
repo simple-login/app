@@ -755,10 +755,16 @@ def test_generate_verp_email(object_id):
 
 
 def test_generate_verp_email_forward_reply_phase():
-    # make sure the verp type is taken into account in verp generation
-    assert generate_verp_email(VerpType.bounce_forward, 1) != generate_verp_email(
-        VerpType.bounce_reply, 1
-    )
+    """make sure the verp type is taken into account in verp generation"""
+    for phase in [
+        VerpType.bounce_forward,
+        VerpType.bounce_reply,
+        VerpType.transactional,
+    ]:
+        verp = generate_verp_email(phase, 100)
+        verp_info = get_verp_info_from_email(verp)
+        assert verp_info[0] == phase
+        assert verp_info[1] == 100
 
 
 def test_add_header_multipart_with_invalid_part():
