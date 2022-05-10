@@ -549,6 +549,9 @@ def setup_paddle_callback(app: Flask):
 
                 Session.commit()
             else:
+                LOG.w(
+                    f"update non-exist subscription {subscription_id}. {request.form}"
+                )
                 return "No such subscription", 400
         elif request.form.get("alert_name") == "payment_refunded":
             subscription_id = request.form.get("subscription_id")
