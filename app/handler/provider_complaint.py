@@ -20,6 +20,7 @@ from app.email_utils import (
     send_email_with_rate_control,
     parse_address_list,
     get_header_unicode,
+    get_verp_info_from_email,
 )
 from app.log import LOG
 from app.models import (
@@ -32,25 +33,44 @@ from app.models import (
     Phase,
     ProviderComplaintState,
     RefusedEmail,
+    VerpType,
+    EmailLog,
+    Mailbox,
 )
 
 
 @dataclass
-class OriginalAddresses:
-    sender: str
-    recipient: str
+class OriginalMessageInformation:
+    sender_address: str
+    rcpt_address: str
+    mailbox_address: Optional[str]
 
 
 class ProviderComplaintOrigin(ABC):
     @classmethod
     @abstractmethod
-    def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
+    def get_original_addresses(
+        cls, message: Message
+    ) -> Optional[OriginalMessageInformation]:
         pass
 
     @classmethod
-    def sanitize_addresses(
+    def _get_mailbox_id(cls, return_path: Optional[str]) -> Optional[Mailbox]:
+        if not return_path:
+            return None
+        _, return_path = parse_full_address(get_header_unicode(return_path))
+        verp_type, email_log_id = get_verp_info_from_email(return_path)
+        if verp_type == VerpType.transactional:
+            return None
+        email_log = EmailLog.get_by(id=email_log_id)
+        if email_log:
+            return email_log.mailbox.email
+        return None
+
+    @classmethod
+    def sanitize_addresses_and_extract_mailbox_id(
         cls, rcpt_header: Optional[str], message: Message
-    ) -> Optional[OriginalAddresses]:
+    ) -> Optional[OriginalMessageInformation]:
         """
         If the rcpt_header is not None, use it as the valid rcpt address, otherwise try to extract it from the To header
         of the original message, since in the original message there can be more than one recipients.
@@ -65,8 +85,15 @@ class ProviderComplaintOrigin(ABC):
                 LOG.w(f"Cannot find rcpt. Saved to {saved_file or 'nowhere'}")
                 return None
             rcpt_address = rcpt_list[0][1]
-            _, sender_address = parse_full_address(message[headers.FROM])
-            return OriginalAddresses(sender_address, rcpt_address)
+            _, sender_address = parse_full_address(
+                get_header_unicode(message[headers.FROM])
+            )
+
+            return OriginalMessageInformation(
+                sender_address,
+                rcpt_address,
+                cls._get_mailbox_id(message[headers.RETURN_PATH]),
+            )
         except ValueError:
             saved_file = save_email_for_debugging(message, "ComplaintOriginalAddress")
             LOG.w(f"Cannot parse from header. Saved to {saved_file or 'nowhere'}")
@@ -105,7 +132,9 @@ class ProviderComplaintYahoo(ProviderComplaintOrigin):
         return None
 
     @classmethod
-    def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
+    def get_original_addresses(
+        cls, message: Message
+    ) -> Optional[OriginalMessageInformation]:
         """
         Try to get the proper recipient from the report that yahoo adds as a port of the complaint. If we cannot find
         the rcpt in the report or we can't find the report, use the first address in the original message from
@@ -113,7 +142,7 @@ class ProviderComplaintYahoo(ProviderComplaintOrigin):
         report = cls.get_feedback_report(message)
         original = cls.get_original_message(message)
         rcpt_header = report["original-rcpt-to"]
-        return cls.sanitize_addresses(rcpt_header, original)
+        return cls.sanitize_addresses_and_extract_mailbox_id(rcpt_header, original)
 
     @classmethod
     def name(cls):
@@ -134,13 +163,15 @@ class ProviderComplaintHotmail(ProviderComplaintOrigin):
         return None
 
     @classmethod
-    def get_original_addresses(cls, message: Message) -> Optional[OriginalAddresses]:
+    def get_original_addresses(
+        cls, message: Message
+    ) -> Optional[OriginalMessageInformation]:
         """
         Try to get the proper recipient from original x-simplelogin-envelope-to header we add on delivery.
         If we can't find the header, use the first address in the original message from"""
         original = cls.get_original_message(message)
         rcpt_header = original["x-simplelogin-envelope-to"]
-        return cls.sanitize_addresses(rcpt_header, original)
+        return cls.sanitize_addresses_and_extract_mailbox_id(rcpt_header, original)
 
     @classmethod
     def name(cls):
@@ -164,50 +195,55 @@ def find_alias_with_address(address: str) -> Optional[Alias]:
 
 
 def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
-    addresses = origin.get_original_addresses(message)
-    if not addresses:
+    msg_info = origin.get_original_addresses(message)
+    if not msg_info:
         return False
 
-    user = User.get_by(email=addresses.recipient)
+    user = User.get_by(email=msg_info.rcpt_address)
     if user:
         LOG.d(f"Handle provider {origin.name()} complaint for {user}")
-        report_complaint_to_user_in_transactional_phase(user, origin)
+        report_complaint_to_user_in_transactional_phase(user, origin, msg_info)
         return True
 
-    alias = find_alias_with_address(addresses.sender)
+    alias = find_alias_with_address(msg_info.sender_address)
     # the email is during a reply phase, from=alias and to=destination
     if alias:
         LOG.i(
-            f"Complaint from {origin.name} during reply phase {alias} -> {addresses.recipient}, {user}"
+            f"Complaint from {origin.name} during reply phase {alias} -> {msg_info.rcpt_address}, {user}"
         )
-        report_complaint_to_user_in_reply_phase(alias, addresses.recipient, origin)
+        report_complaint_to_user_in_reply_phase(
+            alias, msg_info.rcpt_address, origin, msg_info
+        )
         store_provider_complaint(alias, message)
         return True
 
-    contact = Contact.get_by(reply_email=addresses.sender)
+    contact = Contact.get_by(reply_email=msg_info.sender_address)
     if contact:
         alias = contact.alias
     else:
-        alias = find_alias_with_address(addresses.recipient)
+        alias = find_alias_with_address(msg_info.rcpt_address)
 
     if not alias:
         LOG.e(
-            f"Cannot find alias for address {addresses.recipient} or contact with reply {addresses.sender}"
+            f"Cannot find alias for address {msg_info.rcpt_address} or contact with reply {msg_info.sender_address}"
         )
         return False
 
-    report_complaint_to_user_in_forward_phase(alias, origin)
+    report_complaint_to_user_in_forward_phase(alias, origin, msg_info)
     return True
 
 
 def report_complaint_to_user_in_reply_phase(
-    alias: Alias, to_address: str, origin: ProviderComplaintOrigin
+    alias: Alias,
+    to_address: str,
+    origin: ProviderComplaintOrigin,
+    msg_info: OriginalMessageInformation,
 ):
     capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
         alias.user,
         f"{ALERT_COMPLAINT_REPLY_PHASE}_{origin.name()}",
-        alias.user.email,
+        msg_info.mailbox_address or alias.mailbox.email,
         f"Abuse report from {capitalized_name}",
         render(
             "transactional/provider-complaint-reply-phase.txt.jinja2",
@@ -222,13 +258,13 @@ def report_complaint_to_user_in_reply_phase(
 
 
 def report_complaint_to_user_in_transactional_phase(
-    user: User, origin: ProviderComplaintOrigin
+    user: User, origin: ProviderComplaintOrigin, msg_info: OriginalMessageInformation
 ):
     capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
         user,
         f"{ALERT_COMPLAINT_TRANSACTIONAL_PHASE}_{origin.name()}",
-        user.email,
+        msg_info.mailbox_address or user.email,
         f"Abuse report from {capitalized_name}",
         render(
             "transactional/provider-complaint-to-user.txt.jinja2",
@@ -246,23 +282,24 @@ def report_complaint_to_user_in_transactional_phase(
 
 
 def report_complaint_to_user_in_forward_phase(
-    alias: Alias, origin: ProviderComplaintOrigin
+    alias: Alias, origin: ProviderComplaintOrigin, msg_info: OriginalMessageInformation
 ):
     capitalized_name = origin.name().capitalize()
     user = alias.user
+    mailbox_email = msg_info.mailbox_address or alias.mailbox.email
     send_email_with_rate_control(
         user,
         f"{ALERT_COMPLAINT_FORWARD_PHASE}_{origin.name()}",
-        user.email,
+        mailbox_email,
         f"Abuse report from {capitalized_name}",
         render(
             "transactional/provider-complaint-forward-phase.txt.jinja2",
-            user=user,
+            email=mailbox_email,
             provider=capitalized_name,
         ),
         render(
             "transactional/provider-complaint-forward-phase.html",
-            user=user,
+            email=mailbox_email,
             provider=capitalized_name,
         ),
         max_nb_alert=1,
