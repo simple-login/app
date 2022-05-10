@@ -513,7 +513,9 @@ def setup_paddle_callback(app: Flask):
                 )
 
             else:
-                return "No such subscription", 400
+                # user might have deleted their account
+                LOG.i(f"Cancel non-exist subscription {subscription_id}")
+                return "OK"
         elif request.form.get("alert_name") == "subscription_updated":
             subscription_id = request.form.get("subscription_id")
 
