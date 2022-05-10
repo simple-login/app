@@ -51,6 +51,11 @@ class ProviderComplaintOrigin(ABC):
     def sanitize_addresses(
         cls, rcpt_header: Optional[str], message: Message
     ) -> Optional[OriginalAddresses]:
+        """
+        If the rcpt_header is not None, use it as the valid rcpt address, otherwise try to extract it from the To header
+        of the original message, since in the original message there can be more than one recipients.
+        There can only be one sender so that one can safely be extracted from the message headers.
+        """
         try:
             if not rcpt_header:
                 rcpt_header = message[headers.TO]
