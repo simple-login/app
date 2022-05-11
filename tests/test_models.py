@@ -16,6 +16,7 @@ from app.models import (
     EnumE,
     Subscription,
     PlanEnum,
+    PADDLE_SUBSCRIPTION_GRACE_DAYS,
 )
 from tests.utils import login, create_new_user
 
@@ -272,14 +273,14 @@ def test_user_get_subscription_grace_period(flask_client):
         update_url="https://checkout.paddle.com/subscription/update?user=1234",
         subscription_id=str(random.random()),
         event_time=arrow.now(),
-        next_bill_date=arrow.now()
-        .shift(days=-14)
-        .date(),  # the grace period is 14 days
+        next_bill_date=arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date(),
         plan=PlanEnum.monthly,
         commit=True,
     )
 
     assert user.get_subscription() is not None
 
-    sub.next_bill_date = arrow.now().shift(days=-15).date()
+    sub.next_bill_date = (
+        arrow.now().shift(days=-(PADDLE_SUBSCRIPTION_GRACE_DAYS + 1)).date()
+    )
     assert user.get_subscription() is None
