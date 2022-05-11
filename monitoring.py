@@ -1,5 +1,7 @@
 import os
+import subprocess
 from time import sleep
+from typing import List, Dict
 
 import newrelic.agent
 
@@ -30,10 +32,36 @@ def log_postfix_metrics():
     newrelic.agent.record_custom_metric("Custom/postfix_active_queue", active_queue)
     newrelic.agent.record_custom_metric("Custom/postfix_deferred_queue", deferred_queue)
 
+    proc_counts = get_num_procs(["smtp", "smtpd", "bounce", "cleanup"])
+    for proc_name in proc_counts:
+        newrelic.agent.record_custom_metric(
+            f"Custom/process_{proc_name}_count", proc_counts[proc_name]
+        )
+
 
 def nb_files(directory) -> int:
     """return the number of files in directory and its subdirectories"""
     return sum(len(files) for _, _, files in os.walk(directory))
+
+
+def get_num_procs(proc_names: List[str]) -> Dict[str, int]:
+    data = (
+        subprocess.Popen(["ps", "ax"], stdout=subprocess.PIPE)
+        .communicate()[0]
+        .decode("utf-8")
+    )
+    proc_counts = {proc_name: 0 for proc_name in proc_names}
+    lines = data.split("\n")
+    for line in lines:
+        entry = [field for field in line.split() if field.strip()]
+        if len(entry) < 5:
+            continue
+        if entry[4][0] == "[":
+            continue
+        for proc_name in proc_names:
+            if entry[4].find(proc_name) == 0:
+                proc_counts[proc_name] += 1
+    return proc_counts
 
 
 @newrelic.agent.background_task()
