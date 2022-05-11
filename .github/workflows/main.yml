@@ -1,6 +1,9 @@
 name: Run tests & Publish to Docker Registry
 
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+    types: [ 'opened' ]
 
 jobs:
   test:
