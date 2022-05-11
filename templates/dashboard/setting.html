@@ -275,20 +275,15 @@
           <input type="hidden" name="form-name" value="change-random-alias-default-domain">
           <select class="form-control mr-sm-2" name="random-alias-default-domain">
             <option value="">Not Selected</option>
-            {% if current_user.default_alias_custom_domain_id or current_user.default_alias_public_domain_id %}
-              {% for is_public, domain in current_user.available_domains_for_random_alias() %}
-                <option value="{{ domain }}"
-                    {% if current_user.default_random_alias_domain() == domain %} selected {% endif %} >
-                  {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
-                </option>
-              {% endfor %}
-            {% else %}
-              {% for is_public, domain in current_user.available_domains_for_random_alias() %}
-                <option value="{{ domain }}">
-                  {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
-                </option>
-              {% endfor %}
-            {% endif %}
+            {% for is_public, domain in current_user.available_domains_for_random_alias() %}
+              <option value="{{ domain }}"
+                  {% if current_user.default_alias_custom_domain_id or current_user.default_alias_public_domain_id %}
+                    {% if current_user.default_random_alias_domain() == domain %} selected {% endif %}
+                  {% endif %}
+              >
+              {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
+              </option>
+            {% endfor %}
           </select>
           <button class="btn btn-outline-primary">Update</button>
         </form>
