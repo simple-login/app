@@ -1,5 +1,7 @@
+import random
 from uuid import UUID
 
+import arrow
 import pytest
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
@@ -12,6 +14,9 @@ from app.models import (
     Mailbox,
     SenderFormatEnum,
     EnumE,
+    Subscription,
+    PlanEnum,
+    PADDLE_SUBSCRIPTION_GRACE_DAYS,
 )
 from tests.utils import login, create_new_user
 
@@ -258,3 +263,24 @@ def test_can_create_new_alias_disabled_user():
 
     user.disabled = True
     assert not user.can_create_new_alias()
+
+
+def test_user_get_subscription_grace_period(flask_client):
+    user = create_new_user()
+    sub = Subscription.create(
+        user_id=user.id,
+        cancel_url="https://checkout.paddle.com/subscription/cancel?user=1234",
+        update_url="https://checkout.paddle.com/subscription/update?user=1234",
+        subscription_id=str(random.random()),
+        event_time=arrow.now(),
+        next_bill_date=arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date(),
+        plan=PlanEnum.monthly,
+        commit=True,
+    )
+
+    assert user.get_subscription() is not None
+
+    sub.next_bill_date = (
+        arrow.now().shift(days=-(PADDLE_SUBSCRIPTION_GRACE_DAYS + 1)).date()
+    )
+    assert user.get_subscription() is None

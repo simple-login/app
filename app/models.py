@@ -57,6 +57,8 @@ from app.utils import (
 
 Base = declarative_base()
 
+PADDLE_SUBSCRIPTION_GRACE_DAYS = 14
+
 
 class TSVector(sa.types.TypeDecorator):
     impl = TSVECTOR
@@ -751,8 +753,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sub = Subscription.get_by(user_id=self.id)
 
         if sub:
-            # sub is active until the next billing_date + 1
-            if sub.next_bill_date >= arrow.now().shift(days=-1).date():
+            # grace period is 14 days
+            # sub is active until the next billing_date + PADDLE_SUBSCRIPTION_GRACE_DAYS
+            if (
+                sub.next_bill_date
+                >= arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
+            ):
                 return sub
             # past subscription, user is considered not having a subscription = free plan
             else:
@@ -1944,7 +1950,6 @@ class AppleSubscription(Base, ModelMixin):
     user = orm.relationship(User)
 
     def is_valid(self):
-        # Todo: take into account grace period?
         return self.expires_date > arrow.now().shift(days=-_APPLE_GRACE_PERIOD_DAYS)
 
 
