@@ -1,6 +1,8 @@
 from uuid import UUID
+import random
 
 import pytest
+from sqlalchemy_utils.types.arrow import arrow
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
@@ -12,6 +14,9 @@ from app.models import (
     Mailbox,
     SenderFormatEnum,
     EnumE,
+    Subscription,
+    PlanEnum,
+    SUBSCRIPTION_GRACE_DAYS,
 )
 from tests.utils import login, create_new_user
 
@@ -258,3 +263,26 @@ def test_can_create_new_alias_disabled_user():
 
     user.disabled = True
     assert not user.can_create_new_alias()
+
+
+def test_grace_period_for_subscription(flask_client):
+    user = create_new_user()
+    subscription = Subscription.create(
+        user_id=user.id,
+        cancel_url="https://test.url",
+        update_url="https://test.url",
+        subscription_id=int(random.random() * 1000),
+        event_time=arrow.now(),
+        next_bill_date=arrow.now()
+        .shift(days=-(SUBSCRIPTION_GRACE_DAYS - 1))
+        .date(),  # the grace period is 14 days
+        plan=PlanEnum.yearly,
+        commit=True,
+    )
+
+    assert user.get_subscription() is not None
+
+    subscription.next_bill_date = (
+        arrow.now().shift(days=-(SUBSCRIPTION_GRACE_DAYS + 1)).date()
+    )
+    assert user.get_subscription() is None
