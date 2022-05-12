@@ -26,6 +26,19 @@ from app.log import LOG
 from app.models import Alias, Contact, EmailLog, User
 
 
+# TODO: Move this to a scoped config once the global config gets scoped.
+#  This allows this config to be modified from tests so we can test both scenarios.
+#  By default allow users to create contacts
+class AllowFreeUsersToCreateContacts:
+    allow: bool = True
+
+    def set(self, allow: bool):
+        self.allow = allow
+
+
+allow_free_users_to_create_contacts = AllowFreeUsersToCreateContacts()
+
+
 def email_validator():
     """validate email address. Handle both only email and email with name:
     - ab@cd.com
@@ -68,7 +81,9 @@ def create_contact(
             raise ErrContactAlreadyExists(contact)
         return contact
 
-    if not user.is_premium() and user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS > 0:
+    if not allow_free_users_to_create_contacts.allow and (
+        not user.is_premium() and user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS > 0
+    ):
         raise ErrContactErrorUpgradeNeeded()
 
     contact = Contact.create(

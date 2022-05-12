@@ -2,6 +2,9 @@ from flask import url_for
 import arrow
 
 from app.config import PAGE_LIMIT
+from app.dashboard.views.alias_contact_manager import (
+    allow_free_users_to_create_contacts,
+)
 from app.db import Session
 from app.email_utils import is_reverse_alias
 from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
@@ -568,7 +571,7 @@ def test_create_contact_route_free_users(flask_client):
     )
     assert r.status_code == 201
 
-    # End trial and disallow for new free users
+    # End trial and disallow for new free users. Config should allow it
     user.flags = User.FLAG_FREE_DISABLE_CREATE_ALIAS
     Session.commit()
     r = flask_client.post(
@@ -576,7 +579,17 @@ def test_create_contact_route_free_users(flask_client):
         headers={"Authentication": api_key.code},
         json={"contact": f"First Last <first@{random_domain()}>"},
     )
+    assert r.status_code == 201
+
+    # Set the global config to disable free users from create contacts
+    allow_free_users_to_create_contacts.set(False)
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"contact": f"First Last <first@{random_domain()}>"},
+    )
     assert r.status_code == 403
+    allow_free_users_to_create_contacts.set(True)
 
 
 def test_create_contact_route_empty_contact_address(flask_client):
