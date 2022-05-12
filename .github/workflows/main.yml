@@ -2,8 +2,6 @@ name: Run tests & Publish to Docker Registry
 
 on: 
   push:
-  pull_request:
-    types: [ 'opened' ]
 
 jobs:
   test:
@@ -86,7 +84,7 @@ jobs:
 
       - name: Prepare version file
         run: |
-          scripts/generate-build-info.sh ${{ github.ref }}
+          scripts/generate-build-info.sh ${{ github.sha }}
           cat app/build_info.py
 
       - name: Test with pytest
@@ -125,7 +123,7 @@ jobs:
 
       - name: Prepare version file
         run: |
-          scripts/generate-build-info.sh ${{ github.ref }}
+          scripts/generate-build-info.sh ${{ github.sha }}
           cat app/build_info.py
 
       - name: Build image and publish to Docker Registry
@@ -192,7 +190,7 @@ jobs:
                   "type": "section",
                   "text": {
                       "type": "mrkdwn",
-                      "text": "*Tag: ${{ github.ref_name }}*"
+                      "text": "*Tag: ${{ github.ref_name }}* (${{ github.sha }})"
                     }
                 },
                 {
