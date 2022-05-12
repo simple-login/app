@@ -1,4 +1,4 @@
-from app.config import SHA1
+from app.build_info import SHA1
 from app.monitor.base import monitor_bp
 
 

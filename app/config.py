@@ -2,14 +2,13 @@ import os
 import random
 import socket
 import string
-import subprocess
 from ast import literal_eval
 from typing import Callable, List
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
-SHA1 = subprocess.getoutput("git rev-parse HEAD")
+
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
