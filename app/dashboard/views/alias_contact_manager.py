@@ -55,8 +55,8 @@ def user_can_create_contacts(user: User) -> bool:
     if user.is_premium():
         return True
     return (
-        config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
-        and user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS > 0
+        not config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
+        or user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS == 0
     )
 
 
