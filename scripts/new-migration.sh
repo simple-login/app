@@ -2,9 +2,17 @@
 # To run it:
 # sh scripts/new-migration.sh
 
+container_name=sl-db-new-migration
+
+if [ "$#" -lt "1" ]; then
+	echo "What is this migration for?"
+	exit 1
+fi
+reason="$@"
+
 # create a postgres database for SimpleLogin
-docker rm -f sl-db
-docker run -p 25432:5432 --name sl-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sl -d postgres:13
+docker rm -f ${container_name}
+docker run -p 25432:5432 --name ${container_name} -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sl -d postgres:13
 
 # sleep a little bit for the db to be ready
 sleep 3
@@ -13,7 +21,7 @@ sleep 3
 env DB_URI=postgresql://postgres:postgres@127.0.0.1:25432/sl poetry run alembic upgrade head
 
 # generate the migration script.
-env DB_URI=postgresql://postgres:postgres@127.0.0.1:25432/sl poetry run alembic revision --autogenerate
+env DB_URI=postgresql://postgres:postgres@127.0.0.1:25432/sl poetry run alembic revision --autogenerate -m "$reason"
 
 # remove the db
-docker rm -f sl-db
+docker rm -f ${container_name}

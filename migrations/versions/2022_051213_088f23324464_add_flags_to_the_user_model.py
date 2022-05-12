@@ -1,8 +1,8 @@
-"""add flags to user
+"""add flags to the user model
 
-Revision ID: 98040e190381
-Revises: 0aaad1740797
-Create Date: 2022-05-03 17:31:58.559032
+Revision ID: 088f23324464
+Revises: e866ad0e78e1
+Create Date: 2022-05-12 13:32:30.898367
 
 """
 import sqlalchemy_utils
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '98040e190381'
-down_revision = '0aaad1740797'
+revision = '088f23324464'
+down_revision = 'e866ad0e78e1'
 branch_labels = None
 depends_on = None
 
