@@ -8,7 +8,8 @@ def test_monitoring_proc_count():
    3438 ?        Ssl    0:00 /bin/sh arg
    3440 ?        Sl     0:00 /bin/cron args
    3440 ?        Sl     0:00 smtp arg
-   3440 ?        Sl     0:00 smtpd arg
+   3448 ?        Sl     0:00 smtpd arg
+   3441 ?        Sl     0:00 other smtpd arg
     """
     result = _process_ps_output(["smtp", "smtpd", "cron"], data)
     assert 1 == result["smtp"]
