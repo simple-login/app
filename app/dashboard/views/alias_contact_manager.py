@@ -25,6 +25,7 @@ from app.errors import (
 )
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog, User
+from app.utils import sanitize_email
 
 
 def email_validator():
@@ -65,6 +66,7 @@ def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
     except ValueError:
         raise ErrAddressInvalid(contact_address)
 
+    contact_email = sanitize_email(contact_email)
     if not is_valid_email(contact_email):
         raise ErrAddressInvalid(contact_email)
 

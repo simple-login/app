@@ -88,7 +88,7 @@ class ErrContactAlreadyExists(SLException):
     """raised when a contact already exists"""
 
     # TODO: type-hint this as a contact when models are almost dataclasses and don't import errors
-    def __init__(self, contact):
+    def __init__(self, contact: "Contact"):  # noqa: F821
         self.contact = contact
 
     def error_for_user(self) -> str:
