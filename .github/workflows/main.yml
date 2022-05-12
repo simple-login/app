@@ -138,10 +138,44 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           args: Docker image pushed on ${{ github.ref }}
 
+      # If we have generated a tag, generate the changelog, send a notification to slack and create the GitHub release
+      - name: Build Changelog
+        id: build_changelog
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: mikepenz/release-changelog-builder-action@v3
+        with:
+          configuration: ".github/changelog_configuration.json"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Post notification to Slack
         uses: slackapi/slack-github-action@v1.19.0
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          slack-message: "New tag generated: ${{github.ref}}\nBuild result: ${{ job.status }}"
+          payload: |
+            {
+              "text": "New tag generated: ${{github.ref}}\nBuild result: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "New tag generated: ${{github.ref}}\nBuild result: ${{ job.status }}\nChangelog:\n${{ steps.build_changelog.outputs.changelog }}"
+                  }
+                }
+              ]
+            }
+          slack-message: ""
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: ${{ steps.build_changelog.outputs.changelog }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
