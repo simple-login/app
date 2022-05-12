@@ -8,7 +8,7 @@ from flask_wtf import FlaskForm
 from sqlalchemy import and_, func, case
 from wtforms import StringField, validators, ValidationError
 
-from app.config import PAGE_LIMIT
+from app import config
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import (
@@ -24,19 +24,6 @@ from app.errors import (
 )
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog, User
-
-
-# TODO: Move this to a scoped config once the global config gets scoped.
-#  This allows this config to be modified from tests so we can test both scenarios.
-#  By default allow users to create contacts
-class AllowFreeUsersToCreateContacts:
-    allow: bool = True
-
-    def set(self, allow: bool):
-        self.allow = allow
-
-
-allow_free_users_to_create_contacts = AllowFreeUsersToCreateContacts()
 
 
 def email_validator():
@@ -81,7 +68,7 @@ def create_contact(
             raise ErrContactAlreadyExists(contact)
         return contact
 
-    if not allow_free_users_to_create_contacts.allow and (
+    if config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS and (
         not user.is_premium() and user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS > 0
     ):
         raise ErrContactErrorUpgradeNeeded()
@@ -196,7 +183,11 @@ def get_contact_infos(
         ],
         else_=Contact.created_at,
     )
-    q = q.order_by(latest_activity.desc()).limit(PAGE_LIMIT).offset(page * PAGE_LIMIT)
+    q = (
+        q.order_by(latest_activity.desc())
+        .limit(config.PAGE_LIMIT)
+        .offset(page * config.PAGE_LIMIT)
+    )
 
     ret = []
     for contact, latest_email_log, nb_reply, nb_forward in q:
@@ -293,7 +284,7 @@ def alias_contact_manager(alias_id):
             )
 
     contact_infos = get_contact_infos(alias, page, query=query)
-    last_page = len(contact_infos) < PAGE_LIMIT
+    last_page = len(contact_infos) < config.PAGE_LIMIT
     nb_contact = Contact.filter(Contact.alias_id == alias.id).count()
 
     # if highlighted contact isn't included, fetch it
