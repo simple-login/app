@@ -54,10 +54,9 @@ def email_validator():
 def user_can_create_contacts(user: User) -> bool:
     if user.is_premium():
         return True
-    return (
-        not config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
-        or user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS == 0
-    )
+    if user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS == 0:
+        return True
+    return not config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
 
 
 def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
