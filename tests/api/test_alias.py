@@ -1,6 +1,7 @@
 from flask import url_for
 import arrow
 
+# Need to import directly from config to allow modification from the tests
 from app import config
 from app.db import Session
 from app.email_utils import is_reverse_alias

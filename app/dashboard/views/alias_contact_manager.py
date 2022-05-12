@@ -8,6 +8,7 @@ from flask_wtf import FlaskForm
 from sqlalchemy import and_, func, case
 from wtforms import StringField, validators, ValidationError
 
+# Need to import directly from config to allow modification from the tests
 from app import config
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -49,9 +50,7 @@ def email_validator():
     return _check
 
 
-def create_contact(
-    user: User, alias: Alias, contact_address: str, fail_if_already_exist: bool = True
-) -> Contact:
+def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
     if not contact_address:
         raise ErrAddressInvalid("Empty address")
     try:
@@ -64,9 +63,7 @@ def create_contact(
 
     contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
     if contact:
-        if fail_if_already_exist:
-            raise ErrContactAlreadyExists(contact)
-        return contact
+        raise ErrContactAlreadyExists(contact)
 
     if config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS and (
         not user.is_premium() and user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS > 0
