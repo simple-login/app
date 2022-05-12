@@ -51,6 +51,13 @@ def email_validator():
 
 
 def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
+    """
+    Create a contact for a user. Can be restricted for new free users by enabling DISABLE_CREATE_CONTACTS_FOR_FREE_USERS.
+    Can throw exceptions:
+     - ErrAddressInvalid
+     - ErrContactAlreadyExists
+     - ErrContactUpgradeNeeded - If DISABLE_CREATE_CONTACTS_FOR_FREE_USERS this exception will be raised for new free users
+    """
     if not contact_address:
         raise ErrAddressInvalid("Empty address")
     try:
