@@ -2,29 +2,15 @@ import os
 import random
 import socket
 import string
+from app import build_info
 from ast import literal_eval
-from pathlib import Path
 from typing import Callable, List
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
-DEFAULT_VERSION = "unknown"
 
-
-def load_version() -> str:
-    try:
-        this_file_path = Path(__file__)
-        root_dir_path = this_file_path.parent.parent
-        version_file_path = root_dir_path.joinpath(".version")
-        with open(version_file_path, "r") as f:
-            return f.readline().strip()
-    except Exception:
-        print("Could not load .version. Using default version")
-        return DEFAULT_VERSION
-
-
-SHA1 = load_version()
+SHA1 = build_info.SHA1
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 

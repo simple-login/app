@@ -120,7 +120,11 @@ jobs:
 
       - name: Prepare version file
         run: |
-          echo "${{ github.ref }}" > .version
+          BUILD_INFO_FILE=app/build_info.py
+          echo "SHA1 = '${{ github.ref }}'" > $BUILD_INFO_FILE
+          BUILD_TIME=$(date +%s)
+          echo "BUILD_TIME = '${BUILD_TIME}' >> $BUILD_INFO_FILE
+          cat $BUILD_INFO_FILE
 
       - name: Build image and publish to Docker Registry
         uses: docker/build-push-action@v3
