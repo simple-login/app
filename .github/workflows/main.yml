@@ -148,6 +148,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare Slack notification contents
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          changelog=$(cat << EOH
+          ${{ steps.build_changelog.outputs.changelog }}
+          EOH
+          )
+          messageWithoutNewlines=$(echo "${changelog}" | awk '{printf "%s\\n", $0}')
+          messageWithoutDoubleQuotes=$(echo "${messageWithoutNewlines}" | sed "s/\"/'/g")
+          echo "${messageWithoutDoubleQuotes}"
+
+          echo "SLACK_CHANGELOG=${messageWithoutDoubleQuotes}" >> $GITHUB_ENV
+
       - name: Post notification to Slack
         uses: slackapi/slack-github-action@v1.19.0
         if: startsWith(github.ref, 'refs/tags/v')
@@ -155,18 +168,31 @@ jobs:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
-              "text": "New tag generated: ${{github.ref}}\nBuild result: ${{ job.status }}",
               "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "New tag created",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": "*Tag: ${{ github.ref_name }}*"
+                    }
+                },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "New tag generated: ${{github.ref}}\nBuild result: ${{ job.status }}\nChangelog:\n${{ steps.build_changelog.outputs.changelog }}"
+                    "text": "*Changelog:*\n${{ env.SLACK_CHANGELOG }}"
                   }
                 }
               ]
             }
-          slack-message: ""
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
