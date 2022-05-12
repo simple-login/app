@@ -1,4 +1,4 @@
-from monitoring import get_num_procs, _process_ps_output
+from monitoring import _process_ps_output
 
 
 def test_monitoring_proc_count():
