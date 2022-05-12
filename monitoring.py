@@ -34,6 +34,7 @@ def log_postfix_metrics():
 
     proc_counts = get_num_procs(["smtp", "smtpd", "bounce", "cleanup"])
     for proc_name in proc_counts:
+        LOG.d(f"Process count {proc_counts}")
         newrelic.agent.record_custom_metric(
             f"Custom/process_{proc_name}_count", proc_counts[proc_name]
         )
@@ -50,16 +51,20 @@ def get_num_procs(proc_names: List[str]) -> Dict[str, int]:
         .communicate()[0]
         .decode("utf-8")
     )
+    return _process_ps_output(proc_names, data)
+
+
+def _process_ps_output(proc_names: List[str], data: str) -> Dict[str, int]:
     proc_counts = {proc_name: 0 for proc_name in proc_names}
     lines = data.split("\n")
     for line in lines:
-        entry = [field for field in line.split() if field.strip()]
+        entry = [field for field in line.strip().split() if field.strip()]
         if len(entry) < 5:
             continue
         if entry[4][0] == "[":
             continue
         for proc_name in proc_names:
-            if entry[4].find(proc_name) == 0:
+            if entry[4] == proc_name:
                 proc_counts[proc_name] += 1
     return proc_counts
 
