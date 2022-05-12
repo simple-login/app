@@ -2,8 +2,6 @@ name: Run tests & Publish to Docker Registry
 
 on: 
   push:
-  pull_request:
-    types: [ 'opened' ]
 
 jobs:
   test:
@@ -192,7 +190,7 @@ jobs:
                   "type": "section",
                   "text": {
                       "type": "mrkdwn",
-                      "text": "*Tag: ${{ github.ref_name }}*"
+                      "text": "*Tag: ${{ github.ref_name }}* (${{ github.sha }})"
                     }
                 },
                 {
