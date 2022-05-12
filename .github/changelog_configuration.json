@@ -1,0 +1,23 @@
+{
+  "template": "${{CHANGELOG}}",
+  "pr_template": "- ${{TITLE}}\n   - PR: #${{NUMBER}}",
+  "empty_template": "- no changes",
+  "categories": [
+    {
+      "title": "## 🚀 Features",
+      "labels": ["feature"]
+    },
+    {
+      "title": "## 🐛 Fixes",
+      "labels": ["fix", "bug"]
+    },
+    {
+      "title": "## 🔧 Enhancements",
+      "labels": ["enhancement"]
+    }
+  ],
+  "ignore_labels": ["ignore"],
+  "tag_resolver": {
+    "method": "sort"
+  }
+}
