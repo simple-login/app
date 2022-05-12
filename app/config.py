@@ -2,7 +2,6 @@ import os
 import random
 import socket
 import string
-from app import build_info
 from ast import literal_eval
 from typing import Callable, List
 from urllib.parse import urlparse
@@ -10,7 +9,6 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 
-SHA1 = build_info.SHA1
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 

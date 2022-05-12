@@ -41,12 +41,12 @@ from app.admin_model import (
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
+from app.build_info import SHA1
 from app.config import (
     DB_URI,
     FLASK_SECRET,
     SENTRY_DSN,
     URL,
-    SHA1,
     PADDLE_MONTHLY_PRODUCT_ID,
     FLASK_PROFILER_PATH,
     FLASK_PROFILER_PASSWORD,
