@@ -114,15 +114,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build image and publish to Docker Registry
-        uses: docker/build-push-action@v3
-        with:
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-
       # We need to checkout the repository in order for the "Create Sentry release" to work
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Prepare version file
+        run: |
+          echo "${{ github.ref }}" > .version
+
+      - name: Build image and publish to Docker Registry
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
       - name: Create Sentry release
         uses: getsentry/action-release@v1
