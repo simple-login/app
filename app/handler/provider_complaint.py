@@ -170,7 +170,7 @@ class ProviderComplaintHotmail(ProviderComplaintOrigin):
         Try to get the proper recipient from original x-simplelogin-envelope-to header we add on delivery.
         If we can't find the header, use the first address in the original message from"""
         original = cls.get_original_message(message)
-        rcpt_header = original["x-simplelogin-envelope-to"]
+        rcpt_header = original[headers.SL_ENVELOPE_TO]
         return cls.sanitize_addresses_and_extract_mailbox_id(rcpt_header, original)
 
     @classmethod
