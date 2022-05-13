@@ -3,6 +3,6 @@
 {% block content %}
   {{ render_text("Hi " + name) }}
   {{ render_text("This is a test to make sure that you receive emails sent to your alias <b>" + alias + "</b>.") }}
-  {{ render_text("If you have any questions, feel free to reply to this email.") }}
+  {{ render_text('If you have any questions, feel free to contact us either by sending an e-mail to <a href="mailto:' + support_email + '">' + support_email + '</a> or through our <a href="' + support_page +'">support page</a>') }}
 {% endblock %}
 

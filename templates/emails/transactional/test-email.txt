@@ -5,7 +5,7 @@ Hi {{name}}
 
 This is a test to make sure that you receive emails sent to your alias {{alias}}.
 
-If you have any questions, feel free to reply to this email.
+If you have any questions, feel free to contact us either by sending an e-mail to {{support_email}} or through our support page: {{support_page}}
 
 {% endblock %}
 
