@@ -20,7 +20,11 @@
 
 
     <!-- Input + button container -->
-    <div class="mt-8" style="display: grid; place-items: center;">
+    <div class="mt-8" style="display:grid; place-items:center;width:1024px;margin:auto;position:relative;">
+      <img
+        src="/static/images/onboarding-click-icon.png"
+        style="width:400px;position:absolute;right:-90px;top:-44px;"
+      />
       <div style="width: 25rem; display: block">
         <form method="post">
           {{ form.csrf_token }}
