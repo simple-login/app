@@ -734,11 +734,12 @@ def register_custom_commands(app):
 
     @app.cli.command("dummy-data")
     def dummy_data():
-        from init_app import add_sl_domains
+        from init_app import add_sl_domains, add_proton_partner
 
         LOG.w("reset db, add fake data")
         fake_data()
         add_sl_domains()
+        add_proton_partner()
 
 
 def setup_do_not_track(app):
