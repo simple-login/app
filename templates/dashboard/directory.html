@@ -197,14 +197,16 @@
     $(".delete-dir").on("click", function (e) {
       let directory = $(this).parent().find(".dir-name").val();
 
-      let that = $(this);
-      let message = `All aliases associated with <b>${directory}</b> directory will also be deleted. ` +
+      const unsanitizedMessage = `All aliases associated with <b>${directory}</b> directory will also be deleted. ` +
         `As a deleted directory can't be used by someone else, deleting a directory doesn't reset your directory quota. ` +
         `Your directory quota will be {{ current_user.directory_quota }} after the deletion, ` +
         " please confirm.";
+      const element = document.createElement('div');
+      element.innerText = unsanitizedMessage;
+      const sanitizedMessage = element.innerHTML;
 
       bootbox.confirm({
-        message: message,
+        message: sanitizedMessage,
         buttons: {
           confirm: {
             label: 'Yes, delete it',
@@ -215,9 +217,9 @@
             className: 'btn-outline-primary'
           }
         },
-        callback: function (result) {
+        callback: (result) => {
           if (result) {
-            that.closest("form").submit();
+            this.closest("form").submit();
           }
         }
       })
