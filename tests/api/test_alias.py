@@ -1,11 +1,13 @@
 from flask import url_for
+import arrow
 
-from app.config import PAGE_LIMIT
+# Need to import directly from config to allow modification from the tests
+from app import config
 from app.db import Session
 from app.email_utils import is_reverse_alias
 from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
 from tests.api.utils import get_new_user_and_api_key
-from tests.utils import login
+from tests.utils import login, random_domain
 
 
 def test_get_aliases_error_without_pagination(flask_client):
@@ -42,17 +44,17 @@ def test_get_aliases_with_pagination(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     Session.commit()
 
-    # create more aliases than PAGE_LIMIT
-    for _ in range(PAGE_LIMIT + 1):
+    # create more aliases than config.PAGE_LIMIT
+    for _ in range(config.PAGE_LIMIT + 1):
         Alias.create_new_random(user)
     Session.commit()
 
-    # get aliases on the 1st page, should return PAGE_LIMIT aliases
+    # get aliases on the 1st page, should return config.PAGE_LIMIT aliases
     r = flask_client.get(
         url_for("api.get_aliases", page_id=0), headers={"Authentication": api_key.code}
     )
     assert r.status_code == 200
-    assert len(r.json["aliases"]) == PAGE_LIMIT
+    assert len(r.json["aliases"]) == config.PAGE_LIMIT
 
     # assert returned field
     for a in r.json["aliases"]:
@@ -67,7 +69,7 @@ def test_get_aliases_with_pagination(flask_client):
         assert "note" in a
 
     # get aliases on the 2nd page, should return 2 aliases
-    # as the total number of aliases is PAGE_LIMIT +2
+    # as the total number of aliases is config.PAGE_LIMIT +2
     # 1 alias is created when user is created
     r = flask_client.get(
         url_for("api.get_aliases", page_id=1), headers={"Authentication": api_key.code}
@@ -86,7 +88,7 @@ def test_get_aliases_query(flask_client):
     api_key = ApiKey.create(user.id, "for test")
     Session.commit()
 
-    # create more aliases than PAGE_LIMIT
+    # create more aliases than config.PAGE_LIMIT
     Alias.create_new(user, "prefix1")
     Alias.create_new(user, "prefix2")
     Session.commit()
@@ -277,7 +279,7 @@ def test_alias_activities(flask_client):
     )
     Session.commit()
 
-    for _ in range(int(PAGE_LIMIT / 2)):
+    for _ in range(int(config.PAGE_LIMIT / 2)):
         EmailLog.create(
             contact_id=contact.id,
             is_reply=True,
@@ -285,7 +287,7 @@ def test_alias_activities(flask_client):
             alias_id=contact.alias_id,
         )
 
-    for _ in range(int(PAGE_LIMIT / 2) + 2):
+    for _ in range(int(config.PAGE_LIMIT / 2) + 2):
         EmailLog.create(
             contact_id=contact.id,
             blocked=True,
@@ -299,7 +301,7 @@ def test_alias_activities(flask_client):
     )
 
     assert r.status_code == 200
-    assert len(r.json["activities"]) == PAGE_LIMIT
+    assert len(r.json["activities"]) == config.PAGE_LIMIT
     for ac in r.json["activities"]:
         assert ac["from"]
         assert ac["to"]
@@ -452,7 +454,7 @@ def test_alias_contacts(flask_client):
     Session.commit()
 
     # create some alias log
-    for i in range(PAGE_LIMIT + 1):
+    for i in range(config.PAGE_LIMIT + 1):
         contact = Contact.create(
             website_email=f"marketing-{i}@example.com",
             reply_email=f"reply-{i}@a.b",
@@ -472,7 +474,7 @@ def test_alias_contacts(flask_client):
     r = flask_client.get(f"/api/aliases/{alias.id}/contacts?page_id=0")
 
     assert r.status_code == 200
-    assert len(r.json["contacts"]) == PAGE_LIMIT
+    assert len(r.json["contacts"]) == config.PAGE_LIMIT
     for ac in r.json["contacts"]:
         assert ac["creation_date"]
         assert ac["creation_timestamp"]
@@ -527,6 +529,67 @@ def test_create_contact_route(flask_client):
     assert r.json["existed"]
 
 
+def test_create_contact_route_invalid_alias(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    other_user, other_api_key = get_new_user_and_api_key()
+
+    alias = Alias.create_new_random(other_user)
+    Session.commit()
+
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"contact": "First Last <first@example.com>"},
+    )
+
+    assert r.status_code == 403
+
+
+def test_create_contact_route_free_users(flask_client):
+    user, api_key = get_new_user_and_api_key()
+
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    # On trial, should be ok
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"contact": f"First Last <first@{random_domain()}>"},
+    )
+    assert r.status_code == 201
+
+    # End trial but allow via flags for older free users
+    user.trial_end = arrow.now()
+    user.flags = 0
+    Session.commit()
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"contact": f"First Last <first@{random_domain()}>"},
+    )
+    assert r.status_code == 201
+
+    # End trial and disallow for new free users. Config should allow it
+    user.flags = User.FLAG_FREE_DISABLE_CREATE_ALIAS
+    Session.commit()
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"contact": f"First Last <first@{random_domain()}>"},
+    )
+    assert r.status_code == 201
+
+    # Set the global config to disable free users from create contacts
+    config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = True
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=alias.id),
+        headers={"Authentication": api_key.code},
+        json={"contact": f"First Last <first@{random_domain()}>"},
+    )
+    assert r.status_code == 403
+    config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = False
+
+
 def test_create_contact_route_empty_contact_address(flask_client):
     user = login(flask_client)
     alias = Alias.filter_by(user_id=user.id).first()
@@ -537,7 +600,7 @@ def test_create_contact_route_empty_contact_address(flask_client):
     )
 
     assert r.status_code == 400
-    assert r.json["error"] == "Contact cannot be empty"
+    assert r.json["error"] == "Empty address is not a valid email address"
 
 
 def test_create_contact_route_invalid_contact_email(flask_client):
@@ -550,7 +613,7 @@ def test_create_contact_route_invalid_contact_email(flask_client):
     )
 
     assert r.status_code == 400
-    assert r.json["error"] == "invalid contact email @gmail.com"
+    assert r.json["error"] == "@gmail.com is not a valid email address"
 
 
 def test_delete_contact(flask_client):
@@ -579,11 +642,11 @@ def test_delete_contact(flask_client):
 def test_get_alias(flask_client):
     user, api_key = get_new_user_and_api_key()
 
-    # create more aliases than PAGE_LIMIT
+    # create more aliases than config.PAGE_LIMIT
     alias = Alias.create_new_random(user)
     Session.commit()
 
-    # get aliases on the 1st page, should return PAGE_LIMIT aliases
+    # get aliases on the 1st page, should return config.PAGE_LIMIT aliases
     r = flask_client.get(
         url_for("api.get_alias", alias_id=alias.id),
         headers={"Authentication": api_key.code},

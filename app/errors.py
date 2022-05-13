@@ -3,6 +3,10 @@ class SLException(Exception):
         super_str = super().__str__()
         return f"{type(self).__name__} {super_str}"
 
+    def error_for_user(self) -> str:
+        """By default send the exception errror to the user. Should be overloaded by the child exceptions"""
+        return str(self)
+
 
 class AliasInTrashError(SLException):
     """raised when alias is deleted before"""
@@ -25,7 +29,8 @@ class SubdomainInTrashError(SLException):
 class CannotCreateContactForReverseAlias(SLException):
     """raised when a contact is created that has website_email=reverse_alias of another contact"""
 
-    pass
+    def error_for_user(self) -> str:
+        return "You can't create contact for a reverse alias"
 
 
 class NonReverseAliasInReplyPhase(SLException):
@@ -60,3 +65,31 @@ class MailSentFromReverseAlias(SLException):
 
 class ProtonPartnerNotSetUp(SLException):
     pass
+
+
+class ErrContactErrorUpgradeNeeded(SLException):
+    """raised when user cannot create a contact because the plan doesn't allow it"""
+
+    def error_for_user(self) -> str:
+        return f"Please upgrade to premium to create reverse-alias"
+
+
+class ErrAddressInvalid(SLException):
+    """raised when an address is invalid"""
+
+    def __init__(self, address: str):
+        self.address = address
+
+    def error_for_user(self) -> str:
+        return f"{self.address} is not a valid email address"
+
+
+class ErrContactAlreadyExists(SLException):
+    """raised when a contact already exists"""
+
+    # TODO: type-hint this as a contact when models are almost dataclasses and don't import errors
+    def __init__(self, contact: "Contact"):  # noqa: F821
+        self.contact = contact
+
+    def error_for_user(self) -> str:
+        return f"{self.contact.website_email} is already added"

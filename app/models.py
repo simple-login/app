@@ -292,6 +292,9 @@ class Fido(Base, ModelMixin):
 
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
     __tablename__ = "users"
+
+    FLAG_FREE_DISABLE_CREATE_ALIAS = 1
+
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
     name = sa.Column(sa.String(128), nullable=True)
@@ -488,6 +491,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.UniqueConstraint(
             "partner_id", "partner_user_id", name="uq_partner_id_partner_user_id"
         ),
+    )
+
+    # bitwise flags. Allow for future expansion
+    flags = sa.Column(
+        sa.BigInteger,
+        default=FLAG_FREE_DISABLE_CREATE_ALIAS,
+        server_default="0",
+        nullable=False,
     )
 
     @property

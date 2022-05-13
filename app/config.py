@@ -463,3 +463,5 @@ def setup_nameservers():
 
 
 NAMESERVERS = setup_nameservers()
+
+DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = False
