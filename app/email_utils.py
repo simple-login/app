@@ -58,7 +58,6 @@ from app.config import (
     VERP_PREFIX,
     VERP_MESSAGE_LIFETIME,
     VERP_EMAIL_SECRET,
-    SUPPORT_EMAIL,
 )
 from app.db import Session
 from app.dns_utils import get_mx_domains
@@ -213,14 +212,12 @@ def send_test_email_alias(email, name):
             "transactional/test-email.txt",
             name=name,
             alias=email,
-            support_email=SUPPORT_EMAIL,
             support_page=support_page,
         ),
         render(
             "transactional/test-email.html",
             name=name,
             alias=email,
-            support_email=SUPPORT_EMAIL,
             support_page=support_page,
         ),
     )
