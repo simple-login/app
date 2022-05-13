@@ -25,6 +25,12 @@
         src="/static/images/onboarding-click-icon.png"
         style="width:400px;position:absolute;right:-90px;top:-44px;"
       />
+
+      <img
+        src="/static/images/onboarding-right-click.png"
+        style="position:absolute;width:440px;right:-20px;top:25px;"
+      />
+
       <div style="width: 25rem; display: block">
         <form method="post">
           {{ form.csrf_token }}
@@ -35,7 +41,7 @@
       </div>
     </div>
 
-    <div class="mt-9 text-center">
+    <div class="text-center" style="margin-top:250px">
       <p style="font-size: 1rem">For advanced options please use our <a href="{{ url_for("dashboard.index") }}">web dashboard</a></p>
     </div>
   </div>
