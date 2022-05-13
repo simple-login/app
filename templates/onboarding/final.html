@@ -15,7 +15,20 @@
 
     <!-- Text container -->
     <div class="mt-8 mb-4 text-center">
-      <h2 class="text-red" style="font-size:2rem">All set!</h2>
+      <h2 class="text-black-50" style="font-size:2rem">Quickly create an alias every time you need an email</h2>
+    </div>
+
+
+    <!-- Input + button container -->
+    <div class="mt-8" style="display: grid; place-items: center;">
+      <div style="width: 25rem; display: block">
+        <form method="post">
+          {{ form.csrf_token }}
+          {{ form.email(class="p-3", type="email", autofocus="true", placeholder="email", style="border: 2px solid black; border-radius: 2px; width:100%") }}
+          {{ render_field_errors(form.email) }}
+          <button type="submit" class="p-4 mt-2 text-decoration-none" style="background:black;color:white; width:10rem">Send me an email</button>
+        </form>
+      </div>
     </div>
 
   </div>
