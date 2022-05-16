@@ -4,10 +4,9 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import ADMIN_EMAIL, PADDLE_VENDOR_ID, PADDLE_COUPON_ID
+from app.config import PADDLE_VENDOR_ID, PADDLE_COUPON_ID
 from app.dashboard.base import dashboard_bp
 from app.db import Session
-from app.email_utils import send_email
 from app.log import LOG
 from app.models import (
     ManualSubscription,
@@ -97,18 +96,6 @@ def coupon_route():
                     f"Your account has been upgraded to Premium, thanks for your support!",
                     "success",
                 )
-
-            # notify admin
-            if coupon.is_giveaway:
-                subject = f"User {current_user} applies a (free) coupon"
-            else:
-                subject = f"User {current_user} applies a (paid, {coupon.comment or ''}) coupon"
-            send_email(
-                ADMIN_EMAIL,
-                subject=subject,
-                plaintext="",
-                html="",
-            )
 
             return redirect(url_for("dashboard.index"))
 
