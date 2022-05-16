@@ -1,51 +1,70 @@
-import email
 from email.message import Message
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import pytest
-
 from app.config import (
     ALERT_COMPLAINT_FORWARD_PHASE,
     ALERT_COMPLAINT_REPLY_PHASE,
     ALERT_COMPLAINT_TRANSACTIONAL_PHASE,
+    POSTMASTER,
 )
 from app.db import Session
-from app.email import headers
+from app.email_utils import generate_verp_email
 from app.handler.provider_complaint import (
     handle_hotmail_complaint,
     handle_yahoo_complaint,
 )
-from app.models import Alias, ProviderComplaint, SentAlert
-from tests.utils import create_new_user
+from app.models import (
+    Alias,
+    ProviderComplaint,
+    SentAlert,
+    EmailLog,
+    VerpType,
+    Contact,
+)
+from tests.utils import create_new_user, load_eml_file
 
 origins = [
-    [handle_yahoo_complaint, "yahoo", 6],
-    [handle_hotmail_complaint, "hotmail", 3],
+    [handle_yahoo_complaint, "yahoo"],
+    [handle_hotmail_complaint, "hotmail"],
 ]
 
 
-def prepare_complaint(message: Message, part_num: int) -> Message:
-    complaint = MIMEMultipart("related")
-    # When walking, part 0 is the full message so we -1, and we want to be part N so -1 again
-    for i in range(part_num - 2):
-        document = MIMEText("text", "plain")
-        document.set_payload(f"Part {i}")
-        complaint.attach(document)
-    complaint.attach(message)
+def prepare_complaint(
+    provider_name: str, alias: Alias, rcpt_address: str, sender_address: str
+) -> Message:
+    contact = Contact.create(
+        user_id=alias.user.id,
+        alias_id=alias.id,
+        website_email="a@b.c",
+        reply_email="d@e.f",
+        commit=True,
+    )
+    elog = EmailLog.create(
+        user_id=alias.user.id,
+        mailbox_id=alias.user.default_mailbox_id,
+        contact_id=contact.id,
+        commit=True,
+        bounced=True,
+    )
+    return_path = generate_verp_email(VerpType.bounce_forward, elog.id)
+    return load_eml_file(
+        f"{provider_name}_complaint.eml",
+        {
+            "postmaster": POSTMASTER,
+            "return_path": return_path,
+            "rcpt": rcpt_address,
+            "sender": sender_address,
+            "rcpt_comma_list": f"{rcpt_address},other_rcpt@somwhere.net",
+        },
+    )
 
-    return email.message_from_bytes(complaint.as_bytes())
 
-
-@pytest.mark.parametrize("handle_ftor,provider,part_num", origins)
-def test_provider_to_user(flask_client, handle_ftor, provider, part_num):
+@pytest.mark.parametrize("handle_ftor,provider", origins)
+def test_provider_to_user(flask_client, handle_ftor, provider):
     user = create_new_user()
-    original_message = Message()
-    original_message[headers.TO] = user.email
-    original_message[headers.FROM] = "nobody@nowhere.net"
-    original_message.set_payload("Contents")
-
-    complaint = prepare_complaint(original_message, part_num)
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    complaint = prepare_complaint(provider, alias, user.email, "nobody@nowhere.net")
     assert handle_ftor(complaint)
     found = ProviderComplaint.filter_by(user_id=user.id).all()
     assert len(found) == 0
@@ -54,17 +73,12 @@ def test_provider_to_user(flask_client, handle_ftor, provider, part_num):
     assert alerts[0].alert_type == f"{ALERT_COMPLAINT_TRANSACTIONAL_PHASE}_{provider}"
 
 
-@pytest.mark.parametrize("handle_ftor,provider,part_num", origins)
-def test_provider_forward_phase(flask_client, handle_ftor, provider, part_num):
+@pytest.mark.parametrize("handle_ftor,provider", origins)
+def test_provider_forward_phase(flask_client, handle_ftor, provider):
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
-    original_message = Message()
-    original_message[headers.TO] = "nobody@nowhere.net"
-    original_message[headers.FROM] = alias.email
-    original_message.set_payload("Contents")
-
-    complaint = prepare_complaint(original_message, part_num)
+    complaint = prepare_complaint(provider, alias, "nobody@nowhere.net", alias.email)
     assert handle_ftor(complaint)
     found = ProviderComplaint.filter_by(user_id=user.id).all()
     assert len(found) == 1
@@ -73,17 +87,12 @@ def test_provider_forward_phase(flask_client, handle_ftor, provider, part_num):
     assert alerts[0].alert_type == f"{ALERT_COMPLAINT_REPLY_PHASE}_{provider}"
 
 
-@pytest.mark.parametrize("handle_ftor,provider,part_num", origins)
-def test_provider_reply_phase(flask_client, handle_ftor, provider, part_num):
+@pytest.mark.parametrize("handle_ftor,provider", origins)
+def test_provider_reply_phase(flask_client, handle_ftor, provider):
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
-    original_message = Message()
-    original_message[headers.TO] = alias.email
-    original_message[headers.FROM] = "no@no.no"
-    original_message.set_payload("Contents")
-
-    complaint = prepare_complaint(original_message, part_num)
+    complaint = prepare_complaint(provider, alias, alias.email, "no@no.no")
     assert handle_ftor(complaint)
     found = ProviderComplaint.filter_by(user_id=user.id).all()
     assert len(found) == 0

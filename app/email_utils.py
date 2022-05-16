@@ -1,4 +1,5 @@
 import base64
+import binascii
 import enum
 import hmac
 import json
@@ -1322,6 +1323,20 @@ def should_ignore_bounce(mail_from: str) -> bool:
     return False
 
 
+def parse_address_list(address_list: str) -> List[Tuple[str, str]]:
+    """
+    Parse a list of email addresses from a header in the form "ab <ab@sd.com>, cd <cd@cd.com>"
+    and return a list [("ab", "ab@sd.com"),("cd", "cd@cd.com")]
+    """
+    processed_addresses = []
+    for split_address in address_list.split(","):
+        split_address = split_address.strip()
+        if not split_address:
+            continue
+        processed_addresses.append(parse_full_address(split_address))
+    return processed_addresses
+
+
 def parse_full_address(full_address) -> (str, str):
     """
     parse the email address full format and return the display name and address
@@ -1414,10 +1429,15 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     fields = username.split(".")
     if len(fields) != 3 or fields[0] != VERP_PREFIX:
         return None
-    padding = (8 - (len(fields[1]) % 8)) % 8
-    payload = base64.b32decode(fields[1].encode("utf-8").upper() + (b"=" * padding))
-    padding = (8 - (len(fields[2]) % 8)) % 8
-    signature = base64.b32decode(fields[2].encode("utf-8").upper() + (b"=" * padding))
+    try:
+        padding = (8 - (len(fields[1]) % 8)) % 8
+        payload = base64.b32decode(fields[1].encode("utf-8").upper() + (b"=" * padding))
+        padding = (8 - (len(fields[2]) % 8)) % 8
+        signature = base64.b32decode(
+            fields[2].encode("utf-8").upper() + (b"=" * padding)
+        )
+    except binascii.Error:
+        return None
     expected_signature = hmac.new(
         VERP_EMAIL_SECRET.encode("utf-8"), payload, VERP_HMAC_ALGO
     ).digest()[:8]

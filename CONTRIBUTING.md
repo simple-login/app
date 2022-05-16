@@ -105,6 +105,15 @@ We cannot use the local database to generate migration script as the local datab
 It is created via `db.create_all()` (cf `fake_data()` method). This is convenient for development and
 unit tests as we don't have to wait for the migration.
 
+## Reset database
+
+There are two scripts to reset your local db to an empty state:
+
+- `scripts/reset_local_db.sh` will reset your development db to the latest migration version and add the development data needed to run the
+server.py locally.
+- `scripts/reset_test_db.sh` will reset your test db to the latest migration without adding the dev server data to prevent interferring with
+the tests.
+
 ## Code structure
 
 The repo consists of the three following entry points:
