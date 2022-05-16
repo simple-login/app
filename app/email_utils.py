@@ -320,7 +320,7 @@ def send_email(
         msg[headers.CONTENT_TYPE] = "text/plain"
 
     msg[headers.SUBJECT] = subject
-    msg[headers.FROM] = f"{from_name} <{from_addr}>"
+    msg[headers.FROM] = f'"{from_name}" <{from_addr}>'
     msg[headers.TO] = to_email
 
     msg_id_header = make_msgid(domain=EMAIL_DOMAIN)
