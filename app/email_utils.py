@@ -291,6 +291,8 @@ def send_email(
     unsubscribe_via_email=False,
     retries=0,  # by default no retry if sending fails
     ignore_smtp_error=False,
+    from_name=None,
+    from_addr=None,
 ):
     to_email = sanitize_email(to_email)
     if NOT_SEND_EMAIL:
@@ -305,6 +307,9 @@ def send_email(
 
     LOG.d("send email to %s, subject '%s'", to_email, subject)
 
+    from_name = from_name or NOREPLY
+    from_addr = from_addr or NOREPLY
+
     if html:
         msg = MIMEMultipart("alternative")
         msg.attach(MIMEText(plaintext))
@@ -315,7 +320,7 @@ def send_email(
         msg[headers.CONTENT_TYPE] = "text/plain"
 
     msg[headers.SUBJECT] = subject
-    msg[headers.FROM] = f"{NOREPLY} <{NOREPLY}>"
+    msg[headers.FROM] = f"{from_name} <{from_addr}>"
     msg[headers.TO] = to_email
 
     msg_id_header = make_msgid(domain=EMAIL_DOMAIN)
@@ -334,7 +339,7 @@ def send_email(
             )
 
     # add DKIM
-    email_domain = NOREPLY[NOREPLY.find("@") + 1 :]
+    email_domain = from_addr[from_addr.find("@") + 1 :]
     add_dkim_signature(msg, email_domain)
 
     transaction = TransactionalEmail.create(email=to_email, commit=True)
