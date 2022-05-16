@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="flex-fill align-items-center mt-8">
+  <!-- Image container -->
+  <div class="mt-4 mb-4 text-center" style="display:block;">
+    <a class="" href="{{ url_for('dashboard.index') }}">
+      <picture>
+        <source media="(max-width: 650px)" srcset="/static/logo.svg">
+        <img src="/static/logo.svg" style="width: 24rem" alt="logo">
+      </picture>
+    </a>
+  </div>
+
+  <!-- Text container -->
+  <div class="mt-8 mb-4 text-center">
+    <h2 class="text-dark" style="font-size:2rem">Let's take back control of your inbox!</h2>
+  </div>
+
+  <!-- Button container -->
+  <div class="mt-8 text-center">
+    <a class="mx-6 p-4 text-decoration-none" style="background:black;color:white;" href="{{ url_for('auth.register', next=url_for('onboarding.final')) }}">Create a new account</a>
+    <a class="mx-6 p-4 text-decoration-none" style="background:white;color:black;border-radius: 2px;border:1px solid black;" href="{{ url_for('auth.login', next=url_for('onboarding.final')) }}">I already have an account</a>
+  </div>
+
+</div>
+
+{% endblock %}

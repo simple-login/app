@@ -206,8 +206,16 @@ def send_test_email_alias(email, name):
     send_email(
         email,
         f"This email is sent to {email}",
-        render("transactional/test-email.txt", name=name, alias=email),
-        render("transactional/test-email.html", name=name, alias=email),
+        render(
+            "transactional/test-email.txt",
+            name=name,
+            alias=email,
+        ),
+        render(
+            "transactional/test-email.html",
+            name=name,
+            alias=email,
+        ),
     )
 
 
