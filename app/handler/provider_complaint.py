@@ -141,7 +141,7 @@ class ProviderComplaintYahoo(ProviderComplaintOrigin):
         """
         report = cls.get_feedback_report(message)
         original = cls.get_original_message(message)
-        rcpt_header = report["original-rcpt-to"]
+        rcpt_header = report[headers.YAHOO_ORIGINAL_RECIPIENT]
         return cls.sanitize_addresses_and_extract_mailbox_id(rcpt_header, original)
 
     @classmethod

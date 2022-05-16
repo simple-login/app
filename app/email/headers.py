@@ -51,3 +51,6 @@ MIME_HEADERS = [h.lower() for h in MIME_HEADERS]
 # according to https://datatracker.ietf.org/doc/html/rfc3834#section-3.1.7, this header should be set to  "auto-replied"
 # however on hotmail, this is set to "auto-generated"
 AUTO_SUBMITTED = "Auto-Submitted"
+
+# Yahoo complaint specific header
+YAHOO_ORIGINAL_RECIPIENT = "original-rcpt-to"
