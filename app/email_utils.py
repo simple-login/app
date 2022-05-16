@@ -14,7 +14,6 @@ from email.message import Message, EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate
-from flask import url_for
 from smtplib import SMTP, SMTPException
 from typing import Tuple, List, Optional, Union
 
@@ -204,7 +203,6 @@ def send_invalid_totp_login_email(user, totp_type):
 
 
 def send_test_email_alias(email, name):
-    support_page = URL + url_for("dashboard.support_route")
     send_email(
         email,
         f"This email is sent to {email}",
@@ -212,13 +210,11 @@ def send_test_email_alias(email, name):
             "transactional/test-email.txt",
             name=name,
             alias=email,
-            support_page=support_page,
         ),
         render(
             "transactional/test-email.html",
             name=name,
             alias=email,
-            support_page=support_page,
         ),
     )
 
