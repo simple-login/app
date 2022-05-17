@@ -98,10 +98,15 @@ def new_random_alias():
                 scheme = AliasGeneratorEnum.word.value
             elif mode == "uuid":
                 scheme = AliasGeneratorEnum.uuid.value
-            elif mode == "totp":
-                scheme = AliasGeneratorEnum.totp.value
+            elif mode == "random_string":
+                scheme = AliasGeneratorEnum.random_string.value
             else:
-                return jsonify(error=f"{mode} must be either word, uuid, or totp"), 400
+                return (
+                    jsonify(
+                        error=f"{mode} must be either word, uuid, or random_string"
+                    ),
+                    400,
+                )
 
         alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
         Session.commit()
