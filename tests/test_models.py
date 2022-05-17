@@ -8,6 +8,7 @@ from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
 from app.email_utils import parse_full_address
 from app.models import (
+    AliasGeneratorEnum,
     generate_email,
     Alias,
     Contact,
@@ -30,6 +31,14 @@ def test_generate_email(flask_client):
 
     email_uuid = generate_email(scheme=2)
     assert UUID(email_uuid.split("@")[0], version=4)
+
+
+def test_generate_email_with_random_string(flask_client):
+    email = generate_email(scheme=AliasGeneratorEnum.random_string.value)
+    assert email.endswith("@" + EMAIL_DOMAIN)
+
+    email_random_string = generate_email(scheme=3)
+    assert (email_random_string.split("@")[0]).isalnum()
 
 
 def test_profile_picture_url(flask_client):
