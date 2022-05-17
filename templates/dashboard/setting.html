@@ -266,6 +266,9 @@
             <option value="{{ AliasGeneratorEnum.uuid.value }}"
                 {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
               on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
+            <option value="{{ AliasGeneratorEnum.totp.value }}"
+                {% if current_user.alias_generator == AliasGeneratorEnum.totp.value %} selected {% endif %} >Based
+              on {{ AliasGeneratorEnum.totp.name.upper() }}</option>
           </select>
           <button class="btn btn-outline-primary">Update</button>
         </form>
