@@ -41,6 +41,10 @@ def test_update_settings_alias_generator(flask_client):
     assert r.status_code == 200
     assert user.alias_generator == AliasGeneratorEnum.uuid.value
 
+    r = flask_client.patch("/api/setting", json={"alias_generator": "random_string"})
+    assert r.status_code == 200
+    assert user.alias_generator == AliasGeneratorEnum.random_string.value
+
 
 def test_update_settings_random_alias_default_domain(flask_client):
     user = login(flask_client)
