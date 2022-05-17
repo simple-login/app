@@ -217,7 +217,7 @@ class SenderFormatEnum(EnumE):
 class AliasGeneratorEnum(EnumE):
     word = 1  # aliases are generated based on random words
     uuid = 2  # aliases are generated based on uuid
-    totp = 3  # aliases are generated based on random characters
+    random_string = 3  # aliases are generated based on a completely random string
 
 
 class AliasSuffixEnum(EnumE):
@@ -1193,7 +1193,7 @@ def generate_email(
     elif scheme == AliasGeneratorEnum.word.value:
         random_email = random_words() + "@" + alias_domain
     else:
-        name = "".join(random.choices(string.digits + string.ascii_lowercase, k=6))
+        name = "".join(random.choices(string.digits + string.ascii_lowercase, k=9))
         random_email = name + "@" + alias_domain
 
     random_email = random_email.lower().strip()
