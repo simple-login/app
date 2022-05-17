@@ -1,6 +1,7 @@
 import enum
 import os
 import random
+import string
 import uuid
 from email.utils import formataddr
 from typing import List, Tuple, Optional
@@ -216,6 +217,7 @@ class SenderFormatEnum(EnumE):
 class AliasGeneratorEnum(EnumE):
     word = 1  # aliases are generated based on random words
     uuid = 2  # aliases are generated based on uuid
+    totp = 3  # aliases are generated based on random characters
 
 
 class AliasSuffixEnum(EnumE):
@@ -1188,8 +1190,11 @@ def generate_email(
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
         random_email = name + "@" + alias_domain
-    else:
+    elif scheme == AliasGeneratorEnum.word.value:
         random_email = random_words() + "@" + alias_domain
+    else:
+        name = "".join(random.choices(string.digits + string.ascii_lowercase, k=6))
+        random_email = name + "@" + alias_domain
 
     random_email = random_email.lower().strip()
 
