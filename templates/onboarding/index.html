@@ -20,8 +20,8 @@
 
   <!-- Button container -->
   <div class="mt-8 text-center">
-    <a class="mx-6 p-4 text-decoration-none" style="background:black;color:white;" href="{{ url_for('auth.register', next=url_for('onboarding.final')) }}">Create a new account</a>
-    <a class="mx-6 p-4 text-decoration-none" style="background:white;color:black;border-radius: 2px;border:1px solid black;" href="{{ url_for('auth.login', next=url_for('onboarding.final')) }}">I already have an account</a>
+    <a class="mx-6 p-4 text-decoration-none" style="background:black;color:white;" href="{{ url_for('auth.register', next=url_for('onboarding.setup_done')) }}">Create a new account</a>
+    <a class="mx-6 p-4 text-decoration-none" style="background:white;color:black;border-radius: 2px;border:1px solid black;" href="{{ url_for('auth.login', next=url_for('onboarding.setup_done')) }}">I already have an account</a>
   </div>
 
 </div>
