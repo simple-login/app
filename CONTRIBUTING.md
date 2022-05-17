@@ -64,9 +64,10 @@ Install npm packages
 cd static && npm install
 ```
 
-To run the code locally, please create a local setting file based on `example.env`:
+To run the code locally, go back to the root folder, and please create a local setting file based on `example.env`:
 
 ```
+cd ..
 cp example.env .env
 ```
 
