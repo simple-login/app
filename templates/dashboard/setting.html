@@ -266,9 +266,9 @@
             <option value="{{ AliasGeneratorEnum.uuid.value }}"
                 {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
               on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
-            <option value="{{ AliasGeneratorEnum.totp.value }}"
-                {% if current_user.alias_generator == AliasGeneratorEnum.totp.value %} selected {% endif %} >Based
-              on {{ AliasGeneratorEnum.totp.name.upper() }}</option>
+            <option value="{{ AliasGeneratorEnum.random_string.value }}"
+                {% if current_user.alias_generator == AliasGeneratorEnum.random_string.value %} selected {% endif %} >Based
+              on Random combination of 9 letters and digits</option>
           </select>
           <button class="btn btn-outline-primary">Update</button>
         </form>
@@ -300,7 +300,7 @@
               Random word from our dictionary
             </option>
             <option value="1" {% if current_user.random_alias_suffix==1 %} selected {% endif %}>
-              Random combination of {{ ALIAS_RAND_SUFFIX_LENGTH }} letter and digits
+              Random combination of {{ ALIAS_RAND_SUFFIX_LENGTH }} letters and digits
             </option>
           </select>
           <button class="btn btn-outline-primary">Update</button>
