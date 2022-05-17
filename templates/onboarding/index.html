@@ -26,4 +26,11 @@
 
 </div>
 
+<script type="text/javascript">
+    setTimeout(function() {
+        const data = { tag: "PERFORM_EXTENSION_SETUP" };
+        window.postMessage(data, "/");
+    }, 300);
+</script>
+
 {% endblock %}
