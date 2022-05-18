@@ -13,24 +13,39 @@
     </a>
   </div>
 
-  <!-- Text container -->
-  <div class="mt-8 mb-4 text-center">
-    <h2 class="text-dark" style="font-size:2rem">Let's take back control of your inbox!</h2>
+
+  <div id="loading-section" class="mt-8 mb-4 text-center">
+    <h3>Loading...</h3>
   </div>
 
-  <!-- Button container -->
-  <div class="mt-8 text-center">
-    <a class="mx-6 p-4 text-decoration-none" style="background:black;color:white;" href="{{ url_for('auth.register', next=url_for('onboarding.setup_done')) }}">Create a new account</a>
-    <a class="mx-6 p-4 text-decoration-none" style="background:white;color:black;border-radius: 2px;border:1px solid black;" href="{{ url_for('auth.login', next=url_for('onboarding.setup_done')) }}">I already have an account</a>
+  <div id="content-section" style="display: none">
+    <!-- Text container -->
+    <div class="mt-8 mb-4 text-center">
+      <h2 class="text-dark" style="font-size:2rem">Let's take back control of your inbox!</h2>
+    </div>
+
+    <!-- Button container -->
+    <div class="mt-8 text-center">
+      <a class="mx-6 p-4 text-decoration-none" style="background:black;color:white;" href="{{ url_for('auth.register', next=url_for('onboarding.setup_done')) }}">Create a new account</a>
+      <a class="mx-6 p-4 text-decoration-none" style="background:white;color:black;border-radius: 2px;border:1px solid black;" href="{{ url_for('auth.login', next=url_for('onboarding.setup_done')) }}">I already have an account</a>
+    </div>
   </div>
 
 </div>
 
 <script type="text/javascript">
-    setTimeout(function() {
-        const data = { tag: "PERFORM_EXTENSION_SETUP" };
-        window.postMessage(data, "/");
-    }, 300);
+  setTimeout(function() {
+    const data = { tag: "PERFORM_EXTENSION_SETUP" };
+    window.postMessage(data, "/");
+  }, 300); // Give some time to the extension for registering the listener
+
+  setTimeout(function() {
+    const loadingSection = document.getElementById("loading-section");
+    const contentSection = document.getElementById("content-section");
+
+    loadingSection.style.display = "none";
+    contentSection.style.display = "block";
+  }, 1500); // If in this time the extension has not been able to perform the setup, show the buttons
 </script>
 
 {% endblock %}
