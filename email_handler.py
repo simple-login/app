@@ -2237,8 +2237,13 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     # to know whether both successful and unsuccessful deliveries can happen at the same time
     nb_success = len([is_success for (is_success, smtp_status) in res if is_success])
+    # ignore E518 which is a normal condition
     nb_non_success = len(
-        [is_success for (is_success, smtp_status) in res if not is_success]
+        [
+            is_success
+            for (is_success, smtp_status) in res
+            if not is_success and smtp_status != status.E518
+        ]
     )
 
     if nb_success > 0 and nb_non_success > 0:
