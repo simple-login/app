@@ -33,7 +33,7 @@
         setInterval(function() {
             const data = { tag: "PERFORM_EXTENSION_SETUP" };
             window.postMessage(data, "/");
-        }, 300); // Give some time to the extension for registering the listener
+        }, 300); // Send it many times, in case the extension had not registered the listener yet
     </script>
   {% endif %}
 

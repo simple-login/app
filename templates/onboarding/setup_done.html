@@ -20,10 +20,10 @@
   </div>
 
   <script type="text/javascript">
-      setTimeout(function() {
+      setInterval(function() {
           const data = { tag: "PERFORM_EXTENSION_SETUP" };
           window.postMessage(data, "/");
-      }, 300);
+      }, 300); // Send it many times, in case the extension had not registered the listener yet
   </script>
 
 {% endblock %}
