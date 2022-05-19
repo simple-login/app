@@ -11,6 +11,7 @@ from app.onboarding.base import onboarding_bp
 def setup_done():
     response = make_response(render_template("onboarding/setup_done.html"))
 
+    # TODO: Remove when the extension is updated everywhere
     response.set_cookie(
         "setup_done",
         value="true",
