@@ -37,7 +37,6 @@ from sqlalchemy import func
 from app.config import (
     ROOT_DIR,
     POSTFIX_SERVER,
-    NOT_SEND_EMAIL,
     DKIM_SELECTOR,
     DKIM_PRIVATE_KEY,
     ALIAS_DOMAINS,
@@ -295,15 +294,6 @@ def send_email(
     from_addr=None,
 ):
     to_email = sanitize_email(to_email)
-    if NOT_SEND_EMAIL:
-        LOG.d(
-            "send email with subject '%s' to '%s', plaintext: %s, html: %s",
-            subject,
-            to_email,
-            plaintext,
-            html,
-        )
-        return
 
     LOG.d("send email to %s, subject '%s'", to_email, subject)
 
