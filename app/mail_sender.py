@@ -2,17 +2,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from mailbox import Message
 from smtplib import SMTP, SMTPServerDisconnected, SMTPRecipientsRefused
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import newrelic.agent
 from attr import dataclass
 
-from app.config import (
-    NOT_SEND_EMAIL,
-    POSTFIX_SUBMISSION_TLS,
-    POSTFIX_PORT,
-    POSTFIX_SERVER,
-)
+from app import config
 from app.email import headers
 from app.log import LOG
 from app.message_utils import message_to_bytes
@@ -32,13 +27,26 @@ class SendRequest:
 class MailSender:
     def __init__(self):
         self._pool: Optional[ThreadPoolExecutor] = None
+        self._store_emails = False
+        self._emails_sent: List[SendRequest] = []
+
+    def store_emails_instead_of_sending(self):
+        self._store_emails = True
+
+    def purge_stored_emails(self):
+        self._emails_sent = []
+
+    def get_stored_emails(self) -> List[SendRequest]:
+        return self._emails_sent
 
     def enable_background_pool(self, max_workers=10):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
     def send(self, send_request: SendRequest, retries: int = 2):
         """replace smtp.sendmail"""
-        if NOT_SEND_EMAIL:
+        if self._store_emails:
+            self._emails_sent.append(send_request)
+        if config.NOT_SEND_EMAIL:
             LOG.d(
                 "send email with subject '%s', from '%s' to '%s'",
                 send_request.msg[headers.SUBJECT],
@@ -54,13 +62,13 @@ class MailSender:
     def _send_to_smtp(self, send_request: SendRequest, retries: int):
         try:
             start = time.time()
-            if POSTFIX_SUBMISSION_TLS:
+            if config.POSTFIX_SUBMISSION_TLS:
                 smtp_port = 587
             else:
-                smtp_port = POSTFIX_PORT
+                smtp_port = config.POSTFIX_PORT
 
-            with SMTP(POSTFIX_SERVER, smtp_port) as smtp:
-                if POSTFIX_SUBMISSION_TLS:
+            with SMTP(config.POSTFIX_SERVER, smtp_port) as smtp:
+                if config.POSTFIX_SUBMISSION_TLS:
                     smtp.starttls()
 
                 elapsed = time.time() - start

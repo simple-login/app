@@ -13,6 +13,7 @@ from app.handler.provider_complaint import (
     handle_hotmail_complaint,
     handle_yahoo_complaint,
 )
+from app.mail_sender import mail_sender
 from app.models import (
     Alias,
     ProviderComplaint,
@@ -61,6 +62,8 @@ def prepare_complaint(
 
 @pytest.mark.parametrize("handle_ftor,provider", origins)
 def test_provider_to_user(flask_client, handle_ftor, provider):
+    mail_sender.store_emails_instead_of_sending()
+    mail_sender.purge_stored_emails()
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -70,6 +73,8 @@ def test_provider_to_user(flask_client, handle_ftor, provider):
     assert len(found) == 0
     alerts = SentAlert.filter_by(user_id=user.id).all()
     assert len(alerts) == 1
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
     assert alerts[0].alert_type == f"{ALERT_COMPLAINT_TRANSACTIONAL_PHASE}_{provider}"
 
 
@@ -89,6 +94,8 @@ def test_provider_forward_phase(flask_client, handle_ftor, provider):
 
 @pytest.mark.parametrize("handle_ftor,provider", origins)
 def test_provider_reply_phase(flask_client, handle_ftor, provider):
+    mail_sender.store_emails_instead_of_sending()
+    mail_sender.purge_stored_emails()
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -98,4 +105,6 @@ def test_provider_reply_phase(flask_client, handle_ftor, provider):
     assert len(found) == 0
     alerts = SentAlert.filter_by(user_id=user.id).all()
     assert len(alerts) == 1
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
     assert alerts[0].alert_type == f"{ALERT_COMPLAINT_FORWARD_PHASE}_{provider}"
