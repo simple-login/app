@@ -43,7 +43,27 @@
 
     <div class="text-center" style="margin-top:250px">
       <p style="font-size: 1rem">For advanced options please use our <a href="{{ url_for("dashboard.index") }}">web dashboard</a></p>
+      <p id="extension-version-text" class="" style="display:none;"></p>
     </div>
   </div>
+
+  <script type="text/javascript">
+    const extensionVersionTextElement = document.getElementById("extension-version-text");
+    window.addEventListener("message", (event) => {
+        if (!event.data) return;
+        if (!event.data.tag) return;
+        if (event.data.tag === "EXTENSION_INSTALLED_RESPONSE") {
+            const eventData = event.data.data;
+            if (!eventData) return;
+
+            extensionVersionTextElement.style.display = "block";
+            extensionVersionTextElement.textContent = `Extension version: ${eventData.version}`;
+        }
+    });
+    setTimeout(function() {
+        const data = { tag: "EXTENSION_INSTALLED_QUERY" };
+        window.postMessage(data, "/");
+    }, 300); // Give some time to the extension for registering the listener
+  </script>
 
 {% endblock %}
