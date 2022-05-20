@@ -13,7 +13,7 @@ sleep 3
 CONFIG=tests/test.env poetry run alembic upgrade head
 
 # run test
-poetry run pytest
+poetry run pytest -c pytest.ci.ini
 
 # Delete the test DB
 docker rm -f sl-test-db
