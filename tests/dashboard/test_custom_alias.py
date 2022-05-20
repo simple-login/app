@@ -1,3 +1,5 @@
+from random import random
+
 from flask import url_for, g
 
 from app.alias_utils import delete_alias
@@ -19,7 +21,7 @@ from app.models import (
     SLDomain,
 )
 from app.utils import random_word
-from tests.utils import login, random_domain
+from tests.utils import login, random_domain, create_new_user
 
 
 def test_add_alias_success(flask_client):
@@ -27,7 +29,7 @@ def test_add_alias_success(flask_client):
 
     alias_suffix = AliasSuffix(
         is_custom=False,
-        suffix=f".12345@{EMAIL_DOMAIN}",
+        suffix=f".{int(random()*100000)}@{EMAIL_DOMAIN}",
         is_premium=False,
         domain=EMAIL_DOMAIN,
     )
@@ -44,7 +46,7 @@ def test_add_alias_success(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert f"Alias prefix.12345@{EMAIL_DOMAIN} has been created" in str(r.data)
+    assert f"Alias prefix{alias_suffix.suffix} has been created" in str(r.data)
 
     alias = Alias.order_by(Alias.created_at.desc()).first()
     assert not alias._mailboxes
@@ -56,7 +58,7 @@ def test_add_alias_multiple_mailboxes(flask_client):
 
     alias_suffix = AliasSuffix(
         is_custom=False,
-        suffix=f".12345@{EMAIL_DOMAIN}",
+        suffix=f".{int(random()*100000)}@{EMAIL_DOMAIN}",
         is_premium=False,
         domain=EMAIL_DOMAIN,
     )
@@ -76,7 +78,7 @@ def test_add_alias_multiple_mailboxes(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert f"Alias prefix.12345@{EMAIL_DOMAIN} has been created" in str(r.data)
+    assert f"Alias prefix{alias_suffix.suffix} has been created" in str(r.data)
 
     alias = Alias.order_by(Alias.created_at.desc()).first()
     assert alias._mailboxes
@@ -214,13 +216,7 @@ def test_add_alias_in_global_trash(flask_client):
     user = login(flask_client)
     Session.commit()
 
-    another_user = User.create(
-        email="a2@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    another_user = create_new_user()
 
     word = random_word()
     suffix = f".{word}@{EMAIL_DOMAIN}"
@@ -237,9 +233,9 @@ def test_add_alias_in_global_trash(flask_client):
         commit=True,
     )
 
-    assert DeletedAlias.count() == 0
+    prev_deleted = DeletedAlias.count()
     delete_alias(alias, another_user)
-    assert DeletedAlias.count() == 1
+    assert prev_deleted + 1 == DeletedAlias.count()
 
     # create the same alias, should return error
     r = flask_client.post(

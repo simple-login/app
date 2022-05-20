@@ -31,12 +31,8 @@ from tests.utils import load_eml_file, create_new_user
 
 def test_get_mailbox_from_mail_from(flask_client):
     user = create_new_user()
-    alias = Alias.create(
-        user_id=user.id,
-        email="first@d1.test",
-        mailbox_id=user.default_mailbox_id,
-        commit=True,
-    )
+    alias = Alias.create_new_random(user)
+    Session.commit()
 
     mb = get_mailbox_from_mail_from(user.email, alias)
     assert mb.email == user.email
