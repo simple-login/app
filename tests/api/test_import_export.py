@@ -1,10 +1,12 @@
+import csv
+from io import StringIO
+
 from flask import url_for
 
 from app import alias_utils
 from app.db import Session
 from app.import_utils import import_from_csv
 from app.models import (
-    User,
     CustomDomain,
     Mailbox,
     Alias,
@@ -12,15 +14,13 @@ from app.models import (
     BatchImport,
     File,
 )
-from tests.utils import login
+from tests.utils import login, create_new_user, random_domain, random_token
 
 
 def test_export(flask_client):
     # Create users
     user1 = login(flask_client)
-    user2 = User.create(
-        email="x@y.z", password="password", name="Wrong user", activated=True
-    )
+    user2 = create_new_user()
     Session.commit()
 
     # Remove onboarding aliases
@@ -31,44 +31,44 @@ def test_export(flask_client):
     Session.commit()
 
     # Create domains
-    CustomDomain.create(
-        user_id=user1.id, domain="my-destination-domain.com", verified=True
+    ok_domain = CustomDomain.create(
+        user_id=user1.id, domain=random_domain(), verified=True
     )
-    CustomDomain.create(
-        user_id=user2.id, domain="bad-destionation-domain.com", verified=True
+    bad_domain = CustomDomain.create(
+        user_id=user2.id, domain=random_domain(), verified=True
     )
     Session.commit()
 
     # Create mailboxes
     mailbox1 = Mailbox.create(
-        user_id=user1.id, email="destination@my-destination-domain.com", verified=True
+        user_id=user1.id, email=f"{random_token()}@{ok_domain.domain}", verified=True
     )
     mailbox2 = Mailbox.create(
-        user_id=user1.id, email="destination2@my-destination-domain.com", verified=True
+        user_id=user1.id, email=f"{random_token()}@{ok_domain.domain}", verified=True
     )
     badmailbox1 = Mailbox.create(
         user_id=user2.id,
-        email="baddestination@bad-destination-domain.com",
+        email=f"{random_token()}@{bad_domain.domain}",
         verified=True,
     )
     Session.commit()
 
     # Create aliases
-    Alias.create(
+    alias1 = Alias.create(
         user_id=user1.id,
-        email="ebay@my-domain.com",
+        email=f"{random_token()}@my-domain.com",
         note="Used on eBay",
         mailbox_id=mailbox1.id,
     )
     alias2 = Alias.create(
         user_id=user1.id,
-        email="facebook@my-domain.com",
+        email=f"{random_token()}@my-domain.com",
         note="Used on Facebook, Instagram.",
         mailbox_id=mailbox1.id,
     )
     Alias.create(
         user_id=user2.id,
-        email="notmine@my-domain.com",
+        email=f"{random_token()}@my-domain.com",
         note="Should not appear",
         mailbox_id=badmailbox1.id,
     )
@@ -85,15 +85,21 @@ def test_export(flask_client):
     r = flask_client.get(url_for("api.export_aliases"))
     assert r.status_code == 200
     assert r.mimetype == "text/csv"
-    assert (
-        r.data
-        == """alias,note,enabled,mailboxes
-ebay@my-domain.com,Used on eBay,True,destination@my-destination-domain.com
-facebook@my-domain.com,"Used on Facebook, Instagram.",True,destination@my-destination-domain.com destination2@my-destination-domain.com
-""".replace(
-            "\n", "\r\n"
-        ).encode()
-    )
+    csv_data = csv.DictReader(StringIO(r.data.decode("utf-8")))
+    found_aliases = set()
+    for row in csv_data:
+        found_aliases.add(row["alias"])
+        if row["alias"] == alias1.email:
+            assert alias1.note == row["note"]
+            assert "True" == row["enabled"]
+            assert mailbox1.email == row["mailboxes"]
+        elif row["alias"] == alias2.email:
+            assert alias2.note == row["note"]
+            assert "True" == row["enabled"]
+            assert f"{mailbox1.email} {mailbox2.email}" == row["mailboxes"]
+        else:
+            raise AssertionError("Unknown alias")
+    assert set((alias1.email, alias2.email)) == found_aliases
 
 
 def test_import_no_mailboxes_no_domains(flask_client):

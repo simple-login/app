@@ -22,35 +22,27 @@ from tests.utils import create_new_user, random_domain, random_token
 
 def test_delete_alias(flask_client):
     user = create_new_user()
-    alias = Alias.create(
-        user_id=user.id,
-        email="first@d1.test",
-        mailbox_id=user.default_mailbox_id,
-        commit=True,
-    )
-    assert Alias.get_by(email="first@d1.test")
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    assert Alias.get_by(email=alias.email)
 
     delete_alias(alias, user)
-    assert Alias.get_by(email="first@d1.test") is None
+    assert Alias.get_by(email=alias.email) is None
     assert DeletedAlias.get_by(email=alias.email)
 
 
 def test_delete_alias_already_in_trash(flask_client):
     """delete an alias that's already in alias trash"""
     user = create_new_user()
-    alias = Alias.create(
-        user_id=user.id,
-        email="first@d1.test",
-        mailbox_id=user.default_mailbox_id,
-        commit=True,
-    )
+    alias = Alias.create_new_random(user)
+    Session.commit()
 
     # add the alias to global trash
     Session.add(DeletedAlias(email=alias.email))
     Session.commit()
 
     delete_alias(alias, user)
-    assert Alias.get_by(email="first@d1.test") is None
+    assert Alias.get_by(email=alias.email) is None
 
 
 def test_check_alias_prefix(flask_client):
