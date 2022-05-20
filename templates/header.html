@@ -122,8 +122,8 @@
             {% endif %}
 
             <span class="ml-2 d-none d-lg-block">
-							<span class="text-default">
-                {{ current_user.name }}
+							<span class="text-default text-break">
+                {{ current_user.name or current_user.email }}
               </span>
 
               {% if current_user.in_trial() %}
