@@ -18,9 +18,11 @@ class Browser(Enum):
 
 def get_browser() -> Browser:
     user_agent = request.user_agent
+    if user_agent.platform in ["android", "iphone", "ipad']:
+        return Browser.Other
     if user_agent.browser == "edge":
         return Browser.Edge
-    elif user_agent.browser in ["chrome", "edge", "opera", "webkit"]:
+    elif user_agent.browser in ["chrome", "opera", "webkit"]:
         return Browser.Chrome
     elif user_agent.browser in ["mozilla", "firefox"]:
         return Browser.Firefox
