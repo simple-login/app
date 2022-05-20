@@ -4,9 +4,9 @@ from uuid import UUID
 import arrow
 import pytest
 
-from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
+from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, NOREPLY
 from app.db import Session
-from app.email_utils import parse_full_address
+from app.email_utils import parse_full_address, generate_reply_email
 from app.models import (
     generate_email,
     Alias,
@@ -284,3 +284,26 @@ def test_user_get_subscription_grace_period(flask_client):
         arrow.now().shift(days=-(PADDLE_SUBSCRIPTION_GRACE_DAYS + 1)).date()
     )
     assert user.get_subscription() is None
+
+
+def test_create_contact_for_noreply(flask_client):
+    user = create_new_user()
+    alias = Alias.filter(Alias.user_id == user.id).first()
+
+    # create a contact with NOREPLY as reply_email
+    Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=f"{random.random()}@contact.test",
+        reply_email=NOREPLY,
+        commit=True,
+    )
+
+    # create a contact for NOREPLY shouldn't raise CannotCreateContactForReverseAlias
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=NOREPLY,
+        reply_email=generate_reply_email(NOREPLY, user),
+    )
+    assert contact.website_email == NOREPLY
