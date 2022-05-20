@@ -18,7 +18,7 @@ def final():
     form = SendEmailForm(request.form)
     if form.validate_on_submit():
         send_test_email_alias(form.email.data, current_user.name)
-        flash("We have sent a test e-mail to your alias", "success")
+        flash("An email is sent to your alias", "success")
 
     return render_template(
         "onboarding/final.html",
