@@ -30,7 +30,14 @@
 
   {% if current_user != None and current_user.is_authenticated %}
     <script type="text/javascript">
-        setInterval(function() {
+        let counterIterations = 5;
+        let extensionSetupIntervalId = setInterval(function() {
+            counterIterations--;
+            if (counterIterations === 0) {
+                clearInterval(extensionSetupIntervalId);
+                return;
+            }
+
             const data = { tag: "PERFORM_EXTENSION_SETUP" };
             window.postMessage(data, "/");
         }, 300); // Send it many times, in case the extension had not registered the listener yet
