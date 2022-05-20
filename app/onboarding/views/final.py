@@ -1,4 +1,5 @@
 from app.extensions import limiter
+from app.models import Alias
 from app.onboarding.base import onboarding_bp
 from app.email_utils import send_test_email_alias
 from flask import render_template, request, flash
@@ -17,8 +18,10 @@ class SendEmailForm(FlaskForm):
 def final():
     form = SendEmailForm(request.form)
     if form.validate_on_submit():
-        send_test_email_alias(form.email.data, current_user.name)
-        flash("We have sent a test e-mail to your alias", "success")
+        alias = Alias.get_by(email=form.email.data)
+        if alias and alias.user_id == current_user.id:
+            send_test_email_alias(alias.email, current_user.name)
+            flash("An email is sent to your alias", "success")
 
     return render_template(
         "onboarding/final.html",

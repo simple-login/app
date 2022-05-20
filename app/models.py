@@ -36,6 +36,7 @@ from app.config import (
     MAX_NB_SUBDOMAIN,
     MAX_NB_DIRECTORY,
     ROOT_DIR,
+    NOREPLY,
 )
 from app.db import Session
 from app.errors import (
@@ -1648,9 +1649,10 @@ class Contact(Base, ModelMixin):
         website_email = sanitize_email(website_email)
 
         # make sure contact.website_email isn't a reverse alias
-        orig_contact = Contact.get_by(reply_email=website_email)
-        if orig_contact:
-            raise CannotCreateContactForReverseAlias(str(orig_contact))
+        if website_email != NOREPLY:
+            orig_contact = Contact.get_by(reply_email=website_email)
+            if orig_contact:
+                raise CannotCreateContactForReverseAlias(str(orig_contact))
 
         Session.add(new_contact)
 
