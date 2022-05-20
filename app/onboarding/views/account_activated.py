@@ -5,17 +5,22 @@ from flask import redirect, render_template, request, url_for
 
 CHROME_EXTENSION_LINK = "https://chrome.google.com/webstore/detail/simpleloginreceive-send-e/dphilobhebphkdjbpfohgikllaljmgbn"
 FIREFOX_EXTENSION_LINK = "https://addons.mozilla.org/firefox/addon/simplelogin/"
+EDGE_EXTENSION_LINK = "https://microsoftedge.microsoft.com/addons/detail/simpleloginreceive-sen/diacfpipniklenphgljfkmhinphjlfff"
 
 
 class Browser(Enum):
     Firefox = 1
     Chrome = 2
-    Other = 3
+    Edge = 3
+    Other = 4
 
 
 def get_browser() -> Browser:
+
     user_agent = request.user_agent
-    if user_agent.browser in ["chrome", "edge", "opera", "webkit"]:
+    if user_agent.browser == "edge":
+        return Browser.Edge
+    elif user_agent.browser in ["chrome", "edge", "opera", "webkit"]:
         return Browser.Chrome
     elif user_agent.browser in ["mozilla", "firefox"]:
         return Browser.Firefox
@@ -44,6 +49,9 @@ def account_activated():
     elif browser == Browser.Firefox:
         extension_link = FIREFOX_EXTENSION_LINK
         browser_name = "Firefox"
+    elif browser == Browser.Edge:
+        extension_link = EDGE_EXTENSION_LINK
+        browser_name = "Edge"
     else:
         return redirect(url_for("dashboard.index"))
 
