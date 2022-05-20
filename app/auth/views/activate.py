@@ -64,4 +64,4 @@ def activate():
         return redirect(next_url)
     else:
         LOG.d("redirect user to dashboard")
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("onboarding.account_activated"))
