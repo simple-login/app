@@ -22,8 +22,21 @@ def get_browser() -> Browser:
     return Browser.Other
 
 
+def is_mobile() -> bool:
+    return request.user_agent.platform in [
+        "android",
+        "blackberry",
+        "ipad",
+        "iphone",
+        "symbian",
+    ]
+
+
 @onboarding_bp.route("/account_activated", methods=["GET"])
 def account_activated():
+    if is_mobile():
+        return redirect(url_for("dashboard.index"))
+
     browser = get_browser()
     if browser == Browser.Chrome:
         extension_link = CHROME_EXTENSION_LINK
