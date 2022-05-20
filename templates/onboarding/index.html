@@ -19,7 +19,7 @@
   </div>
 
   <div class="mt-8 text-center">
-  {% if is_user_logged_in %}
+  {% if current_user != None and current_user.is_authenticated %}
     <h2 class="text-black-50" style="font-size:2rem">Performing the extension setup...</h2>
   {% else %}
     <a class="mx-6 p-4 text-decoration-none" style="background:black;color:white;" href="{{ url_for('auth.register', next=url_for('onboarding.setup_done')) }}">Create a new account</a>
@@ -28,7 +28,7 @@
   </div>
 </div>
 
-  {% if is_user_logged_in %}
+  {% if current_user != None and current_user.is_authenticated %}
     <script type="text/javascript">
         setInterval(function() {
             const data = { tag: "PERFORM_EXTENSION_SETUP" };
