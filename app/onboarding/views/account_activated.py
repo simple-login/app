@@ -1,6 +1,7 @@
 from app.onboarding.base import onboarding_bp
 from enum import Enum
 from flask import redirect, render_template, request, url_for
+from flask_login import login_required
 
 
 CHROME_EXTENSION_LINK = "https://chrome.google.com/webstore/detail/simpleloginreceive-send-e/dphilobhebphkdjbpfohgikllaljmgbn"
@@ -16,7 +17,6 @@ class Browser(Enum):
 
 
 def get_browser() -> Browser:
-
     user_agent = request.user_agent
     if user_agent.browser == "edge":
         return Browser.Edge
@@ -38,6 +38,7 @@ def is_mobile() -> bool:
 
 
 @onboarding_bp.route("/account_activated", methods=["GET"])
+@login_required
 def account_activated():
     if is_mobile():
         return redirect(url_for("dashboard.index"))
