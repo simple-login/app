@@ -25,10 +25,10 @@ def get_proton_partner() -> Partner:
 
 
 def get_proton_partner_id() -> int:
-    global _PROTON_PARTNER_ID
-    if _PROTON_PARTNER_ID is None:
-        partner = get_proton_partner()
-        _PROTON_PARTNER_ID = partner.id
+    global _PROTON_PARTNER
+    if _PROTON_PARTNER is None:
+        get_proton_partner()
+    return _PROTON_PARTNER.id
 
     return _PROTON_PARTNER_ID
 
