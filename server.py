@@ -74,7 +74,7 @@ from app.db import Session
 from app.developer.base import developer_bp
 from app.discover.base import discover_bp
 from app.email_utils import send_email, render
-from app.extensions import login_manager, migrate, limiter
+from app.extensions import login_manager, limiter
 from app.fake_data import fake_data
 from app.jose_utils import get_jwk_key
 from app.log import LOG
@@ -685,7 +685,6 @@ def handle_coinbase_event(event) -> bool:
 
 def init_extensions(app: Flask):
     login_manager.init_app(app)
-    migrate.init_app(app)
 
 
 def init_admin(app):
