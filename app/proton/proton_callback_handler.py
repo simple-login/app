@@ -11,7 +11,6 @@ from app.proton.proton_client import ProtonClient, ProtonUser
 from app.utils import random_string
 
 PROTON_PARTNER_NAME = "Proton"
-_PROTON_PARTNER_ID: Optional[int] = None
 _PROTON_PARTNER: Optional[Partner] = None
 
 
@@ -21,16 +20,13 @@ def get_proton_partner() -> Partner:
         partner = Partner.get_by(name=PROTON_PARTNER_NAME)
         if partner is None:
             raise ProtonPartnerNotSetUp
+        Session.expunge(partner)
+        _PROTON_PARTNER = partner
     return _PROTON_PARTNER
 
 
 def get_proton_partner_id() -> int:
-    global _PROTON_PARTNER
-    if _PROTON_PARTNER is None:
-        get_proton_partner()
-    return _PROTON_PARTNER.id
-
-    return _PROTON_PARTNER_ID
+    return get_proton_partner().id
 
 
 class Action(enum.Enum):
