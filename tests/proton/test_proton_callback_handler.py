@@ -4,6 +4,7 @@ from app.db import Session
 from app.proton.proton_client import ProtonClient, UserInformation, ProtonPlan
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
+    get_proton_partner,
     get_proton_partner_id,
     get_login_strategy,
     process_link_case,
@@ -84,7 +85,7 @@ def test_proton_callback_handler_unexistant_sl_user():
         user=user, plan=ProtonPlan.Professional, organization={}
     )
     handler = ProtonCallbackHandler(mock_client)
-    res = handler.handle_login()
+    res = handler.handle_login(get_proton_partner())
 
     assert res.user is not None
     assert res.user.email == email
@@ -102,7 +103,7 @@ def test_proton_callback_handler_existant_sl_user():
         user=user, plan=ProtonPlan.Professional, organization={}
     )
     handler = ProtonCallbackHandler(mock_client)
-    res = handler.handle_login()
+    res = handler.handle_login(get_proton_partner())
 
     assert res.user is not None
     assert res.user.id == sl_user.id
@@ -116,6 +117,7 @@ def test_get_strategy_unexistant_sl_user():
     strategy = get_login_strategy(
         proton_user=random_proton_user(),
         sl_user=None,
+        partner=get_proton_partner(),
     )
     assert isinstance(strategy, UnexistantSlClientStrategy)
 
@@ -126,6 +128,7 @@ def test_get_strategy_existing_sl_user():
     strategy = get_login_strategy(
         proton_user=random_proton_user(email=email),
         sl_user=sl_user,
+        partner=get_proton_partner(),
     )
     assert isinstance(strategy, ExistingSlClientStrategy)
 
@@ -137,6 +140,7 @@ def test_get_strategy_already_linked_user():
     strategy = get_login_strategy(
         proton_user=random_proton_user(user_id=proton_user_id, email=email),
         sl_user=sl_user,
+        partner=get_proton_partner(),
     )
     assert isinstance(strategy, AlreadyLinkedUserStrategy)
 
@@ -159,6 +163,7 @@ def test_get_strategy_existing_sl_user_linked_with_different_proton_account():
     strategy = get_login_strategy(
         proton_user=proton_user_1,
         sl_user=sl_user,
+        partner=get_proton_partner(),
     )
     assert isinstance(strategy, ExistingSlUserLinkedWithDifferentProtonAccountStrategy)
 
@@ -179,7 +184,7 @@ def test_link_account_with_proton_account_same_address(flask_client):
     proton_user = random_proton_user(user_id=proton_user_id, email=email)
     sl_user = create_user(email)
 
-    res = process_link_case(proton_user, sl_user)
+    res = process_link_case(proton_user, sl_user, get_proton_partner())
     assert res.redirect_to_login is False
     assert res.redirect is not None
     assert res.flash_category == "success"
@@ -199,7 +204,7 @@ def test_link_account_with_proton_account_different_address(flask_client):
     proton_user = random_proton_user(user_id=proton_user_id, email=random_email())
     sl_user = create_user()
 
-    res = process_link_case(proton_user, sl_user)
+    res = process_link_case(proton_user, sl_user, get_proton_partner())
     assert res.redirect_to_login is False
     assert res.redirect is not None
     assert res.flash_category == "success"
@@ -226,7 +231,7 @@ def test_link_account_with_proton_account_same_address_but_linked_to_other_user(
         proton_user_id, email=random_email()
     )  # User already linked with the proton account
 
-    res = process_link_case(proton_user, sl_user_1)
+    res = process_link_case(proton_user, sl_user_1, get_proton_partner())
     assert res.redirect_to_login is False
     assert res.redirect is not None
     assert res.flash_category == "success"
@@ -256,7 +261,7 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
         proton_user_id, email=random_email()
     )  # User already linked with the proton account
 
-    res = process_link_case(proton_user, sl_user_1)
+    res = process_link_case(proton_user, sl_user_1, get_proton_partner())
     assert res.redirect_to_login is False
     assert res.redirect is not None
     assert res.flash_category == "success"
@@ -282,4 +287,4 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
 
 def test_cannot_create_instance_of_base_strategy():
     with pytest.raises(Exception):
-        ClientMergeStrategy(random_proton_user(), None)
+        ClientMergeStrategy(random_proton_user(), None, get_proton_partner())
