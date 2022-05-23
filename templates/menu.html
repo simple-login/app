@@ -12,7 +12,6 @@
       <a href="{{ url_for('dashboard.subdomain_route') }}"
          class="nav-link {{ 'active' if active_page == 'subdomain' }}">
         <i class="fe fe-server"></i> Subdomains
-        <span class="badge badge-success" style="line-height: .7em; margin-top: 2px">New</span>
       </a>
     </li>
   {% endif %}
@@ -48,23 +47,23 @@
   </li>
   -->
 
-  <li class="nav-item">
-    <a href="{{ url_for('developer.index') }}"
-       class="nav-link {{ 'active' if active_page == 'developer' }}">
-      <i class="fe fe-terminal"></i>
-      SIWSL
-    </a>
-  </li>
+{#  <li class="nav-item">#}
+{#    <a href="{{ url_for('developer.index') }}"#}
+{#       class="nav-link {{ 'active' if active_page == 'developer' }}">#}
+{#      <i class="fe fe-terminal"></i>#}
+{#      SIWSL#}
+{#    </a>#}
+{#  </li>#}
 
-  {% if current_user.should_show_app_page() %}
-    <li class="nav-item">
-      <a href="{{ url_for('dashboard.app_route') }}"
-         class="nav-link {{ 'active' if active_page == 'app' }}">
-        <i class="fe fe-grid"></i>
-        Apps
-      </a>
-    </li>
-  {% endif %}
+{#  {% if current_user.should_show_app_page() %}#}
+{#    <li class="nav-item">#}
+{#      <a href="{{ url_for('dashboard.app_route') }}"#}
+{#         class="nav-link {{ 'active' if active_page == 'app' }}">#}
+{#        <i class="fe fe-grid"></i>#}
+{#        Apps#}
+{#      </a>#}
+{#    </li>#}
+{#  {% endif %}#}
 
   <li class="nav-item">
     <a href="{{ url_for('dashboard.setting') }}"
@@ -74,13 +73,13 @@
     </a>
   </li>
 
-  <li class="nav-item">
-    <a href="{{ url_for('dashboard.api_key') }}"
-       class="nav-link {{ 'active' if active_page == 'api_key' }}">
-      <i class="fa fa-key"></i>
-      API Keys
-    </a>
-  </li>
+{#  <li class="nav-item">#}
+{#    <a href="{{ url_for('dashboard.api_key') }}"#}
+{#       class="nav-link {{ 'active' if active_page == 'api_key' }}">#}
+{#      <i class="fa fa-key"></i>#}
+{#      API Keys#}
+{#    </a>#}
+{#  </li>#}
 
   {% if current_user.can_use_phone %}
     <li class="nav-item">
