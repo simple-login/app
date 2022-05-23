@@ -1,4 +1,7 @@
+import json
+import os
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from mailbox import Message
 from smtplib import SMTP, SMTPServerDisconnected, SMTPRecipientsRefused
@@ -110,8 +113,26 @@ class MailSender:
             else:
                 if send_request.ignore_smtp_error:
                     LOG.w("Ignore smtp error %s", e)
-                else:
-                    raise
+                    return
+                self._save_unsent_email(send_request)
+
+    def _save_unsent_request(self, send_request: SendRequest):
+        if not config.SAVE_DIR:
+            return
+        serialized_message = message_to_bytes(send_request.msg)
+        data = {
+            "envelope_from": send_request.envelope_from,
+            "envelope_tp": send_request.envelope_to,
+            "msg": serialized_message,
+            "mail_options": send_request.mail_options,
+            "rcpt_options": send_request.rcpt_options,
+            "is_forward": send_request.is_forward,
+        }
+        file_name = f"DeliveryFail-{uuid.uuid4()}.eml"
+        file_path = os.path.join(config.SAVE_DIR, file_name)
+        with open(file_path, "wb") as fd:
+            fd.write(json.dumps(data))
+        LOG.d(f"File saved to {file_path}")
 
 
 mail_sender = MailSender()
