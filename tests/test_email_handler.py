@@ -251,7 +251,3 @@ def test_email_sent_to_noreplies(flask_client):
     result = email_handler.handle(envelope, msg)
     assert result == status.E200
 
-    # NOREPLY isn't used anymore
-    envelope.rcpt_tos = [config.NOREPLY]
-    result = email_handler.handle(envelope, msg)
-    assert result == status.E515
