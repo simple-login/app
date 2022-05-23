@@ -4,7 +4,7 @@ from app.db import Session
 from app.proton.proton_client import ProtonClient, UserInformation, ProtonPlan
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
-    get_proton_partner_id,
+    get_proton_partner,
     get_login_strategy,
     process_link_case,
     ProtonUser,
@@ -65,11 +65,11 @@ def create_user(email: str = None) -> User:
 def create_user_for_partner(partner_user_id: str, email: str = None) -> User:
     email = email if email is not None else random_email()
     user = User.create(email=email)
-    user.partner_id = get_proton_partner_id()
+    user.partner_id = get_proton_partner().id
     user.partner_user_id = partner_user_id
 
     PartnerUser.create(
-        user_id=user.id, partner_id=get_proton_partner_id(), partner_email=email
+        user_id=user.id, partner_id=get_proton_partner().id, partner_email=email
     )
     Session.commit()
     return user
@@ -84,7 +84,7 @@ def test_proton_callback_handler_unexistant_sl_user():
         user=user, plan=ProtonPlan.Professional, organization={}
     )
     handler = ProtonCallbackHandler(mock_client)
-    res = handler.handle_login()
+    res = handler.handle_login(get_proton_partner())
 
     assert res.user is not None
     assert res.user.email == email
@@ -102,12 +102,12 @@ def test_proton_callback_handler_existant_sl_user():
         user=user, plan=ProtonPlan.Professional, organization={}
     )
     handler = ProtonCallbackHandler(mock_client)
-    res = handler.handle_login()
+    res = handler.handle_login(get_proton_partner())
 
     assert res.user is not None
     assert res.user.id == sl_user.id
 
-    sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner_id())
+    sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner().id)
     assert sa is not None
     assert sa.partner_email == user.email
 
@@ -116,6 +116,7 @@ def test_get_strategy_unexistant_sl_user():
     strategy = get_login_strategy(
         proton_user=random_proton_user(),
         sl_user=None,
+        partner=get_proton_partner(),
     )
     assert isinstance(strategy, UnexistantSlClientStrategy)
 
@@ -126,6 +127,7 @@ def test_get_strategy_existing_sl_user():
     strategy = get_login_strategy(
         proton_user=random_proton_user(email=email),
         sl_user=sl_user,
+        partner=get_proton_partner(),
     )
     assert isinstance(strategy, ExistingSlClientStrategy)
 
@@ -137,6 +139,7 @@ def test_get_strategy_already_linked_user():
     strategy = get_login_strategy(
         proton_user=random_proton_user(user_id=proton_user_id, email=email),
         sl_user=sl_user,
+        partner=get_proton_partner(),
     )
     assert isinstance(strategy, AlreadyLinkedUserStrategy)
 
@@ -159,6 +162,7 @@ def test_get_strategy_existing_sl_user_linked_with_different_proton_account():
     strategy = get_login_strategy(
         proton_user=proton_user_1,
         sl_user=sl_user,
+        partner=get_proton_partner(),
     )
     assert isinstance(strategy, ExistingSlUserLinkedWithDifferentProtonAccountStrategy)
 
@@ -179,14 +183,14 @@ def test_link_account_with_proton_account_same_address(flask_client):
     proton_user = random_proton_user(user_id=proton_user_id, email=email)
     sl_user = create_user(email)
 
-    res = process_link_case(proton_user, sl_user)
+    res = process_link_case(proton_user, sl_user, get_proton_partner())
     assert res.redirect_to_login is False
     assert res.redirect is not None
     assert res.flash_category == "success"
     assert res.flash_message is not None
 
     updated_user = User.get(sl_user.id)
-    assert updated_user.partner_id == get_proton_partner_id()
+    assert updated_user.partner_id == get_proton_partner().id
     assert updated_user.partner_user_id == proton_user_id
 
 
@@ -199,14 +203,14 @@ def test_link_account_with_proton_account_different_address(flask_client):
     proton_user = random_proton_user(user_id=proton_user_id, email=random_email())
     sl_user = create_user()
 
-    res = process_link_case(proton_user, sl_user)
+    res = process_link_case(proton_user, sl_user, get_proton_partner())
     assert res.redirect_to_login is False
     assert res.redirect is not None
     assert res.flash_category == "success"
     assert res.flash_message is not None
 
     updated_user = User.get(sl_user.id)
-    assert updated_user.partner_id == get_proton_partner_id()
+    assert updated_user.partner_id == get_proton_partner().id
     assert updated_user.partner_user_id == proton_user_id
 
 
@@ -226,14 +230,14 @@ def test_link_account_with_proton_account_same_address_but_linked_to_other_user(
         proton_user_id, email=random_email()
     )  # User already linked with the proton account
 
-    res = process_link_case(proton_user, sl_user_1)
+    res = process_link_case(proton_user, sl_user_1, get_proton_partner())
     assert res.redirect_to_login is False
     assert res.redirect is not None
     assert res.flash_category == "success"
     assert res.flash_message is not None
 
     updated_user_1 = User.get(sl_user_1.id)
-    assert updated_user_1.partner_id == get_proton_partner_id()
+    assert updated_user_1.partner_id == get_proton_partner().id
     assert updated_user_1.partner_user_id == proton_user_id
 
     updated_user_2 = User.get(sl_user_2.id)
@@ -256,17 +260,17 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
         proton_user_id, email=random_email()
     )  # User already linked with the proton account
 
-    res = process_link_case(proton_user, sl_user_1)
+    res = process_link_case(proton_user, sl_user_1, get_proton_partner())
     assert res.redirect_to_login is False
     assert res.redirect is not None
     assert res.flash_category == "success"
     assert res.flash_message is not None
 
     updated_user_1 = User.get(sl_user_1.id)
-    assert updated_user_1.partner_id == get_proton_partner_id()
+    assert updated_user_1.partner_id == get_proton_partner().id
     assert updated_user_1.partner_user_id == proton_user_id
     partner_user_1 = PartnerUser.get_by(
-        user_id=sl_user_1.id, partner_id=get_proton_partner_id()
+        user_id=sl_user_1.id, partner_id=get_proton_partner().id
     )
     assert partner_user_1 is not None
     assert partner_user_1.partner_email == proton_user.email
@@ -275,11 +279,11 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
     assert updated_user_2.partner_id is None
     assert updated_user_2.partner_user_id is None
     partner_user_2 = PartnerUser.get_by(
-        user_id=sl_user_2.id, partner_id=get_proton_partner_id()
+        user_id=sl_user_2.id, partner_id=get_proton_partner().id
     )
     assert partner_user_2 is None
 
 
 def test_cannot_create_instance_of_base_strategy():
     with pytest.raises(Exception):
-        ClientMergeStrategy(random_proton_user(), None)
+        ClientMergeStrategy(random_proton_user(), None, get_proton_partner())

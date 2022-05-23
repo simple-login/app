@@ -48,7 +48,7 @@ from app.models import (
     AppleSubscription,
     PartnerUser,
 )
-from app.proton.proton_callback_handler import get_proton_partner_id
+from app.proton.proton_callback_handler import get_proton_partner
 from app.utils import random_string, sanitize_email
 
 
@@ -70,7 +70,7 @@ class PromoCodeForm(FlaskForm):
 def get_proton_linked_account() -> Optional[str]:
     # Check if the current user has a partner_id
     try:
-        proton_partner_id = get_proton_partner_id()
+        proton_partner_id = get_proton_partner().id
     except ProtonPartnerNotSetUp:
         return None
 
@@ -444,7 +444,7 @@ def unlink_proton_account():
     current_user.partner_id = None
     current_user.partner_user_id = None
     partner_user = PartnerUser.get_by(
-        user_id=current_user.id, partner_id=get_proton_partner_id()
+        user_id=current_user.id, partner_id=get_proton_partner().id
     )
     if partner_user is not None:
         PartnerUser.delete(partner_user.id)

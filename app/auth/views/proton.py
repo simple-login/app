@@ -14,7 +14,11 @@ from app.config import (
     URL,
 )
 from app.proton.proton_client import HttpProtonClient, convert_access_token
-from app.proton.proton_callback_handler import ProtonCallbackHandler, Action
+from app.proton.proton_callback_handler import (
+    ProtonCallbackHandler,
+    Action,
+    get_proton_partner,
+)
 from app.utils import sanitize_next_url
 
 _authorization_base_url = PROTON_BASE_URL + "/oauth/authorize"
@@ -100,11 +104,12 @@ def proton_callback():
         PROTON_BASE_URL, credentials, get_remote_address(), verify=PROTON_VALIDATE_CERTS
     )
     handler = ProtonCallbackHandler(proton_client)
+    proton_partner = get_proton_partner()
 
     if action == Action.Login:
-        res = handler.handle_login()
+        res = handler.handle_login(proton_partner)
     elif action == Action.Link:
-        res = handler.handle_link(current_user)
+        res = handler.handle_link(current_user, proton_partner)
     else:
         raise Exception(f"Unknown Action: {action.name}")
 
