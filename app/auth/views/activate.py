@@ -64,4 +64,6 @@ def activate():
         return redirect(next_url)
     else:
         LOG.d("redirect user to dashboard")
-        return redirect(url_for("onboarding.account_activated"))
+        return redirect(url_for("dashboard.index"))
+        # todo: redirect to account_activated page when more features are added into the browser extension
+        # return redirect(url_for("onboarding.account_activated"))
