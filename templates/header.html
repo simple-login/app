@@ -122,14 +122,17 @@
             {% endif %}
 
             <span class="ml-2 d-none d-lg-block">
-							<span class="text-default">
-                {{ current_user.name }}
+							<span class="text-default text-break">
+                {{ current_user.name or current_user.email }}
               </span>
 
               {% if current_user.in_trial() %}
-                <small class="text-success d-block mt-1">Premium expires {{ current_user.trial_end|dt }}
-                <i class="fe fe-info" data-toggle="tooltip"
-                   title="After you signed up you were given a free 7 day Premium trial, after this period your account will automatically be downgraded to the Free plan."></i>
+                <small class="text-success d-block mt-1" data-toggle="tooltip"
+                       title="When you signed up, you have a free 7-day Premium trial.
+                   After that your account will automatically be downgraded to the Free plan.
+                   During the trial, the only limit is you can't create more than 15 aliases.">
+                  Premium expires {{ current_user.trial_end|dt }}
+                <i class="fe fe-info"></i>
                 </small>
               {% elif current_user.is_premium() %}
 
