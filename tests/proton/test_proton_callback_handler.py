@@ -5,7 +5,6 @@ from app.proton.proton_client import ProtonClient, UserInformation, ProtonPlan
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
     get_proton_partner,
-    get_proton_partner_id,
     get_login_strategy,
     process_link_case,
     ProtonUser,
@@ -66,11 +65,11 @@ def create_user(email: str = None) -> User:
 def create_user_for_partner(partner_user_id: str, email: str = None) -> User:
     email = email if email is not None else random_email()
     user = User.create(email=email)
-    user.partner_id = get_proton_partner_id()
+    user.partner_id = get_proton_partner().id
     user.partner_user_id = partner_user_id
 
     PartnerUser.create(
-        user_id=user.id, partner_id=get_proton_partner_id(), partner_email=email
+        user_id=user.id, partner_id=get_proton_partner().id, partner_email=email
     )
     Session.commit()
     return user
@@ -108,7 +107,7 @@ def test_proton_callback_handler_existant_sl_user():
     assert res.user is not None
     assert res.user.id == sl_user.id
 
-    sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner_id())
+    sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner().id)
     assert sa is not None
     assert sa.partner_email == user.email
 
@@ -191,7 +190,7 @@ def test_link_account_with_proton_account_same_address(flask_client):
     assert res.flash_message is not None
 
     updated_user = User.get(sl_user.id)
-    assert updated_user.partner_id == get_proton_partner_id()
+    assert updated_user.partner_id == get_proton_partner().id
     assert updated_user.partner_user_id == proton_user_id
 
 
@@ -211,7 +210,7 @@ def test_link_account_with_proton_account_different_address(flask_client):
     assert res.flash_message is not None
 
     updated_user = User.get(sl_user.id)
-    assert updated_user.partner_id == get_proton_partner_id()
+    assert updated_user.partner_id == get_proton_partner().id
     assert updated_user.partner_user_id == proton_user_id
 
 
@@ -238,7 +237,7 @@ def test_link_account_with_proton_account_same_address_but_linked_to_other_user(
     assert res.flash_message is not None
 
     updated_user_1 = User.get(sl_user_1.id)
-    assert updated_user_1.partner_id == get_proton_partner_id()
+    assert updated_user_1.partner_id == get_proton_partner().id
     assert updated_user_1.partner_user_id == proton_user_id
 
     updated_user_2 = User.get(sl_user_2.id)
@@ -268,10 +267,10 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
     assert res.flash_message is not None
 
     updated_user_1 = User.get(sl_user_1.id)
-    assert updated_user_1.partner_id == get_proton_partner_id()
+    assert updated_user_1.partner_id == get_proton_partner().id
     assert updated_user_1.partner_user_id == proton_user_id
     partner_user_1 = PartnerUser.get_by(
-        user_id=sl_user_1.id, partner_id=get_proton_partner_id()
+        user_id=sl_user_1.id, partner_id=get_proton_partner().id
     )
     assert partner_user_1 is not None
     assert partner_user_1.partner_email == proton_user.email
@@ -280,7 +279,7 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
     assert updated_user_2.partner_id is None
     assert updated_user_2.partner_user_id is None
     partner_user_2 = PartnerUser.get_by(
-        user_id=sl_user_2.id, partner_id=get_proton_partner_id()
+        user_id=sl_user_2.id, partner_id=get_proton_partner().id
     )
     assert partner_user_2 is None
 

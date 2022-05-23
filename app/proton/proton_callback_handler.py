@@ -25,10 +25,6 @@ def get_proton_partner() -> Partner:
     return _PROTON_PARTNER
 
 
-def get_proton_partner_id() -> int:
-    return get_proton_partner().id
-
-
 class Action(enum.Enum):
     Login = 1
     Link = 2
