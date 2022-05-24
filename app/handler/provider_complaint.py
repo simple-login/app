@@ -59,7 +59,10 @@ class ProviderComplaintOrigin(ABC):
         if not return_path:
             return None
         _, return_path = parse_full_address(get_header_unicode(return_path))
-        verp_type, email_log_id = get_verp_info_from_email(return_path)
+        verp_data = get_verp_info_from_email(return_path)
+        if not verp_data:
+            return None
+        verp_type, email_log_id = verp_data
         if verp_type == VerpType.transactional:
             return None
         email_log = EmailLog.get_by(id=email_log_id)
