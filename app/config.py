@@ -413,6 +413,9 @@ POSTMASTER = os.environ.get("POSTMASTER")
 # store temporary files, especially for debugging
 TEMP_DIR = os.environ.get("TEMP_DIR")
 
+# Store unsent emails
+SAVE_UNSENT_DIR = os.environ.get("SAVE_UNSENT_DIR")
+
 # enable the alias automation disable: an alias can be automatically disabled if it has too many bounces
 ALIAS_AUTOMATIC_DISABLE = "ALIAS_AUTOMATIC_DISABLE" in os.environ
 
