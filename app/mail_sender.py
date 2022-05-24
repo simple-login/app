@@ -6,6 +6,7 @@ import os
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from functools import wraps
 from mailbox import Message
 from smtplib import SMTP, SMTPServerDisconnected, SMTPRecipientsRefused
 from typing import Optional, Dict, List, Callable
@@ -84,12 +85,14 @@ class MailSender:
         return self._emails_sent
 
     def store_emails_test_decorator(self, fn: Callable) -> Callable:
-        def wrapper():
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
             self.purge_stored_emails()
             self.store_emails_instead_of_sending()
-            fn()
+            result = fn(*args, **kwargs)
             self.purge_stored_emails()
             self.store_emails_instead_of_sending(False)
+            return result
 
         return wrapper
 
