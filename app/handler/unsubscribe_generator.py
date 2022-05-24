@@ -94,7 +94,7 @@ class UnsubscribeGenerator:
         """
         Add List-Unsubscribe header
         """
-        if alias.user.original_unsub:
+        if alias.user.unsub_behaviour:
             return self._generate_header_with_original_behaviour(alias, message)
         else:
             return self._generate_header_with_sl_behaviour(alias, contact, message)

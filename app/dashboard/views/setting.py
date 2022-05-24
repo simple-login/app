@@ -48,6 +48,7 @@ from app.models import (
     CoinbaseSubscription,
     AppleSubscription,
     PartnerUser,
+    UnsubscribeBehaviourEnum,
 )
 from app.proton.proton_callback_handler import get_proton_partner
 from app.utils import random_string, sanitize_email
@@ -354,6 +355,21 @@ def setting():
                 )
             else:
                 flash("An export of your data is currently in progress", "error")
+        elif request.form.get("form-name") == "export-data":
+            return redirect(url_for("api.export_data"))
+        elif request.form.get("form-name") == "export-alias":
+            return redirect(url_for("api.export_aliases"))
+        elif request.form.get("form-name") == "change-unsubscribe-behaviour":
+            choose = request.form.get("unsubscribe-behaviour")
+            if choose == UnsubscribeBehaviourEnum.PreserveOriginal.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
+            elif choose == UnsubscribeBehaviourEnum.Disable.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.Disable
+            else:
+                flash("There was an error. Please try again", "warning")
+                return redirect(url_for("dashboard.setting"))
+            Session.commit()
+            flash("Your preference has been updated", "success")
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
@@ -366,6 +382,7 @@ def setting():
         PlanEnum=PlanEnum,
         SenderFormatEnum=SenderFormatEnum,
         BlockBehaviourEnum=BlockBehaviourEnum,
+        UnsubscribeBehaviourEnum=UnsubscribeBehaviourEnum,
         promo_form=promo_form,
         change_email_form=change_email_form,
         pending_email=pending_email,

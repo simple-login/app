@@ -220,6 +220,11 @@ class BlockBehaviourEnum(EnumE):
     return_5xx = 1
 
 
+class UnsubscribeBehaviourEnum(EnumE):
+    Disable = 0
+    PreserveOriginal = 1
+
+
 class AuditLogActionEnum(EnumE):
     create_object = 0
     update_object = 1
@@ -485,8 +490,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     )
 
     # Keep original unsub behaviour
-    original_unsub = sa.Column(
-        sa.Boolean, default=True, nullable=False, server_default="1"
+    unsub_behaviour = sa.Column(
+        sa.Enum(UnsubscribeBehaviourEnum),
+        default=UnsubscribeBehaviourEnum.PreserveOriginal.name,
+        server_default=UnsubscribeBehaviourEnum.Disable.name,
+        nullable=False,
     )
 
     @property
