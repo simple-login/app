@@ -55,3 +55,4 @@ def test_mail_sender_save_unsent_to_disk():
         assert send_request.msg[headers.TO] == loaded_send_request.msg[headers.TO]
         assert send_request.msg[headers.FROM] == loaded_send_request.msg[headers.FROM]
     config.POSTFIX_SERVER = original_postfix_server
+    config.NOT_SEND_EMAIL = True
