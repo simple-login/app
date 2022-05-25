@@ -1,5 +1,7 @@
 import os
 import tempfile
+import threading
+import socket
 from email.message import Message
 from random import random
 
@@ -33,12 +35,28 @@ def test_mail_sender_save_to_mem():
     assert stored_emails[0] == send_request
 
 
+def start_closer_dummy_server() -> int:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(("127.0.0.1", 0))
+    sock.listen()
+    port = sock.getsockname()[1]
+
+    def close_on_accept():
+        connection, _ = sock.accept()
+        connection.close()
+        sock.close()
+
+    threading.Thread(target=close_on_accept, daemon=True).start()
+    return port
+
+
 def test_mail_sender_save_unsent_to_disk():
     original_postfix_server = config.POSTFIX_SERVER
     config.POSTFIX_SERVER = "127.0.0.1"
     config.NOT_SEND_EMAIL = False
     config.POSTFIX_SUBMISSION_TLS = False
-    config.POSTFIX_PORT = 39238
+    config.POSTFIX_PORT = start_closer_dummy_server()
     with tempfile.TemporaryDirectory() as temp_dir:
         config.SAVE_UNSENT_DIR = temp_dir
         send_request = create_dummy_send_request()
