@@ -6,21 +6,14 @@ import time
 
 import arrow
 
-from app.config import (
-    JOB_ONBOARDING_1,
-    JOB_ONBOARDING_2,
-    JOB_ONBOARDING_4,
-    JOB_BATCH_IMPORT,
-    JOB_DELETE_ACCOUNT,
-    JOB_DELETE_MAILBOX,
-    JOB_DELETE_DOMAIN,
-)
+from app import config
 from app.db import Session
 from app.email_utils import (
     send_email,
     render,
 )
 from app.import_utils import handle_batch_import
+from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain
 from server import create_light_app
@@ -111,7 +104,7 @@ if __name__ == "__main__":
                 job.taken = True
                 Session.commit()
 
-                if job.name == JOB_ONBOARDING_1:
+                if job.name == config.JOB_ONBOARDING_1:
                     user_id = job.payload.get("user_id")
                     user = User.get(user_id)
 
@@ -120,7 +113,7 @@ if __name__ == "__main__":
                     if user and user.notification and user.activated:
                         LOG.d("send onboarding send-from-alias email to user %s", user)
                         onboarding_send_from_alias(user)
-                elif job.name == JOB_ONBOARDING_2:
+                elif job.name == config.JOB_ONBOARDING_2:
                     user_id = job.payload.get("user_id")
                     user = User.get(user_id)
 
@@ -129,7 +122,7 @@ if __name__ == "__main__":
                     if user and user.notification and user.activated:
                         LOG.d("send onboarding mailbox email to user %s", user)
                         onboarding_mailbox(user)
-                elif job.name == JOB_ONBOARDING_4:
+                elif job.name == config.JOB_ONBOARDING_4:
                     user_id = job.payload.get("user_id")
                     user = User.get(user_id)
 
@@ -139,11 +132,11 @@ if __name__ == "__main__":
                         LOG.d("send onboarding pgp email to user %s", user)
                         onboarding_pgp(user)
 
-                elif job.name == JOB_BATCH_IMPORT:
+                elif job.name == config.JOB_BATCH_IMPORT:
                     batch_import_id = job.payload.get("batch_import_id")
                     batch_import = BatchImport.get(batch_import_id)
                     handle_batch_import(batch_import)
-                elif job.name == JOB_DELETE_ACCOUNT:
+                elif job.name == config.JOB_DELETE_ACCOUNT:
                     user_id = job.payload.get("user_id")
                     user = User.get(user_id)
 
@@ -163,7 +156,7 @@ if __name__ == "__main__":
                         render("transactional/account-delete.html"),
                         retries=3,
                     )
-                elif job.name == JOB_DELETE_MAILBOX:
+                elif job.name == config.JOB_DELETE_MAILBOX:
                     mailbox_id = job.payload.get("mailbox_id")
                     mailbox = Mailbox.get(mailbox_id)
                     if not mailbox:
@@ -186,7 +179,7 @@ SimpleLogin team.
                         retries=3,
                     )
 
-                elif job.name == JOB_DELETE_DOMAIN:
+                elif job.name == config.JOB_DELETE_DOMAIN:
                     custom_domain_id = job.payload.get("custom_domain_id")
                     custom_domain = CustomDomain.get(custom_domain_id)
                     if not custom_domain:
@@ -210,7 +203,10 @@ SimpleLogin team.
 """,
                         retries=3,
                     )
-
+                if job.name == config.JOB_SEND_USER_REPORT:
+                    export_job = ExportUserDataJob.create_from_job(job)
+                    if export_job:
+                        export_job.run()
                 else:
                     LOG.e("Unknown job name %s", job.name)
 

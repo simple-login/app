@@ -29,6 +29,7 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.errors import ProtonPartnerNotSetUp
+from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import (
     BlockBehaviourEnum,
@@ -352,6 +353,11 @@ def setting():
             return redirect(url_for("api.export_data"))
         elif request.form.get("form-name") == "export-alias":
             return redirect(url_for("api.export_aliases"))
+        elif request.form.get("form-name") == "send-full-user-report":
+            if ExportUserDataJob(current_user).store_job_in_db():
+                flash("You will receive your user report via mail shortly", "success")
+            else:
+                flash("There is already a report being generated", "error")
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
