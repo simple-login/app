@@ -4,8 +4,10 @@ import threading
 import socket
 from email.message import Message
 from random import random
+from typing import Callable
 
 import pytest
+from aiosmtpd.controller import Controller
 
 from app.email import headers
 from app.mail_sender import mail_sender, SendRequest
@@ -40,7 +42,7 @@ def test_mail_sender_save_to_mem():
 def close_on_connect_dummy_server() -> int:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(("127.0.0.1", 0))
+    sock.bind(("localhost", 0))
     sock.listen()
     port = sock.getsockname()[1]
 
@@ -56,19 +58,42 @@ def close_on_connect_dummy_server() -> int:
 def closed_dummy_server() -> int:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(("127.0.0.1", 0))
+    sock.bind(("localhost", 0))
     sock.listen()
     port = sock.getsockname()[1]
     sock.close()
     return port
 
 
+def smtp_response_server(smtp_response: str) -> Callable[[], int]:
+    def inner():
+        empty_port = closed_dummy_server()
+
+        class ResponseHandler:
+            async def handle_DATA(self, server, session, envelope) -> str:
+                return smtp_response
+
+        controller = Controller(
+            ResponseHandler(), hostname="localhost", port=empty_port
+        )
+        controller.start()
+        return controller.server.sockets[0].getsockname()[1]
+
+    return inner
+
+
 @pytest.mark.parametrize(
-    "server_fn", [close_on_connect_dummy_server, closed_dummy_server]
+    "server_fn",
+    [
+        close_on_connect_dummy_server,
+        closed_dummy_server,
+        smtp_response_server("421 Retry"),
+        smtp_response_server("500 error"),
+    ],
 )
 def test_mail_sender_save_unsent_to_disk(server_fn):
     original_postfix_server = config.POSTFIX_SERVER
-    config.POSTFIX_SERVER = "127.0.0.1"
+    config.POSTFIX_SERVER = "localhost"
     config.NOT_SEND_EMAIL = False
     config.POSTFIX_SUBMISSION_TLS = False
     config.POSTFIX_PORT = server_fn()
