@@ -8,7 +8,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from mailbox import Message
-from smtplib import SMTP, SMTPServerDisconnected, SMTPRecipientsRefused
+from smtplib import SMTP, SMTPException
 from typing import Optional, Dict, List, Callable
 
 import newrelic.agent
@@ -156,14 +156,10 @@ class MailSender:
                     "Custom/smtp_sending_time", time.time() - start
                 )
         except (
-            SMTPServerDisconnected,
-            SMTPRecipientsRefused,
+            SMTPException,
             ConnectionRefusedError,
+            TimeoutError,
         ) as e:
-            LOG.w(
-                f"Error connecting to SMTP server: error {e} retries left {retries}",
-                exc_info=True,
-            )
             if retries > 0:
                 time.sleep(0.3 * send_request.retries)
                 self._send_to_smtp(send_request, retries - 1)
@@ -171,6 +167,9 @@ class MailSender:
                 if send_request.ignore_smtp_errors:
                     LOG.w(f"Ignore smtp error {e}")
                     return
+                LOG.e(
+                    f"Could not send message to smtp server {config.POSTFIX_SERVER}:{smtp_port}"
+                )
                 self._save_request_to_unsent_dir(send_request)
 
     def _save_request_to_unsent_dir(self, send_request: SendRequest):
