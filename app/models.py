@@ -172,36 +172,34 @@ class File(Base, ModelMixin):
 
 class EnumE(enum.Enum):
     @classmethod
-    def has_value(cls, value: int) -> bool:
-        return value in set(item.value for item in cls)
-
-    @classmethod
     def get_name(cls, value: int) -> Optional[str]:
-        for item in cls:
-            if item.value == value:
-                return item.name
-
-        return None
+        try:
+            return cls(value).name
+        except ValueError:
+            return None
 
     @classmethod
-    def get_names(cls) -> Set[str]:
-        return set(item.name for item in cls)
+    def get_names(cls) -> List[str]:
+        return [item.name for item in cls]
 
     @classmethod
     def has_name(cls, name: str) -> bool:
-        for item in cls:
-            if item.name == name:
-                return True
-
-        return False
+        return not cls.get_value(name) is None
 
     @classmethod
     def get_value(cls, name: str) -> Optional[int]:
-        for item in cls:
-            if item.name == name:
-                return item.value
+        try:
+            return cls[name].value
+        except KeyError:
+            return None
 
-        return None
+    @classmethod
+    def get_values(cls) -> List[int]:
+        return [item.value for item in cls]
+
+    @classmethod
+    def has_value(cls, value: int) -> bool:
+        return not cls.get_name(value) is None
 
 
 class PlanEnum(EnumE):
