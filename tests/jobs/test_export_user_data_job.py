@@ -92,8 +92,6 @@ def test_model_retrieval_and_serialization():
 
     # Get zip
     memfile = job._build_zip()
-    assert memfile.tell() > 0
-    memfile.seek(0)
     files_in_zip = set()
     with zipfile.ZipFile(memfile, "r") as zf:
         for file_info in zf.infolist():
