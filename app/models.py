@@ -1,4 +1,9 @@
+from __future__ import annotations
+
+import base64
 import enum
+import hashlib
+import hmac
 import os
 import random
 import uuid
@@ -18,6 +23,7 @@ from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import deferred
+from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
 from app import s3
@@ -37,6 +43,7 @@ from app.config import (
     MAX_NB_DIRECTORY,
     ROOT_DIR,
     NOREPLY,
+    PARTNER_API_TOKEN_SECRET,
 )
 from app.db import Session
 from app.errors import (
@@ -3075,15 +3082,54 @@ class Partner(Base, ModelMixin):
     name = sa.Column(sa.String(128), unique=True, nullable=False)
     contact_email = sa.Column(sa.String(128), unique=True, nullable=False)
 
+    @staticmethod
+    def find_by_token(token: str) -> Optional[Partner]:
+        hmaced = PartnerApiToken.hmac_token(token)
+        res = (
+            Session.query(Partner, PartnerApiToken)
+            .filter(
+                and_(
+                    PartnerApiToken.token == hmaced,
+                    Partner.id == PartnerApiToken.partner_id,
+                )
+            )
+            .first()
+        )
+        if res is None or res.Partner is None:
+            return None
+        return res.Partner
+
 
 class PartnerApiToken(Base, ModelMixin):
     __tablename__ = "partner_api_token"
 
-    token = sa.Column(sa.String(32), unique=True, nullable=False, index=True)
+    token = sa.Column(sa.String(50), unique=True, nullable=False, index=True)
     partner_id = sa.Column(
         sa.ForeignKey("partner.id", ondelete="cascade"), nullable=False, index=True
     )
     expiration_time = sa.Column(ArrowType, unique=False, nullable=True)
+
+    @staticmethod
+    def generate(
+        partner_id: int, expiration_time: Optional[ArrowType]
+    ) -> Tuple[PartnerApiToken, str]:
+        raw_token = random_string(32)
+        encoded = PartnerApiToken.hmac_token(raw_token)
+        instance = PartnerApiToken.create(
+            token=encoded, partner_id=partner_id, expiration_time=expiration_time
+        )
+        return instance, raw_token
+
+    @staticmethod
+    def hmac_token(token: str) -> str:
+        as_str = base64.b64encode(
+            hmac.new(
+                PARTNER_API_TOKEN_SECRET.encode("utf-8"),
+                token.encode("utf-8"),
+                hashlib.sha3_256,
+            ).digest()
+        ).decode("utf-8")
+        return as_str.rstrip("=")
 
 
 class PartnerUser(Base, ModelMixin):
