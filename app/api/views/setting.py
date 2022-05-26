@@ -15,11 +15,10 @@ from app.models import (
 
 
 def setting_to_dict(user: User):
-    alias_generator = {
-        "word": AliasGeneratorEnum.word.value,
-        "uuid": AliasGeneratorEnum.uuid.value,
-        "random_string": AliasGeneratorEnum.random_string.value,
-    }
+    try:
+        alias_generator = AliasGeneratorEnum[user.alias_generator].value
+    except KeyError:
+        alias_generator = AliasGeneratorEnum.word.value
     ret = {
         "notification": user.notification,
         "alias_generator": alias_generator.get(user.alias_generator, "word"),
