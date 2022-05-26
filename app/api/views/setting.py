@@ -15,13 +15,12 @@ from app.models import (
 
 
 def setting_to_dict(user: User):
-    try:
-        alias_generator = AliasGeneratorEnum[user.alias_generator].value
-    except KeyError:
-        alias_generator = AliasGeneratorEnum.word.value
     ret = {
         "notification": user.notification,
-        "alias_generator": alias_generator.get(user.alias_generator, "word"),
+        # return the default alias generator in case user uses a non-supported alias generator
+        "alias_generator": user.alias_generator
+        if AliasGeneratorEnum.has_name(user.alias_generator)
+        else AliasGeneratorEnum.get_name(AliasGeneratorEnum.word.value),
         "random_alias_default_domain": user.default_random_alias_domain(),
         # return the default sender format (AT) in case user uses a non-supported sender format
         "sender_format": SenderFormatEnum.get_name(user.sender_format)
