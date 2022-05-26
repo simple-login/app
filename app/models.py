@@ -221,7 +221,7 @@ class BlockBehaviourEnum(EnumE):
 
 
 class UnsubscribeBehaviourEnum(EnumE):
-    Disable = 0
+    DisableAlias = 0
     PreserveOriginal = 1
 
 
@@ -493,7 +493,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     unsub_behaviour = sa.Column(
         sa.Enum(UnsubscribeBehaviourEnum),
         default=UnsubscribeBehaviourEnum.PreserveOriginal.name,
-        server_default=UnsubscribeBehaviourEnum.Disable.name,
+        server_default=UnsubscribeBehaviourEnum.DisableAlias.name,
         nullable=False,
     )
 

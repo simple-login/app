@@ -12,7 +12,7 @@ from app.handler.unsubscribe_handler import (
     UnsubscribeData,
     UnsubscribeEncoder,
 )
-from app.models import Alias, Contact
+from app.models import Alias, Contact, UnsubscribeBehaviourEnum
 from tests.utils import create_new_user
 
 
@@ -21,7 +21,7 @@ TEST_UNSUB_EMAIL = "unsub@sl.com"
 
 def generate_unsub_test_original_unsub_data() -> Iterable:
     user = create_new_user()
-    user.unsub_behaviour = True
+    user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
     alias = Alias.create_new_random(user)
     Session.commit()
     contact = Contact.create(
@@ -92,7 +92,7 @@ def test_original_unsub_header(
 
 def generate_sl_unsub_block_sender_data() -> Iterable:
     user = create_new_user()
-    user.unsub_behaviour = False
+    user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
     user.one_click_unsubscribe_block_sender = True
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -149,7 +149,7 @@ def test_sl_unsub_block_sender_data(
 
 def generate_sl_unsub_not_block_sender_data() -> Iterable:
     user = create_new_user()
-    user.unsub_behaviour = False
+    user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
     user.one_click_unsubscribe_block_sender = False
     alias = Alias.create_new_random(user)
     Session.commit()

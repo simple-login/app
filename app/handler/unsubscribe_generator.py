@@ -9,7 +9,7 @@ from app.handler.unsubscribe_handler import (
     UnsubscribeData,
     UnsubscribeAction,
 )
-from app.models import Alias, Contact
+from app.models import Alias, Contact, UnsubscribeBehaviourEnum
 
 UNSUB_PREFIX = "unsub"
 
@@ -94,7 +94,7 @@ class UnsubscribeGenerator:
         """
         Add List-Unsubscribe header
         """
-        if alias.user.unsub_behaviour:
+        if alias.user.unsub_behaviour == UnsubscribeBehaviourEnum.PreserveOriginal:
             return self._generate_header_with_original_behaviour(alias, message)
         else:
             return self._generate_header_with_sl_behaviour(alias, contact, message)

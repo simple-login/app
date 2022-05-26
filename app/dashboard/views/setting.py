@@ -363,8 +363,8 @@ def setting():
             choose = request.form.get("unsubscribe-behaviour")
             if choose == UnsubscribeBehaviourEnum.PreserveOriginal.name:
                 current_user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
-            elif choose == UnsubscribeBehaviourEnum.Disable.name:
-                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.Disable
+            elif choose == UnsubscribeBehaviourEnum.DisableAlias.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
             else:
                 flash("There was an error. Please try again", "warning")
                 return redirect(url_for("dashboard.setting"))

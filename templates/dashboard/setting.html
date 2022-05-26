@@ -523,8 +523,8 @@
                               selected="selected" {% endif %}>
                         Original action
                       </option>
-                      <option value="{{ UnsubscribeBehaviourEnum.Disable.name }}"
-                              {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.Disable.value %}
+                      <option value="{{ UnsubscribeBehaviourEnum.DisableAlias.name }}"
+                              {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.DisableAlias.value %}
                               selected="selected" {% endif %}>
                           Disable alias or block contact.
                       </option>
