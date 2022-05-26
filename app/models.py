@@ -4,7 +4,7 @@ import random
 import string
 import uuid
 from email.utils import formataddr
-from typing import List, Tuple, Optional
+from typing import List, Set, Tuple, Optional
 
 import arrow
 import sqlalchemy as sa
@@ -182,6 +182,10 @@ class EnumE(enum.Enum):
                 return item.name
 
         return None
+
+    @classmethod
+    def get_names(cls) -> Set[str]:
+        return set(item.name for item in cls)
 
     @classmethod
     def has_name(cls, name: str) -> bool:
@@ -1190,11 +1194,11 @@ def generate_email(
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
         random_email = name + "@" + alias_domain
-    elif scheme == AliasGeneratorEnum.word.value:
-        random_email = random_words() + "@" + alias_domain
-    else:
+    elif scheme == AliasGeneratorEnum.random_string.value:
         name = "".join(random.choices(string.digits + string.ascii_lowercase, k=9))
         random_email = name + "@" + alias_domain
+    else:  # use word.value as the default just like the original code
+        random_email = random_words() + "@" + alias_domain
 
     random_email = random_email.lower().strip()
 

@@ -60,15 +60,10 @@ def update_setting():
 
     if "alias_generator" in data:
         alias_generator = data["alias_generator"]
-        if alias_generator not in ["word", "uuid", "random_string"]:
+        try:
+            user.alias_generator = AliasGeneratorEnum[alias_generator].value
+        except KeyError:
             return jsonify(error="Invalid alias_generator"), 400
-
-        if alias_generator == "word":
-            user.alias_generator = AliasGeneratorEnum.word.value
-        elif alias_generator == "uuid":
-            user.alias_generator = AliasGeneratorEnum.uuid.value
-        else:
-            user.alias_generator = AliasGeneratorEnum.random_string.value
 
     if "sender_format" in data:
         sender_format = data["sender_format"]
