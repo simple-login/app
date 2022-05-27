@@ -550,6 +550,18 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     # link available for 6 days as it gets deleted in 7 days
     refused_email_url = refused_email.get_url(expires_in=518400)
 
+    Notification.create(
+        user_id=user.id,
+        title=f"Email sent to {alias.email} from its own mailbox {from_addr}",
+        message=Notification.render(
+            "notification/cycle-email.html",
+            alias=alias,
+            from_addr=from_addr,
+            refused_email_url=refused_email_url,
+        ),
+        commit=True,
+    )
+
     send_email_at_most_times(
         user,
         ALERT_SEND_EMAIL_CYCLE,
