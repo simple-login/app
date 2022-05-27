@@ -32,12 +32,8 @@ class SendRequest:
 
     def to_bytes(self) -> bytes:
         if not config.SAVE_UNSENT_DIR:
+            LOG.d("Skipping saving unsent message because SAVE_UNSENT_DIR is not set")
             return
-        if not os.path.isdir(config.SAVE_UNSENT_DIR):
-            try:
-                os.makedirs(config.SAVE_UNSENT_DIR)
-            except FileExistsError:
-                pass
         serialized_message = message_to_bytes(self.msg)
         data = {
             "envelope_from": self.envelope_from,
