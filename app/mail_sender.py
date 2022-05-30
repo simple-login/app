@@ -161,7 +161,7 @@ class MailSender:
                 self._send_to_smtp(send_request, retries - 1)
             else:
                 if send_request.ignore_smtp_errors:
-                    LOG.w(f"Ignore smtp error {e}")
+                    LOG.e(f"Ignore smtp error {e}")
                     return
                 LOG.e(
                     f"Could not send message to smtp server {config.POSTFIX_SERVER}:{smtp_port}"
