@@ -9,7 +9,7 @@ def test_generate_partner_api_token(flask_client):
         commit=True,
     )
 
-    (partner_api_token, token) = PartnerApiToken.generate(partner.id, None)
+    partner_api_token, token = PartnerApiToken.generate(partner.id, None)
 
     assert token is not None
     assert len(token) > 0

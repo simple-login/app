@@ -3095,9 +3095,10 @@ class Partner(Base, ModelMixin):
             )
             .first()
         )
-        if res is None or res.Partner is None:
-            return None
-        return res.Partner
+        if res:
+            partner, partner_api_token = res
+            return partner
+        return None
 
 
 class PartnerApiToken(Base, ModelMixin):
