@@ -35,6 +35,13 @@ from app.models import (
 
 
 class ExportUserDataJob:
+
+    REMOVE_FIELDS = {
+        "User": ("otp_secret",),
+        "Alias": ("ts_vector", "transfer_token", "hibp_last_check"),
+        "Domain": ("ownership_txt_token",),
+    }
+
     def __init__(self, user: User):
         self._user: User = user
 
@@ -76,10 +83,13 @@ class ExportUserDataJob:
     def _get_refused_emails(self) -> List[RefusedEmail]:
         return self._get_paginated_model(RefusedEmail)
 
-    @staticmethod
-    def _model_to_dict(object: Base) -> Dict:
+    @classmethod
+    def _model_to_dict(cls, object: Base) -> Dict:
         data = {}
+        fields_to_filter = cls.REMOVE_FIELDS.get(object.__class__.__name__, ())
         for column in object.__table__.columns:
+            if column.name in fields_to_filter:
+                continue
             value = getattr(object, column.name)
             if isinstance(value, arrow.Arrow):
                 value = value.isoformat()
