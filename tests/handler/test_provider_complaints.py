@@ -60,10 +60,9 @@ def prepare_complaint(
     )
 
 
+@mail_sender.store_emails_test_decorator
 @pytest.mark.parametrize("handle_ftor,provider", origins)
 def test_provider_to_user(flask_client, handle_ftor, provider):
-    mail_sender.store_emails_instead_of_sending()
-    mail_sender.purge_stored_emails()
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -92,6 +91,7 @@ def test_provider_forward_phase(flask_client, handle_ftor, provider):
     assert alerts[0].alert_type == f"{ALERT_COMPLAINT_REPLY_PHASE}_{provider}"
 
 
+@mail_sender.store_emails_test_decorator
 @pytest.mark.parametrize("handle_ftor,provider", origins)
 def test_provider_reply_phase(flask_client, handle_ftor, provider):
     mail_sender.store_emails_instead_of_sending()

@@ -1,8 +1,15 @@
+from __future__ import annotations
+import base64
+import email
+import json
+import os
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
+from functools import wraps
 from mailbox import Message
-from smtplib import SMTP, SMTPServerDisconnected, SMTPRecipientsRefused
-from typing import Optional, Dict, List
+from smtplib import SMTP, SMTPException
+from typing import Optional, Dict, List, Callable
 
 import newrelic.agent
 from attr import dataclass
@@ -23,6 +30,40 @@ class SendRequest:
     is_forward: bool = False
     ignore_smtp_errors: bool = False
 
+    def to_bytes(self) -> bytes:
+        if not config.SAVE_UNSENT_DIR:
+            LOG.d("Skipping saving unsent message because SAVE_UNSENT_DIR is not set")
+            return
+        serialized_message = message_to_bytes(self.msg)
+        data = {
+            "envelope_from": self.envelope_from,
+            "envelope_to": self.envelope_to,
+            "msg": base64.b64encode(serialized_message).decode("utf-8"),
+            "mail_options": self.mail_options,
+            "rcpt_options": self.rcpt_options,
+            "is_forward": self.is_forward,
+        }
+        return json.dumps(data).encode("utf-8")
+
+    @staticmethod
+    def load_from_file(file_path: str) -> SendRequest:
+        with open(file_path, "rb") as fd:
+            return SendRequest.load_from_bytes(fd.read())
+
+    @staticmethod
+    def load_from_bytes(data: bytes) -> SendRequest:
+        decoded_data = json.loads(data)
+        msg_data = base64.b64decode(decoded_data["msg"])
+        msg = email.message_from_bytes(msg_data)
+        return SendRequest(
+            envelope_from=decoded_data["envelope_from"],
+            envelope_to=decoded_data["envelope_to"],
+            msg=msg,
+            mail_options=decoded_data["mail_options"],
+            rcpt_options=decoded_data["rcpt_options"],
+            is_forward=decoded_data["is_forward"],
+        )
+
 
 class MailSender:
     def __init__(self):
@@ -30,14 +71,26 @@ class MailSender:
         self._store_emails = False
         self._emails_sent: List[SendRequest] = []
 
-    def store_emails_instead_of_sending(self):
-        self._store_emails = True
+    def store_emails_instead_of_sending(self, store_emails: bool = True):
+        self._store_emails = store_emails
 
     def purge_stored_emails(self):
         self._emails_sent = []
 
     def get_stored_emails(self) -> List[SendRequest]:
         return self._emails_sent
+
+    def store_emails_test_decorator(self, fn: Callable) -> Callable:
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            self.purge_stored_emails()
+            self.store_emails_instead_of_sending()
+            result = fn(*args, **kwargs)
+            self.purge_stored_emails()
+            self.store_emails_instead_of_sending(False)
+            return result
+
+        return wrapper
 
     def enable_background_pool(self, max_workers=10):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
@@ -98,20 +151,30 @@ class MailSender:
                 newrelic.agent.record_custom_metric(
                     "Custom/smtp_sending_time", time.time() - start
                 )
-        except (SMTPServerDisconnected, SMTPRecipientsRefused) as e:
+        except (
+            SMTPException,
+            ConnectionRefusedError,
+            TimeoutError,
+        ) as e:
             if retries > 0:
-                LOG.w(
-                    "SMTPServerDisconnected or SMTPRecipientsRefused error %s, retry",
-                    e,
-                    exc_info=True,
-                )
                 time.sleep(0.3 * send_request.retries)
                 self._send_to_smtp(send_request, retries - 1)
             else:
-                if send_request.ignore_smtp_error:
-                    LOG.w("Ignore smtp error %s", e)
-                else:
-                    raise
+                if send_request.ignore_smtp_errors:
+                    LOG.e(f"Ignore smtp error {e}")
+                    return
+                LOG.e(
+                    f"Could not send message to smtp server {config.POSTFIX_SERVER}:{smtp_port}"
+                )
+                self._save_request_to_unsent_dir(send_request)
+
+    def _save_request_to_unsent_dir(self, send_request: SendRequest):
+        file_name = f"DeliveryFail-{int(time.time())}-{uuid.uuid4()}.eml"
+        file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
+        file_contents = send_request.to_bytes()
+        with open(file_path, "wb") as fd:
+            fd.write(file_contents)
+        LOG.i(f"Saved unsent message {file_path}")
 
 
 mail_sender = MailSender()
