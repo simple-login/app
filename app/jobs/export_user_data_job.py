@@ -39,7 +39,7 @@ class ExportUserDataJob:
     REMOVE_FIELDS = {
         "User": ("otp_secret",),
         "Alias": ("ts_vector", "transfer_token", "hibp_last_check"),
-        "Domain": ("ownership_txt_token",),
+        "CustomDomain": ("ownership_txt_token",),
     }
 
     def __init__(self, user: User):
