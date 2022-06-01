@@ -1,48 +1,34 @@
-import dataclasses
 from abc import ABC, abstractmethod
-from enum import Enum
+from arrow import Arrow
+from dataclasses import dataclass
 from http import HTTPStatus
 from requests import Response, Session
 from typing import Optional
+
+from app.account_linking import SLPlan, SLPlanType
 
 _APP_VERSION = "OauthClient_1.0.0"
 
 PROTON_ERROR_CODE_NOT_EXISTS = 2501
 
 
-class ProtonPlan(Enum):
-    Free = 0
-    Professional = 1
-    Visionary = 2
+def plan_from_name(name: str) -> SLPlanType:
+    if not name:
+        raise Exception("Empty plan name")
 
-    def name(self):
-        if self == self.Free:
-            return "Free"
-        elif self == self.Professional:
-            return "Professional"
-        elif self == self.Visionary:
-            return "Visionary"
-        else:
-            raise Exception("Unknown plan")
-
-
-def plan_from_name(name: str) -> ProtonPlan:
     name_lower = name.lower()
     if name_lower == "free":
-        return ProtonPlan.Free
-    elif name_lower == "professional":
-        return ProtonPlan.Professional
-    elif name_lower == "visionary":
-        return ProtonPlan.Visionary
+        return SLPlanType.Free
     else:
-        raise Exception(f"Unknown plan [{name}]")
+        return SLPlanType.Premium
 
 
-@dataclasses.dataclass
+@dataclass
 class UserInformation:
     email: str
     name: str
     id: str
+    plan: SLPlan
 
 
 class AuthorizeResponse:
@@ -54,7 +40,7 @@ class AuthorizeResponse:
         return f"[code={self.code}] [has_accepted={self.has_accepted}]"
 
 
-@dataclasses.dataclass
+@dataclass
 class SessionResponse:
     state: str
     expires_in: int
@@ -64,15 +50,15 @@ class SessionResponse:
     session_id: str
 
 
-@dataclasses.dataclass
+@dataclass
 class ProtonUser:
     id: str
     name: str
     email: str
-    plan: ProtonPlan
+    plan: SLPlan
 
 
-@dataclasses.dataclass
+@dataclass
 class AccessCredentials:
     access_token: str
     session_id: str
@@ -99,14 +85,6 @@ def convert_access_token(access_token_response: str) -> AccessCredentials:
 class ProtonClient(ABC):
     @abstractmethod
     def get_user(self) -> UserInformation:
-        pass
-
-    @abstractmethod
-    def get_organization(self) -> dict:
-        pass
-
-    @abstractmethod
-    def get_plan(self) -> ProtonPlan:
         pass
 
 
@@ -137,15 +115,20 @@ class HttpProtonClient(ProtonClient):
 
     def get_user(self) -> UserInformation:
         info = self.__get("/users")["User"]
+        subscribed = info["Subscribed"] == 1
+        plan = None
+        if subscribed:
+            plan = self.get_plan()
+
         return UserInformation(
-            email=info.get("Email"), name=info.get("Name"), id=info.get("ID")
+            email=info.get("Email"),
+            name=info.get("Name"),
+            id=info.get("ID"),
+            plan=plan,
         )
 
-    def get_organization(self) -> dict:
-        return self.__get("/code/v4/organizations")["Organization"]
-
-    def get_plan(self) -> ProtonPlan:
-        url = f"{self.base_url}/core/v4/organizations"
+    def get_plan(self) -> SLPlan:
+        url = f"{self.base_url}/payments/subscription"
         res = self.client.get(url)
 
         status = res.status_code
@@ -153,12 +136,28 @@ class HttpProtonClient(ProtonClient):
             as_json = res.json()
             error_code = as_json.get("Code")
             if error_code == PROTON_ERROR_CODE_NOT_EXISTS:
-                return ProtonPlan.Free
+                return SLPlan(type=SLPlanType.Free, expiration=None)
 
-        org = self.__validate_response(res).get("Organization")
-        if org is None:
-            return ProtonPlan.Free
-        return plan_from_name(org["PlanName"])
+        subscription = self.__validate_response(res).get("Subscription")
+        if subscription is None:
+            return SLPlan(type=SLPlanType.Free, expiration=None)
+
+        expiration = Arrow.utcfromtimestamp(subscription["PeriodEnd"])
+
+        # Check if subscription is expired
+        if expiration < Arrow.utcnow():
+            return SLPlan(type=SLPlanType.Free, expiration=None)
+
+        plans = subscription["Plans"]
+        if len(plans) == 0:
+            return SLPlan(type=SLPlanType.Free, expiration=None)
+
+        plan = plans[0]
+        plan_type = plan_from_name(plan["Name"])
+        return SLPlan(
+            type=plan_type,
+            expiration=expiration,
+        )
 
     def __get(self, route: str) -> dict:
         url = f"{self.base_url}{route}"

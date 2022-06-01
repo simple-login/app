@@ -613,6 +613,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if coinbase_subscription and coinbase_subscription.is_active():
             return True
 
+        partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(self.id)
+        if partner_sub and partner_sub.is_active():
+            return True
+
         return False
 
     def is_paid(self) -> bool:
@@ -3150,6 +3154,43 @@ class PartnerUser(Base, ModelMixin):
     __table_args__ = (
         sa.UniqueConstraint("user_id", "partner_id", name="uq_user_id_partner_id"),
     )
+
+
+class PartnerSubscription(Base, ModelMixin):
+    """
+    For users who have a subscription via a partner
+    """
+
+    __tablename__ = "partner_subscription"
+
+    partner_user_id = sa.Column(
+        sa.ForeignKey(PartnerUser.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    # when the partner subscription ends
+    end_at = sa.Column(ArrowType, nullable=False)
+
+    partner_user = orm.relationship(PartnerUser)
+
+    @classmethod
+    def find_by_user_id(cls, user_id: int) -> Optional[PartnerSubscription]:
+        res = (
+            Session.query(PartnerSubscription, PartnerUser)
+            .filter(
+                and_(
+                    PartnerUser.user_id == user_id,
+                    PartnerSubscription.partner_user_id == PartnerUser.id,
+                )
+            )
+            .first()
+        )
+        if res:
+            subscription, partner_user = res
+            return subscription
+        return None
+
+    def is_active(self):
+        return self.end_at > arrow.now()
 
 
 # endregion
