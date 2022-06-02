@@ -1,8 +1,8 @@
-"""Create PartnerSubscription table
+"""Partner Subscription
 
-Revision ID: 59aebc9b9277
-Revises: 088f23324464
-Create Date: 2022-05-30 08:46:21.148470
+Revision ID: 35cc49385ecb
+Revises: 2b1d3cd93e4b
+Create Date: 2022-06-02 11:54:21.381532
 
 """
 import sqlalchemy_utils
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '59aebc9b9277'
-down_revision = '088f23324464'
+revision = '35cc49385ecb'
+down_revision = '2b1d3cd93e4b'
 branch_labels = None
 depends_on = None
 
