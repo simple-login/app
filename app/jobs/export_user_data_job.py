@@ -1,15 +1,14 @@
 from __future__ import annotations
+
 import json
 import zipfile
-from operator import and_
-
-import arrow
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from io import BytesIO
 from typing import List, Dict, Optional
 
+import arrow
 import sqlalchemy
 
 from app import config
