@@ -106,7 +106,7 @@ def test_model_retrieval_and_serialization():
             "directories.json",
             "domains.json",
             "email_logs.json",
-            "refused_emails.json",
+            # "refused_emails.json",
         )
     )
     assert expected_files_in_zip == files_in_zip

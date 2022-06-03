@@ -111,7 +111,8 @@ class ExportUserDataJob:
                 ("directories", self._get_directories),
                 ("domains", self._get_domains),
                 ("email_logs", self._get_email_logs),
-                ("refused_emails", self._get_refused_emails),
+                # not include RefusedEmail as they are not usable by user and are automatically deleted
+                # ("refused_emails", self._get_refused_emails),
             ]:
                 model_objs = get_models()
                 data = json.dumps(
