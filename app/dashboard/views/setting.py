@@ -349,10 +349,6 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
-        elif request.form.get("form-name") == "export-data":
-            return redirect(url_for("api.export_data"))
-        elif request.form.get("form-name") == "export-alias":
-            return redirect(url_for("api.export_aliases"))
         elif request.form.get("form-name") == "send-full-user-report":
             if ExportUserDataJob(current_user).store_job_in_db():
                 flash(
