@@ -128,7 +128,7 @@ class ExportUserDataJob:
     def run(self):
         zipped_contents = self._build_zip()
 
-        to_email = self._user.default_mailbox.email
+        to_email = self._user.email
 
         msg = MIMEMultipart()
         msg[headers.SUBJECT] = "User report from SimpleLogin"
