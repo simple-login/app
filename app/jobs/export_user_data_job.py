@@ -163,7 +163,7 @@ class ExportUserDataJob:
                 Job.name == config.JOB_SEND_USER_REPORT,
                 Job.payload.op("->")("user_id").cast(sqlalchemy.TEXT)
                 == str(self._user.id),
-                Job.taken == False,
+                Job.taken.is_(False),
             )
             .count()
         )
