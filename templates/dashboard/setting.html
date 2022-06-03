@@ -220,14 +220,15 @@
               You have linked your Proton account: {{ proton_linked_account }} <br>
             </div>
             <a
-                    class="btn btn-primary mt-2 proton-button"
-                    href="{{ url_for('dashboard.unlink_proton_account') }}"
+                class="btn btn-primary mt-2 proton-button"
+                href="{{ url_for('dashboard.unlink_proton_account') }}"
             >Unlink account</a>
           {% else %}
             <div class="mb-3">
               You can connect your Proton account with your SimpleLogin one. <br>
             </div>
-            <a class="btn btn-primary mt-2 proton-button" href="{{ url_for("auth.proton_login", action="link") }}">Connect with Proton</a>
+            <a class="btn btn-primary mt-2 proton-button" href="{{ url_for("auth.proton_login", action="link") }}">Connect
+              with Proton</a>
           {% endif %}
         </div>
       </div>
@@ -281,7 +282,7 @@
                     {% if current_user.default_random_alias_domain() == domain %} selected {% endif %}
                   {% endif %}
               >
-              {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
+                {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
               </option>
             {% endfor %}
           </select>
@@ -615,23 +616,23 @@
       </div>
     </div>
 
-      <div class="card">
-          <div class="card-body">
-              <div class="card-title">User report</div>
-              <div class="mb-3">
-                  You can receive a report with all the info SimpleLogin has via mail.
-              </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">User report</div>
+        <div class="mb-3">
+          You can receive a report with all the info SimpleLogin has via mail.
+        </div>
 
-              <div class="d-flex">
-                  <div>
-                      <form method="post">
-                          <input type="hidden" name="form-name" value="send-full-user-report">
-                          <button class="btn btn-outline-info">Request user report via mail</button>
-                      </form>
-                  </div>
-              </div>
+        <div class="d-flex">
+          <div>
+            <form method="post">
+              <input type="hidden" name="form-name" value="send-full-user-report">
+              <button class="btn btn-outline-info">Request user report via mail</button>
+            </form>
           </div>
+        </div>
       </div>
+    </div>
 
     <div class="card">
       <div class="card-body">
