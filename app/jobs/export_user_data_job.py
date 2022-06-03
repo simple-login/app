@@ -131,7 +131,7 @@ class ExportUserDataJob:
         to_email = self._user.email
 
         msg = MIMEMultipart()
-        msg[headers.SUBJECT] = "User report from SimpleLogin"
+        msg[headers.SUBJECT] = "Your SimpleLogin data"
         msg[headers.FROM] = f'"SimpleLogin (noreply)" <{config.NOREPLY}>'
         msg[headers.TO] = to_email
         msg.attach(MIMEText(render("transactional/user-report.html"), "html"))

@@ -355,9 +355,12 @@ def setting():
             return redirect(url_for("api.export_aliases"))
         elif request.form.get("form-name") == "send-full-user-report":
             if ExportUserDataJob(current_user).store_job_in_db():
-                flash("You will receive your user report via mail shortly", "success")
+                flash(
+                    "You will receive your SimpleLogin data via email shortly",
+                    "success",
+                )
             else:
-                flash("There is already a report being generated", "error")
+                flash("An export of your data is currently in progress", "error")
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
