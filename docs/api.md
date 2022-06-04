@@ -1,24 +1,64 @@
 ## API
 
 [Account endpoints](#account-endpoints)
+- [POST /api/auth/login](#post-apiauthlogin): Authentication
+- [POST /api/auth/mfa](#post-apiauthmfa): 2FA authentication
+- [POST /api/auth/facebook](#post-apiauthfacebook) (deprecated)
+- [POST /api/auth/google](#post-apiauthgoogle) (deprecated)
+- [POST /api/auth/register](#post-apiauthregister): Register a new account.
+- [POST /api/auth/activate](#post-apiauthactivate): Activate new account.
+- [POST /api/auth/reactivate](##post-apiauthreactivate): Request a new activation code.
+- [POST /api/auth/forgot_password](#post-apiauthforgot_password): Request reset password link.
+- [GET /api/user_info](#get-apiuser_info): Get user's information.
+- [PATCH /api/user_info](#patch-apiuser_info): Update user's information.
+- [POST /api/api_key](#post-apiapi_key): Create a new API key.
+- [GET /api/logout](#get-apilogout): Log out.
 
 [Alias endpoints](#alias-endpoints)
+- [GET /api/v5/alias/options](#get-apiv5aliasoptions): Get alias options. Used by create alias process.
+- [POST /api/v3/alias/custom/new](#post-apiv3aliascustomnew): Create new alias.
+- [POST /api/alias/random/new](#post-apialiasrandomnew): Random an alias.
+- [GET /api/v2/aliases](#get-apiv2aliases): Get user's aliases.
+- [GET /api/aliases/:alias_id](#get-apialiasesalias_id): Get alias information.
+- [DELETE /api/aliases/:alias_id](#delete-apialiasesalias_id): Delete an alias.
+- [POST /api/aliases/:alias_id/toggle](#post-apialiasesalias_idtoggle): Enable/disable an alias.
+- [GET /api/aliases/:alias_id/activities](#get-apialiasesalias_idactivities): Get alias activities.
+- [PATCH /api/aliases/:alias_id](#patch-apialiasesalias_id): Update alias information.
+- [GET /api/aliases/:alias_id/contacts](#get-apialiasesalias_idcontacts): Get alias contacts.
+- [POST /api/aliases/:alias_id/contacts](#post-apialiasesalias_idcontacts): Create a new contact for an alias.
 
 [Mailbox endpoints](#mailbox-endpoints)
+- [POST /api/mailboxes](#post-apimailboxes): Create a new mailbox.
+- [DELETE /api/mailboxes/:mailbox_id](#delete-apimailboxesmailbox_id): Delete a mailbox.
+- [PUT /api/mailboxes/:mailbox_id](#put-apimailboxesmailbox_id): Update a mailbox.
 
 [Custom domain endpoints](#custom-domain-endpoints)
+- [GET /api/custom_domains](#get-apicustom_domains): Get custom domains.
+- [PATCH /api/custom_domains/:custom_domain_id](#patch-apicustom_domainscustom_domain_id): Update custom domain's information.
+- [GET /api/custom_domains/:custom_domain_id/trash](#get-apicustom_domainscustom_domain_idtrash): Get deleted aliases of a custom domain.
 
 [Contact endpoints](#contact-endpoints)
+- [DELETE /api/contacts/:contact_id](#delete-apicontactscontact_id): Delete a contact.
+- [POST /api/contacts/:contact_id/toggle](#post-apicontactscontact_idtoggle): Block/unblock a contact.
 
 [Notification endpoints](#notification-endpoints)
+- [GET /api/notifications](#get-apinotifications): Get notifications.
+- [POST /api/notifications/:notification_id](#post-apinotificationsnotification_id): Mark as read a notification.
 
 [Settings endpoints](#settings-endpoints)
+- [GET /api/setting](#get-apisetting): Get user's settings.
+- [PATCH /api/setting](#patch-apisetting): Update user's settings.
+- [GET /api/v2/setting/domains](#get-apiv2settingdomains): Get domains that user can use to create random alias.
 
 [Import and export endpoints](#import-and-export-endpoints)
+- [GET /api/export/data](#get-apiexportdata): Export user's data.
+- [GET /api/export/aliases](#get-apiexportaliases): Export aliases into a CSV.
 
 [MISC endpoints](#misc-endpoints)
+- [POST /api/apple/process_payment](#post-apiappleprocess_payment): Process Apple's receipt.
 
 [Phone endpoints](#phone-endpoints)
+- [GET /api/phone/reservations/:reservation_id](#get-apiphonereservationsreservation_id): Get messages received during a reservation.
 
 ---
 
@@ -644,6 +684,7 @@ List of mailboxes. Each mailbox has id, email, default, creation_timestamp field
 }
 ```
 
+## Mailbox endpoints
 #### POST /api/mailboxes
 
 Create a new mailbox
@@ -748,7 +789,7 @@ List of custom domains.
 
 #### PATCH /api/custom_domains/:custom_domain_id
 
-Update alias info.
+Update custom domain's information
 
 Input:
 
