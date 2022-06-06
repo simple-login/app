@@ -30,8 +30,10 @@
                 <h5 class="card-title">{{ api_key.name or "N/A" }}</h5>
                 <h6 class="card-subtitle mb-2 text-muted">
                   {% if api_key.last_used %}
-                    Last used: {{ api_key.last_used | dt }} <br>
-                    Used: {{ api_key.times }} times.
+                    Created {{ api_key.created_at | dt }}.
+                    Used {{ api_key.times }} times.
+                    Was last used {{ api_key.last_used | dt }}.
+
                   {% else %}
                     Never used
                   {% endif %}
