@@ -13,8 +13,11 @@
   <div class="row">
     <div class="col">
       <h1 class="h3"> API Keys </h1>
-      <div class="small-text">
-        API keys are used by the SimpleLogin browser extensions or mobile apps.
+
+      <div class="alert alert-info">
+        When you log in on a SimpleLogin mobile app or browser extension,
+        a new API Key is automatically created and stored on your device.
+        It's usually named after the device where it was created, e.g. Samsung S8, John's iPhone, etc.
       </div>
 
 
@@ -41,24 +44,11 @@
 
                 <div class="input-group">
                   <input class="form-control" id="apikey-{{ api_key.id }}" readonly value="**********">
-                  <div class="input-group-append">
-                <span class="input-group-text">
-                  <i class="fe fe-eye toggle-api-key" data-show="off" data-secret="{{ api_key.code }}"
-                  ></i>
-                </span>
-                  </div>
                 </div>
 
                 <br>
 
                 <div class="row">
-                  <div class="col">
-                    <button class="clipboard btn btn-primary" data-clipboard-action="copy"
-                            data-clipboard-text="{{ api_key.code }}"
-                            data-clipboard-target="#apikey-{{ api_key.id }}">
-                      Copy &nbsp; &nbsp; <i class="fe fe-clipboard"></i>
-                    </button>
-                  </div>
 
                   <div class="col">
                     <form method="post">
@@ -80,12 +70,14 @@
       {% if api_keys|length > 0 %}
         <form method="post">
           <input type="hidden" name="form-name" value="delete-all">
-          <span class="delete btn btn-danger delete-all-api-keys">
+          <span class="delete btn btn-outline-danger delete-all-api-keys float-right">
               Delete All &nbsp; &nbsp; <i class="fe fe-trash"></i>
           </span>
         </form>
         <br>
       {% endif %}
+
+      <hr>
 
       <form method="post">
         {{ new_api_key_form.csrf_token }}
@@ -111,7 +103,7 @@
       let that = $(this);
 
       bootbox.confirm({
-        message: "If this api key is currently in use, you need to replace it with another api key, please confirm.",
+        message: "If this API Key is currently in use, you might need to login again on the corresponding device, please confirm.",
         buttons: {
           confirm: {
             label: 'Yes, delete it',
@@ -133,46 +125,29 @@
     });
 
     $(".delete-all-api-keys").on("click", function (e) {
-        let that = $(this);
-
-        bootbox.confirm({
-            message: "This will delete all API Keys, they will all stop working, are you sure?",
-            buttons: {
-                confirm: {
-                    label: 'Delete All',
-                    className: 'btn-danger'
-                },
-                cancel: {
-                    label: 'Cancel',
-                    className: 'btn-outline-primary'
-                }
-            },
-            callback: function (result) {
-                if (result) {
-                    that.closest("form").submit();
-                }
-            }
-        })
-
-
-    });
-
-    $(".toggle-api-key").on('click', function (event) {
       let that = $(this);
-      let apiInput = that.parent().parent().parent().find("input");
-      if (that.attr("data-show") === "off") {
-        let apiKey = $(this).attr("data-secret");
-        apiInput.val(apiKey);
-        that.addClass("fe-eye-off");
-        that.removeClass("fe-eye");
-        that.attr("data-show", "on");
-      } else {
-        that.removeClass("fe-eye-off");
-        that.addClass("fe-eye");
-        apiInput.val("**********");
-        that.attr("data-show", "off");
-      }
+
+      bootbox.confirm({
+        message: "This will delete all API Keys, they will all stop working, are you sure?",
+        buttons: {
+          confirm: {
+            label: 'Delete All',
+            className: 'btn-danger'
+          },
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          }
+        },
+        callback: function (result) {
+          if (result) {
+            that.closest("form").submit();
+          }
+        }
+      })
+
 
     });
+
   </script>
 {% endblock %}
