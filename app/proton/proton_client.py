@@ -23,25 +23,6 @@ class UserInformation:
     plan: SLPlan
 
 
-class AuthorizeResponse:
-    def __init__(self, code: str, has_accepted: bool):
-        self.code = code
-        self.has_accepted = has_accepted
-
-    def __str__(self):
-        return f"[code={self.code}] [has_accepted={self.has_accepted}]"
-
-
-@dataclass
-class SessionResponse:
-    state: str
-    expires_in: int
-    token_type: str
-    refresh_token: str
-    access_token: str
-    session_id: str
-
-
 @dataclass
 class ProtonUser:
     id: str
