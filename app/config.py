@@ -263,6 +263,7 @@ JOB_BATCH_IMPORT = "batch-import"
 JOB_DELETE_ACCOUNT = "delete-account"
 JOB_DELETE_MAILBOX = "delete-mailbox"
 JOB_DELETE_DOMAIN = "delete-domain"
+JOB_SEND_USER_REPORT = "send-user-report"
 
 # for pagination
 PAGE_LIMIT = 20

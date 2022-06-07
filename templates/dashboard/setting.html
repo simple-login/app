@@ -220,14 +220,15 @@
               You have linked your Proton account: {{ proton_linked_account }} <br>
             </div>
             <a
-                    class="btn btn-primary mt-2 proton-button"
-                    href="{{ url_for('dashboard.unlink_proton_account') }}"
+                class="btn btn-primary mt-2 proton-button"
+                href="{{ url_for('dashboard.unlink_proton_account') }}"
             >Unlink account</a>
           {% else %}
             <div class="mb-3">
               You can connect your Proton account with your SimpleLogin one. <br>
             </div>
-            <a class="btn btn-primary mt-2 proton-button" href="{{ url_for("auth.proton_login", action="link") }}">Connect with Proton</a>
+            <a class="btn btn-primary mt-2 proton-button" href="{{ url_for("auth.proton_login", action="link") }}">Connect
+              with Proton</a>
           {% endif %}
         </div>
       </div>
@@ -281,7 +282,7 @@
                     {% if current_user.default_random_alias_domain() == domain %} selected {% endif %}
                   {% endif %}
               >
-              {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
+                {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
               </option>
             {% endfor %}
           </select>
@@ -591,29 +592,23 @@
       </div>
     </div>
 
+
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Data Export</div>
+        <div class="card-title">SimpleLogin data</div>
         <div class="mb-3">
-          You can download all aliases you have created on SimpleLogin along with other data.
+          As per GDPR law, you can request a copy of your data which are stored on SimpleLogin.
+          A zip file that contains all information will be sent to your SimpleLogin account address.
         </div>
 
         <div class="d-flex">
           <div>
             <form method="post">
-              <input type="hidden" name="form-name" value="export-data">
-              <button class="btn btn-outline-info">Export Data</button>
-            </form>
-          </div>
-          <div class="ml-5">
-            <form method="post">
-              <input type="hidden" name="form-name" value="export-alias">
-              <button class="btn btn-outline-primary">Export Aliases</button>
+              <input type="hidden" name="form-name" value="send-full-user-report">
+              <button class="btn btn-outline-info">Request your data</button>
             </form>
           </div>
         </div>
-
-
       </div>
     </div>
 

@@ -29,6 +29,7 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.errors import ProtonPartnerNotSetUp
+from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import (
     BlockBehaviourEnum,
@@ -348,10 +349,14 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
-        elif request.form.get("form-name") == "export-data":
-            return redirect(url_for("api.export_data"))
-        elif request.form.get("form-name") == "export-alias":
-            return redirect(url_for("api.export_aliases"))
+        elif request.form.get("form-name") == "send-full-user-report":
+            if ExportUserDataJob(current_user).store_job_in_db():
+                flash(
+                    "You will receive your SimpleLogin data via email shortly",
+                    "success",
+                )
+            else:
+                flash("An export of your data is currently in progress", "error")
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
