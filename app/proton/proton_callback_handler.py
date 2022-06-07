@@ -43,17 +43,30 @@ class ProtonCallbackResult:
     user: Optional[User]
 
 
+def generate_account_not_allowed_to_log_in() -> ProtonCallbackResult:
+    return ProtonCallbackResult(
+        redirect_to_login=True,
+        flash_message="This account is not allowed to log in with Proton. Please convert your account to a full Proton account",
+        flash_category="error",
+        redirect=None,
+        user=None,
+    )
+
+
 class ProtonCallbackHandler:
     def __init__(self, proton_client: ProtonClient):
         self.proton_client = proton_client
 
     def handle_login(self, partner: Partner) -> ProtonCallbackResult:
         try:
-            res = process_login_case(self.__get_partner_user(), partner)
+            user = self.__get_partner_user()
+            if user is None:
+                return generate_account_not_allowed_to_log_in()
+            res = process_login_case(user, partner)
             return ProtonCallbackResult(
                 redirect_to_login=False,
-                flash_message="Account successfully linked",
-                flash_category="success",
+                flash_message=None,
+                flash_category=None,
                 redirect=None,
                 user=res.user,
             )
@@ -72,7 +85,10 @@ class ProtonCallbackHandler:
         if current_user is None:
             raise Exception("Cannot link account with current_user being None")
         try:
-            res = process_link_case(self.__get_partner_user(), current_user, partner)
+            user = self.__get_partner_user()
+            if user is None:
+                return generate_account_not_allowed_to_log_in()
+            res = process_link_case(user, current_user, partner)
             return ProtonCallbackResult(
                 redirect_to_login=False,
                 flash_message="Account successfully linked",
@@ -89,8 +105,10 @@ class ProtonCallbackHandler:
                 user=None,
             )
 
-    def __get_partner_user(self) -> PartnerUserDto:
+    def __get_partner_user(self) -> Optional[PartnerUserDto]:
         proton_user = self.__get_proton_user()
+        if proton_user is None:
+            return None
         return PartnerUserDto(
             email=proton_user.email,
             partner_user_id=proton_user.id,
@@ -98,6 +116,8 @@ class ProtonCallbackHandler:
             plan=proton_user.plan,
         )
 
-    def __get_proton_user(self) -> ProtonUser:
+    def __get_proton_user(self) -> Optional[ProtonUser]:
         user = self.proton_client.get_user()
+        if user is None:
+            return None
         return ProtonUser(email=user.email, plan=user.plan, name=user.name, id=user.id)

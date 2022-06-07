@@ -1,26 +1,18 @@
 from abc import ABC, abstractmethod
-from arrow import Arrow
 from dataclasses import dataclass
 from http import HTTPStatus
 from requests import Response, Session
 from typing import Optional
 
 from app.account_linking import SLPlan, SLPlanType
+from app.log import LOG
 
 _APP_VERSION = "OauthClient_1.0.0"
 
 PROTON_ERROR_CODE_NOT_EXISTS = 2501
 
-
-def plan_from_name(name: str) -> SLPlanType:
-    if not name:
-        raise Exception("Empty plan name")
-
-    name_lower = name.lower()
-    if name_lower == "free":
-        return SLPlanType.Free
-    else:
-        return SLPlanType.Premium
+PLAN_FREE = 1
+PLAN_PREMIUM = 2
 
 
 @dataclass
@@ -84,7 +76,7 @@ def convert_access_token(access_token_response: str) -> AccessCredentials:
 
 class ProtonClient(ABC):
     @abstractmethod
-    def get_user(self) -> UserInformation:
+    def get_user(self) -> Optional[UserInformation]:
         pass
 
 
@@ -113,50 +105,25 @@ class HttpProtonClient(ProtonClient):
         client.headers.update(headers)
         self.client = client
 
-    def get_user(self) -> UserInformation:
-        info = self.__get("/users")["User"]
-        subscribed = info["Subscribed"] == 1
-        plan = None
-        if subscribed:
-            plan = self.get_plan()
+    def get_user(self) -> Optional[UserInformation]:
+        info = self.__get("/simple_login/v1/subscription")["Subscription"]
+        if not info["IsAllowed"]:
+            LOG.debug("Account is not allowed to log into SL")
+            return None
+
+        plan_value = info["Plan"]
+        if plan_value == PLAN_FREE:
+            plan = SLPlan(type=SLPlanType.Free, expiration=None)
+        elif plan_value == PLAN_PREMIUM:
+            plan = SLPlan(type=SLPlanType.Premium, expiration=info["PlanExpiration"])
+        else:
+            raise Exception(f"Invalid value for plan: {plan_value}")
 
         return UserInformation(
             email=info.get("Email"),
-            name=info.get("Name"),
-            id=info.get("ID"),
+            name=info.get("DisplayName"),
+            id=info.get("UserID"),
             plan=plan,
-        )
-
-    def get_plan(self) -> SLPlan:
-        url = f"{self.base_url}/payments/subscription"
-        res = self.client.get(url)
-
-        status = res.status_code
-        if status == HTTPStatus.UNPROCESSABLE_ENTITY:
-            as_json = res.json()
-            error_code = as_json.get("Code")
-            if error_code == PROTON_ERROR_CODE_NOT_EXISTS:
-                return SLPlan(type=SLPlanType.Free, expiration=None)
-
-        subscription = self.__validate_response(res).get("Subscription")
-        if subscription is None:
-            return SLPlan(type=SLPlanType.Free, expiration=None)
-
-        expiration = Arrow.utcfromtimestamp(subscription["PeriodEnd"])
-
-        # Check if subscription is expired
-        if expiration < Arrow.utcnow():
-            return SLPlan(type=SLPlanType.Free, expiration=None)
-
-        plans = subscription["Plans"]
-        if len(plans) == 0:
-            return SLPlan(type=SLPlanType.Free, expiration=None)
-
-        plan = plans[0]
-        plan_type = plan_from_name(plan["Name"])
-        return SLPlan(
-            type=plan_type,
-            expiration=expiration,
         )
 
     def __get(self, route: str) -> dict:
@@ -171,4 +138,10 @@ class HttpProtonClient(ProtonClient):
             raise Exception(
                 f"Unexpected status code. Wanted 200 and got {status}: " + res.text
             )
-        return res.json()
+        as_json = res.json()
+        res_code = as_json.get("Code")
+        if not res_code or res_code != 1000:
+            raise Exception(
+                f"Unexpected response code. Wanted 1000 and got {res_code}: " + res.text
+            )
+        return as_json

@@ -7,18 +7,19 @@ from app.proton.proton_client import ProtonClient, UserInformation
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
     get_proton_partner,
+    generate_account_not_allowed_to_log_in,
 )
 from app.models import User, PartnerUser
 from app.utils import random_string
-
+from typing import Optional
 from tests.utils import random_email
 
 
 class MockProtonClient(ProtonClient):
-    def __init__(self, user: UserInformation):
+    def __init__(self, user: Optional[UserInformation]):
         self.user = user
 
-    def get_user(self) -> UserInformation:
+    def get_user(self) -> Optional[UserInformation]:
         return self.user
 
 
@@ -66,3 +67,20 @@ def test_proton_callback_handler_existant_sl_user():
     sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner().id)
     assert sa is not None
     assert sa.partner_email == user.email
+
+
+def test_proton_callback_handler_none_user_login():
+    handler = ProtonCallbackHandler(MockProtonClient(user=None))
+    res = handler.handle_login(get_proton_partner())
+
+    expected = generate_account_not_allowed_to_log_in()
+    assert res == expected
+
+
+def test_proton_callback_handler_none_user_link():
+    sl_user = User.create(random_email(), commit=True)
+    handler = ProtonCallbackHandler(MockProtonClient(user=None))
+    res = handler.handle_link(sl_user, get_proton_partner())
+
+    expected = generate_account_not_allowed_to_log_in()
+    assert res == expected
