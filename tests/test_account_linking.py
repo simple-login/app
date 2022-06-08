@@ -4,10 +4,9 @@ from arrow import Arrow
 from app.account_linking import (
     process_link_case,
     get_login_strategy,
-    UnexistantSlClientStrategy,
-    ExistingSlClientStrategy,
-    AlreadyLinkedUserStrategy,
-    ExistingSlUserLinkedWithDifferentPartnerStrategy,
+    NewUserStrategy,
+    ExistingUnlinedUserStrategy,
+    LinkedWithAnotherPartnerUserStrategy,
     SLPlan,
     SLPlanType,
     PartnerLinkRequest,
@@ -21,20 +20,22 @@ from app.utils import random_string
 from tests.utils import random_email
 
 
-def random_partner_user(
-    user_id: str = None,
+def random_link_request(
+    external_user_id: str = None,
     name: str = None,
     email: str = None,
     plan: SLPlan = None,
 ) -> PartnerLinkRequest:
-    user_id = user_id if user_id is not None else random_string()
+    external_user_id = (
+        external_user_id if external_user_id is not None else random_string()
+    )
     name = name if name is not None else random_string()
     email = email if email is not None else random_email()
     plan = plan if plan is not None else SLPlanType.Free
     return PartnerLinkRequest(
         name=name,
         email=email,
-        partner_user_id=user_id,
+        external_user_id=external_user_id,
         plan=SLPlan(type=plan, expiration=Arrow.utcnow().shift(hours=2)),
     )
 
@@ -46,14 +47,15 @@ def create_user(email: str = None) -> User:
     return user
 
 
-def create_user_for_partner(partner_user_id: str, email: str = None) -> User:
+def create_user_for_partner(external_user_id: str, email: str = None) -> User:
     email = email if email is not None else random_email()
     user = User.create(email=email)
-    user.partner_id = get_proton_partner().id
-    user.partner_user_id = partner_user_id
 
     PartnerUser.create(
-        user_id=user.id, partner_id=get_proton_partner().id, partner_email=email
+        user_id=user.id,
+        partner_id=get_proton_partner().id,
+        partner_email=email,
+        external_user_id=external_user_id,
     )
     Session.commit()
     return user
@@ -61,34 +63,22 @@ def create_user_for_partner(partner_user_id: str, email: str = None) -> User:
 
 def test_get_strategy_unexistant_sl_user():
     strategy = get_login_strategy(
-        link_request=random_partner_user(),
-        sl_user=None,
+        link_request=random_link_request(),
+        user=None,
         partner=get_proton_partner(),
     )
-    assert isinstance(strategy, UnexistantSlClientStrategy)
+    assert isinstance(strategy, NewUserStrategy)
 
 
 def test_get_strategy_existing_sl_user():
     email = random_email()
-    sl_user = User.create(email, commit=True)
+    user = User.create(email, commit=True)
     strategy = get_login_strategy(
-        link_request=random_partner_user(email=email),
-        sl_user=sl_user,
+        link_request=random_link_request(email=email),
+        user=user,
         partner=get_proton_partner(),
     )
-    assert isinstance(strategy, ExistingSlClientStrategy)
-
-
-def test_get_strategy_already_linked_user():
-    email = random_email()
-    proton_user_id = random_string()
-    sl_user = create_user_for_partner(proton_user_id, email=email)
-    strategy = get_login_strategy(
-        link_request=random_partner_user(user_id=proton_user_id, email=email),
-        sl_user=sl_user,
-        partner=get_proton_partner(),
-    )
-    assert isinstance(strategy, AlreadyLinkedUserStrategy)
+    assert isinstance(strategy, ExistingUnlinedUserStrategy)
 
 
 def test_get_strategy_existing_sl_user_linked_with_different_proton_account():
@@ -102,18 +92,22 @@ def test_get_strategy_existing_sl_user_linked_with_different_proton_account():
     partner_user_id_1 = random_string()
     partner_user_id_2 = random_string()
 
-    partner_user_1 = random_partner_user(user_id=partner_user_id_1, email=email1)
-    partner_user_2 = random_partner_user(user_id=partner_user_id_2, email=email2)
+    link_request_1 = random_link_request(
+        external_user_id=partner_user_id_1, email=email1
+    )
+    link_request_2 = random_link_request(
+        external_user_id=partner_user_id_2, email=email2
+    )
 
-    sl_user = create_user_for_partner(
-        partner_user_2.partner_user_id, email=partner_user_1.email
+    user = create_user_for_partner(
+        link_request_2.external_user_id, email=link_request_1.email
     )
     strategy = get_login_strategy(
-        link_request=partner_user_1,
-        sl_user=sl_user,
+        link_request=link_request_1,
+        user=user,
         partner=get_proton_partner(),
     )
-    assert isinstance(strategy, ExistingSlUserLinkedWithDifferentPartnerStrategy)
+    assert isinstance(strategy, LinkedWithAnotherPartnerUserStrategy)
 
 
 ##
@@ -129,20 +123,21 @@ def test_link_account_with_proton_account_same_address(flask_client):
 
     email = random_email()
     partner_user_id = random_string()
-    partner_user = random_partner_user(user_id=partner_user_id, email=email)
-    sl_user = create_user(email)
+    link_request = random_link_request(external_user_id=partner_user_id, email=email)
+    user = create_user(email)
 
-    res = process_link_case(partner_user, sl_user, get_proton_partner())
+    res = process_link_case(link_request, user, get_proton_partner())
     assert res is not None
     assert res.user is not None
-    assert res.user.id == sl_user.id
-    assert res.user.partner_user_id == partner_user_id
+    assert res.user.id == user.id
     assert res.user.email == email
     assert res.strategy == "Link"
 
-    updated_user = User.get(sl_user.id)
-    assert updated_user.partner_id == get_proton_partner().id
-    assert updated_user.partner_user_id == partner_user_id
+    partner_user = PartnerUser.get_by(
+        partner_id=get_proton_partner().id, user_id=user.id
+    )
+    assert partner_user.partner_id == get_proton_partner().id
+    assert partner_user.external_user_id == partner_user_id
 
 
 def test_link_account_with_proton_account_different_address(flask_client):
@@ -151,18 +146,21 @@ def test_link_account_with_proton_account_different_address(flask_client):
     # - SimpleLoginUser (bar@somethingelse)
     # We will try to link both accounts
     partner_user_id = random_string()
-    partner_user = random_partner_user(user_id=partner_user_id, email=random_email())
-    sl_user = create_user()
+    link_request = random_link_request(
+        external_user_id=partner_user_id, email=random_email()
+    )
+    user = create_user()
 
-    res = process_link_case(partner_user, sl_user, get_proton_partner())
-    assert res.user.partner_user_id == partner_user_id
-    assert res.user.id == sl_user.id
-    assert res.user.email == sl_user.email
+    res = process_link_case(link_request, user, get_proton_partner())
+    assert res.user.id == user.id
+    assert res.user.email == user.email
     assert res.strategy == "Link"
 
-    updated_user = User.get(sl_user.id)
-    assert updated_user.partner_id == get_proton_partner().id
-    assert updated_user.partner_user_id == partner_user_id
+    partner_user = PartnerUser.get_by(
+        partner_id=get_proton_partner().id, user_id=user.id
+    )
+    assert partner_user.partner_id == get_proton_partner().id
+    assert partner_user.external_user_id == partner_user_id
 
 
 def test_link_account_with_proton_account_same_address_but_linked_to_other_user(
@@ -175,25 +173,29 @@ def test_link_account_with_proton_account_same_address_but_linked_to_other_user(
     # We will unlink SimpleLoginUser2 and link SimpleLoginUser1 with foo@partner
     partner_user_id = random_string()
     partner_email = random_email()
-    partner_user = random_partner_user(user_id=partner_user_id, email=partner_email)
+    link_request = random_link_request(
+        external_user_id=partner_user_id, email=partner_email
+    )
     sl_user_1 = create_user(partner_email)
     sl_user_2 = create_user_for_partner(
         partner_user_id, email=random_email()
     )  # User already linked with the proton account
 
-    res = process_link_case(partner_user, sl_user_1, get_proton_partner())
-    assert res.user.partner_user_id == partner_user_id
+    res = process_link_case(link_request, sl_user_1, get_proton_partner())
     assert res.user.id == sl_user_1.id
     assert res.user.email == partner_email
     assert res.strategy == "Link"
 
-    updated_user_1 = User.get(sl_user_1.id)
-    assert updated_user_1.partner_id == get_proton_partner().id
-    assert updated_user_1.partner_user_id == partner_user_id
+    partner_user = PartnerUser.get_by(
+        partner_id=get_proton_partner().id, user_id=sl_user_1.id
+    )
+    assert partner_user.partner_id == get_proton_partner().id
+    assert partner_user.external_user_id == partner_user_id
 
-    updated_user_2 = User.get(sl_user_2.id)
-    assert updated_user_2.partner_id is None
-    assert updated_user_2.partner_user_id is None
+    partner_user = PartnerUser.get_by(
+        partner_id=get_proton_partner().id, user_id=sl_user_2.id
+    )
+    assert partner_user is None
 
 
 def test_link_account_with_proton_account_different_address_and_linked_to_other_user(
@@ -205,30 +207,27 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
     # - SimpleLoginUser2 (other@somethingelse) linked with foo@partner
     # We will unlink SimpleLoginUser2 and link SimpleLoginUser1 with foo@partner
     partner_user_id = random_string()
-    partner_user = random_partner_user(user_id=partner_user_id, email=random_email())
+    link_request = random_link_request(
+        external_user_id=partner_user_id, email=random_email()
+    )
     sl_user_1 = create_user(random_email())
     sl_user_2 = create_user_for_partner(
         partner_user_id, email=random_email()
     )  # User already linked with the proton account
 
-    res = process_link_case(partner_user, sl_user_1, get_proton_partner())
-    assert res.user.partner_user_id == partner_user_id
+    res = process_link_case(link_request, sl_user_1, get_proton_partner())
     assert res.user.id == sl_user_1.id
     assert res.user.email == sl_user_1.email
     assert res.strategy == "Link"
 
-    updated_user_1 = User.get(sl_user_1.id)
-    assert updated_user_1.partner_id == get_proton_partner().id
-    assert updated_user_1.partner_user_id == partner_user_id
     partner_user_1 = PartnerUser.get_by(
         user_id=sl_user_1.id, partner_id=get_proton_partner().id
     )
     assert partner_user_1 is not None
-    assert partner_user_1.partner_email == partner_user.email
+    assert partner_user_1.partner_email == sl_user_2.email
+    assert partner_user_1.partner_id == get_proton_partner().id
+    assert partner_user_1.external_user_id == partner_user_id
 
-    updated_user_2 = User.get(sl_user_2.id)
-    assert updated_user_2.partner_id is None
-    assert updated_user_2.partner_user_id is None
     partner_user_2 = PartnerUser.get_by(
         user_id=sl_user_2.id, partner_id=get_proton_partner().id
     )
@@ -237,4 +236,4 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
 
 def test_cannot_create_instance_of_base_strategy():
     with pytest.raises(Exception):
-        ClientMergeStrategy(random_partner_user(), None, get_proton_partner())
+        ClientMergeStrategy(random_link_request(), None, get_proton_partner())

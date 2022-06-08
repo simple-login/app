@@ -24,7 +24,7 @@ class SLPlan:
 class PartnerLinkRequest:
     name: str
     email: str
-    partner_user_id: str
+    external_user_id: str
     plan: SLPlan
 
 
@@ -41,48 +41,48 @@ class LinkException(Exception):
 
 class AccountAlreadyLinkedToAnotherPartnerException(LinkException):
     def __init__(self):
-        super().__init__("This account is already linked to another Partner")
+        super().__init__("This account is already linked to another partner")
 
 
-def set_plan_for_user(user: User, plan: SLPlan, partner: Partner):
-    subs = PartnerSubscription.find_by_user_id(user.id)
+class AccountAlreadyLinkedToAnotherUserException(LinkException):
+    def __init__(self):
+        super().__init__("This account is linked to another user")
+
+
+def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
+    subs = PartnerSubscription.get_by(partner_user_id=partner_user.id)
     if plan.type == SLPlanType.Free:
-        # If the plan is Free, check if there is a subscription. If there is, remove it
-        if subs is None:
-            # There was no subscription. We are done
-            return
-        else:
-            # There was a subscription. This is a downgrade. Remove it
+        if subs is not None:
             PartnerSubscription.delete(subs.id)
     else:
-        # We want to set a plan for the user
-        # Check if there is a subscription
-        if subs is not None:
-            # There already is a subscription. Update it
-            subs.end_at = plan.expiration
-            return
-        else:
-            # There is no subscription. Create it
-            partner_user = PartnerUser.get_or_create(
-                user_id=user.id, partner_id=partner.id
-            )
+        if subs is None:
             PartnerSubscription.create(
                 partner_user_id=partner_user.id,
                 end_at=plan.expiration,
             )
-
+        else:
+            subs.end_at = plan.expiration
     Session.commit()
 
 
-def ensure_partner_user_exists(
+def set_plan_for_user(user: User, plan: SLPlan, partner: Partner):
+    partner_user = PartnerUser.get_by(partner_id=partner.id, user_id=user.id)
+    if partner_user is None:
+        return
+    return set_plan_for_partner_user(partner_user, plan)
+
+
+def ensure_partner_user_exists_for_user(
     link_request: PartnerLinkRequest, sl_user: User, partner: Partner
 ) -> PartnerUser:
+    # Find partner_user by user_id
     res = PartnerUser.get_by(user_id=sl_user.id, partner_id=partner.id)
     if not res:
         res = PartnerUser.create(
             user_id=sl_user.id,
             partner_id=partner.id,
             partner_email=link_request.email,
+            external_user_id=link_request.external_user_id,
         )
         Session.commit()
     return res
@@ -92,13 +92,13 @@ class ClientMergeStrategy(ABC):
     def __init__(
         self,
         link_request: PartnerLinkRequest,
-        sl_user: Optional[User],
+        user: Optional[User],
         partner: Partner,
     ):
         if self.__class__ == ClientMergeStrategy:
             raise RuntimeError("Cannot directly instantiate a ClientMergeStrategy")
         self.link_request = link_request
-        self.sl_user = sl_user
+        self.user = user
         self.partner = partner
 
     @abstractmethod
@@ -106,26 +106,23 @@ class ClientMergeStrategy(ABC):
         pass
 
 
-class UnexistantSlClientStrategy(ClientMergeStrategy):
+class NewUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
         # Will create a new SL User with a random password
         new_user = User.create(
             email=self.link_request.email,
             name=self.link_request.name,
-            partner_user_id=self.link_request.partner_user_id,
-            partner_id=self.partner.id,
             password=random_string(20),
         )
-        PartnerUser.create(
+        partner_user = PartnerUser.create(
             user_id=new_user.id,
             partner_id=self.partner.id,
+            external_user_id=self.link_request.external_user_id,
             partner_email=self.link_request.email,
         )
-
-        set_plan_for_user(
-            new_user,
+        set_plan_for_partner_user(
+            partner_user,
             self.link_request.plan,
-            self.partner,
         )
         Session.commit()
 
@@ -135,86 +132,91 @@ class UnexistantSlClientStrategy(ClientMergeStrategy):
         )
 
 
-class ExistingSlClientStrategy(ClientMergeStrategy):
+class ExistingUnlinedUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
-        ensure_partner_user_exists(self.link_request, self.sl_user, self.partner)
-        set_plan_for_user(
-            self.sl_user,
-            self.link_request.plan,
-            self.partner,
+
+        partner_user = ensure_partner_user_exists_for_user(
+            self.link_request, self.user, self.partner
         )
+        set_plan_for_partner_user(partner_user, self.link_request.plan)
 
         return LinkResult(
-            user=self.sl_user,
+            user=self.user,
             strategy=self.__class__.__name__,
         )
 
 
-class ExistingSlUserLinkedWithDifferentPartnerStrategy(ClientMergeStrategy):
+class LinkedWithAnotherPartnerUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
         raise AccountAlreadyLinkedToAnotherPartnerException()
 
 
-class AlreadyLinkedUserStrategy(ClientMergeStrategy):
-    def process(self) -> LinkResult:
-        set_plan_for_user(self.sl_user, self.link_request.plan, self.partner)
-        return LinkResult(
-            user=self.sl_user,
-            strategy=self.__class__.__name__,
-        )
-
-
 def get_login_strategy(
-    link_request: PartnerLinkRequest, sl_user: Optional[User], partner: Partner
+    link_request: PartnerLinkRequest, user: Optional[User], partner: Partner
 ) -> ClientMergeStrategy:
-    if sl_user is None:
+    if user is None:
         # We couldn't find any SimpleLogin user with the requested e-mail
-        return UnexistantSlClientStrategy(link_request, sl_user, partner)
+        return NewUserStrategy(link_request, user, partner)
+    # Check if user is already linked with another partner_user
+    other_partner_user = PartnerUser.get_by(partner_id=partner.id, user_id=user.id)
+    if other_partner_user is not None:
+        return LinkedWithAnotherPartnerUserStrategy(link_request, user, partner)
     # There is a SimpleLogin user with the partner_user's e-mail
-    # Try to find if it has been registered via a partner
-    if sl_user.partner_id is None:
-        # It has not been registered via a Partner
-        return ExistingSlClientStrategy(link_request, sl_user, partner)
-    # It has been registered via a partner
-    # Check if the partner_user_id matches
-    if sl_user.partner_user_id != link_request.partner_user_id:
-        # It doesn't match. That means that the SimpleLogin user has a different Partner account linked
-        return ExistingSlUserLinkedWithDifferentPartnerStrategy(
-            link_request, sl_user, partner
-        )
-    # This case means that the sl_user is already linked, so nothing to do
-    return AlreadyLinkedUserStrategy(link_request, sl_user, partner)
+    return ExistingUnlinedUserStrategy(link_request, user, partner)
 
 
 def process_login_case(
     link_request: PartnerLinkRequest, partner: Partner
 ) -> LinkResult:
     # Try to find a SimpleLogin user registered with that partner user id
-    sl_user_with_external_id = User.get_by(
-        partner_id=partner.id, partner_user_id=link_request.partner_user_id
+    partner_user = PartnerUser.get_by(
+        partner_id=partner.id, external_user_id=link_request.external_user_id
     )
-    if sl_user_with_external_id is None:
+    if partner_user is None:
         # We didn't find any SimpleLogin user registered with that partner user id
         # Try to find it using the partner's e-mail address
-        sl_user = User.get_by(email=link_request.email)
-        return get_login_strategy(link_request, sl_user, partner).process()
+        user = User.get_by(email=link_request.email)
+        return get_login_strategy(link_request, user, partner).process()
     else:
         # We found the SL user registered with that partner user id
         # We're done
-        return AlreadyLinkedUserStrategy(
-            link_request, sl_user_with_external_id, partner
-        ).process()
+        set_plan_for_partner_user(partner_user, link_request.plan)
+        # It's the same user. No need to do anything
+        return LinkResult(
+            user=partner_user.user,
+            strategy="Link",
+        )
 
 
 def link_user(
     link_request: PartnerLinkRequest, current_user: User, partner: Partner
 ) -> LinkResult:
-    current_user.partner_user_id = link_request.partner_user_id
-    current_user.partner_id = partner.id
+    partner_user = ensure_partner_user_exists_for_user(
+        link_request, current_user, partner
+    )
+    set_plan_for_partner_user(partner_user, link_request.plan)
 
-    ensure_partner_user_exists(link_request, current_user, partner)
-    set_plan_for_user(current_user, link_request.plan, partner)
+    Session.commit()
+    return LinkResult(
+        user=current_user,
+        strategy="Link",
+    )
 
+
+def switch_already_linked_user(
+    link_request: PartnerLinkRequest, partner_user: PartnerUser, current_user: User
+):
+    # Find if the user has another link and unlink it
+    other_partner_user = PartnerUser.get_by(
+        user_id=current_user.id,
+        partner_id=partner_user.partner_id,
+    )
+    if other_partner_user is not None:
+        PartnerUser.delete(other_partner_user.id)
+    # Link this partner_user to the current user
+    partner_user.user_id = current_user.id
+    # Set plan
+    set_plan_for_partner_user(partner_user, link_request.plan)
     Session.commit()
     return LinkResult(
         user=current_user,
@@ -228,29 +230,22 @@ def process_link_case(
     partner: Partner,
 ) -> LinkResult:
     # Try to find a SimpleLogin user linked with this Partner account
-    sl_user_linked_to_partner_account = User.get_by(
-        partner_id=partner.id, partner_user_id=link_request.partner_user_id
+    partner_user = PartnerUser.get_by(
+        partner_id=partner.id, external_user_id=link_request.external_user_id
     )
-    if sl_user_linked_to_partner_account is None:
-        # There is no SL user linked with the partner email. Proceed with linking
+    if partner_user is None:
+        # There is no SL user linked with the partner. Proceed with linking
         return link_user(link_request, current_user, partner)
-    else:
-        # There is a SL user registered with the partner email. Check if is the current one
-        if sl_user_linked_to_partner_account.id == current_user.id:
-            # It's the same user. No need to do anything
-            return LinkResult(
-                user=current_user,
-                strategy="Link",
-            )
-        else:
-            # It's a different user. Unlink the other account and link the current one
-            sl_user_linked_to_partner_account.partner_id = None
-            sl_user_linked_to_partner_account.partner_user_id = None
-            other_partner_user = PartnerUser.get_by(
-                user_id=sl_user_linked_to_partner_account.id,
-                partner_id=partner.id,
-            )
-            if other_partner_user is not None:
-                PartnerUser.delete(other_partner_user.id)
 
-            return link_user(link_request, current_user, partner)
+    # There is a SL user registered with the partner. Check if is the current one
+    if partner_user.id == current_user.id:
+        # Update plan
+        set_plan_for_partner_user(partner_user, link_request.plan)
+        # It's the same user. No need to do anything
+        return LinkResult(
+            user=current_user,
+            strategy="Link",
+        )
+    else:
+
+        return switch_already_linked_user(link_request, partner_user, current_user)

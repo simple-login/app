@@ -492,15 +492,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="1"
     )
 
-    partner_id = sa.Column(sa.BigInteger, unique=False, nullable=True)
-    partner_user_id = sa.Column(sa.String(128), unique=False, nullable=True)
-
-    __table_args__ = (
-        sa.UniqueConstraint(
-            "partner_id", "partner_user_id", name="uq_partner_id_partner_user_id"
-        ),
-    )
-
     # bitwise flags. Allow for future expansion
     flags = sa.Column(
         sa.BigInteger,
@@ -3149,9 +3140,15 @@ class PartnerUser(Base, ModelMixin):
     partner_id = sa.Column(
         sa.ForeignKey("partner.id", ondelete="cascade"), nullable=False, index=True
     )
+    external_user_id = sa.Column(sa.String(128), unique=False, nullable=True)
     partner_email = sa.Column(sa.String(255), unique=False, nullable=True)
 
+    user = orm.relationship(User, foreign_keys=[user_id])
+
     __table_args__ = (
+        sa.UniqueConstraint(
+            "partner_id", "external_user_id", name="uq_partner_id_external_user_id"
+        ),
         sa.UniqueConstraint("user_id", "partner_id", name="uq_user_id_partner_id"),
     )
 
