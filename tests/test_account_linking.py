@@ -10,7 +10,7 @@ from app.account_linking import (
     ExistingSlUserLinkedWithDifferentPartnerStrategy,
     SLPlan,
     SLPlanType,
-    PartnerUserDto,
+    PartnerUserData,
     ClientMergeStrategy,
 )
 from app.proton.proton_callback_handler import get_proton_partner
@@ -26,12 +26,12 @@ def random_partner_user(
     name: str = None,
     email: str = None,
     plan: SLPlan = None,
-) -> PartnerUserDto:
+) -> PartnerUserData:
     user_id = user_id if user_id is not None else random_string()
     name = name if name is not None else random_string()
     email = email if email is not None else random_email()
     plan = plan if plan is not None else SLPlanType.Free
-    return PartnerUserDto(
+    return PartnerUserData(
         name=name,
         email=email,
         partner_user_id=user_id,

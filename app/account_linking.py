@@ -21,7 +21,7 @@ class SLPlan:
 
 
 @dataclass
-class PartnerUserDto:
+class PartnerUserData:
     name: str
     email: str
     partner_user_id: str
@@ -75,7 +75,7 @@ def set_plan_for_user(user: User, plan: SLPlan, partner: Partner):
 
 
 def ensure_partner_user_exists(
-    partner_user: PartnerUserDto, sl_user: User, partner: Partner
+    partner_user: PartnerUserData, sl_user: User, partner: Partner
 ) -> PartnerUser:
     res = PartnerUser.get_by(user_id=sl_user.id, partner_id=partner.id)
     if not res:
@@ -90,7 +90,7 @@ def ensure_partner_user_exists(
 
 class ClientMergeStrategy(ABC):
     def __init__(
-        self, partner_user: PartnerUserDto, sl_user: Optional[User], partner: Partner
+        self, partner_user: PartnerUserData, sl_user: Optional[User], partner: Partner
     ):
         if self.__class__ == ClientMergeStrategy:
             raise RuntimeError("Cannot directly instantiate a ClientMergeStrategy")
@@ -162,7 +162,7 @@ class AlreadyLinkedUserStrategy(ClientMergeStrategy):
 
 
 def get_login_strategy(
-    partner_user: PartnerUserDto, sl_user: Optional[User], partner: Partner
+    partner_user: PartnerUserData, sl_user: Optional[User], partner: Partner
 ) -> ClientMergeStrategy:
     if sl_user is None:
         # We couldn't find any SimpleLogin user with the requested e-mail
@@ -183,7 +183,7 @@ def get_login_strategy(
     return AlreadyLinkedUserStrategy(partner_user, sl_user, partner)
 
 
-def process_login_case(partner_user: PartnerUserDto, partner: Partner) -> LinkResult:
+def process_login_case(partner_user: PartnerUserData, partner: Partner) -> LinkResult:
     # Try to find a SimpleLogin user registered with that partner user id
     sl_user_with_external_id = User.get_by(
         partner_id=partner.id, partner_user_id=partner_user.partner_user_id
@@ -202,7 +202,7 @@ def process_login_case(partner_user: PartnerUserDto, partner: Partner) -> LinkRe
 
 
 def link_user(
-    partner_user: PartnerUserDto, current_user: User, partner: Partner
+    partner_user: PartnerUserData, current_user: User, partner: Partner
 ) -> LinkResult:
     current_user.partner_user_id = partner_user.partner_user_id
     current_user.partner_id = partner.id
@@ -218,7 +218,7 @@ def link_user(
 
 
 def process_link_case(
-    partner_user: PartnerUserDto,
+    partner_user: PartnerUserData,
     current_user: User,
     partner: Partner,
 ) -> LinkResult:

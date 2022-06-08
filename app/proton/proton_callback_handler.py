@@ -10,7 +10,7 @@ from app.proton.proton_client import ProtonClient, ProtonUser
 from app.account_linking import (
     process_login_case,
     process_link_case,
-    PartnerUserDto,
+    PartnerUserData,
     LinkException,
 )
 
@@ -105,11 +105,11 @@ class ProtonCallbackHandler:
                 user=None,
             )
 
-    def __get_partner_user(self) -> Optional[PartnerUserDto]:
+    def __get_partner_user(self) -> Optional[PartnerUserData]:
         proton_user = self.__get_proton_user()
         if proton_user is None:
             return None
-        return PartnerUserDto(
+        return PartnerUserData(
             email=proton_user.email,
             partner_user_id=proton_user.id,
             name=proton_user.name,
