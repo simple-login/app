@@ -50,6 +50,9 @@ def api_key():
                 )
                 Session.commit()
                 flash(f"New API Key {new_api_key.name} has been created", "success")
+                return render_template(
+                    "dashboard/new_api_key.html", api_key=new_api_key
+                )
 
         elif request.form.get("form-name") == "delete-all":
             ApiKey.delete_all(current_user.id)
