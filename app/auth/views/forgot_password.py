@@ -22,20 +22,19 @@ def forgot_password():
     form = ForgotPasswordForm(request.form)
 
     if form.validate_on_submit():
+        # Trigger rate limiter
+        g.deduct_limit = True
+
         email = sanitize_email(form.email.data)
         flash(
             "If your email is correct, you are going to receive an email to reset your password",
             "success",
         )
-
         user = User.get_by(email=email)
 
         if user:
             LOG.d("Send forgot password email to %s", user)
             send_reset_password_email(user)
             return redirect(url_for("auth.forgot_password"))
-
-        # Trigger rate limiter
-        g.deduct_limit = True
 
     return render_template("auth/forgot_password.html", form=form)

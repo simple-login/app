@@ -12,6 +12,7 @@ from app.config import (
     COINBASE_API_KEY,
 )
 from app.dashboard.base import dashboard_bp
+from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     AppleSubscription,
@@ -69,6 +70,7 @@ def subscription_success():
 
 @dashboard_bp.route("/coinbase_checkout")
 @login_required
+@limiter.limit("5/minute")
 def coinbase_checkout_route():
     client = Client(api_key=COINBASE_API_KEY)
     charge = client.charge.create(
