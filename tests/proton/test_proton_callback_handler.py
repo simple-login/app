@@ -44,7 +44,12 @@ def test_proton_callback_handler_unexistant_sl_user():
     assert res.user is not None
     assert res.user.email == email
     assert res.user.name == name
-    assert res.user.partner_user_id == external_id
+
+    partner_user = PartnerUser.get_by(
+        partner_id=get_proton_partner().id, user_id=res.user.id
+    )
+    assert partner_user is not None
+    assert partner_user.external_user_id == external_id
 
 
 def test_proton_callback_handler_existant_sl_user():

@@ -111,7 +111,7 @@ class ProtonCallbackHandler:
             return None
         return PartnerLinkRequest(
             email=proton_user.email,
-            partner_user_id=proton_user.id,
+            external_user_id=proton_user.id,
             name=proton_user.name,
             plan=proton_user.plan,
         )
