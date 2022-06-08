@@ -10,7 +10,7 @@ from app.account_linking import (
     ExistingSlUserLinkedWithDifferentPartnerStrategy,
     SLPlan,
     SLPlanType,
-    PartnerUserData,
+    PartnerLinkRequest,
     ClientMergeStrategy,
 )
 from app.proton.proton_callback_handler import get_proton_partner
@@ -26,12 +26,12 @@ def random_partner_user(
     name: str = None,
     email: str = None,
     plan: SLPlan = None,
-) -> PartnerUserData:
+) -> PartnerLinkRequest:
     user_id = user_id if user_id is not None else random_string()
     name = name if name is not None else random_string()
     email = email if email is not None else random_email()
     plan = plan if plan is not None else SLPlanType.Free
-    return PartnerUserData(
+    return PartnerLinkRequest(
         name=name,
         email=email,
         partner_user_id=user_id,
@@ -61,7 +61,7 @@ def create_user_for_partner(partner_user_id: str, email: str = None) -> User:
 
 def test_get_strategy_unexistant_sl_user():
     strategy = get_login_strategy(
-        partner_user=random_partner_user(),
+        link_request=random_partner_user(),
         sl_user=None,
         partner=get_proton_partner(),
     )
@@ -72,7 +72,7 @@ def test_get_strategy_existing_sl_user():
     email = random_email()
     sl_user = User.create(email, commit=True)
     strategy = get_login_strategy(
-        partner_user=random_partner_user(email=email),
+        link_request=random_partner_user(email=email),
         sl_user=sl_user,
         partner=get_proton_partner(),
     )
@@ -84,7 +84,7 @@ def test_get_strategy_already_linked_user():
     proton_user_id = random_string()
     sl_user = create_user_for_partner(proton_user_id, email=email)
     strategy = get_login_strategy(
-        partner_user=random_partner_user(user_id=proton_user_id, email=email),
+        link_request=random_partner_user(user_id=proton_user_id, email=email),
         sl_user=sl_user,
         partner=get_proton_partner(),
     )
@@ -109,7 +109,7 @@ def test_get_strategy_existing_sl_user_linked_with_different_proton_account():
         partner_user_2.partner_user_id, email=partner_user_1.email
     )
     strategy = get_login_strategy(
-        partner_user=partner_user_1,
+        link_request=partner_user_1,
         sl_user=sl_user,
         partner=get_proton_partner(),
     )
