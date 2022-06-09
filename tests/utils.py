@@ -10,6 +10,7 @@ import jinja2
 from flask import url_for
 
 from app.models import User
+from app.utils import random_string
 
 
 def create_new_user() -> User:
@@ -66,3 +67,7 @@ def load_eml_file(
             template_values = {}
         rendered = template.render(**template_values)
         return email.message_from_string(rendered)
+
+
+def random_email() -> str:
+    return "{rand}@{rand}.com".format(rand=random_string(20))

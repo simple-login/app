@@ -66,6 +66,7 @@ from app.utils import (
 Base = declarative_base()
 
 PADDLE_SUBSCRIPTION_GRACE_DAYS = 14
+_PARTNER_SUBSCRIPTION_GRACE_DAYS = 14
 
 
 class TSVector(sa.types.TypeDecorator):
@@ -492,15 +493,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=False, nullable=False, server_default="1"
     )
 
-    partner_id = sa.Column(sa.BigInteger, unique=False, nullable=True)
-    partner_user_id = sa.Column(sa.String(128), unique=False, nullable=True)
-
-    __table_args__ = (
-        sa.UniqueConstraint(
-            "partner_id", "partner_user_id", name="uq_partner_id_partner_user_id"
-        ),
-    )
-
     # bitwise flags. Allow for future expansion
     flags = sa.Column(
         sa.BigInteger,
@@ -611,6 +603,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             user_id=self.id
         )
         if coinbase_subscription and coinbase_subscription.is_active():
+            return True
+
+        partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(self.id)
+        if partner_sub and partner_sub.is_active():
             return True
 
         return False
@@ -3138,18 +3134,60 @@ class PartnerUser(Base, ModelMixin):
 
     user_id = sa.Column(
         sa.ForeignKey("users.id", ondelete="cascade"),
-        unique=False,
+        unique=True,
         nullable=False,
         index=True,
     )
     partner_id = sa.Column(
         sa.ForeignKey("partner.id", ondelete="cascade"), nullable=False, index=True
     )
+    external_user_id = sa.Column(sa.String(128), unique=False, nullable=True)
     partner_email = sa.Column(sa.String(255), unique=False, nullable=True)
 
+    user = orm.relationship(User, foreign_keys=[user_id])
+
     __table_args__ = (
-        sa.UniqueConstraint("user_id", "partner_id", name="uq_user_id_partner_id"),
+        sa.UniqueConstraint(
+            "partner_id", "external_user_id", name="uq_partner_id_external_user_id"
+        ),
     )
+
+
+class PartnerSubscription(Base, ModelMixin):
+    """
+    For users who have a subscription via a partner
+    """
+
+    __tablename__ = "partner_subscription"
+
+    partner_user_id = sa.Column(
+        sa.ForeignKey(PartnerUser.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    # when the partner subscription ends
+    end_at = sa.Column(ArrowType, nullable=False)
+
+    partner_user = orm.relationship(PartnerUser)
+
+    @classmethod
+    def find_by_user_id(cls, user_id: int) -> Optional[PartnerSubscription]:
+        res = (
+            Session.query(PartnerSubscription, PartnerUser)
+            .filter(
+                and_(
+                    PartnerUser.user_id == user_id,
+                    PartnerSubscription.partner_user_id == PartnerUser.id,
+                )
+            )
+            .first()
+        )
+        if res:
+            subscription, partner_user = res
+            return subscription
+        return None
+
+    def is_active(self):
+        return self.end_at > arrow.now().shift(days=-_PARTNER_SUBSCRIPTION_GRACE_DAYS)
 
 
 # endregion

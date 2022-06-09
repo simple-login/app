@@ -1,78 +1,37 @@
-import dataclasses
 from abc import ABC, abstractmethod
-from enum import Enum
+from dataclasses import dataclass
 from http import HTTPStatus
 from requests import Response, Session
 from typing import Optional
+
+from app.account_linking import SLPlan, SLPlanType
+from app.log import LOG
 
 _APP_VERSION = "OauthClient_1.0.0"
 
 PROTON_ERROR_CODE_NOT_EXISTS = 2501
 
-
-class ProtonPlan(Enum):
-    Free = 0
-    Professional = 1
-    Visionary = 2
-
-    def name(self):
-        if self == self.Free:
-            return "Free"
-        elif self == self.Professional:
-            return "Professional"
-        elif self == self.Visionary:
-            return "Visionary"
-        else:
-            raise Exception("Unknown plan")
+PLAN_FREE = 1
+PLAN_PREMIUM = 2
 
 
-def plan_from_name(name: str) -> ProtonPlan:
-    name_lower = name.lower()
-    if name_lower == "free":
-        return ProtonPlan.Free
-    elif name_lower == "professional":
-        return ProtonPlan.Professional
-    elif name_lower == "visionary":
-        return ProtonPlan.Visionary
-    else:
-        raise Exception(f"Unknown plan [{name}]")
-
-
-@dataclasses.dataclass
+@dataclass
 class UserInformation:
     email: str
     name: str
     id: str
+    plan: SLPlan
 
 
-class AuthorizeResponse:
-    def __init__(self, code: str, has_accepted: bool):
-        self.code = code
-        self.has_accepted = has_accepted
-
-    def __str__(self):
-        return f"[code={self.code}] [has_accepted={self.has_accepted}]"
-
-
-@dataclasses.dataclass
-class SessionResponse:
-    state: str
-    expires_in: int
-    token_type: str
-    refresh_token: str
-    access_token: str
-    session_id: str
-
-
-@dataclasses.dataclass
+@dataclass
 class ProtonUser:
     id: str
     name: str
     email: str
-    plan: ProtonPlan
+    plan: SLPlan
 
 
-@dataclasses.dataclass
+@dataclass
 class AccessCredentials:
     access_token: str
     session_id: str
@@ -98,15 +57,7 @@ def convert_access_token(access_token_response: str) -> AccessCredentials:
 
 class ProtonClient(ABC):
     @abstractmethod
-    def get_user(self) -> UserInformation:
-        pass
-
-    @abstractmethod
-    def get_organization(self) -> dict:
-        pass
-
-    @abstractmethod
-    def get_plan(self) -> ProtonPlan:
+    def get_user(self) -> Optional[UserInformation]:
         pass
 
 
@@ -135,30 +86,26 @@ class HttpProtonClient(ProtonClient):
         client.headers.update(headers)
         self.client = client
 
-    def get_user(self) -> UserInformation:
-        info = self.__get("/users")["User"]
+    def get_user(self) -> Optional[UserInformation]:
+        info = self.__get("/simple_login/v1/subscription")["Subscription"]
+        if not info["IsAllowed"]:
+            LOG.debug("Account is not allowed to log into SL")
+            return None
+
+        plan_value = info["Plan"]
+        if plan_value == PLAN_FREE:
+            plan = SLPlan(type=SLPlanType.Free, expiration=None)
+        elif plan_value == PLAN_PREMIUM:
+            plan = SLPlan(type=SLPlanType.Premium, expiration=info["PlanExpiration"])
+        else:
+            raise Exception(f"Invalid value for plan: {plan_value}")
+
         return UserInformation(
-            email=info.get("Email"), name=info.get("Name"), id=info.get("ID")
+            email=info.get("Email"),
+            name=info.get("DisplayName"),
+            id=info.get("UserID"),
+            plan=plan,
         )
-
-    def get_organization(self) -> dict:
-        return self.__get("/code/v4/organizations")["Organization"]
-
-    def get_plan(self) -> ProtonPlan:
-        url = f"{self.base_url}/core/v4/organizations"
-        res = self.client.get(url)
-
-        status = res.status_code
-        if status == HTTPStatus.UNPROCESSABLE_ENTITY:
-            as_json = res.json()
-            error_code = as_json.get("Code")
-            if error_code == PROTON_ERROR_CODE_NOT_EXISTS:
-                return ProtonPlan.Free
-
-        org = self.__validate_response(res).get("Organization")
-        if org is None:
-            return ProtonPlan.Free
-        return plan_from_name(org["PlanName"])
 
     def __get(self, route: str) -> dict:
         url = f"{self.base_url}{route}"
@@ -172,4 +119,10 @@ class HttpProtonClient(ProtonClient):
             raise Exception(
                 f"Unexpected status code. Wanted 200 and got {status}: " + res.text
             )
-        return res.json()
+        as_json = res.json()
+        res_code = as_json.get("Code")
+        if not res_code or res_code != 1000:
+            raise Exception(
+                f"Unexpected response code. Wanted 1000 and got {res_code}: " + res.text
+            )
+        return as_json

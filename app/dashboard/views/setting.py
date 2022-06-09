@@ -446,8 +446,6 @@ def cancel_email_change():
 @dashboard_bp.route("/unlink_proton_account", methods=["GET", "POST"])
 @login_required
 def unlink_proton_account():
-    current_user.partner_id = None
-    current_user.partner_user_id = None
     partner_user = PartnerUser.get_by(
         user_id=current_user.id, partner_id=get_proton_partner().id
     )

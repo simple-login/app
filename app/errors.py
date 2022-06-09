@@ -93,3 +93,18 @@ class ErrContactAlreadyExists(SLException):
 
     def error_for_user(self) -> str:
         return f"{self.contact.website_email} is already added"
+
+
+class LinkException(SLException):
+    def __init__(self, message: str):
+        self.message = message
+
+
+class AccountAlreadyLinkedToAnotherPartnerException(LinkException):
+    def __init__(self):
+        super().__init__("This account is already linked to another partner")
+
+
+class AccountAlreadyLinkedToAnotherUserException(LinkException):
+    def __init__(self):
+        super().__init__("This account is linked to another user")
