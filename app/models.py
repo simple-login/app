@@ -3134,7 +3134,7 @@ class PartnerUser(Base, ModelMixin):
 
     user_id = sa.Column(
         sa.ForeignKey("users.id", ondelete="cascade"),
-        unique=False,
+        unique=True,
         nullable=False,
         index=True,
     )
@@ -3150,7 +3150,6 @@ class PartnerUser(Base, ModelMixin):
         sa.UniqueConstraint(
             "partner_id", "external_user_id", name="uq_partner_id_external_user_id"
         ),
-        sa.UniqueConstraint("user_id", "partner_id", name="uq_user_id_partner_id"),
     )
 
 
