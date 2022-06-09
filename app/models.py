@@ -66,6 +66,7 @@ from app.utils import (
 Base = declarative_base()
 
 PADDLE_SUBSCRIPTION_GRACE_DAYS = 14
+_PARTNER_SUBSCRIPTION_GRACE_DAYS = 14
 
 
 class TSVector(sa.types.TypeDecorator):
@@ -3187,7 +3188,7 @@ class PartnerSubscription(Base, ModelMixin):
         return None
 
     def is_active(self):
-        return self.end_at > arrow.now()
+        return self.end_at > arrow.now().shift(days=-_PARTNER_SUBSCRIPTION_GRACE_DAYS)
 
 
 # endregion

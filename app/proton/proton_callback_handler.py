@@ -4,14 +4,13 @@ from flask import url_for
 from typing import Optional
 
 from app.db import Session
-from app.errors import ProtonPartnerNotSetUp
+from app.errors import LinkException, ProtonPartnerNotSetUp
 from app.models import User, Partner
 from app.proton.proton_client import ProtonClient, ProtonUser
 from app.account_linking import (
     process_login_case,
     process_link_case,
     PartnerLinkRequest,
-    LinkException,
 )
 
 PROTON_PARTNER_NAME = "Proton"

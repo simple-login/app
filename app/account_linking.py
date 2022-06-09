@@ -5,6 +5,8 @@ from enum import Enum
 from typing import Optional
 
 from app.db import Session
+from app.errors import AccountAlreadyLinkedToAnotherPartnerException
+from app.log import LOG
 from app.models import PartnerSubscription, Partner, PartnerUser, User
 from app.utils import random_string
 
@@ -34,34 +36,28 @@ class LinkResult:
     strategy: str
 
 
-class LinkException(Exception):
-    def __init__(self, message: str):
-        self.message = message
-
-
-class AccountAlreadyLinkedToAnotherPartnerException(LinkException):
-    def __init__(self):
-        super().__init__("This account is already linked to another partner")
-
-
-class AccountAlreadyLinkedToAnotherUserException(LinkException):
-    def __init__(self):
-        super().__init__("This account is linked to another user")
-
-
 def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
-    subs = PartnerSubscription.get_by(partner_user_id=partner_user.id)
+    sub = PartnerSubscription.get_by(partner_user_id=partner_user.id)
     if plan.type == SLPlanType.Free:
-        if subs is not None:
-            PartnerSubscription.delete(subs.id)
+        if sub is not None:
+            LOG.i(
+                f"Deleting partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
+            )
+            PartnerSubscription.delete(sub.id)
     else:
-        if subs is None:
+        if sub is None:
+            LOG.i(
+                f"Creating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
+            )
             PartnerSubscription.create(
                 partner_user_id=partner_user.id,
                 end_at=plan.expiration,
             )
         else:
-            subs.end_at = plan.expiration
+            LOG.i(
+                f"Updating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
+            )
+            sub.end_at = plan.expiration
     Session.commit()
 
 
