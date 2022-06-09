@@ -119,7 +119,9 @@ class NewUserStrategy(ClientMergeStrategy):
             external_user_id=self.link_request.external_user_id,
             partner_email=self.link_request.email,
         )
-        LOG.i(f"Created new user for login request for partner:{partner.id} external_user_id:{link_request.external_user_id}. New user {new_user.id} partner_user:{partner_user.id}")
+        LOG.i(
+            f"Created new user for login request for partner:{self.partner.id} external_user_id:{self.link_request.external_user_id}. New user {new_user.id} partner_user:{partner_user.id}"
+        )
         set_plan_for_partner_user(
             partner_user,
             self.link_request.plan,
@@ -212,7 +214,9 @@ def switch_already_linked_user(
         partner_id=partner_user.partner_id,
     )
     if other_partner_user is not None:
-        LOG.i(f"Deleting previous partner_user:{other_partner_user.id} from user:{current_user.id}")
+        LOG.i(
+            f"Deleting previous partner_user:{other_partner_user.id} from user:{current_user.id}"
+        )
         PartnerUser.delete(other_partner_user.id)
     LOG.i(f"Linking partner_user:{partner_user.id} to user:{current_user.id}")
     # Link this partner_user to the current user
