@@ -295,9 +295,9 @@ def report_complaint_to_user_in_transactional_phase(
 def report_complaint_to_user_in_forward_phase(
     alias: Alias, origin: ProviderComplaintOrigin, msg_info: OriginalMessageInformation
 ):
+    capitalized_name = origin.name().capitalize()
     user = alias.user
     mailbox_email = msg_info.mailbox_address or alias.mailbox.email
-    capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
         user,
         f"{ALERT_COMPLAINT_FORWARD_PHASE}_{origin.name()}",
