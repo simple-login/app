@@ -2232,6 +2232,7 @@ class DomainDeletedAlias(Base, ModelMixin):
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
     domain = orm.relationship(CustomDomain)
+    user = orm.relationship(User, foreign_keys=[user_id])
 
     @classmethod
     def create(cls, **kw):

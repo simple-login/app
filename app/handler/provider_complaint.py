@@ -190,11 +190,11 @@ def handle_yahoo_complaint(message: Message) -> bool:
 
 
 def find_alias_with_address(address: str) -> Optional[Alias]:
-    return (
-        Alias.get_by(email=address)
-        or DeletedAlias.get_by(email=address)
-        or DomainDeletedAlias.get_by(email=address)
-    )
+    return Alias.get_by(email=address) or DomainDeletedAlias.get_by(email=address)
+
+
+def is_deleted_alias(address: str) -> bool:
+    return DeletedAlias.get_by(email=address) is not None
 
 
 def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
@@ -220,11 +220,19 @@ def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
         store_provider_complaint(alias, message)
         return True
 
+    if is_deleted_alias(msg_info.sender_address):
+        LOG.i(f"Complaint is for deleted alias. Do nothing")
+        return True
+
     contact = Contact.get_by(reply_email=msg_info.sender_address)
     if contact:
         alias = contact.alias
     else:
         alias = find_alias_with_address(msg_info.rcpt_address)
+
+    if is_deleted_alias(msg_info.rcpt_address):
+        LOG.i(f"Complaint is for deleted alias. Do nothing")
+        return True
 
     if not alias:
         LOG.e(
@@ -287,9 +295,9 @@ def report_complaint_to_user_in_transactional_phase(
 def report_complaint_to_user_in_forward_phase(
     alias: Alias, origin: ProviderComplaintOrigin, msg_info: OriginalMessageInformation
 ):
-    capitalized_name = origin.name().capitalize()
     user = alias.user
     mailbox_email = msg_info.mailbox_address or alias.mailbox.email
+    capitalized_name = origin.name().capitalize()
     send_email_with_rate_control(
         user,
         f"{ALERT_COMPLAINT_FORWARD_PHASE}_{origin.name()}",
