@@ -481,7 +481,9 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
         )
         return None
 
-    # each item in data["receipt"]["in_app"] has the following format
+    # use responseBody.Latest_receipt_info and not responseBody.Receipt.In_app
+    # as recommended on https://developer.apple.com/documentation/appstorereceipts/responsebody/receipt/in_app
+    # each item in data["latest_receipt_info"] has the following format
     # {
     #     "quantity": "1",
     #     "product_id": "io.simplelogin.ios_app.subscription.premium.monthly",
@@ -500,7 +502,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     #     "is_trial_period": "false",
     #     "is_in_intro_offer_period": "false",
     # }
-    transactions = data["receipt"]["in_app"]
+    transactions = data["latest_receipt_info"]
     if not transactions:
         LOG.w("Empty transactions in data %s", data)
         return None
