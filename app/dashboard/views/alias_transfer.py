@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 
 from app.config import URL
 from app.dashboard.base import dashboard_bp
+from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.email_utils import send_email, render
 from app.extensions import limiter
@@ -77,6 +78,7 @@ def transfer(alias, new_user, new_mailboxes: [Mailbox]):
 
 @dashboard_bp.route("/alias_transfer/send/<int:alias_id>/", methods=["GET", "POST"])
 @login_required
+@sudo_required
 def alias_transfer_send_route(alias_id):
     alias = Alias.get(alias_id)
     if not alias or alias.user_id != current_user.id:
