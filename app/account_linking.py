@@ -72,7 +72,9 @@ def ensure_partner_user_exists_for_user(
     link_request: PartnerLinkRequest, sl_user: User, partner: Partner
 ) -> PartnerUser:
     # Find partner_user by user_id
-    res = PartnerUser.get_by(user_id=sl_user.id, partner_id=partner.id)
+    res = PartnerUser.get_by(user_id=sl_user.id)
+    if res and res.partner_id != partner.id:
+        raise AccountAlreadyLinkedToAnotherPartnerException()
     if not res:
         res = PartnerUser.create(
             user_id=sl_user.id,

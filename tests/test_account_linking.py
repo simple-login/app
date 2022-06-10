@@ -4,6 +4,7 @@ from arrow import Arrow
 from app.account_linking import (
     process_link_case,
     get_login_strategy,
+    ensure_partner_user_exists_for_user,
     NewUserStrategy,
     ExistingUnlinedUserStrategy,
     LinkedWithAnotherPartnerUserStrategy,
@@ -14,7 +15,8 @@ from app.account_linking import (
 )
 from app.proton.proton_callback_handler import get_proton_partner
 from app.db import Session
-from app.models import PartnerUser, User
+from app.errors import AccountAlreadyLinkedToAnotherPartnerException
+from app.models import Partner, PartnerUser, User
 from app.utils import random_string
 
 from tests.utils import random_email
@@ -237,3 +239,47 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
 def test_cannot_create_instance_of_base_strategy():
     with pytest.raises(Exception):
         ClientMergeStrategy(random_link_request(), None, get_proton_partner())
+
+
+def test_ensure_partner_user_exists_for_user_raises_exception_when_linked_to_another_partner():
+    # Setup test data:
+    # - partner_1
+    # - partner_2
+    # - user
+    user_email = random_email()
+    user = create_user(user_email)
+    external_id_1 = random_string()
+    partner_1 = Partner.create(
+        name=random_string(),
+        contact_email=random_email(),
+    )
+    external_id_2 = random_string()
+    partner_2 = Partner.create(
+        name=random_string(),
+        contact_email=random_email(),
+    )
+
+    # Link user with partner_1
+    ensure_partner_user_exists_for_user(
+        PartnerLinkRequest(
+            name=random_string(),
+            email=user_email,
+            external_user_id=external_id_1,
+            plan=SLPlan(type=SLPlanType.Free, expiration=None),
+        ),
+        user,
+        partner_1,
+    )
+
+    # Try to link user with partner_2 and confirm the exception
+    with pytest.raises(AccountAlreadyLinkedToAnotherPartnerException):
+        ensure_partner_user_exists_for_user(
+            PartnerLinkRequest(
+                name=random_string(),
+                email=user_email,
+                external_user_id=external_id_2,
+                plan=SLPlan(type=SLPlanType.Free, expiration=None),
+            ),
+            user,
+            partner_2,
+        )
