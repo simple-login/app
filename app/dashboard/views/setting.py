@@ -75,9 +75,6 @@ def get_proton_linked_account() -> Optional[str]:
     except ProtonPartnerNotSetUp:
         return None
 
-    if current_user.partner_id != proton_partner_id:
-        return None
-
     # It has. Retrieve the information for the PartnerUser
     proton_linked_account = PartnerUser.get_by(
         user_id=current_user.id, partner_id=proton_partner_id
