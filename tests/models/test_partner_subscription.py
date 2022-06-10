@@ -5,6 +5,7 @@ from tests.utils import create_new_user, random_email
 
 
 def test_generate_partner_subscription(flask_client):
+    external_user_id = random_string()
     partner = Partner.create(
         name=random_string(10),
         contact_email=random_email(),
@@ -15,6 +16,7 @@ def test_generate_partner_subscription(flask_client):
         user_id=user.id,
         partner_id=partner.id,
         partner_email=random_email(),
+        external_user_id=external_user_id,
         commit=True,
     )
 
