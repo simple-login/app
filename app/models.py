@@ -3142,7 +3142,7 @@ class PartnerUser(Base, ModelMixin):
     partner_id = sa.Column(
         sa.ForeignKey("partner.id", ondelete="cascade"), nullable=False, index=True
     )
-    external_user_id = sa.Column(sa.String(128), unique=False, nullable=True)
+    external_user_id = sa.Column(sa.String(128), unique=False, nullable=False)
     partner_email = sa.Column(sa.String(255), unique=False, nullable=True)
 
     user = orm.relationship(User, foreign_keys=[user_id])
