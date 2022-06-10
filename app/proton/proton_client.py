@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from arrow import Arrow
 from dataclasses import dataclass
 from http import HTTPStatus
 from requests import Response, Session
@@ -96,7 +97,10 @@ class HttpProtonClient(ProtonClient):
         if plan_value == PLAN_FREE:
             plan = SLPlan(type=SLPlanType.Free, expiration=None)
         elif plan_value == PLAN_PREMIUM:
-            plan = SLPlan(type=SLPlanType.Premium, expiration=info["PlanExpiration"])
+            plan = SLPlan(
+                type=SLPlanType.Premium,
+                expiration=Arrow.fromtimestamp(info["PlanExpiration"], tzinfo="utc"),
+            )
         else:
             raise Exception(f"Invalid value for plan: {plan_value}")
 
