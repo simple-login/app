@@ -111,7 +111,7 @@ def alias_transfer_send_route(alias_id):
         if request.form.get("form-name") == "create":
             transfer_token = f"{alias.id}.{secrets.token_urlsafe(32)}"
             alias.transfer_token = hmac_alias_transfer_token(transfer_token)
-            alias.transfer_token_expiration = arrow.utcnow().shift(minutes=30)
+            alias.transfer_token_expiration = arrow.utcnow().shift(hours=24)
             Session.commit()
             alias_transfer_url = (
                 config.URL
@@ -162,7 +162,7 @@ def alias_transfer_receive_route():
         alias.transfer_token_expiration is not None
         and alias.transfer_token_expiration < arrow.utcnow()
     ):
-        flash("Invalid link", "error")
+        flash("Expired link, please request a new one", "error")
         return redirect(url_for("dashboard.index"))
 
     # alias already belongs to this user
