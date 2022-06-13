@@ -453,6 +453,9 @@ if len(VERP_EMAIL_SECRET) < 32:
     raise RuntimeError(
         "Please, set VERP_EMAIL_SECRET to a random string at least 32 chars long"
     )
+ALIAS_TRANSFER_TOKEN_SECRET = os.environ.get("ALIAS_TRANSFER_TOKEN_SECRET") or (
+    FLASK_SECRET + "aliastransfertoken"
+)
 
 
 def get_allowed_redirect_domains() -> List[str]:

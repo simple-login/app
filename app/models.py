@@ -1286,6 +1286,9 @@ class Alias(Base, ModelMixin):
 
     # used to transfer an alias to another user
     transfer_token = sa.Column(sa.String(64), default=None, unique=True, nullable=True)
+    transfer_token_expiration = sa.Column(
+        ArrowType, default=arrow.utcnow, nullable=True
+    )
 
     # have I been pwned
     hibp_last_check = sa.Column(ArrowType, default=None)
