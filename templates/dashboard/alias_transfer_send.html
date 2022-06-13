@@ -16,10 +16,6 @@
         emails.
       </p>
 
-      <p>
-        In order to transfer ownership,
-        please create the <b>Share URL</b> 👇 and send it to the other person.
-      </p>
 
       {% if alias_transfer_url %}
         <em data-toggle="tooltip"
@@ -29,18 +25,40 @@
           {{ alias_transfer_url }}
         </em>
 
+        <p class="mt-5">
+            Please copy the transfer URL. <strong>We won't be able to display it again</strong>. If you need to access it again you can generate a new URL.
+        </p>
+
+        <p class="mt-2">
+            This transfer URL is <strong>valid for 30 minutes</strong>. If it hasn't been used by then it will be automatically disabled.
+        </p>
+
         <form method="post">
           <input type="hidden" name="form-name" value="remove">
-          <button class="btn btn-warning mt-2">Remove Share URL</button>
+          <button class="btn btn-warning mt-2">Remove alias transfer URL</button>
           <div class="small-text">
             If you don't want to share this alias anymore, you can remove the share URL.
           </div>
         </form>
       {% else %}
-        <form method="post">
-          <input type="hidden" name="form-name" value="create">
-          <button class="btn btn-primary mt-2">Create Share URL</button>
-        </form>
+        {% if link_active %}
+          <p class="mt-2">
+            You have an active transfer link. If you don't want to share this alias any more, please delete the link.
+          </p>
+          <form method="post">
+            <input type="hidden" name="form-name" value="remove">
+            <button class="btn btn-warning mt-2">Remove alias transfer URL</button>
+          </form>
+        {% else %}
+          <p>
+              In order to transfer ownership,
+              please create the <b>Share URL</b> 👇 and send it to the other person.
+          </p>
+          <form method="post">
+            <input type="hidden" name="form-name" value="create">
+            <button class="btn btn-primary mt-2">Generate a new alias transfer URL</button>
+          </form>
+        {% endif %}
       {% endif %}
 
       <p class="mt-5">
