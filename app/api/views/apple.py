@@ -502,9 +502,9 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     #     "is_trial_period": "false",
     #     "is_in_intro_offer_period": "false",
     # }
-    transactions = data["latest_receipt_info"]
+    transactions = data.get("latest_receipt_info")
     if not transactions:
-        LOG.w("Empty transactions in data %s", data)
+        LOG.i("Empty transactions in data %s", data)
         return None
 
     latest_transaction = max(transactions, key=lambda t: int(t["expires_date_ms"]))
