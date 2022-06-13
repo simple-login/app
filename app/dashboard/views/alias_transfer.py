@@ -102,7 +102,7 @@ def alias_transfer_send_route(alias_id):
     # generate a new transfer_token
     if request.method == "POST":
         if request.form.get("form-name") == "create":
-            alias.transfer_token = str(uuid4())
+            alias.transfer_token = f"{alias.id}.{uuid4()}"
             Session.commit()
             flash("Share URL created", "success")
             return redirect(request.url)
