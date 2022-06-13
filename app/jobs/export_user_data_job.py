@@ -142,7 +142,7 @@ class ExportUserDataJob:
         msg.attach(attachment)
 
         # add DKIM
-        email_domain = config.NOREPLY[config.NOREPLY("@") + 1 :]
+        email_domain = config.NOREPLY[config.NOREPLY.find("@") + 1 :]
         add_dkim_signature(msg, email_domain)
 
         transaction = TransactionalEmail.create(email=to_email, commit=True)
