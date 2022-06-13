@@ -104,18 +104,12 @@ def alias_transfer_send_route(alias_id):
         if request.form.get("form-name") == "create":
             alias.transfer_token = str(uuid4())
             Session.commit()
-            alias_transfer_url = (
-                URL
-                + "/dashboard/alias_transfer/receive"
-                + f"?token={alias.transfer_token}"
-            )
             flash("Share URL created", "success")
             return redirect(request.url)
         # request.form.get("form-name") == "remove"
         else:
             alias.transfer_token = None
             Session.commit()
-            alias_transfer_url = None
             flash("Share URL deleted", "success")
             return redirect(request.url)
 
