@@ -14,7 +14,7 @@ import sqlalchemy
 from app import config
 from app.db import Session
 from app.email import headers
-from app.email_utils import generate_verp_email, render
+from app.email_utils import generate_verp_email, render, add_dkim_signature
 from app.mail_sender import sl_sendmail
 from app.models import (
     Alias,
@@ -140,6 +140,10 @@ class ExportUserDataJob:
         )
         attachment.add_header("Content-Type", "application/zip")
         msg.attach(attachment)
+
+        # add DKIM
+        email_domain = config.NOREPLY[config.NOREPLY.find("@") + 1 :]
+        add_dkim_signature(msg, email_domain)
 
         transaction = TransactionalEmail.create(email=to_email, commit=True)
         sl_sendmail(
