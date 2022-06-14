@@ -8,6 +8,7 @@ import flask_profiler
 import sentry_sdk
 from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
 from coinbase_commerce.webhook import Webhook
+from dateutil.relativedelta import relativedelta
 from flask import (
     Flask,
     redirect,
@@ -566,6 +567,39 @@ def setup_paddle_callback(app: Flask):
                 Subscription.delete(sub.id)
                 Session.commit()
                 LOG.e("%s requests a refund", user)
+
+        elif request.form.get("alert_name") == "subscription_payment_refunded":
+            subscription_id = request.form.get("subscription_id")
+            sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
+            LOG.d(
+                "Handle subscription_payment_refunded for subscription %s",
+                subscription_id,
+            )
+
+            if not sub:
+                LOG.w(
+                    "No such subscription for %s, payload %s",
+                    subscription_id,
+                    request.form,
+                )
+                return "No such subscription"
+
+            plan_id = request.form["subscription_plan_id"]
+            if request.form["refund_type"] == "full":
+                if plan_id == PADDLE_MONTHLY_PRODUCT_ID:
+                    LOG.d("subtract 1 month from next_bill_date %s", sub.next_bill_date)
+                    sub.next_bill_date = sub.next_bill_date - relativedelta(months=1)
+                    LOG.d("next_bill_date is %s", sub.next_bill_date)
+                    Session.commit()
+                elif plan_id == PADDLE_YEARLY_PRODUCT_IDS:
+                    LOG.d("subtract 1 year from next_bill_date %s", sub.next_bill_date)
+                    sub.next_bill_date = sub.next_bill_date - relativedelta(years=1)
+                    LOG.d("next_bill_date is %s", sub.next_bill_date)
+                    Session.commit()
+                else:
+                    LOG.e("Unknown plan_id %s", plan_id)
+            else:
+                LOG.w("partial subscription_payment_refunded, not handled")
 
         return "OK"
 
