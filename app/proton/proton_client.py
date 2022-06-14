@@ -6,6 +6,7 @@ from requests import Response, Session
 from typing import Optional
 
 from app.account_linking import SLPlan, SLPlanType
+from app.config import PROTON_EXTRA_HEADER_NAME, PROTON_EXTRA_HEADER_VALUE
 from app.log import LOG
 
 _APP_VERSION = "OauthClient_1.0.0"
@@ -82,6 +83,10 @@ class HttpProtonClient(ProtonClient):
             "accept": "application/vnd.protonmail.v1+json",
             "user-agent": "ProtonOauthClient",
         }
+
+        if PROTON_EXTRA_HEADER_NAME and PROTON_EXTRA_HEADER_VALUE:
+            headers[PROTON_EXTRA_HEADER_NAME] = PROTON_EXTRA_HEADER_VALUE
+
         if original_ip is not None:
             headers["x-forwarded-for"] = original_ip
         client.headers.update(headers)

@@ -10,6 +10,8 @@ from app.config import (
     PROTON_BASE_URL,
     PROTON_CLIENT_ID,
     PROTON_CLIENT_SECRET,
+    PROTON_EXTRA_HEADER_NAME,
+    PROTON_EXTRA_HEADER_VALUE,
     PROTON_VALIDATE_CERTS,
     URL,
 )
@@ -89,6 +91,11 @@ def proton_callback():
         return response
 
     proton.register_compliance_hook("access_token_response", check_status_code)
+
+    headers = None
+    if PROTON_EXTRA_HEADER_NAME and PROTON_EXTRA_HEADER_VALUE:
+        headers = {PROTON_EXTRA_HEADER_NAME: PROTON_EXTRA_HEADER_VALUE}
+
     token = proton.fetch_token(
         _token_url,
         client_secret=PROTON_CLIENT_SECRET,
@@ -96,6 +103,7 @@ def proton_callback():
         verify=PROTON_VALIDATE_CERTS,
         method="GET",
         include_client_id=True,
+        headers=headers,
     )
     credentials = convert_access_token(token["access_token"])
     action = get_action_from_state()
