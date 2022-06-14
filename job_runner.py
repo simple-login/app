@@ -203,7 +203,7 @@ SimpleLogin team.
 """,
                         retries=3,
                     )
-                if job.name == config.JOB_SEND_USER_REPORT:
+                elif job.name == config.JOB_SEND_USER_REPORT:
                     export_job = ExportUserDataJob.create_from_job(job)
                     if export_job:
                         export_job.run()
