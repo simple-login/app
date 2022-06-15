@@ -155,7 +155,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:4.6.2-beta flask db upgrade
+    simplelogin/app:4.6.2-beta alembic upgrade head
 
 # Run init data
 sudo docker run --rm \
