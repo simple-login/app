@@ -361,7 +361,7 @@ dbname = simplelogin
 
 # forward to smtp:127.0.0.1:20381 for custom domain AND email domain
 query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND verified=true
-    UNION SELECT 'smtp:127.0.0.1:2025' FROM public_domain WHERE domain = '%s'
+    UNION SELECT 'smtp:127.0.0.1:20381' FROM public_domain WHERE domain = '%s'
     UNION SELECT 'smtp:127.0.0.1:20381' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
