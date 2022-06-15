@@ -3,4 +3,5 @@ from .views import (
     final,
     setup_done,
     account_activated,
+    extension_redirect,
 )
