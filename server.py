@@ -77,6 +77,7 @@ from app.discover.base import discover_bp
 from app.email_utils import send_email, render
 from app.extensions import login_manager, limiter
 from app.fake_data import fake_data
+from app.internal.base import internal_bp
 from app.jose_utils import get_jwk_key
 from app.log import LOG
 from app.models import (
@@ -221,6 +222,7 @@ def register_blueprints(app: Flask):
     app.register_blueprint(onboarding_bp)
 
     app.register_blueprint(discover_bp)
+    app.register_blueprint(internal_bp)
     app.register_blueprint(api_bp)
 
 

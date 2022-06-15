@@ -50,6 +50,7 @@ from app.models import (
     AppleSubscription,
     PartnerUser,
 )
+from app.proton import CONNECT_WITH_PROTON_COOKIE_NAME
 from app.proton.proton_callback_handler import get_proton_partner
 from app.utils import random_string, sanitize_email
 
@@ -361,6 +362,12 @@ def setting():
     coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
     proton_linked_account = get_proton_linked_account()
 
+    connect_with_proton = False
+    if CONNECT_WITH_PROTON:
+        proton_integration_cookie = request.cookies.get(CONNECT_WITH_PROTON_COOKIE_NAME)
+        if proton_integration_cookie is not None:
+            connect_with_proton = True
+
     return render_template(
         "dashboard/setting.html",
         form=form,
@@ -376,7 +383,7 @@ def setting():
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
-        connect_with_proton=CONNECT_WITH_PROTON,
+        connect_with_proton=connect_with_proton,
         proton_linked_account=proton_linked_account,
     )
 

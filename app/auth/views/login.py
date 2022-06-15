@@ -10,6 +10,7 @@ from app.events.auth_event import LoginEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
+from app.proton import CONNECT_WITH_PROTON_COOKIE_NAME
 from app.utils import sanitize_email, sanitize_next_url
 
 
@@ -63,10 +64,16 @@ def login():
             LoginEvent(LoginEvent.ActionType.success).send()
             return after_login(user, next_url)
 
+    connect_with_proton = False
+    if CONNECT_WITH_PROTON:
+        proton_integration_cookie = request.cookies.get(CONNECT_WITH_PROTON_COOKIE_NAME)
+        if proton_integration_cookie is not None:
+            connect_with_proton = True
+
     return render_template(
         "auth/login.html",
         form=form,
         next_url=next_url,
         show_resend_activation=show_resend_activation,
-        connect_with_proton=CONNECT_WITH_PROTON,
+        connect_with_proton=connect_with_proton,
     )
