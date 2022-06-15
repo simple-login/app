@@ -129,7 +129,7 @@ sudo docker pull simplelogin/app:4.6.2-beta
 sudo docker stop sl-email sl-migration sl-app sl-db sl-job-runner
 
 # Make sure to remove these containers to avoid conflict
-sudo docker rm -f sl-email sl-migration sl-app sl-db
+sudo docker rm -f sl-email sl-migration sl-app sl-db sl-job-runner
 
 # create ./sl/upload/ if not exist
 mkdir -p ./sl/upload/
