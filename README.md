@@ -426,7 +426,7 @@ docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:3.4.0 flask db upgrade
+    simplelogin/app:4.6.2-beta alembic upgrade head
 ```
 
 This command could take a while to download the `simplelogin/app` docker image.
@@ -441,7 +441,7 @@ docker run --rm \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
-    simplelogin/app:3.4.0 python init_app.py
+    simplelogin/app:4.6.2-beta python init_app.py
 ```
 
 Now, it's time to run the `webapp` container!
@@ -457,7 +457,7 @@ docker run -d \
     -p 127.0.0.1:7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.4.0
+    simplelogin/app:4.6.2-beta
 ```
 
 Next run the `email handler`
@@ -473,7 +473,7 @@ docker run -d \
     -p 127.0.0.1:20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.4.0 python email_handler.py
+    simplelogin/app:4.6.2-beta python email_handler.py
 ```
 
 And finally the `job runner`
@@ -488,7 +488,7 @@ docker run -d \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:3.4.0 python job_runner.py
+    simplelogin/app:4.6.2-beta python job_runner.py
 ```
 
 ### Nginx
