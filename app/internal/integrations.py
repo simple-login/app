@@ -1,6 +1,5 @@
 import arrow
-from app.config import URL
-from app.proton import CONNECT_WITH_PROTON_COOKIE_NAME
+from app.config import CONNECT_WITH_PROTON_COOKIE_NAME, URL
 from flask import make_response, redirect, url_for
 from flask_login import current_user
 from .base import internal_bp
@@ -14,12 +13,13 @@ def set_enable_proton_cookie():
         redirect_url = url_for("auth.login")
 
     response = make_response(redirect(redirect_url))
-    response.set_cookie(
-        CONNECT_WITH_PROTON_COOKIE_NAME,
-        value="true",
-        expires=arrow.now().shift(days=30).datetime,
-        secure=True if URL.startswith("https") else False,
-        httponly=True,
-        samesite="Lax",
-    )
+    if CONNECT_WITH_PROTON_COOKIE_NAME:
+        response.set_cookie(
+            CONNECT_WITH_PROTON_COOKIE_NAME,
+            value="true",
+            expires=arrow.now().shift(days=30).datetime,
+            secure=True if URL.startswith("https") else False,
+            httponly=True,
+            samesite="Lax",
+        )
     return response
