@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from arrow import Arrow
 from dataclasses import dataclass
 from enum import Enum
+from newrelic import agent
 from typing import Optional
 
 from app.db import Session
@@ -44,6 +45,7 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                 f"Deleting partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
             )
             PartnerSubscription.delete(sub.id)
+            agent.record_custom_event("PlanChange", {"plan": "free"})
     else:
         if sub is None:
             LOG.i(
@@ -53,11 +55,16 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                 partner_user_id=partner_user.id,
                 end_at=plan.expiration,
             )
+            agent.record_custom_event("PlanChange", {"plan": "premium", "type": "new"})
         else:
-            LOG.i(
-                f"Updating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
-            )
-            sub.end_at = plan.expiration
+            if sub.end_at != plan.expiration:
+                LOG.i(
+                    f"Updating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
+                )
+                agent.record_custom_event(
+                    "PlanChange", {"plan": "premium", "type": "extension"}
+                )
+                sub.end_at = plan.expiration
     Session.commit()
 
 
@@ -130,6 +137,8 @@ class NewUserStrategy(ClientMergeStrategy):
         )
         Session.commit()
 
+        agent.record_custom_event("PartnerUserCreation", {"partner": self.partner.name})
+
         return LinkResult(
             user=new_user,
             strategy=self.__class__.__name__,
@@ -200,6 +209,7 @@ def link_user(
     )
     set_plan_for_partner_user(partner_user, link_request.plan)
 
+    agent.record_custom_event("AccountLinked", {"partner": partner.name})
     Session.commit()
     return LinkResult(
         user=current_user,
