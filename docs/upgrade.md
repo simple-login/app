@@ -4,17 +4,17 @@ No emails or any data is lost in the upgrade process. The same process is by the
 
 Sometimes upgrading to a major version might require running a manual migration. This is for example the case when upgrading to 2.0.0. In this case please follow the corresponding migration first before running these scripts.
 
-If you are running versions prior to 3x, please:
+If you are running versions prior to 4.x.x, please:
 
 1. first upgrade to 2.1.2 then
 2. upgrade to the latest version which is 4.6.2-beta
 
 <details>
-<summary>After upgrade to 3x from 2x</summary>
+<summary>After upgrade to 4.x.x from 2.x.x</summary>
 <p>
 
-3x has some data structure changes that cannot be automatically upgraded from 2x.
-Once you have upgraded your installation to 3x, please run the following scripts to make your data fully compatible with 3x
+4.x.x has some data structure changes that cannot be automatically upgraded from 2.x.x.
+Once you have upgraded your installation to 4.x.x, please run the following scripts to make your data fully compatible with 4.x.x
 
 First connect to your SimpleLogin container shell:
 
@@ -41,6 +41,36 @@ for email_log in EmailLog.query.all():
 
 db.session.commit()
 ```
+
+Please also update `/etc/postfix/pgsql-relay-domains.cf` to the following. Make sure to replace `mydomain.com` by your actual domain.
+
+```
+# postgres config
+hosts = localhost
+user = myuser
+password = mypassword
+dbname = simplelogin
+
+query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true
+    UNION SELECT domain FROM public_domain WHERE domain='%s'
+    UNION SELECT '%s' WHERE '%s' = 'mydomain.com' LIMIT 1;
+```
+
+and `/etc/postfix/pgsql-transport-maps.cf` to
+
+```
+# postgres config
+hosts = localhost
+user = myuser
+password = mypassword
+dbname = simplelogin
+
+# forward to smtp:127.0.0.1:20381 for custom domain AND email domain
+query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND verified=true
+    UNION SELECT 'smtp:127.0.0.1:20381' FROM public_domain WHERE domain = '%s'
+    UNION SELECT 'smtp:127.0.0.1:20381' WHERE '%s' = 'mydomain.com' LIMIT 1;
+```
+
 
 </p>
 </details>
