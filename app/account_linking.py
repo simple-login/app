@@ -61,7 +61,7 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                 LOG.i(
                     f"Updating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
                 )
-                agent.record_custom_event("PlanUpdateExpiration")
+                agent.record_custom_event("PlanChange", {"plan": "premium", "type": "extension"})
                 sub.end_at = plan.expiration
     Session.commit()
 
