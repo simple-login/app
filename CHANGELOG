@@ -6,6 +6,23 @@ The version corresponds to SimpleLogin Docker `image tag`.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.6.2] - 2022-06-15
+- support dot in alias prefix
+- Set the "X-SimpleLogin-Envelope-To" to the alias during forward
+- Use a different format for VERP
+- use same footer as landing page
+- remove obsolete endpoints /alias/custom/new, /alias/options, /v2/alias/options, /v3/alias/options
+- support search on contact page
+- Better search using Postgres fulltext search
+- Use AGPL license instead of MIT
+- auto-create alias rule for custom domain
+- use re2 instead of re to avoid ReDOS attack
+- Use alembic instead of flask migrate which depends on flask-sqlalchemy
+- Remove flask-sqlalchemy
+- Able to block sender
+- subdomain
+- GPDR data export
+
 ## [3.4.0] - 2021-04-06
 Support ARM arch
 Remove unused config like DEBUG, CLOUDWATCH, DKIM_PUBLIC_KEY_PATH, DKIM_DNS_VALUE
