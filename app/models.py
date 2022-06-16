@@ -44,6 +44,7 @@ from app.config import (
     ROOT_DIR,
     NOREPLY,
     PARTNER_API_TOKEN_SECRET,
+    JOB_SEND_PROTON_WELCOME_1,
 )
 from app.db import Session
 from app.errors import (
@@ -564,6 +565,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             user.flags = User.FLAG_CREATED_FROM_PARTNER
             user.notification = False
             user.trial_end = None
+            Job.create(
+                name=JOB_SEND_PROTON_WELCOME_1,
+                payload={"user_id": user.id},
+                run_at=arrow.now(),
+            )
             Session.flush()
             return user
 
