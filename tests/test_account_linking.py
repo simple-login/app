@@ -3,10 +3,11 @@ from arrow import Arrow
 
 from app.account_linking import (
     process_link_case,
+    process_login_case,
     get_login_strategy,
     ensure_partner_user_exists_for_user,
     NewUserStrategy,
-    ExistingUnlinedUserStrategy,
+    ExistingUnlinkedUserStrategy,
     LinkedWithAnotherPartnerUserStrategy,
     SLPlan,
     SLPlanType,
@@ -27,6 +28,7 @@ def random_link_request(
     name: str = None,
     email: str = None,
     plan: SLPlan = None,
+    from_partner: bool = False,
 ) -> PartnerLinkRequest:
     external_user_id = (
         external_user_id if external_user_id is not None else random_string()
@@ -39,6 +41,7 @@ def random_link_request(
         email=email,
         external_user_id=external_user_id,
         plan=SLPlan(type=plan, expiration=Arrow.utcnow().shift(hours=2)),
+        from_partner=from_partner,
     )
 
 
@@ -72,6 +75,24 @@ def test_get_strategy_unexistant_sl_user():
     assert isinstance(strategy, NewUserStrategy)
 
 
+def test_login_case_from_partner():
+    partner = get_proton_partner()
+    external_user_id = random_string()
+    res = process_login_case(
+        random_link_request(
+            external_user_id=external_user_id,
+            from_partner=True,
+        ),
+        partner,
+    )
+
+    assert res.strategy == NewUserStrategy.__name__
+    assert res.user is not None
+    assert User.FLAG_CREATED_FROM_PARTNER == (
+        res.user.flags & User.FLAG_CREATED_FROM_PARTNER
+    )
+
+
 def test_get_strategy_existing_sl_user():
     email = random_email()
     user = User.create(email, commit=True)
@@ -80,7 +101,7 @@ def test_get_strategy_existing_sl_user():
         user=user,
         partner=get_proton_partner(),
     )
-    assert isinstance(strategy, ExistingUnlinedUserStrategy)
+    assert isinstance(strategy, ExistingUnlinkedUserStrategy)
 
 
 def test_get_strategy_existing_sl_user_linked_with_different_proton_account():
@@ -266,6 +287,7 @@ def test_ensure_partner_user_exists_for_user_raises_exception_when_linked_to_ano
             email=user_email,
             external_user_id=external_id_1,
             plan=SLPlan(type=SLPlanType.Free, expiration=None),
+            from_partner=False,
         ),
         user,
         partner_1,
@@ -279,6 +301,7 @@ def test_ensure_partner_user_exists_for_user_raises_exception_when_linked_to_ano
                 email=user_email,
                 external_user_id=external_id_2,
                 plan=SLPlan(type=SLPlanType.Free, expiration=None),
+                from_partner=False,
             ),
             user,
             partner_2,

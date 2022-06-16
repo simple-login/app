@@ -147,7 +147,7 @@ class NewUserStrategy(ClientMergeStrategy):
         )
 
 
-class ExistingUnlinedUserStrategy(ClientMergeStrategy):
+class ExistingUnlinkedUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
 
         partner_user = ensure_partner_user_exists_for_user(
@@ -177,7 +177,7 @@ def get_login_strategy(
     if other_partner_user is not None:
         return LinkedWithAnotherPartnerUserStrategy(link_request, user, partner)
     # There is a SimpleLogin user with the partner_user's e-mail
-    return ExistingUnlinedUserStrategy(link_request, user, partner)
+    return ExistingUnlinkedUserStrategy(link_request, user, partner)
 
 
 def process_login_case(
