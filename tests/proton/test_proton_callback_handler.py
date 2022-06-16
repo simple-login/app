@@ -44,6 +44,12 @@ def test_proton_callback_handler_unexistant_sl_user():
     assert res.user is not None
     assert res.user.email == email
     assert res.user.name == name
+    # Ensure the user is not marked as created from partner
+    assert User.FLAG_CREATED_FROM_PARTNER != (
+        res.user.flags & User.FLAG_CREATED_FROM_PARTNER
+    )
+    assert res.user.notification is True
+    assert res.user.trial_end is not None
 
     partner_user = PartnerUser.get_by(
         partner_id=get_proton_partner().id, user_id=res.user.id
@@ -68,6 +74,12 @@ def test_proton_callback_handler_existant_sl_user():
 
     assert res.user is not None
     assert res.user.id == sl_user.id
+    # Ensure the user is not marked as created from partner
+    assert User.FLAG_CREATED_FROM_PARTNER != (
+        res.user.flags & User.FLAG_CREATED_FROM_PARTNER
+    )
+    assert res.user.notification is True
+    assert res.user.trial_end is not None
 
     sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner().id)
     assert sa is not None

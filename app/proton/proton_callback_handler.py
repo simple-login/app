@@ -113,6 +113,7 @@ class ProtonCallbackHandler:
             external_user_id=proton_user.id,
             name=proton_user.name,
             plan=proton_user.plan,
+            from_partner=False,  # The user has started this flow, so we don't mark it as created by a partner
         )
 
     def __get_proton_user(self) -> Optional[ProtonUser]:

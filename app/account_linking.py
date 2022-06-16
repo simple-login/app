@@ -29,6 +29,7 @@ class PartnerLinkRequest:
     email: str
     external_user_id: str
     plan: SLPlan
+    from_partner: bool
 
 
 @dataclass
@@ -121,6 +122,7 @@ class NewUserStrategy(ClientMergeStrategy):
             email=self.link_request.email,
             name=self.link_request.name,
             password=random_string(20),
+            from_partner=self.link_request.from_partner,
         )
         partner_user = PartnerUser.create(
             user_id=new_user.id,
@@ -145,7 +147,7 @@ class NewUserStrategy(ClientMergeStrategy):
         )
 
 
-class ExistingUnlinedUserStrategy(ClientMergeStrategy):
+class ExistingUnlinkedUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
 
         partner_user = ensure_partner_user_exists_for_user(
@@ -175,7 +177,7 @@ def get_login_strategy(
     if other_partner_user is not None:
         return LinkedWithAnotherPartnerUserStrategy(link_request, user, partner)
     # There is a SimpleLogin user with the partner_user's e-mail
-    return ExistingUnlinedUserStrategy(link_request, user, partner)
+    return ExistingUnlinkedUserStrategy(link_request, user, partner)
 
 
 def process_login_case(
