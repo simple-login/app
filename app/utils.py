@@ -87,7 +87,7 @@ class NextUrlSanitizer:
                 return replaced
             else:
                 return None
-        if result.path and result.path[0] == "/":
+        if result.path and result.path[0] == "/" and not result.path.startswith("//"):
             return result.path
 
         return None

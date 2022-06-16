@@ -27,6 +27,7 @@ def generate_sanitize_url_cases() -> List:
         ["/auth", "/auth"],
         ["/some/path", "/some/path"],
         ["//somewhere.net", None],
+        ["//\\\\evil.com", None],
     ]
     for domain in ALLOWED_REDIRECT_DOMAINS:
         cases.append([f"http://{domain}", f"http://{domain}"])
