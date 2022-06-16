@@ -29,6 +29,7 @@ class PartnerLinkRequest:
     email: str
     external_user_id: str
     plan: SLPlan
+    from_partner: bool
 
 
 @dataclass
@@ -121,6 +122,7 @@ class NewUserStrategy(ClientMergeStrategy):
             email=self.link_request.email,
             name=self.link_request.name,
             password=random_string(20),
+            from_partner=self.link_request.from_partner,
         )
         partner_user = PartnerUser.create(
             user_id=new_user.id,

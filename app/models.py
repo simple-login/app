@@ -302,7 +302,8 @@ class Fido(Base, ModelMixin):
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
     __tablename__ = "users"
 
-    FLAG_FREE_DISABLE_CREATE_ALIAS = 1
+    FLAG_FREE_DISABLE_CREATE_ALIAS = 1 << 0
+    FLAG_CREATED_FROM_PARTNER = 1 << 1
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
@@ -528,7 +529,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             return str(self.id)
 
     @classmethod
-    def create(cls, email, name="", password=None, **kwargs):
+    def create(cls, email, name="", password=None, from_partner=False, **kwargs):
         user: User = super(User, cls).create(email=email, name=name, **kwargs)
 
         if password:
@@ -556,6 +557,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         # generate an alternative_id if needed
         if "alternative_id" not in kwargs:
             user.alternative_id = str(uuid.uuid4())
+
+        # If the user is created from partner, do not notify
+        # nor give a trial
+        if from_partner:
+            user.flags = User.FLAG_CREATED_FROM_PARTNER
+            user.notification = False
+            user.trial_end = None
+            Session.flush()
+            return user
 
         if DISABLE_ONBOARDING:
             LOG.d("Disable onboarding emails")
