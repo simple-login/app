@@ -91,6 +91,23 @@ def test_login_case_from_partner():
     assert User.FLAG_CREATED_FROM_PARTNER == (
         res.user.flags & User.FLAG_CREATED_FROM_PARTNER
     )
+    
+def test_login_case_from_web():
+    partner = get_proton_partner()
+    external_user_id = random_string()
+    res = process_login_case(
+        random_link_request(
+            external_user_id=external_user_id,
+            from_partner=False,
+        ),
+        partner,
+    )
+
+    assert res.strategy == NewUserStrategy.__name__
+    assert res.user is not None
+    assert 0 == (
+        res.user.flags & User.FLAG_CREATED_FROM_PARTNER
+    )
 
 
 def test_get_strategy_existing_sl_user():
