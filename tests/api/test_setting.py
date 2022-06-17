@@ -12,13 +12,17 @@ def test_get_setting(flask_client):
 
     r = flask_client.get("/api/setting")
     assert r.status_code == 200
-    assert r.json == {
+    e_json = {
         "alias_generator": "word",
         "notification": True,
         "random_alias_default_domain": "sl.local",
         "sender_format": "AT",
         "random_alias_suffix": "random_string",
     }
+    for key in e_json:
+        # Assert on a per-key basis for better error reporting
+        assert r.json[key] == e_json[key]
+    assert len(r.json) == len(e_json)
 
 
 def test_update_settings_notification(flask_client):
@@ -40,6 +44,10 @@ def test_update_settings_alias_generator(flask_client):
     r = flask_client.patch("/api/setting", json={"alias_generator": "uuid"})
     assert r.status_code == 200
     assert user.alias_generator == AliasGeneratorEnum.uuid.value
+
+    r = flask_client.patch("/api/setting", json={"alias_generator": "random_string"})
+    assert r.status_code == 200
+    assert user.alias_generator == AliasGeneratorEnum.random_string.value
 
 
 def test_update_settings_random_alias_default_domain(flask_client):

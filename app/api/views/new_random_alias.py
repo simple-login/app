@@ -94,12 +94,14 @@ def new_random_alias():
         scheme = user.alias_generator
         mode = request.args.get("mode")
         if mode:
-            if mode == "word":
-                scheme = AliasGeneratorEnum.word.value
-            elif mode == "uuid":
-                scheme = AliasGeneratorEnum.uuid.value
-            else:
-                return jsonify(error=f"{mode} must be either word or uuid"), 400
+            try:
+                scheme = AliasGeneratorEnum[mode].value
+            except KeyError:
+                modes = ", ".join(AliasGeneratorEnum.get_names())
+                return (
+                    jsonify(error=f"{mode} must be one of {modes}"),
+                    400,
+                )
 
         alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
         Session.commit()

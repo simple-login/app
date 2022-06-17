@@ -101,6 +101,32 @@ def test_custom_mode(flask_client):
     assert ge.note == "test note"
 
 
+def test_random_string_mode(flask_client):
+    login(flask_client)
+
+    # without note
+    r = flask_client.post(
+        url_for("api.new_random_alias", mode="random_string"),
+    )
+
+    assert r.status_code == 201
+    # extract the uuid part
+    alias = r.json["alias"]
+    random_string_part: str = alias[: len(alias) - len(EMAIL_DOMAIN) - 1]
+    assert random_string_part.isalnum()
+
+    # with note
+    r = flask_client.post(
+        url_for("api.new_random_alias", mode="random_string"),
+        json={"note": "test note"},
+    )
+
+    assert r.status_code == 201
+    alias = r.json["alias"]
+    ge = Alias.get_by(email=alias)
+    assert ge.note == "test note"
+
+
 def test_out_of_quota(flask_client):
     user = login(flask_client)
     user.trial_end = None

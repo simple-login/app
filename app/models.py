@@ -6,9 +6,10 @@ import hashlib
 import hmac
 import os
 import random
+import string
 import uuid
 from email.utils import formataddr
-from typing import List, Tuple, Optional
+from typing import List, Set, Tuple, Optional
 
 import arrow
 import sqlalchemy as sa
@@ -180,32 +181,34 @@ class File(Base, ModelMixin):
 
 class EnumE(enum.Enum):
     @classmethod
-    def has_value(cls, value: int) -> bool:
-        return value in set(item.value for item in cls)
+    def get_name(cls, value: int) -> Optional[str]:
+        try:
+            return cls(value).name
+        except ValueError:
+            return None
 
     @classmethod
-    def get_name(cls, value: int) -> Optional[str]:
-        for item in cls:
-            if item.value == value:
-                return item.name
-
-        return None
+    def get_names(cls) -> List[str]:
+        return [item.name for item in cls]
 
     @classmethod
     def has_name(cls, name: str) -> bool:
-        for item in cls:
-            if item.name == name:
-                return True
-
-        return False
+        return not cls.get_value(name) is None
 
     @classmethod
     def get_value(cls, name: str) -> Optional[int]:
-        for item in cls:
-            if item.name == name:
-                return item.value
+        try:
+            return cls[name].value
+        except KeyError:
+            return None
 
-        return None
+    @classmethod
+    def get_values(cls) -> List[int]:
+        return [item.value for item in cls]
+
+    @classmethod
+    def has_value(cls, value: int) -> bool:
+        return not cls.get_name(value) is None
 
 
 class PlanEnum(EnumE):
@@ -225,6 +228,7 @@ class SenderFormatEnum(EnumE):
 class AliasGeneratorEnum(EnumE):
     word = 1  # aliases are generated based on random words
     uuid = 2  # aliases are generated based on uuid
+    random_string = 3  # aliases are generated based on a completely random string
 
 
 class AliasSuffixEnum(EnumE):
@@ -1205,7 +1209,10 @@ def generate_email(
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
         random_email = name + "@" + alias_domain
-    else:
+    elif scheme == AliasGeneratorEnum.random_string.value:
+        name = "".join(random.choices(string.digits + string.ascii_lowercase, k=9))
+        random_email = name + "@" + alias_domain
+    else:  # use word.value as the default just like the original code
         random_email = random_words() + "@" + alias_domain
 
     random_email = random_email.lower().strip()

@@ -17,9 +17,10 @@ from app.models import (
 def setting_to_dict(user: User):
     ret = {
         "notification": user.notification,
-        "alias_generator": "word"
-        if user.alias_generator == AliasGeneratorEnum.word.value
-        else "uuid",
+        # return the default alias generator in case user uses a non-supported alias generator
+        "alias_generator": user.alias_generator
+        if AliasGeneratorEnum.has_name(user.alias_generator)
+        else AliasGeneratorEnum.get_name(AliasGeneratorEnum.word.value),
         "random_alias_default_domain": user.default_random_alias_domain(),
         # return the default sender format (AT) in case user uses a non-supported sender format
         "sender_format": SenderFormatEnum.get_name(user.sender_format)
@@ -48,7 +49,7 @@ def update_setting():
     Update user setting
     Input:
     - notification: bool
-    - alias_generator: word|uuid
+    - alias_generator: word|uuid|random_string
     - random_alias_default_domain: str
     """
     user = g.user
@@ -59,13 +60,10 @@ def update_setting():
 
     if "alias_generator" in data:
         alias_generator = data["alias_generator"]
-        if alias_generator not in ["word", "uuid"]:
+        try:
+            user.alias_generator = AliasGeneratorEnum[alias_generator].value
+        except KeyError:
             return jsonify(error="Invalid alias_generator"), 400
-
-        if alias_generator == "word":
-            user.alias_generator = AliasGeneratorEnum.word.value
-        else:
-            user.alias_generator = AliasGeneratorEnum.uuid.value
 
     if "sender_format" in data:
         sender_format = data["sender_format"]
