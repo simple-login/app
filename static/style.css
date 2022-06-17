@@ -193,3 +193,6 @@ textarea.parsley-error {
     background-color:white;
     color:#6d4aff;
 }
+.proton-button:hover {
+    background-color: #1b1340;
+}
