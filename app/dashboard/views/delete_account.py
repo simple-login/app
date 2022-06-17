@@ -14,7 +14,7 @@ from app.models import Subscription, Job
 @sudo_required
 def delete_account():
     if request.method == "POST" and request.form.get("form-name") == "delete-account":
-        sub: Subscription = current_user.get_subscription()
+        sub: Subscription = current_user.get_paddle_subscription()
         # user who has canceled can also re-subscribe
         if sub and not sub.cancelled:
             flash("Please cancel your current subscription first", "warning")

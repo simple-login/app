@@ -19,8 +19,8 @@ from app.proton.proton_client import HttpProtonClient, convert_access_token
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
     Action,
-    get_proton_partner,
 )
+from app.proton.utils import get_proton_partner
 from app.utils import sanitize_next_url
 
 _authorization_base_url = PROTON_BASE_URL + "/oauth/authorize"

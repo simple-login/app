@@ -1,6 +1,10 @@
+import random
+
+import arrow
 import pytest
 from arrow import Arrow
 
+from app import config
 from app.account_linking import (
     process_link_case,
     process_login_case,
@@ -13,11 +17,13 @@ from app.account_linking import (
     SLPlanType,
     PartnerLinkRequest,
     ClientMergeStrategy,
+    set_plan_for_partner_user,
 )
-from app.proton.proton_callback_handler import get_proton_partner
+from app.mail_sender import mail_sender
 from app.db import Session
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
-from app.models import Partner, PartnerUser, User
+from app.models import Partner, PartnerUser, User, Subscription, PlanEnum, SentAlert
+from app.proton.utils import get_proton_partner
 from app.utils import random_string
 
 from tests.utils import random_email
@@ -320,3 +326,39 @@ def test_ensure_partner_user_exists_for_user_raises_exception_when_linked_to_ano
             user,
             partner_2,
         )
+
+
+@mail_sender.store_emails_test_decorator
+def test_send_double_sub_email_is_sent(flask_client):
+    user = create_user(random_email())
+    Subscription.create(
+        user_id=user.id,
+        cancel_url="https://checkout.paddle.com/subscription/cancel?user=1234",
+        update_url="https://checkout.paddle.com/subscription/update?user=1234",
+        subscription_id=int(random.randint(10000, 999999999)),
+        event_time=arrow.now(),
+        next_bill_date=arrow.now().shift(days=10).date(),
+        plan=PlanEnum.monthly,
+        commit=True,
+    )
+    partner = Partner.create(
+        name=random_string(),
+        contact_email=random_email(),
+        flush=True,
+    )
+    partner_user = PartnerUser.create(
+        user_id=user.id,
+        partner_id=partner.id,
+        partner_email=user.email,
+        external_user_id=random_string(),
+        commit=True,
+    )
+    set_plan_for_partner_user(
+        partner_user,
+        SLPlan(type=SLPlanType.Premium, expiration=arrow.now().shift(months=10)),
+    )
+    emails_sent = mail_sender.get_stored_emails()
+    assert len(emails_sent) == 1
+    alerts = SentAlert.filter_by(user_id=user.id).all()
+    assert len(alerts) == 1
+    assert alerts[0].alert_type == config.ALERT_DUAL_SUBSCRIPTION_WITH_PARTNER

@@ -29,7 +29,7 @@ def pricing():
         flash("You already have a lifetime subscription", "error")
         return redirect(url_for("dashboard.index"))
 
-    sub: Subscription = current_user.get_subscription()
+    sub: Subscription = current_user.get_paddle_subscription()
     # user who has canceled can re-subscribe
     if sub and not sub.cancelled:
         flash("You already have an active subscription", "error")

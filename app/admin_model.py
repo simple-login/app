@@ -219,7 +219,7 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
             flash(f"user {user} already has a lifetime license", "warning")
             continue
 
-        sub: Subscription = user.get_subscription()
+        sub: Subscription = user.get_paddle_subscription()
         if sub and not sub.cancelled:
             flash(
                 f"user {user} already has a Paddle license, they have to cancel it first",

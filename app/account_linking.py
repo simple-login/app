@@ -2,13 +2,25 @@ from abc import ABC, abstractmethod
 from arrow import Arrow
 from dataclasses import dataclass
 from enum import Enum
+
+from flask import url_for
 from newrelic import agent
 from typing import Optional
 
+from app import config
 from app.db import Session
+from app.email_utils import send_email_at_most_times, render
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
 from app.log import LOG
-from app.models import PartnerSubscription, Partner, PartnerUser, User
+from app.models import (
+    PartnerSubscription,
+    Partner,
+    PartnerUser,
+    User,
+    AppleSubscription,
+    Subscription,
+)
+from app.proton.utils import is_proton_partner
 from app.utils import random_string
 
 
@@ -36,6 +48,36 @@ class PartnerLinkRequest:
 class LinkResult:
     user: User
     strategy: str
+
+
+def send_double_subscription_if_needed(partner_user: PartnerUser):
+    sub = partner_user.user.get_active_subscription()
+    if isinstance(sub, AppleSubscription):
+        channel = "Apple"
+    elif isinstance(sub, Subscription):
+        channel = "Paddle"
+    else:
+        return
+    send_email_at_most_times(
+        partner_user.user,
+        config.ALERT_DUAL_SUBSCRIPTION_WITH_PARTNER,
+        partner_user.user.email,
+        f"You have two subscriptions in SimpleLogin",
+        render(
+            "transactional/double-subscription-partner.txt.jinja2",
+            is_proton=is_proton_partner(partner_user.partner),
+            partner=partner_user.partner,
+            subscription_channel=channel,
+            cancel_link=url_for("dashboard.billing"),
+        ),
+        render(
+            "transactional/double-subscription-partner.html",
+            is_proton=is_proton_partner(partner_user.partner),
+            partner=partner_user.partner,
+            subscription_channel=channel,
+            cancel_link=url_for("dashboard.billing"),
+        ),
+    )
 
 
 def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
@@ -66,6 +108,7 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                     "PlanChange", {"plan": "premium", "type": "extension"}
                 )
                 sub.end_at = plan.expiration
+        send_double_subscription_if_needed(partner_user)
     Session.commit()
 
 

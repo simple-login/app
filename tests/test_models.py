@@ -278,12 +278,12 @@ def test_user_get_subscription_grace_period(flask_client):
         commit=True,
     )
 
-    assert user.get_subscription() is not None
+    assert user.get_paddle_subscription() is not None
 
     sub.next_bill_date = (
         arrow.now().shift(days=-(PADDLE_SUBSCRIPTION_GRACE_DAYS + 1)).date()
     )
-    assert user.get_subscription() is None
+    assert user.get_paddle_subscription() is None
 
 
 def test_create_contact_for_noreply(flask_client):

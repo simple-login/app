@@ -49,8 +49,7 @@ from app.models import (
     AppleSubscription,
     PartnerUser,
 )
-from app.proton.utils import is_connect_with_proton_enabled
-from app.proton.proton_callback_handler import get_proton_partner
+from app.proton.utils import is_connect_with_proton_enabled, get_proton_partner
 from app.utils import random_string, sanitize_email
 
 
