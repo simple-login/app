@@ -1,36 +1,19 @@
-{% extends "base.html" %}
+Welcome to SimpleLogin, a service developed by Proton to protect your email address!
 
-{% block content %}
-  {% call text() %}
-    Welcome to SimpleLogin, a service developed by Proton to protect your email address!
-  {% endcall %}
+This is the first email you receive via your first alias {{ to_address }}
 
-  {% call text() %}
-    This is the first email you receive via your first alias {{ to_address }}
-  {% endcall %}
+This alias was automatically created the first time you accessed SimpleLogin.
+Emails sent to it are forwarded to your Proton mailbox.
+If you want to reply to an email, just hit "Reply" and the response will come from this alias.
+Your personal email address will stay hidden.
 
-  {% call text() %}
-    This alias was automatically created the first time you accessed SimpleLogin.
-    Emails sent to it are forwarded to your Proton mailbox.
-    If you want to reply to an email, just hit "Reply" and the response will come from this alias.
-    Your personal email address will stay hidden.
-  {% endcall %}
+SimpleLogin is also available on Android and iOS, so you can manage your aliases on the go.
 
-  {% call text() %}
-    SimpleLogin is also available on <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android</a>
-    and <a href="https://apps.apple.com/app/id1494359858">iOS</a> so you can manage your aliases on the go.
-  {% endcall %}
+For any question, feedback or feature request, please join our GitHub forum.
+You can also join our Reddit or follow our Twitter.
 
-  {% call text() %}
-    For any question, feedback or feature request, please join our <a href="https://github.com/simple-login/app/discussions">GitHub forum</a>.
-    You can also join our <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a> or follow our <a href="https://twitter.com/simple_login">Twitter</a>.
-  {% endcall %}
+Best,
+SimpleLogin Team.
 
-  {% call text() %}
-    Best, <br/>
-    SimpleLogin Team.
-  {% endcall %}
-
-{% endblock %}
 
 
