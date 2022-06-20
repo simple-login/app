@@ -51,7 +51,11 @@
 
       {% if connect_with_proton %}
         <div class="text-center my-2 text-gray"><span>or</span></div>
-        <a class="btn btn-primary btn-block mt-2 proton-button" href="{{ url_for("auth.proton_login") }}">Sign up with Proton</a>
+        <a class="btn btn-primary btn-block mt-2 proton-button"
+           href="{{ url_for("auth.proton_login", next=next_url) }}">
+          <img class="mr-2" src="/static/images/proton.svg">
+          Sign up with Proton
+        </a>
       {% endif %}
     </div>
   </form>
