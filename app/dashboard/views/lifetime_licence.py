@@ -23,7 +23,7 @@ def lifetime_licence():
 
     # user needs to cancel active subscription first
     # to avoid being charged
-    sub = current_user.get_subscription()
+    sub = current_user.get_paddle_subscription()
     if sub and not sub.cancelled:
         flash("Please cancel your current subscription first", "warning")
         return redirect(url_for("dashboard.index"))

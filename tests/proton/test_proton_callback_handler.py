@@ -6,10 +6,10 @@ from app.account_linking import (
 from app.proton.proton_client import ProtonClient, UserInformation
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
-    get_proton_partner,
     generate_account_not_allowed_to_log_in,
 )
 from app.models import User, PartnerUser
+from app.proton.utils import get_proton_partner
 from app.utils import random_string
 from typing import Optional
 from tests.utils import random_email

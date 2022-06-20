@@ -3,8 +3,7 @@ from enum import Enum
 from flask import url_for
 from typing import Optional
 
-from app.db import Session
-from app.errors import LinkException, ProtonPartnerNotSetUp
+from app.errors import LinkException
 from app.models import User, Partner
 from app.proton.proton_client import ProtonClient, ProtonUser
 from app.account_linking import (
@@ -12,20 +11,6 @@ from app.account_linking import (
     process_link_case,
     PartnerLinkRequest,
 )
-
-PROTON_PARTNER_NAME = "Proton"
-_PROTON_PARTNER: Optional[Partner] = None
-
-
-def get_proton_partner() -> Partner:
-    global _PROTON_PARTNER
-    if _PROTON_PARTNER is None:
-        partner = Partner.get_by(name=PROTON_PARTNER_NAME)
-        if partner is None:
-            raise ProtonPartnerNotSetUp
-        Session.expunge(partner)
-        _PROTON_PARTNER = partner
-    return _PROTON_PARTNER
 
 
 class Action(Enum):

@@ -8,7 +8,7 @@ import os
 import random
 import uuid
 from email.utils import formataddr
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 import arrow
 import sqlalchemy as sa
@@ -597,57 +597,59 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return user
 
+    def get_active_subscription(
+        self,
+    ) -> Optional[
+        Union[
+            Subscription
+            | AppleSubscription
+            | ManualSubscription
+            | CoinbaseSubscription
+            | PartnerSubscription
+        ]
+    ]:
+        sub: Subscription = self.get_paddle_subscription()
+        if sub:
+            return sub
+
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and apple_sub.is_valid():
+            return apple_sub
+
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
+        if manual_sub and manual_sub.is_active():
+            return manual_sub
+
+        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+            user_id=self.id
+        )
+        if coinbase_subscription and coinbase_subscription.is_active():
+            return coinbase_subscription
+
+        partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(self.id)
+        if partner_sub and partner_sub.is_active():
+            return partner_sub
+
+        return None
+
     # region Billing
     def lifetime_or_active_subscription(self) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
 
-        sub: Subscription = self.get_subscription()
-        if sub:
-            return True
-
-        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
-        if apple_sub and apple_sub.is_valid():
-            return True
-
-        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
-        if manual_sub and manual_sub.is_active():
-            return True
-
-        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
-            user_id=self.id
-        )
-        if coinbase_subscription and coinbase_subscription.is_active():
-            return True
-
-        partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(self.id)
-        if partner_sub and partner_sub.is_active():
-            return True
-
-        return False
+        return self.get_active_subscription() is not None
 
     def is_paid(self) -> bool:
         """same as _lifetime_or_active_subscription but not include free manual subscription"""
-        sub: Subscription = self.get_subscription()
-        if sub:
-            return True
+        sub = self.get_active_subscription()
+        if sub is None:
+            return False
 
-        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
-        if apple_sub and apple_sub.is_valid():
-            return True
+        if isinstance(sub, ManualSubscription) and sub.is_giveaway():
+            return False
 
-        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
-        if manual_sub and not manual_sub.is_giveaway and manual_sub.is_active():
-            return True
-
-        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
-            user_id=self.id
-        )
-        if coinbase_subscription and coinbase_subscription.is_active():
-            return True
-
-        return False
+        return True
 
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
@@ -665,7 +667,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         if self.lifetime_or_active_subscription():
             # user who has canceled can also re-subscribe
-            sub: Subscription = self.get_subscription()
+            sub: Subscription = self.get_paddle_subscription()
             if sub and sub.cancelled:
                 return True
 
@@ -696,7 +698,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if self.lifetime:
             channels.append("Lifetime")
 
-        sub: Subscription = self.get_subscription()
+        sub: Subscription = self.get_paddle_subscription()
         if sub:
             if sub.cancelled:
                 channels.append(
@@ -779,7 +781,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
 
-    def get_subscription(self) -> Optional["Subscription"]:
+    def get_paddle_subscription(self) -> Optional["Subscription"]:
         """return *active* Paddle subscription
         Return None if the subscription is already expired
         TODO: support user unsubscribe and re-subscribe
@@ -3165,6 +3167,7 @@ class PartnerUser(Base, ModelMixin):
     partner_email = sa.Column(sa.String(255), unique=False, nullable=True)
 
     user = orm.relationship(User, foreign_keys=[user_id])
+    partner = orm.relationship(Partner, foreign_keys=[partner_id])
 
     __table_args__ = (
         sa.UniqueConstraint(

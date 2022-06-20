@@ -40,7 +40,7 @@ def coupon_route():
     if current_user.lifetime:
         can_use_coupon = False
 
-    sub: Subscription = current_user.get_subscription()
+    sub: Subscription = current_user.get_paddle_subscription()
     if sub:
         can_use_coupon = False
 
