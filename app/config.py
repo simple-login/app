@@ -267,6 +267,7 @@ JOB_DELETE_ACCOUNT = "delete-account"
 JOB_DELETE_MAILBOX = "delete-mailbox"
 JOB_DELETE_DOMAIN = "delete-domain"
 JOB_SEND_USER_REPORT = "send-user-report"
+JOB_SEND_PROTON_WELCOME_1 = "proton-welcome-1"
 
 # for pagination
 PAGE_LIMIT = 20

@@ -87,6 +87,25 @@ def onboarding_mailbox(user):
     )
 
 
+def welcome_proton(user):
+    to_email, _, _ = user.get_communication_email()
+    if not to_email:
+        return
+
+    send_email(
+        to_email,
+        "Welcome to SimpleLogin, an email masking service provided by Proton",
+        render(
+            "com/onboarding/welcome-proton-user.txt.jinja2",
+            user=user,
+            to_email=to_email,
+        ),
+        render("com/onboarding/welcome-proton-user.html", user=user, to_email=to_email),
+        retries=3,
+        ignore_smtp_error=True,
+    )
+
+
 if __name__ == "__main__":
     while True:
         # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
@@ -207,6 +226,12 @@ SimpleLogin team.
                     export_job = ExportUserDataJob.create_from_job(job)
                     if export_job:
                         export_job.run()
+                elif job.name == config.JOB_SEND_PROTON_WELCOME_1:
+                    user_id = job.payload.get("user_id")
+                    user = User.get(user_id)
+                    if user and user.activated:
+                        LOG.d("send proton welcome email to user %s", user)
+                        welcome_proton(user)
                 else:
                     LOG.e("Unknown job name %s", job.name)
 
