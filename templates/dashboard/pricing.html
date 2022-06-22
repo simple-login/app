@@ -80,22 +80,24 @@
         <hr>
       {% endif %}
 
-      <div id="proton-upgrade" style="display:none" class="px-4">
-        <h3 class="mb-5">Proton Unlimited and Mail Plus plans include SimpleLogin premium and more!</h3>
-        <a class="btn btn-primary btn-lg w-75" role="button" href="https://account.proton.me/u/0/mail/upgrade">
-          <b>Upgrade your Proton account</b>
-        </a>
-        <p class="mt-2 pl-3 small w-75"> Starts at $3.99/month (billed yearly), starting with 15GB of storage, encrypted calendar & file storage and more. </p>
-        <hr/>
-        <div id="normal-upgrade-button">
-          <button class="btn btn-secondary" onclick="showNormalUpgrade()">
-            Upgrade your SimpleLogin account
-          </button>
-          <p class="mt-2 pl-3 small">Starts at $2.5/month (billed yearly)</p>
+      {% if proton_upgrade %}
+        <div id="proton-upgrade" class="px-4" >
+          <h3 class="mb-5">Proton Unlimited and Mail Plus plans include SimpleLogin premium and more!</h3>
+          <a class="btn btn-primary btn-lg w-75" role="button" href="https://account.proton.me/u/0/mail/upgrade">
+            <b>Upgrade your Proton account</b>
+          </a>
+          <p class="mt-2 pl-3 small w-75"> Starts at $3.99/month (billed yearly), starting with 15GB of storage, encrypted calendar & file storage and more. </p>
+          <hr/>
+          <div id="normal-upgrade-button">
+            <button class="btn btn-secondary" onclick="showNormalUpgrade()">
+              Upgrade your SimpleLogin account
+            </button>
+            <p class="mt-2 pl-3 small">Starts at $2.5/month (billed yearly)</p>
+          </div>
         </div>
-      </div>
+      {% endif %}
 
-      <div id="normal-upgrade" class="px-4">
+      <div id="normal-upgrade" class="px-4" {% if proton_upgrade %}style="display: none"{% endif %}>
 
         <div class="display-6 my-3">
           🔐 Secure payments by
@@ -197,17 +199,10 @@
       });
     }
 
-    function setProtonUpgradeMode(showProton) {
-      document.getElementById("proton-upgrade").style.display = showProton ? "block" : "none";
-      document.getElementById("normal-upgrade").style.display = !showProton ? "block" : "none";
-    }
-
     function showNormalUpgrade(){
       document.getElementById("normal-upgrade").style.display = "block";
       document.getElementById("normal-upgrade-button").style.display = "none";
     }
-
-    {% if proton_upgrade %}setProtonUpgradeMode(true);{% else %}setProtonUpgradeMode(false);{% endif %}
   </script>
 
 {% endblock %}
