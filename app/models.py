@@ -2061,6 +2061,7 @@ class ApiKey(Base, ModelMixin):
     name = sa.Column(sa.String(128), nullable=True)
     last_used = sa.Column(ArrowType, default=None)
     times = sa.Column(sa.Integer, default=0, nullable=False)
+    sudo_mode_at = sa.Column(ArrowType, default=None)
 
     user = orm.relationship(User)
 
