@@ -170,6 +170,34 @@ def test_available_suffixes_random_prefix_generation(flask_client):
     assert first_suffix.suffix.startswith(".")
 
 
+def test_available_suffixes_hidden_domain(flask_client):
+    user = login(flask_client)
+    nb_suffix = len(get_available_suffixes(user))
+
+    sl_domain = SLDomain.create(domain=random_domain(), commit=True)
+    assert len(get_available_suffixes(user)) == nb_suffix + 1
+
+    sl_domain.hidden = True
+    Session.commit()
+    assert len(get_available_suffixes(user)) == nb_suffix
+
+
+def test_available_suffixes_domain_order(flask_client):
+    user = login(flask_client)
+
+    domain = random_domain()
+    # will be the last domain as other domains have order=0
+    sl_domain = SLDomain.create(domain=domain, order=1, commit=True)
+    last_suffix_info = get_available_suffixes(user)[-1]
+    assert last_suffix_info.suffix.endswith(domain)
+
+    # now will be the first domain
+    sl_domain.order = -1
+    Session.commit()
+    first_suffix_info = get_available_suffixes(user)[0]
+    assert first_suffix_info.suffix.endswith(domain)
+
+
 def test_add_already_existed_alias(flask_client):
     user = login(flask_client)
     Session.commit()
