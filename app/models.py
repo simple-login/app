@@ -916,10 +916,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return [sl_domain.domain for sl_domain in self.get_sl_domains()]
 
     def get_sl_domains(self) -> List["SLDomain"]:
+        query = SLDomain.filter_by(hidden=False).order_by(SLDomain.order)
+
         if self.is_premium():
-            return SLDomain.all()
+            return query.all()
         else:
-            return SLDomain.filter_by(premium_only=False).all()
+            return query.filter_by(premium_only=False).all()
 
     def available_alias_domains(self) -> [str]:
         """return all domains that user can use when creating a new alias, including:
@@ -2703,6 +2705,12 @@ class SLDomain(Base, ModelMixin):
     can_use_subdomain = sa.Column(
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
+
+    # if enabled, do not show this domain when user creates a custom alias
+    hidden = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
+
+    # the order in which the domains are shown when user creates a custom alias
+    order = sa.Column(sa.Integer, nullable=False, default=0, server_default="0")
 
     def __repr__(self):
         return f"<SLDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
