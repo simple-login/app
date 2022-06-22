@@ -9,10 +9,10 @@
 {% block head %}
   <script src="https://cdn.paddle.com/paddle/paddle.js"></script>
   <script>
-      if (window.Paddle === undefined) {
-          console.log("cannot load Paddle from CDN");
-          document.write('<script src="/static/vendor/paddle.js"><\/script>')
-      }
+    if (window.Paddle === undefined) {
+      console.log("cannot load Paddle from CDN");
+      document.write('<script src="/static/vendor/paddle.js"><\/script>')
+    }
   </script>
 
   <style type="text/css">
@@ -171,43 +171,43 @@
 
 
   <script type="text/javascript">
-      Paddle.Setup({vendor: {{ PADDLE_VENDOR_ID }}});
+    Paddle.Setup({vendor: {{ PADDLE_VENDOR_ID }}});
 
-      function upgrade(productId) {
-          bootbox.dialog({
-              title: `Payment with credit card or PayPal via Paddle`,
-              message: `Paddle will ask for an email address for sending out the invoices, please feel free to use an alias. <br>
+    function upgrade(productId) {
+      bootbox.dialog({
+        title: `Payment with credit card or PayPal via Paddle`,
+        message: `Paddle will ask for an email address for sending out the invoices, please feel free to use an alias. <br>
         You don't have to use your SimpleLogin account email address`,
-              size: 'large',
-              onEscape: true,
-              backdrop: true,
-              buttons: {
-                  got_it: {
-                      label: 'Got it!',
-                      className: 'btn-outline-primary',
-                      callback: function () {
-                          Paddle.Checkout.open({
-                              product: productId,
-                              success: "{{ success_url }}",
-                              passthrough: "{\"user_id\": {{current_user.id}} }"
-                          });
-                      }
-                  },
-              }
-          });
-      }
+        size: 'large',
+        onEscape: true,
+        backdrop: true,
+        buttons: {
+          got_it: {
+            label: 'Got it!',
+            className: 'btn-outline-primary',
+            callback: function () {
+              Paddle.Checkout.open({
+                product: productId,
+                success: "{{ success_url }}",
+                passthrough: "{\"user_id\": {{current_user.id}} }"
+              });
+            }
+          },
+        }
+      });
+    }
 
-      function setProtonUpgradeMode(showProton) {
-          document.getElementById("proton-upgrade").style.display = showProton ? "block" : "none";
-          document.getElementById("normal-upgrade").style.display = !showProton ? "block" : "none";
-      }
+    function setProtonUpgradeMode(showProton) {
+      document.getElementById("proton-upgrade").style.display = showProton ? "block" : "none";
+      document.getElementById("normal-upgrade").style.display = !showProton ? "block" : "none";
+    }
 
-      function showNormalUpgrade(){
-          document.getElementById("normal-upgrade").style.display = "block";
-          document.getElementById("normal-upgrade-button").style.display = "none";
-      }
+    function showNormalUpgrade(){
+      document.getElementById("normal-upgrade").style.display = "block";
+      document.getElementById("normal-upgrade-button").style.display = "none";
+    }
 
-      {% if proton_upgrade %}setProtonUpgradeMode(true);{% else %}setProtonUpgradeMode(false);{% endif %}
+    {% if proton_upgrade %}setProtonUpgradeMode(true);{% else %}setProtonUpgradeMode(false);{% endif %}
   </script>
 
 {% endblock %}
