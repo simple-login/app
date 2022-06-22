@@ -6,43 +6,14 @@ Sometimes upgrading to a major version might require running a manual migration.
 
 If you are running versions prior to 4.x.x, please:
 
-1. first upgrade to 2.1.2 then
+1. first upgrade to 3.4.0 then
 2. upgrade to the latest version which is 4.6.2-beta
 
 <details>
-<summary>After upgrade to 4.x.x from 2.x.x</summary>
+<summary>After upgrade to 4.x.x from 3.4.0</summary>
 <p>
 
-4.x.x has some data structure changes that cannot be automatically upgraded from 2.x.x.
-Once you have upgraded your installation to 4.x.x, please run the following scripts to make your data fully compatible with 4.x.x
-
-First connect to your SimpleLogin container shell:
-
-```bash
-docker exec -it sl-app python shell.py
-```
-
-Then copy and run this below script:
-
-```python
-from app.extensions import db
-from app.models import AliasUsedOn, Contact, EmailLog
-
-for auo in AliasUsedOn.query.all():
-    auo.user_id = auo.alias.user_id
-db.session.commit()
-
-for contact in Contact.query.all():
-    contact.user_id = contact.alias.user_id
-db.session.commit()
-
-for email_log in EmailLog.query.all():
-    email_log.user_id = email_log.contact.user_id
-
-db.session.commit()
-```
-
-Please also update `/etc/postfix/pgsql-relay-domains.cf` to the following. Make sure to replace `mydomain.com` by your actual domain.
+Please update `/etc/postfix/pgsql-relay-domains.cf` to the following. Make sure to replace `mydomain.com` by your actual domain.
 
 ```
 # postgres config
@@ -71,6 +42,42 @@ query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND
     UNION SELECT 'smtp:127.0.0.1:20381' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
+
+</p>
+</details>
+
+<details>
+<summary>After upgrade to 3x from 2x</summary>
+<p>
+
+3x has some data structure changes that cannot be automatically upgraded from 2x.
+Once you have upgraded your installation to 3x, please run the following scripts to make your data fully compatible with 3x
+
+First connect to your SimpleLogin container shell:
+
+```bash
+docker exec -it sl-app python shell.py
+```
+
+Then copy and run this below script:
+
+```python
+from app.extensions import db
+from app.models import AliasUsedOn, Contact, EmailLog
+
+for auo in AliasUsedOn.query.all():
+    auo.user_id = auo.alias.user_id
+db.session.commit()
+
+for contact in Contact.query.all():
+    contact.user_id = contact.alias.user_id
+db.session.commit()
+
+for email_log in EmailLog.query.all():
+    email_log.user_id = email_log.contact.user_id
+
+db.session.commit()
+```
 
 </p>
 </details>
