@@ -87,7 +87,7 @@
         </a>
       </div>
 
-      {% set sub = current_user.get_subscription() %}
+      {% set sub = current_user.get_paddle_subscription() %}
       {% if sub and sub.cancelled %}
         <div class="alert alert-primary" role="alert">
           You have an active subscription until {{ sub.next_bill_date.strftime("%Y-%m-%d") }}. <br>
