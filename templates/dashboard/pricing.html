@@ -19,6 +19,16 @@
       html.mvc__a.mvc__lot.mvc__of.mvc__classes.mvc__to.mvc__increase.mvc__the.mvc__odds.mvc__of.mvc__winning.mvc__specificity, html.mvc__a.mvc__lot.mvc__of.mvc__classes.mvc__to.mvc__increase.mvc__the.mvc__odds.mvc__of.mvc__winning.mvc__specificity > body {
           position: static;
       }
+
+
+      {#CSS to change collapse button display from https://stackoverflow.com/a/31967516/1428034#}
+      [data-toggle="collapse"].collapsed .if-not-collapsed {
+          display: none;
+      }
+
+      [data-toggle="collapse"]:not(.collapsed) .if-collapsed {
+          display: none;
+      }
   </style>
 
 {% endblock %}
@@ -80,74 +90,103 @@
         <hr>
       {% endif %}
 
-      <div class="display-6 my-3">
-        🔐 Secure payments by
-        <a href="https://paddle.com" target="_blank" rel="noopener">
-          Paddle <i class="fe fe-external-link"></i>
-        </a>
-      </div>
+      {% if proton_upgrade %}
+        <div id="proton-upgrade" class="">
+          <h4 class="">Proton Unlimited and Mail Plus plans include SimpleLogin premium and more!</h4>
+          <a class="btn btn-primary" role="button" href="https://account.proton.me/u/0/mail/upgrade">
+            <b>Upgrade your Proton account</b>
+          </a>
+          <p class="mt-2 small"> Starts at $3.99/month (billed yearly), starting with 15GB of storage, encrypted
+            calendar & file storage and more. </p>
 
-      {% set sub = current_user.get_paddle_subscription() %}
-      {% if sub and sub.cancelled %}
-        <div class="alert alert-primary" role="alert">
-          You have an active subscription until {{ sub.next_bill_date.strftime("%Y-%m-%d") }}. <br>
-          Please note that if you re-subscribe now, this will be a completely
-          new subscription and
-          your payment method will be charged <b>immediately</b>.
+          <div class="middle-line my-5 h4">OR</div>
+
+          <div id="normal-upgrade-button">
+            <a class="btn btn-secondary collapsed" data-toggle="collapse" href="#normal-upgrade" role="button">
+              Upgrade your SimpleLogin account
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </a>
+            <p class="mt-2 small">Starts at $2.5/month (billed yearly)</p>
+          </div>
         </div>
       {% endif %}
 
-      {% if coinbase_sub %}
-        <div class="alert alert-info">
-          You currently have a Coinbase subscription until <b>{{ coinbase_sub.end_at.format("YYYY-MM-DD") }}</b>
-          ({{ (coinbase_sub.end_at - now).days }} days left).
+      <div id="normal-upgrade" class="{% if proton_upgrade %} collapse {% endif %}">
+
+        <div class="display-6 my-3">
+          🔐 Secure payments by
+          <a href="https://paddle.com" target="_blank" rel="noopener">
+            Paddle <i class="fe fe-external-link"></i>
+          </a>
+        </div>
+
+        {% set sub = current_user.get_paddle_subscription() %}
+        {% if sub and sub.cancelled %}
+          <div class="alert alert-primary" role="alert">
+            You have an active subscription until {{ sub.next_bill_date.strftime("%Y-%m-%d") }}. <br>
+            Please note that if you re-subscribe now, this will be a completely
+            new subscription and
+            your payment method will be charged <b>immediately</b>.
+          </div>
+        {% endif %}
+
+        {% if coinbase_sub %}
+          <div class="alert alert-info">
+            You currently have a Coinbase subscription until <b>{{ coinbase_sub.end_at.format("YYYY-MM-DD") }}</b>
+            ({{ (coinbase_sub.end_at - now).days }} days left).
+            <br>
+            Please note that the time left will <b>not</b> be taken into account in a new Paddle subscription.
+          </div>
+        {% endif %}
+
+        <div class="mb-3">
+          Paddle supports bank cards
+          (Mastercard, Visa, American Express, etc) and PayPal.
+        </div>
+
+        <button class="btn btn-primary" onclick="upgrade({{ PADDLE_YEARLY_PRODUCT_ID }})">
+          Yearly billing
+          <span class="badge badge-success">Save $18</span>
           <br>
-          Please note that the time left will <b>not</b> be taken into account in a new Paddle subscription.
-        </div>
-      {% endif %}
-
-      <div class="mb-3">
-        Paddle supports bank cards
-        (Mastercard, Visa, American Express, etc) and PayPal.
-      </div>
-
-      <button class="btn btn-primary" onclick="upgrade({{ PADDLE_YEARLY_PRODUCT_ID }})">
-        Yearly billing
-        <span class="badge badge-success">Save $18</span>
-        <br>
-        <span style="font-size: 18px">
+          <span style="font-size: 18px">
           $30/year
         </span>
-      </button>
+        </button>
 
-      <button class="btn btn-secondary" onclick="upgrade({{ PADDLE_MONTHLY_PRODUCT_ID }})">
-        Monthly billing <br>
-        <b>
-          $4/month
-        </b>
-      </button>
+        <button class="btn btn-secondary" onclick="upgrade({{ PADDLE_MONTHLY_PRODUCT_ID }})">
+          Monthly billing <br>
+          <b>
+            $4/month
+          </b>
+        </button>
 
-      <hr>
-      <i class="fa fa-bitcoin"></i>
-      Payment via
-      <a href="https://commerce.coinbase.com/?lang=en" target="_blank">
-        Coinbase Commerce<i class="fe fe-external-link"></i>
-      </a> <br>
-      Currently Bitcoin, Bitcoin Cash, Dai, Ethereum, Litecoin and USD Coin are supported. <br>
+        <hr>
+        <i class="fa fa-bitcoin"></i>
+        Payment via
+        <a href="https://commerce.coinbase.com/?lang=en" target="_blank">
+          Coinbase Commerce<i class="fe fe-external-link"></i>
+        </a> <br>
+        Currently Bitcoin, Bitcoin Cash, Dai, Ethereum, Litecoin and USD Coin are supported. <br>
 
-      <a class="btn btn-outline-primary" href="{{ url_for('dashboard.coinbase_checkout_route') }}"
-         target="_blank">
-        Yearly billing - Crypto <br>
-        $30/year
-        <i class="fe fe-external-link"></i>
-      </a>
+        <a class="btn btn-outline-primary" href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+           target="_blank">
+          Yearly billing - Crypto <br>
+          $30/year
+          <i class="fe fe-external-link"></i>
+        </a>
 
-      <hr>
-      For other payment options, please send us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a>.
-      <br>
-      If you have bought a coupon, please go to the <a href="{{ url_for('dashboard.coupon_route') }}">coupon page</a> to
-      apply the coupon code.
+        <hr>
+        For other payment options, please send us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a>.
+        <br>
+        If you have bought a coupon, please go to the <a href="{{ url_for('dashboard.coupon_route') }}">coupon page</a>
+        to apply the coupon code.
 
+      </div>
     </div>
   </div>
 
@@ -178,6 +217,7 @@
         }
       });
     }
+
   </script>
 
 {% endblock %}
