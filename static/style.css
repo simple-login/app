@@ -196,3 +196,21 @@ textarea.parsley-error {
 .proton-button:hover {
     background-color: #1b1340;
 }
+
+/* CSS technique for a horizontal line with words in the middle */
+.middle-line {
+  display: flex;
+  flex-direction: row;
+}
+.middle-line:before, .middle-line:after{
+  content: "";
+  flex: 1 1;
+  border-bottom: 1px solid;
+  margin: auto;
+}
+.middle-line:before {
+  margin-right: 10px
+}
+.middle-line:after {
+  margin-left: 10px
+}
