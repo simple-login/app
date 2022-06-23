@@ -10,7 +10,7 @@
 - [POST /api/auth/reactivate](##post-apiauthreactivate): Request a new activation code.
 - [POST /api/auth/forgot_password](#post-apiauthforgot_password): Request reset password link.
 - [GET /api/user_info](#get-apiuser_info): Get user's information.
-- [PATCH /api/sudo](#get-apiuser_sudo): Enable sudo mode.
+- [PATCH /api/sudo](#patch-apiuser_sudo): Enable sudo mode.
 - [PATCH /api/user_info](#patch-apiuser_info): Update user's information.
 - [POST /api/api_key](#post-apiapi_key): Create a new API key.
 - [GET /api/logout](#get-apilogout): Log out.
