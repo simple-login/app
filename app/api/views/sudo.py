@@ -1,4 +1,4 @@
-from flask import jsonify, g, request, make_response
+from flask import jsonify, g, request
 from sqlalchemy_utils.types.arrow import arrow
 
 from app.api.base import api_bp, require_api_auth
