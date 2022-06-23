@@ -19,6 +19,16 @@
       html.mvc__a.mvc__lot.mvc__of.mvc__classes.mvc__to.mvc__increase.mvc__the.mvc__odds.mvc__of.mvc__winning.mvc__specificity, html.mvc__a.mvc__lot.mvc__of.mvc__classes.mvc__to.mvc__increase.mvc__the.mvc__odds.mvc__of.mvc__winning.mvc__specificity > body {
           position: static;
       }
+
+
+      {#CSS to change collapse button display from https://stackoverflow.com/a/31967516/1428034#}
+      [data-toggle="collapse"].collapsed .if-not-collapsed {
+          display: none;
+      }
+
+      [data-toggle="collapse"]:not(.collapsed) .if-collapsed {
+          display: none;
+      }
   </style>
 
 {% endblock %}
@@ -86,20 +96,27 @@
           <a class="btn btn-primary" role="button" href="https://account.proton.me/u/0/mail/upgrade">
             <b>Upgrade your Proton account</b>
           </a>
-          <p class="mt-2 small"> Starts at $3.99/month (billed yearly), starting with 15GB of storage, encrypted calendar & file storage and more. </p>
+          <p class="mt-2 small"> Starts at $3.99/month (billed yearly), starting with 15GB of storage, encrypted
+            calendar & file storage and more. </p>
 
           <div class="middle-line my-5 h4">OR</div>
 
           <div id="normal-upgrade-button">
-            <button class="btn btn-secondary" onclick="showNormalUpgrade()">
+            <a class="btn btn-secondary collapsed" data-toggle="collapse" href="#normal-upgrade" role="button">
               Upgrade your SimpleLogin account
-            </button>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </a>
             <p class="mt-2 small">Starts at $2.5/month (billed yearly)</p>
           </div>
         </div>
       {% endif %}
 
-      <div id="normal-upgrade" class="px-4" {% if proton_upgrade %}style="display: none"{% endif %}>
+      <div id="normal-upgrade" class="{% if proton_upgrade %} collapse {% endif %}">
 
         <div class="display-6 my-3">
           🔐 Secure payments by
@@ -166,8 +183,8 @@
         <hr>
         For other payment options, please send us an email at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a>.
         <br>
-        If you have bought a coupon, please go to the <a href="{{ url_for('dashboard.coupon_route') }}">coupon page</a> to
-        apply the coupon code.
+        If you have bought a coupon, please go to the <a href="{{ url_for('dashboard.coupon_route') }}">coupon page</a>
+        to apply the coupon code.
 
       </div>
     </div>
@@ -201,10 +218,6 @@
       });
     }
 
-    function showNormalUpgrade(){
-      document.getElementById("normal-upgrade").style.display = "block";
-      document.getElementById("normal-upgrade-button").style.display = "none";
-    }
   </script>
 
 {% endblock %}
