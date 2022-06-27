@@ -70,6 +70,12 @@
               </a>
             </div>
           {% endif %}
+
+          {% if partner_sub %}
+            <div>
+              Premium subscription managed by {{ partner_name }}.
+            </div>
+          {% endif %}
         {% elif current_user.in_trial() %}
           Your Premium trial expires {{ current_user.trial_end | dt }}.
         {% else %}
