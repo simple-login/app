@@ -1,10 +1,11 @@
+import enum
 from dataclasses import dataclass
 from typing import Optional
 
-from app.models import EnumE
+from app import config
 
 
-class UnsubscribeAction(EnumE):
+class UnsubscribeAction(enum.Enum):
     UnsubscribeNewsletter = 1
     DisableAlias = 2
     DisableContact = 3
@@ -16,18 +17,41 @@ class UnsubscribeData:
     data: int
 
 
+@dataclass
+class UnsubscribeLink:
+    link: str
+    via_email: bool
+
+
 class UnsubscribeEncoder:
     @staticmethod
-    def encode(unsub: UnsubscribeData) -> str:
-        if unsub.action == UnsubscribeAction.DisableAlias:
-            return f"{unsub.data}="
-        if unsub.action == UnsubscribeAction.DisableContact:
-            return f"{unsub.data}_"
-        if unsub.action == UnsubscribeAction.UnsubscribeNewsletter:
-            return f"{unsub.data}*"
+    def encode(action: UnsubscribeAction, data: int) -> UnsubscribeLink:
+        if config.UNSUBSCRIBER:
+            return UnsubscribeLink(
+                UnsubscribeEncoder.encode_subject(action, data), True
+            )
+        return UnsubscribeLink(UnsubscribeEncoder.encode_url(action, data), False)
 
-    @classmethod
-    def decode(cls, data: str) -> Optional[UnsubscribeData]:
+    @staticmethod
+    def encode_subject(action: UnsubscribeAction, data: int) -> str:
+        if action == UnsubscribeAction.DisableAlias:
+            return f"{data}="
+        if action == UnsubscribeAction.DisableContact:
+            return f"{data}_"
+        if action == UnsubscribeAction.UnsubscribeNewsletter:
+            return f"{data}*"
+
+    @staticmethod
+    def encode_url(action: UnsubscribeAction, data: int) -> str:
+        if action == UnsubscribeAction.DisableAlias:
+            return f"{config.URL}/dashboard/unsubscribe/{data}"
+        if action == UnsubscribeAction.DisableContact:
+            return f"{config.URL}/dashboard/block_contact/{data}"
+        if action == UnsubscribeAction.UnsubscribeNewsletter:
+            raise Exception("Cannot encode url to disable newsletter")
+
+    @staticmethod
+    def decode_subject(data: str) -> Optional[UnsubscribeData]:
         try:
             # subject has the format {alias.id}=
             if data.endswith("="):

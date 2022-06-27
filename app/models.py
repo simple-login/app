@@ -35,6 +35,7 @@ from app.errors import (
     SubdomainInTrashError,
     CannotCreateContactForReverseAlias,
 )
+from app.handler.unsubscribe_encoder import UnsubscribeAction, UnsubscribeEncoder
 from app.log import LOG
 from app.oauth_models import Scope
 from app.pw_models import PasswordOracle
@@ -218,11 +219,6 @@ class AliasSuffixEnum(EnumE):
 class BlockBehaviourEnum(EnumE):
     return_2xx = 0
     return_5xx = 1
-
-
-class UnsubscribeBehaviourEnum(EnumE):
-    DisableAlias = 0
-    PreserveOriginal = 1
 
 
 class AuditLogActionEnum(EnumE):
@@ -883,8 +879,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             if self.newsletter_alias_id:
                 alias = Alias.get(self.newsletter_alias_id)
                 if alias.enabled:
-                    unsubscribe_link, via_email = alias.unsubscribe_link()
-                    return alias.email, unsubscribe_link, via_email
+                    unsub = UnsubscribeEncoder.encode(
+                        UnsubscribeAction.DisableAlias, alias.id
+                    )
+                    return alias.email, unsub.link, unsub.via_email
                 # alias disabled -> user doesn't want to receive newsletter
                 else:
                     return None, None, False

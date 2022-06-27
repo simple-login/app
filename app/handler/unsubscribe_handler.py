@@ -23,7 +23,7 @@ class UnsubscribeHandler:
         header_value = message[headers.SUBJECT]
         if not header_value:
             return None
-        return UnsubscribeEncoder.decode(header_value)
+        return UnsubscribeEncoder.decode_subject(header_value)
 
     def handle_unsubscribe_from_message(self, envelope: Envelope, msg: Message) -> str:
         unsub_data = self._extract_unsub_info_from_message(msg)
