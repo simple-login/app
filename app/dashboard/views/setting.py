@@ -12,7 +12,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from newrelic import agent
-from typing import Optional
+from typing import Optional, Tuple
 from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
@@ -48,6 +48,7 @@ from app.models import (
     CoinbaseSubscription,
     AppleSubscription,
     PartnerUser,
+    PartnerSubscription,
 )
 from app.proton.utils import is_connect_with_proton_enabled, get_proton_partner
 from app.utils import random_string, sanitize_email
@@ -82,6 +83,17 @@ def get_proton_linked_account() -> Optional[str]:
     if proton_linked_account is None:
         return None
     return proton_linked_account.partner_email
+
+
+def get_partner_subscription_and_name(
+    user_id: int,
+) -> Optional[Tuple[PartnerSubscription, str]]:
+    partner_sub = PartnerSubscription.find_by_user_id(user_id)
+    if not partner_sub or not partner_sub.is_active():
+        return None
+
+    partner = partner_sub.partner_user.partner
+    return (partner_sub, partner.name)
 
 
 @dashboard_bp.route("/setting", methods=["GET", "POST"])
@@ -358,6 +370,13 @@ def setting():
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
     coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
+    partner_sub = None
+    partner_name = None
+
+    partner_sub_name = get_partner_subscription_and_name(current_user.id)
+    if partner_sub_name:
+        partner_sub, partner_name = partner_sub_name
+
     proton_linked_account = get_proton_linked_account()
 
     return render_template(
@@ -371,6 +390,8 @@ def setting():
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
         manual_sub=manual_sub,
+        partner_sub=partner_sub,
+        partner_name=partner_name,
         apple_sub=apple_sub,
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
