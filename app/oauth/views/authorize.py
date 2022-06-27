@@ -72,16 +72,16 @@ def authorize():
     if not client:
         return redirect(url_for("auth.login"))
 
-    # check if redirect_uri is valid
     # allow localhost by default
     # allow any redirect_uri if the app isn't approved
     hostname, scheme = get_host_name_and_scheme(redirect_uri)
-    if hostname != "localhost" and hostname != "127.0.0.1" and client.approved:
+    if hostname != "localhost" and hostname != "127.0.0.1":
         # support custom scheme for mobile app
         if scheme == "http":
             final_redirect_uri = f"{redirect_uri}?error=http_not_allowed"
             return redirect(final_redirect_uri)
 
+        # check if redirect_uri is valid
         if not RedirectUri.get_by(client_id=client.id, uri=redirect_uri):
             final_redirect_uri = f"{redirect_uri}?error=unknown_redirect_uri"
             return redirect(final_redirect_uri)

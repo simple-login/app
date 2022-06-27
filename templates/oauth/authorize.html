@@ -36,7 +36,7 @@
   <form class="card" method="post" data-parsley-validate style="max-width: 40rem; margin: auto; border-radius: 2%">
     {% if not client.approved %}
       <div class="alert alert-warning" style="border-bottom: 3px solid;">
-        <b>{{ client.name }}</b> is in Dev Mode and isn't approved (yet) by SimpleLogin.
+        <b>{{ client.name }}</b> is in Dev Mode and isn't approved (yet) by SimpleLogin. <b>Please make sure you trust {{ client.name }} before proceeding.</b>
       </div>
     {% endif %}
 
