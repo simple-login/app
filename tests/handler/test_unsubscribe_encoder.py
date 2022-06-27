@@ -49,7 +49,7 @@ legacy_mail_or_link_test_data = [
         UnsubscribeData(UnsubscribeAction.DisableAlias, 3),
     ),
     (
-        "9=",
+        "mailto:me@nowhere.net?subject=9=",
         True,
         UnsubscribeData(UnsubscribeAction.DisableAlias, 9),
     ),
@@ -59,9 +59,14 @@ legacy_mail_or_link_test_data = [
         UnsubscribeData(UnsubscribeAction.DisableContact, 8),
     ),
     (
-        "8_",
+        "mailto:me@nowhere.net?subject=8_",
         True,
         UnsubscribeData(UnsubscribeAction.DisableContact, 8),
+    ),
+    (
+        "mailto:me@nowhere.net?subject=83*",
+        True,
+        UnsubscribeData(UnsubscribeAction.UnsubscribeNewsletter, 83),
     ),
 ]
 

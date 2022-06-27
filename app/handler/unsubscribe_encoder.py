@@ -27,9 +27,7 @@ class UnsubscribeEncoder:
     @staticmethod
     def encode(action: UnsubscribeAction, data: int) -> UnsubscribeLink:
         if config.UNSUBSCRIBER:
-            return UnsubscribeLink(
-                UnsubscribeEncoder.encode_subject(action, data), True
-            )
+            return UnsubscribeLink(UnsubscribeEncoder.encode_mailto(action, data), True)
         return UnsubscribeLink(UnsubscribeEncoder.encode_url(action, data), False)
 
     @staticmethod
@@ -40,6 +38,11 @@ class UnsubscribeEncoder:
             return f"{data}_"
         if action == UnsubscribeAction.UnsubscribeNewsletter:
             return f"{data}*"
+
+    @staticmethod
+    def encode_mailto(action: UnsubscribeAction, data: int) -> str:
+        subject = UnsubscribeEncoder.encode_subject(action, data)
+        return f"mailto:{config.UNSUBSCRIBER}?subject={subject}"
 
     @staticmethod
     def encode_url(action: UnsubscribeAction, data: int) -> str:

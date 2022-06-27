@@ -892,7 +892,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                     # use * as suffix instead of = as for alias unsubscribe
                     return (
                         self.email,
-                        f"mailto:{config.UNSUBSCRIBER}?subject={self.id}*",
+                        UnsubscribeEncoder.encode_mailto(
+                            UnsubscribeAction.UnsubscribeNewsletter, self.id
+                        ),
                         True,
                     )
 
@@ -1479,22 +1481,6 @@ class Alias(Base, ModelMixin):
             return self.mailbox.email
         else:
             return self.user.email
-
-    def unsubscribe_link(self, contact: Optional["Contact"] = None) -> (str, bool):
-        """
-        return the unsubscribe link along with whether this is via email (mailto:) or Http POST
-        The mailto: method is preferred
-        """
-        if contact:
-            if config.UNSUBSCRIBER:
-                return f"mailto:{config.UNSUBSCRIBER}?subject={contact.id}_", True
-            else:
-                return f"{config.URL}/dashboard/block_contact/{contact.id}", False
-        else:
-            if config.UNSUBSCRIBER:
-                return f"mailto:{config.UNSUBSCRIBER}?subject={self.id}=", True
-            else:
-                return f"{config.URL}/dashboard/unsubscribe/{self.id}", False
 
     def __repr__(self):
         return f"<Alias {self.id} {self.email}>"
