@@ -262,6 +262,13 @@ class VerpType(EnumE):
     transactional = 2
 
 
+class JobState(EnumE):
+    ready = 0
+    taken = 1
+    done = 2
+    error = 3
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)
@@ -2370,6 +2377,14 @@ class Job(Base, ModelMixin):
     # whether the job has been taken by the job runner
     taken = sa.Column(sa.Boolean, default=False, nullable=False)
     run_at = sa.Column(ArrowType)
+    state = sa.Column(
+        sa.Integer,
+        nullable=False,
+        server_default=str(JobState.ready.value),
+        default=JobState.ready.value,
+    )
+    attempts = sa.Column(sa.Integer, nullable=False, server_default="0", default=0)
+    taken_at = sa.Column(ArrowType, nullable=True)
 
     def __repr__(self):
         return f"<Job {self.id} {self.name} {self.payload}>"
