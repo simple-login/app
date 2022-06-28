@@ -17,9 +17,9 @@ def enter_sudo():
     user = g.user
     data = request.get_json() or {}
     if "password" not in data:
-        return jsonify(error="Invalid request"), 403
+        return jsonify(error="Invalid password"), 403
     if not user.check_password(data["password"]):
-        return jsonify(error="Invalid request"), 403
+        return jsonify(error="Invalid password"), 403
 
     g.api_key.sudo_mode_at = arrow.now()
     Session.commit()
