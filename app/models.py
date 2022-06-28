@@ -525,6 +525,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             - CustomDomain.filter_by(user_id=self.id, is_sl_subdomain=True).count(),
         )
 
+    @property
+    def created_by_partner(self):
+        return User.FLAG_CREATED_FROM_PARTNER == (
+            self.flags & User.FLAG_CREATED_FROM_PARTNER
+        )
+
     @staticmethod
     def subdomain_is_available():
         return SLDomain.filter_by(can_use_subdomain=True).count() > 0
