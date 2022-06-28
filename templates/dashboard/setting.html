@@ -27,9 +27,10 @@
         {% if current_user.lifetime %}
           You have lifetime access to the Premium plan.
         {% elif current_user.lifetime_or_active_subscription() %}
-          {% if current_user.get_paddle_subscription() %}
+          {% if paddle_sub %}
             <div>
-              {{ current_user.get_paddle_subscription().plan_name() }} plan subscribed via Paddle.
+              {% if paddle_sub.cancelled %}(Cancelled){% endif %}
+              {{ paddle_sub.plan_name() }} plan subscribed via Paddle.
               <a href="{{ url_for('dashboard.billing') }}">
                 Manage Subscription ➡
               </a>
