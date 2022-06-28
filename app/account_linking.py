@@ -50,36 +50,6 @@ class LinkResult:
     strategy: str
 
 
-def send_double_subscription_if_needed(partner_user: PartnerUser):
-    sub = partner_user.user.get_active_subscription()
-    if isinstance(sub, AppleSubscription):
-        channel = "Apple"
-    elif isinstance(sub, Subscription):
-        channel = "Paddle"
-    else:
-        return
-    send_email_at_most_times(
-        partner_user.user,
-        config.ALERT_DUAL_SUBSCRIPTION_WITH_PARTNER,
-        partner_user.user.email,
-        f"You have two subscriptions in SimpleLogin",
-        render(
-            "transactional/double-subscription-partner.txt.jinja2",
-            is_proton=is_proton_partner(partner_user.partner),
-            partner=partner_user.partner,
-            subscription_channel=channel,
-            cancel_link=url_for("dashboard.billing"),
-        ),
-        render(
-            "transactional/double-subscription-partner.html",
-            is_proton=is_proton_partner(partner_user.partner),
-            partner=partner_user.partner,
-            subscription_channel=channel,
-            cancel_link=url_for("dashboard.billing"),
-        ),
-    )
-
-
 def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
     sub = PartnerSubscription.get_by(partner_user_id=partner_user.id)
     if plan.type == SLPlanType.Free:
@@ -108,7 +78,6 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                     "PlanChange", {"plan": "premium", "type": "extension"}
                 )
                 sub.end_at = plan.expiration
-        send_double_subscription_if_needed(partner_user)
     Session.commit()
 
 
