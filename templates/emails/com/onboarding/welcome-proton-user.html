@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 
-{% block logo %}<img src="{{URL}}/static/logo-sl-proton.svg" style="width: 150px; margin: auto">{% endblock %}
+{% block logo %}<img src="{{ URL }}/static/logo-sl-proton.svg" style="width: 150px; margin: auto">{% endblock %}
 
 {% block content %}
   {% call text() %}
@@ -9,24 +9,42 @@
   {% endcall %}
 
   {% call text() %}
-    This is the first email you receive via your first alias {{ to_address }}
+    This is the first email you receive via your <b>first alias</b> {{ to_address }}
   {% endcall %}
 
   {% call text() %}
-    This alias was automatically created the first time you accessed SimpleLogin.
+    This alias is automatically created when you use SimpleLogin for the first time.
     Emails sent to it are forwarded to your Proton mailbox.
-    If you want to reply to an email, just hit "Reply" and the response will come from this alias.
-    Your personal email address will stay hidden.
+    If you want to reply to an email, just hit "Reply" and the response will come from your alias.
+    Your personal email address stays hidden.
   {% endcall %}
 
   {% call text() %}
-    SimpleLogin is also available on <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android</a>
+    To create new aliases, use the SimpleLogin browser extension (recommended) or web dashboard.
+    SimpleLogin is available on
+    <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">Chrome</a>,
+    <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">Firefox</a>
+    and
+    <a href="https://microsoftedge.microsoft.com/addons/detail/simpleloginreceive-sen/diacfpipniklenphgljfkmhinphjlfff">Edge</a>
+  {% endcall %}
+
+  {% call text() %}
+    SimpleLogin is also available on
+    <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android</a>
     and <a href="https://apps.apple.com/app/id1494359858">iOS</a> so you can manage your aliases on the go.
+
   {% endcall %}
 
   {% call text() %}
-    For any question, feedback or feature request, please join our <a href="https://github.com/simple-login/app/discussions">GitHub forum</a>.
-    You can also join our <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a> or follow our <a href="https://twitter.com/simple_login">Twitter</a>.
+    Note, if you are a paying Proton Mail user, you automatically receive the premium version of SimpleLogin.
+
+  {% endcall %}
+
+  {% call text() %}
+    For any question, feedback or feature request, please join our
+    <a href="https://github.com/simple-login/app/discussions">GitHub forum</a>.
+    You can also join our <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a> or follow our
+    <a href="https://twitter.com/simple_login">Twitter</a>.
   {% endcall %}
 
   {% call text() %}
