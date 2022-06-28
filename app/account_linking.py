@@ -9,7 +9,7 @@ from typing import Optional
 
 from app import config
 from app.db import Session
-from app.email_utils import send_email_at_most_times, render
+from app.email_utils import send_email_at_most_times, send_welcome_email, render
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
 from app.log import LOG
 from app.models import (
@@ -181,6 +181,9 @@ class NewUserStrategy(ClientMergeStrategy):
             self.link_request.plan,
         )
         Session.commit()
+
+        if not new_user.created_by_partner:
+            send_welcome_email(new_user)
 
         agent.record_custom_event("PartnerUserCreation", {"partner": self.partner.name})
 
