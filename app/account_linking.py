@@ -1,15 +1,13 @@
 from abc import ABC, abstractmethod
-from arrow import Arrow
 from dataclasses import dataclass
 from enum import Enum
-
-from flask import url_for
-from newrelic import agent
 from typing import Optional
 
-from app import config
+from arrow import Arrow
+from newrelic import agent
+
 from app.db import Session
-from app.email_utils import send_email_at_most_times, send_welcome_email, render
+from app.email_utils import send_welcome_email
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
 from app.log import LOG
 from app.models import (
@@ -17,10 +15,7 @@ from app.models import (
     Partner,
     PartnerUser,
     User,
-    AppleSubscription,
-    Subscription,
 )
-from app.proton.utils import is_proton_partner
 from app.utils import random_string
 
 
