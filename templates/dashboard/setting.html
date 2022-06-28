@@ -227,15 +227,15 @@
               You have linked your Proton account: {{ proton_linked_account }} <br>
             </div>
             <a
-              class="btn btn-primary mt-2 proton-button"
-              href="{{ url_for('dashboard.unlink_proton_account') }}"
+                class="btn btn-primary mt-2 proton-button"
+                href="{{ url_for('dashboard.unlink_proton_account') }}"
             ><img class="mr-2" src="/static/images/proton.svg">Unlink account</a>
           {% else %}
             <div class="mb-3">
               You can connect your Proton account with your SimpleLogin one. <br>
             </div>
             <a class="btn btn-primary mt-2 proton-button" href="{{ url_for("auth.proton_login", action="link") }}"><img
-              class="mr-2" src="/static/images/proton.svg">Connect
+                class="mr-2" src="/static/images/proton.svg">Connect
               with Proton</a>
           {% endif %}
         </div>
@@ -270,10 +270,10 @@
           <input type="hidden" name="form-name" value="change-alias-generator">
           <select class="form-control mr-sm-2" name="alias-generator-scheme">
             <option value="{{ AliasGeneratorEnum.word.value }}"
-              {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected {% endif %} >Based on
+                {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected {% endif %} >Based on
               Random {{ AliasGeneratorEnum.word.name.capitalize() }}</option>
             <option value="{{ AliasGeneratorEnum.uuid.value }}"
-              {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
+                {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
               on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
           </select>
           <button class="btn btn-outline-primary">Update</button>
@@ -286,9 +286,9 @@
             <option value="">Not Selected</option>
             {% for is_public, domain in current_user.available_domains_for_random_alias() %}
               <option value="{{ domain }}"
-                {% if current_user.default_alias_custom_domain_id or current_user.default_alias_public_domain_id %}
-                  {% if current_user.default_random_alias_domain() == domain %} selected {% endif %}
-                {% endif %}
+                  {% if current_user.default_alias_custom_domain_id or current_user.default_alias_public_domain_id %}
+                    {% if current_user.default_random_alias_domain() == domain %} selected {% endif %}
+                  {% endif %}
               >
                 {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
               </option>
@@ -333,27 +333,27 @@
 
           <select class="form-control mr-sm-2" name="sender-format">
             <option value="{{ SenderFormatEnum.AT.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.AT.value %} selected {% endif %}>
+                {% if current_user.sender_format == SenderFormatEnum.AT.value %} selected {% endif %}>
               John Wick - john at wick.com
             </option>
 
             <option value="{{ SenderFormatEnum.A.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.A.value %} selected {% endif %}>
+                {% if current_user.sender_format == SenderFormatEnum.A.value %} selected {% endif %}>
               John Wick - john(a)wick.com
             </option>
 
             <option value="{{ SenderFormatEnum.NAME_ONLY.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.NAME_ONLY.value %} selected {% endif %}>
+                {% if current_user.sender_format == SenderFormatEnum.NAME_ONLY.value %} selected {% endif %}>
               John Wick
             </option>
 
             <option value="{{ SenderFormatEnum.AT_ONLY.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.AT_ONLY.value %} selected {% endif %}>
+                {% if current_user.sender_format == SenderFormatEnum.AT_ONLY.value %} selected {% endif %}>
               john at wick.com
             </option>
 
             <option value="{{ SenderFormatEnum.NO_NAME.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.NO_NAME.value %} selected {% endif %}>
+                {% if current_user.sender_format == SenderFormatEnum.NO_NAME.value %} selected {% endif %}>
               No Name (i.e. only reverse-alias)
             </option>
 
@@ -381,7 +381,7 @@
           <input type="hidden" name="form-name" value="replace-ra">
           <div class="form-check">
             <input type="checkbox" id="replace-ra" name="replace-ra"
-              {% if current_user.replace_reverse_alias %} checked {% endif %} class="form-check-input">
+                {% if current_user.replace_reverse_alias %} checked {% endif %} class="form-check-input">
             <label for="replace-ra">Enable replacing reverse alias</label>
           </div>
           <button type="submit" class="btn btn-outline-primary">Update</button>
@@ -407,8 +407,8 @@
           <input type="hidden" name="form-name" value="sender-in-ra">
           <div class="form-check">
             <input type="checkbox" id="include-sender-ra" name="enable"
-              {#                   todo: remove current_user.include_sender_in_reverse_alias is none condition #}
-              {% if current_user.include_sender_in_reverse_alias is none or current_user.include_sender_in_reverse_alias %}
+                {#                   todo: remove current_user.include_sender_in_reverse_alias is none condition #}
+                {% if current_user.include_sender_in_reverse_alias is none or current_user.include_sender_in_reverse_alias %}
                    checked {% endif %} class="form-check-input">
             <label for="include-sender-ra">Include sender address in reverse-alias</label>
           </div>
@@ -430,7 +430,7 @@
           <input type="hidden" name="form-name" value="expand-alias-info">
           <div class="form-check">
             <input type="checkbox" id="expand-alias-info" name="enable"
-              {% if current_user.expand_alias_info %} checked {% endif %} class="form-check-input">
+                {% if current_user.expand_alias_info %} checked {% endif %} class="form-check-input">
             <label for="expand-alias-info">Automatically expand alias info</label>
           </div>
           <button type="submit" class="btn btn-outline-primary">Update</button>
@@ -455,7 +455,7 @@
           <input type="hidden" name="form-name" value="include_website_in_one_click_alias">
           <div class="form-check">
             <input type="checkbox" id="include-website-in-alias" name="enable"
-              {% if current_user.include_website_in_one_click_alias %} checked {% endif %} class="form-check-input">
+                {% if current_user.include_website_in_one_click_alias %} checked {% endif %} class="form-check-input">
             <label for="include-website-in-alias">Include website address in alias</label>
           </div>
           <button type="submit" class="btn btn-outline-primary">Update</button>
@@ -502,7 +502,7 @@
           <input type="hidden" name="form-name" value="one-click-unsubscribe">
           <div class="form-check">
             <input type="checkbox" id="one-click-unsubscribe" name="enable"
-              {% if current_user.one_click_unsubscribe_block_sender %} checked {% endif %} class="form-check-input">
+                {% if current_user.one_click_unsubscribe_block_sender %} checked {% endif %} class="form-check-input">
             <label for="one-click-unsubscribe">Block sender instead</label>
           </div>
           <button type="submit" class="btn btn-outline-primary">Update</button>
@@ -545,12 +545,12 @@
 
           <select class="form-control mr-sm-2" name="blocked-behaviour">
             <option value="{{ BlockBehaviourEnum.return_2xx.value }}"
-              {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_2xx.value %}
+                {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_2xx.value %}
                     selected="selected" {% endif %}>
               Ignore (the sender will see the email as delivered, but you won't receive anything).
             </option>
             <option value="{{ BlockBehaviourEnum.return_5xx.value }}"
-              {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_5xx.value %}
+                {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_5xx.value %}
                     selected="selected" {% endif %}>
               Reject (the sender will be told that your alias does not exist).
             </option>
@@ -578,7 +578,7 @@
 
           <div class="form-check">
             <input type="checkbox" id="include-sender-header" name="enable"
-              {% if current_user.include_header_email_header %} checked {% endif %} class="form-check-input">
+                {% if current_user.include_header_email_header %} checked {% endif %} class="form-check-input">
             <label for="include-sender-header">Include sender address in email headers</label>
           </div>
 
