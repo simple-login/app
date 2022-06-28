@@ -675,15 +675,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return False
 
     def should_show_upgrade_button(self):
-        if self.lifetime:
-            return False
-
         if self.lifetime_or_active_subscription():
-            # user who has canceled can also re-subscribe
-            sub: Subscription = self.get_paddle_subscription()
-            if sub and sub.cancelled:
-                return True
-
             return False
 
         return True

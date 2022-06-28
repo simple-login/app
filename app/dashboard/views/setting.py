@@ -370,6 +370,7 @@ def setting():
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
     coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
+    paddle_sub = current_user.get_paddle_subscription()
     partner_sub = None
     partner_name = None
 
@@ -393,6 +394,7 @@ def setting():
         partner_sub=partner_sub,
         partner_name=partner_name,
         apple_sub=apple_sub,
+        paddle_sub=paddle_sub,
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
