@@ -229,11 +229,19 @@ Enable sudo mode
 
 Input:
 
+- `Authentication` header that contains the api key
 - password: User password to validate the user presence and enter sudo mode
+
+```json
+{
+  "password": "yourpassword",
+}
+```
 
 Output: 
 
-- ok: True if sudo mode has been enabled
+- 200 with ```{"ok": true}``` if sudo mode has been enabled.
+- 403 with ```{"error": "Some error"} ``` if there's an error
 
 #### POST /api/api_key
 
