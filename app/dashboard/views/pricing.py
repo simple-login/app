@@ -62,7 +62,7 @@ def pricing():
                 "error",
             )
             return redirect(url_for("dashboard.index"))
-        proton_upgrade = partner_user.id == get_proton_partner().id
+        proton_upgrade = partner_user.partner_id == get_proton_partner().id
 
     return render_template(
         "dashboard/pricing.html",
