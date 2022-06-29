@@ -129,6 +129,7 @@ class NewUserStrategy(ClientMergeStrategy):
             email=self.link_request.email,
             name=self.link_request.name,
             password=random_string(20),
+            activated=True,
             from_partner=self.link_request.from_partner,
         )
         partner_user = PartnerUser.create(
