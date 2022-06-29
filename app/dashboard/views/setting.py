@@ -29,6 +29,7 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.errors import ProtonPartnerNotSetUp
+from app.image_validation import detect_image_format, ImageFormat
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import (
@@ -181,12 +182,18 @@ def setting():
                     profile_updated = True
 
                 if form.profile_picture.data:
+                    image_contents = form.profile_picture.data.read()
+                    if detect_image_format(image_contents) == ImageFormat.Unknown:
+                        flash(
+                            "This image format is not supported",
+                            "error",
+                        )
+                        return redirect(url_for("dashboard.setting"))
+
                     file_path = random_string(30)
                     file = File.create(user_id=current_user.id, path=file_path)
 
-                    s3.upload_from_bytesio(
-                        file_path, BytesIO(form.profile_picture.data.read())
-                    )
+                    s3.upload_from_bytesio(file_path, BytesIO(image_contents))
 
                     Session.flush()
                     LOG.d("upload file %s to s3", file)
