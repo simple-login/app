@@ -18,6 +18,17 @@ exclude = '''
 )
 '''
 
+[tool.djlint]
+indent = 2
+profile = "jinja"
+blank_line_after_tag = "if,for,include,load,extends,block"
+
+# H006: Images should have a height attribute
+# H013: Images should have an alt attribute
+# H021: Avoid inline styles
+# T003: Endblock should have a name
+ignore = "H006,H013,H021,T003"
+
 [tool.poetry]
 name = "SimpleLogin"
 version = "0.1.0"
@@ -98,6 +109,7 @@ pre-commit = "^2.17.0"
 black = "^22.1.0"
 flake8 = "^4.0.1"
 flake8-bugbear = "^22.1.11"
+djlint = "0.7.3"
 
 [build-system]
 requires = ["poetry>=0.12"]
