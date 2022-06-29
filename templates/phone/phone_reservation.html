@@ -1,74 +1,59 @@
-{% extends 'default.html' %}
+{% extends "default.html" %}
 
 {% set active_page = "phone" %}
-
-{% block title %}
-  Phone reservation {{ phone_number.number }}
-{% endblock %}
-
+{% block title %}Phone reservation {{ phone_number.number }}{% endblock %}
 {% block default_content %}
+
   <div class="card">
     <div class="card-body">
       Your number is
-
       <div class="d-flex mt-3">
         <h2>{{ phone_number.number }}</h2>
         <div class="ml-3">
-          <button
-              data-clipboard-text="{{ phone_number.number }}"
-              class="clipboard btn btn-outline-primary btn-sm" type="button">
+          <button data-clipboard-text="{{ phone_number.number }}"
+                  class="clipboard btn btn-outline-primary btn-sm"
+                  type="button">
             <i class="fe fe-clipboard"></i>
           </button>
         </div>
       </div>
-
       {% if now > reservation.end %}
+
         was ended {{ reservation.end.humanize() }}
       {% else %}
         will be released {{ reservation.end.humanize() }}
       {% endif %}
-
     </div>
   </div>
-
   <div class="card">
     <div class="card-body" id="message-app">
-
       <h2 class="mb-2">Received Messages</h2>
-
-      <div v-if="loading">
-        Loading ...
-      </div>
+      <div v-if="loading">Loading ...</div>
       <div v-else>
         <table class="table">
           <thead>
-          <tr>
-            <th scope="col">From</th>
-            <th scope="col">Time</th>
-            <th scope="col">Message</th>
-          </tr>
+            <tr>
+              <th scope="col">From</th>
+              <th scope="col">Time</th>
+              <th scope="col">Message</th>
+            </tr>
           </thead>
-
           <tbody>
-
-          <tr v-for="message in messages">
-            <td>[[ message.from_number ]]</td>
-            <td>[[ message.created_at ]]</td>
-            <td>[[ message.body ]]</td>
-          </tr>
-
+            <tr v-for="message in messages">
+              <td>[[ message.from_number ]]</td>
+              <td>[[ message.created_at ]]</td>
+              <td>[[ message.body ]]</td>
+            </tr>
           </tbody>
         </table>
       </div>
-
     </div>
   </div>
-
   {% if now < reservation.end %}
+
     <div class="card">
       <div class="card-body">
         When the number is released, you can't reclaim it.
-
         <form method="post" class="mt-3">
           <input type="hidden" name="form-name" value="release">
           <button class="btn btn-outline-danger">Release the number</button>
@@ -76,10 +61,9 @@
       </div>
     </div>
   {% endif %}
-
 {% endblock %}
-
 {% block script %}
+
   <script>
     var app = new Vue({
       el: '#message-app',
@@ -119,6 +103,3 @@
     })
   </script>
 {% endblock %}
-
-
-

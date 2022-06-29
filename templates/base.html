@@ -1,132 +1,105 @@
 {% from "_formhelpers.html" import render_field, render_field_errors %}
-
 <!doctype html>
-<html lang="en" dir="ltr" data-theme="{% if request.cookies.get('dark-mode') == 'true' %}dark{% endif %}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <meta http-equiv="Content-Language" content="en"/>
-  <meta name="msapplication-TileColor" content="#2d89ef">
-  <meta name="theme-color" content="#4188c9">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="HandheldFriendly" content="True">
-  <meta name="MobileOptimized" content="320">
-  <meta name="referrer" content="no-referrer">
+<html lang="en"
+      dir="ltr"
+      data-theme="{%- if request.cookies.get('dark-mode') == 'true' -%} dark{%- endif -%}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta http-equiv="Content-Language" content="en" />
+    <meta name="msapplication-TileColor" content="#2d89ef" />
+    <meta name="theme-color" content="#4188c9" />
+    <meta name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"/>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+    <meta name="referrer" content="no-referrer" />
+    <!-- Bing -->
+    <meta name="msvalidate.01" content="2A313A69CBFD1A378C3B91734DC221A8" />
+    <!-- Yandex -->
+    <meta name="yandex-verification" content="c9e5d4d68bc983a1" />
+    <meta name="description"
+          content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, spams."/>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico" />
+    <link rel="canonical" href="{{ CANONICAL_URL }}" />
+    <title>
+      {% block title %}{% endblock %}
+      | SimpleLogin
+    </title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='node_modules/font-awesome/css/font-awesome.css') }}"/>
+    <!-- Dashboard Core -->
+    <link href="/static/assets/css/dashboard.css" rel="stylesheet" />
+    <!-- Tabler JS -->
+    <script src="/static/assets/js/vendors/jquery-3.2.1.min.js"></script>
+    <script src="/static/assets/js/vendors/bootstrap.bundle.min.js"></script>
+    <script src="/static/assets/js/vendors/jquery.sparkline.min.js"></script>
+    <script src="/static/assets/js/vendors/selectize.min.js"></script>
+    <script src="/static/assets/js/vendors/jquery.tablesorter.min.js"></script>
+    <script src="/static/assets/js/vendors/jquery-jvectormap-2.0.3.min.js"></script>
+    <script src="/static/assets/js/vendors/jquery-jvectormap-de-merc.js"></script>
+    <script src="/static/assets/js/vendors/jquery-jvectormap-world-mill.js"></script>
+    <script src="/static/assets/js/vendors/circle-progress.min.js"></script>
+    <script src="/static/assets/js/core.js"></script>
+    <!-- ClipboardJS -->
+    <script src="/static/vendor/clipboard.min.js"></script>
+    <!-- IntroJS -->
+    <link rel="stylesheet"
+          type="text/css"
+          href="{{ url_for('static', filename='node_modules/intro.js/minified/introjs.min.css') }}"/>
+    <script src="{{ url_for('static', filename='node_modules/intro.js/minified/intro.min.js') }}"></script>
+    <!-- Sentry -->
+    <script src="{{ url_for('static', filename='node_modules/@sentry/browser/build/bundle.min.js') }}"></script>
+    <link rel="stylesheet" href="/static/vendor/bootstrap-social.min.css" />
+    <!-- Toastr library -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.css') }}"/>
+    <script src="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='node_modules/bootbox/dist/bootbox.min.js') }}"></script>
+    <!-- Multiple-select library -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.css') }}"/>
+    <script src="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.js') }}"></script>
+    <!-- Parseley library -->
+    <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/parsley.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/i18n/en.js') }}"></script>
+    <script src="{{ url_for('static', filename='node_modules/htmx.org/dist/htmx.min.js') }}"></script>
+    {% if PLAUSIBLE_HOST and PLAUSIBLE_DOMAIN %}
 
-  <!-- Bing -->
-  <meta name="msvalidate.01" content="2A313A69CBFD1A378C3B91734DC221A8"/>
+      <!-- Plausible Analytics library -->
+      <script async defer data-domain=”{{ PLAUSIBLE_DOMAIN }}” src=”{{ PLAUSIBLE_HOST }}/js/plausible.outbound-links.js”></script>
+    {% endif %}
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='darkmode.css') }}?v={{ VERSION }}"/>
+    <link rel="stylesheet"
+          type="text/css"
+          href="/static/style.css?v={{ VERSION }}"/>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script>toastr.options.closeButton = true;</script>
+    <!-- For additional head -->
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="page">
+      {% block announcement %}{% endblock %}
+      <div class="container">
+        <!-- For flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+          {% if messages %}
 
-  <!-- Yandex -->
-  <meta name="yandex-verification" content="c9e5d4d68bc983a1"/>
-
-  <meta name="description"
-        content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, spams.">
-
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
-  <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
-  <link rel="canonical" href="{{ CANONICAL_URL }}">
-
-  <title>
-    {% block title %}{% endblock %} | SimpleLogin
-  </title>
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='node_modules/font-awesome/css/font-awesome.css') }}">
-
-  <!-- Dashboard Core -->
-  <link href="/static/assets/css/dashboard.css" rel="stylesheet"/>
-
-
-  <!-- Tabler JS -->
-  <script src="/static/assets/js/vendors/jquery-3.2.1.min.js"></script>
-  <script src="/static/assets/js/vendors/bootstrap.bundle.min.js"></script>
-  <script src="/static/assets/js/vendors/jquery.sparkline.min.js"></script>
-  <script src="/static/assets/js/vendors/selectize.min.js"></script>
-  <script src="/static/assets/js/vendors/jquery.tablesorter.min.js"></script>
-  <script src="/static/assets/js/vendors/jquery-jvectormap-2.0.3.min.js"></script>
-  <script src="/static/assets/js/vendors/jquery-jvectormap-de-merc.js"></script>
-  <script src="/static/assets/js/vendors/jquery-jvectormap-world-mill.js"></script>
-  <script src="/static/assets/js/vendors/circle-progress.min.js"></script>
-  <script src="/static/assets/js/core.js"></script>
-
-  <!-- ClipboardJS -->
-  <script src="/static/vendor/clipboard.min.js"></script>
-
-  <!-- IntroJS -->
-  <link rel="stylesheet" type="text/css"
-        href="{{ url_for('static', filename='node_modules/intro.js/minified/introjs.min.css') }}">
-  <script src="{{ url_for('static', filename='node_modules/intro.js/minified/intro.min.js') }}"></script>
-
-  <!-- Sentry -->
-  <script src="{{ url_for('static', filename='node_modules/@sentry/browser/build/bundle.min.js') }}">
-  </script>
-
-  <link rel="stylesheet" href="/static/vendor/bootstrap-social.min.css">
-
-  <!-- Toastr library -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.css') }}">
-  <script src="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.js') }}"></script>
-
-  <script src="{{ url_for('static', filename='node_modules/bootbox/dist/bootbox.min.js') }}"></script>
-
-  <!-- Multiple-select library -->
-  <link rel="stylesheet"
-        href="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.css') }}">
-  <script
-      src="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.js') }}"></script>
-
-  <!-- Parseley library -->
-  <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/parsley.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/i18n/en.js') }}"></script>
-
-  <script src="{{ url_for('static', filename='node_modules/htmx.org/dist/htmx.min.js') }}"></script>
-
-
-  {% if PLAUSIBLE_HOST and PLAUSIBLE_DOMAIN %}
-    <!-- Plausible Analytics library -->
-    <script async defer data-domain=”{{ PLAUSIBLE_DOMAIN }}” src=”{{ PLAUSIBLE_HOST }}/js/plausible.outbound-links.js”></script>
-  {% endif %}
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='darkmode.css') }}?v={{ VERSION }}">
-  <link rel="stylesheet" type="text/css" href="/static/style.css?v={{ VERSION }}">
-
-  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-
-  <script>
-    toastr.options.closeButton = true;
-  </script>
-
-  <!-- For additional head -->
-  {% block head %}
-  {% endblock %}
-</head>
-<body class="">
-<div class="page">
-  {% block announcement %}
-  {% endblock %}
-
-  <div class="container">
-    <!-- For flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
-      {% if messages %}
-        {% for category, message in messages %}
-          <script>
-            toastr.{{category}}("{{ message }}");
-          </script>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-  </div>
-
-  {% block content %}
-  {% endblock %}
-</div>
-
-<script>
+            {% for category, message in messages %}<script>toastr.{{category }}("{{ message }}");</script>{% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+      {% block content %}{% endblock %}
+    </div>
+    <script>
   {% if SENTRY_DSN %}
     console.log("Init sentry");
     try {
@@ -206,14 +179,10 @@
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
   });
 
-</script>
-
-<script src="{{ url_for('static', filename='local-storage-polyfill.js') }}"></script>
-
-<!-- For additional script -->
-{% block script %}
-{% endblock %}
-
-<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
-</body>
+    </script>
+    <script src="{{ url_for('static', filename='local-storage-polyfill.js') }}"></script>
+    <!-- For additional script -->
+    {% block script %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+  </body>
 </html>

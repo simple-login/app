@@ -1,103 +1,84 @@
-{% extends 'default.html' %}
+{% extends "default.html" %}
 
-{% block title %}
-  API Key
-{% endblock %}
-
+{% block title %}API Key{% endblock %}
 {% set active_page = "api_key" %}
-
-{% block head %}
-{% endblock %}
-
+{% block head %}{% endblock %}
 {% block default_content %}
+
   <div class="row">
     <div class="col">
-      <h1 class="h3"> API Keys </h1>
-
+      <h1 class="h3">API Keys</h1>
       <div class="alert alert-info">
         When you log in on a SimpleLogin mobile app or browser extension,
         a new API Key is automatically created and stored on your device.
         It's usually named after the device where it was created, e.g. Samsung S8, John's iPhone, etc.
       </div>
-
-
       <div class="alert alert-danger">
         ️API Keys should be kept secret and treated like passwords, they can be used to gain access to your account.
       </div>
-
       <div class="row">
         {% for api_key in api_keys %}
+
           <div class="col-12 col-lg-6">
             <div class="card">
               <div class="card-body">
                 <h5 class="card-title">{{ api_key.name or "N/A" }}</h5>
                 <h6 class="card-subtitle mb-2 text-muted">
                   {% if api_key.last_used %}
+
                     Created {{ api_key.created_at | dt }}.
                     Used {{ api_key.times }} times.
                     Was last used {{ api_key.last_used | dt }}.
-
                   {% else %}
                     Never used
                   {% endif %}
                 </h6>
-
                 <div class="input-group">
-                  <input class="form-control" id="apikey-{{ api_key.id }}" readonly value="**********">
+                  <input class="form-control"
+                         id="apikey-{{ api_key.id }}"
+                         readonly
+                         value="**********">
                 </div>
-
-                <br>
-
+                <br />
                 <div class="row">
-
                   <div class="col">
                     <form method="post">
                       <input type="hidden" name="form-name" value="delete">
                       <input type="hidden" name="api-key-id" value="{{ api_key.id }}">
-                      <span class="card-link btn btn-link float-right text-danger delete-api-key">
-                    Delete
-                  </span>
+                      <span class="card-link btn btn-link float-right text-danger delete-api-key">Delete</span>
                     </form>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
         {% endfor %}
       </div>
-
       {% if api_keys|length > 0 %}
+
         <form method="post">
           <input type="hidden" name="form-name" value="delete-all">
           <span class="delete btn btn-outline-danger delete-all-api-keys float-right">
-              Delete All &nbsp; &nbsp; <i class="fe fe-trash"></i>
+            Delete All &nbsp; &nbsp; <i class="fe fe-trash"></i>
           </span>
         </form>
-        <br>
+        <br />
       {% endif %}
-
-      <hr>
-
+      <hr />
       <form method="post">
         {{ new_api_key_form.csrf_token }}
         <input type="hidden" name="form-name" value="create">
         <h2 class="h4">New API Key</h2>
-
         {{ new_api_key_form.name(class="form-control", placeholder="Chrome") }}
         {{ render_field_errors(new_api_key_form.name) }}
         <div class="small-text">Name of the api key, e.g. where it will be used.</div>
-
         <button class="btn btn-success mt-2">Create</button>
       </form>
-
-
     </div>
-
   </div>
 {% endblock %}
-
 {% block script %}
+
   <script>
     $(".delete-api-key").on("click", function (e) {
       let that = $(this);

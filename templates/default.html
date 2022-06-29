@@ -1,18 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   <div class="flex-fill">
     {% include "header.html" %}
 
     <div class="my-2 my-md-2">
       <div class="container pt-1" style="min-height: 800px">
-        {% block default_content %}
-        {% endblock %}
+        {% block default_content %}{% endblock %}
       </div>
-
     </div>
   </div>
-
   {% include "footer.html" %}
 
 {% endblock %}

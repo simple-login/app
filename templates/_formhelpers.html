@@ -3,29 +3,21 @@
     <label class="col-sm-2 col-form-label">{{ field.label }}</label>
     <div class="col-sm-10">
       {{ field(**kwargs)|safe }}
-
-      <small class="form-text text-muted">
-        {{ field.description }}
-      </small>
-
+      <small class="form-text text-muted">{{ field.description }}</small>
       {% if field.errors %}
-        <ul class=errors>
-          {% for error in field.errors %}
-            <li>{{ error }}</li>
-          {% endfor %}
+
+        <ul class="errors">
+          {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
       {% endif %}
     </div>
   </div>
 {% endmacro %}
-
 {% macro render_field_errors(field) %}
   {% if field.errors %}
-    <ul class=errors>
-      {% for error in field.errors %}
-        <li class="text-danger">{{ error }}</li>
-      {% endfor %}
+
+    <ul class="errors">
+      {% for error in field.errors %}<li class="text-danger">{{ error }}</li>{% endfor %}
     </ul>
   {% endif %}
 {% endmacro %}
-
