@@ -1,27 +1,30 @@
-{% extends 'dashboard/domain_detail/base.html' %}
+{% extends "dashboard/domain_detail/base.html" %}
 
 {% set domain_detail_page = "trash" %}
-
-{% block title %}
-  {{ custom_domain.domain }} deleted aliases
-{% endblock %}
-
+{% block title %}{{ custom_domain.domain }} deleted aliases{% endblock %}
 {% block domain_detail_content %}
-  <h1 class="h3"> {{ custom_domain.domain }} deleted alias (aka Trash)
-    <a class="ml-3 text-info" style="font-size: 12px" data-toggle="collapse" href="#howtouse" role="button"
-       aria-expanded="false" aria-controls="collapseExample">
+
+  <h1 class="h3">
+    {{ custom_domain.domain }} deleted alias (aka Trash)
+    <a class="ml-3 text-info"
+       style="font-size: 12px"
+       data-toggle="collapse"
+       href="#howtouse"
+       role="button"
+       aria-expanded="false"
+       aria-controls="collapseExample">
       How to use <i class="fe fe-chevrons-down"></i>
     </a>
   </h1>
-
   <div class="alert alert-primary collapse" id="howtouse" role="alert">
     On this page you can view all aliases that have been deleted and belong to the domain
-    <b>{{ custom_domain.domain }}</b>. <br>
+    <b>{{ custom_domain.domain }}</b>.
+    <br />
     When an alias is in the trash, it cannot be re-created, either via the alias creation page or on-the-fly with the
     domain catch-all option.
   </div>
-
   {% if domain_deleted_aliases | length > 0 %}
+
     <form method="post">
       <input type="hidden" name="form-name" value="empty-all">
       <button class="btn btn-outline-danger">Empty Trash</button>
@@ -33,10 +36,9 @@
   {% else %}
     There's no deleted alias recorded for this domain.
   {% endif %}
-
-
   {% for deleted_alias in domain_deleted_aliases %}
-    <hr>
+
+    <hr />
     <b>{{ deleted_alias.email }}</b> -
     deleted {{ deleted_alias.created_at | dt }}
     <form method="post">
@@ -45,6 +47,4 @@
       <button class="btn btn-sm btn-outline-warning">Remove from trash</button>
     </form>
   {% endfor %}
-
-
 {% endblock %}

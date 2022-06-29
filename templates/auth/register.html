@@ -1,15 +1,12 @@
 {% extends "single.html" %}
 
-{% block title %}
-  Register
-{% endblock %}
-
+{% block title %}Register{% endblock %}
 {% block single_content %}
+
   <form class="card" style="border-radius: 2%" method="post">
     {{ form.csrf_token }}
     <div class="card-body p-6">
       <h1 class="card-title">Create new account</h1>
-
       <div class="form-group">
         <label class="form-label">Email address</label>
         {{ form.email(class="form-control", type="email") }}
@@ -19,13 +16,11 @@
         </div>
         {{ render_field_errors(form.email) }}
       </div>
-
       <div class="form-group">
         <label class="form-label">Password</label>
         {{ form.password(class="form-control", type="password") }}
         {{ render_field_errors(form.password) }}
       </div>
-
       <!-- TODO: add terms
       <div class="form-group">
         <label class="custom-control custom-checkbox">
@@ -33,34 +28,34 @@
           <span class="custom-control-label">Agree the <a href="terms.html">terms and policy</a></span>
         </label>
       </div>
-      -->
-
+-->
       {% if HCAPTCHA_SITEKEY %}
+
         <div class="h-captcha" data-sitekey="{{ HCAPTCHA_SITEKEY }}"></div>
         <script src="https://hcaptcha.com/1/api.js" async defer></script>
       {% endif %}
-
       <small class="text-center mt-3">
         By clicking Create Account, you agree to abide by
         <a href="https://simplelogin.io/terms">SimpleLogin's Terms and Conditions.</a>
       </small>
-
       <div class="mt-2">
         <button type="submit" class="btn btn-primary btn-block">Create Account</button>
       </div>
-
       {% if connect_with_proton %}
-        <div class="text-center my-2 text-gray"><span>or</span></div>
+
+        <div class="text-center my-2 text-gray">
+          <span>or</span>
+        </div>
         <a class="btn btn-primary btn-block mt-2 proton-button"
            href="{{ url_for("auth.proton_login", next=next_url) }}">
-          <img class="mr-2" src="/static/images/proton.svg">
+          <img class="mr-2" src="/static/images/proton.svg" />
           Sign up with Proton
         </a>
       {% endif %}
     </div>
   </form>
   <div class="text-center text-muted mb-6">
-    Already have account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+    Already have account?
+    <a href="{{ url_for('auth.login') }}">Sign in</a>
   </div>
-
 {% endblock %}

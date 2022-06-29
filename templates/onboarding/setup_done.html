@@ -1,24 +1,22 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
 
   <div class="flex-fill align-items-center mt-8">
     <!-- Image container -->
     <div class="mt-4 mb-4 text-center" style="display:block;">
-      <a class="" href="{{ url_for('dashboard.index') }}">
+      <a href="{{ url_for('dashboard.index') }}">
         <picture>
           <source media="(max-width: 650px)" srcset="/static/logo.svg">
           <img src="/static/logo.svg" style="width: 24rem" alt="logo">
         </picture>
       </a>
     </div>
-
     <!-- Text container -->
     <div class="mt-8 mb-4 text-center">
       <h2 class="text-black-50" style="font-size:2rem">Performing the extension setup...</h2>
     </div>
   </div>
-
   <script type="text/javascript">
       let counterIterations = 5;
       let extensionSetupIntervalId = setInterval(function() {
@@ -32,5 +30,4 @@
           window.postMessage(data, "/");
       }, 300); // Send it many times, in case the extension had not registered the listener yet
   </script>
-
 {% endblock %}
