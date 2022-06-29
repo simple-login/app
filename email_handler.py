@@ -959,7 +959,7 @@ def replace_sl_message_id_by_original_message_id(msg):
 
     # Replace SL Message-ID by original Message-ID in References header
     if msg[headers.REFERENCES]:
-        message_ids = msg[headers.REFERENCES].split()
+        message_ids = str(msg[headers.REFERENCES]).split()
         new_message_ids = []
         for message_id in message_ids:
             matching = MessageIDMatching.get_by(sl_message_id=message_id)
@@ -1292,7 +1292,7 @@ def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message)
 
     # Replace all original headers in References header by SL Message ID header if needed
     if msg[headers.REFERENCES]:
-        message_ids = msg[headers.REFERENCES].split()
+        message_ids = str(msg[headers.REFERENCES]).split()
         new_message_ids = []
         for message_id in message_ids:
             matching = MessageIDMatching.get_by(original_message_id=message_id)

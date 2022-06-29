@@ -255,3 +255,14 @@ def test_email_sent_to_noreplies(flask_client):
     envelope.rcpt_tos = [config.NOREPLY]
     result = email_handler.handle(envelope, msg)
     assert result == status.E515
+
+
+def test_references_header(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    msg = load_eml_file("reference_encoded.eml", {"alias_email": alias.email})
+    envelope = Envelope()
+    envelope.mail_from = "somewhere@rainbow.com"
+    envelope.rcpt_tos = [alias.email]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
