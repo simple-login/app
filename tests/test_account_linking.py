@@ -89,6 +89,7 @@ def test_login_case_from_partner():
     assert User.FLAG_CREATED_FROM_PARTNER == (
         res.user.flags & User.FLAG_CREATED_FROM_PARTNER
     )
+    assert res.user.activated is True
 
 
 def test_login_case_from_web():
@@ -104,6 +105,7 @@ def test_login_case_from_web():
     assert res.strategy == NewUserStrategy.__name__
     assert res.user is not None
     assert 0 == (res.user.flags & User.FLAG_CREATED_FROM_PARTNER)
+    assert res.user.activated is True
 
 
 def test_get_strategy_existing_sl_user():
