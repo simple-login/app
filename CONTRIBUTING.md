@@ -145,7 +145,11 @@ The code is also checked with `flake8`, make sure to run `flake8` before creatin
 poetry run flake8
 ```
 
-Nice to have: as we haven't found a good enough HTML code formatter, please reformat any HTML code with PyCharm. 
+For HTML templates, we use `djlint`. Before creating a pull request, please run
+
+```bash
+poetry run djlint --check templates
+```
 
 ## Test sending email
 
