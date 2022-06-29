@@ -15,11 +15,14 @@ def read_static_file_contents(filename: str) -> bytes:
 
 
 def read_test_data_file_contents(filename: str) -> bytes:
-    with open(f"./data/{filename}", "rb") as f:
+    this_path = Path(__file__)
+    test_data_path = this_path.parent.joinpath("data")
+    file_path = test_data_path.joinpath(filename)
+    with open(file_path.as_posix(), "rb") as f:
         return f.read()
 
 
-def test_non_image_file_returns_none():
+def test_non_image_file_returns_unknown():
     contents = read_static_file_contents("local-storage-polyfill.js")
     assert detect_image_format(contents) is ImageFormat.Unknown
 
