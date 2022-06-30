@@ -142,6 +142,8 @@ from app.handler.provider_complaint import (
     handle_hotmail_complaint,
     handle_yahoo_complaint,
 )
+from app.handler.unsubscribe_generator import UnsubscribeGenerator
+from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
 from app.mail_sender import sl_sendmail
 from app.message_utils import message_to_bytes
@@ -892,16 +894,7 @@ def forward_email_to_mailbox(
     add_alias_to_header_if_needed(msg, alias)
 
     # add List-Unsubscribe header
-    if user.one_click_unsubscribe_block_sender:
-        unsubscribe_link, via_email = alias.unsubscribe_link(contact)
-    else:
-        unsubscribe_link, via_email = alias.unsubscribe_link()
-
-    add_or_replace_header(msg, headers.LIST_UNSUBSCRIBE, f"<{unsubscribe_link}>")
-    if not via_email:
-        add_or_replace_header(
-            msg, headers.LIST_UNSUBSCRIBE_POST, "List-Unsubscribe=One-Click"
-        )
+    msg = UnsubscribeGenerator().add_header_to_message(alias, contact, msg)
 
     add_dkim_signature(msg, EMAIL_DOMAIN)
 
@@ -1748,127 +1741,6 @@ def is_bounce(envelope: Envelope, msg: Message):
     )
 
 
-def handle_unsubscribe(envelope: Envelope, msg: Message) -> str:
-    """return the SMTP status"""
-    # format: alias_id:
-    subject = msg[headers.SUBJECT]
-    alias, contact = None, None
-
-    try:
-        # subject has the format {alias.id}=
-        if subject.endswith("="):
-            alias_id = int(subject[:-1])
-            alias = Alias.get(alias_id)
-        # {contact.id}_
-        elif subject.endswith("_"):
-            contact_id = int(subject[:-1])
-            contact = Contact.get(contact_id)
-            if contact:
-                alias = contact.alias
-        # {user.id}*
-        elif subject.endswith("*"):
-            user_id = int(subject[:-1])
-            return handle_unsubscribe_user(user_id, envelope.mail_from)
-        # some email providers might strip off the = suffix
-        else:
-            alias_id = int(subject)
-            alias = Alias.get(alias_id)
-    except Exception:
-        LOG.w("Wrong format subject %s", msg[headers.SUBJECT])
-        return status.E507
-
-    if not alias:
-        LOG.w("Cannot get alias from subject %s", subject)
-        return status.E508
-
-    mail_from = envelope.mail_from
-    # Only alias's owning mailbox can send the unsubscribe request
-    mailbox = get_mailbox_from_mail_from(mail_from, alias)
-    if not mailbox:
-        LOG.d(
-            "%s cannot disable alias %s. Alias authorized addresses:%s",
-            envelope.mail_from,
-            alias,
-            alias.authorized_addresses,
-        )
-        return status.E509
-
-    user = alias.user
-
-    if contact:
-        contact.block_forward = True
-        Session.commit()
-        unblock_contact_url = (
-            URL
-            + f"/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
-        )
-        for mailbox in alias.mailboxes:
-            send_email(
-                mailbox.email,
-                f"Emails from {contact.website_email} to {alias.email} are now blocked",
-                render(
-                    "transactional/unsubscribe-block-contact.txt.jinja2",
-                    user=user,
-                    alias=alias,
-                    contact=contact,
-                    unblock_contact_url=unblock_contact_url,
-                ),
-            )
-    else:
-        alias.enabled = False
-        Session.commit()
-        enable_alias_url = URL + f"/dashboard/?highlight_alias_id={alias.id}"
-        for mailbox in alias.mailboxes:
-            send_email(
-                mailbox.email,
-                f"Alias {alias.email} has been disabled successfully",
-                render(
-                    "transactional/unsubscribe-disable-alias.txt",
-                    user=user,
-                    alias=alias.email,
-                    enable_alias_url=enable_alias_url,
-                ),
-                render(
-                    "transactional/unsubscribe-disable-alias.html",
-                    user=user,
-                    alias=alias.email,
-                    enable_alias_url=enable_alias_url,
-                ),
-            )
-
-    return status.E202
-
-
-def handle_unsubscribe_user(user_id: int, mail_from: str) -> str:
-    """return the SMTP status"""
-    user = User.get(user_id)
-    if not user:
-        LOG.w("No such user %s %s", user_id, mail_from)
-        return status.E510
-
-    if mail_from != user.email:
-        LOG.w("Unauthorized mail_from %s %s", user, mail_from)
-        return status.E511
-
-    user.notification = False
-    Session.commit()
-
-    send_email(
-        user.email,
-        "You have been unsubscribed from SimpleLogin newsletter",
-        render(
-            "transactional/unsubscribe-newsletter.txt",
-            user=user,
-        ),
-        render(
-            "transactional/unsubscribe-newsletter.html",
-            user=user,
-        ),
-    )
-
-    return status.E202
-
-
 def handle_transactional_bounce(
     envelope: Envelope, msg, rcpt_to, transactional_id=None
 ):
@@ -2066,7 +1938,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
     # unsubscribe request
     if UNSUBSCRIBER and (rcpt_tos == [UNSUBSCRIBER] or rcpt_tos == [OLD_UNSUBSCRIBER]):
         LOG.d("Handle unsubscribe request from %s", mail_from)
-        return handle_unsubscribe(envelope, msg)
+        return UnsubscribeHandler().handle_unsubscribe_from_message(envelope, msg)
 
     # region mail sent to VERP
     verp_info = get_verp_info_from_email(rcpt_tos[0])
