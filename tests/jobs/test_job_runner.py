@@ -1,5 +1,6 @@
+from app import config
 from app.db import Session
-from job_runner import get_jobs_to_run, MAX_JOB_ATTEMPTS
+from job_runner import get_jobs_to_run
 from app.models import Job, JobState
 import arrow
 
@@ -9,33 +10,36 @@ def test_get_jobs_to_run(flask_client):
     for job in Job.all():
         Job.delete(job.id)
     expected_jobs_to_run = [
+        # Jobs in ready state
         Job.create(name="", payload=""),
+        Job.create(name="", payload="", run_at=now.shift(minutes=40)),
+        Job.create(name="", payload="", run_at=now.shift(minutes=-40)),
+        # Jobs in taken state
         Job.create(
             name="",
             payload="",
             state=JobState.taken.value,
-            taken_at=now.shift(minutes=-40),
-        ),
-        Job.create(name="", payload="", run_at=now.shift(minutes=30)),
-        Job.create(name="", payload="", run_at=now.shift(minutes=-30)),
-        Job.create(
-            name="",
-            payload="",
-            run_at=now.shift(minutes=-30),
-            attempts=MAX_JOB_ATTEMPTS - 1,
+            taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
         ),
         Job.create(
             name="",
             payload="",
             state=JobState.taken.value,
-            taken_at=now.shift(minutes=-40),
+            taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
+            attempts=config.JOB_MAX_ATTEMPTS - 1,
+        ),
+        Job.create(
+            name="",
+            payload="",
+            state=JobState.taken.value,
+            taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
             run_at=now.shift(minutes=30),
         ),
         Job.create(
             name="",
             payload="",
             state=JobState.taken.value,
-            taken_at=now.shift(minutes=-40),
+            taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
             run_at=now.shift(minutes=-30),
         ),
     ]
@@ -49,14 +53,14 @@ def test_get_jobs_to_run(flask_client):
         name="",
         payload="",
         state=JobState.taken.value,
-        taken_at=now.shift(minutes=-10),
+        taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS - 10)),
     )
     # Job taken with enough time but out of run_at zone
     Job.create(
         name="",
         payload="",
         state=JobState.taken.value,
-        taken_at=now.shift(minutes=-40),
+        taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
         run_at=now.shift(hours=3),
     )
     # Job taken with enough time but out of run_at zone
@@ -64,7 +68,7 @@ def test_get_jobs_to_run(flask_client):
         name="",
         payload="",
         state=JobState.taken.value,
-        taken_at=now.shift(minutes=-20),
+        taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
         run_at=now.shift(hours=-3),
     )
     # Job out of attempts
@@ -72,8 +76,8 @@ def test_get_jobs_to_run(flask_client):
         name="",
         payload="",
         state=JobState.taken.value,
-        taken_at=now.shift(minutes=-40),
-        attempts=MAX_JOB_ATTEMPTS + 1,
+        taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
+        attempts=config.JOB_MAX_ATTEMPTS + 1,
     ),
     Session.commit()
     jobs = get_jobs_to_run()

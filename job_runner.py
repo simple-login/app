@@ -20,8 +20,6 @@ from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
 from server import create_light_app
 
-MAX_JOB_ATTEMPTS = 5
-
 
 def onboarding_send_from_alias(user):
     to_email, unsubscribe_link, via_email = user.get_communication_email()
@@ -238,8 +236,9 @@ def get_jobs_to_run() -> List[Job]:
                 Job.state == JobState.ready.value,
                 and_(
                     Job.state == JobState.taken.value,
-                    Job.taken_at < arrow.now().shift(minutes=-30),
-                    Job.attempts < MAX_JOB_ATTEMPTS,
+                    Job.taken_at
+                    < arrow.now().shift(minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS),
+                    Job.attempts < config.JOB_MAX_ATTEMPTS,
                 ),
             ),
             or_(Job.run_at.is_(None), and_(Job.run_at > min_dt, Job.run_at <= max_dt)),
