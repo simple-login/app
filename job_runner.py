@@ -223,25 +223,22 @@ SimpleLogin team.
 
 
 def get_jobs_to_run() -> List[Job]:
-    # run a job 1h earlier or later is not a big deal ...
-    min_dt = arrow.now().shift(hours=-1)
-    max_dt = arrow.now().shift(hours=1)
-
     # Get jobs that match all conditions:
     #  - Job.state == ready OR (Job.state == taken AND Job.taken_at < now - 30 mins AND Job.attempts < 5)
-    #  - Job.run_at is Null OR (Job.run_at > min_dt AND Job.run_at < max_dt)
+    #  - Job.run_at is Null OR Job.run_at < now + 10 mins
+    taken_at_earliest = arrow.now().shift(minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS)
+    run_at_earliest = arrow.now().shift(minutes=+10)
     query = Job.filter(
         and_(
             or_(
                 Job.state == JobState.ready.value,
                 and_(
                     Job.state == JobState.taken.value,
-                    Job.taken_at
-                    < arrow.now().shift(minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS),
+                    Job.taken_at < taken_at_earliest,
                     Job.attempts < config.JOB_MAX_ATTEMPTS,
                 ),
             ),
-            or_(Job.run_at.is_(None), and_(Job.run_at > min_dt, Job.run_at <= max_dt)),
+            or_(Job.run_at.is_(None), and_(Job.run_at <= run_at_earliest)),
         )
     )
     return query.all()

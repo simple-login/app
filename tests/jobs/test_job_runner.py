@@ -12,8 +12,7 @@ def test_get_jobs_to_run(flask_client):
     expected_jobs_to_run = [
         # Jobs in ready state
         Job.create(name="", payload=""),
-        Job.create(name="", payload="", run_at=now.shift(minutes=40)),
-        Job.create(name="", payload="", run_at=now.shift(minutes=-40)),
+        Job.create(name="", payload="", run_at=now),
         # Jobs in taken state
         Job.create(
             name="",
@@ -33,14 +32,7 @@ def test_get_jobs_to_run(flask_client):
             payload="",
             state=JobState.taken.value,
             taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
-            run_at=now.shift(minutes=30),
-        ),
-        Job.create(
-            name="",
-            payload="",
-            state=JobState.taken.value,
-            taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
-            run_at=now.shift(minutes=-30),
+            run_at=now,
         ),
     ]
     # Jobs not to run
@@ -62,14 +54,6 @@ def test_get_jobs_to_run(flask_client):
         state=JobState.taken.value,
         taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
         run_at=now.shift(hours=3),
-    )
-    # Job taken with enough time but out of run_at zone
-    Job.create(
-        name="",
-        payload="",
-        state=JobState.taken.value,
-        taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
-        run_at=now.shift(hours=-3),
     )
     # Job out of attempts
     Job.create(
