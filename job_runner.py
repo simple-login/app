@@ -3,8 +3,10 @@ Run scheduled jobs.
 Not meant for running job at precise time (+- 1h)
 """
 import time
+from typing import List
 
 import arrow
+from sqlalchemy.sql.expression import or_, and_
 
 from app import config
 from app.db import Session
@@ -17,6 +19,8 @@ from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
 from server import create_light_app
+
+MAX_JOB_ATTEMPTS = 5
 
 
 def onboarding_send_from_alias(user):
@@ -220,19 +224,35 @@ SimpleLogin team.
         LOG.e("Unknown job name %s", job.name)
 
 
+def get_jobs_to_run() -> List[Job]:
+    # run a job 1h earlier or later is not a big deal ...
+    min_dt = arrow.now().shift(hours=-1)
+    max_dt = arrow.now().shift(hours=1)
+
+    # Get jobs that match all conditions:
+    #  - Job.state == ready OR (Job.state == taken AND Job.taken_at < now - 30 mins AND Job.attempts < 5)
+    #  - Job.run_at is Null OR (Job.run_at > min_dt AND Job.run_at < max_dt)
+    query = Job.filter(
+        and_(
+            or_(
+                Job.state == JobState.ready.value,
+                and_(
+                    Job.state == JobState.taken.value,
+                    Job.taken_at < arrow.now().shift(minutes=-30),
+                    Job.attempts < MAX_JOB_ATTEMPTS,
+                ),
+            ),
+            or_(Job.run_at.is_(None), and_(Job.run_at > min_dt, Job.run_at <= max_dt)),
+        )
+    )
+    return query.all()
+
+
 if __name__ == "__main__":
     while True:
         # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
         with create_light_app().app_context():
-            # run a job 1h earlier or later is not a big deal ...
-            min_dt = arrow.now().shift(hours=-1)
-            max_dt = arrow.now().shift(hours=1)
-
-            # TODO: Change This condition after deploying this MR
-            # to Job.state == ready or (Job.state == taken and job.taken_at < arrow.now.shift(minutes=-10))
-            for job in Job.filter(
-                Job.taken.is_(False), Job.run_at > min_dt, Job.run_at <= max_dt
-            ).all():
+            for job in get_jobs_to_run():
                 LOG.d("Take job %s", job)
 
                 # mark the job as taken, whether it will be executed successfully or not
