@@ -58,6 +58,8 @@ def proton_login():
     next_url = sanitize_next_url(request.args.get("next"))
     if next_url:
         session["oauth_next"] = next_url
+    elif "oauth_next" in session:
+        del session["oauth_next"]
     proton = OAuth2Session(PROTON_CLIENT_ID, redirect_uri=_redirect_uri)
     authorization_url, state = proton.authorization_url(_authorization_base_url)
 
