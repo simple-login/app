@@ -24,6 +24,7 @@ from app.models import (
     ProviderComplaintState,
     Phase,
     ProviderComplaint,
+    Alias,
 )
 
 
@@ -268,6 +269,26 @@ class EmailLogAdmin(SLModelView):
 class AliasAdmin(SLModelView):
     column_searchable_list = ["id", "user.email", "email", "mailbox.email"]
     column_filters = ["id", "user.email", "email", "mailbox.email"]
+
+    @action(
+        "disable_email_spoofing_check",
+        "Disable email spoofing protection",
+        "Disable email spoofing protection?",
+    )
+    def disable_email_spoofing_check_for(self, ids):
+        for alias in Alias.filter(Alias.id.in_(ids)):
+            if alias.disable_email_spoofing_check:
+                flash(
+                    f"Email spoofing protection is already disabled on {alias.email}",
+                    "warning",
+                )
+            else:
+                alias.disable_email_spoofing_check = True
+                flash(
+                    f"Email spoofing protection is disabled on {alias.email}", "success"
+                )
+
+        Session.commit()
 
 
 class MailboxAdmin(SLModelView):
