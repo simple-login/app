@@ -4,117 +4,125 @@
 {% block title %}Alias Activity{% endblock %}
 {% block default_content %}
 
-<h1 class="h3">{{ alias.email }}</h1>
+  <h1 class="h3">{{ alias.email }}</h1>
   <!-- Stats -->
-<div class="row">
-<div class="col-12 col-md-6 col-lg-3">
-<div class="card">
-<div class="card-body">
-<div class="d-flex align-items-center">
-<div class="subheader">Total</div>
-<div class="text-muted" style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
-</div>
-<div class="h1 m-0">{{ total }}</div>
-</div>
-</div>
-</div>
-<div class="col-12 col-md-6 col-lg-3">
-<div class="card">
-<div class="card-body">
-<div class="d-flex align-items-center">
-<div class="subheader">Forwards</div>
-<div class="text-muted" style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
-</div>
-<div class="h1 m-0">{{ email_forwarded }}</div>
-</div>
-</div>
-</div>
-<div class="col-12 col-md-6 col-lg-3">
-<div class="card">
-<div class="card-body">
-<div class="d-flex align-items-center">
-<div class="subheader">Replies/Sent</div>
-<div class="text-muted" style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
-</div>
-<div class="h1 m-0">{{ email_replied }}</div>
-</div>
-</div>
-</div>
-<div class="col-12 col-md-6 col-lg-3">
-<div class="card">
-<div class="card-body">
-<div class="d-flex align-items-center">
-<div class="subheader">Blocks</div>
-<div class="text-muted" style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
-</div>
-<div class="h1 m-0">{{ email_blocked }}</div>
-</div>
-</div>
-</div>
-</div>
-<!-- END Stats -->
+  <div class="row">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader">Total</div>
+            <div class="text-muted"
+                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+          </div>
+          <div class="h1 m-0">{{ total }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader">Forwards</div>
+            <div class="text-muted"
+                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+          </div>
+          <div class="h1 m-0">{{ email_forwarded }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader">Replies/Sent</div>
+            <div class="text-muted"
+                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+          </div>
+          <div class="h1 m-0">{{ email_replied }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader">Blocks</div>
+            <div class="text-muted"
+                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+          </div>
+          <div class="h1 m-0">{{ email_blocked }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END Stats -->
+  <div class="row mt-4">
+    {% for log in logs %}
 
+      <div class="col-lg-6">
+        <div class="my-2 p-2 card border-light">
+          <div class="font-weight-bold">
+            {{ log.when | dt }}
+            <div class="float-right pr-3">
+              {% if log.bounced %}
 
-<div class="row mt-4">
-{% for log in logs %}
+                ⚠️
+              {% else %}
+                {% if log.is_reply %}
 
-<div class="col-lg-6">
-<div class="my-2 p-2 card border-light">
-<div class="font-weight-bold">
-{{ log.when | dt }}
-<div class="float-right pr-3">
-{% if log.bounced %}
+                  <i class="fa fa-reply"></i>
+                {% elif log.blocked %}
+                  <i class="fa fa-ban text-danger"></i>
+                {% else %}
+                  <i class="fa fa-paper-plane"></i>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+          {% if log.bounced and not log.is_reply %}
 
-⚠️
-{% else %}
-{% if log.is_reply %}
-
-<i class="fa fa-reply"></i>
-{% elif log.blocked %}
-<i class="fa fa-ban text-danger"></i>
-{% else %}
-<i class="fa fa-paper-plane"></i>
-{% endif %}
-{% endif %}
-</div>
-</div>
-{% if log.bounced and not log.is_reply %}
-
-<div>
-<span class="mr-2">{{ log.website_email }}</span>
-<img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
-<span class="ml-2">{{ log.alias }}</span>
-<img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
-<span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
-</div>
-{% elif log.bounced and log.is_reply %}
-<div>
-<span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
-<img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}" class="arrow">
-<span class="ml-2">{{ log.alias }}</span>
-<img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}" class="arrow">
-<span class="mr-2">{{ log.website_email }}</span>
-</div>
-{% else %}
-<div>{{ log.website_email }}</div>
-{% endif %}
-</div>
-</div>
-{% endfor %}
-</div>
-<nav aria-label="Alias log navigation">
-<ul class="pagination">
-<li class="page-item">
-<a class="btn btn-outline-secondary {% if page_id == 0 %}disabled{% endif %}" href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id-1) }}">
-Previous
-</a>
-</li>
-<li class="page-item">
-<a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}" href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id+1) }}">
-Next
-</a>
-</li>
-</ul>
-</nav>
+            <div>
+              <span class="mr-2">{{ log.website_email }}</span>
+              <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}"
+                   class="arrow">
+              <span class="ml-2">{{ log.alias }}</span>
+              <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}"
+                   class="arrow">
+              <span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
+            </div>
+          {% elif log.bounced and log.is_reply %}
+            <div>
+              <span class="ml-2">{{ log.email_log.bounced_mailbox() }}</span>
+              <img src="{{ url_for('static', filename='arrows/forward-arrow.svg') }}"
+                   class="arrow">
+              <span class="ml-2">{{ log.alias }}</span>
+              <img src="{{ url_for('static', filename='arrows/blocked-arrow.svg') }}"
+                   class="arrow">
+              <span class="mr-2">{{ log.website_email }}</span>
+            </div>
+          {% else %}
+            <div>{{ log.website_email }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <nav aria-label="Alias log navigation">
+    <ul class="pagination">
+      <li class="page-item">
+        <a class="btn btn-outline-secondary {% if page_id == 0 %}disabled{% endif %}"
+           href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id-1) }}">
+          Previous
+        </a>
+      </li>
+      <li class="page-item">
+        <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}"
+           href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id+1) }}">
+          Next
+        </a>
+      </li>
+    </ul>
+  </nav>
 {% endblock %}
 {% block script %}{% endblock %}
