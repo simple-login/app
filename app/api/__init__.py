@@ -14,4 +14,5 @@ from .views import (
     export,
     phone,
     sudo,
+    user,
 )

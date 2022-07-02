@@ -11,6 +11,7 @@
 - [POST /api/auth/forgot_password](#post-apiauthforgot_password): Request reset password link.
 - [GET /api/user_info](#get-apiuser_info): Get user's information.
 - [PATCH /api/sudo](#patch-apisudo): Enable sudo mode.
+- [DELETE /api/user](#delete-apiuser): Delete the current user.
 - [PATCH /api/user_info](#patch-apiuser_info): Update user's information.
 - [POST /api/api_key](#post-apiapi_key): Create a new API key.
 - [GET /api/logout](#get-apilogout): Log out.
@@ -242,6 +243,21 @@ Output:
 
 - 200 with ```{"ok": true}``` if sudo mode has been enabled.
 - 403 with ```{"error": "Some error"}``` if there is an error.
+
+#### DELETE /api/user
+
+Delete the current user. It requires sudo mode.
+
+Input:
+
+- `Authentication` header that contains the api key
+
+Output:
+
+- 200 with ```{"ok": true}``` if account is scheduled to be deleted.
+- 440 with ```{"error": "Need sudo"}``` if sudo mode is not enabled.
+- 403 with ```{"error": "Some error"}``` if there is an error.
+
 
 #### POST /api/api_key
 
