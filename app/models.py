@@ -642,7 +642,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if sub is None:
             return False
 
-        if isinstance(sub, ManualSubscription) and sub.is_giveaway():
+        if isinstance(sub, ManualSubscription) and sub.is_giveaway:
             return False
 
         return True
