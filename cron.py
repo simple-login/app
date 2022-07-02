@@ -37,6 +37,7 @@ from app.email_utils import (
     is_valid_email,
     get_email_domain_part,
 )
+from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
 from app.models import (
     Subscription,
@@ -63,7 +64,10 @@ from app.models import (
     Directory,
     DeletedDirectory,
     DeletedSubdomain,
+    PartnerSubscription,
+    PartnerUser,
 )
+from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
 from server import create_light_app
 
@@ -270,6 +274,22 @@ def compute_metric2() -> Metric2:
         if user.is_paid():
             nb_referred_user_paid += 1
 
+    # compute nb_proton_premium
+    nb_proton_premium = 0
+    try:
+        proton_partner = get_proton_partner()
+        nb_proton_premium = (
+            Session.query(PartnerSubscription, PartnerUser)
+            .filter(
+                PartnerSubscription.partner_user_id == PartnerUser.id,
+                PartnerUser.partner_id == proton_partner.id,
+                PartnerSubscription.end_at > now,
+            )
+            .count()
+        )
+    except ProtonPartnerNotSetUp:
+        LOG.d("Proton partner not set up")
+
     return Metric2.create(
         date=now,
         # user stats
@@ -289,6 +309,7 @@ def compute_metric2() -> Metric2:
         nb_coinbase_premium=CoinbaseSubscription.filter(
             CoinbaseSubscription.end_at > now
         ).count(),
+        nb_proton_premium=nb_proton_premium,
         # referral stats
         nb_referred_user=User.filter(User.referral_id.isnot(None)).count(),
         nb_referred_user_paid=nb_referred_user_paid,
