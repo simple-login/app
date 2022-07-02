@@ -274,8 +274,8 @@ def compute_metric2() -> Metric2:
         if user.is_paid():
             nb_referred_user_paid += 1
 
-    # compute nb_proton_premium
-    nb_proton_premium = 0
+    # compute nb_proton_premium, nb_proton_user
+    nb_proton_premium = nb_proton_user = 0
     try:
         proton_partner = get_proton_partner()
         nb_proton_premium = (
@@ -287,6 +287,13 @@ def compute_metric2() -> Metric2:
             )
             .count()
         )
+        nb_proton_user = (
+            Session.query(PartnerUser)
+            .filter(
+                PartnerUser.partner_id == proton_partner.id,
+            )
+            .count()
+        )
     except ProtonPartnerNotSetUp:
         LOG.d("Proton partner not set up")
 
@@ -295,6 +302,7 @@ def compute_metric2() -> Metric2:
         # user stats
         nb_user=User.count(),
         nb_activated_user=User.filter_by(activated=True).count(),
+        nb_proton_user=nb_proton_user,
         # subscription stats
         nb_premium=Subscription.filter(Subscription.cancelled.is_(False)).count(),
         nb_cancelled_premium=Subscription.filter(

@@ -2775,6 +2775,7 @@ class Metric2(Base, ModelMixin):
 
     nb_user = sa.Column(sa.Float, nullable=True)
     nb_activated_user = sa.Column(sa.Float, nullable=True)
+    nb_proton_user = sa.Column(sa.Float, nullable=True)
 
     nb_premium = sa.Column(sa.Float, nullable=True)
     nb_apple_premium = sa.Column(sa.Float, nullable=True)
