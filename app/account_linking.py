@@ -217,7 +217,6 @@ def process_login_case(
         )
 
 
-
 def link_user(
     link_request: PartnerLinkRequest, current_user: User, partner: Partner
 ) -> LinkResult:
