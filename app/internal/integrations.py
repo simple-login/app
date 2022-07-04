@@ -8,7 +8,7 @@ from .base import internal_bp
 @internal_bp.route("/integrations/proton")
 def set_enable_proton_cookie():
     if current_user.is_authenticated:
-        redirect_url = url_for("dashboard.index")
+        redirect_url = url_for("dashboard.setting", _anchor="connect-with-proton")
     else:
         redirect_url = url_for("auth.login")
 
