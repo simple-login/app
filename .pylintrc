@@ -3,7 +3,7 @@ extension-pkg-allow-list=re2
 
 fail-under=7.0
 ignore=CVS
-ignore-paths=
+ignore-paths=migrations
 ignore-patterns=^\.#
 jobs=0
 

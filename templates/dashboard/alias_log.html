@@ -57,7 +57,7 @@
     </div>
   </div>
   <!-- END Stats -->
-=======
+  =======
   <div class="row">
     <div class="col-md-3 col-sm-6">
       <div class="card-counter primary">
@@ -88,7 +88,7 @@
       </div>
     </div>
   </div>
->>>>>>> cf81b590 (Reformat with new djlint version)
+  >>>>>>> cf81b590 (Reformat with new djlint version)
   <div class="row mt-4">
     {% for log in logs %}
 
@@ -134,7 +134,9 @@
               <span class="mr-2">{{ log.website_email }}</span>
             </div>
           {% else %}
-            <div>{{ log.website_email }}</div>
+            <div>
+              {{ log.website_email }}
+            </div>
           {% endif %}
         </div>
       </div>
