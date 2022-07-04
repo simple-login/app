@@ -10,6 +10,10 @@
           font-weight: 600;
           margin-bottom: 3px;
       }
+      .highlighted{
+        border: solid 2px #5675E2;
+      }
+
   </style>
 {% endblock %}
 {% block default_content %}
@@ -219,7 +223,7 @@
     <!-- Connect with Proton -->
     {% if connect_with_proton %}
 
-      <div class="card">
+      <div class="card" id="connect-with-proton">
         <div class="card-body">
           <div class="card-title">Connect with Proton</div>
           {% if proton_linked_account != None %}
@@ -718,4 +722,12 @@
           </div>
         </div>
       </div>
+    {% endblock %}
+    {% block script %}
+      <script>
+  let anchor = window.location.hash;
+  $(anchor).addClass("highlighted")
+
+
+      </script>
     {% endblock %}
