@@ -15,6 +15,7 @@ from app.config import (
     PROTON_VALIDATE_CERTS,
     URL,
 )
+from app.log import LOG
 from app.proton.proton_client import HttpProtonClient, convert_access_token
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
@@ -98,15 +99,21 @@ def proton_callback():
     if PROTON_EXTRA_HEADER_NAME and PROTON_EXTRA_HEADER_VALUE:
         headers = {PROTON_EXTRA_HEADER_NAME: PROTON_EXTRA_HEADER_VALUE}
 
-    token = proton.fetch_token(
-        _token_url,
-        client_secret=PROTON_CLIENT_SECRET,
-        authorization_response=request.url,
-        verify=PROTON_VALIDATE_CERTS,
-        method="GET",
-        include_client_id=True,
-        headers=headers,
-    )
+    try:
+        token = proton.fetch_token(
+            _token_url,
+            client_secret=PROTON_CLIENT_SECRET,
+            authorization_response=request.url,
+            verify=PROTON_VALIDATE_CERTS,
+            method="GET",
+            include_client_id=True,
+            headers=headers,
+        )
+    except Exception as e:
+        LOG.warning(f"Error fetching Proton token: {e}")
+        flash("There was an error in the login process", "error")
+        return redirect(url_for("auth.login"))
+
     credentials = convert_access_token(token["access_token"])
     action = get_action_from_state()
 
