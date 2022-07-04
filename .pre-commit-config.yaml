@@ -1,3 +1,4 @@
+exclude: "(migrations|static/node_modules|static/assets|static/vendor)"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.2.0
@@ -9,12 +10,10 @@ repos:
     hooks:
       - id: black
         language_version: "3.10"
-        exclude: "(migrations)"
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
     hooks:
       - id: flake8
-        exclude: "(migrations)"
   - repo: https://github.com/Riverside-Healthcare/djLint
     rev: v1.3.0
     hooks:
@@ -25,4 +24,3 @@ repos:
     rev: v2.14.4
     hooks:
       - id: pylint
-        exclude: "(migrations)"
