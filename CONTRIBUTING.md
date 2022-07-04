@@ -50,6 +50,16 @@ More info on https://github.com/andreasvc/pyre2
 brew install -s re2 pybind11
 ```
 
+## Linting and static analysis
+
+We use pre-commit to run all our linting and static analysis checks. Please run
+
+```bash
+poetry run pre-commit install
+```
+
+To install it in your development environment.
+
 ## Run tests
 
 ```bash
