@@ -92,6 +92,24 @@ def test_login_case_from_partner():
     assert res.user.activated is True
 
 
+def test_login_case_from_partner_with_uppercase_email():
+    partner = get_proton_partner()
+    link_request = random_link_request(
+        external_user_id=random_string(),
+        from_partner=True,
+    )
+    link_request.email = link_request.email.upper()
+    res = process_login_case(link_request, partner)
+
+    assert res.strategy == NewUserStrategy.__name__
+    assert res.user is not None
+    assert res.user.email == link_request.email.lower()
+    assert User.FLAG_CREATED_FROM_PARTNER == (
+        res.user.flags & User.FLAG_CREATED_FROM_PARTNER
+    )
+    assert res.user.activated is True
+
+
 def test_login_case_from_web():
     partner = get_proton_partner()
     res = process_login_case(
@@ -113,6 +131,17 @@ def test_get_strategy_existing_sl_user():
     user = User.create(email, commit=True)
     strategy = get_login_strategy(
         link_request=random_link_request(email=email),
+        user=user,
+        partner=get_proton_partner(),
+    )
+    assert isinstance(strategy, ExistingUnlinkedUserStrategy)
+
+
+def test_get_strategy_existing_sl_user_with_uppercase_email():
+    email = random_email()
+    user = User.create(email, commit=True)
+    strategy = get_login_strategy(
+        link_request=random_link_request(email=email.upper()),
         user=user,
         partner=get_proton_partner(),
     )
@@ -321,3 +350,30 @@ def test_ensure_partner_user_exists_for_user_raises_exception_when_linked_to_ano
             user,
             partner_2,
         )
+
+
+def test_link_account_with_uppercase(flask_client):
+    # In this scenario we have:
+    # - PartnerUser (email1@partner)
+    # - SimpleLoginUser registered with email1@proton
+    # We will try to link both accounts with an uppercase email
+
+    email = random_email()
+    partner_user_id = random_string()
+    link_request = random_link_request(
+        external_user_id=partner_user_id, email=email.upper()
+    )
+    user = create_user(email)
+
+    res = process_link_case(link_request, user, get_proton_partner())
+    assert res is not None
+    assert res.user is not None
+    assert res.user.id == user.id
+    assert res.user.email == email
+    assert res.strategy == "Link"
+
+    partner_user = PartnerUser.get_by(
+        partner_id=get_proton_partner().id, user_id=user.id
+    )
+    assert partner_user.partner_id == get_proton_partner().id
+    assert partner_user.external_user_id == partner_user_id
