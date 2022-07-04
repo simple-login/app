@@ -137,7 +137,7 @@ def proton_callback():
         return redirect(url_for("auth.login"))
 
     if res.redirect:
-        return after_login(res.user, res.redirect)
+        return after_login(res.user, res.redirect, login_from_proton=True)
 
     next_url = session.get("oauth_next")
-    return after_login(res.user, next_url)
+    return after_login(res.user, next_url, login_from_proton=True)
