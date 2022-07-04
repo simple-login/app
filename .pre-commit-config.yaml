@@ -1,4 +1,6 @@
 exclude: "(migrations|static/node_modules|static/assets|static/vendor)"
+default_language_version:
+  python: python3
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.2.0
@@ -9,7 +11,6 @@ repos:
     rev: 22.3.0
     hooks:
       - id: black
-        language_version: "3.9"
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
     hooks:
