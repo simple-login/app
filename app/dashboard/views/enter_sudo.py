@@ -8,6 +8,7 @@ from wtforms import PasswordField, validators
 
 from app.dashboard.base import dashboard_bp
 from app.log import LOG
+from app.proton.utils import is_connect_with_proton_enabled
 from app.utils import sanitize_next_url
 
 _SUDO_GAP = 900
@@ -40,7 +41,10 @@ def enter_sudo():
             flash("Incorrect password", "warning")
 
     return render_template(
-        "dashboard/enter_sudo.html", password_check_form=password_check_form
+        "dashboard/enter_sudo.html",
+        password_check_form=password_check_form,
+        next=request.args.get("next"),
+        connect_with_proton=is_connect_with_proton_enabled(),
     )
 
 

@@ -1,3 +1,4 @@
+from time import time
 from typing import Optional
 
 from flask import session, redirect, url_for, request
@@ -31,6 +32,7 @@ def after_login(user, next_url):
     else:
         LOG.d("log user %s in", user)
         login_user(user)
+        session["sudo_time"] = int(time())
 
         # User comes to login page from another page
         if next_url:
