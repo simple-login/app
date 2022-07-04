@@ -2775,12 +2775,14 @@ class Metric2(Base, ModelMixin):
 
     nb_user = sa.Column(sa.Float, nullable=True)
     nb_activated_user = sa.Column(sa.Float, nullable=True)
+    nb_proton_user = sa.Column(sa.Float, nullable=True)
 
     nb_premium = sa.Column(sa.Float, nullable=True)
     nb_apple_premium = sa.Column(sa.Float, nullable=True)
     nb_cancelled_premium = sa.Column(sa.Float, nullable=True)
     nb_manual_premium = sa.Column(sa.Float, nullable=True)
     nb_coinbase_premium = sa.Column(sa.Float, nullable=True)
+    nb_proton_premium = sa.Column(sa.Float, nullable=True)
 
     # nb users who have been referred
     nb_referred_user = sa.Column(sa.Float, nullable=True)
