@@ -75,7 +75,7 @@ jobs:
 
       - name: Check formatting & linting
         run: |
-          poetry run pre-commit
+          poetry run pre-commit run --all-files
 
       - name: Run db migration
         run: |
