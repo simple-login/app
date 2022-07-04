@@ -13,9 +13,7 @@
   <div class="card">
     <div class="card-body">
       <h1 class="h2 text-center">Register Your Security Key</h1>
-      <p class="text-center">
-        Follow your browser's steps to register your security key with SimpleLogin
-      </p>
+      <p class="text-center">Follow your browser's steps to register your security key with SimpleLogin</p>
       <form id="formRegisterKey" method="post">
         {{ fido_token_form.csrf_token }}
         {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}

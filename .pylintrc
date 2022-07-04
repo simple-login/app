@@ -1,0 +1,227 @@
+[MASTER]
+extension-pkg-allow-list=re2
+
+fail-under=7.0
+ignore=CVS
+ignore-paths=migrations
+ignore-patterns=^\.#
+jobs=0
+
+[MESSAGES CONTROL]
+disable=missing-function-docstring,
+        missing-module-docstring,
+        duplicate-code,
+        #import-error,
+        missing-class-docstring,
+        useless-object-inheritance,
+        use-dict-literal,
+        logging-format-interpolation,
+        consider-using-f-string,
+        unnecessary-comprehension,
+        inconsistent-return-statements,
+        wrong-import-order,
+        line-too-long,
+        invalid-name,
+        global-statement,
+        no-else-return,
+        unspecified-encoding,
+        logging-fstring-interpolation,
+        too-few-public-methods,
+        bare-except,
+        fixme,
+        unnecessary-pass,
+        f-string-without-interpolation,
+        super-init-not-called,
+        unused-argument,
+        ungrouped-imports,
+        too-many-locals,
+        consider-using-with,
+        too-many-statements,
+        consider-using-set-comprehension,
+        unidiomatic-typecheck,
+        useless-else-on-loop,
+        too-many-return-statements,
+        broad-except,
+        protected-access,
+        consider-using-enumerate,
+        too-many-nested-blocks,
+        too-many-branches,
+        simplifiable-if-expression,
+        possibly-unused-variable,
+        pointless-string-statement,
+        wrong-import-position,
+        redefined-outer-name,
+        raise-missing-from,
+        logging-too-few-args,
+        redefined-builtin,
+        too-many-arguments,
+        import-outside-toplevel,
+        redefined-argument-from-local,
+        logging-too-many-args,
+        too-many-instance-attributes,
+        unreachable,
+        no-name-in-module,
+        no-member,
+        consider-using-ternary,
+        too-many-lines,
+        arguments-differ,
+        too-many-public-methods,
+        unused-variable,
+        consider-using-dict-items,
+        consider-using-in,
+        reimported,
+        too-many-boolean-expressions,
+        cyclic-import,
+        not-callable, # (paddle_utils.py) verifier.verify cannot be called (although it can)
+        abstract-method, # (models.py)
+
+[BASIC]
+
+# Naming style matching correct argument names.
+argument-naming-style=snake_case
+
+# Regular expression matching correct argument names. Overrides argument-
+# naming-style. If left empty, argument names will be checked with the set
+# naming style.
+#argument-rgx=
+
+# Naming style matching correct attribute names.
+attr-naming-style=snake_case
+
+# Regular expression matching correct attribute names. Overrides attr-naming-
+# style. If left empty, attribute names will be checked with the set naming
+# style.
+#attr-rgx=
+
+# Bad variable names which should always be refused, separated by a comma.
+bad-names=foo,
+          bar,
+          baz,
+          toto,
+          tutu,
+          tata
+
+# Bad variable names regexes, separated by a comma. If names match any regex,
+# they will always be refused
+bad-names-rgxs=
+
+# Naming style matching correct class attribute names.
+class-attribute-naming-style=any
+
+# Regular expression matching correct class attribute names. Overrides class-
+# attribute-naming-style. If left empty, class attribute names will be checked
+# with the set naming style.
+#class-attribute-rgx=
+
+# Naming style matching correct class constant names.
+class-const-naming-style=UPPER_CASE
+
+# Regular expression matching correct class constant names. Overrides class-
+# const-naming-style. If left empty, class constant names will be checked with
+# the set naming style.
+#class-const-rgx=
+
+# Naming style matching correct class names.
+class-naming-style=PascalCase
+
+# Regular expression matching correct class names. Overrides class-naming-
+# style. If left empty, class names will be checked with the set naming style.
+#class-rgx=
+
+# Naming style matching correct constant names.
+const-naming-style=UPPER_CASE
+
+# Regular expression matching correct constant names. Overrides const-naming-
+# style. If left empty, constant names will be checked with the set naming
+# style.
+#const-rgx=
+
+# Minimum line length for functions/classes that require docstrings, shorter
+# ones are exempt.
+docstring-min-length=-1
+
+# Naming style matching correct function names.
+function-naming-style=snake_case
+
+# Regular expression matching correct function names. Overrides function-
+# naming-style. If left empty, function names will be checked with the set
+# naming style.
+#function-rgx=
+
+# Good variable names which should always be accepted, separated by a comma.
+good-names=i,
+           j,
+           k,
+           ex,
+           Run,
+           _
+
+# Good variable names regexes, separated by a comma. If names match any regex,
+# they will always be accepted
+good-names-rgxs=
+
+# Include a hint for the correct naming format with invalid-name.
+include-naming-hint=no
+
+# Naming style matching correct inline iteration names.
+inlinevar-naming-style=any
+
+# Regular expression matching correct inline iteration names. Overrides
+# inlinevar-naming-style. If left empty, inline iteration names will be checked
+# with the set naming style.
+#inlinevar-rgx=
+
+# Naming style matching correct method names.
+method-naming-style=snake_case
+
+# Regular expression matching correct method names. Overrides method-naming-
+# style. If left empty, method names will be checked with the set naming style.
+#method-rgx=
+
+# Naming style matching correct module names.
+module-naming-style=snake_case
+
+# Regular expression matching correct module names. Overrides module-naming-
+# style. If left empty, module names will be checked with the set naming style.
+#module-rgx=
+
+# Colon-delimited sets of names that determine each other's naming style when
+# the name regexes allow several styles.
+name-group=
+
+# Regular expression which should only match function or class names that do
+# not require a docstring.
+no-docstring-rgx=^_
+
+# List of decorators that produce properties, such as abc.abstractproperty. Add
+# to this list to register other decorators that produce valid properties.
+# These decorators are taken in consideration only for invalid-name.
+property-classes=abc.abstractproperty
+
+# Regular expression matching correct type variable names. If left empty, type
+# variable names will be checked with the set naming style.
+#typevar-rgx=
+
+# Naming style matching correct variable names.
+variable-naming-style=snake_case
+
+# Regular expression matching correct variable names. Overrides variable-
+# naming-style. If left empty, variable names will be checked with the set
+# naming style.
+#variable-rgx=
+
+
+[STRING]
+
+# This flag controls whether inconsistent-quotes generates a warning when the
+# character used as a quote delimiter is used inconsistently within a module.
+check-quote-consistency=no
+
+# This flag controls whether the implicit-str-concat should generate a warning
+# on implicit string concatenation in sequences defined over several lines.
+check-str-concat-over-line-jumps=no
+
+
+[FORMAT]
+max-line-length=88
+single-line-if-stmt=yes

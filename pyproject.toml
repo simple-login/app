@@ -53,7 +53,7 @@ packages = [
 include = ["templates/*", "templates/**/*"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.7.2"
 flask = "^1.1.2"
 flask_login = "^0.5.0"
 wtforms = "^2.3.3"
@@ -116,9 +116,8 @@ pytest = "^7.0.0"
 pytest-cov = "^3.0.0"
 pre-commit = "^2.17.0"
 black = "^22.1.0"
-flake8 = "^4.0.1"
-flake8-bugbear = "^22.1.11"
-djlint = "0.7.3"
+djlint = "^1.3.0"
+pylint = "^2.14.4"
 
 [build-system]
 requires = ["poetry>=0.12"]

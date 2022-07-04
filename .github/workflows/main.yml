@@ -1,6 +1,6 @@
 name: Run tests & Publish to Docker Registry
 
-on: 
+on:
   push:
 
 jobs:
@@ -9,7 +9,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.7, "3.10"]
+        python-version: ["3.9", "3.10"]
 
     # service containers to run with `postgres-job`
     services:
@@ -75,9 +75,7 @@ jobs:
 
       - name: Check formatting & linting
         run: |
-          poetry run black --check .
-          poetry run flake8
-          poetry run djlint --check templates
+          poetry run pre-commit run --all-files
 
       - name: Run db migration
         run: |

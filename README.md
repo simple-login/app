@@ -29,12 +29,12 @@
 
 ---
 
-Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked. 
-More information on https://simplelogin.io 
+Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked.
+More information on https://simplelogin.io
 
 This README contains instructions on how to self host SimpleLogin.
 
-Once you have your own SimpleLogin instance running, you can change the `API URL` in SimpleLogin's Chrome/Firefox extension, Android/iOS app to your server. 
+Once you have your own SimpleLogin instance running, you can change the `API URL` in SimpleLogin's Chrome/Firefox extension, Android/iOS app to your server.
 
 SimpleLogin roadmap is at https://github.com/simple-login/app/projects/1 and our forum at https://github.com/simple-login/app/discussions, feel free to submit new ideas or vote on features.
 
@@ -374,10 +374,10 @@ sudo systemctl restart postfix
 To run SimpleLogin, you need a config file at `$(pwd)/simplelogin.env`. Below is an example that you can use right away, make sure to
 
 - replace `mydomain.com` by your domain,
-- set `FLASK_SECRET` to a secret string, 
+- set `FLASK_SECRET` to a secret string,
 - update 'myuser' and 'mypassword' with your database credentials used in previous step.
 
-All possible parameters can be found in [config example](example.env). Some are optional and are commented out by default. 
+All possible parameters can be found in [config example](example.env). Some are optional and are commented out by default.
 Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
 ```.env

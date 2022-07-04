@@ -27,12 +27,12 @@ smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
 smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
 ```
 
-with 
+with
 
 ```
 smtpd_tls_cert_file = /etc/letsencrypt/live/app.mydomain.com/fullchain.pem
 smtpd_tls_key_file = /etc/letsencrypt/live/app.mydomain.com/privkey.pem
-``` 
+```
 
 Make sure to replace app.mydomain.com with your own domain.
 

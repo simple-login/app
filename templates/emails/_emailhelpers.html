@@ -2,18 +2,14 @@
   <p style="font-size: 16px;
             line-height: 1.625;
             color: #51545E;
-            margin: .4em 0 1.1875em;">
-    {{ text }}
-  </p>
+            margin: .4em 0 1.1875em;">{{ text }}</p>
 {% endmacro %}
 <!-- To be used instead of render_text, much better! -->
 {% macro text() %}
   <p style="font-size: 16px;
             line-height: 1.625;
             color: #51545E;
-            margin: .4em 0 1.1875em;">
-    {{ caller() }}
-  </p>
+            margin: .4em 0 1.1875em;">{{ caller() }}</p>
 {% endmacro %}
 {% macro render_button(button_text, link) %}
   <!-- Action -->
