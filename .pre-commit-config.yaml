@@ -20,7 +20,7 @@ repos:
     hooks:
       - id: djlint-jinja
         files: '.*\.html'
-        entry: djlint --check
+        entry: djlint --reformat
   - repo: https://github.com/PyCQA/pylint
     rev: v2.14.4
     hooks:

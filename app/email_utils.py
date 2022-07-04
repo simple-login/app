@@ -19,7 +19,7 @@ from smtplib import SMTP, SMTPException
 from typing import Tuple, List, Optional, Union
 
 import arrow
-import dkim  # pylint: disable=syntax-error
+import dkim
 import re2 as re
 import spf
 from aiosmtpd.smtp import Envelope
