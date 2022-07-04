@@ -1211,7 +1211,7 @@ def generate_email(
     :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
     """
     if scheme == AliasGeneratorEnum.uuid.value:
-        name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
+        name = uuid.uuid4().hex if in_hex else str(uuid.uuid4())
         random_email = name + "@" + alias_domain
     else:
         random_email = random_words() + "@" + alias_domain
