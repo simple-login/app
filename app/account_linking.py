@@ -8,6 +8,7 @@ from newrelic import agent
 
 from app.db import Session
 from app.email_utils import send_welcome_email
+from app.utils import sanitize_email
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
 from app.log import LOG
 from app.models import (
@@ -194,8 +195,8 @@ def get_login_strategy(
 def process_login_case(
     link_request: PartnerLinkRequest, partner: Partner
 ) -> LinkResult:
-    # Use lowercase email always
-    link_request.email = link_request.email.lower()
+    # Sanitize email just in case
+    link_request.email = sanitize_email(link_request.email)
     # Try to find a SimpleLogin user registered with that partner user id
     partner_user = PartnerUser.get_by(
         partner_id=partner.id, external_user_id=link_request.external_user_id
@@ -216,11 +217,12 @@ def process_login_case(
         )
 
 
+
 def link_user(
     link_request: PartnerLinkRequest, current_user: User, partner: Partner
 ) -> LinkResult:
-    # Use lowercase email always
-    link_request.email = link_request.email.lower()
+    # Sanitize email just in case
+    link_request.email = sanitize_email(link_request.email)
     partner_user = ensure_partner_user_exists_for_user(
         link_request, current_user, partner
     )
@@ -264,8 +266,8 @@ def process_link_case(
     current_user: User,
     partner: Partner,
 ) -> LinkResult:
-    # Use lowercase email always
-    link_request.email = link_request.email.lower()
+    # Sanitize email just in case
+    link_request.email = sanitize_email(link_request.email)
     # Try to find a SimpleLogin user linked with this Partner account
     partner_user = PartnerUser.get_by(
         partner_id=partner.id, external_user_id=link_request.external_user_id
