@@ -723,12 +723,11 @@
         </div>
       </div>
     {% endblock %}
-
-{% block script %}
-  <script>
+    {% block script %}
+      <script>
   let anchor = window.location.hash;
   $(anchor).addClass("highlighted")
 
 
-  </script>
-{% endblock %}
+      </script>
+    {% endblock %}
