@@ -57,6 +57,38 @@
     </div>
   </div>
   <!-- END Stats -->
+=======
+  <div class="row">
+    <div class="col-md-3 col-sm-6">
+      <div class="card-counter primary">
+        <i class="fa fa-at"></i>
+        <span class="count-numbers">{{ total }}</span>
+        <span class="count-name">Email Handled</span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card-counter primary">
+        <i class="fa fa-paper-plane"></i>
+        <span class="count-numbers">{{ email_forwarded }}</span>
+        <span class="count-name">Email Forwarded</span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card-counter primary">
+        <i class="fa fa-reply"></i>
+        <span class="count-numbers">{{ email_replied }}</span>
+        <span class="count-name">Email Replied</span>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card-counter danger">
+        <i class="fa fa-ban"></i>
+        <span class="count-numbers">{{ email_blocked }}</span>
+        <span class="count-name">Email Blocked</span>
+      </div>
+    </div>
+  </div>
+>>>>>>> cf81b590 (Reformat with new djlint version)
   <div class="row mt-4">
     {% for log in logs %}
 

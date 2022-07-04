@@ -11,9 +11,7 @@
   <div class="card">
     <div class="card-body">
       <h1 class="h2">Manage Your Security Key</h1>
-      <p>
-        Unlink all keys will also disable WebAuthn 2FA.
-      </p>
+      <p>Unlink all keys will also disable WebAuthn 2FA.</p>
       <form id="formManageKey" method="post">
         {{ fido_manage_form.csrf_token }}
         {{ fido_manage_form.credential_id(class="form-control", placeholder="") }}

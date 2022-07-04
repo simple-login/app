@@ -7,9 +7,7 @@
   <div class="card">
     <div class="card-body">
       <h1 class="h2">Extend Subscription</h1>
-      <p>
-        Your subscription is expired on {{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}
-      </p>
+      <p>Your subscription is expired on {{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}</p>
       <div>
         <a class="buy-with-crypto"
            data-custom="{{ current_user.id }}"
