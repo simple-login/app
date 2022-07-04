@@ -1,6 +1,6 @@
 name: Run tests & Publish to Docker Registry
 
-on: 
+on:
   push:
 
 jobs:
@@ -75,9 +75,7 @@ jobs:
 
       - name: Check formatting & linting
         run: |
-          poetry run black --check .
-          poetry run flake8
-          poetry run djlint --check templates
+          poetry run pre-commit
 
       - name: Run db migration
         run: |
