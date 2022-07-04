@@ -1,9 +1,9 @@
 Thanks for taking the time to contribute! 🎉👍
 
-Before working on a new feature, please get in touch with us at dev[at]simplelogin.io to avoid duplication. 
-We can also discuss the best way to implement it. 
+Before working on a new feature, please get in touch with us at dev[at]simplelogin.io to avoid duplication.
+We can also discuss the best way to implement it.
 
-The project uses Flask, Python3.7+ and requires Postgres 12+ as dependency. 
+The project uses Flask, Python3.7+ and requires Postgres 12+ as dependency.
 
 ## General Architecture
 
@@ -43,7 +43,7 @@ You also need to install `gpg` tool, on Mac it can be done with:
 brew install gnupg
 ```
 
-If you see the `pyre2` package in the error message, you might need to install its dependencies with `brew`. 
+If you see the `pyre2` package in the error message, you might need to install its dependencies with `brew`.
 More info on https://github.com/andreasvc/pyre2
 
 ```bash

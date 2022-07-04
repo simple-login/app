@@ -7,7 +7,7 @@ function confirmDeleteAlias() {
 
   let message = `Maybe you want to disable the alias instead? Please note once deleted, it <b>can't</b> be restored.`;
   if (aliasDomainTrashUrl !== undefined) {
-    message = `Maybe you want to disable the alias instead? When it's deleted, it's moved to the domain 
+    message = `Maybe you want to disable the alias instead? When it's deleted, it's moved to the domain
     <a href="${aliasDomainTrashUrl}">trash</a>`;
   }
 

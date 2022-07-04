@@ -26,7 +26,7 @@ def upgrade():
     session = Session(bind=bind)
 
     session.execute("""
-    ALTER TABLE alias ADD COLUMN ts_vector tsvector GENERATED ALWAYS 
+    ALTER TABLE alias ADD COLUMN ts_vector tsvector GENERATED ALWAYS
     AS (to_tsvector('english', note)) STORED;
     """)
 

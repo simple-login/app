@@ -239,7 +239,7 @@ Input:
 }
 ```
 
-Output: 
+Output:
 
 - 200 with ```{"ok": true}``` if sudo mode has been enabled.
 - 403 with ```{"error": "Some error"}``` if there is an error.
@@ -308,7 +308,7 @@ Input:
 Output: a json with the following field:
 
 - can_create: boolean. Whether user can create new alias
-- suffixes: list of alias suffix that user can use. 
+- suffixes: list of alias suffix that user can use.
   Each item is a dictionary with `suffix`, `signed-suffix`, `is_custom`, `is_premium` as keys.
   The `signed-suffix` is necessary to avoid request tampering.
 - prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted
@@ -389,8 +389,8 @@ Input:
 - `page_id` in query. Used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts
   at 0.
 - (Optional) `pinned` in query. If set, only pinned aliases are returned.
-- (Optional) `disabled` in query. If set, only disabled aliases are returned. 
-- (Optional) `enabled` in query. If set, only enabled aliases are returned. 
+- (Optional) `disabled` in query. If set, only disabled aliases are returned.
+- (Optional) `enabled` in query. If set, only enabled aliases are returned.
   Please note `pinned`, `disabled`, `enabled` are exclusive, i.e. only one can be present.
 - (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this
   case this endpoint also supports POST.

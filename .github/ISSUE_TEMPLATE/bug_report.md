@@ -7,12 +7,12 @@ assignees: ''
 
 ---
 
-Please note that this is only for bug report. 
+Please note that this is only for bug report.
 
 For help on your account, please reach out to us at hi[at]simplelogin.io. Please make sure to check out [our FAQ](https://simplelogin.io/faq/) that contains  frequently asked questions.
 
 
-For feature request, you can use our [forum](https://github.com/simple-login/app/discussions/categories/feature-request). 
+For feature request, you can use our [forum](https://github.com/simple-login/app/discussions/categories/feature-request).
 
 For self-hosted question/issue, please ask in [self-hosted forum](https://github.com/simple-login/app/discussions/categories/self-hosting-question)
 
