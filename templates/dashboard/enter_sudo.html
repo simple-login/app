@@ -19,9 +19,7 @@
       {% if connect_with_proton %}
 
         <div class="my-3">
-          <p>
-            Alternatively you can use your Proton credentials to ensure it's you.
-          </p>
+          <p>Alternatively you can use your Proton credentials to ensure it's you.</p>
         </div>
         <a class="btn btn-primary btn-block mt-2 proton-button w-25"
            href="{{ url_for("auth.proton_login", next=next) }}">
