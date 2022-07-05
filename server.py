@@ -593,7 +593,7 @@ def setup_paddle_callback(app: Flask):
                     sub.next_bill_date = sub.next_bill_date - relativedelta(months=1)
                     LOG.d("next_bill_date is %s", sub.next_bill_date)
                     Session.commit()
-                elif plan_id == PADDLE_YEARLY_PRODUCT_IDS:
+                elif plan_id in PADDLE_YEARLY_PRODUCT_IDS:
                     LOG.d("subtract 1 year from next_bill_date %s", sub.next_bill_date)
                     sub.next_bill_date = sub.next_bill_date - relativedelta(years=1)
                     LOG.d("next_bill_date is %s", sub.next_bill_date)
