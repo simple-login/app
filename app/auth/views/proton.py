@@ -76,7 +76,7 @@ def proton_login():
 @auth_bp.route("/proton/callback")
 def proton_callback():
     if SESSION_STATE_KEY not in session or SESSION_STATE_KEY not in session:
-        flash("Invalid OAuth state", "error")
+        flash("Invalid state, please retry", "error")
         return redirect(url_for("auth.login"))
     if PROTON_CLIENT_ID is None or PROTON_CLIENT_SECRET is None:
         return redirect(url_for("auth.login"))
