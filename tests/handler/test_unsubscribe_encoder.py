@@ -5,6 +5,7 @@ from app.handler.unsubscribe_encoder import (
     UnsubscribeData,
     UnsubscribeAction,
     UnsubscribeEncoder,
+    UnsubscribeOriginalData,
 )
 
 legacy_subject_test_data = [
@@ -17,11 +18,7 @@ legacy_subject_test_data = [
 @pytest.mark.parametrize("expected_subject, expected_deco", legacy_subject_test_data)
 def test_legacy_unsub_subject(expected_subject, expected_deco):
     info = UnsubscribeEncoder.decode_subject(expected_subject)
-    assert expected_deco == info
-    subject = UnsubscribeEncoder.encode_subject(
-        expected_deco.action, expected_deco.data
-    )
-    assert expected_subject == subject
+    assert info == expected_deco
 
 
 legacy_url_test_data = [
@@ -49,7 +46,7 @@ legacy_mail_or_link_test_data = [
         UnsubscribeData(UnsubscribeAction.DisableAlias, 3),
     ),
     (
-        "mailto:me@nowhere.net?subject=9=",
+        "mailto:me@nowhere.net?subject=unsub.WzIsIDld.ONeJMiTW6CosJg4PMR1MPcDs-6GWoTOQFMfA2A",
         True,
         UnsubscribeData(UnsubscribeAction.DisableAlias, 9),
     ),
@@ -59,14 +56,30 @@ legacy_mail_or_link_test_data = [
         UnsubscribeData(UnsubscribeAction.DisableContact, 8),
     ),
     (
-        "mailto:me@nowhere.net?subject=8_",
+        "mailto:me@nowhere.net?subject=unsub.WzMsIDhd.eo_Ynk0eNyPtsHXMpTqw7HMFgYmm1Up_wWUc3g",
         True,
         UnsubscribeData(UnsubscribeAction.DisableContact, 8),
     ),
     (
-        "mailto:me@nowhere.net?subject=83*",
+        "mailto:me@nowhere.net?subject=unsub.WzEsIDgzXQ.NZAWqfpCmLEszwc5nWuQwDSLJ3TXO3rcOe_73Q",
         True,
         UnsubscribeData(UnsubscribeAction.UnsubscribeNewsletter, 83),
+    ),
+    (
+        f"{config.URL}/dashboard/unsubscribe/encoded?data=unsub.WzQsIFswLCAxLCAiYUBiLmMiLCAic3ViamVjdCJdXQ.aU3T5XNzJIG4LDm6-pqJk4vxxJxpgVYzc9MEFQ",
+        False,
+        UnsubscribeData(
+            UnsubscribeAction.OriginalUnsubscribeMailto,
+            UnsubscribeOriginalData(1, "a@b.c", "subject"),
+        ),
+    ),
+    (
+        "mailto:me@nowhere.net?subject=unsub.WzQsIFswLCAxLCAiYUBiLmMiLCAic3ViamVjdCJdXQ.aU3T5XNzJIG4LDm6-pqJk4vxxJxpgVYzc9MEFQ",
+        True,
+        UnsubscribeData(
+            UnsubscribeAction.OriginalUnsubscribeMailto,
+            UnsubscribeOriginalData(1, "a@b.c", "subject"),
+        ),
     ),
 ]
 
@@ -82,3 +95,22 @@ def test_encode_legacy_link(expected_link, via_mail, unsub_data):
     link_info = UnsubscribeEncoder.encode(unsub_data.action, unsub_data.data)
     assert via_mail == link_info.via_email
     assert expected_link == link_info.link
+
+
+encode_decode_test_data = [
+    UnsubscribeData(UnsubscribeAction.DisableContact, 3),
+    UnsubscribeData(UnsubscribeAction.DisableContact, 10),
+    UnsubscribeData(UnsubscribeAction.DisableAlias, 101),
+    UnsubscribeData(
+        UnsubscribeAction.OriginalUnsubscribeMailto,
+        UnsubscribeOriginalData(323, "a@b.com", "some subject goes here"),
+    ),
+]
+
+
+@pytest.mark.parametrize("unsub_data", encode_decode_test_data)
+def test_encode_decode_unsub(unsub_data):
+    encoded = UnsubscribeEncoder.encode_subject(unsub_data.action, unsub_data.data)
+    decoded = UnsubscribeEncoder.decode_subject(encoded)
+    assert unsub_data.action == decoded.action
+    assert unsub_data.data == decoded.data

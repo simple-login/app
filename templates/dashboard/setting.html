@@ -584,6 +584,42 @@
           </div>
         </div>
         <!-- END One-click subscribe -->
+        <div class="card" id="unsub-behaviour">
+          <div class="card-body">
+            <div class="card-title">
+              Unsubscribe list header behaviour
+            </div>
+            <div class="mb-3">
+              When an email is sent to your mailbox you can decide what do you want the action to be performed when
+              you unsubscribe from the list.
+              <br>
+              <b>Original action</b> means that if a message sent to your alias has an unsubscribe header, that same action
+              will be preserved in the email forwarded to your mailbox.
+              <br>
+              <b>Disable alias or block contact</b> means that the unsubscribe action will disable that alias and you will stop receiving emails
+              to it, or the contact will be disabled based on your preferences.
+              <br>
+            </div>
+            <form method="post"
+                  action="#change-unsubscribe-behaviour"
+                  class="form-inline">
+              <input type="hidden" name="form-name" value="change-unsubscribe-behaviour">
+              <select class="form-control mr-sm-2" name="unsubscribe-behaviour">
+                <option value="{{ UnsubscribeBehaviourEnum.PreserveOriginal.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.PreserveOriginal.value %}
+                   selected="selected" {% endif %}>
+                  Original action
+                </option>
+                <option value="{{ UnsubscribeBehaviourEnum.DisableAlias.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.DisableAlias.value %}
+                   selected="selected" {% endif %}>
+                  Disable alias or block contact.
+                </option>
+              </select>
+              <button class="btn btn-outline-primary">
+                Update
+              </button>
+            </form>
+          </div>
+        </div>
         <div class="card">
           <div class="card-body">
             <div class="card-title">

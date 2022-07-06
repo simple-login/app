@@ -252,6 +252,26 @@ class JobState(EnumE):
     error = 3
 
 
+class UnsubscribeBehaviourEnum(EnumE):
+    DisableAlias = 0
+    BlockContact = 1
+    PreserveOriginal = 2
+
+
+class IntEnumType(sa.types.TypeDecorator):
+    impl = sa.Integer
+
+    def __init__(self, enumtype, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._enum_type = enumtype
+
+    def process_bind_param(self, enum_obj, dialect):
+        return enum_obj.value
+
+    def process_result_value(self, enum_value, dialect):
+        return self._enum_type(enum_value)
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)
@@ -490,6 +510,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.BigInteger,
         default=FLAG_FREE_DISABLE_CREATE_ALIAS,
         server_default="0",
+        nullable=False,
+    )
+
+    # Keep original unsub behaviour
+    unsub_behaviour = sa.Column(
+        IntEnumType(UnsubscribeBehaviourEnum),
+        default=UnsubscribeBehaviourEnum.PreserveOriginal,
+        server_default=str(UnsubscribeBehaviourEnum.DisableAlias.value),
         nullable=False,
     )
 
