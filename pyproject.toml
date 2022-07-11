@@ -21,7 +21,7 @@ exclude = '''
 [tool.djlint]
 indent = 2
 profile = "jinja"
-blank_line_after_tag = "if,for,include,load,extends,block"
+blank_line_after_tag = "if,for,include,load,extends,block,endcall"
 
 # H006: Images should have a height attribute
 # H013: Images should have an alt attribute

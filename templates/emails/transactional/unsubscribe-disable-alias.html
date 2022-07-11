@@ -5,14 +5,17 @@
   {% call text() %}
   <h1>{{ alias }} has been disabled successfully.</h1>
 {% endcall %}
+
 {% call text() %}
 The alias has been disabled thanks to the "One-click unsubscribe” provided by your mailbox service.
 <br />
 When you click on this button on a forwarded email, the alias will be disabled automatically.
 {% endcall %}
+
 {% call text() %}
 If this is a mistake, you can re-enable the alias on the dashboard.
 {% endcall %}
+
 {{ render_button("Enable Alias", enable_alias_url) }}
 {{ render_text('Thanks,
 <br />

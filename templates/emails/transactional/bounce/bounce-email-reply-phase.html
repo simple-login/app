@@ -5,6 +5,7 @@
   {% call text() %}
   <h1>Email cannot be sent to {{ contact.email }} from your alias {{ alias.email }}</h1>
 {% endcall %}
+
 {% call text() %}
 This might mean {{ contact.email }}
 <ul>
@@ -13,13 +14,16 @@ This might mean {{ contact.email }}
   <li>its mail server refuses your email</li>
 </ul>
 {% endcall %}
+
 {{ render_button("View the original email", refused_email_url) }}
 {% call text() %}
 This email is automatically deleted in 7 days.
 {% endcall %}
+
 {% call text() %}
 Best,
 <br />
 SimpleLogin Team.
 {% endcall %}
+
 {% endblock %}

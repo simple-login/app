@@ -5,11 +5,13 @@
   {% call text() %}
   <h1>Your trial will end {{ user.trial_end.humanize() }}</h1>
 {% endcall %}
+
 {{ render_text("When the trial ends:") }}
 {{ render_text("- All aliases/domains/directories you have created are <b>kept</b> and continue working normally.") }}
 {% call text() %}
 - You cannot create new aliases if you exceed the free plan limit, i.e. have more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.
 {% endcall %}
+
 {{ render_text("- You cannot add new domain or directory.") }}
 {{ render_text("- You cannot add new mailbox.") }}
 {{ render_text("- If you enable PGP Encryption, forwarded emails are not encrypted anymore.") }}

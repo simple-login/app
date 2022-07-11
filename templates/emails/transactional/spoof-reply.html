@@ -8,13 +8,16 @@
     <b>{{ sender }}</b> has been blocked.
   </h1>
 {% endcall %}
+
 {% call text() %}
 To protect against <b>email spoofing</b>, only your mailbox can send emails on behalf of your alias.
 SimpleLogin also refuses emails that claim to come from your mailbox but fail DMARC.
 {% endcall %}
+
 {% call text() %}
 Best,
 <br />
 SimpleLogin Team.
 {% endcall %}
+
 {% endblock %}
