@@ -139,12 +139,12 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
-      - name: Send Telegram message
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          args: Docker image pushed on ${{ github.ref }}
+      #- name: Send Telegram message
+      #  uses: appleboy/telegram-action@master
+      #  with:
+      #    to: ${{ secrets.TELEGRAM_TO }}
+      #    token: ${{ secrets.TELEGRAM_TOKEN }}
+      #    args: Docker image pushed on ${{ github.ref }}
 
       # If we have generated a tag, generate the changelog, send a notification to slack and create the GitHub release
       - name: Build Changelog
