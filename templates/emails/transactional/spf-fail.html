@@ -7,11 +7,13 @@
     Attempt to send an email from your alias <b>{{ alias }}</b> from an unknown IP address
   </h1>
 {% endcall %}
+
 {% call text() %}
 We have recorded an attempt to send the following email from your alias <b>{{ alias }}</b> from an unknown IP
 address
 <b>{{ ip }}</b>.
 {% endcall %}
+
 {% call text() %}
 - From: <b>{{ alias }}</b>
 <br />
@@ -21,16 +23,20 @@ address
 <br />
 - Time: <b>{{ time.humanize() }}</b>
 {% endcall %}
+
 {% call text() %}
 To prevent email-spoofing, SimpleLogin enforces the SPF (Sender Policy Framework).
 Emails sent from an IP address that is <b>unknown</b> by your email service are refused by default.
 {% endcall %}
+
 {% call text() %}
 However you can turn off this option by going to {{ mailbox_url }}.
 {% endcall %}
+
 {% call text() %}
 Please only turn this protection off this if you know what you're doing :).
 {% endcall %}
+
 {{ render_text('Thanks,
 <br />
 SimpleLogin Team.') }}

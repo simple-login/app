@@ -9,10 +9,12 @@
   {% call text() %}
   - You cannot create new aliases if you exceed the free plan limit, i.e. have more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.
 {% endcall %}
+
 {% call text() %}
 - As features like <b>catch-all</b> or <b>directory</b> allow you to create aliases on-the-fly,
 those aliases cannot be automatically created if you have more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.
 {% endcall %}
+
 {{ render_text("- You cannot add new domain or directory.") }}
 {{ render_text('You can upgrade today to continue using all these Premium features (and much more coming).') }}
 {{ render_button("Upgrade your account", URL ~ "/dashboard/pricing") }}

@@ -8,9 +8,11 @@
     {{ mailbox_email }}
   </h1>
 {% endcall %}
+
 {% call text() %}
 This is usually because your mailbox service thinks the email is <b>spam</b>.
 {% endcall %}
+
 {{ render_button("View the bounced email", refused_email_url) }}
 {{ render_text('The email is automatically deleted in 7 days.') }}
 {% call text() %}
@@ -35,6 +37,7 @@ Please consider the following options:
 <br />
 Please note that the alias can be automatically disabled if too many emails sent to it are bounced.
 {% endcall %}
+
 {{ render_text('Thanks,
 <br />
 SimpleLogin Team.') }}

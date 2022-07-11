@@ -8,15 +8,18 @@
     <b>{{ from_addr }}</b>.
   </h1>
 {% endcall %}
+
 {% call text() %}
 SimpleLogin doesn't send this email <b>back</b> to your mailbox as it would be refused or hidden anyway by your email service.
 <br />
 So no worries, there's nothing you need to do :).
 {% endcall %}
+
 {{ render_button("View the email", refused_email_url) }}
 {% call text() %}
 The email is automatically deleted in 7 days.
 {% endcall %}
+
 {{ render_text('Thanks,
 <br />
 SimpleLogin Team.') }}

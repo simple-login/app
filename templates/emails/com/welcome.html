@@ -18,6 +18,7 @@
     {% call text() %}
     This is the first email you receive via your <b>first alias</b> <em>{{ alias }}</em>.
   {% endcall %}
+
   {% call text() %}
   This alias is automatically created for receiving SimpleLogin news and tips.
   <br />
@@ -27,6 +28,7 @@
   <a href="{{ URL + '/dashboard/setting#notification' }}">disable</a>
   it if you don't need this.
 {% endcall %}
+
 {% endif %}
 {% call text() %}
 If you are using Firefox or a Chromium-browser like Chrome, Edge, Brave, you can
@@ -36,10 +38,12 @@ or
 <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">Chrome extension</a>
 to create aliases in one click (like in the below gif 👇).
 {% endcall %}
+
 {% call text() %}
 <img src="https://simplelogin.io/images/one-click-alias.gif"
      style="max-width: 80%; margin: auto; border: 1px solid">
 {% endcall %}
+
 {% call text() %}
 SimpleLogin is also available on
 <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android</a>
@@ -47,6 +51,7 @@ and
 <a href="https://apps.apple.com/app/id1494359858">iOS</a>
 so you can manage your aliases on the go.
 {% endcall %}
+
 {% if user.in_trial() and user.trial_end %}
 
   {% call text() %}
@@ -58,10 +63,12 @@ so you can manage your aliases on the go.
   continue to work normally even if you don't upgrade.
   <br />
 {% endcall %}
+
 {% call text() %}
 Please note that you can't create more than 15 aliases during the trial period.
 <br />
 {% endcall %}
+
 {% endif %}
 {% call text() %}
 For any question, feedback or feature request, please join our
@@ -73,4 +80,5 @@ or follow our
 <a href="https://twitter.com/simple_login">Twitter</a>
 .
 {% endcall %}
+
 {% endblock %}
