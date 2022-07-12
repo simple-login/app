@@ -19,10 +19,9 @@ from tests.utils import create_new_user
 TEST_UNSUB_EMAIL = "unsub@sl.com"
 
 
-def generate_sl_unsub_block_sender_data() -> Iterable:
+def generate_unsub_block_contact_data() -> Iterable:
     user = create_new_user()
-    user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
-    user.one_click_unsubscribe_block_sender = True
+    user.unsub_behaviour = UnsubscribeBehaviourEnum.BlockContact
     alias = Alias.create_new_random(user)
     Session.commit()
     contact = Contact.create(
@@ -61,9 +60,9 @@ def generate_sl_unsub_block_sender_data() -> Iterable:
 
 @pytest.mark.parametrize(
     "alias_id, contact_id, unsub_via_mail, original_header, expected_header",
-    generate_sl_unsub_block_sender_data(),
+    generate_unsub_block_contact_data(),
 )
-def test_sl_unsub_block_sender_data(
+def test_unsub_disable_contact(
     alias_id, contact_id, unsub_via_mail, original_header, expected_header
 ):
     alias = Alias.get(alias_id)
@@ -79,10 +78,9 @@ def test_sl_unsub_block_sender_data(
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
 
 
-def generate_sl_unsub_not_block_sender_data() -> Iterable:
+def generate_unsub_disable_alias_data() -> Iterable:
     user = create_new_user()
     user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
-    user.one_click_unsubscribe_block_sender = False
     alias = Alias.create_new_random(user)
     Session.commit()
     contact = Contact.create(
@@ -115,15 +113,15 @@ def generate_sl_unsub_not_block_sender_data() -> Iterable:
         contact.id,
         False,
         None,
-        f"<{config.URL}/dashboard/encoded_unsubscribe?request={alias.id}>",
+        f"<{config.URL}/dashboard/unsubscribe/{alias.id}>",
     )
 
 
 @pytest.mark.parametrize(
     "alias_id, contact_id, unsub_via_mail, original_header, expected_header",
-    generate_sl_unsub_block_sender_data(),
+    generate_unsub_disable_alias_data(),
 )
-def test_sl_unsub_not_block_sender_data(
+def test_unsub_disable_alias(
     alias_id, contact_id, unsub_via_mail, original_header, expected_header
 ):
     alias = Alias.get(alias_id)
@@ -139,7 +137,7 @@ def test_sl_unsub_not_block_sender_data(
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
 
 
-def generate_unsub_test_original_unsub_data() -> Iterable:
+def generate_unsub_preserve_original_data() -> Iterable:
     user = create_new_user()
     user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
     alias = Alias.create_new_random(user)
@@ -190,9 +188,9 @@ def generate_unsub_test_original_unsub_data() -> Iterable:
 
 @pytest.mark.parametrize(
     "alias_id, contact_id, unsub_via_mail, original_header, expected_header",
-    generate_unsub_test_original_unsub_data(),
+    generate_unsub_preserve_original_data(),
 )
-def test_original_unsub_header(
+def test_unsub_preserve_original(
     alias_id, contact_id, unsub_via_mail, original_header, expected_header
 ):
     alias = Alias.get(alias_id)

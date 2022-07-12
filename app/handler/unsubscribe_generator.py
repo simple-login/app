@@ -90,7 +90,7 @@ class UnsubscribeGenerator:
         unsub_behaviour = alias.user.unsub_behaviour
         if unsub_behaviour == UnsubscribeBehaviourEnum.PreserveOriginal:
             return self._generate_header_with_original_behaviour(alias, message)
-        if unsub_behaviour == UnsubscribeBehaviourEnum.DisableAlias:
+        elif unsub_behaviour == UnsubscribeBehaviourEnum.DisableAlias:
             unsub = UnsubscribeData(UnsubscribeAction.DisableAlias, alias.id)
             return self._add_unsubscribe_header(message, unsub)
         else:
