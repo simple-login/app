@@ -690,11 +690,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if sub:
             if sub.cancelled:
                 channels.append(
-                    f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
+                    f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()} {sub.next_bill_date}"
                 )
             else:
                 channels.append(
-                    f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
+                    f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()} {sub.next_bill_date}"
                 )
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
