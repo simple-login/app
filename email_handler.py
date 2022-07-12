@@ -168,9 +168,7 @@ from init_app import load_pgp_public_keys
 from server import create_light_app
 
 
-def get_or_create_contact(
-    from_header: str, mail_from: str, alias: Alias, msg: Message
-) -> Contact:
+def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Contact:
     """
     contact_from_header is the RFC 2047 format FROM header
     """
@@ -626,7 +624,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
     try:
-        contact = get_or_create_contact(from_header, envelope.mail_from, alias, msg)
+        contact = get_or_create_contact(from_header, envelope.mail_from, alias)
     except ObjectDeletedError:
         LOG.d("maybe alias was deleted in the meantime")
         alias = Alias.get_by(email=alias_address)
