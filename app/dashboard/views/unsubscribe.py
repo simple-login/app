@@ -75,6 +75,10 @@ def block_contact(contact_id):
 @dashboard_bp.route("/encoded", methods=["GET"])
 @login_required
 def encoded_unsubscribe():
+    """
+    Expected parameters:
+     - data: This parameter should contain the encoded unsubscribe request.
+    """
     if "data" not in request.args:
         return redirect(url_for("dashboard.index"))
 

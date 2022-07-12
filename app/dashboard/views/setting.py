@@ -329,11 +329,16 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
         elif request.form.get("form-name") == "one-click-unsubscribe":
-            choose = request.form.get("enable")
-            if choose == "on":
-                current_user.one_click_unsubscribe_block_sender = True
+            choose = request.form.get("unsubscribe-behaviour")
+            if choose == UnsubscribeBehaviourEnum.PreserveOriginal.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
+            elif choose == UnsubscribeBehaviourEnum.DisableAlias.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
+            elif choose == UnsubscribeBehaviourEnum.BlockContact.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.BlockContact
             else:
-                current_user.one_click_unsubscribe_block_sender = False
+                flash("There was an error. Please try again", "warning")
+                return redirect(url_for("dashboard.setting"))
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
@@ -374,17 +379,6 @@ def setting():
                 )
             else:
                 flash("An export of your data is currently in progress", "error")
-        elif request.form.get("form-name") == "change-unsubscribe-behaviour":
-            choose = request.form.get("unsubscribe-behaviour")
-            if choose == UnsubscribeBehaviourEnum.PreserveOriginal.name:
-                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
-            elif choose == UnsubscribeBehaviourEnum.DisableAlias.name:
-                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
-            else:
-                flash("There was an error. Please try again", "warning")
-                return redirect(url_for("dashboard.setting"))
-            Session.commit()
-            flash("Your preference has been updated", "success")
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)

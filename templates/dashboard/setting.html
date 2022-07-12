@@ -11,7 +11,7 @@
           margin-bottom: 3px;
       }
       .highlighted{
-        border: solid 2px #5675E2;
+          border: solid 2px #5675E2;
       }
 
   </style>
@@ -560,23 +560,33 @@
               <a href="https://simplelogin.io/docs/getting-started/one-click-unsubscribe/">
                 One-click unsubscribe
               </a>
-              button,
-              clicking on it will disable the alias that receives the emails.
+              button, clicking on it will allow you to do one of these actions:
               <br />
-              You can choose to block the sender instead of disabling the alias.
+              <b>Original action:</b> If a message sent to your alias has an unsubscribe header, that same action
+              will be preserved in the email forwarded to your mailbox.
+              <br>
+              <b>Disable alias:</b> The unsubscribe action will disable the alias that received the email and you will stop receiving emails.
+              <br>
+              <b>Block contact:</b> The sender of the email won't be allowed to send emails to this alias.
             </div>
-            <form method="post" action="#one-click-unsubscribe-section">
+            <form method="post"
+                  action="#one-click-unsubscribe-section"
+                  class="form-inline">
               <input type="hidden" name="form-name" value="one-click-unsubscribe">
-              <div class="form-check">
-                <input type="checkbox"
-                       id="one-click-unsubscribe"
-                       name="enable"
-                       {% if current_user.one_click_unsubscribe_block_sender %} checked{% endif %}
-                       class="form-check-input">
-                <label for="one-click-unsubscribe">
-                  Block sender instead
-                </label>
-              </div>
+              <select class="form-control mr-sm-2" name="unsubscribe-behaviour">
+                <option value="{{ UnsubscribeBehaviourEnum.PreserveOriginal.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.PreserveOriginal.value %}
+                   selected="selected" {% endif %}>
+                  Preserve the original unsubscribe request in the original email
+                </option>
+                <option value="{{ UnsubscribeBehaviourEnum.DisableAlias.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.DisableAlias.value %}
+                   selected="selected" {% endif %}>
+                  Disable the alias that received the email
+                </option>
+                <option value="{{ UnsubscribeBehaviourEnum.BlockContact.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.BlockContact.value %}
+                   selected="selected" {% endif %}>
+                  Block the sender that sent the original email
+                </option>
+              </select>
               <button type="submit" class="btn btn-outline-primary">
                 Update
               </button>
@@ -584,42 +594,6 @@
           </div>
         </div>
         <!-- END One-click subscribe -->
-        <div class="card" id="unsub-behaviour">
-          <div class="card-body">
-            <div class="card-title">
-              Unsubscribe list header behaviour
-            </div>
-            <div class="mb-3">
-              When an email is sent to your mailbox you can decide what do you want the action to be performed when
-              you unsubscribe from the list.
-              <br>
-              <b>Original action</b> means that if a message sent to your alias has an unsubscribe header, that same action
-              will be preserved in the email forwarded to your mailbox.
-              <br>
-              <b>Disable alias or block contact</b> means that the unsubscribe action will disable that alias and you will stop receiving emails
-              to it, or the contact will be disabled based on your preferences.
-              <br>
-            </div>
-            <form method="post"
-                  action="#change-unsubscribe-behaviour"
-                  class="form-inline">
-              <input type="hidden" name="form-name" value="change-unsubscribe-behaviour">
-              <select class="form-control mr-sm-2" name="unsubscribe-behaviour">
-                <option value="{{ UnsubscribeBehaviourEnum.PreserveOriginal.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.PreserveOriginal.value %}
-                   selected="selected" {% endif %}>
-                  Original action
-                </option>
-                <option value="{{ UnsubscribeBehaviourEnum.DisableAlias.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.DisableAlias.value %}
-                   selected="selected" {% endif %}>
-                  Disable alias or block contact.
-                </option>
-              </select>
-              <button class="btn btn-outline-primary">
-                Update
-              </button>
-            </form>
-          </div>
-        </div>
         <div class="card">
           <div class="card-body">
             <div class="card-title">
@@ -761,8 +735,8 @@
     {% endblock %}
     {% block script %}
       <script>
-  let anchor = window.location.hash;
-  $(anchor).addClass("highlighted")
+    let anchor = window.location.hash;
+    $(anchor).addClass("highlighted")
 
 
       </script>
