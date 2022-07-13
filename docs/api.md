@@ -207,7 +207,8 @@ Output: if api key is correct, return a json with user name and whether user is 
   "is_premium": false,
   "email": "john@wick.com",
   "in_trial": true,
-  "profile_picture_url": "https://profile.png"
+  "profile_picture_url": "https://profile.png",
+  "max_alias_free_plan": 5,
 }
 ```
 
