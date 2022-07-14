@@ -295,7 +295,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     FLAG_FREE_DISABLE_CREATE_ALIAS = 1 << 0
     FLAG_CREATED_FROM_PARTNER = 1 << 1
-    FLAG_FREE_NEW_ALIAS_LIMIT = 1 << 2
+    FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
@@ -489,7 +489,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     # bitwise flags. Allow for future expansion
     flags = sa.Column(
         sa.BigInteger,
-        default=FLAG_FREE_DISABLE_CREATE_ALIAS | FLAG_FREE_NEW_ALIAS_LIMIT,
+        default=FLAG_FREE_DISABLE_CREATE_ALIAS,
         server_default="0",
         nullable=False,
     )
@@ -723,12 +723,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     def max_alias_for_free_account(self) -> int:
         if (
-            self.FLAG_FREE_NEW_ALIAS_LIMIT
-            == self.flags & self.FLAG_FREE_NEW_ALIAS_LIMIT
+            self.FLAG_FREE_OLD_ALIAS_LIMIT
+            == self.flags & self.FLAG_FREE_OLD_ALIAS_LIMIT
         ):
-            return config.MAX_NB_EMAIL_FREE_PLAN
-        else:
             return config.MAX_NB_EMAIL_OLD_FREE_PLAN
+        else:
+            return config.MAX_NB_EMAIL_FREE_PLAN
 
     def can_create_new_alias(self) -> bool:
         """
