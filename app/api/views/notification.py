@@ -60,7 +60,7 @@ def get_notifications():
     )
 
 
-@api_bp.route("/notifications/<notification_id>/read", methods=["POST"])
+@api_bp.route("/notifications/<int:notification_id>/read", methods=["POST"])
 @require_api_auth
 def mark_as_read(notification_id):
     """
