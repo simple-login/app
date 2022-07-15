@@ -28,6 +28,16 @@ def batch_import_route():
     batch_imports = BatchImport.filter_by(user_id=current_user.id).all()
 
     if request.method == "POST":
+        total_imports = BatchImport.filter_by(user_id=current_user.id).count()
+        if total_imports > 10:
+            flash(
+                "You have too many imports already. Wait until some get cleaned up",
+                "error",
+            )
+            return render_template(
+                "dashboard/batch_import.html", batch_imports=batch_imports
+            )
+
         alias_file = request.files["alias-file"]
 
         file_path = random_string(20) + ".csv"
