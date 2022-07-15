@@ -9,7 +9,7 @@ from app.phone.base import phone_bp
 current_user: User
 
 
-@phone_bp.route("/reservation/<reservation_id>", methods=["GET", "POST"])
+@phone_bp.route("/reservation/<int:reservation_id>", methods=["GET", "POST"])
 @login_required
 def reservation_route(reservation_id: int):
     reservation: PhoneReservation = PhoneReservation.get(reservation_id)

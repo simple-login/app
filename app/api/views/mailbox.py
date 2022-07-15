@@ -71,7 +71,7 @@ def create_mailbox():
         )
 
 
-@api_bp.route("/mailboxes/<mailbox_id>", methods=["DELETE"])
+@api_bp.route("/mailboxes/<int:mailbox_id>", methods=["DELETE"])
 @require_api_auth
 def delete_mailbox(mailbox_id):
     """
@@ -103,7 +103,7 @@ def delete_mailbox(mailbox_id):
     return jsonify(deleted=True), 200
 
 
-@api_bp.route("/mailboxes/<mailbox_id>", methods=["PUT"])
+@api_bp.route("/mailboxes/<int:mailbox_id>", methods=["PUT"])
 @require_api_auth
 def update_mailbox(mailbox_id):
     """
