@@ -29,8 +29,13 @@ def batch_import_route():
 
     if request.method == "POST":
         if len(batch_imports) > 10:
-            flash("You have too many imports already. Wait until some get cleaned up", "error")
-            return render_template("dashboard/batch_import.html", batch_imports=batch_imports)
+            flash(
+                "You have too many imports already. Wait until some get cleaned up",
+                "error",
+            )
+            return render_template(
+                "dashboard/batch_import.html", batch_imports=batch_imports
+            )
 
         alias_file = request.files["alias-file"]
 
