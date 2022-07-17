@@ -69,6 +69,7 @@ from app.config import (
     PAGE_LIMIT,
     PADDLE_COUPON_ID,
     ZENDESK_ENABLED,
+    MAX_NB_EMAIL_FREE_PLAN,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -405,6 +406,7 @@ def jinja2_filter(app):
             CANONICAL_URL=f"{URL}{request.path}",
             PAGE_LIMIT=PAGE_LIMIT,
             ZENDESK_ENABLED=ZENDESK_ENABLED,
+            MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN,
         )
 
 
