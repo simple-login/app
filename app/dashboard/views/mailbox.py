@@ -164,9 +164,9 @@ def send_verification_email(user, mailbox):
     )
     send_email(
         mailbox.email,
-        f"Please confirm your email {mailbox.email}",
+        f"Please confirm your mailbox {mailbox.email}",
         render(
-            "transactional/verify-mailbox.txt",
+            "transactional/verify-mailbox.txt.jinja2",
             user=user,
             link=verification_url,
             mailbox_email=mailbox.email,
