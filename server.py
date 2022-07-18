@@ -69,7 +69,8 @@ from app.config import (
     COINBASE_WEBHOOK_SECRET,
     PAGE_LIMIT,
     PADDLE_COUPON_ID,
-    ZENDESK_ENABLED, MEM_STORE_URI,
+    ZENDESK_ENABLED,
+    MEM_STORE_URI,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
