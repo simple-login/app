@@ -139,7 +139,7 @@ def test_new_subject_original_unsub():
     mail_sent = mail_sender.get_stored_emails()[0]
     assert mail_sent.envelope_to == original_recipient
     name, address = parse_full_address(mail_sent.msg[headers.FROM])
-    assert alias.email == name
+    assert name == ""
     assert alias.email == address
     assert mail_sent.msg[headers.TO] == original_recipient
     assert mail_sent.msg[headers.SUBJECT] == original_subject
@@ -225,7 +225,7 @@ def test_request_original_unsub(flask_client):
     mail_sent = mail_sender.get_stored_emails()[0]
     assert mail_sent.envelope_to == original_recipient
     name, address = parse_full_address(mail_sent.msg[headers.FROM])
-    assert alias.email == name
+    assert name == ""
     assert alias.email == address
     assert mail_sent.msg[headers.TO] == original_recipient
     assert mail_sent.msg[headers.SUBJECT] == original_subject

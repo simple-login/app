@@ -1,4 +1,5 @@
-from email.message import Message
+from email.message import Message, EmailMessage
+from email.utils import make_msgid, formatdate
 from typing import Optional
 
 from aiosmtpd.smtp import Envelope
@@ -6,7 +7,13 @@ from aiosmtpd.smtp import Envelope
 from app import config
 from app.db import Session
 from app.email import headers, status
-from app.email_utils import send_email, render
+from app.email_utils import (
+    send_email,
+    render,
+    get_email_domain_part,
+    add_dkim_signature,
+    generate_verp_email,
+)
 from app.handler.unsubscribe_encoder import (
     UnsubscribeData,
     UnsubscribeEncoder,
@@ -14,7 +21,16 @@ from app.handler.unsubscribe_encoder import (
     UnsubscribeOriginalData,
 )
 from app.log import LOG
-from app.models import Alias, Contact, User, Mailbox
+from app.mail_sender import sl_sendmail
+from app.models import (
+    Alias,
+    Contact,
+    User,
+    Mailbox,
+    TransactionalEmail,
+    VerpType,
+)
+from app.utils import sanitize_email
 
 
 class UnsubscribeHandler:
@@ -208,11 +224,27 @@ class UnsubscribeHandler:
             return status.E508
         if alias.user_id != user.id:
             return status.E509
-        send_email(
-            original_unsub_data.recipient,
-            original_unsub_data.subject,
-            "",
-            from_name=alias.email,
-            from_addr=alias.email,
+        email_domain = get_email_domain_part(alias.email)
+        to_email = sanitize_email(original_unsub_data.recipient)
+        msg = EmailMessage()
+        msg[headers.TO] = to_email
+        msg[headers.SUBJECT] = original_unsub_data.subject
+        msg[headers.FROM] = alias.email
+        msg[headers.MESSAGE_ID] = make_msgid(domain=email_domain)
+        msg[headers.DATE] = formatdate()
+        msg[headers.CONTENT_TYPE] = "text/plain"
+        msg[headers.MIME_VERSION] = "1.0"
+        msg.set_payload("")
+        add_dkim_signature(msg, email_domain)
+
+        transaction = TransactionalEmail.create(email=to_email, commit=True)
+        sl_sendmail(
+            generate_verp_email(
+                VerpType.transactional, transaction.id, sender_domain=email_domain
+            ),
+            to_email,
+            msg,
+            retries=3,
+            ignore_smtp_error=True,
         )
         return status.E202
