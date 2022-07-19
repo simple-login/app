@@ -587,21 +587,20 @@
         <div class="card">
           <div class="card-body">
             <div class="card-title">
-              Quarantine
+              Quarantine & Bounces
             </div>
             <div class="mb-3">
-              When an email sent to your alias is classified as spam or refused by your email provider,
-              it usually means your alias has been leaked to a spammer.
-              <br />
-              In this case SimpleLogin will <b>keep</b> a copy of this email (so it isn't lost)
-              and notify you so you can take a look at its content and take appropriate actions.
+              When an email is refused (or bounced) by your mailbox provider or flagged by
+              <a href="https://simplelogin.io/docs/getting-started/anti-phishing/">SimpleLogin anti-phishing program</a>,
+              SimpleLogin keeps a copy of this email for 7 days so you can take a look at its content and take appropriate actions.
               <br />
               The emails are deleted in 7 days.
-              This is an exceptional case where SimpleLogin stores the email.
+              <br />
+              This is an exceptional case where SimpleLogin temporarily stores the email.
             </div>
             <a href="{{ url_for('dashboard.refused_email_route') }}"
                class="btn btn-outline-primary">
-              See refused emails
+              See quarantine & bounce emails
             </a>
           </div>
         </div>
