@@ -517,7 +517,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     unsub_behaviour = sa.Column(
         IntEnumType(UnsubscribeBehaviourEnum),
         default=UnsubscribeBehaviourEnum.PreserveOriginal,
-        server_default=str(UnsubscribeBehaviourEnum.DisableAlias.value),
+        server_default=str(UnsubscribeBehaviourEnum.PreserveOriginal.value),
         nullable=False,
     )
 
