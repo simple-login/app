@@ -14,7 +14,7 @@ from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.models import Alias, Contact
 
 
-@dashboard_bp.route("/unsubscribe/<alias_id>", methods=["GET", "POST"])
+@dashboard_bp.route("/unsubscribe/<int:alias_id>", methods=["GET", "POST"])
 @login_required
 def unsubscribe(alias_id):
     alias = Alias.get(alias_id)
@@ -40,7 +40,7 @@ def unsubscribe(alias_id):
         return render_template("dashboard/unsubscribe.html", alias=alias.email)
 
 
-@dashboard_bp.route("/block_contact/<contact_id>", methods=["GET", "POST"])
+@dashboard_bp.route("/block_contact/<int:contact_id>", methods=["GET", "POST"])
 @login_required
 def block_contact(contact_id):
     contact = Contact.get(contact_id)
@@ -72,21 +72,15 @@ def block_contact(contact_id):
         return render_template("dashboard/block_contact.html", contact=contact)
 
 
-@dashboard_bp.route("/encoded", methods=["GET"])
+@dashboard_bp.route("/unsubscribe/encoded/<encoded_request>", methods=["GET"])
 @login_required
-def encoded_unsubscribe():
-    """
-    Expected parameters:
-     - data: This parameter should contain the encoded unsubscribe request.
-    """
-    if "data" not in request.args:
-        return redirect(url_for("dashboard.index"))
+def encoded_unsubscribe(encoded_request: str):
 
     unsub_data = UnsubscribeHandler().handle_unsubscribe_from_request(
-        current_user, request.args.get("data")
+        current_user, encoded_request
     )
     if not unsub_data:
-        flash(f"Invalid unsuscribe request", "error")
+        flash(f"Invalid unsubscribe request", "error")
         return redirect(url_for("dashboard.index"))
     if unsub_data.action == UnsubscribeAction.DisableAlias:
         alias = Alias.get(unsub_data.data)

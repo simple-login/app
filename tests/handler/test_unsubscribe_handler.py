@@ -155,7 +155,7 @@ def test_request_disable_alias(flask_client):
     )
 
     req = flask_client.get(
-        url_for("dashboard.encoded_unsubscribe", data=req_data),
+        url_for("dashboard.encoded_unsubscribe", encoded_request=req_data),
         follow_redirects=True,
     )
     assert 200 == req.status_code
@@ -180,7 +180,7 @@ def test_request_disable_contact(flask_client):
         UnsubscribeAction.DisableContact, contact.id
     )
     req = flask_client.get(
-        url_for("dashboard.encoded_unsubscribe", data=req_data),
+        url_for("dashboard.encoded_unsubscribe", encoded_request=req_data),
         follow_redirects=True,
     )
     assert 200 == req.status_code
@@ -195,7 +195,7 @@ def test_request_disable_newsletter(flask_client):
         UnsubscribeAction.UnsubscribeNewsletter, user.id
     )
     req = flask_client.get(
-        url_for("dashboard.encoded_unsubscribe", data=req_data),
+        url_for("dashboard.encoded_unsubscribe", encoded_request=req_data),
         follow_redirects=True,
     )
     assert 200 == req.status_code
@@ -217,7 +217,7 @@ def test_request_original_unsub(flask_client):
         UnsubscribeOriginalData(alias.id, original_recipient, original_subject),
     )
     req = flask_client.get(
-        url_for("dashboard.encoded_unsubscribe", data=req_data),
+        url_for("dashboard.encoded_unsubscribe", encoded_request=req_data),
         follow_redirects=True,
     )
     assert 200 == req.status_code

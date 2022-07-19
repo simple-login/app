@@ -8,6 +8,7 @@ from typing import Optional, Union
 import itsdangerous
 
 from app import config
+from app.log import LOG
 
 UNSUB_PREFIX = "unsub"
 
@@ -70,7 +71,10 @@ class UnsubscribeEncoder:
             .decode("utf-8")
         )
         signed_data = cls._get_signer().sign(serialized_data).decode("utf-8")
-        return f"{UNSUB_PREFIX}.{signed_data}"
+        encoded_request = f"{UNSUB_PREFIX}.{signed_data}"
+        if len(encoded_request) > 256:
+            LOG.e("Encoded request is longer than 256 chars")
+        return encoded_request
 
     @staticmethod
     def encode_mailto(
