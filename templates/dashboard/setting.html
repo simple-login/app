@@ -13,6 +13,9 @@
       .highlighted{
           border: solid 2px #5675E2;
       }
+      li {
+      margin-top: 8px;
+  }
 
   </style>
 {% endblock %}
@@ -561,13 +564,18 @@
                 One-click unsubscribe
               </a>
               button, clicking on it will allow you to do one of these actions:
-              <br />
-              <b>Original action:</b> If a message sent to your alias has an unsubscribe header, that same action
-              will be preserved in the email forwarded to your mailbox.
-              <br>
-              <b>Disable alias:</b> The unsubscribe action will disable the alias that received the email and you will stop receiving emails.
-              <br>
-              <b>Block contact:</b> The sender of the email won't be allowed to send emails to this alias.
+              <ul>
+                <li>
+                  <b>Original action:</b> Use the same unsubscribe policy set by your sender.
+                  SimpleLogin will make sure to hide your mailbox address.
+                </li>
+                <li>
+                  <b>Disable alias:</b> The unsubscribe action will disable the alias that received the email.
+                </li>
+                <li>
+                  <b>Block contact:</b> The sender of the email will be blocked: you won't receive emails from this sender to your alias anymore.
+                </li>
+              </ul>
             </div>
             <form method="post"
                   action="#one-click-unsubscribe-section"
@@ -576,7 +584,7 @@
               <select class="form-control mr-sm-2" name="unsubscribe-behaviour">
                 <option value="{{ UnsubscribeBehaviourEnum.PreserveOriginal.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.PreserveOriginal.value %}
                    selected="selected" {% endif %}>
-                  Preserve the original unsubscribe request in the original email
+                  Preserve the original unsubscribe policy
                 </option>
                 <option value="{{ UnsubscribeBehaviourEnum.DisableAlias.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.DisableAlias.value %}
                    selected="selected" {% endif %}>

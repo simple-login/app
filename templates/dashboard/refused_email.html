@@ -37,7 +37,10 @@
         </li>
       </ul>
     </div>
-    {% if email_logs|length == 0 %}<div class="my-4 p-4 card">You don't have any emails in Quarantine.</div>{% endif %}
+    {% if email_logs|length == 0 %}
+
+      <div class="my-4 p-4 card">You don't have any emails in Quarantine/Bounce.</div>
+    {% endif %}
     {% for email_log in email_logs %}
 
       {% set refused_email = email_log.refused_email %}
