@@ -50,6 +50,7 @@ from app.models import (
     AppleSubscription,
     PartnerUser,
     PartnerSubscription,
+    UnsubscribeBehaviourEnum,
 )
 from app.proton.utils import is_connect_with_proton_enabled, get_proton_partner
 from app.utils import random_string, sanitize_email
@@ -328,11 +329,16 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
         elif request.form.get("form-name") == "one-click-unsubscribe":
-            choose = request.form.get("enable")
-            if choose == "on":
-                current_user.one_click_unsubscribe_block_sender = True
+            choose = request.form.get("unsubscribe-behaviour")
+            if choose == UnsubscribeBehaviourEnum.PreserveOriginal.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
+            elif choose == UnsubscribeBehaviourEnum.DisableAlias.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
+            elif choose == UnsubscribeBehaviourEnum.BlockContact.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.BlockContact
             else:
-                current_user.one_click_unsubscribe_block_sender = False
+                flash("There was an error. Please try again", "warning")
+                return redirect(url_for("dashboard.setting"))
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
@@ -397,6 +403,7 @@ def setting():
         change_email_form=change_email_form,
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
+        UnsubscribeBehaviourEnum=UnsubscribeBehaviourEnum,
         manual_sub=manual_sub,
         partner_sub=partner_sub,
         partner_name=partner_name,

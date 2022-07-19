@@ -1,4 +1,5 @@
-from email.message import Message
+from email.message import Message, EmailMessage
+from email.utils import make_msgid, formatdate
 from typing import Optional
 
 from aiosmtpd.smtp import Envelope
@@ -6,14 +7,30 @@ from aiosmtpd.smtp import Envelope
 from app import config
 from app.db import Session
 from app.email import headers, status
-from app.email_utils import send_email, render
+from app.email_utils import (
+    send_email,
+    render,
+    get_email_domain_part,
+    add_dkim_signature,
+    generate_verp_email,
+)
 from app.handler.unsubscribe_encoder import (
     UnsubscribeData,
     UnsubscribeEncoder,
     UnsubscribeAction,
+    UnsubscribeOriginalData,
 )
 from app.log import LOG
-from app.models import Alias, Contact, User, Mailbox
+from app.mail_sender import sl_sendmail
+from app.models import (
+    Alias,
+    Contact,
+    User,
+    Mailbox,
+    TransactionalEmail,
+    VerpType,
+)
+from app.utils import sanitize_email
 
 
 class UnsubscribeHandler:
@@ -41,8 +58,33 @@ class UnsubscribeHandler:
             return self._disable_contact(unsub_data.data, mailbox.user, mailbox)
         elif unsub_data.action == UnsubscribeAction.UnsubscribeNewsletter:
             return self._unsubscribe_user_from_newsletter(unsub_data.data, mailbox.user)
+        elif unsub_data.action == UnsubscribeAction.OriginalUnsubscribeMailto:
+            return self._unsubscribe_original_behaviour(unsub_data.data, mailbox.user)
         else:
             raise Exception(f"Unknown unsubscribe action {unsub_data.action}")
+
+    def handle_unsubscribe_from_request(
+        self, user: User, unsub_request: str
+    ) -> Optional[UnsubscribeData]:
+        unsub_data = UnsubscribeEncoder.decode_subject(unsub_request)
+        if not unsub_data:
+            LOG.w("Wrong request %s", unsub_request)
+            return None
+        if unsub_data.action == UnsubscribeAction.DisableAlias:
+            response_code = self._disable_alias(unsub_data.data, user)
+        elif unsub_data.action == UnsubscribeAction.DisableContact:
+            response_code = self._disable_contact(unsub_data.data, user)
+        elif unsub_data.action == UnsubscribeAction.UnsubscribeNewsletter:
+            response_code = self._unsubscribe_user_from_newsletter(
+                unsub_data.data, user
+            )
+        elif unsub_data.action == UnsubscribeAction.OriginalUnsubscribeMailto:
+            response_code = self._unsubscribe_original_behaviour(unsub_data.data, user)
+        else:
+            raise Exception(f"Unknown unsubscribe action {unsub_data.action}")
+        if response_code == status.E202:
+            return unsub_data
+        return None
 
     def _disable_alias(
         self, alias_id: int, user: User, mailbox: Optional[Mailbox] = None
@@ -173,3 +215,36 @@ class UnsubscribeHandler:
             alias.authorized_addresses,
         )
         return False
+
+    def _unsubscribe_original_behaviour(
+        self, original_unsub_data: UnsubscribeOriginalData, user: User
+    ) -> str:
+        alias = Alias.get(original_unsub_data.alias_id)
+        if not alias:
+            return status.E508
+        if alias.user_id != user.id:
+            return status.E509
+        email_domain = get_email_domain_part(alias.email)
+        to_email = sanitize_email(original_unsub_data.recipient)
+        msg = EmailMessage()
+        msg[headers.TO] = to_email
+        msg[headers.SUBJECT] = original_unsub_data.subject
+        msg[headers.FROM] = alias.email
+        msg[headers.MESSAGE_ID] = make_msgid(domain=email_domain)
+        msg[headers.DATE] = formatdate()
+        msg[headers.CONTENT_TYPE] = "text/plain"
+        msg[headers.MIME_VERSION] = "1.0"
+        msg.set_payload("")
+        add_dkim_signature(msg, email_domain)
+
+        transaction = TransactionalEmail.create(email=to_email, commit=True)
+        sl_sendmail(
+            generate_verp_email(
+                VerpType.transactional, transaction.id, sender_domain=email_domain
+            ),
+            to_email,
+            msg,
+            retries=3,
+            ignore_smtp_error=True,
+        )
+        return status.E202
