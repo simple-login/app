@@ -4,6 +4,7 @@ import time
 from datetime import timedelta
 
 import arrow
+import flask_limiter
 import flask_profiler
 import sentry_sdk
 from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
@@ -69,6 +70,7 @@ from app.config import (
     PAGE_LIMIT,
     PADDLE_COUPON_ID,
     ZENDESK_ENABLED,
+    MEM_STORE_URI,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -132,7 +134,6 @@ def create_app() -> Flask:
     app = Flask(__name__)
     # SimpleLogin is deployed behind NGINX
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1)
-    limiter.init_app(app)
 
     app.url_map.strict_slashes = False
 
@@ -153,6 +154,10 @@ def create_app() -> Flask:
     if URL.startswith("https"):
         app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    if MEM_STORE_URI:
+        app.config[flask_limiter.extension.C.STORAGE_URL] = MEM_STORE_URI
+
+    limiter.init_app(app)
 
     setup_error_page(app)
 
