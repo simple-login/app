@@ -122,7 +122,7 @@
 
                 <small class="text-success d-block mt-1"
                        data-toggle="tooltip"
-                       title="When you signed up, you have a free 7-day Premium trial. After that your account will automatically be downgraded to the Free plan. During the trial, the only limit is you can't create more than 15 aliases.">
+                       title="When you signed up, you have a free 7-day Premium trial. After that your account will automatically be downgraded to the Free plan. During the trial, the only limit is you can't create more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.">
                   Premium expires {{ current_user.trial_end|dt }}
                   <i class="fe fe-info"></i>
                 </small>
