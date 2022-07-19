@@ -10,7 +10,7 @@ import itsdangerous
 from app import config
 from app.log import LOG
 
-UNSUB_PREFIX = "unsub"
+UNSUB_PREFIX = "un"
 
 
 class UnsubscribeAction(enum.Enum):

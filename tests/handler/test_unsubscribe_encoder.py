@@ -46,7 +46,7 @@ legacy_mail_or_link_test_data = [
         UnsubscribeData(UnsubscribeAction.DisableAlias, 3),
     ),
     (
-        "mailto:me@nowhere.net?subject=unsub.WzIsIDld.ONeJMiTW6CosJg4PMR1MPcDs-6GWoTOQFMfA2A",
+        "mailto:me@nowhere.net?subject=un.WzIsIDld.ONeJMiTW6CosJg4PMR1MPcDs-6GWoTOQFMfA2A",
         True,
         UnsubscribeData(UnsubscribeAction.DisableAlias, 9),
     ),
@@ -56,17 +56,17 @@ legacy_mail_or_link_test_data = [
         UnsubscribeData(UnsubscribeAction.DisableContact, 8),
     ),
     (
-        "mailto:me@nowhere.net?subject=unsub.WzMsIDhd.eo_Ynk0eNyPtsHXMpTqw7HMFgYmm1Up_wWUc3g",
+        "mailto:me@nowhere.net?subject=un.WzMsIDhd.eo_Ynk0eNyPtsHXMpTqw7HMFgYmm1Up_wWUc3g",
         True,
         UnsubscribeData(UnsubscribeAction.DisableContact, 8),
     ),
     (
-        "mailto:me@nowhere.net?subject=unsub.WzEsIDgzXQ.NZAWqfpCmLEszwc5nWuQwDSLJ3TXO3rcOe_73Q",
+        "mailto:me@nowhere.net?subject=un.WzEsIDgzXQ.NZAWqfpCmLEszwc5nWuQwDSLJ3TXO3rcOe_73Q",
         True,
         UnsubscribeData(UnsubscribeAction.UnsubscribeNewsletter, 83),
     ),
     (
-        f"{config.URL}/dashboard/unsubscribe/encoded?data=unsub.WzQsIFswLCAxLCAiYUBiLmMiLCAic3ViamVjdCJdXQ.aU3T5XNzJIG4LDm6-pqJk4vxxJxpgVYzc9MEFQ",
+        f"{config.URL}/dashboard/unsubscribe/encoded?data=un.WzQsIFswLCAxLCAiYUBiLmMiLCAic3ViamVjdCJdXQ.aU3T5XNzJIG4LDm6-pqJk4vxxJxpgVYzc9MEFQ",
         False,
         UnsubscribeData(
             UnsubscribeAction.OriginalUnsubscribeMailto,
@@ -74,7 +74,7 @@ legacy_mail_or_link_test_data = [
         ),
     ),
     (
-        "mailto:me@nowhere.net?subject=unsub.WzQsIFswLCAxLCAiYUBiLmMiLCAic3ViamVjdCJdXQ.aU3T5XNzJIG4LDm6-pqJk4vxxJxpgVYzc9MEFQ",
+        "mailto:me@nowhere.net?subject=un.WzQsIFswLCAxLCAiYUBiLmMiLCAic3ViamVjdCJdXQ.aU3T5XNzJIG4LDm6-pqJk4vxxJxpgVYzc9MEFQ",
         True,
         UnsubscribeData(
             UnsubscribeAction.OriginalUnsubscribeMailto,
