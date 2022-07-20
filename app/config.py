@@ -97,6 +97,8 @@ except Exception:
     print("MAX_NB_EMAIL_FREE_PLAN is not set, use 5 as default value")
     MAX_NB_EMAIL_FREE_PLAN = 5
 
+MAX_NB_EMAIL_OLD_FREE_PLAN = int(os.environ.get("MAX_NB_EMAIL_OLD_FREE_PLAN", 15))
+
 # maximum number of directory a premium user can create
 MAX_NB_DIRECTORY = 50
 MAX_NB_SUBDOMAIN = 5

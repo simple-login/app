@@ -315,6 +315,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     FLAG_FREE_DISABLE_CREATE_ALIAS = 1 << 0
     FLAG_CREATED_FROM_PARTNER = 1 << 1
+    FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
@@ -748,6 +749,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     # endregion
 
+    def max_alias_for_free_account(self) -> int:
+        if (
+            self.FLAG_FREE_OLD_ALIAS_LIMIT
+            == self.flags & self.FLAG_FREE_OLD_ALIAS_LIMIT
+        ):
+            return config.MAX_NB_EMAIL_OLD_FREE_PLAN
+        else:
+            return config.MAX_NB_EMAIL_FREE_PLAN
+
     def can_create_new_alias(self) -> bool:
         """
         Whether user can create a new alias. User can't create a new alias if
@@ -760,7 +770,8 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             return True
         else:
             return (
-                Alias.filter_by(user_id=self.id).count() < config.MAX_NB_EMAIL_FREE_PLAN
+                Alias.filter_by(user_id=self.id).count()
+                < self.max_alias_for_free_account()
             )
 
     def profile_picture_url(self):
