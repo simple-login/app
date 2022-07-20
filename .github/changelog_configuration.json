@@ -18,6 +18,6 @@
   ],
   "ignore_labels": ["ignore"],
   "tag_resolver": {
-    "method": "sort"
+    "method": "semver"
   }
 }
