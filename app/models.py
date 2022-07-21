@@ -3270,11 +3270,14 @@ class Newsletter(Base, ModelMixin):
 
 
 class NewsletterUser(Base, ModelMixin):
+    """This model keeps track of what newsletter is sent to what user"""
+
     __tablename__ = "newsletter_user"
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
     newsletter_id = sa.Column(
         sa.ForeignKey(Newsletter.id, ondelete="cascade"), nullable=True
     )
+    # not use created_at here as it should only used for auditting purpose
     sent_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
 
     user = orm.relationship(User)

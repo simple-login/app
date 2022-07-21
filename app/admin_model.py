@@ -474,10 +474,12 @@ class ProviderComplaintAdmin(SLModelView):
 
 
 def _newsletter_plain_text_formatter(view, context, model: Newsletter, name):
+    # to display newsletter plain_text with linebreaks in the list view
     return Markup(model.plain_text.replace("\n", "<br>"))
 
 
 def _newsletter_html_formatter(view, context, model: Newsletter, name):
+    # to display newsletter html with linebreaks in the list view
     return Markup(model.html.replace("\n", "<br>"))
 
 
