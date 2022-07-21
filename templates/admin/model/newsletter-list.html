@@ -1,0 +1,22 @@
+{# Based on https://github.com/flask-admin/flask-admin/issues/974#issuecomment-168215285 #}
+{% extends 'admin/model/list.html' %}
+
+{% block model_menu_bar_before_filters %}
+
+  <br>
+  <li id="here" class="form-row">
+    <input name="user_id"
+           class="form-control"
+           placeholder="User ID"
+           aria-describedby="userID"/>
+  </li>
+{% endblock %}
+{% block tail %}
+
+  {{ super() }}
+  <script type="application/javascript">
+        $("input[name='user_id']").appendTo($("#action_form"))
+        $("#action_form").appendTo($("#here"))
+        $("#action_form").attr("style", "")
+  </script>
+{% endblock %}

@@ -25,7 +25,9 @@ from app.models import (
     Phase,
     ProviderComplaint,
     Alias,
+    Newsletter,
 )
+from app.newsletter_utils import send_newsletter_to_user
 
 
 class SLModelView(sqla.ModelView):
@@ -469,3 +471,45 @@ class ProviderComplaintAdmin(SLModelView):
                 )
             },
         )
+
+
+def _newsletter_plain_text_formatter(view, context, model: Newsletter, name):
+    return Markup(model.plain_text.replace("\n", "<br>"))
+
+
+def _newsletter_html_formatter(view, context, model: Newsletter, name):
+    return Markup(model.html.replace("\n", "<br>"))
+
+
+class NewsletterAdmin(SLModelView):
+    list_template = "admin/model/newsletter-list.html"
+
+    can_edit = True
+    can_create = True
+
+    column_formatters = {
+        "plain_text": _newsletter_plain_text_formatter,
+        "html": _newsletter_html_formatter,
+    }
+
+    @action("send_newsletter_to_user", "Send this newsletter to this userID")
+    def send_newsletter_to_user(self, newsletter_ids):
+        user_id = request.form["user_id"]
+        user = User.get(user_id)
+
+        for newsletter_id in newsletter_ids:
+            newsletter = Newsletter.get(newsletter_id)
+            sent, error_msg = send_newsletter_to_user(newsletter, user)
+            if sent:
+                flash(f"{newsletter} sent to {user}", "success")
+            else:
+                flash(error_msg, "error")
+
+
+class NewsletterUserAdmin(SLModelView):
+    column_searchable_list = ["id"]
+    column_filters = ["id", "user.email", "newsletter.subject"]
+    column_exclude_list = ["created_at", "updated_at", "id"]
+
+    can_edit = False
+    can_create = False

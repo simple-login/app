@@ -3256,3 +3256,26 @@ class PartnerSubscription(Base, ModelMixin):
 
 
 # endregion
+
+
+class Newsletter(Base, ModelMixin):
+    __tablename__ = "newsletter"
+    subject = sa.Column(sa.String(), nullable=False, unique=True, index=True)
+
+    html = sa.Column(sa.Text)
+    plain_text = sa.Column(sa.Text)
+
+    def __repr__(self):
+        return f"<Newsletter {self.id} {self.subject}>"
+
+
+class NewsletterUser(Base, ModelMixin):
+    __tablename__ = "newsletter_user"
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+    newsletter_id = sa.Column(
+        sa.ForeignKey(Newsletter.id, ondelete="cascade"), nullable=True
+    )
+    sent_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
+
+    user = orm.relationship(User)
+    newsletter = orm.relationship(Newsletter)

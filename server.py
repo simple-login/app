@@ -40,6 +40,8 @@ from app.admin_model import (
     CustomDomainAdmin,
     AdminAuditLogAdmin,
     ProviderComplaintAdmin,
+    NewsletterAdmin,
+    NewsletterUserAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -97,6 +99,8 @@ from app.models import (
     Coupon,
     AdminAuditLog,
     ProviderComplaint,
+    Newsletter,
+    NewsletterUser,
 )
 from app.monitor.base import monitor_bp
 from app.oauth.base import oauth_bp
@@ -745,6 +749,8 @@ def init_admin(app):
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))
     admin.add_view(AdminAuditLogAdmin(AdminAuditLog, Session))
     admin.add_view(ProviderComplaintAdmin(ProviderComplaint, Session))
+    admin.add_view(NewsletterAdmin(Newsletter, Session))
+    admin.add_view(NewsletterUserAdmin(NewsletterUser, Session))
 
 
 def register_custom_commands(app):
