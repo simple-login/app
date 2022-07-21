@@ -78,13 +78,13 @@ def authorize():
     if hostname != "localhost" and hostname != "127.0.0.1":
         # support custom scheme for mobile app
         if scheme == "http":
-            final_redirect_uri = f"{redirect_uri}?error=http_not_allowed"
-            return redirect(final_redirect_uri)
+            flash("The external client must use HTTPS", "error")
+            return redirect(url_for("dashboard.index"))
 
         # check if redirect_uri is valid
         if not RedirectUri.get_by(client_id=client.id, uri=redirect_uri):
-            final_redirect_uri = f"{redirect_uri}?error=unknown_redirect_uri"
-            return redirect(final_redirect_uri)
+            flash("The external client is using an invalid URL", "error")
+            return redirect(url_for("dashboard.index"))
 
     # redirect from client website
     if request.method == "GET":
