@@ -9,6 +9,7 @@ from app.models import NewsletterUser
 
 
 def send_newsletter_to_user(newsletter, user) -> (bool, str):
+    """Return whether the newsletter is sent successfully and the error if not"""
     try:
         templates_dir = os.path.join(ROOT_DIR, "templates", "emails")
         env = Environment(loader=FileSystemLoader(templates_dir))
