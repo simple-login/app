@@ -494,10 +494,20 @@ class NewsletterAdmin(SLModelView):
         "html": _newsletter_html_formatter,
     }
 
-    @action("send_newsletter_to_user", "Send this newsletter to this userID")
+    @action(
+        "send_newsletter_to_user",
+        "Send this newsletter to myself or the specified userID",
+    )
     def send_newsletter_to_user(self, newsletter_ids):
         user_id = request.form["user_id"]
-        user = User.get(user_id)
+        if user_id:
+            user = User.get(user_id)
+            if not user:
+                flash(f"No such user with ID {user_id}", "error")
+                return
+        else:
+            flash("use the current user", "info")
+            user = current_user
 
         for newsletter_id in newsletter_ids:
             newsletter = Newsletter.get(newsletter_id)
