@@ -12,6 +12,10 @@ Based on https://github.com/flask-admin/flask-admin/issues/974#issuecomment-1682
            class="form-control"
            placeholder="User ID"
            aria-describedby="userID"/>
+    <input name="to_address"
+           class="form-control"
+           placeholder="Specify an address to receive the newsletter for testing"
+           aria-describedby="Email address"/>
   </li>
 {% endblock %}
 {% block tail %}
@@ -19,6 +23,7 @@ Based on https://github.com/flask-admin/flask-admin/issues/974#issuecomment-1682
   {{ super() }}
   <script type="application/javascript">
         $("input[name='user_id']").appendTo($("#action_form"))
+        $("input[name='to_address']").appendTo($("#action_form"))
         $("#action_form").appendTo($("#here"))
         $("#action_form").attr("style", "")
   </script>

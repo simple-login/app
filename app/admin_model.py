@@ -27,7 +27,7 @@ from app.models import (
     Alias,
     Newsletter,
 )
-from app.newsletter_utils import send_newsletter_to_user
+from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 
 
 class SLModelView(sqla.ModelView):
@@ -516,6 +516,30 @@ class NewsletterAdmin(SLModelView):
             sent, error_msg = send_newsletter_to_user(newsletter, user)
             if sent:
                 flash(f"{newsletter} sent to {user}", "success")
+            else:
+                flash(error_msg, "error")
+
+    @action(
+        "send_newsletter_to_address",
+        "Send this newsletter to a specific address",
+    )
+    def send_newsletter_to_address(self, newsletter_ids):
+        to_address = request.form["to_address"]
+        if not to_address:
+            flash("to_address missing", "error")
+            return
+
+        for newsletter_id in newsletter_ids:
+            newsletter = Newsletter.get(newsletter_id)
+            # use the current_user for rendering email
+            sent, error_msg = send_newsletter_to_address(
+                newsletter, current_user, to_address
+            )
+            if sent:
+                flash(
+                    f"{newsletter} sent to {to_address} with {current_user} context",
+                    "success",
+                )
             else:
                 flash(error_msg, "error")
 

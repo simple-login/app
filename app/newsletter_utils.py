@@ -22,7 +22,35 @@ def send_newsletter_to_user(newsletter, user) -> (bool, str):
 
         send_email(
             to_email,
-            "Please change your Sender Address Format on SimpleLogin",
+            newsletter.subject,
+            text_template.render(
+                user=user,
+                URL=URL,
+            ),
+            html_template.render(
+                user=user,
+                URL=URL,
+            ),
+        )
+
+        NewsletterUser.create(newsletter_id=newsletter.id, user_id=user.id, commit=True)
+        return True, ""
+    except Exception as err:
+        LOG.w(f"cannot send {newsletter} to {user}", exc_info=True)
+        return False, str(err)
+
+
+def send_newsletter_to_address(newsletter, user, to_address) -> (bool, str):
+    """Return whether the newsletter is sent successfully and the error if not"""
+    try:
+        templates_dir = os.path.join(ROOT_DIR, "templates", "emails")
+        env = Environment(loader=FileSystemLoader(templates_dir))
+        html_template = env.from_string(newsletter.html)
+        text_template = env.from_string(newsletter.plain_text)
+
+        send_email(
+            to_address,
+            newsletter.subject,
             text_template.render(
                 user=user,
                 URL=URL,
