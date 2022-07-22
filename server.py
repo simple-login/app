@@ -4,6 +4,7 @@ import time
 from datetime import timedelta
 
 import arrow
+import click
 import flask_limiter
 import flask_profiler
 import sentry_sdk
@@ -103,6 +104,7 @@ from app.models import (
     NewsletterUser,
 )
 from app.monitor.base import monitor_bp
+from app.newsletter_utils import send_newsletter_to_user
 from app.oauth.base import oauth_bp
 from app.onboarding.base import onboarding_bp
 from app.phone.base import phone_bp
@@ -790,6 +792,46 @@ def register_custom_commands(app):
         fake_data()
         add_sl_domains()
         add_proton_partner()
+
+    @app.cli.command("send-newsletter")
+    @click.option("-n", "--newsletter_id", type=int, help="Newsletter ID to be sent")
+    def send_newsletter(newsletter_id):
+        newsletter = Newsletter.get(newsletter_id)
+        if not newsletter:
+            LOG.w(f"no such newsletter {newsletter_id}")
+            return
+
+        nb_success = 0
+        nb_failure = 0
+
+        # user_ids that have received the newsletter
+        user_received_newsletter = Session.query(NewsletterUser.user_id).filter(
+            NewsletterUser.newsletter_id == newsletter_id
+        )
+
+        # only send newsletter to those who haven't received it
+        user_query = (
+            User.order_by(User.id)
+            .filter(User.id.notin_(user_received_newsletter))
+            .all()
+        )
+
+        for user in user_query:
+            to_email, unsubscribe_link, via_email = user.get_communication_email()
+            if not to_email:
+                continue
+
+            sent, error_msg = send_newsletter_to_user(newsletter, user)
+            if sent:
+                LOG.d(f"{newsletter} sent to {user}")
+                nb_success += 1
+            else:
+                nb_failure += 1
+
+            # sleep in between to not overwhelm mailbox provider
+            time.sleep(0.2)
+
+        LOG.d(f"Nb success {nb_success}, failures {nb_failure}")
 
 
 def setup_do_not_track(app):
