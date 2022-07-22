@@ -485,6 +485,8 @@ def _newsletter_html_formatter(view, context, model: Newsletter, name):
 
 class NewsletterAdmin(SLModelView):
     list_template = "admin/model/newsletter-list.html"
+    edit_template = "admin/model/newsletter-edit.html"
+    edit_modal = False
 
     can_edit = True
     can_create = True
