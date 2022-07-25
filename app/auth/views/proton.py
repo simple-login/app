@@ -16,6 +16,7 @@ from app.config import (
     URL,
 )
 from app.log import LOG
+from app.models import ApiKey, User
 from app.proton.proton_client import HttpProtonClient, convert_access_token
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
@@ -33,6 +34,15 @@ _redirect_uri = URL + "/auth/proton/callback"
 
 SESSION_ACTION_KEY = "oauth_action"
 SESSION_STATE_KEY = "oauth_state"
+
+
+def get_api_key_for_user(user: User) -> str:
+    ak = ApiKey.create(
+        user_id=user.id,
+        name="Created via Login with Proton on mobile app",
+        commit=True,
+    )
+    return ak.code
 
 
 def extract_action() -> Action:
@@ -64,6 +74,13 @@ def proton_login():
         session["oauth_next"] = next_url
     elif "oauth_next" in session:
         del session["oauth_next"]
+
+    mode = request.args.get("mode", "session")
+    if mode == "apikey":
+        session["oauth_mode"] = "apikey"
+    else:
+        session["oauth_mode"] = "session"
+
     proton = OAuth2Session(PROTON_CLIENT_ID, redirect_uri=_redirect_uri)
     authorization_url, state = proton.authorization_url(_authorization_base_url)
 
@@ -138,6 +155,10 @@ def proton_callback():
 
     if res.flash_message is not None:
         flash(res.flash_message, res.flash_category)
+
+    if session.get("oauth_mode", "session") == "apikey":
+        apikey = get_api_key_for_user(res.user)
+        return redirect(f"auth.simplelogin://callback?apikey={apikey}")
 
     if res.redirect_to_login:
         return redirect(url_for("auth.login"))
