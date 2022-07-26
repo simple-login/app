@@ -1,6 +1,5 @@
 from typing import Optional
 
-from app.config import CONNECT_WITH_PROTON
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
 from app.models import Partner
@@ -20,11 +19,5 @@ def get_proton_partner() -> Partner:
     return _PROTON_PARTNER
 
 
-def is_proton_partner(partner: Partner) -> str:
+def is_proton_partner(partner: Partner) -> bool:
     return partner.name == PROTON_PARTNER_NAME
-
-
-def is_connect_with_proton_enabled() -> bool:
-    if CONNECT_WITH_PROTON:
-        return True
-    return False

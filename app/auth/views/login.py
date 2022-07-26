@@ -5,11 +5,11 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
+from app.config import CONNECT_WITH_PROTON
 from app.events.auth_event import LoginEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
-from app.proton.utils import is_connect_with_proton_enabled
 from app.utils import sanitize_email, sanitize_next_url
 
 
@@ -68,5 +68,5 @@ def login():
         form=form,
         next_url=next_url,
         show_resend_activation=show_resend_activation,
-        connect_with_proton=is_connect_with_proton_enabled(),
+        connect_with_proton=CONNECT_WITH_PROTON,
     )
