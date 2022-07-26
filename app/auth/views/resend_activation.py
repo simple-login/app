@@ -4,6 +4,7 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.register import send_activation_email
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User
 from app.utils import sanitize_email
@@ -14,6 +15,7 @@ class ResendActivationForm(FlaskForm):
 
 
 @auth_bp.route("/resend_activation", methods=["GET", "POST"])
+@limiter.limit("10/hour")
 def resend_activation():
     form = ResendActivationForm(request.form)
 
