@@ -3,7 +3,7 @@ from flask_login import login_user
 
 from app.auth.base import auth_bp
 from app.db import Session
-from app.models import EmailChange
+from app.models import EmailChange, ResetPasswordCode
 
 
 @auth_bp.route("/change_email", methods=["GET", "POST"])
@@ -25,6 +25,7 @@ def change_email():
     user.email = email_change.new_email
 
     EmailChange.delete(email_change.id)
+    ResetPasswordCode.filter_by(user_id=user.id).delete()
     Session.commit()
 
     flash("Your new email has been updated", "success")
