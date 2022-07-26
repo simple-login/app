@@ -1,4 +1,5 @@
 from io import BytesIO
+from typing import Optional, Tuple
 
 import arrow
 from flask import (
@@ -12,7 +13,6 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from newrelic import agent
-from typing import Optional, Tuple
 from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
@@ -21,6 +21,7 @@ from app.config import (
     URL,
     FIRST_ALIAS_DOMAIN,
     ALIAS_RANDOM_SUFFIX_LENGTH,
+    CONNECT_WITH_PROTON,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -52,7 +53,7 @@ from app.models import (
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
 )
-from app.proton.utils import is_connect_with_proton_enabled, get_proton_partner
+from app.proton.utils import get_proton_partner
 from app.utils import random_string, sanitize_email
 
 
@@ -412,7 +413,7 @@ def setting():
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
-        connect_with_proton=is_connect_with_proton_enabled(),
+        connect_with_proton=CONNECT_WITH_PROTON,
         proton_linked_account=proton_linked_account,
     )
 
