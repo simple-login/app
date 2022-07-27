@@ -2,6 +2,7 @@ from flask import g
 from flask import jsonify, request
 from itsdangerous import SignatureExpired
 
+from app.alias_suffix import check_suffix_signature
 from app.alias_utils import check_alias_prefix
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
@@ -65,12 +66,11 @@ def new_custom_alias_v2():
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
-    # hypothesis: user will click on the button in the 600 secs
     try:
-        alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
-    except SignatureExpired:
-        LOG.w("Alias creation time expired for %s", user)
-        return jsonify(error="Alias creation time is expired, please retry"), 412
+        alias_suffix = check_suffix_signature(signed_suffix)
+        if not alias_suffix:
+            LOG.w("Alias creation time expired for %s", user)
+            return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
         LOG.w("Alias suffix is tampered, user %s", user)
         return jsonify(error="Tampered suffix"), 400

@@ -4,12 +4,11 @@ from dataclasses import asdict, dataclass
 from typing import Optional
 
 import itsdangerous
-from itsdangerous import TimestampSigner
 from app import config
 from app.models import User
 
 
-signer = TimestampSigner(config.CUSTOM_ALIAS_SECRET)
+signer = itsdangerous.TimestampSigner(config.CUSTOM_ALIAS_SECRET)
 
 
 @dataclass
@@ -36,6 +35,7 @@ class AliasSuffix:
 
 
 def check_suffix_signature(signed_suffix: str) -> Optional[str]:
+    # hypothesis: user will click on the button in the 600 secs
     try:
         return signer.unsign(signed_suffix, max_age=600).decode()
     except itsdangerous.BadSignature:

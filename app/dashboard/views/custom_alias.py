@@ -77,7 +77,6 @@ def custom_alias():
             flash("At least one mailbox must be selected", "error")
             return redirect(request.url)
 
-        # hypothesis: user will click on the button in the 600 secs
         try:
             suffix = check_suffix_signature(signed_alias_suffix)
             if not suffix:
