@@ -105,8 +105,9 @@ def new_random_alias():
         Session.commit()
 
     if hostname and not AliasUsedOn.get_by(alias_id=alias.id, hostname=hostname):
-        AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
-        Session.commit()
+        AliasUsedOn.create(
+            alias_id=alias.id, hostname=hostname, user_id=alias.user_id, commit=True
+        )
 
     return (
         jsonify(alias=alias.email, **serialize_alias_info_v2(get_alias_info_v2(alias))),
