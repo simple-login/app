@@ -1,4 +1,3 @@
-
 from email_validator import validate_email, EmailNotValidError
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
@@ -48,11 +47,6 @@ def custom_alias():
         if not alias_suffix.is_custom and alias_suffix.is_premium:
             at_least_a_premium_domain = True
             break
-
-    alias_suffixes_with_signature = [
-        (alias_suffix, signer.sign(alias_suffix.serialize()).decode())
-        for alias_suffix in alias_suffixes
-    ]
 
     mailboxes = current_user.mailboxes()
 
@@ -175,7 +169,7 @@ def custom_alias():
     return render_template(
         "dashboard/custom_alias.html",
         user_custom_domains=user_custom_domains,
-        alias_suffixes_with_signature=alias_suffixes_with_signature,
+        alias_suffixes=alias_suffixes,
         at_least_a_premium_domain=at_least_a_premium_domain,
         mailboxes=mailboxes,
     )
