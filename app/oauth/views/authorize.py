@@ -5,9 +5,10 @@ from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user
 from itsdangerous import SignatureExpired
 
+from app.alias_suffix import get_available_suffixes
 from app.alias_utils import check_alias_prefix
 from app.config import EMAIL_DOMAIN
-from app.dashboard.views.custom_alias import signer, get_available_suffixes
+from app.dashboard.views.custom_alias import signer
 from app.db import Session
 from app.jose_utils import make_id_token
 from app.log import LOG

@@ -2,13 +2,13 @@ import tldextract
 from flask import g
 from flask import jsonify, request
 
+from app.alias_suffix import get_available_suffixes
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
     get_alias_info_v2,
     serialize_alias_info_v2,
 )
 from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
-from app.dashboard.views.custom_alias import get_available_suffixes
 from app.db import Session
 from app.errors import AliasInTrashError
 from app.extensions import limiter

@@ -2,13 +2,12 @@ from random import random
 
 from flask import url_for, g
 
+from app.alias_suffix import get_available_suffixes, AliasSuffix
 from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.custom_alias import (
     signer,
     verify_prefix_suffix,
-    get_available_suffixes,
-    AliasSuffix,
 )
 from app.db import Session
 from app.models import (
