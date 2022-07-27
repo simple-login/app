@@ -1,14 +1,12 @@
 from email_validator import validate_email, EmailNotValidError
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from itsdangerous import TimestampSigner, SignatureExpired
 from sqlalchemy.exc import IntegrityError
 
-from app.alias_suffix import get_alias_suffixes
+from app.alias_suffix import get_alias_suffixes, check_suffix_signature
 from app.alias_utils import check_alias_prefix
 from app.config import (
     DISABLE_ALIAS_SUFFIX,
-    CUSTOM_ALIAS_SECRET,
     ALIAS_LIMIT,
 )
 from app.dashboard.base import dashboard_bp
@@ -23,8 +21,6 @@ from app.models import (
     AliasMailbox,
     DomainDeletedAlias,
 )
-
-signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
 
 
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
@@ -83,11 +79,11 @@ def custom_alias():
 
         # hypothesis: user will click on the button in the 600 secs
         try:
-            suffix = signer.unsign(signed_alias_suffix, max_age=600).decode()
-        except SignatureExpired:
-            LOG.w("Alias creation time expired for %s", current_user)
-            flash("Alias creation time is expired, please retry", "warning")
-            return redirect(request.url)
+            suffix = check_suffix_signature(signed_alias_suffix)
+            if not suffix:
+                LOG.w("Alias creation time expired for %s", current_user)
+                flash("Alias creation time is expired, please retry", "warning")
+                return redirect(request.url)
         except Exception:
             LOG.w("Alias suffix is tampered, user %s", current_user)
             flash("Unknown error, refresh the page", "error")

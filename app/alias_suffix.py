@@ -1,6 +1,9 @@
 from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
+from typing import Optional
+
+import itsdangerous
 from itsdangerous import TimestampSigner
 from app import config
 from app.models import User
@@ -30,6 +33,13 @@ class AliasSuffix:
     @classmethod
     def deserialize(cls, data: str) -> AliasSuffix:
         return AliasSuffix(**json.loads(data))
+
+
+def check_suffix_signature(signed_suffix: str) -> Optional[str]:
+    try:
+        return signer.unsign(signed_suffix, max_age=600).decode()
+    except itsdangerous.BadSignature:
+        return None
 
 
 def get_alias_suffixes(user: User) -> [AliasSuffix]:
