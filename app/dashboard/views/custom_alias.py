@@ -1,5 +1,3 @@
-import json
-from dataclasses import dataclass, asdict
 
 from email_validator import validate_email, EmailNotValidError
 from flask import render_template, redirect, url_for, flash, request
@@ -7,7 +5,7 @@ from flask_login import login_required, current_user
 from itsdangerous import TimestampSigner, SignatureExpired
 from sqlalchemy.exc import IntegrityError
 
-from app.alias_suffix import get_alias_suffixes, AliasSuffix
+from app.alias_suffix import get_alias_suffixes
 from app.alias_utils import check_alias_prefix
 from app.config import (
     DISABLE_ALIAS_SUFFIX,
@@ -20,7 +18,6 @@ from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     Alias,
-    CustomDomain,
     DeletedAlias,
     Mailbox,
     User,
@@ -29,6 +26,7 @@ from app.models import (
 )
 
 signer = TimestampSigner(CUSTOM_ALIAS_SECRET)
+
 
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
 @limiter.limit(ALIAS_LIMIT, methods=["POST"])
@@ -91,12 +89,7 @@ def custom_alias():
 
         # hypothesis: user will click on the button in the 600 secs
         try:
-            signed_alias_suffix_decoded = signer.unsign(
-                signed_alias_suffix, max_age=600
-            ).decode()
-            alias_suffix: AliasSuffix = AliasSuffix.deserialize(
-                signed_alias_suffix_decoded
-            )
+            suffix = signer.unsign(signed_alias_suffix, max_age=600).decode()
         except SignatureExpired:
             LOG.w("Alias creation time expired for %s", current_user)
             flash("Alias creation time is expired, please retry", "warning")
@@ -106,8 +99,8 @@ def custom_alias():
             flash("Unknown error, refresh the page", "error")
             return redirect(request.url)
 
-        if verify_prefix_suffix(current_user, alias_prefix, alias_suffix.suffix):
-            full_alias = alias_prefix + alias_suffix.suffix
+        if verify_prefix_suffix(current_user, alias_prefix, suffix):
+            full_alias = alias_prefix + suffix
 
             if ".." in full_alias:
                 flash("Your alias can't contain 2 consecutive dots (..)", "error")

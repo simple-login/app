@@ -5,7 +5,7 @@ from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user
 from itsdangerous import SignatureExpired
 
-from app.alias_suffix import get_available_suffixes
+from app.alias_suffix import get_alias_suffixes
 from app.alias_utils import check_alias_prefix
 from app.config import EMAIL_DOMAIN
 from app.dashboard.views.custom_alias import signer
@@ -125,7 +125,7 @@ def authorize():
                 user_custom_domains = [
                     cd.domain for cd in current_user.verified_custom_domains()
                 ]
-                suffixes = get_available_suffixes(current_user)
+                suffixes = get_alias_suffixes(current_user)
 
             return render_template(
                 "oauth/authorize.html",
