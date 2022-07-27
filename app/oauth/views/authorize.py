@@ -3,12 +3,10 @@ from urllib.parse import urlparse
 
 from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user
-from itsdangerous import SignatureExpired
 
-from app.alias_suffix import get_alias_suffixes
+from app.alias_suffix import get_alias_suffixes, check_suffix_signature
 from app.alias_utils import check_alias_prefix
 from app.config import EMAIL_DOMAIN
-from app.dashboard.views.custom_alias import signer
 from app.db import Session
 from app.jose_utils import make_id_token
 from app.log import LOG
@@ -183,11 +181,11 @@ def authorize():
 
                 # hypothesis: user will click on the button in the 600 secs
                 try:
-                    alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
-                except SignatureExpired:
-                    LOG.w("Alias creation time expired for %s", current_user)
-                    flash("Alias creation time is expired, please retry", "warning")
-                    return redirect(request.url)
+                    alias_suffix = check_suffix_signature(signed_suffix)
+                    if not alias_suffix:
+                        LOG.w("Alias creation time expired for %s", current_user)
+                        flash("Alias creation time is expired, please retry", "warning")
+                        return redirect(request.url)
                 except Exception:
                     LOG.w("Alias suffix is tampered, user %s", current_user)
                     flash("Unknown error, refresh the page", "error")
@@ -197,7 +195,7 @@ def authorize():
                     cd.domain for cd in current_user.verified_custom_domains()
                 ]
 
-                from app.dashboard.views.custom_alias import verify_prefix_suffix
+                from app.alias_suffix import verify_prefix_suffix
 
                 if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
                     full_alias = alias_prefix + alias_suffix

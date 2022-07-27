@@ -3,10 +3,13 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
-from app.alias_suffix import get_alias_suffixes, check_suffix_signature
+from app.alias_suffix import (
+    get_alias_suffixes,
+    check_suffix_signature,
+    verify_prefix_suffix,
+)
 from app.alias_utils import check_alias_prefix
 from app.config import (
-    DISABLE_ALIAS_SUFFIX,
     ALIAS_LIMIT,
 )
 from app.dashboard.base import dashboard_bp
@@ -17,7 +20,6 @@ from app.models import (
     Alias,
     DeletedAlias,
     Mailbox,
-    User,
     AliasMailbox,
     DomainDeletedAlias,
 )
@@ -168,47 +170,3 @@ def custom_alias():
         at_least_a_premium_domain=at_least_a_premium_domain,
         mailboxes=mailboxes,
     )
-
-
-def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
-    """verify if user could create an alias with the given prefix and suffix"""
-    if not alias_prefix or not alias_suffix:  # should be caught on frontend
-        return False
-
-    user_custom_domains = [cd.domain for cd in user.verified_custom_domains()]
-
-    # make sure alias_suffix is either .random_word@simplelogin.co or @my-domain.com
-    alias_suffix = alias_suffix.strip()
-    # alias_domain_prefix is either a .random_word or ""
-    alias_domain_prefix, alias_domain = alias_suffix.split("@", 1)
-
-    # alias_domain must be either one of user custom domains or built-in domains
-    if alias_domain not in user.available_alias_domains():
-        LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
-        return False
-
-    # SimpleLogin domain case:
-    # 1) alias_suffix must start with "." and
-    # 2) alias_domain_prefix must come from the word list
-    if (
-        alias_domain in user.available_sl_domains()
-        and alias_domain not in user_custom_domains
-        # when DISABLE_ALIAS_SUFFIX is true, alias_domain_prefix is empty
-        and not DISABLE_ALIAS_SUFFIX
-    ):
-
-        if not alias_domain_prefix.startswith("."):
-            LOG.e("User %s submits a wrong alias suffix %s", user, alias_suffix)
-            return False
-
-    else:
-        if alias_domain not in user_custom_domains:
-            if not DISABLE_ALIAS_SUFFIX:
-                LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
-                return False
-
-            if alias_domain not in user.available_sl_domains():
-                LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
-                return False
-
-    return True
