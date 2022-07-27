@@ -5,7 +5,7 @@ COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm install
 
 # Main image
-FROM python:3.7
+FROM python:3.10
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE 1
