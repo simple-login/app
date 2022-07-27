@@ -33,7 +33,7 @@ def test_with_hostname(flask_client):
     assert "enabled" in res
     assert "note" in res
 
-    alias_used_on: AliasUsedOn = AliasUsedOn.first()
+    alias_used_on: AliasUsedOn = AliasUsedOn.order_by(AliasUsedOn.id.desc()).first()
     assert alias_used_on.hostname == "www.test.com"
     assert alias_used_on.alias_id == res["id"]
 

@@ -40,10 +40,9 @@
           </div>
           <div class="col-sm-6 p-1">
             <select class="form-control" name="signed-alias-suffix">
-              {% for suffix_info in alias_suffixes_with_signature %}
+              {% for alias_suffix in alias_suffixes %}
 
-                {% set alias_suffix = suffix_info[0] %}
-                <option value="{{ suffix_info[1] }}" {% if alias_suffix.is_premium %}
+                <option value="{{ alias_suffix.signed_suffix }}" {% if alias_suffix.is_premium %}
                    title="Only available to Premium accounts" {% elif not alias_suffix.is_custom and at_least_a_premium_domain %} title="Available to all accounts" {% endif %}>
                   {% if alias_suffix.is_custom %}
                     {% if alias_suffix.mx_verified %}
