@@ -42,6 +42,6 @@ def test_webp_file_is_detected():
     assert detect_image_format(contents) is ImageFormat.Webp
 
 
-def test_svg_file_is_detected():
+def test_svg_file_is_not_detected():
     contents = read_static_file_contents("icon.svg")
-    assert detect_image_format(contents) is ImageFormat.Svg
+    assert detect_image_format(contents) is ImageFormat.Unknown
