@@ -2,7 +2,7 @@ Contribution from https://github.com/havedill/
 
 ## Integrating with Amazon SES
 
-If you're self hosting, here is the method I used to route emails through Amazon's SES service. 
+If you're self hosting, here is the method I used to route emails through Amazon's SES service.
 
 For me, when hosting on AWS the public IP is widely blacklisted for abuse. If you have an SES account, you are whitelisted, use TLS, and amazon creates the DKIM records.
 
@@ -57,11 +57,11 @@ Also make sure that Postfix is able to authenticate successfully by installing t
 sudo apt install libsasl2-modules
 ```
 
-Then restart postfix 
+Then restart postfix
 
 ```bash
 sudo systemctl restart postfix
-``` 
+```
 
 and you should see the mail in `/var/log/mail.log` and in your alias emails routed through Amazons servers!
 

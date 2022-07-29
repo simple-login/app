@@ -1,15 +1,14 @@
 from abc import ABC, abstractmethod
-from arrow import Arrow
 from dataclasses import dataclass
 from enum import Enum
-
-from flask import url_for
-from newrelic import agent
 from typing import Optional
 
-from app import config
+from arrow import Arrow
+from newrelic import agent
+
 from app.db import Session
-from app.email_utils import send_email_at_most_times, render
+from app.email_utils import send_welcome_email
+from app.utils import sanitize_email
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
 from app.log import LOG
 from app.models import (
@@ -17,10 +16,7 @@ from app.models import (
     Partner,
     PartnerUser,
     User,
-    AppleSubscription,
-    Subscription,
 )
-from app.proton.utils import is_proton_partner
 from app.utils import random_string
 
 
@@ -48,36 +44,6 @@ class PartnerLinkRequest:
 class LinkResult:
     user: User
     strategy: str
-
-
-def send_double_subscription_if_needed(partner_user: PartnerUser):
-    sub = partner_user.user.get_active_subscription()
-    if isinstance(sub, AppleSubscription):
-        channel = "Apple"
-    elif isinstance(sub, Subscription):
-        channel = "Paddle"
-    else:
-        return
-    send_email_at_most_times(
-        partner_user.user,
-        config.ALERT_DUAL_SUBSCRIPTION_WITH_PARTNER,
-        partner_user.user.email,
-        f"You have two subscriptions in SimpleLogin",
-        render(
-            "transactional/double-subscription-partner.txt.jinja2",
-            is_proton=is_proton_partner(partner_user.partner),
-            partner=partner_user.partner,
-            subscription_channel=channel,
-            cancel_link=url_for("dashboard.billing"),
-        ),
-        render(
-            "transactional/double-subscription-partner.html",
-            is_proton=is_proton_partner(partner_user.partner),
-            partner=partner_user.partner,
-            subscription_channel=channel,
-            cancel_link=url_for("dashboard.billing"),
-        ),
-    )
 
 
 def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
@@ -108,7 +74,6 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                     "PlanChange", {"plan": "premium", "type": "extension"}
                 )
                 sub.end_at = plan.expiration
-        send_double_subscription_if_needed(partner_user)
     Session.commit()
 
 
@@ -165,6 +130,7 @@ class NewUserStrategy(ClientMergeStrategy):
             email=self.link_request.email,
             name=self.link_request.name,
             password=random_string(20),
+            activated=True,
             from_partner=self.link_request.from_partner,
         )
         partner_user = PartnerUser.create(
@@ -181,6 +147,9 @@ class NewUserStrategy(ClientMergeStrategy):
             self.link_request.plan,
         )
         Session.commit()
+
+        if not new_user.created_by_partner:
+            send_welcome_email(new_user)
 
         agent.record_custom_event("PartnerUserCreation", {"partner": self.partner.name})
 
@@ -226,6 +195,8 @@ def get_login_strategy(
 def process_login_case(
     link_request: PartnerLinkRequest, partner: Partner
 ) -> LinkResult:
+    # Sanitize email just in case
+    link_request.email = sanitize_email(link_request.email)
     # Try to find a SimpleLogin user registered with that partner user id
     partner_user = PartnerUser.get_by(
         partner_id=partner.id, external_user_id=link_request.external_user_id
@@ -249,6 +220,8 @@ def process_login_case(
 def link_user(
     link_request: PartnerLinkRequest, current_user: User, partner: Partner
 ) -> LinkResult:
+    # Sanitize email just in case
+    link_request.email = sanitize_email(link_request.email)
     partner_user = ensure_partner_user_exists_for_user(
         link_request, current_user, partner
     )
@@ -292,6 +265,8 @@ def process_link_case(
     current_user: User,
     partner: Partner,
 ) -> LinkResult:
+    # Sanitize email just in case
+    link_request.email = sanitize_email(link_request.email)
     # Try to find a SimpleLogin user linked with this Partner account
     partner_user = PartnerUser.get_by(
         partner_id=partner.id, external_user_id=link_request.external_user_id

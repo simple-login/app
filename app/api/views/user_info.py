@@ -18,6 +18,7 @@ def user_to_dict(user: User) -> dict:
         "is_premium": user.is_premium(),
         "email": user.email,
         "in_trial": user.in_trial(),
+        "max_alias_free_plan": user.max_alias_for_free_account(),
     }
 
     if user.profile_picture_id:
@@ -33,6 +34,13 @@ def user_to_dict(user: User) -> dict:
 def user_info():
     """
     Return user info given the api-key
+
+    Output as json
+    - name
+    - is_premium
+    - email
+    - in_trial
+    - max_alias_free
     """
     user = g.user
 
@@ -46,7 +54,6 @@ def update_user_info():
     Input
     - profile_picture (optional): base64 of the profile picture. Set to null to remove the profile picture
     - name (optional)
-
     """
     user = g.user
     data = request.get_json() or {}

@@ -1,4 +1,5 @@
 from io import BytesIO
+from typing import Optional, Tuple
 
 import arrow
 from flask import (
@@ -12,7 +13,6 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from newrelic import agent
-from typing import Optional
 from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
@@ -21,6 +21,7 @@ from app.config import (
     URL,
     FIRST_ALIAS_DOMAIN,
     ALIAS_RANDOM_SUFFIX_LENGTH,
+    CONNECT_WITH_PROTON,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -29,6 +30,7 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.errors import ProtonPartnerNotSetUp
+from app.image_validation import detect_image_format, ImageFormat
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import (
@@ -48,8 +50,10 @@ from app.models import (
     CoinbaseSubscription,
     AppleSubscription,
     PartnerUser,
+    PartnerSubscription,
+    UnsubscribeBehaviourEnum,
 )
-from app.proton.utils import is_connect_with_proton_enabled, get_proton_partner
+from app.proton.utils import get_proton_partner
 from app.utils import random_string, sanitize_email
 
 
@@ -82,6 +86,17 @@ def get_proton_linked_account() -> Optional[str]:
     if proton_linked_account is None:
         return None
     return proton_linked_account.partner_email
+
+
+def get_partner_subscription_and_name(
+    user_id: int,
+) -> Optional[Tuple[PartnerSubscription, str]]:
+    partner_sub = PartnerSubscription.find_by_user_id(user_id)
+    if not partner_sub or not partner_sub.is_active():
+        return None
+
+    partner = partner_sub.partner_user.partner
+    return (partner_sub, partner.name)
 
 
 @dashboard_bp.route("/setting", methods=["GET", "POST"])
@@ -169,12 +184,18 @@ def setting():
                     profile_updated = True
 
                 if form.profile_picture.data:
+                    image_contents = form.profile_picture.data.read()
+                    if detect_image_format(image_contents) == ImageFormat.Unknown:
+                        flash(
+                            "This image format is not supported",
+                            "error",
+                        )
+                        return redirect(url_for("dashboard.setting"))
+
                     file_path = random_string(30)
                     file = File.create(user_id=current_user.id, path=file_path)
 
-                    s3.upload_from_bytesio(
-                        file_path, BytesIO(form.profile_picture.data.read())
-                    )
+                    s3.upload_from_bytesio(file_path, BytesIO(image_contents))
 
                     Session.flush()
                     LOG.d("upload file %s to s3", file)
@@ -309,11 +330,16 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
         elif request.form.get("form-name") == "one-click-unsubscribe":
-            choose = request.form.get("enable")
-            if choose == "on":
-                current_user.one_click_unsubscribe_block_sender = True
+            choose = request.form.get("unsubscribe-behaviour")
+            if choose == UnsubscribeBehaviourEnum.PreserveOriginal.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
+            elif choose == UnsubscribeBehaviourEnum.DisableAlias.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.DisableAlias
+            elif choose == UnsubscribeBehaviourEnum.BlockContact.name:
+                current_user.unsub_behaviour = UnsubscribeBehaviourEnum.BlockContact
             else:
-                current_user.one_click_unsubscribe_block_sender = False
+                flash("There was an error. Please try again", "warning")
+                return redirect(url_for("dashboard.setting"))
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
@@ -358,6 +384,14 @@ def setting():
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
     coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
+    paddle_sub = current_user.get_paddle_subscription()
+    partner_sub = None
+    partner_name = None
+
+    partner_sub_name = get_partner_subscription_and_name(current_user.id)
+    if partner_sub_name:
+        partner_sub, partner_name = partner_sub_name
+
     proton_linked_account = get_proton_linked_account()
 
     return render_template(
@@ -370,12 +404,16 @@ def setting():
         change_email_form=change_email_form,
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
+        UnsubscribeBehaviourEnum=UnsubscribeBehaviourEnum,
         manual_sub=manual_sub,
+        partner_sub=partner_sub,
+        partner_name=partner_name,
         apple_sub=apple_sub,
+        paddle_sub=paddle_sub,
         coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
-        connect_with_proton=is_connect_with_proton_enabled(),
+        connect_with_proton=CONNECT_WITH_PROTON,
         proton_linked_account=proton_linked_account,
     )
 

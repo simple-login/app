@@ -229,12 +229,16 @@ def delete_contact(alias: Alias, contact_id: int):
         flash(f"Reverse-alias for {delete_contact_email} has been deleted", "success")
 
 
-@dashboard_bp.route("/alias_contact_manager/<alias_id>/", methods=["GET", "POST"])
+@dashboard_bp.route("/alias_contact_manager/<int:alias_id>/", methods=["GET", "POST"])
 @login_required
 def alias_contact_manager(alias_id):
     highlight_contact_id = None
     if request.args.get("highlight_contact_id"):
-        highlight_contact_id = int(request.args.get("highlight_contact_id"))
+        try:
+            highlight_contact_id = int(request.args.get("highlight_contact_id"))
+        except ValueError:
+            flash("Invalid contact id", "error")
+            return redirect(url_for("dashboard.index"))
 
     alias = Alias.get(alias_id)
 

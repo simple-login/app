@@ -208,7 +208,7 @@ def verify_mailbox_change(user, mailbox, new_email):
         new_email,
         "Confirm mailbox change on SimpleLogin",
         render(
-            "transactional/verify-mailbox-change.txt",
+            "transactional/verify-mailbox-change.txt.jinja2",
             user=user,
             link=verification_url,
             mailbox_email=mailbox.email,

@@ -1,5 +1,6 @@
 import json
 import secrets
+from time import time
 
 import webauthn
 from flask import (
@@ -107,6 +108,7 @@ def fido():
             Session.commit()
             del session[MFA_USER_ID]
 
+            session["sudo_time"] = int(time())
             login_user(user)
             flash(f"Welcome back!", "success")
 

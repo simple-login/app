@@ -1,30 +1,20 @@
-{% extends 'default.html' %}
+{% extends "default.html" %}
 
 {% set active_page = "dashboard" %}
-
-{% block title %}
-  Block an alias
-{% endblock %}
-
+{% block title %}Block an alias{% endblock %}
 {% block default_content %}
 
   <div class="card">
     <div class="card-body">
-      <h1 class="h3">
-        Block alias
-      </h1>
+      <h1 class="h3">Block alias</h1>
       <p>
-        You are about to block the alias <a href="mailto:{{ alias }}">{{ alias }}</a>
+        You are about to block the alias
+        <a href="mailto:{{ alias }}">{{ alias }}</a>
       </p>
-      <p>
-        After this, you will stop receiving all emails sent to this alias, please confirm.
-      </p>
-
+      <p>After this, you will stop receiving all emails sent to this alias, please confirm.</p>
       <form method="post">
         <button class="btn btn-warning">Confirm</button>
       </form>
     </div>
   </div>
-
 {% endblock %}
-

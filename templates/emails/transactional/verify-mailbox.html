@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {{ render_text("Hi") }}
   {{ render_text("You have added <b>"+ mailbox_email +"</b> as an additional mailbox.") }}
   {{ render_text("To confirm, please click on the button below.") }}
-  {{ render_button("Confirm email", link) }}
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ render_button("Confirm mailbox", link) }}
+  {{ render_text('Thanks,
+  <br />
+  SimpleLogin Team.') }}
   {{ raw_url(link) }}
 {% endblock %}
-

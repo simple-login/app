@@ -10,6 +10,8 @@
 - [POST /api/auth/reactivate](##post-apiauthreactivate): Request a new activation code.
 - [POST /api/auth/forgot_password](#post-apiauthforgot_password): Request reset password link.
 - [GET /api/user_info](#get-apiuser_info): Get user's information.
+- [PATCH /api/sudo](#patch-apisudo): Enable sudo mode.
+- [DELETE /api/user](#delete-apiuser): Delete the current user.
 - [PATCH /api/user_info](#patch-apiuser_info): Update user's information.
 - [POST /api/api_key](#post-apiapi_key): Create a new API key.
 - [GET /api/logout](#get-apilogout): Log out.
@@ -205,7 +207,8 @@ Output: if api key is correct, return a json with user name and whether user is 
   "is_premium": false,
   "email": "john@wick.com",
   "in_trial": true,
-  "profile_picture_url": "https://profile.png"
+  "profile_picture_url": "https://profile.png",
+  "max_alias_free_plan": 5,
 }
 ```
 
@@ -221,6 +224,41 @@ Input:
 - name
 
 Output: same as GET /api/user_info
+
+#### PATCH /api/sudo
+
+Enable sudo mode
+
+Input:
+
+- `Authentication` header that contains the api key
+- password: User password to validate the user presence and enter sudo mode
+
+```json
+{
+  "password": "yourpassword"
+}
+```
+
+Output:
+
+- 200 with ```{"ok": true}``` if sudo mode has been enabled.
+- 403 with ```{"error": "Some error"}``` if there is an error.
+
+#### DELETE /api/user
+
+Delete the current user. It requires sudo mode.
+
+Input:
+
+- `Authentication` header that contains the api key
+
+Output:
+
+- 200 with ```{"ok": true}``` if account is scheduled to be deleted.
+- 440 with ```{"error": "Need sudo"}``` if sudo mode is not enabled.
+- 403 with ```{"error": "Some error"}``` if there is an error.
+
 
 #### POST /api/api_key
 
@@ -271,7 +309,7 @@ Input:
 Output: a json with the following field:
 
 - can_create: boolean. Whether user can create new alias
-- suffixes: list of alias suffix that user can use. 
+- suffixes: list of alias suffix that user can use.
   Each item is a dictionary with `suffix`, `signed-suffix`, `is_custom`, `is_premium` as keys.
   The `signed-suffix` is necessary to avoid request tampering.
 - prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted
@@ -352,8 +390,8 @@ Input:
 - `page_id` in query. Used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts
   at 0.
 - (Optional) `pinned` in query. If set, only pinned aliases are returned.
-- (Optional) `disabled` in query. If set, only disabled aliases are returned. 
-- (Optional) `enabled` in query. If set, only enabled aliases are returned. 
+- (Optional) `disabled` in query. If set, only disabled aliases are returned.
+- (Optional) `enabled` in query. If set, only enabled aliases are returned.
   Please note `pinned`, `disabled`, `enabled` are exclusive, i.e. only one can be present.
 - (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this
   case this endpoint also supports POST.

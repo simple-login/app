@@ -15,6 +15,8 @@ from app.config import (
     PROTON_VALIDATE_CERTS,
     URL,
 )
+from app.log import LOG
+from app.models import ApiKey, User
 from app.proton.proton_client import HttpProtonClient, convert_access_token
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
@@ -30,6 +32,18 @@ _token_url = PROTON_BASE_URL + "/oauth/token"
 # when served behind nginx, the redirect_uri is localhost... and not the real url
 _redirect_uri = URL + "/auth/proton/callback"
 
+SESSION_ACTION_KEY = "oauth_action"
+SESSION_STATE_KEY = "oauth_state"
+
+
+def get_api_key_for_user(user: User) -> str:
+    ak = ApiKey.create(
+        user_id=user.id,
+        name="Created via Login with Proton on mobile app",
+        commit=True,
+    )
+    return ak.code
+
 
 def extract_action() -> Action:
     action = request.args.get("action")
@@ -42,7 +56,7 @@ def extract_action() -> Action:
 
 
 def get_action_from_state() -> Action:
-    oauth_action = session["oauth_action"]
+    oauth_action = session[SESSION_ACTION_KEY]
     if oauth_action == Action.Login.value:
         return Action.Login
     elif oauth_action == Action.Link.value:
@@ -58,17 +72,29 @@ def proton_login():
     next_url = sanitize_next_url(request.args.get("next"))
     if next_url:
         session["oauth_next"] = next_url
+    elif "oauth_next" in session:
+        del session["oauth_next"]
+
+    mode = request.args.get("mode", "session")
+    if mode == "apikey":
+        session["oauth_mode"] = "apikey"
+    else:
+        session["oauth_mode"] = "session"
+
     proton = OAuth2Session(PROTON_CLIENT_ID, redirect_uri=_redirect_uri)
     authorization_url, state = proton.authorization_url(_authorization_base_url)
 
     # State is used to prevent CSRF, keep this for later.
-    session["oauth_state"] = state
-    session["oauth_action"] = extract_action().value
+    session[SESSION_STATE_KEY] = state
+    session[SESSION_ACTION_KEY] = extract_action().value
     return redirect(authorization_url)
 
 
 @auth_bp.route("/proton/callback")
 def proton_callback():
+    if SESSION_STATE_KEY not in session or SESSION_STATE_KEY not in session:
+        flash("Invalid state, please retry", "error")
+        return redirect(url_for("auth.login"))
     if PROTON_CLIENT_ID is None or PROTON_CLIENT_SECRET is None:
         return redirect(url_for("auth.login"))
 
@@ -79,7 +105,7 @@ def proton_callback():
 
     proton = OAuth2Session(
         PROTON_CLIENT_ID,
-        state=session["oauth_state"],
+        state=session[SESSION_STATE_KEY],
         redirect_uri=_redirect_uri,
     )
 
@@ -96,15 +122,21 @@ def proton_callback():
     if PROTON_EXTRA_HEADER_NAME and PROTON_EXTRA_HEADER_VALUE:
         headers = {PROTON_EXTRA_HEADER_NAME: PROTON_EXTRA_HEADER_VALUE}
 
-    token = proton.fetch_token(
-        _token_url,
-        client_secret=PROTON_CLIENT_SECRET,
-        authorization_response=request.url,
-        verify=PROTON_VALIDATE_CERTS,
-        method="GET",
-        include_client_id=True,
-        headers=headers,
-    )
+    try:
+        token = proton.fetch_token(
+            _token_url,
+            client_secret=PROTON_CLIENT_SECRET,
+            authorization_response=request.url,
+            verify=PROTON_VALIDATE_CERTS,
+            method="GET",
+            include_client_id=True,
+            headers=headers,
+        )
+    except Exception as e:
+        LOG.warning(f"Error fetching Proton token: {e}")
+        flash("There was an error in the login process", "error")
+        return redirect(url_for("auth.login"))
+
     credentials = convert_access_token(token["access_token"])
     action = get_action_from_state()
 
@@ -124,11 +156,15 @@ def proton_callback():
     if res.flash_message is not None:
         flash(res.flash_message, res.flash_category)
 
+    if session.get("oauth_mode", "session") == "apikey":
+        apikey = get_api_key_for_user(res.user)
+        return redirect(f"auth.simplelogin://callback?apikey={apikey}")
+
     if res.redirect_to_login:
         return redirect(url_for("auth.login"))
 
     if res.redirect:
-        return after_login(res.user, res.redirect)
+        return after_login(res.user, res.redirect, login_from_proton=True)
 
     next_url = session.get("oauth_next")
-    return after_login(res.user, next_url)
+    return after_login(res.user, next_url, login_from_proton=True)

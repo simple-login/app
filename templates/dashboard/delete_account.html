@@ -1,11 +1,9 @@
-{% extends 'default.html' %}
+{% extends "default.html" %}
+
 {% set active_page = "setting" %}
-{% block title %}
-  Delete account
-{% endblock %}
-
-
+{% block title %}Delete account{% endblock %}
 {% block default_content %}
+
   <div class="card">
     <div class="card-body">
       <div class="h2">Account Deletion</div>
@@ -13,7 +11,6 @@
         Once an account is deleted, it can't be restored.
         All its records (aliases, domains, settings, etc.) are immediately deleted.
       </div>
-
       <form method="post">
         <input type="hidden" name="form-name" value="delete-account">
         <span class="delete-account btn btn-outline-danger">Delete account</span>
@@ -21,8 +18,8 @@
     </div>
   </div>
 {% endblock %}
-
 {% block script %}
+
   <script>
     $(".delete-account").on("click", function (e) {
       let that = $(this);

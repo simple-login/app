@@ -6,8 +6,11 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, validators
 
+from app.config import CONNECT_WITH_PROTON
 from app.dashboard.base import dashboard_bp
 from app.log import LOG
+from app.models import PartnerUser
+from app.proton.utils import get_proton_partner
 from app.utils import sanitize_next_url
 
 _SUDO_GAP = 900
@@ -39,8 +42,18 @@ def enter_sudo():
         else:
             flash("Incorrect password", "warning")
 
+    proton_enabled = CONNECT_WITH_PROTON
+    if proton_enabled:
+        # Only for users that have the account linked
+        partner_user = PartnerUser.get_by(user_id=current_user.id)
+        if not partner_user or partner_user.partner_id != get_proton_partner().id:
+            proton_enabled = False
+
     return render_template(
-        "dashboard/enter_sudo.html", password_check_form=password_check_form
+        "dashboard/enter_sudo.html",
+        password_check_form=password_check_form,
+        next=request.args.get("next"),
+        connect_with_proton=proton_enabled,
     )
 
 

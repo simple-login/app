@@ -193,7 +193,7 @@ sudo docker run -d \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0 python email_handler.py
-    
+
 # Run the job runner
 docker run -d \
     --name sl-job-runner \
@@ -205,6 +205,6 @@ docker run -d \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0 python job_runner.py
-    
+
 ```
 

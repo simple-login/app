@@ -97,6 +97,8 @@ except Exception:
     print("MAX_NB_EMAIL_FREE_PLAN is not set, use 5 as default value")
     MAX_NB_EMAIL_FREE_PLAN = 5
 
+MAX_NB_EMAIL_OLD_FREE_PLAN = int(os.environ.get("MAX_NB_EMAIL_OLD_FREE_PLAN", 15))
+
 # maximum number of directory a premium user can create
 MAX_NB_DIRECTORY = 50
 MAX_NB_SUBDOMAIN = 5
@@ -167,6 +169,7 @@ if not FLASK_SECRET:
 SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
+UNSUBSCRIBE_SECRET = FLASK_SECRET + "unsub"
 
 # AWS
 AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"
@@ -246,7 +249,6 @@ PROTON_VALIDATE_CERTS = "PROTON_VALIDATE_CERTS" in os.environ
 CONNECT_WITH_PROTON = "CONNECT_WITH_PROTON" in os.environ
 PROTON_EXTRA_HEADER_NAME = os.environ.get("PROTON_EXTRA_HEADER_NAME")
 PROTON_EXTRA_HEADER_VALUE = os.environ.get("PROTON_EXTRA_HEADER_VALUE")
-CONNECT_WITH_PROTON_COOKIE_NAME = os.environ.get("CONNECT_WITH_PROTON_COOKIE_NAME")
 
 # in seconds
 AVATAR_URL_EXPIRATION = 3600 * 24 * 7  # 1h*24h/d*7d=1week
@@ -486,3 +488,9 @@ DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = False
 PARTNER_API_TOKEN_SECRET = os.environ.get("PARTNER_API_TOKEN_SECRET") or (
     FLASK_SECRET + "partnerapitoken"
 )
+
+JOB_MAX_ATTEMPTS = 5
+JOB_TAKEN_RETRY_WAIT_MINS = 30
+
+# MEM_STORE
+MEM_STORE_URI = os.environ.get("MEM_STORE_URI", None)

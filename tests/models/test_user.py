@@ -21,3 +21,11 @@ def test_create_from_partner(flask_client):
     assert job is not None
     assert job.name == config.JOB_SEND_PROTON_WELCOME_1
     assert job.payload.get("user_id") == user.id
+
+
+def test_user_created_by_partner(flask_client):
+    user_from_partner = User.create(email=random_email(), from_partner=True)
+    assert user_from_partner.created_by_partner is True
+
+    regular_user = User.create(email=random_email())
+    assert regular_user.created_by_partner is False

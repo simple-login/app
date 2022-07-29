@@ -1,40 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {{ render_text("Hi") }}
   {{ render_text("If you happen to use Gmail, Yahoo, Outlook, etc, do you know these services can read your emails?") }}
-
   {{ render_text("If you want to keep your emails only readable by you, Pretty Good Privacy (PGP) is maybe the solution.") }}
-
   {{ render_text('Highly recommended, open source and free, PGP is unfortunately not widely supported. However with SimpleLogin most recent PGP support, you can now enable PGP on emails sent to your aliases easily.') }}
-
   {{ render_text('Without PGP the emails sent to an alias are forwarded by SimpleLogin as-is to your mailbox, leaving anyone in-between or your email service able to read your emails:') }}
-
-  <img src="https://simplelogin.io/blog/without-pgp.png" alt="Without PGP" style="max-width: 100%">
-
+  <img src="https://simplelogin.io/blog/without-pgp.png"
+       alt="Without PGP"
+       style="max-width: 100%">
   {{ render_text("With PGP enabled, all emails arrived at SimpleLogin are encrypted with your public key before being forwarded to your mailbox:") }}
-
-  <img src="https://simplelogin.io/blog/with-pgp.png" alt="Without PGP" style="max-width: 100%">
-
+  <img src="https://simplelogin.io/blog/with-pgp.png"
+       alt="Without PGP"
+       style="max-width: 100%">
   {{ render_text("You can find more info on our announcement post on https://simplelogin.io/blog/introducing-pgp/") }}
-
-
   {{ render_text("You can create and manage your PGP keys when adding or editing your mailboxes. Check it out on your mailbox dashboard.") }}
-
   {{ render_button("Add your PGP key", URL ~ "/dashboard/mailbox") }}
-
   {{ render_text("Our next important feature is the coming of an iOS app. If you use iPhone or iPad want to help us testing out the app, please reply to this email so we can add you into the TestFlight program.
-") }}
-
+  ") }}
   {{ render_text("For Android users, don't worry: the Android version is already in progress.
-") }}
-
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  ") }}
+  {{ render_text('Thanks,
+  <br />
+  SimpleLogin Team.') }}
   {{ render_text('<strong>P.S.</strong> Need immediate help getting started? Just reply to this email, the SimpleLogin support team is always ready to help!.') }}
-
 {% endblock %}
-
 {% block footer %}
+
   This email is sent to {{ user.email }}. Unsubscribe on
-  <a href="{{URL}}/dashboard/setting#notification">Settings</a>
+  <a href="{{ URL }}/dashboard/setting#notification">Settings</a>
 {% endblock %}

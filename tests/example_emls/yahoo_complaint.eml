@@ -1,7 +1,7 @@
 X-SimpleLogin-Client-IP: 66.163.186.21
 Received-SPF: None (mailfrom) identity=mailfrom; client-ip=66.163.186.21;
  helo=sonic326-46.consmr.mail.ne1.yahoo.com;
- envelope-from=feedback@arf.mail.yahoo.com; receiver=<UNKNOWN> 
+ envelope-from=feedback@arf.mail.yahoo.com; receiver=<UNKNOWN>
 Received: from sonic326-46.consmr.mail.ne1.yahoo.com
  (sonic326-46.consmr.mail.ne1.yahoo.com [66.163.186.21])
 	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
@@ -24,7 +24,7 @@ Received: from sonic.gate.mail.ne1.yahoo.com by
 Date: Sun, 8 May 2022 13:31:28 +0000 (UTC)
 From: Yahoo! Mail AntiSpam Feedback <feedback@arf.mail.yahoo.com>
 To: {{ postmaster }}
-Message-ID: 
+Message-ID:
  <1486688083.18136997.1652016688605@chakraconsumer2.asd.mail.ne1.yahoo.com>
 Subject: Original subject
 MIME-Version: 1.0
@@ -87,7 +87,7 @@ Content-Disposition: inline
 Received: from 10.217.151.74
  by atlas316.free.mail.ne1.yahoo.com with HTTPS;
  Sun, 8 May 2022 11:12:34 +0000
-Return-Path: 
+Return-Path:
  <{{ return_path }}>
 X-Originating-Ip: [176.129.238.160]
 Received-SPF: pass (domain of simplelogin.co designates 176.119.200.160 as
@@ -131,7 +131,7 @@ DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=simplelogin.co;
 	jQ8bqMZhCsN/xVpkMqJdNJefdkj3dP4=
 MIME-Version: 1.0
 Date: Sun, 8 May 2022 04:11:42 -0700
-Message-ID: 
+Message-ID:
  <CAKGh96GHg2kuwvm4biQ-PF-4-8SPZ6JyPj-=GpoYZ6njctoRtg@mail.gmail.com>
 Subject: MF
 Content-Type: multipart/alternative; boundary="0000000000006dd95f05de7e2a70"

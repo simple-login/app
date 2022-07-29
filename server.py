@@ -4,6 +4,8 @@ import time
 from datetime import timedelta
 
 import arrow
+import click
+import flask_limiter
 import flask_profiler
 import sentry_sdk
 from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
@@ -39,6 +41,8 @@ from app.admin_model import (
     CustomDomainAdmin,
     AdminAuditLogAdmin,
     ProviderComplaintAdmin,
+    NewsletterAdmin,
+    NewsletterUserAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -69,6 +73,8 @@ from app.config import (
     PAGE_LIMIT,
     PADDLE_COUPON_ID,
     ZENDESK_ENABLED,
+    MAX_NB_EMAIL_FREE_PLAN,
+    MEM_STORE_URI,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -94,8 +100,11 @@ from app.models import (
     Coupon,
     AdminAuditLog,
     ProviderComplaint,
+    Newsletter,
+    NewsletterUser,
 )
 from app.monitor.base import monitor_bp
+from app.newsletter_utils import send_newsletter_to_user
 from app.oauth.base import oauth_bp
 from app.onboarding.base import onboarding_bp
 from app.phone.base import phone_bp
@@ -132,7 +141,6 @@ def create_app() -> Flask:
     app = Flask(__name__)
     # SimpleLogin is deployed behind NGINX
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1)
-    limiter.init_app(app)
 
     app.url_map.strict_slashes = False
 
@@ -153,6 +161,10 @@ def create_app() -> Flask:
     if URL.startswith("https"):
         app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    if MEM_STORE_URI:
+        app.config[flask_limiter.extension.C.STORAGE_URL] = MEM_STORE_URI
+
+    limiter.init_app(app)
 
     setup_error_page(app)
 
@@ -204,8 +216,10 @@ def create_app() -> Flask:
 @login_manager.user_loader
 def load_user(alternative_id):
     user = User.get_by(alternative_id=alternative_id)
-    if user and user.disabled:
-        return None
+    if user:
+        sentry_sdk.set_user({"email": user.email, "id": user.id})
+        if user.disabled:
+            return None
 
     return user
 
@@ -403,6 +417,7 @@ def jinja2_filter(app):
             CANONICAL_URL=f"{URL}{request.path}",
             PAGE_LIMIT=PAGE_LIMIT,
             ZENDESK_ENABLED=ZENDESK_ENABLED,
+            MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN,
         )
 
 
@@ -593,7 +608,7 @@ def setup_paddle_callback(app: Flask):
                     sub.next_bill_date = sub.next_bill_date - relativedelta(months=1)
                     LOG.d("next_bill_date is %s", sub.next_bill_date)
                     Session.commit()
-                elif plan_id == PADDLE_YEARLY_PRODUCT_IDS:
+                elif plan_id in PADDLE_YEARLY_PRODUCT_IDS:
                     LOG.d("subtract 1 year from next_bill_date %s", sub.next_bill_date)
                     sub.next_bill_date = sub.next_bill_date - relativedelta(years=1)
                     LOG.d("next_bill_date is %s", sub.next_bill_date)
@@ -736,6 +751,8 @@ def init_admin(app):
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))
     admin.add_view(AdminAuditLogAdmin(AdminAuditLog, Session))
     admin.add_view(ProviderComplaintAdmin(ProviderComplaint, Session))
+    admin.add_view(NewsletterAdmin(Newsletter, Session))
+    admin.add_view(NewsletterUserAdmin(NewsletterUser, Session))
 
 
 def register_custom_commands(app):
@@ -775,6 +792,46 @@ def register_custom_commands(app):
         fake_data()
         add_sl_domains()
         add_proton_partner()
+
+    @app.cli.command("send-newsletter")
+    @click.option("-n", "--newsletter_id", type=int, help="Newsletter ID to be sent")
+    def send_newsletter(newsletter_id):
+        newsletter = Newsletter.get(newsletter_id)
+        if not newsletter:
+            LOG.w(f"no such newsletter {newsletter_id}")
+            return
+
+        nb_success = 0
+        nb_failure = 0
+
+        # user_ids that have received the newsletter
+        user_received_newsletter = Session.query(NewsletterUser.user_id).filter(
+            NewsletterUser.newsletter_id == newsletter_id
+        )
+
+        # only send newsletter to those who haven't received it
+        user_query = (
+            User.order_by(User.id)
+            .filter(User.id.notin_(user_received_newsletter))
+            .all()
+        )
+
+        for user in user_query:
+            to_email, unsubscribe_link, via_email = user.get_communication_email()
+            if not to_email:
+                continue
+
+            sent, error_msg = send_newsletter_to_user(newsletter, user)
+            if sent:
+                LOG.d(f"{newsletter} sent to {user}")
+                nb_success += 1
+            else:
+                nb_failure += 1
+
+            # sleep in between to not overwhelm mailbox provider
+            time.sleep(0.2)
+
+        LOG.d(f"Nb success {nb_success}, failures {nb_failure}")
 
 
 def setup_do_not_track(app):

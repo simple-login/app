@@ -37,6 +37,7 @@ from app.email_utils import (
     is_valid_email,
     get_email_domain_part,
 )
+from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
 from app.models import (
     Subscription,
@@ -63,7 +64,10 @@ from app.models import (
     Directory,
     DeletedDirectory,
     DeletedSubdomain,
+    PartnerSubscription,
+    PartnerUser,
 )
+from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
 from server import create_light_app
 
@@ -270,11 +274,35 @@ def compute_metric2() -> Metric2:
         if user.is_paid():
             nb_referred_user_paid += 1
 
+    # compute nb_proton_premium, nb_proton_user
+    nb_proton_premium = nb_proton_user = 0
+    try:
+        proton_partner = get_proton_partner()
+        nb_proton_premium = (
+            Session.query(PartnerSubscription, PartnerUser)
+            .filter(
+                PartnerSubscription.partner_user_id == PartnerUser.id,
+                PartnerUser.partner_id == proton_partner.id,
+                PartnerSubscription.end_at > now,
+            )
+            .count()
+        )
+        nb_proton_user = (
+            Session.query(PartnerUser)
+            .filter(
+                PartnerUser.partner_id == proton_partner.id,
+            )
+            .count()
+        )
+    except ProtonPartnerNotSetUp:
+        LOG.d("Proton partner not set up")
+
     return Metric2.create(
         date=now,
         # user stats
         nb_user=User.count(),
         nb_activated_user=User.filter_by(activated=True).count(),
+        nb_proton_user=nb_proton_user,
         # subscription stats
         nb_premium=Subscription.filter(Subscription.cancelled.is_(False)).count(),
         nb_cancelled_premium=Subscription.filter(
@@ -289,6 +317,7 @@ def compute_metric2() -> Metric2:
         nb_coinbase_premium=CoinbaseSubscription.filter(
             CoinbaseSubscription.end_at > now
         ).count(),
+        nb_proton_premium=nb_proton_premium,
         # referral stats
         nb_referred_user=User.filter(User.referral_id.isnot(None)).count(),
         nb_referred_user_paid=nb_referred_user_paid,
@@ -484,11 +513,13 @@ def stats():
 Growth Stats for {today}
 
 nb_user: {stats_today.nb_user} - {increase_percent(stats_yesterday.nb_user, stats_today.nb_user)}
+nb_proton_user: {stats_today.nb_proton_user} - {increase_percent(stats_yesterday.nb_proton_user, stats_today.nb_proton_user)}
 nb_premium: {stats_today.nb_premium} - {increase_percent(stats_yesterday.nb_premium, stats_today.nb_premium)}
 nb_cancelled_premium: {stats_today.nb_cancelled_premium} - {increase_percent(stats_yesterday.nb_cancelled_premium, stats_today.nb_cancelled_premium)}
 nb_apple_premium: {stats_today.nb_apple_premium} - {increase_percent(stats_yesterday.nb_apple_premium, stats_today.nb_apple_premium)}
 nb_manual_premium: {stats_today.nb_manual_premium} - {increase_percent(stats_yesterday.nb_manual_premium, stats_today.nb_manual_premium)}
 nb_coinbase_premium: {stats_today.nb_coinbase_premium} - {increase_percent(stats_yesterday.nb_coinbase_premium, stats_today.nb_coinbase_premium)}
+nb_proton_premium: {stats_today.nb_proton_premium} - {increase_percent(stats_yesterday.nb_proton_premium, stats_today.nb_proton_premium)}
 nb_alias: {stats_today.nb_alias} - {increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)}
 
 nb_forward_last_24h: {stats_today.nb_forward_last_24h} - {increase_percent(stats_yesterday.nb_forward_last_24h, stats_today.nb_forward_last_24h)}

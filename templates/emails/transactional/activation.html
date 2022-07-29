@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {{ render_text("Thank you for choosing SimpleLogin.") }}
   {{ render_text("To get started, please confirm that <b>" + email + "</b> is your email address by clicking on the button below within 1 hour.") }}
   {{ render_button("Verify email", activation_link) }}
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ render_text('Thanks,
+  <br />
+  SimpleLogin Team.') }}
   {{ raw_url(activation_link) }}
 {% endblock %}
-

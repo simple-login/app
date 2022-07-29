@@ -1,23 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {% call text() %}
-    <h1>
-      An email was sent to your alias <b>{{ alias.email }}</b> from its own mailbox
-      <b>{{ from_addr }}</b>.
-    </h1>
-  {% endcall %}
 
   {% call text() %}
-    SimpleLogin doesn't send this email <b>back</b> to your mailbox as it would be refused or hidden anyway by your email service. <br>
-    So no worries, there's nothing you need to do :).
-  {% endcall %}
+  <h1>
+    An email was sent to your alias <b>{{ alias.email }}</b> from its own mailbox
+    <b>{{ from_addr }}</b>.
+  </h1>
+{% endcall %}
 
-  {{ render_button("View the email", refused_email_url) }}
+{% call text() %}
+SimpleLogin doesn't send this email <b>back</b> to your mailbox as it would be refused or hidden anyway by your email service.
+<br />
+So no worries, there's nothing you need to do :).
+{% endcall %}
 
-  {% call text() %}
-    The email is automatically deleted in 7 days.
-  {% endcall %}
+{{ render_button("View the email", refused_email_url) }}
+{% call text() %}
+The email is automatically deleted in 7 days.
+{% endcall %}
 
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+{{ render_text('Thanks,
+<br />
+SimpleLogin Team.') }}
 {% endblock %}

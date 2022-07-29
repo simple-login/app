@@ -1,5 +1,6 @@
 from flask import url_for
 
+from app import config
 from app.models import User
 from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login
@@ -19,6 +20,7 @@ def test_user_in_trial(flask_client):
         "email": user.email,
         "in_trial": True,
         "profile_picture_url": None,
+        "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
     }
 
 

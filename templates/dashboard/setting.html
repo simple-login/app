@@ -1,21 +1,24 @@
-{% extends 'default.html' %}
+{% extends "default.html" %}
 
 {% set active_page = "setting" %}
-
-{% block title %}
-  Settings
-{% endblock %}
-
+{% block title %}Settings{% endblock %}
 {% block head %}
+
   <style>
       .card-title {
           font-size: 22px;
           font-weight: 600;
           margin-bottom: 3px;
       }
+      .highlighted{
+          border: solid 2px #5675E2;
+      }
+      li {
+      margin-top: 8px;
+  }
+
   </style>
 {% endblock %}
-
 {% block default_content %}
 
   <div class="col pb-3">
@@ -23,53 +26,59 @@
     <div class="card">
       <div class="card-body">
         <div class="card-title mb-3">Current Plan</div>
-
         {% if current_user.lifetime %}
+
           You have lifetime access to the Premium plan.
         {% elif current_user.lifetime_or_active_subscription() %}
-          {% if current_user.get_subscription() %}
+          {% if paddle_sub %}
+
             <div>
-              {{ current_user.get_subscription().plan_name() }} plan subscribed via Paddle.
-              <a href="{{ url_for('dashboard.billing') }}">
-                Manage Subscription ➡
-              </a>
+              {% if paddle_sub.cancelled %}(Cancelled){% endif %}
+              {{ paddle_sub.plan_name() }} plan subscribed via Paddle.
+              <a href="{{ url_for('dashboard.billing') }}">Manage Subscription ➡</a>
             </div>
           {% endif %}
-
           {% if manual_sub and manual_sub.is_active() %}
+
             <div>
               Manual plan which expires {{ manual_sub.end_at | dt }}
               ({{ manual_sub.end_at.format("YYYY-MM-DD") }}).
               {% if manual_sub.is_giveaway %}
-                <br>
-                To gain additional features and support SimpleLogin you can upgrade to a Premium plan. <br>
-                <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+
+                <br />
+                To gain additional features and support SimpleLogin you can upgrade to a Premium plan.
+                <br />
+                <a href="{{ url_for('dashboard.pricing') }}"
+                   class="btn btn-sm btn-outline-primary">Upgrade</a>
               {% endif %}
             </div>
           {% endif %}
-
           {% if apple_sub and apple_sub.is_valid() %}
+
             <div>
               Premium plan subscribed via Apple which expires {{ apple_sub.expires_date | dt }}
               ({{ apple_sub.expires_date.format("YYYY-MM-DD") }}).
               <div class="alert alert-info">
                 If you want to subscribe via the Web instead, please make sure to cancel your subscription
                 on Apple first.
-                <a href="{{ url_for('dashboard.pricing') }}"
-                   class="">Upgrade <i class="fa fa-arrow-right" aria-hidden="true"></i></a>
+                <a href="{{ url_for('dashboard.pricing') }}">
+                  Upgrade <i class="fa fa-arrow-right" aria-hidden="true"></i>
+                </a>
               </div>
             </div>
           {% endif %}
-
           {% if coinbase_sub and coinbase_sub.is_active() %}
+
             <div>
               Yearly plan subscribed with cryptocurrency which expires on
               {{ coinbase_sub.end_at.format("YYYY-MM-DD") }}.
-              <a href="{{ url_for('dashboard.coinbase_checkout_route') }}" target="_blank">
+              <a href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+                 target="_blank">
                 Extend Subscription <i class="fe fe-external-link"></i>
               </a>
             </div>
           {% endif %}
+          {% if partner_sub %}<div>Premium subscription managed by {{ partner_name }}.</div>{% endif %}
         {% elif current_user.in_trial() %}
           Your Premium trial expires {{ current_user.trial_end | dt }}.
         {% else %}
@@ -78,24 +87,27 @@
       </div>
     </div>
     <!-- END Current plan -->
-
     <!-- TOTP -->
     <div class="card" id="totp">
       <div class="card-body">
         <div class="card-title">Two Factor Authentication</div>
         <div class="mb-3">
-          Secure your account with 2FA, you'll be asked for a code generated through an app when you login. <br>
+          Secure your account with 2FA, you'll be asked for a code generated through an app when you login.
+          <br />
         </div>
         {% if not current_user.enable_otp %}
-          <a href="{{ url_for('dashboard.mfa_setup') }}" class="btn btn-outline-primary">Setup TOTP</a>
+
+          <a href="{{ url_for('dashboard.mfa_setup') }}"
+             class="btn btn-outline-primary">Setup TOTP</a>
         {% else %}
-          <a href="{{ url_for('dashboard.mfa_cancel') }}" class="btn btn-outline-danger">Disable TOTP</a>
-          <a href="{{ url_for('dashboard.recovery_code_route') }}" class="btn btn-outline-secondary">Recovery Codes</a>
+          <a href="{{ url_for('dashboard.mfa_cancel') }}"
+             class="btn btn-outline-danger">Disable TOTP</a>
+          <a href="{{ url_for('dashboard.recovery_code_route') }}"
+             class="btn btn-outline-secondary">Recovery Codes</a>
         {% endif %}
       </div>
     </div>
     <!-- END TOTP -->
-
     <!-- WebAuthn -->
     <div class="card">
       <div class="card-body">
@@ -106,28 +118,31 @@
           or a device with appropriate hardware to your account.
         </div>
         {% if current_user.fido_uuid is none %}
-          <a href="{{ url_for('dashboard.fido_setup') }}" class="btn btn-outline-primary">Setup WebAuthn</a>
+
+          <a href="{{ url_for('dashboard.fido_setup') }}"
+             class="btn btn-outline-primary">Setup WebAuthn</a>
         {% else %}
-          <a href="{{ url_for('dashboard.fido_manage') }}" class="btn btn-outline-info">Manage WebAuthn</a>
-          <a href="{{ url_for('dashboard.recovery_code_route') }}" class="btn btn-outline-secondary">Recovery Codes</a>
+          <a href="{{ url_for('dashboard.fido_manage') }}"
+             class="btn btn-outline-info">Manage WebAuthn</a>
+          <a href="{{ url_for('dashboard.recovery_code_route') }}"
+             class="btn btn-outline-secondary">Recovery Codes</a>
         {% endif %}
       </div>
     </div>
     <!-- END WebAuthn -->
-
-
     <!-- Newsletter -->
     <div class="card" id="notification">
       <div class="card-body">
         <div class="card-title">Newsletters</div>
-        <div class="mb-3">
-          We will occasionally send you emails with new feature announcements.
-        </div>
+        <div class="mb-3">We will occasionally send you emails with new feature announcements.</div>
         <form method="post">
           <input type="hidden" name="form-name" value="notification-preference">
           <div class="form-check">
-            <input type="checkbox" id="notification" name="notification" {% if current_user.notification %}
-                   checked {% endif %} class="form-check-input">
+            <input type="checkbox"
+                   id="notification"
+                   name="notification"
+                   {% if current_user.notification %} checked{% endif %}
+                   class="form-check-input">
             <label for="notification">I want to be emailed when new features are released.</label>
           </div>
           <button type="submit" class="btn btn-outline-primary">Submit</button>
@@ -135,17 +150,13 @@
       </div>
     </div>
     <!-- END Newsletter -->
-
     <!-- Change name & profile picture -->
     <div class="card">
       <form method="post" enctype="multipart/form-data">
         {{ form.csrf_token }}
         <input type="hidden" name="form-name" value="update-profile">
-
         <div class="card-body">
-          <div class="card-title">
-            Profile
-          </div>
+          <div class="card-title">Profile</div>
           <div>
             This information will be filled in automatically when you use the
             <em>Sign in with SimpleLogin</em> button.
@@ -155,13 +166,14 @@
             {{ form.name(class="form-control", value=current_user.name) }}
             {{ render_field_errors(form.name) }}
           </div>
-
           <div class="form-group">
             <div class="form-label">Profile picture</div>
             {{ form.profile_picture(class="form-control-file") }}
             {{ render_field_errors(form.profile_picture) }}
             {% if current_user.profile_picture_id %}
-              <img src="{{ current_user.profile_picture_url() }}" class="profile-picture">
+
+              <img src="{{ current_user.profile_picture_url() }}"
+                   class="profile-picture">
             {% endif %}
           </div>
           <button class="btn btn-outline-primary">Update</button>
@@ -169,36 +181,40 @@
       </form>
     </div>
     <!-- END change name & profile picture -->
-
     <!-- Change email -->
     <div class="card">
       <form method="post" enctype="multipart/form-data">
         <input type="hidden" name="form-name" value="update-email">
         {{ change_email_form.csrf_token }}
-
         <div class="card-body">
-          <div class="card-title">
-            Account Email
-          </div>
+          <div class="card-title">Account Email</div>
           <div class="mb-3">
-            This email address is used to log in to SimpleLogin. <br>
+            This email address is used to log in to SimpleLogin.
+            <br />
             If you want to change the mailbox that emails are forwarded to, use the
             <a href="{{ url_for('dashboard.mailbox_route') }}">
               <i class="fe fe-inbox"></i> Mailboxes page
-            </a> instead.
+            </a>
+            instead.
           </div>
           <div class="form-group mt-2">
             <!-- Not allow user to change email if there's a pending change -->
             {{ change_email_form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
             {{ render_field_errors(change_email_form.email) }}
-
             {% if pending_email %}
+
               <div class="mt-2">
                 <span class="text-danger">Pending email change: {{ pending_email }}</span>
-                <a href="{{ url_for('dashboard.resend_email_change') }}" class="btn btn-secondary btn-sm">Resend
-                  confirmation email</a>
-                <a href="{{ url_for('dashboard.cancel_email_change') }}" class="btn btn-secondary btn-sm">Cancel email
-                  change</a>
+                <a href="{{ url_for('dashboard.resend_email_change') }}"
+                   class="btn btn-secondary btn-sm">
+                  Resend
+                  confirmation email
+                </a>
+                <a href="{{ url_for('dashboard.cancel_email_change') }}"
+                   class="btn btn-secondary btn-sm">
+                  Cancel email
+                  change
+                </a>
               </div>
             {% endif %}
           </div>
@@ -207,192 +223,229 @@
       </form>
     </div>
     <!-- END Change email -->
-
     <!-- Connect with Proton -->
     {% if connect_with_proton %}
-      <div class="card">
+
+      <div class="card" id="connect-with-proton">
         <div class="card-body">
-          <div class="card-title">
-            Connect with Proton
-          </div>
+          <div class="card-title">Connect with Proton</div>
           {% if proton_linked_account != None %}
+
             <div class="mb-3">
-              You have linked your Proton account: {{ proton_linked_account }} <br>
+              Your account is currently linked to the Proton account <b>{{ proton_linked_account }}</b>
+              <br />
             </div>
-            <a
-              class="btn btn-primary mt-2 proton-button"
-              href="{{ url_for('dashboard.unlink_proton_account') }}"
-            ><img class="mr-2" src="/static/images/proton.svg">Unlink account</a>
+            <a class="btn btn-primary mt-2 proton-button"
+               href="{{ url_for('dashboard.unlink_proton_account') }}">
+              <img class="mr-2" src="/static/images/proton.svg">
+              Unlink account
+            </a>
           {% else %}
             <div class="mb-3">
-              You can connect your Proton account with your SimpleLogin one. <br>
+              You can connect your Proton and SimpleLogin accounts.
+              <br>
+              You can then quickly log in to your SimpleLogin account using the Proton one.
+              <br>
+              If you have Proton Unlimited, Business or Visionary, you can have SimpleLogin premium for free.
+              <br />
             </div>
-            <a class="btn btn-primary mt-2 proton-button" href="{{ url_for("auth.proton_login", action="link") }}"><img
-              class="mr-2" src="/static/images/proton.svg">Connect
-              with Proton</a>
+            <a class="btn btn-primary mt-2 proton-button"
+               href="{{ url_for("auth.proton_login", action="link") }}">
+              <img class="mr-2"
+                   src="{{ url_for('static', filename='images/proton.svg') }}"/>
+              Connect with Proton
+            </a>
           {% endif %}
         </div>
       </div>
     {% endif %}
     <!-- END Connect with Proton -->
-
     <!-- Change password -->
     <div class="card" id="change_password">
       <div class="card-body">
-        <div class="card-title">
-          Password
-        </div>
+        <div class="card-title">Password</div>
         <div class="mb-3">
           You will receive an email containing instructions on how to change your password.
         </div>
         <form method="post">
           <input type="hidden" name="form-name" value="change-password">
-          <button class="btn btn-outline-primary">Change password</button>
+          <button class="btn btn-outline-primary">
+            Change password
+          </button>
         </form>
       </div>
     </div>
     <!-- END Change password -->
-
     <!-- Random alias -->
     <div id="random-alias" class="card">
       <div class="card-body">
-        <div class="card-title">Aliases</div>
-
-        <div class="mt-3 mb-1">Change the way random aliases are generated by default.</div>
+        <div class="card-title">
+          Aliases
+        </div>
+        <div class="mt-3 mb-1">
+          Change the way random aliases are generated by default.
+        </div>
         <form method="post" action="#random-alias" class="form-inline">
           <input type="hidden" name="form-name" value="change-alias-generator">
           <select class="form-control mr-sm-2" name="alias-generator-scheme">
             <option value="{{ AliasGeneratorEnum.word.value }}"
-              {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected {% endif %} >Based on
-              Random {{ AliasGeneratorEnum.word.name.capitalize() }}</option>
+                    {% if current_user.alias_generator == AliasGeneratorEnum.word.value %} selected{% endif %}>
+              Based on
+              Random {{ AliasGeneratorEnum.word.name.capitalize() }}
+            </option>
             <option value="{{ AliasGeneratorEnum.uuid.value }}"
-              {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected {% endif %} >Based
-              on {{ AliasGeneratorEnum.uuid.name.upper() }}</option>
+                    {% if current_user.alias_generator == AliasGeneratorEnum.uuid.value %} selected{% endif %}>
+              Based
+              on {{ AliasGeneratorEnum.uuid.name.upper() }}
+            </option>
           </select>
-          <button class="btn btn-outline-primary">Update</button>
+          <button class="btn btn-outline-primary">
+            Update
+          </button>
         </form>
-
-        <div class="mt-3 mb-1">Select the default domain for aliases.</div>
+        <div class="mt-3 mb-1">
+          Select the default domain for aliases.
+        </div>
         <form method="post" action="#random-alias" class="form-inline">
-          <input type="hidden" name="form-name" value="change-random-alias-default-domain">
+          <input type="hidden"
+                 name="form-name"
+                 value="change-random-alias-default-domain">
           <select class="form-control mr-sm-2" name="random-alias-default-domain">
-            <option value="">Not Selected</option>
+            <option value="">
+              Not Selected
+            </option>
             {% for is_public, domain in current_user.available_domains_for_random_alias() %}
-              <option value="{{ domain }}"
-                {% if current_user.default_alias_custom_domain_id or current_user.default_alias_public_domain_id %}
-                  {% if current_user.default_random_alias_domain() == domain %} selected {% endif %}
+
+              <option value="{{ domain }}" {% if current_user.default_alias_custom_domain_id or current_user.default_alias_public_domain_id %}
+                 {% if current_user.default_random_alias_domain() == domain %}
+                 selected {% endif %} {% endif %}>
+                {{ domain }} (
+                {% if is_public %}
+
+                  SimpleLogin domain
+                {% else %}
+                  your domain
                 {% endif %}
-              >
-                {{ domain }} ({% if is_public %} SimpleLogin domain {% else %} your domain {% endif %})
+                )
               </option>
             {% endfor %}
           </select>
-          <button class="btn btn-outline-primary">Update</button>
+          <button class="btn btn-outline-primary">
+            Update
+          </button>
         </form>
-
-        <div id="random-alias-suffix" class="mt-3 mb-1">Select the default suffix generator for aliases.</div>
+        <div id="random-alias-suffix" class="mt-3 mb-1">
+          Select the default suffix generator for aliases.
+        </div>
         <form method="post" action="#random-alias-suffix" class="form-inline">
           <input type="hidden" name="form-name" value="random-alias-suffix">
           <select class="form-control mr-sm-2" name="random-alias-suffix-generator">
-
-            <option value="0" {% if current_user.random_alias_suffix==0 %} selected {% endif %}>
+            <option value="0"
+                    {% if current_user.random_alias_suffix==0 %} selected{% endif %}>
               Random word from our dictionary
             </option>
-            <option value="1" {% if current_user.random_alias_suffix==1 %} selected {% endif %}>
+            <option value="1"
+                    {% if current_user.random_alias_suffix==1 %} selected{% endif %}>
               Random combination of {{ ALIAS_RAND_SUFFIX_LENGTH }} letter and digits
             </option>
           </select>
-          <button class="btn btn-outline-primary">Update</button>
+          <button class="btn btn-outline-primary">
+            Update
+          </button>
         </form>
-
       </div>
     </div>
     <!-- END Random alias -->
-
     <!-- Sender Format -->
     <div class="card" id="sender-format">
       <div class="card-body">
-        <div class="card-title">Sender Address Format</div>
+        <div class="card-title">
+          Sender Address Format
+        </div>
         <div class="mt-1 mb-3">
           When your alias receives an email, say from: <b>John Wick &lt;john@wick.com&gt;</b>,
-          SimpleLogin forwards it to your mailbox. <br>
-
+          SimpleLogin forwards it to your mailbox.
+          <br />
           Due to some email constraints, SimpleLogin cannot keep the sender email address
           in the original form and needs to <b>transform</b> it to one of the formats below.
         </div>
-
         <form method="post" action="#sender-format">
           <input type="hidden" name="form-name" value="change-sender-format">
-
           <select class="form-control mr-sm-2" name="sender-format">
             <option value="{{ SenderFormatEnum.AT.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.AT.value %} selected {% endif %}>
+                    {% if current_user.sender_format == SenderFormatEnum.AT.value %} selected{% endif %}>
               John Wick - john at wick.com
             </option>
-
             <option value="{{ SenderFormatEnum.A.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.A.value %} selected {% endif %}>
+                    {% if current_user.sender_format == SenderFormatEnum.A.value %} selected{% endif %}>
               John Wick - john(a)wick.com
             </option>
-
             <option value="{{ SenderFormatEnum.NAME_ONLY.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.NAME_ONLY.value %} selected {% endif %}>
+                    {% if current_user.sender_format == SenderFormatEnum.NAME_ONLY.value %} selected{% endif %}>
               John Wick
             </option>
-
             <option value="{{ SenderFormatEnum.AT_ONLY.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.AT_ONLY.value %} selected {% endif %}>
+                    {% if current_user.sender_format == SenderFormatEnum.AT_ONLY.value %} selected{% endif %}>
               john at wick.com
             </option>
-
             <option value="{{ SenderFormatEnum.NO_NAME.value }}"
-              {% if current_user.sender_format == SenderFormatEnum.NO_NAME.value %} selected {% endif %}>
+                    {% if current_user.sender_format == SenderFormatEnum.NO_NAME.value %} selected{% endif %}>
               No Name (i.e. only reverse-alias)
             </option>
-
           </select>
-
-          <button class="btn btn-outline-primary mt-3">Update</button>
+          <button class="btn btn-outline-primary mt-3">
+            Update
+          </button>
         </form>
       </div>
     </div>
     <!-- END Sender Format -->
-
     <!-- Reverse-alias replacement -->
     <div class="card" id="reverse-alias-replacement-section">
       <div class="card-body">
-        <div class="card-title">Reverse Alias Replacement
-          <div class="badge badge-warning">Experimental</div>
+        <div class="card-title">
+          Reverse Alias Replacement
+          <div class="badge badge-warning">
+            Experimental
+          </div>
         </div>
         <div class="mb-3">
           When replying to a forwarded email, the <b>reverse-alias</b> can be automatically included
           in the attached message by your email client.
           If this option is enabled, SimpleLogin will try to <b>replace</b> the reverse-alias by your contact email.
-          <br>
+          <br />
         </div>
         <form method="post" action="#reverse-alias-replacement-section">
           <input type="hidden" name="form-name" value="replace-ra">
           <div class="form-check">
-            <input type="checkbox" id="replace-ra" name="replace-ra"
-              {% if current_user.replace_reverse_alias %} checked {% endif %} class="form-check-input">
-            <label for="replace-ra">Enable replacing reverse alias</label>
+            <input type="checkbox"
+                   id="replace-ra"
+                   name="replace-ra"
+                   {% if current_user.replace_reverse_alias %} checked{% endif %}
+                   class="form-check-input">
+            <label for="replace-ra">
+              Enable replacing reverse alias
+            </label>
           </div>
-          <button type="submit" class="btn btn-outline-primary">Update</button>
+          <button type="submit" class="btn btn-outline-primary">
+            Update
+          </button>
         </form>
       </div>
     </div>
     <!-- END Reverse-alias -->
-
     <!-- Sender included in reverse-alias -->
     <div class="card" id="sender-in-ra">
       <div class="card-body">
-        <div class="card-title">Include sender address in reverse-alias</div>
+        <div class="card-title">
+          Include sender address in reverse-alias
+        </div>
         <div class="mb-3">
           By default, the reverse-alias is randomly generated and doesn't contain any information about
-          the sender.<br>
-
-          Enabling this option will include the sender address in the reverse-alias. <br>
-
+          the sender.
+          <br />
+          Enabling this option will include the sender address in the reverse-alias.
+          <br />
           This can be useful if you want to set up email filters based on the reverse-alias.
           It will also make the reverse-alias more readable.
         </div>
@@ -402,232 +455,300 @@
             <input type="checkbox" id="include-sender-ra" name="enable"
               {#                   todo: remove current_user.include_sender_in_reverse_alias is none condition #}
               {% if current_user.include_sender_in_reverse_alias is none or current_user.include_sender_in_reverse_alias %}
-                   checked {% endif %} class="form-check-input">
-            <label for="include-sender-ra">Include sender address in reverse-alias</label>
-          </div>
-          <button type="submit" class="btn btn-outline-primary">Update</button>
-        </form>
-      </div>
-    </div>
-    <!-- END Reverse-alias -->
 
-    <!-- Always expand alias info -->
-    <div class="card" id="expand-alias-info-section">
-      <div class="card-body">
-        <div class="card-title">Always expand alias info</div>
-        <div class="mb-3">
-          By default, additional alias info is shown after clicking on the "More" button. <br>
-          When this option is enabled, alias additional info will always be shown. <br>
-        </div>
-        <form method="post" action="#expand-alias-info-section">
-          <input type="hidden" name="form-name" value="expand-alias-info">
-          <div class="form-check">
-            <input type="checkbox" id="expand-alias-info" name="enable"
-              {% if current_user.expand_alias_info %} checked {% endif %} class="form-check-input">
-            <label for="expand-alias-info">Automatically expand alias info</label>
-          </div>
-          <button type="submit" class="btn btn-outline-primary">Update</button>
-        </form>
-      </div>
-    </div>
-    <!-- END Always expand alias info -->
-
-    <!-- Include website address in alias -->
-    <div class="card" id="include_website_in_one_click_alias">
-      <div class="card-body">
-        <div class="card-title">
-          Include website address in one-click alias creation on browser extension
-        </div>
-        <div class="mb-3">
-          If enabled, the website name will be used as alias prefix
-          when you create an alias via SimpleLogin browser extension via the email input field <br>
-          <img src="https://simplelogin.io/images/one-click-alias.gif" class="my-2"
-               style="max-width: 40%">
-        </div>
-        <form method="post" action="#include_website_in_one_click_alias">
-          <input type="hidden" name="form-name" value="include_website_in_one_click_alias">
-          <div class="form-check">
-            <input type="checkbox" id="include-website-in-alias" name="enable"
-              {% if current_user.include_website_in_one_click_alias %} checked {% endif %} class="form-check-input">
-            <label for="include-website-in-alias">Include website address in alias</label>
-          </div>
-          <button type="submit" class="btn btn-outline-primary">Update</button>
-        </form>
-      </div>
-    </div>
-    <!-- END Include website address in alias -->
-
-    <!-- Ignore Loop Email -->
-    {#    <div class="card" id="ignore-loop-email-section">#}
-    {#      <div class="card-body">#}
-    {#        <div class="card-title">Ignore Loop Emails</div>#}
-    {#        <div class="mb-3">#}
-    {#          On some email clients, "Reply All" automatically includes your alias that#}
-    {#          would send the same email to your mailbox.#}
-    {#          <br>#}
-    {#          You can disable these "loop" emails by enabling this option.#}
-    {#        </div>#}
-    {#        <form method="post" action="#ignore-loop-email-section">#}
-    {#          <input type="hidden" name="form-name" value="ignore-loop-email">#}
-    {#          <div class="form-check">#}
-    {#            <input type="checkbox" id="ignore-loop-email" name="enable"#}
-    {#                {% if current_user.ignore_loop_email %} checked {% endif %} class="form-check-input">#}
-    {#            <label for="ignore-loop-email">Ignore Loop Emails</label>#}
-    {#          </div>#}
-    {#          <button type="submit" class="btn btn-outline-primary">Update</button>#}
-    {#        </form>#}
-    {#      </div>#}
-    {#    </div>#}
-    <!-- END Ignore Loop Email -->
-
-    <!-- One-click subscribe -->
-    <div class="card" id="one-click-unsubscribe-section">
-      <div class="card-body">
-        <div class="card-title">One-click unsubscribe</div>
-        <div class="mb-3">
-          On email clients that support the
-          <a href="https://simplelogin.io/docs/getting-started/one-click-unsubscribe/">One-click unsubscribe</a> button,
-          clicking on it will disable the alias that receives the emails.
-          <br>
-          You can choose to block the sender instead of disabling the alias.
-        </div>
-        <form method="post" action="#one-click-unsubscribe-section">
-          <input type="hidden" name="form-name" value="one-click-unsubscribe">
-          <div class="form-check">
-            <input type="checkbox" id="one-click-unsubscribe" name="enable"
-              {% if current_user.one_click_unsubscribe_block_sender %} checked {% endif %} class="form-check-input">
-            <label for="one-click-unsubscribe">Block sender instead</label>
-          </div>
-          <button type="submit" class="btn btn-outline-primary">Update</button>
-        </form>
-      </div>
-    </div>
-    <!-- END One-click subscribe -->
-
-    <div class="card">
-      <div class="card-body">
-        <div class="card-title">Quarantine</div>
-        <div class="mb-3">
-          When an email sent to your alias is classified as spam or refused by your email provider,
-          it usually means your alias has been leaked to a spammer. <br>
-          In this case SimpleLogin will <b>keep</b> a copy of this email (so it isn't lost)
-          and notify you so you can take a look at its content and take appropriate actions. <br>
-
-          The emails are deleted in 7 days.
-          This is an exceptional case where SimpleLogin stores the email.
-        </div>
-        <a href="{{ url_for('dashboard.refused_email_route') }}" class="btn btn-outline-primary">
-          See refused emails
-        </a>
-      </div>
-    </div>
-
-    <div class="card" id="blocked-behaviour">
-      <div class="card-body">
-        <div class="card-title">Disabled alias/Blocked contact</div>
-        <div class="mb-3">
-          When an email is sent to a <b>disabled</b> alias or sent from a <b>blocked</b> contact, you can decide what
-          response the sender should see. <br>
-          <b>Ignore</b> means they will see the message as delivered, but SimpleLogin won't actually forward it to you.
-          This is the default option as you can start receiving the emails again
-          by re-enabling the alias or unblocking a contact.<br>
-          <b>Reject</b> means SimpleLogin will tell them that the alias does not exist. <br>
-        </div>
-        <form method="post" action="#blocked-behaviour" class="form-inline">
-          <input type="hidden" name="form-name" value="change-blocked-behaviour">
-
-          <select class="form-control mr-sm-2" name="blocked-behaviour">
-            <option value="{{ BlockBehaviourEnum.return_2xx.value }}"
-              {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_2xx.value %}
-                    selected="selected" {% endif %}>
-              Ignore (the sender will see the email as delivered, but you won't receive anything).
-            </option>
-            <option value="{{ BlockBehaviourEnum.return_5xx.value }}"
-              {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_5xx.value %}
-                    selected="selected" {% endif %}>
-              Reject (the sender will be told that your alias does not exist).
-            </option>
-
-          </select>
-
-          <button class="btn btn-outline-primary">Update</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card" id="sender-header">
-      <div class="card-body">
-        <div class="card-title">Include original sender in email headers
-        </div>
-        <div class="mb-3">
-          SimpleLogin forwards emails to your mailbox from the <b>reverse-alias</b> and not from the <b>original</b>
-          sender address. <br>
-          If this option is enabled, the original sender addresses is stored in the email header <b>X-SimpleLogin-Envelope-From</b>.
-          You can choose to display this header in your email client. <br>
-          As email headers aren't encrypted, your mailbox service can know the sender address via this header.
-        </div>
-        <form method="post" action="#sender-header">
-          <input type="hidden" name="form-name" value="sender-header">
-
-          <div class="form-check">
-            <input type="checkbox" id="include-sender-header" name="enable"
-              {% if current_user.include_header_email_header %} checked {% endif %} class="form-check-input">
-            <label for="include-sender-header">Include sender address in email headers</label>
-          </div>
-
-          <button type="submit" class="btn btn-outline-primary">Update</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-body">
-        <div class="card-title">Alias import</div>
-        <div class="mb-3">
-          You can import your aliases created on other platforms into SimpleLogin.
-        </div>
-        <a href="{{ url_for('dashboard.batch_import_route') }}" class="btn btn-outline-primary">
-          Batch Import
-        </a>
-
-      </div>
-    </div>
-
-
-    <div class="card">
-      <div class="card-body">
-        <div class="card-title">SimpleLogin data export</div>
-        <div class="mb-3">
-          As per GDPR (General Data Protection Regulation) law, you can request a copy of your data which are stored on
-          SimpleLogin.
-          A zip file that contains all information will be sent to your SimpleLogin account address.
-        </div>
-
-        <div class="d-flex">
-          <div>
-            <form method="post">
-              <input type="hidden" name="form-name" value="send-full-user-report">
-              <button class="btn btn-outline-info">Request your data</button>
+                checked {% endif %} class="form-check-input">
+                <label for="include-sender-ra">
+                  Include sender address in reverse-alias
+                </label>
+              </div>
+              <button type="submit" class="btn btn-outline-primary">
+                Update
+              </button>
             </form>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-body">
-        <div class="card-title">Account Deletion</div>
-        <div class="mb-3">
-          If SimpleLogin isn't the right fit for you, you can simply delete your account.
+        <!-- END Reverse-alias -->
+        <!-- Always expand alias info -->
+        <div class="card" id="expand-alias-info-section">
+          <div class="card-body">
+            <div class="card-title">
+              Always expand alias info
+            </div>
+            <div class="mb-3">
+              By default, additional alias info is shown after clicking on the "More" button.
+              <br />
+              When this option is enabled, alias additional info will always be shown.
+              <br />
+            </div>
+            <form method="post" action="#expand-alias-info-section">
+              <input type="hidden" name="form-name" value="expand-alias-info">
+              <div class="form-check">
+                <input type="checkbox"
+                       id="expand-alias-info"
+                       name="enable"
+                       {% if current_user.expand_alias_info %} checked{% endif %}
+                       class="form-check-input">
+                <label for="expand-alias-info">
+                  Automatically expand alias info
+                </label>
+              </div>
+              <button type="submit" class="btn btn-outline-primary">
+                Update
+              </button>
+            </form>
+          </div>
         </div>
-
-        <a href="{{ url_for('dashboard.delete_account') }}" class="btn btn-outline-danger">Delete account</a>
+        <!-- END Always expand alias info -->
+        <!-- Include website address in alias -->
+        <div class="card" id="include_website_in_one_click_alias">
+          <div class="card-body">
+            <div class="card-title">
+              Include website address in one-click alias creation on browser extension
+            </div>
+            <div class="mb-3">
+              If enabled, the website name will be used as alias prefix
+              when you create an alias via SimpleLogin browser extension via the email input field
+              <br />
+              <img src="https://simplelogin.io/images/one-click-alias.gif"
+                   class="my-2"
+                   style="max-width: 40%">
+            </div>
+            <form method="post" action="#include_website_in_one_click_alias">
+              <input type="hidden"
+                     name="form-name"
+                     value="include_website_in_one_click_alias">
+              <div class="form-check">
+                <input type="checkbox"
+                       id="include-website-in-alias"
+                       name="enable"
+                       {% if current_user.include_website_in_one_click_alias %} checked{% endif %}
+                       class="form-check-input">
+                <label for="include-website-in-alias">
+                  Include website address in alias
+                </label>
+              </div>
+              <button type="submit" class="btn btn-outline-primary">
+                Update
+              </button>
+            </form>
+          </div>
+        </div>
+        <!-- END Include website address in alias -->
+        <!-- Ignore Loop Email -->
+        {#    <div class="card" id="ignore-loop-email-section">#}
+        {#      <div class="card-body">#}
+        {#        <div class="card-title">Ignore Loop Emails</div>#}
+        {#        <div class="mb-3">#}
+        {#          On some email clients, "Reply All" automatically includes your alias that#}
+        {#          would send the same email to your mailbox.#}
+        {#          <br />#}
+        {#          You can disable these "loop" emails by enabling this option.#}
+        {#        </div>#}
+        {#        <form method="post" action="#ignore-loop-email-section">#}
+        {#          <input type="hidden" name="form-name" value="ignore-loop-email">#}
+        {#          <div class="form-check">#}
+        {#            <input type="checkbox" id="ignore-loop-email" name="enable"#}
+        {#                {% if current_user.ignore_loop_email %} checked{% endif %} class="form-check-input">#}
+        {#            <label for="ignore-loop-email">Ignore Loop Emails</label>#}
+        {#          </div>#}
+        {#          <button type="submit" class="btn btn-outline-primary">Update</button>#}
+        {#        </form>#}
+        {#      </div>#}
+        {#    </div>#}
+        <!-- END Ignore Loop Email -->
+        <!-- One-click subscribe -->
+        <div class="card" id="one-click-unsubscribe-section">
+          <div class="card-body">
+            <div class="card-title">
+              One-click unsubscribe
+            </div>
+            <div class="mb-3">
+              On email clients that support the
+              <a href="https://simplelogin.io/docs/getting-started/one-click-unsubscribe/">
+                One-click unsubscribe
+              </a>
+              button, clicking on it will allow you to do one of these actions:
+              <ul>
+                <li>
+                  <b>Original action:</b> Use the same unsubscribe policy set by your sender.
+                  SimpleLogin will make sure to hide your mailbox address.
+                </li>
+                <li>
+                  <b>Disable alias:</b> The unsubscribe action will disable the alias that received the email.
+                </li>
+                <li>
+                  <b>Block contact:</b> The sender of the email will be blocked: you won't receive emails from this sender to your alias anymore.
+                </li>
+              </ul>
+            </div>
+            <form method="post"
+                  action="#one-click-unsubscribe-section"
+                  class="form-inline">
+              <input type="hidden" name="form-name" value="one-click-unsubscribe">
+              <select class="form-control mr-sm-2" name="unsubscribe-behaviour">
+                <option value="{{ UnsubscribeBehaviourEnum.PreserveOriginal.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.PreserveOriginal.value %}
+                   selected="selected" {% endif %}>
+                  Preserve the original unsubscribe policy
+                </option>
+                <option value="{{ UnsubscribeBehaviourEnum.DisableAlias.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.DisableAlias.value %}
+                   selected="selected" {% endif %}>
+                  Disable the alias that received the email
+                </option>
+                <option value="{{ UnsubscribeBehaviourEnum.BlockContact.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.BlockContact.value %}
+                   selected="selected" {% endif %}>
+                  Block the sender that sent the original email
+                </option>
+              </select>
+              <button type="submit" class="btn btn-outline-primary">
+                Update
+              </button>
+            </form>
+          </div>
+        </div>
+        <!-- END One-click subscribe -->
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title">
+              Quarantine & Bounces
+            </div>
+            <div class="mb-3">
+              When an email is refused (or bounced) by your mailbox provider or flagged by
+              <a href="https://simplelogin.io/docs/getting-started/anti-phishing/">SimpleLogin anti-phishing program</a>,
+              SimpleLogin keeps a copy of this email for 7 days so you can take a look at its content and take appropriate actions.
+              <br />
+              The emails are deleted in 7 days.
+              <br />
+              This is an exceptional case where SimpleLogin temporarily stores the email.
+            </div>
+            <a href="{{ url_for('dashboard.refused_email_route') }}"
+               class="btn btn-outline-primary">
+              See quarantine & bounce emails
+            </a>
+          </div>
+        </div>
+        <div class="card" id="blocked-behaviour">
+          <div class="card-body">
+            <div class="card-title">
+              Disabled alias/Blocked contact
+            </div>
+            <div class="mb-3">
+              When an email is sent to a <b>disabled</b> alias or sent from a <b>blocked</b> contact, you can decide what
+              response the sender should see.
+              <br />
+              <b>Ignore</b> means they will see the message as delivered, but SimpleLogin won't actually forward it to you.
+              This is the default option as you can start receiving the emails again
+              by re-enabling the alias or unblocking a contact.
+              <br />
+              <b>Reject</b> means SimpleLogin will tell them that the alias does not exist.
+              <br />
+            </div>
+            <form method="post" action="#blocked-behaviour" class="form-inline">
+              <input type="hidden" name="form-name" value="change-blocked-behaviour">
+              <select class="form-control mr-sm-2" name="blocked-behaviour">
+                <option value="{{ BlockBehaviourEnum.return_2xx.value }}"
+                        {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_2xx.value %} selected="selected"{% endif %}>
+                  Ignore (the sender will see the email as delivered, but you won't receive anything).
+                </option>
+                <option value="{{ BlockBehaviourEnum.return_5xx.value }}"
+                        {% if current_user.block_behaviour.value == BlockBehaviourEnum.return_5xx.value %} selected="selected"{% endif %}>
+                  Reject (the sender will be told that your alias does not exist).
+                </option>
+              </select>
+              <button class="btn btn-outline-primary">
+                Update
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="card" id="sender-header">
+          <div class="card-body">
+            <div class="card-title">
+              Include original sender in email headers
+            </div>
+            <div class="mb-3">
+              SimpleLogin forwards emails to your mailbox from the <b>reverse-alias</b> and not from the <b>original</b>
+              sender address.
+              <br />
+              If this option is enabled, the original sender addresses is stored in the email header <b>X-SimpleLogin-Envelope-From</b>.
+              You can choose to display this header in your email client.
+              <br />
+              As email headers aren't encrypted, your mailbox service can know the sender address via this header.
+            </div>
+            <form method="post" action="#sender-header">
+              <input type="hidden" name="form-name" value="sender-header">
+              <div class="form-check">
+                <input type="checkbox"
+                       id="include-sender-header"
+                       name="enable"
+                       {% if current_user.include_header_email_header %} checked{% endif %}
+                       class="form-check-input">
+                <label for="include-sender-header">
+                  Include sender address in email headers
+                </label>
+              </div>
+              <button type="submit" class="btn btn-outline-primary">
+                Update
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title">
+              Alias import
+            </div>
+            <div class="mb-3">
+              You can import your aliases created on other platforms into SimpleLogin.
+            </div>
+            <a href="{{ url_for('dashboard.batch_import_route') }}"
+               class="btn btn-outline-primary">
+              Batch Import
+            </a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title">
+              SimpleLogin data export
+            </div>
+            <div class="mb-3">
+              As per GDPR (General Data Protection Regulation) law, you can request a copy of your data which are stored on
+              SimpleLogin.
+              A zip file that contains all information will be sent to your SimpleLogin account address.
+            </div>
+            <div class="d-flex">
+              <div>
+                <form method="post">
+                  <input type="hidden" name="form-name" value="send-full-user-report">
+                  <button class="btn btn-outline-info">
+                    Request your data
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title">
+              Account Deletion
+            </div>
+            <div class="mb-3">
+              If SimpleLogin isn't the right fit for you, you can simply delete your account.
+            </div>
+            <a href="{{ url_for('dashboard.delete_account') }}"
+               class="btn btn-outline-danger">
+              Delete account
+            </a>
+          </div>
+        </div>
       </div>
-    </div>
+    {% endblock %}
+    {% block script %}
+      <script>
+    let anchor = window.location.hash;
+    $(anchor).addClass("highlighted")
 
-  </div>
 
-{% endblock %}
-
-
-
+      </script>
+    {% endblock %}

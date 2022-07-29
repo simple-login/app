@@ -24,7 +24,10 @@ from app.models import (
     ProviderComplaintState,
     Phase,
     ProviderComplaint,
+    Alias,
+    Newsletter,
 )
+from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 
 
 class SLModelView(sqla.ModelView):
@@ -269,6 +272,26 @@ class AliasAdmin(SLModelView):
     column_searchable_list = ["id", "user.email", "email", "mailbox.email"]
     column_filters = ["id", "user.email", "email", "mailbox.email"]
 
+    @action(
+        "disable_email_spoofing_check",
+        "Disable email spoofing protection",
+        "Disable email spoofing protection?",
+    )
+    def disable_email_spoofing_check_for(self, ids):
+        for alias in Alias.filter(Alias.id.in_(ids)):
+            if alias.disable_email_spoofing_check:
+                flash(
+                    f"Email spoofing protection is already disabled on {alias.email}",
+                    "warning",
+                )
+            else:
+                alias.disable_email_spoofing_check = True
+                flash(
+                    f"Email spoofing protection is disabled on {alias.email}", "success"
+                )
+
+        Session.commit()
+
 
 class MailboxAdmin(SLModelView):
     column_searchable_list = ["id", "user.email", "email"]
@@ -448,3 +471,83 @@ class ProviderComplaintAdmin(SLModelView):
                 )
             },
         )
+
+
+def _newsletter_plain_text_formatter(view, context, model: Newsletter, name):
+    # to display newsletter plain_text with linebreaks in the list view
+    return Markup(model.plain_text.replace("\n", "<br>"))
+
+
+def _newsletter_html_formatter(view, context, model: Newsletter, name):
+    # to display newsletter html with linebreaks in the list view
+    return Markup(model.html.replace("\n", "<br>"))
+
+
+class NewsletterAdmin(SLModelView):
+    list_template = "admin/model/newsletter-list.html"
+    edit_template = "admin/model/newsletter-edit.html"
+    edit_modal = False
+
+    can_edit = True
+    can_create = True
+
+    column_formatters = {
+        "plain_text": _newsletter_plain_text_formatter,
+        "html": _newsletter_html_formatter,
+    }
+
+    @action(
+        "send_newsletter_to_user",
+        "Send this newsletter to myself or the specified userID",
+    )
+    def send_newsletter_to_user(self, newsletter_ids):
+        user_id = request.form["user_id"]
+        if user_id:
+            user = User.get(user_id)
+            if not user:
+                flash(f"No such user with ID {user_id}", "error")
+                return
+        else:
+            flash("use the current user", "info")
+            user = current_user
+
+        for newsletter_id in newsletter_ids:
+            newsletter = Newsletter.get(newsletter_id)
+            sent, error_msg = send_newsletter_to_user(newsletter, user)
+            if sent:
+                flash(f"{newsletter} sent to {user}", "success")
+            else:
+                flash(error_msg, "error")
+
+    @action(
+        "send_newsletter_to_address",
+        "Send this newsletter to a specific address",
+    )
+    def send_newsletter_to_address(self, newsletter_ids):
+        to_address = request.form["to_address"]
+        if not to_address:
+            flash("to_address missing", "error")
+            return
+
+        for newsletter_id in newsletter_ids:
+            newsletter = Newsletter.get(newsletter_id)
+            # use the current_user for rendering email
+            sent, error_msg = send_newsletter_to_address(
+                newsletter, current_user, to_address
+            )
+            if sent:
+                flash(
+                    f"{newsletter} sent to {to_address} with {current_user} context",
+                    "success",
+                )
+            else:
+                flash(error_msg, "error")
+
+
+class NewsletterUserAdmin(SLModelView):
+    column_searchable_list = ["id"]
+    column_filters = ["id", "user.email", "newsletter.subject"]
+    column_exclude_list = ["created_at", "updated_at", "id"]
+
+    can_edit = False
+    can_create = False

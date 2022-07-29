@@ -1,0 +1,25 @@
+{#
+Automatically increase textarea height to match content to facilitate editing
+#}
+{% extends 'admin/model/edit.html' %}
+
+{% block head %}
+
+  {{ super() }}
+  <style>
+  body{
+      max-width: 80%;
+      margin: auto;
+  }
+  </style>
+{% endblock %}
+{% block tail %}
+
+  {{ super() }}
+  <script type="application/javascript">
+    $('textarea').each(function (index) {
+      this.style.height = "";
+      this.style.height = this.scrollHeight + "px";
+    });
+  </script>
+{% endblock %}

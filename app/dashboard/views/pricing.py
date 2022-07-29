@@ -19,7 +19,10 @@ from app.models import (
     Subscription,
     ManualSubscription,
     CoinbaseSubscription,
+    PartnerUser,
+    PartnerSubscription,
 )
+from app.proton.utils import get_proton_partner
 
 
 @dashboard_bp.route("/pricing", methods=["GET", "POST"])
@@ -29,9 +32,9 @@ def pricing():
         flash("You already have a lifetime subscription", "error")
         return redirect(url_for("dashboard.index"))
 
-    sub: Subscription = current_user.get_paddle_subscription()
+    paddle_sub: Subscription = current_user.get_paddle_subscription()
     # user who has canceled can re-subscribe
-    if sub and not sub.cancelled:
+    if paddle_sub and not paddle_sub.cancelled:
         flash("You already have an active subscription", "error")
         return redirect(url_for("dashboard.index"))
 
@@ -49,6 +52,18 @@ def pricing():
     if apple_sub and apple_sub.is_valid():
         flash("Please make sure to cancel your subscription on Apple first", "warning")
 
+    proton_upgrade = False
+    partner_user = PartnerUser.get_by(user_id=current_user.id)
+    if partner_user:
+        partner_sub = PartnerSubscription.get_by(partner_user_id=partner_user.id)
+        if partner_sub and partner_sub.is_active():
+            flash(
+                f"You already have a subscription provided by {partner_user.partner.name}",
+                "error",
+            )
+            return redirect(url_for("dashboard.index"))
+        proton_upgrade = partner_user.partner_id == get_proton_partner().id
+
     return render_template(
         "dashboard/pricing.html",
         PADDLE_VENDOR_ID=PADDLE_VENDOR_ID,
@@ -58,6 +73,7 @@ def pricing():
         manual_sub=manual_sub,
         coinbase_sub=coinbase_sub,
         now=now,
+        proton_upgrade=proton_upgrade,
     )
 
 

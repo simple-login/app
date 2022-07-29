@@ -1,52 +1,61 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
 
   <div class="flex-fill align-items-center mt-8">
     <!-- Image container -->
     <div class="mt-4 mb-4 text-center" style="display:block;">
-      <a class="" href="{{ url_for('dashboard.index') }}">
+      <a href="{{ url_for('dashboard.index') }}">
         <picture>
           <source media="(max-width: 650px)" srcset="/static/logo.svg">
           <img src="/static/logo.svg" style="width: 12rem" alt="logo">
         </picture>
       </a>
     </div>
-
     <!-- Text container -->
     <div class="mt-8 text-center" style="margin-bottom: 120px">
       <h2 class="text-black-75" style="font-size:2rem">Quickly create an alias every time you need an email</h2>
     </div>
-
-
     <!-- Input + button container -->
-    <div class="mt-8" style="display:grid; place-items:center;width:1024px;margin:auto;position:relative;">
-      <img
-        src="/static/images/onboarding-click-icon.svg"
-        style="width:400px;position:absolute;right:-70px;top:-90px;"
-      />
-
-      <img
-        src="/static/images/onboarding-right-click.svg"
-        style="position:absolute;width:440px;right:-20px;top:25px;"
-      />
-
+    <div class="mt-8"
+         style="display:grid;
+                place-items:center;
+                width:1024px;
+                margin:auto;
+                position:relative;">
+      <img src="/static/images/onboarding-click-icon.svg"
+           style="width:400px;
+                  position:absolute;
+                  right:-70px;
+                  top:-90px;"/>
+      <img src="/static/images/onboarding-right-click.svg"
+           style="position:absolute;
+                  width:440px;
+                  right:-20px;
+                  top:25px;"/>
       <div style="width: 25rem; display: block">
         <form method="post">
           {{ form.csrf_token }}
           {{ form.email(class="p-3", type="email", autofocus="true", placeholder="email", style="border: 1px solid black; border-radius: 2px; width:100%") }}
           {{ render_field_errors(form.email) }}
-          <button type="submit" class="p-4 mt-2 text-decoration-none" style="background:black;color:white; width:10rem; border-radius: 4px">Send me an email</button>
+          <button type="submit"
+                  class="p-4 mt-2 text-decoration-none"
+                  style="background:black;color:white; width:10rem; border-radius: 4px">
+            Send me an email
+          </button>
         </form>
       </div>
     </div>
-
     <div class="text-center" style="margin-top:350px">
-      <p style="font-size: 1rem">For advanced options please use our <a href="{{ url_for("dashboard.index") }}">web dashboard</a></p>
-      <p id="extension-version-text" class="font-weight-light" style="display:none;"></p>
+      <p style="font-size: 1rem">
+        For advanced options please use our
+        <a href="{{ url_for("dashboard.index") }}">web dashboard</a>
+      </p>
+      <p id="extension-version-text"
+         class="font-weight-light"
+         style="display:none;"></p>
     </div>
   </div>
-
   <script type="text/javascript">
     const extensionVersionTextElement = document.getElementById("extension-version-text");
     window.addEventListener("message", (event) => {
@@ -65,5 +74,4 @@
         window.postMessage(data, "/");
     }, 300); // Give some time to the extension for registering the listener
   </script>
-
 {% endblock %}
