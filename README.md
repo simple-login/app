@@ -329,8 +329,8 @@ smtpd_recipient_restrictions =
    reject_unknown_recipient_domain,
    permit_mynetworks,
    reject_unauth_destination,
-   reject_rbl_client zen.spamhaus.org,
-   reject_rbl_client bl.spamcop.net,
+   reject_rbl_client zen.spamhaus.org=127.0.0.[2..11],
+   reject_rbl_client bl.spamcop.net=127.0.0.2,
    permit
 ```
 
