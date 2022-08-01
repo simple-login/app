@@ -719,11 +719,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if sub:
             if sub.cancelled:
                 channels.append(
-                    f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()} {sub.next_bill_date}"
+                    f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()} ends at {sub.next_bill_date}"
                 )
             else:
                 channels.append(
-                    f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()} {sub.next_bill_date}"
+                    f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()}, renews at {sub.next_bill_date}"
                 )
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
@@ -743,6 +743,20 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if coinbase_subscription and coinbase_subscription.is_active():
             channels.append(
                 f"Coinbase Subscription ends {coinbase_subscription.end_at.humanize()}"
+            )
+
+        r = (
+            Session.query(PartnerSubscription, PartnerUser, Partner)
+            .filter(
+                PartnerSubscription.partner_user_id == PartnerUser.id,
+                PartnerUser.user_id == self.id,
+                Partner.id == PartnerUser.partner_id,
+            )
+            .first()
+        )
+        if r and r[0].is_active():
+            channels.append(
+                f"Subscription via {r[2].name} partner , ends {r[0].end_at.humanize()}"
             )
 
         return ".\n".join(channels)
