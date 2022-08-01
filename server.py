@@ -810,13 +810,26 @@ def register_custom_commands(app):
         )
 
         # only send newsletter to those who haven't received it
-        user_query = (
-            User.order_by(User.id)
+        # not query users directly here as we can run out of memory
+        user_ids = (
+            Session.query(User.id)
+            .order_by(User.id)
             .filter(User.id.notin_(user_received_newsletter))
             .all()
         )
 
-        for user in user_query:
+        # user_ids is an array of tuple (user_id,)
+        user_ids = [user_id[0] for user_id in user_ids]
+
+        for user_id in user_ids:
+            user = User.get(user_id)
+            # refetch newsletter
+            newsletter = Newsletter.get(newsletter_id)
+
+            if not user:
+                LOG.i(f"User {user_id} was maybe deleted in the meantime")
+                continue
+
             to_email, unsubscribe_link, via_email = user.get_communication_email()
             if not to_email:
                 continue
