@@ -601,9 +601,9 @@ def setup_paddle_callback(app: Flask):
                 )
                 return "No such subscription"
 
-            plan_id = request.form["subscription_plan_id"]
+            plan_id = int(request.form["subscription_plan_id"])
             if request.form["refund_type"] == "full":
-                if plan_id == PADDLE_MONTHLY_PRODUCT_ID:
+                if plan_id in PADDLE_MONTHLY_PRODUCT_IDS:
                     LOG.d("subtract 1 month from next_bill_date %s", sub.next_bill_date)
                     sub.next_bill_date = sub.next_bill_date - relativedelta(months=1)
                     LOG.d("next_bill_date is %s", sub.next_bill_date)
