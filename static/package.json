@@ -19,7 +19,7 @@
     "@sentry/browser": "^5.30.0",
     "bootbox": "^5.5.3",
     "font-awesome": "^4.7.0",
-    "htmx.org": "^1.6.1",
+    "htmx.org": "^1.8.0",
     "intro.js": "^2.9.3",
     "multiple-select": "^1.5.2",
     "parsleyjs": "^2.9.2",
