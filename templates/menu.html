@@ -83,6 +83,14 @@
       </a>
     </li>
   {% endif %}
+  {% if current_user.is_admin %}
+
+    <li class="nav-item">
+      <a href="/admin">
+        <i class="fe fe-server"></i> Admin ☢️
+      </a>
+    </li>
+  {% endif %}
   {% if ZENDESK_ENABLED %}
 
     <li class="nav-item">
