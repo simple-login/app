@@ -26,6 +26,7 @@ from app.models import (
     ProviderComplaint,
     Alias,
     Newsletter,
+    PADDLE_SUBSCRIPTION_GRACE_DAYS,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 
@@ -195,6 +196,25 @@ class UserAdmin(SLModelView):
                 flash(f"Disable FIDO for {user}", "info")
             AdminAuditLog.disable_otp_fido(
                 current_user.id, user.id, user_had_otp, user_had_fido
+            )
+
+        Session.commit()
+
+    @action(
+        "stop_paddle_sub",
+        "Stop user Paddle subscription",
+        "This will stop the current user Paddle subscription so if user doesn't have Proton sub, they will lose all SL benefits immediately",
+    )
+    def stop_paddle_sub(self, ids):
+        for user in User.filter(User.id.in_(ids)):
+            sub: Subscription = user.get_paddle_subscription()
+            if not sub:
+                flash(f"No Paddle sub for {user}", "warning")
+                continue
+
+            flash(f"{user} sub will end now, instead of {sub.next_bill_date}", "info")
+            sub.next_bill_date = (
+                arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
             )
 
         Session.commit()
