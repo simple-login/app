@@ -1,13 +1,23 @@
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_login import LoginManager
+from flask_login import current_user, LoginManager
 
 login_manager = LoginManager()
 login_manager.session_protection = "strong"
 
-# Setup rate limit facility
-limiter = Limiter(key_func=get_remote_address)
 
+# We want to rate limit based on:
+# - If the user is not logged in: request source IP
+# - If the user is logged in: user_id
+def __key_func():
+    if current_user.is_authenticated:
+        return current_user.id
+    else:
+        return get_remote_address()
+
+
+# Setup rate limit facility
+limiter = Limiter(key_func=__key_func)
 
 # @limiter.request_filter
 # def ip_whitelist():
