@@ -11,9 +11,10 @@ login_manager.session_protection = "strong"
 # - If the user is logged in: user_id
 def __key_func():
     if current_user.is_authenticated:
-        return current_user.id
+        return f"userid:{current_user.id}"
     else:
-        return get_remote_address()
+        ip_addr = get_remote_address()
+        return f"ip:{ip_addr}"
 
 
 # Setup rate limit facility
