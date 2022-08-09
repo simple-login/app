@@ -3296,3 +3296,12 @@ class NewsletterUser(Base, ModelMixin):
 
     user = orm.relationship(User)
     newsletter = orm.relationship(Newsletter)
+
+
+class ApiToCookieToken(Base, ModelMixin):
+
+    __tablename__ = "api_cookie_token"
+    code = sa.Column(sa.String(128), unique=True, nullable=False)
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+
+    user = orm.relationship(User)
