@@ -85,6 +85,7 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
         return None
 
     if not user.can_create_new_alias():
+        LOG.d(f"{user} can't create new custom-domain alias {address}")
         if notify_user:
             send_cannot_create_domain_alias(custom_domain.user, address, alias_domain)
         return None
@@ -146,6 +147,7 @@ def check_if_alias_can_be_auto_created_for_a_directory(
         return None
 
     if not user.can_create_new_alias():
+        LOG.d(f"{user} can't create new directory alias {address}")
         if notify_user:
             send_cannot_create_directory_alias(user, address, directory_name)
         return None
