@@ -1,5 +1,3 @@
-from random import random
-
 import arrow
 
 from app.models import CoinbaseSubscription, ApiToCookieToken, ApiKey

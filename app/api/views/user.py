@@ -1,5 +1,3 @@
-import secrets
-
 from flask import jsonify, g
 from sqlalchemy_utils.types.arrow import arrow
 
