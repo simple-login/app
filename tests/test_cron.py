@@ -20,7 +20,6 @@ def test_notify_manual_sub_end(flask_client):
 def test_cleanup_tokens(flask_client):
     user = create_new_user()
     api_key = ApiKey.create(
-        code=f"code-{random()}",
         user_id=user.id,
         commit=True,
     )
