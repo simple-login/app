@@ -26,14 +26,13 @@ def test_cleanup_tokens(flask_client):
     id_to_clean = ApiToCookieToken.create(
         user_id=user.id,
         api_key_id=api_key.id,
-        code=f"code-{random()}",
         commit=True,
         created_at=arrow.now().shift(days=-1),
     ).id
 
     id_to_keep = ApiToCookieToken.create(
         user_id=user.id,
-        code=f"code-{random()}",
+        api_key_id=api_key.id,
         commit=True,
     ).id
     delete_expired_tokens()
