@@ -14,9 +14,10 @@ def test_get_cookie(flask_client):
     token_code = token.code
     token_id = token.id
 
-    r = flask_client.post(
-        url_for("auth.api_to_cookie", next=url_for("dashboard.setting")),
-        json={"token": token_code},
+    r = flask_client.get(
+        url_for(
+            "auth.api_to_cookie", token=token_code, next=url_for("dashboard.setting")
+        ),
         follow_redirects=True,
     )
 

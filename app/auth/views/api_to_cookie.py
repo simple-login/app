@@ -8,17 +8,17 @@ from app.models import ApiToCookieToken
 from app.utils import sanitize_next_url
 
 
-@auth_bp.route("/api_to_cookie", methods=["POST"])
+@auth_bp.route("/api_to_cookie", methods=["GET"])
 def api_to_cookie():
     if current_user.is_authenticated:
         LOG.d("user is already authenticated, redirect to dashboard")
         return redirect(url_for("dashboard.index"))
-    body = request.json
-    if "token" not in body:
+    code = request.args.get("token")
+    if not code:
         flash("Missing token", "error")
         return redirect(url_for("auth.login"))
 
-    token = ApiToCookieToken.get_by(code=body["token"])
+    token = ApiToCookieToken.get_by(code=code)
     if not token or token.created_at < arrow.now().shift(minutes=-5):
         flash("Missing token", "error")
         return redirect(url_for("auth.login"))

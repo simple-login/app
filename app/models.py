@@ -3303,5 +3303,7 @@ class ApiToCookieToken(Base, ModelMixin):
     __tablename__ = "api_cookie_token"
     code = sa.Column(sa.String(128), unique=True, nullable=False)
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+    api_key_id = sa.Column(sa.ForeignKey(ApiKey.id, ondelete="cascade"), nullable=True)
 
     user = orm.relationship(User)
+    api_key = orm.relationship(ApiKey)
