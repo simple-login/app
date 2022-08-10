@@ -8,8 +8,16 @@ from tests.utils import create_new_user
 
 def test_get_cookie(flask_client):
     user = create_new_user()
+    api_key = ApiKey.create(
+        code=f"code-{random()}",
+        user_id=user.id,
+        commit=True,
+    )
     token = ApiToCookieToken.create(
-        user_id=user.id, code=f"random{random()}", commit=True
+        user_id=user.id,
+        code=f"random{random()}",
+        commit=True,
+        api_key_id=api_key.id,
     )
     token_code = token.code
     token_id = token.id

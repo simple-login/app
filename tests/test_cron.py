@@ -2,7 +2,7 @@ from random import random
 
 import arrow
 
-from app.models import CoinbaseSubscription, ApiToCookieToken
+from app.models import CoinbaseSubscription, ApiToCookieToken, ApiKey
 from cron import notify_manual_sub_end, delete_expired_tokens
 from tests.utils import create_new_user
 
@@ -19,8 +19,14 @@ def test_notify_manual_sub_end(flask_client):
 
 def test_cleanup_tokens(flask_client):
     user = create_new_user()
+    api_key = ApiKey.create(
+        code=f"code-{random()}",
+        user_id=user.id,
+        commit=True,
+    )
     id_to_clean = ApiToCookieToken.create(
         user_id=user.id,
+        api_key_id=api_key.id,
         code=f"code-{random()}",
         commit=True,
         created_at=arrow.now().shift(days=-1),
