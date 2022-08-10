@@ -1,8 +1,8 @@
 """Add api to cookie token
 
-Revision ID: 878e951adc36
+Revision ID: 9cc0f0712b29
 Revises: c66f2c5b6cb1
-Create Date: 2022-08-10 10:34:27.964099
+Create Date: 2022-08-10 16:54:46.979196
 
 """
 import sqlalchemy_utils
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '878e951adc36'
+revision = '9cc0f0712b29'
 down_revision = 'c66f2c5b6cb1'
 branch_labels = None
 depends_on = None
@@ -24,8 +24,8 @@ def upgrade():
     sa.Column('created_at', sqlalchemy_utils.types.arrow.ArrowType(), nullable=False),
     sa.Column('updated_at', sqlalchemy_utils.types.arrow.ArrowType(), nullable=True),
     sa.Column('code', sa.String(length=128), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.Column('api_key_id', sa.Integer(), nullable=True),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('api_key_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['api_key_id'], ['api_key.id'], ondelete='cascade'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='cascade'),
     sa.PrimaryKeyConstraint('id'),

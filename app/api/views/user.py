@@ -41,6 +41,8 @@ def get_api_session_token():
         }
     """
     token = ApiToCookieToken.create(
-        code=secrets.token_urlsafe(32), user=g.user, commit=True
+        user=g.user,
+        api_token_id=g.api_key.id,
+        commit=True,
     )
     return jsonify({"token": token.code})

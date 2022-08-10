@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import os
 import random
+import secrets
 import uuid
 from email.utils import formataddr
 from typing import List, Tuple, Optional, Union
@@ -3302,8 +3303,14 @@ class ApiToCookieToken(Base, ModelMixin):
 
     __tablename__ = "api_cookie_token"
     code = sa.Column(sa.String(128), unique=True, nullable=False)
-    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
-    api_key_id = sa.Column(sa.ForeignKey(ApiKey.id, ondelete="cascade"), nullable=True)
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    api_key_id = sa.Column(sa.ForeignKey(ApiKey.id, ondelete="cascade"), nullable=False)
 
     user = orm.relationship(User)
     api_key = orm.relationship(ApiKey)
+
+    @classmethod
+    def create(cls, **kwargs):
+        code = secrets.token_urlsafe(32)
+
+        return super().create(code=code, **kwargs)
