@@ -40,7 +40,7 @@ def get_api_session_token():
     """
     token = ApiToCookieToken.create(
         user=g.user,
-        api_token_id=g.api_key.id,
+        api_key_id=g.api_key.id,
         commit=True,
     )
     return jsonify({"token": token.code})
