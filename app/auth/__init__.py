@@ -15,4 +15,5 @@ from .views import (
     fido,
     social,
     recovery,
+    api_to_cookie,
 )

@@ -12,6 +12,7 @@
 - [GET /api/user_info](#get-apiuser_info): Get user's information.
 - [PATCH /api/sudo](#patch-apisudo): Enable sudo mode.
 - [DELETE /api/user](#delete-apiuser): Delete the current user.
+- [GET /api/user/cookie_token](#get_apiusergookie_token): Get a one time use token to exchange it for a valid cookie
 - [PATCH /api/user_info](#patch-apiuser_info): Update user's information.
 - [POST /api/api_key](#post-apiapi_key): Create a new API key.
 - [GET /api/logout](#get-apilogout): Log out.
@@ -259,6 +260,19 @@ Output:
 - 440 with ```{"error": "Need sudo"}``` if sudo mode is not enabled.
 - 403 with ```{"error": "Some error"}``` if there is an error.
 
+
+#### GET /api/user/cookie_token
+
+Get a one time use cookie to exchange it for a valid cookie in the web app
+
+Input:
+
+- `Authentication` header that contains the api key
+
+Output:
+
+- 200 with ```{"token": "token value"}```
+- 403 with ```{"error": "Some error"}``` if there is an error.
 
 #### POST /api/api_key
 

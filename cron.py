@@ -66,6 +66,7 @@ from app.models import (
     DeletedSubdomain,
     PartnerSubscription,
     PartnerUser,
+    ApiToCookieToken,
 )
 from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
@@ -875,6 +876,16 @@ def delete_old_monitoring():
     LOG.d("delete monitoring records older than %s, nb row %s", max_time, nb_row)
 
 
+def delete_expired_tokens():
+    """
+    Delete old tokens
+    """
+    max_time = arrow.now().shift(hours=-1)
+    nb_row = ApiToCookieToken.filter(ApiToCookieToken.created_at < max_time).delete()
+    Session.commit()
+    LOG.d("Delete api to cookie tokens older than %s, nb row %s", max_time, nb_row)
+
+
 async def _hibp_check(api_key, queue):
     """
     Uses a single API key to check the queue as fast as possible.
@@ -1066,6 +1077,7 @@ if __name__ == "__main__":
             "check_custom_domain",
             "check_hibp",
             "notify_hibp",
+            "cleanup_tokens",
         ],
     )
     args = parser.parse_args()
@@ -1104,3 +1116,6 @@ if __name__ == "__main__":
         elif args.job == "notify_hibp":
             LOG.d("Notify users about HIBP breaches")
             notify_hibp()
+        elif args.job == "cleanup_tokens":
+            LOG.d("Cleanup expired tokens")
+            delete_expired_tokens()
