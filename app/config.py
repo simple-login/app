@@ -230,6 +230,8 @@ else:
 
     print("WARNING: Use a temp directory for GNUPGHOME", GNUPGHOME)
 
+ACTIVATION_CODE_NUM_DIGITS = 6
+
 # Github, Google, Facebook client id and secrets
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
