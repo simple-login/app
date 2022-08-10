@@ -2,7 +2,7 @@ from random import random
 
 from flask import url_for
 
-from app.models import ApiToCookieToken
+from app.models import ApiToCookieToken, ApiKey
 from tests.utils import create_new_user
 
 
