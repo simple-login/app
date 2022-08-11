@@ -64,7 +64,9 @@ class ProtonCallbackHandler:
             )
 
     def handle_link(
-        self, current_user: Optional[User], partner: Partner
+        self,
+        current_user: Optional[User],
+        partner: Partner,
     ) -> ProtonCallbackResult:
         if current_user is None:
             raise Exception("Cannot link account with current_user being None")

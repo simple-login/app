@@ -1,3 +1,4 @@
+import re
 import secrets
 import string
 import time
@@ -88,6 +89,8 @@ class NextUrlSanitizer:
             else:
                 return None
         if result.path and result.path[0] == "/" and not result.path.startswith("//"):
+            if result.query:
+                return f"{result.path}?{result.query}"
             return result.path
 
         return None
@@ -95,6 +98,17 @@ class NextUrlSanitizer:
 
 def sanitize_next_url(url: Optional[str]) -> Optional[str]:
     return NextUrlSanitizer.sanitize(url, ALLOWED_REDIRECT_DOMAINS)
+
+
+def sanitize_scheme(scheme: Optional[str]) -> Optional[str]:
+    if not scheme:
+        return None
+    if scheme in ["http", "https"]:
+        return None
+    scheme_regex = re.compile("^[a-z.]+$")
+    if scheme_regex.match(scheme):
+        return scheme
+    return None
 
 
 def query2str(query):

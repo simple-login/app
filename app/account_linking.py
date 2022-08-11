@@ -276,7 +276,7 @@ def process_link_case(
         return link_user(link_request, current_user, partner)
 
     # There is a SL user registered with the partner. Check if is the current one
-    if partner_user.id == current_user.id:
+    if partner_user.user_id == current_user.id:
         # Update plan
         set_plan_for_partner_user(partner_user, link_request.plan)
         # It's the same user. No need to do anything
@@ -285,5 +285,4 @@ def process_link_case(
             strategy="Link",
         )
     else:
-
         return switch_already_linked_user(link_request, partner_user, current_user)
