@@ -23,7 +23,7 @@ from app.proton.proton_callback_handler import (
     Action,
 )
 from app.proton.utils import get_proton_partner
-from app.utils import sanitize_next_url
+from app.utils import sanitize_next_url, sanitize_scheme
 
 _authorization_base_url = PROTON_BASE_URL + "/oauth/authorize"
 _token_url = PROTON_BASE_URL + "/oauth/token"
@@ -34,6 +34,7 @@ _redirect_uri = URL + "/auth/proton/callback"
 
 SESSION_ACTION_KEY = "oauth_action"
 SESSION_STATE_KEY = "oauth_state"
+DEFAULT_SCHEME = "auth.simplelogin"
 
 
 def get_api_key_for_user(user: User) -> str:
@@ -74,6 +75,12 @@ def proton_login():
         session["oauth_next"] = next_url
     elif "oauth_next" in session:
         del session["oauth_next"]
+
+    scheme = sanitize_scheme(request.args.get("scheme"))
+    if scheme:
+        session["oauth_scheme"] = scheme
+    elif "oauth_scheme" in session:
+        del session["oauth_scheme"]
 
     mode = request.args.get("mode", "session")
     if mode == "apikey":
@@ -150,21 +157,24 @@ def proton_callback():
     if action == Action.Login:
         res = handler.handle_login(proton_partner)
     elif action == Action.Link:
-        res = handler.handle_link(current_user, proton_partner, redirect=next_url)
+        res = handler.handle_link(current_user, proton_partner)
     else:
         raise Exception(f"Unknown Action: {action.name}")
 
     if res.flash_message is not None:
         flash(res.flash_message, res.flash_category)
 
+    oauth_scheme = session.get("oauth_scheme")
     if session.get("oauth_mode", "session") == "apikey":
         apikey = get_api_key_for_user(res.user)
-        return redirect(f"auth.simplelogin://callback?apikey={apikey}")
+        scheme = oauth_scheme or DEFAULT_SCHEME
+        return redirect(f"{scheme}:///login_callback?apikey={apikey}")
 
     if res.redirect_to_login:
         return redirect(url_for("auth.login"))
 
-    if res.redirect:
-        return after_login(res.user, res.redirect, login_from_proton=True)
+    if next_url and next_url[0] == "/" and oauth_scheme:
+        next_url = f"{oauth_scheme}://{next_url}"
 
-    return after_login(res.user, next_url, login_from_proton=True)
+    redirect_url = next_url or res.redirect
+    return after_login(res.user, redirect_url, login_from_proton=True)

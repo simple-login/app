@@ -67,7 +67,6 @@ class ProtonCallbackHandler:
         self,
         current_user: Optional[User],
         partner: Partner,
-        redirect: Optional[str] = None,
     ) -> ProtonCallbackResult:
         if current_user is None:
             raise Exception("Cannot link account with current_user being None")
@@ -76,14 +75,11 @@ class ProtonCallbackHandler:
             if user is None:
                 return generate_account_not_allowed_to_log_in()
             res = process_link_case(user, current_user, partner)
-            result_redirect = url_for("dashboard.setting")
-            if redirect:
-                result_redirect = redirect
             return ProtonCallbackResult(
                 redirect_to_login=False,
                 flash_message="Account successfully linked",
                 flash_category="success",
-                redirect=result_redirect,
+                redirect=url_for("dashboard.setting"),
                 user=res.user,
             )
         except LinkException as e:
