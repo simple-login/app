@@ -146,10 +146,11 @@ def proton_callback():
     handler = ProtonCallbackHandler(proton_client)
     proton_partner = get_proton_partner()
 
+    next_url = session.get("oauth_next")
     if action == Action.Login:
         res = handler.handle_login(proton_partner)
     elif action == Action.Link:
-        res = handler.handle_link(current_user, proton_partner)
+        res = handler.handle_link(current_user, proton_partner, redirect=next_url)
     else:
         raise Exception(f"Unknown Action: {action.name}")
 
@@ -166,5 +167,4 @@ def proton_callback():
     if res.redirect:
         return after_login(res.user, res.redirect, login_from_proton=True)
 
-    next_url = session.get("oauth_next")
     return after_login(res.user, next_url, login_from_proton=True)
