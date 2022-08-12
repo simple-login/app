@@ -3,6 +3,7 @@ from flask import request, session, redirect, flash, url_for
 from flask_limiter.util import get_remote_address
 from flask_login import current_user
 from requests_oauthlib import OAuth2Session
+from typing import Optional
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
@@ -46,7 +47,7 @@ def get_api_key_for_user(user: User) -> str:
     return ak.code
 
 
-def extract_action() -> Action:
+def extract_action() -> Optional[Action]:
     action = request.args.get("action")
     if action is not None:
         if action == "link":
@@ -54,7 +55,8 @@ def extract_action() -> Action:
         elif action == "login":
             return Action.Login
         else:
-            raise Exception(f"Unknown action: {action}")
+            LOG.w(f"Unknown action received: {action}")
+            return None
     return Action.Login
 
 
@@ -73,6 +75,8 @@ def proton_login():
         return redirect(url_for("auth.login"))
 
     action = extract_action()
+    if action is None:
+        return redirect(url_for("auth.login"))
     if action == Action.Link and not current_user.is_authenticated:
         return redirect(url_for("auth.login"))
 
