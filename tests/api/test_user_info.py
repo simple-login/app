@@ -21,6 +21,7 @@ def test_user_in_trial(flask_client):
         "in_trial": True,
         "profile_picture_url": None,
         "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
+        "connected_proton_address": None,
     }
 
 

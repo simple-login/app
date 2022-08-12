@@ -51,6 +51,8 @@ def extract_action() -> Action:
     if action is not None:
         if action == "link":
             return Action.Link
+        elif action == "login":
+            return Action.Login
         else:
             raise Exception(f"Unknown action: {action}")
     return Action.Login
@@ -68,6 +70,10 @@ def get_action_from_state() -> Action:
 @auth_bp.route("/proton/login")
 def proton_login():
     if PROTON_CLIENT_ID is None or PROTON_CLIENT_SECRET is None:
+        return redirect(url_for("auth.login"))
+
+    action = extract_action()
+    if action == Action.Link and not current_user.is_authenticated:
         return redirect(url_for("auth.login"))
 
     next_url = sanitize_next_url(request.args.get("next"))
@@ -93,7 +99,7 @@ def proton_login():
 
     # State is used to prevent CSRF, keep this for later.
     session[SESSION_STATE_KEY] = state
-    session[SESSION_ACTION_KEY] = extract_action().value
+    session[SESSION_ACTION_KEY] = action.value
     return redirect(authorization_url)
 
 
@@ -168,7 +174,7 @@ def proton_callback():
     if session.get("oauth_mode", "session") == "apikey":
         apikey = get_api_key_for_user(res.user)
         scheme = oauth_scheme or DEFAULT_SCHEME
-        return redirect(f"{scheme}:///login_callback?apikey={apikey}")
+        return redirect(f"{scheme}:///login?apikey={apikey}")
 
     if res.redirect_to_login:
         return redirect(url_for("auth.login"))
