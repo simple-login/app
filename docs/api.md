@@ -12,7 +12,7 @@
 - [GET /api/user_info](#get-apiuser_info): Get user's information.
 - [PATCH /api/sudo](#patch-apisudo): Enable sudo mode.
 - [DELETE /api/user](#delete-apiuser): Delete the current user.
-- [GET /api/user/cookie_token](#get_apiusergookie_token): Get a one time use token to exchange it for a valid cookie
+- [GET /api/user/cookie_token](#get-apiusercookie_token): Get a one time use token to exchange it for a valid cookie
 - [PATCH /api/user_info](#patch-apiuser_info): Update user's information.
 - [POST /api/api_key](#post-apiapi_key): Create a new API key.
 - [GET /api/logout](#get-apilogout): Log out.
