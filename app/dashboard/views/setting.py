@@ -12,7 +12,6 @@ from flask import (
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
-from newrelic import agent
 from wtforms import StringField, validators
 from wtforms.fields.html5 import EmailField
 
@@ -53,7 +52,7 @@ from app.models import (
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
 )
-from app.proton.utils import get_proton_partner
+from app.proton.utils import get_proton_partner, perform_proton_account_unlink
 from app.utils import random_string, sanitize_email
 
 
@@ -481,13 +480,6 @@ def cancel_email_change():
 @dashboard_bp.route("/unlink_proton_account", methods=["GET", "POST"])
 @login_required
 def unlink_proton_account():
-    proton_partner = get_proton_partner()
-    partner_user = PartnerUser.get_by(
-        user_id=current_user.id, partner_id=proton_partner.id
-    )
-    if partner_user is not None:
-        PartnerUser.delete(partner_user.id)
-    Session.commit()
+    perform_proton_account_unlink(current_user)
     flash("Your Proton account has been unlinked", "success")
-    agent.record_custom_event("AccountUnlinked", {"partner": proton_partner.name})
     return redirect(url_for("dashboard.setting"))

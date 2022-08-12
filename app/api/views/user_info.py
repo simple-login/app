@@ -3,13 +3,23 @@ from io import BytesIO
 
 from flask import jsonify, g, request, make_response
 from flask_login import logout_user
+from typing import Optional
 
 from app import s3
 from app.api.base import api_bp, require_api_auth
 from app.config import SESSION_COOKIE_NAME
 from app.db import Session
-from app.models import ApiKey, File, User
+from app.models import ApiKey, File, PartnerUser, User
 from app.utils import random_string
+from app.proton.utils import get_proton_partner
+
+
+def get_connected_proton_address(user: User) -> Optional[str]:
+    proton_partner = get_proton_partner()
+    partner_user = PartnerUser.get_by(user_id=user.id, partner_id=proton_partner.id)
+    if partner_user is None:
+        return None
+    return partner_user.partner_email
 
 
 def user_to_dict(user: User) -> dict:
@@ -19,6 +29,7 @@ def user_to_dict(user: User) -> dict:
         "email": user.email,
         "in_trial": user.in_trial(),
         "max_alias_free_plan": user.max_alias_for_free_account(),
+        "connected_proton_address": get_connected_proton_address(user),
     }
 
     if user.profile_picture_id:
@@ -41,6 +52,7 @@ def user_info():
     - email
     - in_trial
     - max_alias_free
+    - is_connected_with_proton
     """
     user = g.user
 

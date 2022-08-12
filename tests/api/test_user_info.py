@@ -1,9 +1,10 @@
 from flask import url_for
 
 from app import config
-from app.models import User
+from app.models import User, PartnerUser
+from app.proton.utils import get_proton_partner
 from tests.api.utils import get_new_user_and_api_key
-from tests.utils import login
+from tests.utils import login, random_token, random_email
 
 
 def test_user_in_trial(flask_client):
@@ -21,6 +22,35 @@ def test_user_in_trial(flask_client):
         "in_trial": True,
         "profile_picture_url": None,
         "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
+        "connected_proton_address": None,
+    }
+
+
+def test_user_linked_to_proton(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    partner = get_proton_partner()
+    partner_email = random_email()
+    PartnerUser.create(
+        user_id=user.id,
+        partner_id=partner.id,
+        external_user_id=random_token(),
+        partner_email=partner_email,
+        commit=True,
+    )
+
+    r = flask_client.get(
+        url_for("api.user_info"), headers={"Authentication": api_key.code}
+    )
+
+    assert r.status_code == 200
+    assert r.json == {
+        "is_premium": True,
+        "name": "Test User",
+        "email": user.email,
+        "in_trial": True,
+        "profile_picture_url": None,
+        "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
+        "connected_proton_address": partner_email,
     }
 
 
