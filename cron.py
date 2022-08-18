@@ -123,6 +123,7 @@ def delete_refused_emails():
 
             # do not set path and full_report_path to null
             # so we can check later that the files are indeed deleted
+            refused_email.delete_at = arrow.now()
             refused_email.deleted = True
             Session.commit()
 
