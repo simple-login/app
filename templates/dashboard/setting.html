@@ -441,13 +441,11 @@
           Include sender address in reverse-alias
         </div>
         <div class="mb-3">
-          By default, the reverse-alias is randomly generated and doesn't contain any information about
-          the sender.
+          If this option is enabled, new reverse-alias will include the sender address (e.g. <span class="italic">sender_domain_com_gibberish@simplelogin.co</span>)
+          so you can quickly know the sender.
           <br />
-          Enabling this option will include the sender address in the reverse-alias.
-          <br />
-          This can be useful if you want to set up email filters based on the reverse-alias.
-          It will also make the reverse-alias more readable.
+          If disabled, a new reverse-alias will be randomly generated.
+          Please note that existing reverse-aliases won't change.
         </div>
         <form method="post" action="#sender-in-ra">
           <input type="hidden" name="form-name" value="sender-in-ra">

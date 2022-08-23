@@ -71,6 +71,14 @@
         </form>
       </div>
       <!-- END Change email -->
+      {% if mailbox.pgp_finger_print and not mailbox.disable_pgp and current_user.include_sender_in_reverse_alias %}
+
+        <div class="alert alert-info">
+          Email headers like <span class="italic">From, To, Subject</span> aren't encrypted by PGP.
+          Currently, your reverse alias includes the sender address.
+          You can disable this on <a href="/dashboard/setting#sender-in-ra">Settings</a>.
+        </div>
+      {% endif %}
       <div class="card">
         <div class="card-body">
           <div class="card-title">
