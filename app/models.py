@@ -424,7 +424,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     # whether to include the sender address in reverse-alias
     include_sender_in_reverse_alias = sa.Column(
-        sa.Boolean, default=False, nullable=False, server_default="0"
+        sa.Boolean, default=True, nullable=False, server_default="0"
     )
 
     # whether to use random string or random word as suffix
