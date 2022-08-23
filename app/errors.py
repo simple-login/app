@@ -34,7 +34,7 @@ class CannotCreateContactForReverseAlias(SLException):
 
 
 class NonReverseAliasInReplyPhase(SLException):
-    """raised when a non reverse-alias is used during a reply phase"""
+    """raised when a non reverse alias is used during a reply phase"""
 
     pass
 
@@ -71,7 +71,7 @@ class ErrContactErrorUpgradeNeeded(SLException):
     """raised when user cannot create a contact because the plan doesn't allow it"""
 
     def error_for_user(self) -> str:
-        return f"Please upgrade to premium to create reverse-alias"
+        return f"Please upgrade to premium to create reverse alias"
 
 
 class ErrAddressInvalid(SLException):

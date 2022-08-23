@@ -310,7 +310,7 @@ MACAPP_APPLE_API_SECRET = os.environ.get("MACAPP_APPLE_API_SECRET")
 # maximal number of alerts that can be sent to the same email in 24h
 MAX_ALERT_24H = 4
 
-# When a reverse-alias receives emails from un unknown mailbox
+# When a reverse alias receives emails from un unknown mailbox
 ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX = "reverse_alias_unknown_mailbox"
 
 # When somebody is trying to spoof a reply
@@ -391,7 +391,7 @@ if PGP_SENDER_PRIVATE_KEY_PATH:
 # the signer address that signs outgoing encrypted emails
 PGP_SIGNER = os.environ.get("PGP_SIGNER")
 
-# emails that have empty From address is sent from this special reverse-alias
+# emails that have empty From address is sent from this special reverse alias
 NOREPLY = os.environ.get("NOREPLY", f"noreply@{EMAIL_DOMAIN}")
 
 # list of no reply addresses

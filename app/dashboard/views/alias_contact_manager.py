@@ -94,7 +94,7 @@ def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
     )
 
     LOG.d(
-        "create reverse-alias for %s %s, reverse alias:%s",
+        "create reverse alias for %s %s, reverse alias:%s",
         contact_address,
         alias,
         contact.reply_email,
@@ -220,13 +220,13 @@ def delete_contact(alias: Alias, contact_id: int):
     if not contact:
         flash("Unknown error. Refresh the page", "warning")
     elif contact.alias_id != alias.id:
-        flash("You cannot delete reverse-alias", "warning")
+        flash("You cannot delete reverse alias", "warning")
     else:
         delete_contact_email = contact.website_email
         Contact.delete(contact_id)
         Session.commit()
 
-        flash(f"Reverse-alias for {delete_contact_email} has been deleted", "success")
+        flash(f"reverse alias for {delete_contact_email} has been deleted", "success")
 
 
 @dashboard_bp.route("/alias_contact_manager/<int:alias_id>/", methods=["GET", "POST"])

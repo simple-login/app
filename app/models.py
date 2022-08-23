@@ -422,7 +422,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.ForeignKey("alias.id", ondelete="SET NULL"), nullable=True, default=None
     )
 
-    # whether to include the sender address in reverse-alias
+    # whether to include the sender address in reverse alias
     include_sender_in_reverse_alias = sa.Column(
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
@@ -1334,7 +1334,7 @@ class Alias(Base, ModelMixin):
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
-    # when a mailbox wants to send an email on behalf of the alias via the reverse-alias
+    # when a mailbox wants to send an email on behalf of the alias via the reverse alias
     # several checks are performed to avoid email spoofing
     # this option allow disabling these checks
     disable_email_spoofing_check = sa.Column(
@@ -1398,7 +1398,7 @@ class Alias(Base, ModelMixin):
         return ret
 
     def authorized_addresses(self) -> [str]:
-        """return addresses that can send on behalf of this alias, i.e. can send emails to this alias's reverse-aliases
+        """return addresses that can send on behalf of this alias, i.e. can send emails to this alias's reverse aliases
         Including its mailboxes and their authorized addresses
         """
         mailboxes = self.mailboxes
@@ -1732,7 +1732,7 @@ class Contact(Base, ModelMixin):
         """return the email address with name.
         to use when user wants to send an email from the alias
         Return
-        "First Last | email at example.com" <reverse-alias@SL>
+        "First Last | email at example.com" <reverse alias@SL>
         """
 
         # Prefer using contact name if possible
@@ -2587,8 +2587,8 @@ class Referral(Base, ModelMixin):
 class SentAlert(Base, ModelMixin):
     """keep track of alerts sent to user.
     User can receive an alert when there's abnormal activity on their aliases such as
-    - reverse-alias not used by the owning mailbox
-    - SPF fails when using the reverse-alias
+    - reverse alias not used by the owning mailbox
+    - SPF fails when using the reverse alias
     - bounced email
     - ...
 

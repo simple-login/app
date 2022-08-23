@@ -865,7 +865,7 @@ def forward_email_to_mailbox(
 
     replace_sl_message_id_by_original_message_id(msg)
 
-    # change the from_header so the email comes from a reverse-alias
+    # change the from_header so the email comes from a reverse alias
     # replace the email part in from: header
     old_from_header = msg[headers.FROM]
     new_from_header = contact.new_addr()
@@ -878,7 +878,7 @@ def forward_email_to_mailbox(
         add_or_replace_header(msg, "Reply-To", new_reply_to_header)
         LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header)
 
-    # replace CC & To emails by reverse-alias for all emails that are not alias
+    # replace CC & To emails by reverse alias for all emails that are not alias
     try:
         replace_header_when_forward(msg, alias, headers.CC)
         replace_header_when_forward(msg, alias, headers.TO)
@@ -1024,7 +1024,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         if alias.disable_email_spoofing_check:
             # ignore this error, use default alias mailbox
             LOG.w(
-                "ignore unknown sender to reverse-alias %s: %s -> %s",
+                "ignore unknown sender to reverse alias %s: %s -> %s",
                 mail_from,
                 alias,
                 contact,
@@ -1113,10 +1113,10 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         + headers.MIME_HEADERS,
     )
 
-    # replace the reverse-alias by the contact email in the email body
+    # replace the reverse alias by the contact email in the email body
     # as this is usually included when replying
     if user.replace_reverse_alias:
-        LOG.d("Replace reverse-alias %s by contact email %s", reply_email, contact)
+        LOG.d("Replace reverse alias %s by contact email %s", reply_email, contact)
         msg = replace(msg, reply_email, contact.website_email)
 
     # create PGP email if needed
@@ -1159,14 +1159,14 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         replace_header_when_reply(msg, alias, headers.TO)
         replace_header_when_reply(msg, alias, headers.CC)
     except NonReverseAliasInReplyPhase as e:
-        LOG.w("non reverse-alias in reply %s %s %s", e, contact, alias)
+        LOG.w("non reverse alias in reply %s %s %s", e, contact, alias)
 
         # the email is ignored, delete the email log
         EmailLog.delete(email_log.id, commit=True)
 
         send_email(
             mailbox.email,
-            f"Email sent to {contact.email} contains non reverse-alias addresses",
+            f"Email sent to {contact.email} contains non reverse alias addresses",
             render(
                 "transactional/non-reverse-alias-reply-phase.txt.jinja2",
                 destination=contact.email,
@@ -1327,7 +1327,7 @@ def handle_unknown_mailbox(
 ):
     LOG.w(
         "Reply email can only be used by mailbox. "
-        "Actual mail_from: %s. msg from header: %s, reverse-alias %s, %s %s %s",
+        "Actual mail_from: %s. msg from header: %s, reverse alias %s, %s %s %s",
         envelope.mail_from,
         msg[headers.FROM],
         reply_email,
@@ -2199,11 +2199,11 @@ class MailHandler:
             ret = self._handle(envelope, msg)
             return ret
 
-        # happen if reverse-alias is used during the forward phase
-        # as in this case, a new reverse-alias needs to be created for this reverse-alias -> chaos
+        # happen if reverse alias is used during the forward phase
+        # as in this case, a new reverse alias needs to be created for this reverse alias -> chaos
         except CannotCreateContactForReverseAlias as e:
             LOG.w(
-                "Probably due to reverse-alias used in the forward phase, "
+                "Probably due to reverse alias used in the forward phase, "
                 "error:%s mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s",
                 e,
                 envelope.mail_from,

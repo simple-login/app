@@ -1059,7 +1059,7 @@ def replace(msg: Message, old, new) -> Message:
 
 def generate_reply_email(contact_email: str, user: User) -> str:
     """
-    generate a reply_email (aka reverse-alias), make sure it isn't used by any contact
+    generate a reply_email (aka reverse alias), make sure it isn't used by any contact
     """
     # shorten email to avoid exceeding the 64 characters
     # from https://tools.ietf.org/html/rfc5321#section-4.5.3
@@ -1104,7 +1104,7 @@ def generate_reply_email(contact_email: str, user: User) -> str:
 
 
 def is_reverse_alias(address: str) -> bool:
-    # to take into account the new reverse-alias that doesn't start with "ra+"
+    # to take into account the new reverse alias that doesn't start with "ra+"
     if Contact.get_by(reply_email=address):
         return True
 

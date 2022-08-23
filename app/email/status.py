@@ -2,7 +2,7 @@
 E200 = "250 Message accepted for delivery"
 E201 = "250 SL E201"
 E202 = "250 Unsubscribe request accepted"
-E203 = "250 SL E203 email can't be sent from a reverse-alias"
+E203 = "250 SL E203 email can't be sent from a reverse alias"
 E204 = "250 SL E204 ignore"
 E205 = "250 SL E205 bounce handled"
 # out-of-office status
@@ -63,5 +63,5 @@ E522 = (
     "at a rate that prevents additional messages from being delivered."
 )
 E523 = "550 SL E523 Unknown error"
-E524 = "550 SL E524 Wrong use of reverse-alias"
+E524 = "550 SL E524 Wrong use of reverse alias"
 # endregion
