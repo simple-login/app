@@ -42,6 +42,13 @@ query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND
     UNION SELECT 'smtp:127.0.0.1:20381' WHERE '%s' = 'mydomain.com' LIMIT 1;
 ```
 
+Please run the following command to update the `email_log` table:
+
+```bash
+docker exec -it sl-db psql -U myuser simplelogin
+update email_log set alias_id=(select alias_id from contact where contact.id = email_log.contact_id);
+exit
+```
 
 </p>
 </details>
