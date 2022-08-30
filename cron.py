@@ -236,6 +236,9 @@ def notify_manual_sub_end():
 
         if need_reminder:
             user = coinbase_subscription.user
+            if user.lifetime:
+                continue
+
             LOG.d(
                 "Remind user %s that their coinbase subscription is ending soon", user
             )
