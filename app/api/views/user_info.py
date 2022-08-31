@@ -7,7 +7,7 @@ from typing import Optional
 
 from app import s3
 from app.api.base import api_bp, require_api_auth
-from app.config import SESSION_COOKIE_NAME
+from app.config import SESSION_COOKIE_NAME, CONNECT_WITH_PROTON
 from app.db import Session
 from app.models import ApiKey, File, PartnerUser, User
 from app.utils import random_string
@@ -29,8 +29,10 @@ def user_to_dict(user: User) -> dict:
         "email": user.email,
         "in_trial": user.in_trial(),
         "max_alias_free_plan": user.max_alias_for_free_account(),
-        "connected_proton_address": get_connected_proton_address(user),
     }
+
+    if CONNECT_WITH_PROTON:
+        ret["connected_proton_address"] = get_connected_proton_address(user)
 
     if user.profile_picture_id:
         ret["profile_picture_url"] = user.profile_picture.get_url()
