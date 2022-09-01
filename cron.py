@@ -68,6 +68,7 @@ from app.models import (
     PartnerUser,
     ApiToCookieToken,
 )
+from app.pgp_utils import load_public_key_and_check, PGPException
 from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
 from server import create_light_app
@@ -741,6 +742,9 @@ def sanity_check():
     LOG.d("check mailbox valid domain")
     check_mailbox_valid_domain()
 
+    LOG.d("check mailbox valid PGP keys")
+    check_mailbox_valid_pgp_keys()
+
     LOG.d(
         """check if there's an email that starts with "\u200f" (right-to-left mark (RLM))"""
     )
@@ -765,7 +769,7 @@ def check_mailbox_valid_domain():
     )
     mailbox_ids = [e[0] for e in mailbox_ids]
     # iterate over id instead of mailbox directly
-    # as a mailbox can be deleted during the sleep time
+    # as a mailbox can be deleted in the meantime
     for mailbox_id in mailbox_ids:
         mailbox = Mailbox.get(mailbox_id)
         # a mailbox has been deleted
@@ -817,6 +821,42 @@ def check_mailbox_valid_domain():
                         render("transactional/disable-mailbox.html", mailbox=mailbox),
                         retries=3,
                     )
+
+        Session.commit()
+
+
+def check_mailbox_valid_pgp_keys():
+    mailbox_ids = (
+        Session.query(Mailbox.id)
+        .filter(
+            Mailbox.verified.is_(True),
+            Mailbox.pgp_public_key.isnot(None),
+            Mailbox.pgp_enabled,
+        )
+        .all()
+    )
+    mailbox_ids = [e[0] for e in mailbox_ids]
+    # iterate over id instead of mailbox directly
+    # as a mailbox can be deleted in the meantime
+    for mailbox_id in mailbox_ids:
+        mailbox = Mailbox.get(mailbox_id)
+        # a mailbox has been deleted
+        if not mailbox:
+            continue
+
+        try:
+            load_public_key_and_check(mailbox.pgp_public_key)
+        except PGPException:
+            LOG.i(f"{mailbox} PGP key invalid")
+            send_email(
+                mailbox.user.email,
+                f"Mailbox {mailbox.email}'s PGP Key is invalid",
+                render(
+                    "transactional/invalid-mailbox-pgp-key.txt.jinja2",
+                    mailbox=mailbox,
+                ),
+                retries=3,
+            )
 
         Session.commit()
 
