@@ -831,7 +831,7 @@ def check_mailbox_valid_pgp_keys():
         .filter(
             Mailbox.verified.is_(True),
             Mailbox.pgp_public_key.isnot(None),
-            Mailbox.pgp_enabled,
+            Mailbox.disable_pgp.is_(False),
         )
         .all()
     )
