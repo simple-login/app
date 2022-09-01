@@ -1,17 +1,17 @@
 import base64
 from io import BytesIO
+from typing import Optional
 
 from flask import jsonify, g, request, make_response
 from flask_login import logout_user
-from typing import Optional
 
-from app import s3
+from app import s3, config
 from app.api.base import api_bp, require_api_auth
-from app.config import SESSION_COOKIE_NAME, CONNECT_WITH_PROTON
+from app.config import SESSION_COOKIE_NAME
 from app.db import Session
 from app.models import ApiKey, File, PartnerUser, User
-from app.utils import random_string
 from app.proton.utils import get_proton_partner
+from app.utils import random_string
 
 
 def get_connected_proton_address(user: User) -> Optional[str]:
@@ -32,7 +32,7 @@ def user_to_dict(user: User) -> dict:
         "connected_proton_address": None,
     }
 
-    if CONNECT_WITH_PROTON:
+    if config.CONNECT_WITH_PROTON:
         ret["connected_proton_address"] = get_connected_proton_address(user)
 
     if user.profile_picture_id:

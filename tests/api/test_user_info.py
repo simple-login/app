@@ -27,6 +27,7 @@ def test_user_in_trial(flask_client):
 
 
 def test_user_linked_to_proton(flask_client):
+    config.CONNECT_WITH_PROTON = True
     user, api_key = get_new_user_and_api_key()
     partner = get_proton_partner()
     partner_email = random_email()
