@@ -858,8 +858,6 @@ def check_mailbox_valid_pgp_keys():
                 retries=3,
             )
 
-        Session.commit()
-
 
 def check_custom_domain():
     LOG.d("Check verified domain for DNS issues")
