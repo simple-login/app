@@ -1,27 +1,17 @@
-from flask import url_for
 import arrow
+from flask import url_for
 
 # Need to import directly from config to allow modification from the tests
 from app import config
 from app.db import Session
 from app.email_utils import is_reverse_alias
-from app.models import User, ApiKey, Alias, Contact, EmailLog, Mailbox
+from app.models import User, Alias, Contact, EmailLog, Mailbox
 from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login, random_domain
 
 
 def test_get_aliases_error_without_pagination(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     r = flask_client.get(
         url_for("api.get_aliases"), headers={"Authentication": api_key.code}
@@ -32,17 +22,7 @@ def test_get_aliases_error_without_pagination(flask_client):
 
 
 def test_get_aliases_with_pagination(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     # create more aliases than config.PAGE_LIMIT
     for _ in range(config.PAGE_LIMIT + 1):
@@ -79,14 +59,7 @@ def test_get_aliases_with_pagination(flask_client):
 
 
 def test_get_aliases_query(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     # create more aliases than config.PAGE_LIMIT
     Alias.create_new(user, "prefix1")
@@ -491,14 +464,7 @@ def test_alias_contacts(flask_client):
 
 
 def test_create_contact_route(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     alias = Alias.create_new_random(user)
     Session.commit()
