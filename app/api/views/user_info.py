@@ -29,6 +29,7 @@ def user_to_dict(user: User) -> dict:
         "email": user.email,
         "in_trial": user.in_trial(),
         "max_alias_free_plan": user.max_alias_for_free_account(),
+        "connected_proton_address": None,
     }
 
     if CONNECT_WITH_PROTON:
