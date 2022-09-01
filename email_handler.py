@@ -162,7 +162,12 @@ from app.models import (
     Notification,
     VerpType,
 )
-from app.pgp_utils import PGPException, sign_data_with_pgpy, sign_data
+from app.pgp_utils import (
+    PGPException,
+    sign_data_with_pgpy,
+    sign_data,
+    load_public_key_and_check,
+)
 from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_light_app
@@ -502,7 +507,12 @@ def prepare_pgp_message(
         encrypted_data = pgp_utils.encrypt_file(BytesIO(msg_bytes), pgp_fingerprint)
         second.set_payload(encrypted_data)
     except PGPException:
-        LOG.w("Cannot encrypt using python-gnupg, use pgpy")
+        LOG.w(
+            "Cannot encrypt using python-gnupg, check if public key is valid and try with pgpy"
+        )
+        # check if the public key is valid
+        load_public_key_and_check(public_key)
+
         encrypted = pgp_utils.encrypt_file_with_pgpy(msg_bytes, public_key)
         second.set_payload(str(encrypted))
 

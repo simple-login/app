@@ -1,0 +1,11 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+
+  We have detected that your mailbox {{ mailbox.email }}'s PGP key is invalid.
+
+  A potential cause is the key is already expired.
+
+  Please update the key so forwarded emails can be properly encrypted.
+
+{% endblock %}
