@@ -515,6 +515,9 @@ def prepare_pgp_message(
 
         encrypted = pgp_utils.encrypt_file_with_pgpy(msg_bytes, public_key)
         second.set_payload(str(encrypted))
+        LOG.i(
+            f"encryption works with pgpy and not with python-gnupg, public key {public_key}"
+        )
 
     msg.attach(second)
 
@@ -853,12 +856,13 @@ def forward_email_to_mailbox(
                 msg, mailbox.pgp_finger_print, mailbox.pgp_public_key, can_sign=True
             )
         except PGPException:
-            LOG.e(
+            LOG.w(
                 "Cannot encrypt message %s -> %s. %s %s", contact, alias, mailbox, user
             )
-            EmailLog.delete(email_log.id, commit=True)
-            # so the client can retry later
-            return False, status.E406
+            msg = add_header(
+                msg,
+                f"""PGP encryption fails with {mailbox.email}'s PGP key""",
+            )
 
     # add custom header
     add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
