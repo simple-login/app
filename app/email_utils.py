@@ -14,7 +14,7 @@ from email.header import decode_header, Header
 from email.message import Message, EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import make_msgid, formatdate
+from email.utils import make_msgid, formatdate, formataddr
 from smtplib import SMTP, SMTPException
 from typing import Tuple, List, Optional, Union
 
@@ -1463,3 +1463,9 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     if data[2] > (time.time() + VERP_MESSAGE_LIFETIME - VERP_TIME_START) / 60:
         return None
     return VerpType(data[0]), data[1]
+
+
+def sl_formataddr(name_address_tuple: Tuple[str, str]):
+    """Same as formataddr but use utf-8 encoding by default"""
+    name, addr = name_address_tuple
+    return formataddr((name, Header(addr, "utf-8")))
