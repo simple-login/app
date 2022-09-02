@@ -515,6 +515,9 @@ def prepare_pgp_message(
 
         encrypted = pgp_utils.encrypt_file_with_pgpy(msg_bytes, public_key)
         second.set_payload(str(encrypted))
+        LOG.i(
+            f"encryption works with pgpy and not with python-gnupg, public key {public_key}"
+        )
 
     msg.attach(second)
 

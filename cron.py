@@ -842,7 +842,10 @@ def check_mailbox_valid_pgp_keys():
         mailbox = Mailbox.get(mailbox_id)
         # a mailbox has been deleted
         if not mailbox:
+            LOG.d(f"Mailbox {mailbox_id} not found")
             continue
+
+        LOG.d(f"Checking PGP key for {mailbox}")
 
         try:
             load_public_key_and_check(mailbox.pgp_public_key)
