@@ -2,10 +2,10 @@
 
 {% block content %}
 
-  We have detected that your mailbox {{ mailbox.email }}'s PGP key is invalid.
+We have detected that your mailbox {{ mailbox.email }}'s PGP key is invalid.
 
-  A potential cause is the key is already expired.
+A potential cause is the PGP key is already expired.
 
-  Please update the key so forwarded emails can be properly encrypted.
+Please update your PGP key on {{URL}}/dashboard/mailbox/{{ mailbox.id }}/ so forwarded emails can be properly encrypted.
 
 {% endblock %}
