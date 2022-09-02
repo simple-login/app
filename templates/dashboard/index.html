@@ -49,7 +49,7 @@
       <div class="card">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="subheader">Forwards</div>
+            <div class="subheader">Forwarded</div>
             <div class="text-muted"
                  style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
           </div>
@@ -73,7 +73,7 @@
       <div class="card">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="subheader">Blocks</div>
+            <div class="subheader">Blocked</div>
             <div class="text-muted"
                  style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
           </div>
@@ -396,9 +396,9 @@
           Alias created {{ alias.created_at | dt }}
         </div>
       {% endif %}
-      <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwards,
-      <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocks,
-      <span class="alias-activity">{{ alias_info.nb_reply }}</span> sents
+      <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwarded,
+      <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocked,
+      <span class="alias-activity">{{ alias_info.nb_reply }}</span> sent
       in the last 14 days
       <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
          class="btn btn-sm btn-link">
