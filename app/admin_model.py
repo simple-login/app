@@ -93,6 +93,10 @@ class SLAdminIndexView(AdminIndexView):
         return redirect("/admin/user")
 
 
+def _user_upgrade_channel_formatter(view, context, model, name):
+    return Markup(model.upgrade_channel)
+
+
 class UserAdmin(SLModelView):
     column_searchable_list = ["email", "id"]
     column_exclude_list = [
@@ -109,6 +113,10 @@ class UserAdmin(SLModelView):
         ret = super().scaffold_list_columns()
         ret.insert(0, "upgrade_channel")
         return ret
+
+    column_formatters = {
+        "upgrade_channel": _user_upgrade_channel_formatter,
+    }
 
     @action(
         "education_upgrade",
