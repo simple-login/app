@@ -33,9 +33,6 @@ E404 = "421 SL E404 Unexpected error - Retry later"
 E405 = "421 SL E405 Mailbox domain problem - Retry later"
 E406 = "421 SL E406 Retry later"
 E407 = "421 SL E407 Retry later"
-E408 = "421 SL E408 Retry later"
-E409 = "421 SL E409 Retry later"
-E410 = "421 SL E410 Retry later"
 # endregion
 
 # region 5** errors
