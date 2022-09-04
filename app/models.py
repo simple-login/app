@@ -29,7 +29,6 @@ from sqlalchemy_utils import ArrowType
 from app import config
 from app import s3
 from app.db import Session
-from app.email_utils import sl_formataddr
 from app.errors import (
     AliasInTrashError,
     DirectoryInTrashError,
@@ -1806,6 +1805,8 @@ class Contact(Base, ModelMixin):
                 if self.name and self.name != self.website_email.strip()
                 else formatted_email
             )
+
+        from app.email_utils import sl_formataddr
 
         new_addr = sl_formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
