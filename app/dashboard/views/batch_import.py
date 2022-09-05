@@ -25,7 +25,9 @@ def batch_import_route():
         )
         return redirect(url_for("dashboard.index"))
 
-    batch_imports = BatchImport.filter_by(user_id=current_user.id).all()
+    batch_imports = BatchImport.filter_by(
+        user_id=current_user.id, processed=False
+    ).all()
 
     if request.method == "POST":
         if len(batch_imports) > 10:
