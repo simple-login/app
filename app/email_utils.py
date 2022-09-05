@@ -1466,6 +1466,7 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
 
 
 def sl_formataddr(name_address_tuple: Tuple[str, str]):
-    """Same as formataddr but use utf-8 encoding by default"""
+    """Same as formataddr but use utf-8 encoding by default and always return str (and never Header)"""
     name, addr = name_address_tuple
-    return formataddr((name, Header(addr, "utf-8")))
+    # formataddr can return Header, make sure to convert to str
+    return str(formataddr((name, Header(addr, "utf-8"))))
