@@ -1,6 +1,7 @@
 import email
 import os
 from email.message import EmailMessage
+from email.utils import formataddr
 
 import arrow
 import pytest
@@ -37,6 +38,7 @@ from app.email_utils import (
     is_invalid_mailbox_domain,
     generate_verp_email,
     get_verp_info_from_email,
+    sl_formataddr,
 )
 from app.models import (
     CustomDomain,
@@ -777,3 +779,10 @@ def test_add_header_multipart_with_invalid_part():
             assert part.get_payload().index("INJECT") > -1
         else:
             assert part == "invalid"
+
+
+def test_sl_formataddr():
+    assert sl_formataddr(("é", "è@ç.à")) == "=?utf-8?b?w6k=?= <è@ç.à>"
+    # test that the same name-address can't be handled by the built-in formataddr
+    with pytest.raises(UnicodeEncodeError):
+        formataddr(("é", "è@ç.à"))

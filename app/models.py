@@ -8,7 +8,6 @@ import os
 import random
 import secrets
 import uuid
-from email.utils import formataddr
 from typing import List, Tuple, Optional, Union
 
 import arrow
@@ -27,8 +26,8 @@ from sqlalchemy.orm import deferred
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
-from app import s3
 from app import config
+from app import s3
 from app.db import Session
 from app.errors import (
     AliasInTrashError,
@@ -1807,7 +1806,9 @@ class Contact(Base, ModelMixin):
                 else formatted_email
             )
 
-        new_addr = formataddr((new_name, self.reply_email)).strip()
+        from app.email_utils import sl_formataddr
+
+        new_addr = sl_formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
 
     def last_reply(self) -> "EmailLog":

@@ -39,7 +39,7 @@ from email.encoders import encode_noop
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr, make_msgid, formatdate, getaddresses
+from email.utils import make_msgid, formatdate, getaddresses
 from io import BytesIO
 from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
 from typing import List, Tuple, Optional
@@ -122,6 +122,7 @@ from app.email_utils import (
     save_envelope_for_debugging,
     get_verp_info_from_email,
     generate_verp_email,
+    sl_formataddr,
 )
 from app.errors import (
     NonReverseAliasInReplyPhase,
@@ -134,13 +135,13 @@ from app.handler.dmarc import (
     apply_dmarc_policy_for_reply_phase,
     apply_dmarc_policy_for_forward_phase,
 )
-from app.handler.spamd_result import (
-    SpamdResult,
-    SPFCheckResult,
-)
 from app.handler.provider_complaint import (
     handle_hotmail_complaint,
     handle_yahoo_complaint,
+)
+from app.handler.spamd_result import (
+    SpamdResult,
+    SPFCheckResult,
 )
 from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
@@ -445,7 +446,7 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
             # still keep this email in header
             # new_addrs.append(reply_email)
         else:
-            new_addrs.append(formataddr((contact.name, contact.website_email)))
+            new_addrs.append(sl_formataddr((contact.name, contact.website_email)))
 
     if new_addrs:
         new_header = ",".join(new_addrs)
@@ -1156,7 +1157,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # add alias name from alias
     if alias.name:
         LOG.d("Put alias name %s in from header", alias.name)
-        from_header = formataddr((alias.name, alias.email))
+        from_header = sl_formataddr((alias.name, alias.email))
     elif alias.custom_domain:
         # add alias name from domain
         if alias.custom_domain.name:
@@ -1164,7 +1165,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
                 "Put domain default alias name %s in from header",
                 alias.custom_domain.name,
             )
-            from_header = formataddr((alias.custom_domain.name, alias.email))
+            from_header = sl_formataddr((alias.custom_domain.name, alias.email))
 
     LOG.d("From header is %s", from_header)
     add_or_replace_header(msg, headers.FROM, from_header)
