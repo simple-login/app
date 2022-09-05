@@ -782,6 +782,10 @@ def test_add_header_multipart_with_invalid_part():
 
 
 def test_sl_formataddr():
+    # when the name part (first element in the tuple) is empty, formataddr() returns a Header
+    # this makes sure sl_formataddr always returns str
+    assert sl_formataddr(("", "a@b.c")) == "a@b.c"
+
     assert sl_formataddr(("é", "è@ç.à")) == "=?utf-8?b?w6k=?= <è@ç.à>"
     # test that the same name-address can't be handled by the built-in formataddr
     with pytest.raises(UnicodeEncodeError):
