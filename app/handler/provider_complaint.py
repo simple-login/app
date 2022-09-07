@@ -245,16 +245,22 @@ def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
 
 
 def report_complaint_to_user_in_reply_phase(
-    alias: Alias,
+    alias: Union[Alias, DomainDeletedAlias],
     to_address: str,
     origin: ProviderComplaintOrigin,
     msg_info: OriginalMessageInformation,
 ):
     capitalized_name = origin.name().capitalize()
+    mailbox_email = msg_info.mailbox_address
+    if not mailbox_email:
+        if type(alias) is Alias:
+            mailbox_email = alias.mailbox.email
+        else:
+            mailbox_email = alias.email
     send_email_with_rate_control(
         alias.user,
         f"{ALERT_COMPLAINT_REPLY_PHASE}_{origin.name()}",
-        msg_info.mailbox_address or alias.mailbox.email,
+        mailbox_email,
         f"Abuse report from {capitalized_name}",
         render(
             "transactional/provider-complaint-reply-phase.txt.jinja2",
