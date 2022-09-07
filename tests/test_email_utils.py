@@ -460,6 +460,12 @@ Content-Type: text/html;	charset=us-ascii
     assert "old" not in new_msg.as_string()
 
 
+def test_replace_str():
+    msg = "a string"
+    new_msg = replace(msg, "a", "still a")
+    assert new_msg == "still a string"
+
+
 def test_generate_reply_email(flask_client):
     user = create_new_user()
     reply_email = generate_reply_email("test@example.org", user)

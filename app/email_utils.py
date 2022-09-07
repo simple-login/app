@@ -994,7 +994,11 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
     return msg
 
 
-def replace(msg: Message, old, new) -> Message:
+def replace(msg: Union[Message, str], old, new) -> Union[Message, str]:
+    if type(msg) is str:
+        msg = msg.replace(old, new)
+        return msg
+
     content_type = msg.get_content_type()
 
     if (
