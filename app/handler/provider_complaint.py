@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from io import BytesIO
 from mailbox import Message
-from typing import Optional
+from typing import Optional, Union
 
 from app import s3
 from app.config import (
@@ -189,7 +189,7 @@ def handle_yahoo_complaint(message: Message) -> bool:
     return handle_complaint(message, ProviderComplaintYahoo())
 
 
-def find_alias_with_address(address: str) -> Optional[Alias]:
+def find_alias_with_address(address: str) -> Optional[Union[Alias, DomainDeletedAlias]]:
     return Alias.get_by(email=address) or DomainDeletedAlias.get_by(email=address)
 
 
@@ -245,16 +245,22 @@ def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
 
 
 def report_complaint_to_user_in_reply_phase(
-    alias: Alias,
+    alias: Union[Alias, DomainDeletedAlias],
     to_address: str,
     origin: ProviderComplaintOrigin,
     msg_info: OriginalMessageInformation,
 ):
     capitalized_name = origin.name().capitalize()
+    mailbox_email = msg_info.mailbox_address
+    if not mailbox_email:
+        if type(alias) is Alias:
+            mailbox_email = alias.mailbox.email
+        else:
+            mailbox_email = alias.domain.mailboxes[0].email
     send_email_with_rate_control(
         alias.user,
         f"{ALERT_COMPLAINT_REPLY_PHASE}_{origin.name()}",
-        msg_info.mailbox_address or alias.mailbox.email,
+        mailbox_email,
         f"Abuse report from {capitalized_name}",
         render(
             "transactional/provider-complaint-reply-phase.txt.jinja2",
@@ -293,11 +299,19 @@ def report_complaint_to_user_in_transactional_phase(
 
 
 def report_complaint_to_user_in_forward_phase(
-    alias: Alias, origin: ProviderComplaintOrigin, msg_info: OriginalMessageInformation
+    alias: Union[Alias, DomainDeletedAlias],
+    origin: ProviderComplaintOrigin,
+    msg_info: OriginalMessageInformation,
 ):
     capitalized_name = origin.name().capitalize()
     user = alias.user
-    mailbox_email = msg_info.mailbox_address or alias.mailbox.email
+
+    mailbox_email = msg_info.mailbox_address
+    if not mailbox_email:
+        if type(alias) is Alias:
+            mailbox_email = alias.mailbox.email
+        else:
+            mailbox_email = alias.domain.mailboxes[0].email
     send_email_with_rate_control(
         user,
         f"{ALERT_COMPLAINT_FORWARD_PHASE}_{origin.name()}",
