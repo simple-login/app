@@ -256,7 +256,7 @@ def report_complaint_to_user_in_reply_phase(
         if type(alias) is Alias:
             mailbox_email = alias.mailbox.email
         else:
-            mailbox_email = alias.email
+            mailbox_email = alias.domain.mailboxes[0].email
     send_email_with_rate_control(
         alias.user,
         f"{ALERT_COMPLAINT_REPLY_PHASE}_{origin.name()}",
@@ -311,7 +311,7 @@ def report_complaint_to_user_in_forward_phase(
         if type(alias) is Alias:
             mailbox_email = alias.mailbox.email
         else:
-            mailbox_email = alias.email
+            mailbox_email = alias.domain.mailboxes[0].email
     send_email_with_rate_control(
         user,
         f"{ALERT_COMPLAINT_FORWARD_PHASE}_{origin.name()}",
