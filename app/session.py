@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 
 import flask
 import redis
@@ -16,12 +17,12 @@ SESSION_PREFIX = "session"
 
 
 class ServerSession(CallbackDict, SessionMixin):
-    def __init__(self, initial=None, sid=None):
+    def __init__(self, initial=None, session_Id=None):
         def on_update(self):
             self.modified = True
 
-        CallbackDict.__init__(self, initial, on_update)
-        self.sid = sid
+        super(ServerSession, self).__init__(initial, on_update)
+        self.session_id = session_Id
         self.modified = False
 
 
@@ -30,35 +31,37 @@ class RedisSessionStore(SessionInterface):
         self._redis = redis
         self._app = app
 
-    def _get_signer(self, app) -> itsdangerous.Signer:
+    @classmethod
+    def _get_signer(cls, app) -> itsdangerous.Signer:
         return itsdangerous.Signer(
             app.secret_key, salt="session", key_derivation="hmac"
         )
 
-    def _get_key(self, sid: str) -> str:
-        return f"{SESSION_PREFIX}:{sid}"
+    @classmethod
+    def _get_key(cls, session_Id: str) -> str:
+        return f"{SESSION_PREFIX}:{session_Id}"
 
     def open_session(self, app: flask.Flask, request: flask.Request):
-        unverified_sid = request.cookies.get(app.session_cookie_name)
-        if not unverified_sid:
-            unverified_sid = str(uuid.uuid4())
-            return ServerSession(sid=unverified_sid)
+        unverified_session_Id = request.cookies.get(app.session_cookie_name)
+        if not unverified_session_Id:
+            unverified_session_Id = str(uuid.uuid4())
+            return ServerSession(session_Id=unverified_session_Id)
         signer = self._get_signer(app)
         try:
-            sid_as_bytes = signer.unsign(unverified_sid)
-            sid = sid_as_bytes.decode()
+            sid_as_bytes = signer.unsign(unverified_session_Id)
+            session_id = sid_as_bytes.decode()
         except itsdangerous.BadSignature:
-            unverified_sid = str(uuid.uuid4())
-            return ServerSession(sid=unverified_sid)
+            unverified_session_Id = str(uuid.uuid4())
+            return ServerSession(session_Id=unverified_session_Id)
 
-        val = self._redis.get(self._get_key(sid))
+        val = self._redis.get(self._get_key(session_id))
         if val is not None:
             try:
                 data = pickle.loads(val)
-                return ServerSession(data, sid=sid)
+                return ServerSession(data, session_Id=session_id)
             except:
                 pass
-        return ServerSession(sid=unverified_sid)
+        return ServerSession(session_Id=unverified_session_Id)
 
     def save_session(
         self, app: flask.Flask, session: ServerSession, response: flask.Response
@@ -70,11 +73,13 @@ class RedisSessionStore(SessionInterface):
         expires = self.get_expiration_time(app, session)
         val = pickle.dumps(dict(session))
         self._redis.setex(
-            name=self._get_key(session.sid),
+            name=self._get_key(session.session_id),
             value=val,
             time=int(app.permanent_session_lifetime.total_seconds()),
         )
-        session_id = self._get_signer(app).sign(itsdangerous.want_bytes(session.sid))
+        session_id = self._get_signer(app).sign(
+            itsdangerous.want_bytes(session.session_id)
+        )
         response.set_cookie(
             app.session_cookie_name,
             session_id,
