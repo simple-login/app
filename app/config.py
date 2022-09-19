@@ -44,7 +44,7 @@ if config_file:
 else:
     load_dotenv()
 
-COLOR_LOG = "COLOR_LOG" in os.environ
+COLOR_LOG = os.environ.get("COLOR_LOG", 'False').lower() in ('true', '1', 't')
 
 # Allow user to have 1 year of premium: set the expiration_date to 1 year more
 PROMO_CODE = "SIMPLEISBETTER"
@@ -62,7 +62,7 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN")
 SENTRY_FRONT_END_DSN = os.environ.get("SENTRY_FRONT_END_DSN") or SENTRY_DSN
 
 # Email related settings
-NOT_SEND_EMAIL = "NOT_SEND_EMAIL" in os.environ
+NOT_SEND_EMAIL = os.environ.get("NOT_SEND_EMAIL", 'False').lower() in ('true', '1', 't')
 EMAIL_DOMAIN = os.environ["EMAIL_DOMAIN"].lower()
 SUPPORT_EMAIL = os.environ["SUPPORT_EMAIL"]
 SUPPORT_NAME = os.environ.get("SUPPORT_NAME", "Son from SimpleLogin")
@@ -103,13 +103,13 @@ MAX_NB_EMAIL_OLD_FREE_PLAN = int(os.environ.get("MAX_NB_EMAIL_OLD_FREE_PLAN", 15
 MAX_NB_DIRECTORY = 50
 MAX_NB_SUBDOMAIN = 5
 
-ENFORCE_SPF = "ENFORCE_SPF" in os.environ
+ENFORCE_SPF = os.environ.get("ENFORCE_SPF", 'False').lower() in ('true', '1', 't')
 
 # override postfix server locally
 # use 240.0.0.1 here instead of 10.0.0.1 as existing SL instances use the 240.0.0.0 network
 POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 
-DISABLE_REGISTRATION = "DISABLE_REGISTRATION" in os.environ
+DISABLE_REGISTRATION = os.environ.get("DISABLE_REGISTRATION", 'False').lower() in ('true', '1', 't')
 
 # allow using a different postfix port, useful when developing locally
 POSTFIX_PORT = 25
@@ -118,7 +118,7 @@ if "POSTFIX_PORT" in os.environ:
 
 # Use port 587 instead of 25 when sending emails through Postfix
 # Useful when calling Postfix from an external network
-POSTFIX_SUBMISSION_TLS = "POSTFIX_SUBMISSION_TLS" in os.environ
+POSTFIX_SUBMISSION_TLS = os.environ.get("POSTFIX_SUBMISSION_TLS", 'False').lower() in ('true', '1', 't')
 
 # ["domain1.com", "domain2.com"]
 OTHER_ALIAS_DOMAINS = sl_getenv("OTHER_ALIAS_DOMAINS", list)
@@ -143,7 +143,7 @@ FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN
 EMAIL_SERVERS_WITH_PRIORITY = sl_getenv("EMAIL_SERVERS_WITH_PRIORITY")
 
 # disable the alias suffix, i.e. the ".random_word" part
-DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
+DISABLE_ALIAS_SUFFIX = os.environ.get("DISABLE_ALIAS_SUFFIX", 'False').lower() in ('true', '1', 't')
 
 # the email address that receives all unsubscription request
 UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
@@ -245,8 +245,8 @@ PROTON_CLIENT_SECRET = os.environ.get("PROTON_CLIENT_SECRET")
 PROTON_BASE_URL = os.environ.get(
     "PROTON_BASE_URL", "https://account.protonmail.com/api"
 )
-PROTON_VALIDATE_CERTS = "PROTON_VALIDATE_CERTS" in os.environ
-CONNECT_WITH_PROTON = "CONNECT_WITH_PROTON" in os.environ
+PROTON_VALIDATE_CERTS = os.environ.get("PROTON_VALIDATE_CERTS", 'False').lower() in ('true', '1', 't')
+CONNECT_WITH_PROTON = os.environ.get("CONNECT_WITH_PROTON", 'False').lower() in ('true', '1', 't')
 PROTON_EXTRA_HEADER_NAME = os.environ.get("PROTON_EXTRA_HEADER_NAME")
 PROTON_EXTRA_HEADER_VALUE = os.environ.get("PROTON_EXTRA_HEADER_VALUE")
 
@@ -275,7 +275,7 @@ JOB_SEND_PROTON_WELCOME_1 = "proton-welcome-1"
 PAGE_LIMIT = 20
 
 # Upload to static/upload instead of s3
-LOCAL_FILE_UPLOAD = "LOCAL_FILE_UPLOAD" in os.environ
+LOCAL_FILE_UPLOAD = os.environ.get("LOCAL_FILE_UPLOAD", 'False').lower() in ('true', '1', 't')
 UPLOAD_DIR = None
 
 # Rate Limiting
@@ -297,7 +297,7 @@ LANDING_PAGE_URL = os.environ.get("LANDING_PAGE_URL") or "https://simplelogin.io
 STATUS_PAGE_URL = os.environ.get("STATUS_PAGE_URL") or "https://status.simplelogin.io"
 
 # Loading PGP keys when mail_handler runs. To be used locally when init_app is not called.
-LOAD_PGP_EMAIL_HANDLER = "LOAD_PGP_EMAIL_HANDLER" in os.environ
+LOAD_PGP_EMAIL_HANDLER = os.environ.get("LOAD_PGP_EMAIL_HANDLER", 'False').lower() in ('true', '1', 't')
 
 # Used when querying info on Apple API
 # for iOS App
@@ -358,7 +358,7 @@ ALERT_DUAL_SUBSCRIPTION_WITH_PARTNER = "alert_dual_sub_with_partner"
 # <<<<< END ALERT EMAIL >>>>
 
 # Disable onboarding emails
-DISABLE_ONBOARDING = "DISABLE_ONBOARDING" in os.environ
+DISABLE_ONBOARDING = os.environ.get("DISABLE_ONBOARDING", 'False').lower() in ('true', '1', 't')
 
 HCAPTCHA_SECRET = os.environ.get("HCAPTCHA_SECRET")
 HCAPTCHA_SITEKEY = os.environ.get("HCAPTCHA_SITEKEY")
@@ -407,7 +407,7 @@ except Exception:
 
 ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"
 
-ENABLE_SPAM_ASSASSIN = "ENABLE_SPAM_ASSASSIN" in os.environ
+ENABLE_SPAM_ASSASSIN = os.environ.get("ENABLE_SPAM_ASSASSIN", 'False').lower() in ('true', '1', 't')
 
 ALIAS_RANDOM_SUFFIX_LENGTH = int(os.environ.get("ALIAS_RAND_SUFFIX_LENGTH", 5))
 
@@ -431,10 +431,10 @@ if SAVE_UNSENT_DIR and not os.path.isdir(SAVE_UNSENT_DIR):
         pass
 
 # enable the alias automation disable: an alias can be automatically disabled if it has too many bounces
-ALIAS_AUTOMATIC_DISABLE = "ALIAS_AUTOMATIC_DISABLE" in os.environ
+ALIAS_AUTOMATIC_DISABLE = os.environ.get("ALIAS_AUTOMATIC_DISABLE", 'False').lower() in ('true', '1', 't')
 
 # whether the DKIM signing is handled by Rspamd
-RSPAMD_SIGN_DKIM = "RSPAMD_SIGN_DKIM" in os.environ
+RSPAMD_SIGN_DKIM = os.environ.get("RSPAMD_SIGN_DKIM", 'False').lower() in ('true', '1', 't')
 
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
 
@@ -446,9 +446,9 @@ PHONE_PROVIDER_2_SECRET = os.environ.get("PHONE_PROVIDER_2_SECRET")
 
 ZENDESK_HOST = os.environ.get("ZENDESK_HOST")
 ZENDESK_API_TOKEN = os.environ.get("ZENDESK_API_TOKEN")
-ZENDESK_ENABLED = "ZENDESK_ENABLED" in os.environ
+ZENDESK_ENABLED = os.environ.get("ZENDESK_ENABLED", 'False').lower() in ('true', '1', 't')
 
-DMARC_CHECK_ENABLED = "DMARC_CHECK_ENABLED" in os.environ
+DMARC_CHECK_ENABLED = os.environ.get("DMARC_CHECK_ENABLED", 'False').lower() in ('true', '1', 't')
 
 # Bounces can happen after 5 days
 VERP_MESSAGE_LIFETIME = 5 * 86400
