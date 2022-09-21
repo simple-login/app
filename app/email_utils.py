@@ -319,7 +319,8 @@ def send_email(
     date_header = formatdate()
     msg[headers.DATE] = date_header
 
-    msg[headers.MIME_VERSION] = "1.0"
+    if headers.MIME_VERSION not in msg:
+        msg[headers.MIME_VERSION] = "1.0"
 
     if unsubscribe_link:
         add_or_replace_header(msg, headers.LIST_UNSUBSCRIBE, f"<{unsubscribe_link}>")
