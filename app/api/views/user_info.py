@@ -3,7 +3,6 @@ from io import BytesIO
 from typing import Optional
 
 from flask import jsonify, g, request, make_response
-from flask_login import logout_user
 
 from app import s3, config
 from app.api.base import api_bp, require_api_auth
@@ -11,6 +10,7 @@ from app.config import SESSION_COOKIE_NAME
 from app.db import Session
 from app.models import ApiKey, File, PartnerUser, User
 from app.proton.utils import get_proton_partner
+from app.session import logout_session
 from app.utils import random_string
 
 
@@ -131,7 +131,7 @@ def logout():
     Output:
     - 200
     """
-    logout_user()
+    logout_session()
     response = make_response(jsonify(msg="User is logged out"), 200)
     response.delete_cookie(SESSION_COOKIE_NAME)
 
