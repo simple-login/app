@@ -12,6 +12,7 @@ except ImportError:
     import pickle
 
 import itsdangerous
+import urllib.parse
 from flask.sessions import SessionMixin, SessionInterface
 from werkzeug.datastructures import CallbackDict
 
@@ -29,8 +30,9 @@ class ServerSession(CallbackDict, SessionMixin):
 
 
 class RedisSessionStore(SessionInterface):
-    def __init__(self, redis, app):
-        self._redis = redis
+    def __init__(self, redis_w, redis_r, app):
+        self._redis_w = redis_w
+        self._redis_r = redis_r
         self._app = app
 
     @classmethod
@@ -59,7 +61,7 @@ class RedisSessionStore(SessionInterface):
 
     def purge_session(self, session: ServerSession):
         try:
-            self._redis.delete(self._get_key(session.session_id))
+            self._redis_w.delete(self._get_key(session.session_id))
             session.session_id = str(uuid.uuid4())
         except AttributeError:
             pass
@@ -69,7 +71,7 @@ class RedisSessionStore(SessionInterface):
         if not session_id:
             return ServerSession(session_id=str(uuid.uuid4()))
 
-        val = self._redis.get(self._get_key(session_id))
+        val = self._redis_r.get(self._get_key(session_id))
         if val is not None:
             try:
                 data = pickle.loads(val)
@@ -87,7 +89,7 @@ class RedisSessionStore(SessionInterface):
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
         val = pickle.dumps(dict(session))
-        self._redis.setex(
+        self._redis_w.setex(
             name=self._get_key(session.session_id),
             value=val,
             time=int(app.permanent_session_lifetime.total_seconds()),
@@ -106,8 +108,47 @@ class RedisSessionStore(SessionInterface):
         )
 
 
+def _get_redis_sessionstore(app: flask.Flask, redis_url: str) -> RedisSessionStore:
+    redis_conn = redis.from_url(redis_url)
+    return RedisSessionStore(redis_conn, redis_conn, app)
+
+
+def _get_redis_sentinel_sessionstore(
+    app: flask.Flask, redis_url: str
+) -> RedisSessionStore:
+    # This code has been taken from the flask rate limiter library
+    parsed = urllib.parse.urlparse(redis_url)
+    sentinel_configuration = []
+    password = None
+    if parsed.password:
+        password = parsed.password
+    for loc in parsed.netloc[parsed.netloc.find("@") + 1 :].split(","):
+        host, port = loc.split(":")
+        sentinel_configuration.append((host, int(port)))
+    service_name = parsed.path.replace("/", "")
+    if not service_name:
+        raise RuntimeError(
+            f"Cannot connect to Redis Sentinel: service_name was not provided (the portion after /)"
+        )
+
+    sentinel = redis.Sentinel(
+        sentinel_configuration, password=password, socket_timeout=0.2
+    )
+    master = sentinel.master_for(service_name)
+    replica = sentinel.slave_for(service_name)
+
+    return RedisSessionStore(master, replica, app)
+
+
 def set_redis_session(app: flask.Flask, redis_url: str):
-    app.session_interface = RedisSessionStore(redis.from_url(redis_url), app)
+    if redis_url.startswith("redis://"):
+        app.session_interface = _get_redis_sessionstore(app, redis_url)
+    elif redis_url.startswith("redis+sentinel://"):
+        app.session_interface = _get_redis_sentinel_sessionstore(app, redis_url)
+    else:
+        raise RuntimeError(
+            f"Tried to set_redis_session with an invalid redis url: ${redis_url}"
+        )
 
 
 def logout_session():
