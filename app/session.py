@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 import flask
-import redis
+import limits.storage
 from flask import current_app, session
 from flask_login import logout_user
 
@@ -12,7 +12,6 @@ except ImportError:
     import pickle
 
 import itsdangerous
-import urllib.parse
 from flask.sessions import SessionMixin, SessionInterface
 from werkzeug.datastructures import CallbackDict
 
@@ -108,43 +107,15 @@ class RedisSessionStore(SessionInterface):
         )
 
 
-def _get_redis_sessionstore(app: flask.Flask, redis_url: str) -> RedisSessionStore:
-    redis_conn = redis.from_url(redis_url)
-    return RedisSessionStore(redis_conn, redis_conn, app)
-
-
-def _get_redis_sentinel_sessionstore(
-    app: flask.Flask, redis_url: str
-) -> RedisSessionStore:
-    # This code has been taken from the flask rate limiter library
-    parsed = urllib.parse.urlparse(redis_url)
-    sentinel_configuration = []
-    password = None
-    if parsed.password:
-        password = parsed.password
-    for loc in parsed.netloc[parsed.netloc.find("@") + 1 :].split(","):
-        host, port = loc.split(":")
-        sentinel_configuration.append((host, int(port)))
-    service_name = parsed.path.replace("/", "")
-    if not service_name:
-        raise RuntimeError(
-            f"Cannot connect to Redis Sentinel: service_name was not provided (the portion after /)"
-        )
-
-    sentinel = redis.Sentinel(
-        sentinel_configuration, password=password, socket_timeout=0.2
-    )
-    master = sentinel.master_for(service_name)
-    replica = sentinel.slave_for(service_name)
-
-    return RedisSessionStore(master, replica, app)
-
-
 def set_redis_session(app: flask.Flask, redis_url: str):
     if redis_url.startswith("redis://"):
-        app.session_interface = _get_redis_sessionstore(app, redis_url)
+        storage = limits.storage.RedisStorage(redis_url)
+        app.session_interface = RedisSessionStore(storage.storage, storage.storage, app)
     elif redis_url.startswith("redis+sentinel://"):
-        app.session_interface = _get_redis_sentinel_sessionstore(app, redis_url)
+        storage = limits.storage.RedisSentinelStorage(redis_url)
+        app.session_interface = RedisSessionStore(
+            storage.storage, storage.storage_slave, app
+        )
     else:
         raise RuntimeError(
             f"Tried to set_redis_session with an invalid redis url: ${redis_url}"
