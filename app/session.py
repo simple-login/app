@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 import flask
-import redis
+import limits.storage
 from flask import current_app, session
 from flask_login import logout_user
 
@@ -29,8 +29,9 @@ class ServerSession(CallbackDict, SessionMixin):
 
 
 class RedisSessionStore(SessionInterface):
-    def __init__(self, redis, app):
-        self._redis = redis
+    def __init__(self, redis_w, redis_r, app):
+        self._redis_w = redis_w
+        self._redis_r = redis_r
         self._app = app
 
     @classmethod
@@ -59,7 +60,7 @@ class RedisSessionStore(SessionInterface):
 
     def purge_session(self, session: ServerSession):
         try:
-            self._redis.delete(self._get_key(session.session_id))
+            self._redis_w.delete(self._get_key(session.session_id))
             session.session_id = str(uuid.uuid4())
         except AttributeError:
             pass
@@ -69,7 +70,7 @@ class RedisSessionStore(SessionInterface):
         if not session_id:
             return ServerSession(session_id=str(uuid.uuid4()))
 
-        val = self._redis.get(self._get_key(session_id))
+        val = self._redis_r.get(self._get_key(session_id))
         if val is not None:
             try:
                 data = pickle.loads(val)
@@ -87,7 +88,7 @@ class RedisSessionStore(SessionInterface):
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
         val = pickle.dumps(dict(session))
-        self._redis.setex(
+        self._redis_w.setex(
             name=self._get_key(session.session_id),
             value=val,
             time=int(app.permanent_session_lifetime.total_seconds()),
@@ -107,7 +108,18 @@ class RedisSessionStore(SessionInterface):
 
 
 def set_redis_session(app: flask.Flask, redis_url: str):
-    app.session_interface = RedisSessionStore(redis.from_url(redis_url), app)
+    if redis_url.startswith("redis://"):
+        storage = limits.storage.RedisStorage(redis_url)
+        app.session_interface = RedisSessionStore(storage.storage, storage.storage, app)
+    elif redis_url.startswith("redis+sentinel://"):
+        storage = limits.storage.RedisSentinelStorage(redis_url)
+        app.session_interface = RedisSessionStore(
+            storage.storage, storage.storage_slave, app
+        )
+    else:
+        raise RuntimeError(
+            f"Tried to set_redis_session with an invalid redis url: ${redis_url}"
+        )
 
 
 def logout_session():
