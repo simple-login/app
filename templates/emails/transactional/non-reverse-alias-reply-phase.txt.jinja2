@@ -1,19 +1,19 @@
 {% extends "base.txt.jinja2" %}
 
 {% block content %}
-  Hi
+Hi
 
-  Your email sent to {{ destination }} from {{ alias }} ({{ subject }}) contains an address
-  which isn't a reverse-alias in the To: or Cc: field.
+Your email sent to {{ destination }} from {{ alias }} ({{ subject }}) contains an address
+which isn't a reverse-alias in the To: or Cc: field.
 
-  The email was then directly sent to this recipient and doesn't pass by SimpleLogin.
-  Unfortunately, it reveals your real mailbox address to the recipient.
-  Please create a reverse alias for each recipient to make sure your mailbox stays hidden and re-send the email.
+The email was then directly sent to this recipient and doesn't pass by SimpleLogin.
+Unfortunately, it reveals your real mailbox address to the recipient.
+Please create a reverse alias for each recipient to make sure your mailbox stays hidden and re-send the email.
 
-  In case some reverse aliases are also present in To: or Cc:, SimpleLogin won't deliver this email to the
-  corresponding contacts to avoid any potential side effect. Please remove the non reverse-alias addresses and
-  re-send the email.
+In case some reverse aliases are also present in To: or Cc:, SimpleLogin won't deliver this email to the
+corresponding contacts to avoid any potential side effect. Please remove the non reverse-alias addresses and
+re-send the email.
 
-  More info about reverse-alias can be found on https://simplelogin.io/docs/getting-started/reverse-alias/
-  and how to send an email from your alias on https://simplelogin.io/docs/getting-started/send-email/
+More info about reverse-alias can be found on https://simplelogin.io/docs/getting-started/reverse-alias/
+and how to send an email from your alias on https://simplelogin.io/docs/getting-started/send-email/
 {% endblock %}
