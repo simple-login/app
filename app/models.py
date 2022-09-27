@@ -2691,7 +2691,9 @@ class RecoveryCode(Base, ModelMixin):
 
     @classmethod
     def _hash_code(cls, user: User, code: str) -> str:
-        hashed_code = hashlib.sha3_224(f"{user.id}:{code}:{config.RECOVERY_CODE_HASH_SALT}".encode("utf-8")).digest()
+        hashed_code = hashlib.sha3_224(
+            f"{user.id}:{code}:{config.RECOVERY_CODE_HASH_SALT}".encode("utf-8")
+        ).digest()
         return base64.b64encode(hashed_code).decode("utf-8").rstrip("=")
 
     @classmethod

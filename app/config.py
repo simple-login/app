@@ -495,7 +495,9 @@ JOB_TAKEN_RETRY_WAIT_MINS = 30
 # MEM_STORE
 MEM_STORE_URI = os.environ.get("MEM_STORE_URI", None)
 
-#Recovery codes hash salt
+# Recovery codes hash salt
 RECOVERY_CODE_HASH_SALT = os.environ.get("RECOVERY_CODE_HASH_SALT")
 if not RECOVERY_CODE_HASH_SALT:
-    raise RuntimeError("Please define RECOVERY_CODE_HASH_SALT in your configuration with a random string")
+    raise RuntimeError(
+        "Please define RECOVERY_CODE_HASH_SALT in your configuration with a random string"
+    )
