@@ -1171,7 +1171,13 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     add_or_replace_header(msg, headers.FROM, from_header)
 
     try:
-        replace_header_when_reply(msg, alias, headers.TO)
+        if str(msg[headers.TO]).lower() == "undisclosed-recipients:;":
+            # no need to replace TO header
+            LOG.d("email is sent in BCC mode")
+            del msg[headers.TO]
+        else:
+            replace_header_when_reply(msg, alias, headers.TO)
+
         replace_header_when_reply(msg, alias, headers.CC)
     except NonReverseAliasInReplyPhase as e:
         LOG.w("non reverse-alias in reply %s %s %s", e, contact, alias)
