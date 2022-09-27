@@ -16,9 +16,7 @@
         <strong>If you had recovery codes before, they have been invalidated. Please store the new ones in a safe place!</strong>
       </p>
       <ul>
-        {% for recovery_code in recovery_codes %}
-            <li>{{ recovery_code }}</li>
-        {% endfor %}
+        {% for recovery_code in recovery_codes %}<li>{{ recovery_code }}</li>{% endfor %}
       </ul>
     </div>
   </div>
