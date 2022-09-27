@@ -2690,11 +2690,13 @@ class RecoveryCode(Base, ModelMixin):
     user = orm.relationship(User)
 
     @classmethod
-    def _hash_code(cls, user: User, code: str) -> str:
-        hashed_code = hashlib.sha3_224(
-            f"{user.id}:{code}:{config.RECOVERY_CODE_HASH_SALT}".encode("utf-8")
-        ).digest()
-        return base64.b64encode(hashed_code).decode("utf-8").rstrip("=")
+    def _hash_code(cls, code: str) -> str:
+        code_hmac = hmac.new(
+            config.RECOVERY_CODE_HMAC_SECRET.encode("utf-8"),
+            code.encode("utf-8"),
+            "sha3_224",
+        )
+        return base64.urlsafe_b64encode(code_hmac.digest()).decode("utf-8").rstrip("=")
 
     @classmethod
     def generate(cls, user):
@@ -2707,7 +2709,7 @@ class RecoveryCode(Base, ModelMixin):
         raw_codes = []
         while nb_code < _NB_RECOVERY_CODE:
             raw_code = random_string(_RECOVERY_CODE_LENGTH)
-            encoded_code = cls._hash_code(user, raw_code)
+            encoded_code = cls._hash_code(raw_code)
             if not cls.get_by(user_id=user.id, code=encoded_code):
                 cls.create(user_id=user.id, code=encoded_code)
                 raw_codes.append(raw_code)
@@ -2719,7 +2721,7 @@ class RecoveryCode(Base, ModelMixin):
 
     @classmethod
     def find_by_user_code(cls, user: User, code: str):
-        hashed_code = cls._hash_code(user, code)
+        hashed_code = cls._hash_code(code)
         # TODO: Only return hashed codes once there aren't unhashed codes in the db.
         found_code = cls.get_by(user_id=user.id, code=hashed_code)
         if found_code:

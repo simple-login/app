@@ -40,17 +40,32 @@ def migrate_recovery_codes():
             RecoveryCode.filter(RecoveryCode.id > last_id)
             .order_by(RecoveryCode.id)
             .limit(100)
+            .all()
         )
-        users_by_id = {}
+        batch_codes = len(recovery_codes)
+        old_codes = 0
+        new_codes = 0
+        last_code = None
+        last_code_id = None
         for recovery_code in recovery_codes:
             if len(recovery_code.code) == models._RECOVERY_CODE_LENGTH:
-                if recovery_code.user_id not in users_by_id:
-                    users_by_id[recovery_code.user_id] = recovery_code.user
-                recovery_code.code = RecoveryCode._hash_code(
-                    users_by_id[recovery_code.user_id], recovery_code.code
-                )
+                last_code = recovery_code.code
+                last_code_id = recovery_code.id
+                recovery_code.code = RecoveryCode._hash_code(recovery_code.code)
+                old_codes += 1
+                Session.flush()
+            else:
+                new_codes += 1
             last_id = recovery_code.id
         Session.commit()
+        LOG.i(
+            f"Updated {old_codes}/{batch_codes} for this batch ({new_codes} already updated)"
+        )
+        if last_code is not None:
+            recovery_code = RecoveryCode.get_by(id=last_code_id)
+            assert RecoveryCode._hash_code(last_code) == recovery_code.code
+            LOG.i("Check is Good")
+
         if len(recovery_codes) == 0:
             break
 
