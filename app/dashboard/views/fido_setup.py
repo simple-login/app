@@ -78,10 +78,10 @@ def fido_setup():
         )
 
         flash("Security key has been activated", "success")
-        if not RecoveryCode.filter_by(user_id=current_user.id).all():
-            return redirect(url_for("dashboard.recovery_code_route"))
-        else:
-            return redirect(url_for("dashboard.fido_manage"))
+        recovery_codes = RecoveryCode.generate(current_user)
+        return render_template(
+            "dashboard/recovery_code.html", recovery_codes=recovery_codes
+        )
 
     # Prepare information for key registration process
     fido_uuid = (

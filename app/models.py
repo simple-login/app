@@ -2683,11 +2683,16 @@ class RecoveryCode(Base, ModelMixin):
     __table_args__ = (sa.UniqueConstraint("user_id", "code", name="uq_recovery_code"),)
 
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-    code = sa.Column(sa.String(16), nullable=False)
+    code = sa.Column(sa.String(64), nullable=False)
     used = sa.Column(sa.Boolean, nullable=False, default=False)
     used_at = sa.Column(ArrowType, nullable=True, default=None)
 
     user = orm.relationship(User)
+
+    @classmethod
+    def _hash_code(cls, user: User, code: str) -> str:
+        hashed_code = hashlib.sha3_224(f"{user.id}:{code}:{config.RECOVERY_CODE_HASH_SALT}".encode("utf-8")).digest()
+        return base64.b64encode(hashed_code).decode("utf-8").rstrip("=")
 
     @classmethod
     def generate(cls, user):
@@ -2697,14 +2702,27 @@ class RecoveryCode(Base, ModelMixin):
         Session.flush()
 
         nb_code = 0
+        raw_codes = []
         while nb_code < _NB_RECOVERY_CODE:
-            code = random_string(_RECOVERY_CODE_LENGTH)
-            if not cls.get_by(user_id=user.id, code=code):
-                cls.create(user_id=user.id, code=code)
+            raw_code = random_string(_RECOVERY_CODE_LENGTH)
+            encoded_code = cls._hash_code(user, raw_code)
+            if not cls.get_by(user_id=user.id, code=encoded_code):
+                cls.create(user_id=user.id, code=encoded_code)
+                raw_codes.append(raw_code)
                 nb_code += 1
 
         LOG.d("Create recovery codes for %s", user)
         Session.commit()
+        return raw_codes
+
+    @classmethod
+    def find_by_user_code(cls, user: User, code: str):
+        hashed_code = cls._hash_code(user, code)
+        # TODO: Only return hashed codes once there aren't unhashed codes in the db.
+        found_code = cls.get_by(user_id=user.id, code=hashed_code)
+        if found_code:
+            return found_code
+        return cls.get_by(user_id=user.id, code=code)
 
     @classmethod
     def empty(cls, user):
@@ -3301,7 +3319,6 @@ class NewsletterUser(Base, ModelMixin):
 
 
 class ApiToCookieToken(Base, ModelMixin):
-
     __tablename__ = "api_cookie_token"
     code = sa.Column(sa.String(128), unique=True, nullable=False)
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
