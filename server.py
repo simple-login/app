@@ -29,7 +29,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app import paddle_utils, config
+from app import paddle_utils, config, paddle_callback
 from app.admin_model import (
     SLAdminIndexView,
     UserAdmin,
@@ -543,6 +543,11 @@ def setup_paddle_callback(app: Flask):
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
+                next_bill_date = request.form.get("next_bill_date")
+                if not next_bill_date:
+                    paddle_callback.failed_payment(sub, subscription_id)
+                    return "OK"
+
                 LOG.d(
                     "Update subscription %s %s on %s, next bill date %s",
                     subscription_id,
