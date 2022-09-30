@@ -545,7 +545,7 @@ def setup_paddle_callback(app: Flask):
             if sub:
                 next_bill_date = request.form.get("next_bill_date")
                 if not next_bill_date:
-                    paddle_callback.failed_payment(sub, request)
+                    paddle_callback.failed_payment(sub, subscription_id)
                     return "OK"
 
                 LOG.d(

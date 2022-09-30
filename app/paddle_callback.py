@@ -8,8 +8,7 @@ from app.models import Subscription
 from app import paddle_utils
 
 
-def failed_payment(sub: Subscription, request: flask.Request):
-    subscription_id = request.form.get("subscription_id")
+def failed_payment(sub: Subscription, subscription_id: str):
     LOG.w(
         "Subscription failed payment %s for %s (sub %s)",
         subscription_id,
