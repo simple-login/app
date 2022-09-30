@@ -1,4 +1,3 @@
-import flask
 import arrow
 
 from app.db import Session
