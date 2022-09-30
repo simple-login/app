@@ -1,5 +1,4 @@
 import arrow
-import flask
 
 from app import paddle_callback
 from app.db import Session
