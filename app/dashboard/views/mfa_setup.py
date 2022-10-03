@@ -8,6 +8,7 @@ from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.log import LOG
+from app.models import RecoveryCode
 
 
 class OtpTokenForm(FlaskForm):
@@ -39,8 +40,10 @@ def mfa_setup():
             current_user.last_otp = token
             Session.commit()
             flash("MFA has been activated", "success")
-
-            return redirect(url_for("dashboard.recovery_code_route"))
+            recovery_codes = RecoveryCode.generate(current_user)
+            return render_template(
+                "dashboard/recovery_code.html", recovery_codes=recovery_codes
+            )
         else:
             flash("Incorrect token", "warning")
 

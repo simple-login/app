@@ -494,3 +494,12 @@ JOB_TAKEN_RETRY_WAIT_MINS = 30
 
 # MEM_STORE
 MEM_STORE_URI = os.environ.get("MEM_STORE_URI", None)
+
+# Recovery codes hash salt
+RECOVERY_CODE_HMAC_SECRET = os.environ.get("RECOVERY_CODE_HMAC_SECRET") or (
+    FLASK_SECRET + "generatearandomtoken"
+)
+if not RECOVERY_CODE_HMAC_SECRET or len(RECOVERY_CODE_HMAC_SECRET) < 16:
+    raise RuntimeError(
+        "Please define RECOVERY_CODE_HMAC_SECRET in your configuration with a random string at least 16 chars long"
+    )

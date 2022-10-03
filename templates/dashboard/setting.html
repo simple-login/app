@@ -102,8 +102,6 @@
         {% else %}
           <a href="{{ url_for('dashboard.mfa_cancel') }}"
              class="btn btn-outline-danger">Disable TOTP</a>
-          <a href="{{ url_for('dashboard.recovery_code_route') }}"
-             class="btn btn-outline-secondary">Recovery Codes</a>
         {% endif %}
       </div>
     </div>
@@ -124,8 +122,6 @@
         {% else %}
           <a href="{{ url_for('dashboard.fido_manage') }}"
              class="btn btn-outline-info">Manage WebAuthn</a>
-          <a href="{{ url_for('dashboard.recovery_code_route') }}"
-             class="btn btn-outline-secondary">Recovery Codes</a>
         {% endif %}
       </div>
     </div>
@@ -264,14 +260,10 @@
     <div class="card" id="change_password">
       <div class="card-body">
         <div class="card-title">Password</div>
-        <div class="mb-3">
-          You will receive an email containing instructions on how to change your password.
-        </div>
+        <div class="mb-3">You will receive an email containing instructions on how to change your password.</div>
         <form method="post">
           <input type="hidden" name="form-name" value="change-password">
-          <button class="btn btn-outline-primary">
-            Change password
-          </button>
+          <button class="btn btn-outline-primary">Change password</button>
         </form>
       </div>
     </div>

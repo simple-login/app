@@ -23,7 +23,6 @@ from .views import (
     mailbox_detail,
     refused_email,
     referral,
-    recovery_code,
     contact_detail,
     setup_done,
     batch_import,
