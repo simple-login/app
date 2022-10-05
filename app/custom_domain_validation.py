@@ -28,6 +28,6 @@ class CustomDomainValidation:
             dkim_record = get_cname_record(custom_record)
             if dkim_record != expected_record:
                 invalid_records[custom_record] = dkim_record or "empty"
-        custom_domain.verified = len(invalid_records) == 0
+        custom_domain.dkim_verified = len(invalid_records) == 0
         Session.commit()
         return invalid_records
