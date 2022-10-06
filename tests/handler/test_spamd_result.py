@@ -5,6 +5,7 @@ from tests.utils import load_eml_file
 def test_dmarc_result_softfail():
     msg = load_eml_file("dmarc_gmail_softfail.eml")
     assert DmarcCheckResult.soft_fail == SpamdResult.extract_from_headers(msg).dmarc
+    assert SpamdResult.extract_from_headers(msg).rspamd_score == 0.5
 
 
 def test_dmarc_result_quarantine():
@@ -32,3 +33,8 @@ def test_dmarc_result_bad_policy():
     assert SpamdResult._get_from_message(msg) is None
     assert DmarcCheckResult.bad_policy == SpamdResult.extract_from_headers(msg).dmarc
     assert SpamdResult._get_from_message(msg) is not None
+
+
+def test_parse_rspamd_score():
+    msg = load_eml_file("dmarc_gmail_softfail.eml")
+    assert SpamdResult.extract_from_headers(msg).rspamd_score == 0.5

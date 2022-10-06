@@ -55,6 +55,7 @@ class SpamdResult:
         self.phase: Phase = phase
         self.dmarc: DmarcCheckResult = DmarcCheckResult.not_available
         self.spf: SPFCheckResult = SPFCheckResult.not_available
+        self.rspamd_score = -1
 
     def set_dmarc_result(self, dmarc_result: DmarcCheckResult):
         self.dmarc = dmarc_result
@@ -85,6 +86,7 @@ class SpamdResult:
         spam_entries = [
             entry.strip() for entry in str(spam_result_header[-1]).split("\n")
         ]
+
         for entry_pos in range(len(spam_entries)):
             sep = spam_entries[entry_pos].find("(")
             if sep > -1:
@@ -100,6 +102,14 @@ class SpamdResult:
             if header_value in spam_entries:
                 spamd_result.set_spf_result(spf_result)
                 break
+
+        # parse the rspamd score
+        score_line = spam_entries[0]  # e.g. "default: False [2.30 / 13.00];"
+        spamd_result.rspamd_score = float(
+            score_line[(score_line.find("[") + 1) : score_line.find("]")]
+            .split("/")[0]
+            .strip()
+        )
 
         cls._store_in_message(spamd_result, msg)
         return spamd_result

@@ -503,3 +503,11 @@ if not RECOVERY_CODE_HMAC_SECRET or len(RECOVERY_CODE_HMAC_SECRET) < 16:
     raise RuntimeError(
         "Please define RECOVERY_CODE_HMAC_SECRET in your configuration with a random string at least 16 chars long"
     )
+
+# the minimum rspamd spam score above which emails that fail DMARC should be quarantined
+if "MIN_RSPAMD_SCORE_FOR_FAILED_DMARC" in os.environ:
+    MIN_RSPAMD_SCORE_FOR_FAILED_DMARC = float(
+        os.environ["MIN_RSPAMD_SCORE_FOR_FAILED_DMARC"]
+    )
+else:
+    MIN_RSPAMD_SCORE_FOR_FAILED_DMARC = None
