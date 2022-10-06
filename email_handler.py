@@ -1142,7 +1142,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
                 Contact.alias_id == alias.id,
             ).limit(config.MAX_NB_REVERSE_ALIAS_REPLACEMENT)
 
-            # replace any reverse alias by real address for all contacts
+            # replace reverse alias by real address for all contacts
             for c in contact_query.all():
                 c: Contact
                 msg = replace(msg, c.reply_email, c.website_email)
