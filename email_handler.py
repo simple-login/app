@@ -1132,7 +1132,30 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # as this is usually included when replying
     if user.replace_reverse_alias:
         LOG.d("Replace reverse-alias %s by contact email %s", reply_email, contact)
+
         msg = replace(msg, reply_email, contact.website_email)
+
+        if config.ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
+            start = time.time()
+            # MAX_NB_REVERSE_ALIAS_REPLACEMENT is there to limit potential attack
+            contact_query = Contact.filter(
+                Contact.alias_id == alias.id,
+            ).limit(config.MAX_NB_REVERSE_ALIAS_REPLACEMENT)
+
+            # replace any reverse alias by real address for all contacts
+            for c in contact_query.all():
+                c: Contact
+                msg = replace(msg, c.reply_email, c.website_email)
+
+            elapsed = time.time() - start
+            LOG.d(
+                ">>> Replace %s contacts takes %s seconds",
+                contact_query.count(),
+                elapsed,
+            )
+            newrelic.agent.record_custom_metric(
+                "Custom/reverse_alias_replacement_time", elapsed
+            )
 
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():
