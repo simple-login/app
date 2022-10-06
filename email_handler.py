@@ -1149,7 +1149,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
             elapsed = time.time() - start
             LOG.d(
-                ">>> Replace %s contacts takes %s seconds",
+                "Replace reverse alias by real address for %s contacts takes %s seconds",
                 contact_query.count(),
                 elapsed,
             )
