@@ -304,11 +304,10 @@
               Without DKIM setup, emails you sent from your alias might end up in Spam/Junk folder.
             {% endif %}
           </div>
-          {% if custom_domain.dkim_verified and custom_domain.dmarc_verified %}
+          {% if custom_domain.dkim_verified %}
 
             <div class="text-danger mt-4">
-              Since you have DMARC enabled, DKIM is still enabled to avoid failing the DMARC check.
-              Please update your DKIM settings with all CNAME records
+              DKIM is still enabled. Please update your DKIM settings with all CNAME records
             </div>
           {%  endif %}
         {% endif %}

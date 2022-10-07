@@ -29,11 +29,9 @@ class CustomDomainValidation:
             dkim_record = get_cname_record(custom_record)
             if dkim_record != expected_record:
                 invalid_records[custom_record] = dkim_record or "empty"
-        if len(invalid_records) == 0:
-            custom_domain.verified = True
-        # HACK: IF DMARC is enabled do not update the dkim verification to avoid breaking it for domains that have it
-        # already set up with only one dkim record
-        elif not custom_domain.dmarc_verified:
-            custom_domain.verified = False
+        # HACK: If dkim is enabled, don't disable it to give users time to update their CNAMES
+        if custom_domain.dkim_verified:
+            return invalid_records
+        custom_domain.verified = len(invalid_records) == 0
         Session.commit()
         return invalid_records
