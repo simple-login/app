@@ -1144,8 +1144,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
                     Contact.filter(
                         Contact.alias_id == alias.id, Contact.id > last_contact_id
                     )
-                    .limit(100)
                     .order_by(Contact.id)
+                    .limit(100)
                 )
 
                 # replace reverse alias by real address for all contacts

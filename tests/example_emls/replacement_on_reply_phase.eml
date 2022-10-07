@@ -22,7 +22,7 @@ References:
  <imported@frontapp.com_t:Appeldefonds2022-06-26T10:04:55+02:00d89f5e23-6d98-4f01-95fa-b7c7544b7aa9>
  <imported@frontapp.com_81c5208b4cff8b0633f167fda4e6e8e8f63b7a9b>
  <af07e94a66ece6564ae30a2aaac7a34c@frontapp.com>
-To: {{ alias_email }}
+To: {{ contact_reply_email }}
 Subject: Something
 Message-ID: <af07e94a66ece6564ae30a2aaac7a34c@frontapp.com>
 X-Mailer: Front (1.0; +https://frontapp.com;
@@ -59,5 +59,6 @@ X-Spamd-Result: default: False [-2.00 / 13.00];
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
 
-Hello
+Contact is {{ contact_reply_email }}
+Other contact is {{ other_contact_reply_email }}
 ------sinikael-?=_1-16563448907660.10629093370416887--
