@@ -1137,15 +1137,22 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
         if config.ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
             start = time.time()
+            last_contact_id = 0
             # MAX_NB_REVERSE_ALIAS_REPLACEMENT is there to limit potential attack
-            contact_query = Contact.filter(
-                Contact.alias_id == alias.id,
-            ).limit(config.MAX_NB_REVERSE_ALIAS_REPLACEMENT)
+            for i in range(0, MAX_REPLY_PHASE_SPAM_SCORE, 100):
+                contact_query = (
+                    Contact.filter(
+                        Contact.alias_id == alias.id, Contact.id > last_contact_id
+                    )
+                    .limit(100)
+                    .order_by(Contact.id)
+                )
 
-            # replace reverse alias by real address for all contacts
-            for c in contact_query.all():
-                c: Contact
-                msg = replace(msg, c.reply_email, c.website_email)
+                # replace reverse alias by real address for all contacts
+                for c in contact_query.all():
+                    c: Contact
+                    msg = replace(msg, c.reply_email, c.website_email)
+                    last_contact_id = c.id
 
             elapsed = time.time() - start
             LOG.d(
