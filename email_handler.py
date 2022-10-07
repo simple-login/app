@@ -1139,7 +1139,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             start = time.time()
             last_contact_id = 0
             # MAX_NB_REVERSE_ALIAS_REPLACEMENT is there to limit potential attack
-            for i in range(0, config.MAX_NB_REVERSE_ALIAS_REPLACEMENT, 100):
+            for i in range(0, config.MAX_NB_REVERSE_ALIAS_REPLACEMENT, 1000):
                 contact_query = (
                     Contact.filter(
                         Contact.alias_id == alias.id, Contact.id > last_contact_id
