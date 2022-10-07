@@ -14,7 +14,6 @@ from app.dns_utils import (
     get_mx_domains,
     get_spf_domain,
     get_txt_record,
-    get_cname_record,
     is_mx_equivalent,
 )
 from app.log import LOG
