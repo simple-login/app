@@ -46,7 +46,6 @@ def domain_detail_dns(custom_domain_id):
 
     spf_record = f"v=spf1 include:{EMAIL_DOMAIN} ~all"
 
-    # hardcode the DKIM selector here
     domain_validator = CustomDomainValidation(EMAIL_DOMAIN)
 
     dmarc_record = "v=DMARC1; p=quarantine; pct=100; adkim=s; aspf=s"

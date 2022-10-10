@@ -18,7 +18,7 @@ class CustomDomainValidation:
         """
         return self._dkim_records
 
-    def validate_dkim_records(self, custom_domain: CustomDomain) -> {str: str}:
+    def validate_dkim_records(self, custom_domain: CustomDomain) -> dict[str, str]:
         """
         Check if dkim records are properly set for this custom domain.
         Returns empty list if all records are ok. Other-wise return the records that aren't properly configured
@@ -32,6 +32,6 @@ class CustomDomainValidation:
         # HACK: If dkim is enabled, don't disable it to give users time to update their CNAMES
         if custom_domain.dkim_verified:
             return invalid_records
-        custom_domain.verified = len(invalid_records) == 0
+        custom_domain.dkim_verified = len(invalid_records) == 0
         Session.commit()
         return invalid_records
