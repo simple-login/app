@@ -504,6 +504,7 @@ if not RECOVERY_CODE_HMAC_SECRET or len(RECOVERY_CODE_HMAC_SECRET) < 16:
         "Please define RECOVERY_CODE_HMAC_SECRET in your configuration with a random string at least 16 chars long"
     )
 
+
 # the minimum rspamd spam score above which emails that fail DMARC should be quarantined
 if "MIN_RSPAMD_SCORE_FOR_FAILED_DMARC" in os.environ:
     MIN_RSPAMD_SCORE_FOR_FAILED_DMARC = float(
@@ -511,3 +512,14 @@ if "MIN_RSPAMD_SCORE_FOR_FAILED_DMARC" in os.environ:
     )
 else:
     MIN_RSPAMD_SCORE_FOR_FAILED_DMARC = None
+
+# run over all reverse alias for an alias and replace them with sender address
+ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT = (
+    "ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT" in os.environ
+)
+
+if ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
+    # max number of reverse alias that can be replaced
+    MAX_NB_REVERSE_ALIAS_REPLACEMENT = int(
+        os.environ["MAX_NB_REVERSE_ALIAS_REPLACEMENT"]
+    )

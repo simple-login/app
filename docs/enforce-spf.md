@@ -1,4 +1,4 @@
-Some email services like Gmail, Protonmail, etc don't have a strict SPF record (`-all`) to support the "classic" email forwarding
+Some email services like Gmail, Proton Mail, etc don't have a strict SPF record (`-all`) to support the "classic" email forwarding
 that is usually used for group mailing list. In this scenario, an email is sent to a group is forwarded as-is,
 breaking therefore the SPF.
 

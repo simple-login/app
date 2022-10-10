@@ -1,0 +1,64 @@
+Received: by mail-ed1-f49.google.com with SMTP id ej4so13657316edb.7
+        for <gmail@simplemail.fplante.fr>; Mon, 27 Jun 2022 08:48:15 -0700 (PDT)
+X-Gm-Message-State: AJIora8exR9DGeRFoKAtjzwLtUpH5hqx6Zt3tm8n4gUQQivGQ3fELjUV
+	yT7RQIfeW9Kv2atuOcgtmGYVU4iQ8VBeLmK1xvOYL4XpXfrT7ZrJNQ==
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@matera.eu header.s=fnt header.b=XahYMey7;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b="QOCS/yjt";
+       spf=pass (google.com: domain of bounces+14445963-ab4e-csyndic.quartz=gmail.com@front-mail.matera.eu designates 168.245.4.42 as permitted sender) smtp.mailfrom="bounces+14445963-ab4e-csyndic.quartz=gmail.com@front-mail.matera.eu";
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=matera.eu
+Received: from out.frontapp.com (unknown)
+	by geopod-ismtpd-3-0 (SG)
+	with ESMTP id d2gM2N7PT7W8d2-UEC4ESA
+	for <csyndic.quartz@gmail.com>;
+	Mon, 27 Jun 2022 15:48:11.014 +0000 (UTC)
+Content-Type: multipart/alternative;
+ boundary="----sinikael-?=_1-16563448907660.10629093370416887"
+In-Reply-To:
+ <imported@frontapp.com_81c5208b4cff8b0633f167fda4e6e8e8f63b7a9b>
+References:
+ <imported@frontapp.com_t:AssembléeGénérale2022-06-25T16:32:03+02:006b3cdade-982b-47cd-8114-6a037dfb7d60>
+ <imported@frontapp.com_f924cce139940c9935621f067d46443597394f34>
+ <imported@frontapp.com_t:Appeldefonds2022-06-26T10:04:55+02:00d89f5e23-6d98-4f01-95fa-b7c7544b7aa9>
+ <imported@frontapp.com_81c5208b4cff8b0633f167fda4e6e8e8f63b7a9b>
+ <af07e94a66ece6564ae30a2aaac7a34c@frontapp.com>
+To: {{ contact_reply_email }}
+Subject: Something
+Message-ID: <af07e94a66ece6564ae30a2aaac7a34c@frontapp.com>
+X-Mailer: Front (1.0; +https://frontapp.com;
+ +msgid=af07e94a66ece6564ae30a2aaac7a34c@frontapp.com)
+X-Feedback-ID: 14445963:SG
+X-SG-EID:
+ =?us-ascii?Q?XtlxQDg5i3HqMzQY2Upg19JPZBVl1RybInUUL2yta9uBoIU4KU1FMJ5DjWrz6g?=
+ =?us-ascii?Q?fJUK5Qmneg2uc46gwp5BdHdp6Foaq5gg3xJriv3?=
+ =?us-ascii?Q?9OA=2FWRifeylU9O+ngdNbOKXoeJAkROmp2mCgw9x?=
+ =?us-ascii?Q?uud+EclOT9mYVtbZsydOLLm6Y2PPswQl8lnmiku?=
+ =?us-ascii?Q?DAhkG15HTz2FbWGWNDFb7VrSsN5ddjAscr6sIHw?=
+ =?us-ascii?Q?S48R5fnXmfhPbmlCgqFjr0FGphfuBdNAt6z6w8a?=
+ =?us-ascii?Q?o9u1EYDIX7zWHZ+Tr3eyw=3D=3D?=
+X-SG-ID:
+ =?us-ascii?Q?N2C25iY2uzGMFz6rgvQsb8raWjw0ZPf1VmjsCkspi=2FI9PhcvqXQTpKqqyZkvBe?=
+ =?us-ascii?Q?+2RscnQ4WPkA+BN1vYgz1rezTVIqgp+rlWrKk8o?=
+ =?us-ascii?Q?HoB5dzpX6HKWtWCVRi10zwlDN1+pJnySoIUrlaT?=
+ =?us-ascii?Q?PA2aqQKmMQbjTl0CUAFryR8hhHcxdS0cQowZSd7?=
+ =?us-ascii?Q?XNjJWLvCGF7ODwg=2FKr+4yRE8UvULS2nrdO2wWyQ?=
+ =?us-ascii?Q?AiFHdPdZsRlgNomEo=3D?=
+X-Spamd-Result: default: False [-2.00 / 13.00];
+	ARC_ALLOW(-1.00)[google.com:s=arc-20160816:i=1];
+	MIME_GOOD(-0.10)[multipart/alternative,text/plain];
+	REPLYTO_ADDR_EQ_FROM(0.00)[];
+	FORGED_RECIPIENTS_FORWARDING(0.00)[];
+	NEURAL_HAM(-0.00)[-0.981];
+	FREEMAIL_TO(0.00)[gmail.com];
+	RCVD_TLS_LAST(0.00)[];
+	FREEMAIL_ENVFROM(0.00)[gmail.com];
+	MIME_TRACE(0.00)[0:+,1:+,2:~];
+	RWL_MAILSPIKE_POSSIBLE(0.00)[209.85.208.49:from]
+
+------sinikael-?=_1-16563448907660.10629093370416887
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Contact is {{ contact_reply_email }}
+Other contact is {{ other_contact_reply_email }}
+------sinikael-?=_1-16563448907660.10629093370416887--
