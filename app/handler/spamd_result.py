@@ -4,6 +4,7 @@ from typing import Dict, Optional
 import newrelic.agent
 
 from app.email import headers
+from app.log import LOG
 from app.models import EnumE, Phase
 from email.message import Message
 
@@ -104,12 +105,16 @@ class SpamdResult:
                 break
 
         # parse the rspamd score
-        score_line = spam_entries[0]  # e.g. "default: False [2.30 / 13.00];"
-        spamd_result.rspamd_score = float(
-            score_line[(score_line.find("[") + 1) : score_line.find("]")]
-            .split("/")[0]
-            .strip()
-        )
+        try:
+            score_line = spam_entries[0]  # e.g. "default: False [2.30 / 13.00];"
+            spamd_result.rspamd_score = float(
+                score_line[(score_line.find("[") + 1) : score_line.find("]")]
+                .split("/")[0]
+                .strip()
+            )
+        except (IndexError, ValueError):
+            LOG.e("cannot parse rspamd score")
+            spamd_result.rspamd_score = 0
 
         cls._store_in_message(spamd_result, msg)
         return spamd_result
