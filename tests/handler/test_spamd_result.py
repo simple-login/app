@@ -43,4 +43,4 @@ def test_parse_rspamd_score():
 def test_cannot_parse_rspamd_score():
     msg = load_eml_file("dmarc_cannot_parse_rspamd_score.eml")
     # use the default score when cannot parse
-    assert SpamdResult.extract_from_headers(msg).rspamd_score == 0
+    assert SpamdResult.extract_from_headers(msg).rspamd_score == -1

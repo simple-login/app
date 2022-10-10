@@ -114,7 +114,6 @@ class SpamdResult:
             )
         except (IndexError, ValueError):
             LOG.e("cannot parse rspamd score")
-            spamd_result.rspamd_score = 0
 
         cls._store_in_message(spamd_result, msg)
         return spamd_result
