@@ -236,25 +236,28 @@
           folder.
         </div>
         <div class="mb-2">
-          Add the following CNAME DNS record to your domain.
+          Add the following CNAME DNS records to your domain.
         </div>
-        <div class="mb-2 p-3 dns-record">
-          Record: CNAME
-          <br />
-          Domain: <em data-toggle="tooltip"
+        {% for dkim_prefix, dkim_cname_value in dkim_records %}
+
+          <div class="mb-2 p-3 dns-record">
+            Record: CNAME
+            <br />
+            Domain: <em data-toggle="tooltip"
      title="Click to copy"
      class="clipboard"
-     data-clipboard-text="dkim._domainkey">dkim._domainkey</em>
-          <br />
-          Value:
-          <em data-toggle="tooltip"
-              title="Click to copy"
-              class="clipboard"
-              data-clipboard-text="{{ dkim_cname + '.' }}"
-              style="overflow-wrap: break-word">
-            {{ dkim_cname }}.
-          </em>
-        </div>
+     data-clipboard-text="dkim._domainkey">{{ dkim_prefix }}</em>
+            <br />
+            Value:
+            <em data-toggle="tooltip"
+                title="Click to copy"
+                class="clipboard"
+                data-clipboard-text="{{ dkim_cname_value }}."
+                style="overflow-wrap: break-word">
+              {{ dkim_cname_value }}.
+            </em>
+          </div>
+        {% endfor %}
         <div class="alert alert-info">
           Some DNS registrar might require a full record path, in this case please use
           <i>dkim._domainkey.{{ custom_domain.domain }}</i> as domain value instead.
@@ -285,24 +288,28 @@
         {% if not dkim_ok %}
 
           <div class="text-danger mt-4">
-            Your DNS is not correctly set.
-            {% if dkim_errors %}
+            <p>
+              Your DNS is not correctly set.
+            </p>
+            <ul>
+              {% for custom_record, retrieved_cname in dkim_errors.items() %}
 
-              The CNAME record we obtain for
-              <em>dkim._domainkey.{{ custom_domain.domain }}</em> is:
-              <div class="mb-3 p-3 dns-record">
-                {% for r in dkim_errors %}
-
-                  {{ r }}
-                  <br />
-                {% endfor %}
-              </div>
-            {% endif %}
+                <li>
+                  The CNAME record we obtain for <em>{{ custom_record }}</em> is {{ retrieved_cname }}
+                </li>
+              {% endfor %}
+            </ul>
             {% if custom_domain.dkim_verified %}
 
               Without DKIM setup, emails you sent from your alias might end up in Spam/Junk folder.
             {% endif %}
           </div>
+          {% if custom_domain.dkim_verified %}
+
+            <div class="text-danger mt-4">
+              DKIM is still enabled. Please update your DKIM settings with all CNAME records
+            </div>
+          {%  endif %}
         {% endif %}
       </div>
       <hr />

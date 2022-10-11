@@ -7,13 +7,13 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators, IntegerField
 
 from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN, JOB_DELETE_DOMAIN
+from app.custom_domain_validation import CustomDomainValidation
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.dns_utils import (
     get_mx_domains,
     get_spf_domain,
     get_txt_record,
-    get_cname_record,
     is_mx_equivalent,
 )
 from app.log import LOG
@@ -46,8 +46,7 @@ def domain_detail_dns(custom_domain_id):
 
     spf_record = f"v=spf1 include:{EMAIL_DOMAIN} ~all"
 
-    # hardcode the DKIM selector here
-    dkim_cname = f"dkim._domainkey.{EMAIL_DOMAIN}"
+    domain_validator = CustomDomainValidation(EMAIL_DOMAIN)
 
     dmarc_record = "v=DMARC1; p=quarantine; pct=100; adkim=s; aspf=s"
 
@@ -122,23 +121,17 @@ def domain_detail_dns(custom_domain_id):
                 spf_errors = get_txt_record(custom_domain.domain)
 
         elif request.form.get("form-name") == "check-dkim":
-            dkim_record = get_cname_record("dkim._domainkey." + custom_domain.domain)
-            if dkim_record == dkim_cname:
+            dkim_errors = domain_validator.validate_dkim_records(custom_domain)
+            if len(dkim_errors) == 0:
                 flash("DKIM is setup correctly.", "success")
-                custom_domain.dkim_verified = True
-                Session.commit()
-
                 return redirect(
                     url_for(
                         "dashboard.domain_detail_dns", custom_domain_id=custom_domain.id
                     )
                 )
             else:
-                custom_domain.dkim_verified = False
-                Session.commit()
-                flash("DKIM: the CNAME record is not correctly set", "warning")
                 dkim_ok = False
-                dkim_errors = [dkim_record or "[Empty]"]
+                flash("DKIM: the CNAME record is not correctly set", "warning")
 
         elif request.form.get("form-name") == "check-dmarc":
             txt_records = get_txt_record("_dmarc." + custom_domain.domain)
@@ -164,6 +157,7 @@ def domain_detail_dns(custom_domain_id):
     return render_template(
         "dashboard/domain_detail/dns.html",
         EMAIL_SERVERS_WITH_PRIORITY=EMAIL_SERVERS_WITH_PRIORITY,
+        dkim_records=domain_validator.get_dkim_records(),
         **locals(),
     )
 
