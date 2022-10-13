@@ -88,10 +88,15 @@ class RedisSessionStore(SessionInterface):
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
         val = pickle.dumps(dict(session))
+        ttl = int(app.permanent_session_lifetime.total_seconds())
+        # Only 5 minutes for non-authenticated sessions.
+        # We need to keep the non-authenticated ones because the csrf token is stored in the session.
+        if "_user_id" not in session:
+            ttl = 300
         self._redis_w.setex(
             name=self._get_key(session.session_id),
             value=val,
-            time=int(app.permanent_session_lifetime.total_seconds()),
+            time=ttl,
         )
         signed_session_id = self._get_signer(app).sign(
             itsdangerous.want_bytes(session.session_id)
