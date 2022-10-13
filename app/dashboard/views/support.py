@@ -3,7 +3,7 @@ import urllib.parse
 from typing import Union
 
 import requests
-from flask import render_template, request, flash, url_for, redirect, g
+from flask import render_template, request, flash, url_for, redirect
 from flask_login import login_required, current_user
 from werkzeug.datastructures import FileStorage
 
@@ -83,7 +83,6 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
 @limiter.limit(
     "2/hour",
     methods=["POST"],
-    deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit,
 )
 def support_route():
     if not ZENDESK_HOST:
@@ -113,8 +112,6 @@ def support_route():
                 "dashboard/support.html", ticket_email=email, ticket_content=content
             )
 
-        # only enable rate limiting for successful Zendesk ticket creation
-        g.deduct_limit = True
         flash(
             "Support ticket is created. You will receive an email about its status.",
             "success",

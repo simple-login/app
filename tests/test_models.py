@@ -18,7 +18,7 @@ from app.models import (
     PlanEnum,
     PADDLE_SUBSCRIPTION_GRACE_DAYS,
 )
-from tests.utils import login, create_new_user
+from tests.utils import login, create_new_user, random_token
 
 
 def test_generate_email(flask_client):
@@ -71,45 +71,48 @@ def test_website_send_to(flask_client):
     alias = Alias.create_new_random(user)
     Session.commit()
 
+    prefix = random_token()
+
     # non-empty name
     c1 = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="abcd@example.com",
+        website_email=f"{prefix}@example.com",
         reply_email="rep@SL",
         name="First Last",
     )
-    assert c1.website_send_to() == '"First Last | abcd at example.com" <rep@SL>'
+    assert c1.website_send_to() == f'"First Last | {prefix} at example.com" <rep@SL>'
 
     # empty name, ascii website_from, easy case
     c1.name = None
-    c1.website_from = "First Last <abcd@example.com>"
-    assert c1.website_send_to() == '"First Last | abcd at example.com" <rep@SL>'
+    c1.website_from = f"First Last <{prefix}@example.com>"
+    assert c1.website_send_to() == f'"First Last | {prefix} at example.com" <rep@SL>'
 
     # empty name, RFC 2047 website_from
     c1.name = None
-    c1.website_from = "=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <abcd@example.com>"
-    assert c1.website_send_to() == '"Nhơn Nguyễn | abcd at example.com" <rep@SL>'
+    c1.website_from = f"=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <{prefix}@example.com>"
+    assert c1.website_send_to() == f'"Nhơn Nguyễn | {prefix} at example.com" <rep@SL>'
 
 
 def test_new_addr_default_sender_format(flask_client):
     user = login(flask_client)
     alias = Alias.first()
+    prefix = random_token()
 
     contact = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="abcd@example.com",
+        website_email=f"{prefix}@example.com",
         reply_email="rep@SL",
         name="First Last",
         commit=True,
     )
 
-    assert contact.new_addr() == '"First Last - abcd at example.com" <rep@SL>'
+    assert contact.new_addr() == f'"First Last - {prefix} at example.com" <rep@SL>'
 
     # Make sure email isn't duplicated if sender name equals email
-    contact.name = "abcd@example.com"
-    assert contact.new_addr() == '"abcd at example.com" <rep@SL>'
+    contact.name = f"{prefix}@example.com"
+    assert contact.new_addr() == f'"{prefix} at example.com" <rep@SL>'
 
 
 def test_new_addr_a_sender_format(flask_client):
@@ -117,17 +120,18 @@ def test_new_addr_a_sender_format(flask_client):
     user.sender_format = SenderFormatEnum.A.value
     Session.commit()
     alias = Alias.first()
+    prefix = random_token()
 
     contact = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="abcd@example.com",
+        website_email=f"{prefix}@example.com",
         reply_email="rep@SL",
         name="First Last",
         commit=True,
     )
 
-    assert contact.new_addr() == '"First Last - abcd(a)example.com" <rep@SL>'
+    assert contact.new_addr() == f'"First Last - {prefix}(a)example.com" <rep@SL>'
 
 
 def test_new_addr_no_name_sender_format(flask_client):
@@ -135,11 +139,12 @@ def test_new_addr_no_name_sender_format(flask_client):
     user.sender_format = SenderFormatEnum.NO_NAME.value
     Session.commit()
     alias = Alias.first()
+    prefix = random_token()
 
     contact = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="abcd@example.com",
+        website_email=f"{prefix}@example.com",
         reply_email="rep@SL",
         name="First Last",
         commit=True,
@@ -153,11 +158,12 @@ def test_new_addr_name_only_sender_format(flask_client):
     user.sender_format = SenderFormatEnum.NAME_ONLY.value
     Session.commit()
     alias = Alias.first()
+    prefix = random_token()
 
     contact = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="abcd@example.com",
+        website_email=f"{prefix}@example.com",
         reply_email="rep@SL",
         name="First Last",
         commit=True,
@@ -171,27 +177,29 @@ def test_new_addr_at_only_sender_format(flask_client):
     user.sender_format = SenderFormatEnum.AT_ONLY.value
     Session.commit()
     alias = Alias.first()
+    prefix = random_token()
 
     contact = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="abcd@example.com",
+        website_email=f"{prefix}@example.com",
         reply_email="rep@SL",
         name="First Last",
         commit=True,
     )
 
-    assert contact.new_addr() == '"abcd at example.com" <rep@SL>'
+    assert contact.new_addr() == f'"{prefix} at example.com" <rep@SL>'
 
 
 def test_new_addr_unicode(flask_client):
     user = login(flask_client)
     alias = Alias.first()
 
+    random_prefix = random_token()
     contact = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="abcd@example.com",
+        website_email=f"{random_prefix}@example.com",
         reply_email="rep@SL",
         name="Nhơn Nguyễn",
         commit=True,
@@ -199,12 +207,12 @@ def test_new_addr_unicode(flask_client):
 
     assert (
         contact.new_addr()
-        == "=?utf-8?q?Nh=C6=A1n_Nguy=E1=BB=85n_-_abcd_at_example=2Ecom?= <rep@SL>"
+        == f"=?utf-8?q?Nh=C6=A1n_Nguy=E1=BB=85n_-_{random_prefix}_at_example=2Ecom?= <rep@SL>"
     )
 
     # sanity check
     assert parse_full_address(contact.new_addr()) == (
-        "Nhơn Nguyễn - abcd at example.com",
+        f"Nhơn Nguyễn - {random_prefix} at example.com",
         "rep@sl",
     )
 

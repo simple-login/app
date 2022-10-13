@@ -1,5 +1,6 @@
 from flask import g
 
+from app import config
 from app.alias_suffix import signer
 from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
@@ -250,6 +251,8 @@ def test_cannot_create_alias_in_trash(flask_client):
 
 
 def test_too_many_requests(flask_client):
+    config.DISABLE_RATE_LIMIT = False
+
     user = login(flask_client)
 
     # create a custom domain

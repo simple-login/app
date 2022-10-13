@@ -1,5 +1,6 @@
 from flask import url_for, g
 
+from app import config
 from app.models import (
     Alias,
 )
@@ -20,6 +21,7 @@ def test_create_random_alias_success(flask_client):
 
 
 def test_too_many_requests(flask_client):
+    config.DISABLE_RATE_LIMIT = False
     login(flask_client)
 
     # can't create more than 5 aliases in 1 minute

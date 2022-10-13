@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
-
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
@@ -523,3 +522,5 @@ if ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
     MAX_NB_REVERSE_ALIAS_REPLACEMENT = int(
         os.environ["MAX_NB_REVERSE_ALIAS_REPLACEMENT"]
     )
+
+DISABLE_RATE_LIMIT = "DISABLE_RATE_LIMIT" in os.environ

@@ -17,7 +17,7 @@ def test_api_key_page_requires_password(flask_client):
 
 def test_create_delete_api_key(flask_client):
     user = login(flask_client)
-    Session.commit()
+    nb_api_key = ApiKey.count()
 
     # to bypass sudo mode
     with flask_client.session_transaction() as session:
@@ -31,7 +31,7 @@ def test_create_delete_api_key(flask_client):
     )
     assert create_r.status_code == 200
     api_key = ApiKey.get_by(user_id=user.id)
-    assert ApiKey.count() == 1
+    assert ApiKey.filter(ApiKey.user_id == user.id).count() == 1
     assert api_key.name == "for test"
 
     # delete api_key
@@ -41,10 +41,12 @@ def test_create_delete_api_key(flask_client):
         follow_redirects=True,
     )
     assert delete_r.status_code == 200
-    assert ApiKey.count() == 0
+    assert ApiKey.count() == nb_api_key
 
 
 def test_delete_all_api_keys(flask_client):
+    nb_api_keys = ApiKey.count()
+
     # create two test users
     user_1 = login(flask_client)
     user_2 = User.create(
@@ -59,7 +61,7 @@ def test_delete_all_api_keys(flask_client):
     Session.commit()
 
     assert (
-        ApiKey.count() == 3
+        ApiKey.count() == nb_api_keys + 3
     )  # assert that the total number of API keys for all users is 3.
     # assert that each user has the API keys created
     assert ApiKey.filter(ApiKey.user_id == user_1.id).count() == 2
@@ -77,7 +79,7 @@ def test_delete_all_api_keys(flask_client):
     )
     assert r.status_code == 200
     assert (
-        ApiKey.count() == 1
+        ApiKey.count() == nb_api_keys + 1
     )  # assert that the total number of API keys for all users is now 1.
     assert (
         ApiKey.filter(ApiKey.user_id == user_1.id).count() == 0
