@@ -61,12 +61,13 @@ def test_create_directory_in_trash(flask_client):
 
 def test_create_directory_out_of_quota(flask_client):
     user = login(flask_client)
-    nb_directory = Directory.count()
 
-    for i in range(MAX_NB_DIRECTORY - Directory.count()):
+    for i in range(
+        MAX_NB_DIRECTORY - Directory.filter(Directory.user_id == user.id).count()
+    ):
         Directory.create(name=f"test{i}", user_id=user.id, commit=True)
 
-    assert Directory.count() == MAX_NB_DIRECTORY
+    assert Directory.filter(Directory.user_id == user.id).count() == MAX_NB_DIRECTORY
 
     flask_client.post(
         url_for("dashboard.directory"),
@@ -75,4 +76,4 @@ def test_create_directory_out_of_quota(flask_client):
     )
 
     # no new directory is created
-    assert Directory.count() == MAX_NB_DIRECTORY + nb_directory
+    assert Directory.filter(Directory.user_id == user.id).count() == MAX_NB_DIRECTORY
