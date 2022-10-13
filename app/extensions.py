@@ -2,6 +2,8 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import current_user, LoginManager
 
+from app import config
+
 login_manager = LoginManager()
 login_manager.session_protection = "strong"
 
@@ -19,6 +21,12 @@ def __key_func():
 
 # Setup rate limit facility
 limiter = Limiter(key_func=__key_func)
+
+
+@limiter.request_filter
+def disable_rate_limit():
+    return config.DISABLE_RATE_LIMIT
+
 
 # @limiter.request_filter
 # def ip_whitelist():

@@ -1,10 +1,12 @@
-from flask import g
 from http import HTTPStatus
 from random import Random
 
+from flask import g
+
+from app import config
 from app.extensions import limiter
-from tests.utils import login
 from tests.conftest import app as test_app
+from tests.utils import login
 
 # IMPORTANT NOTICE
 # ----------------
@@ -41,6 +43,7 @@ def request_headers(source_ip: str) -> dict:
 
 
 def test_rate_limit_limits_by_source_ip(flask_client):
+    config.DISABLE_RATE_LIMIT = False
     source_ip = random_ip()
 
     for _ in range(_MAX_PER_MINUTE):
@@ -59,6 +62,7 @@ def test_rate_limit_limits_by_source_ip(flask_client):
 
 
 def test_rate_limit_limits_by_user_id(flask_client):
+    config.DISABLE_RATE_LIMIT = False
     # Login with a user
     login(flask_client)
     fix_rate_limit_after_request()
@@ -75,6 +79,7 @@ def test_rate_limit_limits_by_user_id(flask_client):
 
 
 def test_rate_limit_limits_by_user_id_ignoring_ip(flask_client):
+    config.DISABLE_RATE_LIMIT = False
     source_ip = random_ip()
 
     # Login with a user
