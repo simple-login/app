@@ -1,4 +1,4 @@
-from flask import request, render_template, redirect, url_for, flash
+from flask import request, render_template, redirect, url_for, flash, g
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
@@ -15,11 +15,16 @@ class ForgotPasswordForm(FlaskForm):
 
 
 @auth_bp.route("/forgot_password", methods=["GET", "POST"])
-@limiter.limit("10/minute")
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def forgot_password():
     form = ForgotPasswordForm(request.form)
 
     if form.validate_on_submit():
+        # Trigger rate limiter
+        g.deduct_limit = True
+
         email = sanitize_email(form.email.data)
         flash(
             "If your email is correct, you are going to receive an email to reset your password",

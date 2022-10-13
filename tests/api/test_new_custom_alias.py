@@ -1,13 +1,12 @@
 from flask import g
 
-from app import config
 from app.alias_suffix import signer
 from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
 from app.models import Alias, CustomDomain, Mailbox, AliasUsedOn
 from app.utils import random_word
-from tests.utils import login, random_domain, random_token
+from tests.utils import login, random_domain
 
 
 def test_v2(flask_client):
@@ -93,14 +92,12 @@ def test_full_payload(flask_client):
     suffix = f".{word}@{EMAIL_DOMAIN}"
     signed_suffix = signer.sign(suffix).decode()
 
-    prefix = random_token()
-
-    assert AliasUsedOn.filter(AliasUsedOn.user_id == user.id).count() == 0
+    assert AliasUsedOn.count() == 0
 
     r = flask_client.post(
         "/api/v3/alias/custom/new?hostname=example.com",
         json={
-            "alias_prefix": prefix,
+            "alias_prefix": "prefix",
             "signed_suffix": signed_suffix,
             "note": "test note",
             "mailbox_ids": [user.default_mailbox_id, mb.id],
@@ -109,7 +106,7 @@ def test_full_payload(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["alias"] == f"{prefix}.{word}@{EMAIL_DOMAIN}"
+    assert r.json["alias"] == f"prefix.{word}@{EMAIL_DOMAIN}"
 
     # assert returned field
     res = r.json
@@ -120,7 +117,7 @@ def test_full_payload(flask_client):
     assert new_alias.note == "test note"
     assert len(new_alias.mailboxes) == 2
 
-    alias_used_on = AliasUsedOn.filter(AliasUsedOn.user_id == user.id).first()
+    alias_used_on = AliasUsedOn.first()
     assert alias_used_on.alias_id == new_alias.id
     assert alias_used_on.hostname == "example.com"
 
@@ -253,8 +250,6 @@ def test_cannot_create_alias_in_trash(flask_client):
 
 
 def test_too_many_requests(flask_client):
-    config.DISABLE_RATE_LIMIT = False
-
     user = login(flask_client)
 
     # create a custom domain
