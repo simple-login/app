@@ -1,5 +1,5 @@
 import arrow
-from flask import request, render_template, redirect, url_for, flash, session, g
+from flask import request, render_template, redirect, url_for, flash, session
 from flask_login import login_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -19,9 +19,7 @@ class RecoveryForm(FlaskForm):
 
 
 @auth_bp.route("/recovery", methods=["GET", "POST"])
-@limiter.limit(
-    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
-)
+@limiter.limit("10/minute")
 def recovery_route():
     # passed from login page
     user_id = session.get(MFA_USER_ID)
@@ -46,8 +44,6 @@ def recovery_route():
 
         if recovery_code:
             if recovery_code.used:
-                # Trigger rate limiter
-                g.deduct_limit = True
                 flash("Code already used", "error")
             else:
                 del session[MFA_USER_ID]
@@ -67,8 +63,6 @@ def recovery_route():
                     LOG.d("redirect user to dashboard")
                     return redirect(url_for("dashboard.index"))
         else:
-            # Trigger rate limiter
-            g.deduct_limit = True
             flash("Incorrect code", "error")
             send_invalid_totp_login_email(user, "recovery")
 

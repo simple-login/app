@@ -7,7 +7,6 @@ from flask import (
     session,
     make_response,
     request,
-    g,
 )
 from flask_login import login_user
 from flask_wtf import FlaskForm
@@ -30,9 +29,7 @@ class OtpTokenForm(FlaskForm):
 
 
 @auth_bp.route("/mfa", methods=["GET", "POST"])
-@limiter.limit(
-    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
-)
+@limiter.limit("10/minute")
 def mfa():
     # passed from login page
     user_id = session.get(MFA_USER_ID)
@@ -58,9 +55,6 @@ def mfa():
             flash(f"Welcome back!", "success")
             # Redirect user to correct page
             return redirect(next_url or url_for("dashboard.index"))
-        else:
-            # Trigger rate limiter
-            g.deduct_limit = True
 
     if otp_token_form.validate_on_submit():
         totp = pyotp.TOTP(user.otp_secret)
@@ -94,8 +88,6 @@ def mfa():
 
         else:
             flash("Incorrect token", "warning")
-            # Trigger rate limiter
-            g.deduct_limit = True
             otp_token_form.token.data = None
             send_invalid_totp_login_email(user, "TOTP")
 
