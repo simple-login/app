@@ -42,22 +42,15 @@ def flask_app():
     yield app
 
 
-from app import config
-
-
 @pytest.fixture
 def flask_client():
     transaction = connection.begin()
 
     with app.app_context():
-        # disable rate limit during test
-        config.DISABLE_RATE_LIMIT = True
         try:
             client = app.test_client()
             yield client
         finally:
-            # disable rate limit again as some tests might enable rate limit
-            config.DISABLE_RATE_LIMIT = True
             # roll back all commits made during a test
             transaction.rollback()
             Session.rollback()

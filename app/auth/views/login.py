@@ -1,4 +1,4 @@
-from flask import request, render_template, redirect, url_for, flash
+from flask import request, render_template, redirect, url_for, flash, g
 from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -19,7 +19,9 @@ class LoginForm(FlaskForm):
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
-@limiter.limit("10/minute")
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def login():
     next_url = sanitize_next_url(request.args.get("next"))
 
@@ -39,6 +41,8 @@ def login():
         user = User.filter_by(email=sanitize_email(form.email.data)).first()
 
         if not user or not user.check_password(form.password.data):
+            # Trigger rate limiter
+            g.deduct_limit = True
             form.password.data = None
             flash("Email or password incorrect", "error")
             LoginEvent(LoginEvent.ActionType.failed).send()

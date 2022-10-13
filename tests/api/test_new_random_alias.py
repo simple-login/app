@@ -2,7 +2,6 @@ import uuid
 
 from flask import url_for, g
 
-from app import config
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
 from app.models import Alias, CustomDomain, AliasUsedOn
@@ -123,7 +122,6 @@ def test_out_of_quota(flask_client):
 
 
 def test_too_many_requests(flask_client):
-    config.DISABLE_RATE_LIMIT = False
     login(flask_client)
 
     # can't create more than 5 aliases in 1 minute

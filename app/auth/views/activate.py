@@ -1,4 +1,4 @@
-from flask import request, redirect, url_for, flash, render_template
+from flask import request, redirect, url_for, flash, render_template, g
 from flask_login import login_user, current_user
 
 from app import email_utils
@@ -11,7 +11,9 @@ from app.utils import sanitize_next_url
 
 
 @auth_bp.route("/activate", methods=["GET", "POST"])
-@limiter.limit("10/minute")
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def activate():
     if current_user.is_authenticated:
         return (
@@ -24,6 +26,8 @@ def activate():
     activation_code: ActivationCode = ActivationCode.get_by(code=code)
 
     if not activation_code:
+        # Trigger rate limiter
+        g.deduct_limit = True
         return (
             render_template(
                 "auth/activate.html", error="Activation code cannot be found"

@@ -11,6 +11,7 @@ from flask import (
     flash,
     session,
     make_response,
+    g,
 )
 from flask_login import login_user
 from flask_wtf import FlaskForm
@@ -34,7 +35,9 @@ class FidoTokenForm(FlaskForm):
 
 
 @auth_bp.route("/fido", methods=["GET", "POST"])
-@limiter.limit("10/minute")
+@limiter.limit(
+    "10/minute", deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit
+)
 def fido():
     # passed from login page
     user_id = session.get(MFA_USER_ID)
@@ -62,6 +65,9 @@ def fido():
             flash(f"Welcome back!", "success")
             # Redirect user to correct page
             return redirect(next_url or url_for("dashboard.index"))
+        else:
+            # Trigger rate limiter
+            g.deduct_limit = True
 
     # Handling POST requests
     if fido_token_form.validate_on_submit():
@@ -94,6 +100,8 @@ def fido():
         except Exception as e:
             LOG.w(f"An error occurred in WebAuthn verification process: {e}")
             flash("Key verification failed.", "warning")
+            # Trigger rate limiter
+            g.deduct_limit = True
             auto_activate = False
         else:
             user.fido_sign_count = new_sign_count

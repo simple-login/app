@@ -2,7 +2,6 @@ from random import random
 
 from flask import url_for, g
 
-from app import config
 from app.alias_suffix import (
     get_alias_suffixes,
     AliasSuffix,
@@ -329,7 +328,6 @@ def test_add_alias_in_custom_domain_trash(flask_client):
 
 
 def test_too_many_requests(flask_client):
-    config.DISABLE_RATE_LIMIT = False
     user = login(flask_client)
 
     # create a custom domain
