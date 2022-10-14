@@ -19,6 +19,7 @@ from app.models import (
     DomainDeletedAlias,
     DeletedAlias,
     SLDomain,
+    DailyMetric,
 )
 from app.utils import random_word
 from tests.utils import login, random_domain, create_new_user
@@ -51,6 +52,37 @@ def test_add_alias_success(flask_client):
 
     alias = Alias.order_by(Alias.created_at.desc()).first()
     assert not alias._mailboxes
+
+
+def test_add_alias_increment_nb_daily_metric_alias(flask_client):
+    user = login(flask_client)
+
+    daily_metric = DailyMetric.get_or_create_today_metric()
+    Session.commit()
+    nb_alias = daily_metric.nb_alias
+
+    suffix = f".{int(random() * 100000)}@{EMAIL_DOMAIN}"
+    alias_suffix = AliasSuffix(
+        is_custom=False,
+        suffix=suffix,
+        signed_suffix=signer.sign(suffix).decode(),
+        is_premium=False,
+        domain=EMAIL_DOMAIN,
+    )
+
+    # create with a single mailbox
+    r = flask_client.post(
+        url_for("dashboard.custom_alias"),
+        data={
+            "prefix": "prefix",
+            "signed-alias-suffix": alias_suffix.signed_suffix,
+            "mailboxes": [user.default_mailbox_id],
+        },
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    new_daily_metric = DailyMetric.get_or_create_today_metric()
+    assert new_daily_metric.nb_alias == nb_alias + 1
 
 
 def test_add_alias_multiple_mailboxes(flask_client):

@@ -16,7 +16,7 @@ from app.email_utils import (
 )
 from app.events.auth_event import RegisterEvent
 from app.log import LOG
-from app.models import User, ActivationCode
+from app.models import User, ActivationCode, DailyMetric
 from app.utils import random_string, encode_url, sanitize_email
 
 
@@ -91,6 +91,10 @@ def register():
                 try:
                     send_activation_email(user, next_url)
                     RegisterEvent(RegisterEvent.ActionType.success).send()
+                    DailyMetric.get_or_create_today_metric().nb_new_web_non_proton_user += (
+                        1
+                    )
+                    Session.commit()
                 except Exception:
                     flash("Invalid email, are you sure the email is correct?", "error")
                     RegisterEvent(RegisterEvent.ActionType.invalid_email).send()
