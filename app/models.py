@@ -2913,7 +2913,11 @@ class DailyMetric(Base, ModelMixin):
     @staticmethod
     def get_or_create_today_metric() -> DailyMetric:
         today = arrow.utcnow().date()
-        daily_metric = DailyMetric.get_or_create(date=today)
+        daily_metric = DailyMetric.get_by(date=today)
+        if not daily_metric:
+            daily_metric = DailyMetric.create(
+                date=today, nb_new_web_non_proton_user=0, nb_alias=0
+            )
         return daily_metric
 
 
