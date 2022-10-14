@@ -181,8 +181,8 @@
 
     </script>
     <script src="{{ url_for('static', filename='local-storage-polyfill.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/analytics.js', v='1') }}"></script>
     <!-- For additional script -->
     {% block script %}{% endblock %}
-    <script src="{{ url_for('static', filename='js/analytics.js', v='1') }}"></script>
   </body>
 </html>
