@@ -2905,10 +2905,10 @@ class DailyMetric(Base, ModelMixin):
 
     # users who sign up via web without using "Login with Proton"
     nb_new_web_non_proton_user = sa.Column(
-        sa.Integer, nullable=False, server_default="0"
+        sa.Integer, nullable=False, server_default="0", default=0
     )
 
-    nb_alias = sa.Column(sa.Integer, nullable=False, server_default="0")
+    nb_alias = sa.Column(sa.Integer, nullable=False, server_default="0", default=0)
 
     @staticmethod
     def get_or_create_today_metric() -> DailyMetric:
