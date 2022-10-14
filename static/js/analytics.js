@@ -17,7 +17,7 @@
   var plausibleScript = document.createElement('script');
   plausibleScript.defer = 1;
   plausibleScript.async = 1;
-  plausibleScript.dataset.domain = "app.simplelogin.io";
+  plausibleScript.dataset.domain = "app.simplelogin.io,everything.simplelogin.com";
   plausibleScript.src = 'https://plausible.simplelogin.io/js/index.js';
 
   var ins = document.getElementsByTagName('script')[0];
