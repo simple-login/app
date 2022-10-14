@@ -17,10 +17,13 @@
   var plausibleScript = document.createElement('script');
   plausibleScript.defer = 1;
   plausibleScript.async = 1;
-  plausibleScript.dataset.domain = "app.simplelogin.io";
+  plausibleScript.dataset.domain = "app.simplelogin.io,everything.simplelogin.com";
   plausibleScript.src = 'https://plausible.simplelogin.io/js/index.js';
 
   var ins = document.getElementsByTagName('script')[0];
   ins.parentNode.insertBefore(plausibleScript, ins);
+
+  // allow custom event
+  window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }
 
 })();
