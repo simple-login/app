@@ -1457,6 +1457,7 @@ class Alias(Base, ModelMixin):
                 new_alias.custom_domain_id = custom_domain.id
 
         Session.add(new_alias)
+        DailyMetric.get_or_create_today_metric().nb_alias += 1
 
         if commit:
             Session.commit()
@@ -2890,6 +2891,30 @@ class Metric2(Base, ModelMixin):
     nb_deleted_subdomain = sa.Column(sa.Float, nullable=True)
 
     nb_app = sa.Column(sa.Float, nullable=True)
+
+
+class DailyMetric(Base, ModelMixin):
+    """
+    For storing daily event-based metrics.
+    The difference between DailyEventMetric and Metric2 is Metric2 stores the total
+    whereas DailyEventMetric is reset for a new day
+    """
+
+    __tablename__ = "daily_metric"
+    date = sa.Column(sa.Date, nullable=False, unique=True)
+
+    # users who sign up via web without using "Login with Proton"
+    nb_new_web_non_proton_user = sa.Column(
+        sa.Integer, nullable=False, server_default="0"
+    )
+
+    nb_alias = sa.Column(sa.Integer, nullable=False, server_default="0")
+
+    @staticmethod
+    def get_or_create_today_metric() -> DailyMetric:
+        today = arrow.utcnow().date()
+        daily_metric = DailyMetric.get_or_create(date=today)
+        return daily_metric
 
 
 class Bounce(Base, ModelMixin):
