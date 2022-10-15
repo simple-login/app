@@ -579,3 +579,15 @@ class NewsletterUserAdmin(SLModelView):
 
     can_edit = False
     can_create = False
+
+
+class DailyMetricAdmin(SLModelView):
+    column_exclude_list = ["created_at", "updated_at", "id"]
+
+    can_export = True
+
+
+class MetricAdmin(SLModelView):
+    column_exclude_list = ["created_at", "updated_at", "id"]
+
+    can_export = True

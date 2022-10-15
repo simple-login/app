@@ -33,7 +33,6 @@ from app import paddle_utils, config, paddle_callback
 from app.admin_model import (
     SLAdminIndexView,
     UserAdmin,
-    EmailLogAdmin,
     AliasAdmin,
     MailboxAdmin,
     ManualSubscriptionAdmin,
@@ -43,6 +42,8 @@ from app.admin_model import (
     ProviderComplaintAdmin,
     NewsletterAdmin,
     NewsletterUserAdmin,
+    DailyMetricAdmin,
+    MetricAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -102,6 +103,8 @@ from app.models import (
     ProviderComplaint,
     Newsletter,
     NewsletterUser,
+    DailyMetric,
+    Metric2,
 )
 from app.monitor.base import monitor_bp
 from app.newsletter_utils import send_newsletter_to_user
@@ -752,7 +755,6 @@ def init_admin(app):
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
     admin.add_view(MailboxAdmin(Mailbox, Session))
-    admin.add_view(EmailLogAdmin(EmailLog, Session))
     admin.add_view(CouponAdmin(Coupon, Session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))
@@ -760,6 +762,8 @@ def init_admin(app):
     admin.add_view(ProviderComplaintAdmin(ProviderComplaint, Session))
     admin.add_view(NewsletterAdmin(Newsletter, Session))
     admin.add_view(NewsletterUserAdmin(NewsletterUser, Session))
+    admin.add_view(DailyMetricAdmin(DailyMetric, Session))
+    admin.add_view(MetricAdmin(Metric2, Session))
 
 
 def register_custom_commands(app):
