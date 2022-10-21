@@ -27,7 +27,6 @@ class CouponForm(FlaskForm):
 @login_required
 @parallel_limiter.lock()
 def coupon_route():
-    LOG.i("RO")
     coupon_form = CouponForm()
 
     if coupon_form.validate_on_submit():
@@ -72,7 +71,6 @@ def coupon_route():
             coupon.used_by_user_id = current_user.id
             coupon.used = True
             Session.commit()
-            LOG.i("USEDCOU")
 
             manual_sub: ManualSubscription = ManualSubscription.get_by(
                 user_id=current_user.id
