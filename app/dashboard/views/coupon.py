@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
+from app import parallel_limiter
 from app.config import PADDLE_VENDOR_ID, PADDLE_COUPON_ID
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -24,7 +25,9 @@ class CouponForm(FlaskForm):
 
 @dashboard_bp.route("/coupon", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock()
 def coupon_route():
+    LOG.i("RO")
     coupon_form = CouponForm()
 
     if coupon_form.validate_on_submit():
@@ -69,6 +72,7 @@ def coupon_route():
             coupon.used_by_user_id = current_user.id
             coupon.used = True
             Session.commit()
+            LOG.i("USEDCOU")
 
             manual_sub: ManualSubscription = ManualSubscription.get_by(
                 user_id=current_user.id
