@@ -1,7 +1,13 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, validators
+from wtforms import (
+    StringField,
+    validators,
+    SelectMultipleField,
+    BooleanField,
+    IntegerField,
+)
 
 from app.config import (
     EMAIL_DOMAIN,
@@ -21,6 +27,23 @@ class NewDirForm(FlaskForm):
     )
 
 
+class ToggleDirForm(FlaskForm):
+    directory_id = IntegerField(validators=[validators.DataRequired()])
+    directory_enabled = BooleanField(validators=[])
+
+
+class UpdateDirForm(FlaskForm):
+    directory_id = IntegerField(validators=[validators.DataRequired()])
+    mailbox_ids = SelectMultipleField(
+        validators=[validators.DataRequired()], validate_choice=False, choices=[]
+    )
+
+
+class DeleteDirForm(FlaskForm):
+    directory_id = IntegerField(validators=[validators.DataRequired()])
+    directory_name = StringField(validators=[validators.DataRequired()])
+
+
 @dashboard_bp.route("/directory", methods=["GET", "POST"])
 @login_required
 def directory():
@@ -33,6 +56,12 @@ def directory():
     mailboxes = current_user.mailboxes()
 
     new_dir_form = NewDirForm()
+    toggle_dir_form = ToggleDirForm()
+    update_dir_form = UpdateDirForm()
+    update_dir_form.mailbox_ids.choices = [
+        (str(mailbox.id), str(mailbox.id)) for mailbox in mailboxes
+    ]
+    delete_dir_form = DeleteDirForm()
 
     if request.method == "POST":
         if request.form.get("form-name") == "delete":
@@ -54,14 +83,17 @@ def directory():
             return redirect(url_for("dashboard.directory"))
 
         if request.form.get("form-name") == "toggle-directory":
-            dir_id = request.form.get("dir-id")
+            if not toggle_dir_form.validate():
+                flash(f"Invalid request", "warning")
+                return redirect(url_for("dashboard.directory"))
+            dir_id = toggle_dir_form.directory_id.data
             dir = Directory.get(dir_id)
 
             if not dir or dir.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
                 return redirect(url_for("dashboard.directory"))
 
-            if request.form.get("dir-status") == "on":
+            if toggle_dir_form.directory_enabled.data:
                 dir.disabled = False
                 flash(f"On-the-fly is enabled for {dir.name}", "success")
             else:
@@ -73,14 +105,17 @@ def directory():
             return redirect(url_for("dashboard.directory"))
 
         elif request.form.get("form-name") == "update":
-            dir_id = request.form.get("dir-id")
+            if not update_dir_form.validate():
+                flash(f"Invalid request", "warning")
+                return redirect(url_for("dashboard.directory"))
+            dir_id = update_dir_form.directory_id.data
             dir = Directory.get(dir_id)
 
             if not dir or dir.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
                 return redirect(url_for("dashboard.directory"))
 
-            mailbox_ids = request.form.getlist("mailbox_ids")
+            mailbox_ids = update_dir_form.mailbox_ids.data
             # check if mailbox is not tempered with
             mailboxes = []
             for mailbox_id in mailbox_ids:
@@ -181,6 +216,9 @@ def directory():
     return render_template(
         "dashboard/directory.html",
         dirs=dirs,
+        toggle_dir_form=toggle_dir_form,
+        update_dir_form=update_dir_form,
+        delete_dir_form=delete_dir_form,
         new_dir_form=new_dir_form,
         mailboxes=mailboxes,
         EMAIL_DOMAIN=EMAIL_DOMAIN,
