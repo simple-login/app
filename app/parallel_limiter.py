@@ -1,5 +1,6 @@
 import time
 import uuid
+from datetime import timedelta
 from functools import wraps
 from typing import Callable, Any, Optional
 
@@ -15,28 +16,32 @@ def set_redis_concurrent_lock(redis: RedisStorage):
     lock_redis = redis
 
 
-class __InnerLock:
+class _InnerLock:
     def __init__(
         self,
         lock_suffix: Optional[str] = None,
         max_wait_secs: int = 5,
         only_when: Optional[Callable[..., bool]] = None,
+        wait_loop_secs: float = 0.1,
     ):
         self.lock_suffix = lock_suffix
         self.max_wait_secs = max_wait_secs
         self.only_when = only_when
-        self.wait_loop_secs = 0.1
+        self.wait_loop_secs = wait_loop_secs
 
     def acquire_lock(self, lock_name: str, lock_value: str) -> bool:
         retries = 0
 
+        print(f"PRELOCK {lock_value}")
         while not lock_redis.storage.set(
-            lock_name, lock_value, ex=self.max_wait_secs, nx=True
+            lock_name, lock_value, ex=timedelta(seconds=self.max_wait_secs), nx=True
         ):
+            print(f"NOT LOCK {lock_value}")
             retries += 1
             if retries > self.max_wait_secs / self.wait_loop_secs:
                 return False
             time.sleep(self.wait_loop_secs)
+        print(f"LOCKED {lock_value}")
         return True
 
     def release_lock(self, lock_name: str, lock_value: str):
@@ -63,8 +68,10 @@ class __InnerLock:
             if not self.acquire_lock(lock_name, lock_value):
                 raise exceptions.TooManyRequests()
             try:
+                print(f"CALL {f.__name__}{args}")
                 return f(*args, **kwargs)
             finally:
+                print(f"OUT {f.__name__}{args}")
                 self.release_lock(lock_name, lock_value)
 
         return decorated
@@ -72,7 +79,8 @@ class __InnerLock:
 
 def lock(
     name: Optional[str] = None,
-    max_secs: int = 5,
+    max_wait_secs: int = 5,
     only_when: Optional[Callable[..., bool]] = None,
+    wait_loop_secs: float = 0.1,
 ):
-    return __InnerLock(name, max_secs, only_when)
+    return _InnerLock(name, max_wait_secs, only_when, wait_loop_secs)
