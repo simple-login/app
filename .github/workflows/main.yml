@@ -38,7 +38,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Start Redis v${{ matrix.redis-version }}
+      - name: Start Redis v6
         uses: superchargejs/redis-github-action@1.1.0
         with:
           redis-version: 6
