@@ -13,12 +13,13 @@
   console.log("init Analytics");
 
   // Add Plausible script
-  // <script async defer data-domain="app.simplelogin.io" src="https://plausible.simplelogin.io/js/index.js"></script>
+  // <script async defer data-domain="app.simplelogin.io,everything.simplelogin.com" src="https://simplelogin.io/p.outbound.js"></script>
   var plausibleScript = document.createElement('script');
   plausibleScript.defer = 1;
   plausibleScript.async = 1;
+  plausibleScript.dataset.api = "https://simplelogin.io/p/api/event";
   plausibleScript.dataset.domain = "app.simplelogin.io,everything.simplelogin.com";
-  plausibleScript.src = 'https://plausible.simplelogin.io/js/index.js';
+  plausibleScript.src = 'https://simplelogin.io/p.outbound.js';
 
   var ins = document.getElementsByTagName('script')[0];
   ins.parentNode.insertBefore(plausibleScript, ins);
