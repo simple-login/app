@@ -35,7 +35,7 @@ def custom_domain():
                 return redirect(url_for("dashboard.custom_domain"))
 
             if new_custom_domain_form.validate():
-                new_domain = new_custom_domain_form.domain.data.ower().strip()
+                new_domain = new_custom_domain_form.domain.data.lower().strip()
 
                 if new_domain.startswith("http://"):
                     new_domain = new_domain[len("http://") :]

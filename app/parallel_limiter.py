@@ -2,11 +2,10 @@ import time
 import uuid
 from functools import wraps
 from typing import Callable, Any, Optional
-from urllib import request
 
-from flask import flash, redirect
 from flask_login import current_user
 from limits.storage import RedisStorage
+from werkzeug import exceptions
 
 lock_redis: Optional[RedisStorage] = None
 
@@ -62,8 +61,7 @@ class __InnerLock:
             lock_value = str(uuid.uuid4())[:10]
             lock_name = f"cl:{current_user.id}:{lock_suffix}"
             if not self.acquire_lock(lock_name, lock_value):
-                flash("Request could not be completed. Please try again later.")
-                return redirect(request.Request.full_url)
+                raise exceptions.TooManyRequests()
             try:
                 return f(*args, **kwargs)
             finally:
