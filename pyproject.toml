@@ -50,7 +50,7 @@ packages = [
   { include = "app/" },
   { include = "migrations/" },
 ]
-include = ["templates/*", "templates/**/*"]
+include = ["templates/*", "templates/**/*", "local_data/*.txt"]
 
 [tool.poetry.dependencies]
 python = "^3.7.2"
