@@ -41,7 +41,6 @@ class UpdateDirForm(FlaskForm):
 
 class DeleteDirForm(FlaskForm):
     directory_id = IntegerField(validators=[validators.DataRequired()])
-    directory_name = StringField(validators=[validators.DataRequired()])
 
 
 @dashboard_bp.route("/directory", methods=["GET", "POST"])

@@ -120,7 +120,6 @@
                     {{ delete_dir_form.csrf_token }}
                     <input type="hidden" name="form-name" value="delete">
                     {{ delete_dir_form.directory_id( type="hidden", value=dir.id) }}
-                    {{ delete_dir_form.directory_name( type="hidden", value=dir.name) }}
                     <span class="card-link btn btn-link float-right text-danger delete-dir">Delete</span>
                   </form>
                 </div>
