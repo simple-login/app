@@ -13,6 +13,7 @@
       </div>
       <form method="post">
         <input type="hidden" name="form-name" value="delete-account">
+        {{ delete_form.csrf_token }}
         <span class="delete-account btn btn-outline-danger">Delete account</span>
       </form>
     </div>

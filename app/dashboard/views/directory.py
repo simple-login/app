@@ -65,18 +65,20 @@ def directory():
 
     if request.method == "POST":
         if request.form.get("form-name") == "delete":
-            dir_id = request.form.get("dir-id")
-            dir = Directory.get(dir_id)
+            if not delete_dir_form.validate():
+                flash(f"Invalid request", "warning")
+                return redirect(url_for("dashboard.directory"))
+            dir_obj = Directory.get(delete_dir_form.directory_id.data)
 
-            if not dir:
+            if not dir_obj:
                 flash("Unknown error. Refresh the page", "warning")
                 return redirect(url_for("dashboard.directory"))
-            elif dir.user_id != current_user.id:
+            elif dir_obj.user_id != current_user.id:
                 flash("You cannot delete this directory", "warning")
                 return redirect(url_for("dashboard.directory"))
 
-            name = dir.name
-            Directory.delete(dir_id)
+            name = dir_obj.name
+            Directory.delete(dir_obj.id)
             Session.commit()
             flash(f"Directory {name} has been deleted", "success")
 
@@ -87,18 +89,18 @@ def directory():
                 flash(f"Invalid request", "warning")
                 return redirect(url_for("dashboard.directory"))
             dir_id = toggle_dir_form.directory_id.data
-            dir = Directory.get(dir_id)
+            dir_obj = Directory.get(dir_id)
 
-            if not dir or dir.user_id != current_user.id:
+            if not dir_obj or dir_obj.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
                 return redirect(url_for("dashboard.directory"))
 
             if toggle_dir_form.directory_enabled.data:
-                dir.disabled = False
-                flash(f"On-the-fly is enabled for {dir.name}", "success")
+                dir_obj.disabled = False
+                flash(f"On-the-fly is enabled for {dir_obj.name}", "success")
             else:
-                dir.disabled = True
-                flash(f"On-the-fly is disabled for {dir.name}", "warning")
+                dir_obj.disabled = True
+                flash(f"On-the-fly is disabled for {dir_obj.name}", "warning")
 
             Session.commit()
 
@@ -109,9 +111,9 @@ def directory():
                 flash(f"Invalid request", "warning")
                 return redirect(url_for("dashboard.directory"))
             dir_id = update_dir_form.directory_id.data
-            dir = Directory.get(dir_id)
+            dir_obj = Directory.get(dir_id)
 
-            if not dir or dir.user_id != current_user.id:
+            if not dir_obj or dir_obj.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
                 return redirect(url_for("dashboard.directory"))
 
@@ -134,14 +136,14 @@ def directory():
                 return redirect(url_for("dashboard.directory"))
 
             # first remove all existing directory-mailboxes links
-            DirectoryMailbox.filter_by(directory_id=dir.id).delete()
+            DirectoryMailbox.filter_by(directory_id=dir_obj.id).delete()
             Session.flush()
 
             for mailbox in mailboxes:
-                DirectoryMailbox.create(directory_id=dir.id, mailbox_id=mailbox.id)
+                DirectoryMailbox.create(directory_id=dir_obj.id, mailbox_id=mailbox.id)
 
             Session.commit()
-            flash(f"Directory {dir.name} has been updated", "success")
+            flash(f"Directory {dir_obj.name} has been updated", "success")
 
             return redirect(url_for("dashboard.directory"))
         elif request.form.get("form-name") == "create":
