@@ -32,16 +32,13 @@ class _InnerLock:
     def acquire_lock(self, lock_name: str, lock_value: str) -> bool:
         retries = 0
 
-        print(f"PRELOCK {lock_value}")
         while not lock_redis.storage.set(
             lock_name, lock_value, ex=timedelta(seconds=self.max_wait_secs), nx=True
         ):
-            print(f"NOT LOCK {lock_value}")
             retries += 1
             if retries > self.max_wait_secs / self.wait_loop_secs:
                 return False
             time.sleep(self.wait_loop_secs)
-        print(f"LOCKED {lock_value}")
         return True
 
     def release_lock(self, lock_name: str, lock_value: str):
@@ -68,10 +65,8 @@ class _InnerLock:
             if not self.acquire_lock(lock_name, lock_value):
                 raise exceptions.TooManyRequests()
             try:
-                print(f"CALL {f.__name__}{args}")
                 return f(*args, **kwargs)
             finally:
-                print(f"OUT {f.__name__}{args}")
                 self.release_lock(lock_name, lock_value)
 
         return decorated
