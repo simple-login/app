@@ -264,9 +264,15 @@ def poll_apple_subscription():
     """Poll Apple API to update AppleSubscription"""
     # todo: only near the end of the subscription
     for apple_sub in AppleSubscription.all():
+        if not apple_sub.product_id:
+            LOG.d("Ignore %s", apple_sub)
+            continue
+
         user = apple_sub.user
-        verify_receipt(apple_sub.receipt_data, user, APPLE_API_SECRET)
-        verify_receipt(apple_sub.receipt_data, user, MACAPP_APPLE_API_SECRET)
+        if "io.simplelogin.macapp.subscription" in apple_sub.product_id:
+            verify_receipt(apple_sub.receipt_data, user, MACAPP_APPLE_API_SECRET)
+        else:
+            verify_receipt(apple_sub.receipt_data, user, APPLE_API_SECRET)
 
     LOG.d("Finish poll_apple_subscription")
 
