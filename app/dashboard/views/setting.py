@@ -71,6 +71,10 @@ class PromoCodeForm(FlaskForm):
     code = StringField("Name", validators=[validators.DataRequired()])
 
 
+class CSRFValidationForm(FlaskForm):
+    pass
+
+
 def get_proton_linked_account() -> Optional[str]:
     # Check if the current user has a partner_id
     try:
@@ -104,6 +108,7 @@ def setting():
     form = SettingForm()
     promo_form = PromoCodeForm()
     change_email_form = ChangeEmailForm()
+    csrf_form = CSRFValidationForm()
 
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
@@ -112,6 +117,9 @@ def setting():
         pending_email = None
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(url_for("dashboard.setting"))
         if request.form.get("form-name") == "update-email":
             if change_email_form.validate():
                 # whether user can proceed with the email update
@@ -395,6 +403,7 @@ def setting():
 
     return render_template(
         "dashboard/setting.html",
+        csrf_form=csrf_form,
         form=form,
         PlanEnum=PlanEnum,
         SenderFormatEnum=SenderFormatEnum,
@@ -477,9 +486,14 @@ def cancel_email_change():
         return redirect(url_for("dashboard.setting"))
 
 
-@dashboard_bp.route("/unlink_proton_account", methods=["GET", "POST"])
+@dashboard_bp.route("/unlink_proton_account", methods=["POST"])
 @login_required
 def unlink_proton_account():
+    csrf_form = CSRFValidationForm()
+    if not csrf_form.validate():
+        flash("Invalid request", "warning")
+        return redirect(url_for("dashboard.setting"))
+
     perform_proton_account_unlink(current_user)
     flash("Your Proton account has been unlinked", "success")
     return redirect(url_for("dashboard.setting"))
