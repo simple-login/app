@@ -17,6 +17,7 @@ from app.models import (
     EmailLog,
     Contact,
 )
+from app.utils import CSRFValidationForm
 
 
 @dataclass
@@ -75,8 +76,12 @@ def index():
                 "highlight_alias_id must be a number, received %s",
                 request.args.get("highlight_alias_id"),
             )
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "create-custom-email":
             if current_user.can_create_new_alias():
                 return redirect(url_for("dashboard.custom_alias"))
@@ -204,6 +209,7 @@ def index():
         sort=sort,
         filter=alias_filter,
         stats=stats,
+        csrf_form=csrf_form,
     )
 
 

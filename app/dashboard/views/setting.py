@@ -53,7 +53,7 @@ from app.models import (
     UnsubscribeBehaviourEnum,
 )
 from app.proton.utils import get_proton_partner, perform_proton_account_unlink
-from app.utils import random_string, sanitize_email
+from app.utils import random_string, sanitize_email, CSRFValidationForm
 
 
 class SettingForm(FlaskForm):
@@ -69,10 +69,6 @@ class ChangeEmailForm(FlaskForm):
 
 class PromoCodeForm(FlaskForm):
     code = StringField("Name", validators=[validators.DataRequired()])
-
-
-class CSRFValidationForm(FlaskForm):
-    pass
 
 
 def get_proton_linked_account() -> Optional[str]:

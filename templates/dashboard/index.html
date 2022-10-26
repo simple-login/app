@@ -90,6 +90,7 @@
         <div>
           <div class="btn-group" role="group">
             <form method="post">
+              {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="create-custom-email">
               <button data-toggle="tooltip"
                       title="Create a custom alias"
@@ -99,6 +100,7 @@
             </form>
             <div class="btn-group" role="group">
               <form method="post">
+                {{ csrf_form.csrf_token }}
                 <input type="hidden" name="form-name" value="create-random-email">
                 <button data-toggle="tooltip"
                         title="Create a totally random alias"
@@ -117,6 +119,7 @@
                    aria-labelledby="btnGroupDrop1">
                 <div>
                   <form method="post">
+                    {{ csrf_form.csrf_token }}
                     <input type="hidden" name="form-name" value="create-random-email">
                     <input type="hidden"
                            name="generator_scheme"
@@ -126,6 +129,7 @@
                 </div>
                 <div>
                   <form method="post">
+                    {{ csrf_form.csrf_token }}
                     <input type="hidden" name="form-name" value="create-random-email">
                     <input type="hidden"
                            name="generator_scheme"
@@ -152,6 +156,7 @@
       <!-- Filter Control -->
       <div class="col d-flex">
         <form method="get" class="form-inline">
+          {{ csrf_form.csrf_token }}
           <select name="sort"
                   onchange="this.form.submit()"
                   class="form-control mr-3 shadow">
@@ -493,6 +498,7 @@
             <i class="ml-0 dropdown-icon fe fe-share-2 text-primary"></i>
           </a>
           <form method="post">
+            {{ csrf_form.csrf_token }}
             <input type="hidden" name="form-name" value="delete-alias">
             <input type="hidden" name="alias-id" value="{{ alias.id }}">
             <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">

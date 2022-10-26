@@ -9,11 +9,7 @@ from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.log import LOG
 from app.models import File, BatchImport, Job
-from app.utils import random_string
-
-
-class CSRFVerificationForm(FlaskForm):
-    pass
+from app.utils import random_string, CSRFValidationForm
 
 
 @dashboard_bp.route("/batch_import", methods=["GET", "POST"])
@@ -34,7 +30,7 @@ def batch_import_route():
         user_id=current_user.id, processed=False
     ).all()
 
-    csrf_form = CSRFVerificationForm()
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
         if not csrf_form.validate():
