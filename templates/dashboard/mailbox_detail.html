@@ -87,6 +87,7 @@
               {% if mailbox.pgp_finger_print %}
 
                 <form method="post">
+                  {{ csrf_form.csrf_token }}
                   <input type="hidden" name="form-name" value="toggle-pgp">
                   <label class="custom-switch cursor" style="padding-left: 1rem" data-toggle="tooltip" {% if mailbox.disable_pgp %}
                      title="Enable PGP" {% else %} title="Disable PGP" {% endif %}>
@@ -108,6 +109,7 @@
             <div class="alert alert-danger" role="alert">This feature is only available in premium plan.</div>
           {% endif %}
           <form method="post">
+            {{ csrf_form.csrf_token }}
             <div class="form-group">
               <label class="form-label">PGP Public Key</label>
               <textarea name="pgp" {% if not current_user.is_premium() %} disabled {% endif %} class="form-control" rows=10 id="pgp-public-key" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
@@ -127,6 +129,7 @@
       <div class="card" {% if not mailbox.pgp_enabled() %}
          disabled {% endif %}>
         <form method="post">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="generic-subject">
           <div class="card-body">
             <div class="card-title">
@@ -167,6 +170,7 @@
 
           <div class="card" id="spf">
             <form method="post">
+              {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="force-spf">
               <div class="card-body">
                 <div class="card-title">
@@ -210,6 +214,7 @@
                   <li>
                     {{ authorized_address.email }}
                     <form method="post" action="#authorized-address" style="display: inline">
+                      {{ csrf_form.csrf_token }}
                       <input type="hidden" name="form-name" value="delete-authorized-address">
                       <input type="hidden"
                              name="authorized-address-id"
@@ -221,6 +226,7 @@
               </ul>
             {% endif %}
             <form method="post" action="#authorized-address" class="form-inline">
+              {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="add-authorized-address">
               <input type="email" name="email" size="50" class="form-control">
               <input type="submit" class="btn btn-primary" value="Add">

@@ -132,7 +132,7 @@ def mailbox_route():
         "dashboard/mailbox.html",
         mailboxes=mailboxes,
         new_mailbox_form=new_mailbox_form,
-        csrf_form=csrf_form
+        csrf_form=csrf_form,
     )
 
 
