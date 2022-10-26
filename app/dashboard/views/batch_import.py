@@ -1,7 +1,6 @@
 import arrow
 from flask import render_template, flash, request, redirect, url_for
 from flask_login import login_required, current_user
-from flask_wtf import FlaskForm
 
 from app import s3
 from app.config import JOB_BATCH_IMPORT

@@ -11,7 +11,7 @@ from app.dashboard.base import dashboard_bp
 from app.log import LOG
 from app.models import PartnerUser
 from app.proton.utils import get_proton_partner
-from app.utils import sanitize_next_url, CSRFValidationForm
+from app.utils import sanitize_next_url
 
 _SUDO_GAP = 900
 
