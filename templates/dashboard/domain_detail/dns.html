@@ -41,6 +41,7 @@
      data-clipboard-text="{{ custom_domain.get_ownership_dns_txt_value() }}">{{ custom_domain.get_ownership_dns_txt_value() }}</em>
           </div>
           <form method="post" action="#ownership-form">
+            {{ csrf_form.csrf_token }}
             <input type="hidden" name="form-name" value="check-ownership">
             <button type="submit" class="btn btn-primary">Verify</button>
           </form>
@@ -107,6 +108,7 @@
           </div>
         {% endfor %}
         <form method="post" action="#mx-form">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="check-mx">
           {% if custom_domain.verified %}
 
@@ -180,6 +182,7 @@
           </em>
         </div>
         <form method="post" action="#spf-form">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="check-spf">
           {% if custom_domain.spf_verified %}
 
@@ -273,6 +276,7 @@
           <img src="/static/images/cloudflare-proxy.png" class="w-100">
         </div>
         <form method="post" action="#dkim-form">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="check-dkim">
           {% if custom_domain.dkim_verified %}
 
@@ -367,6 +371,7 @@
           <br />
         </div>
         <form method="post" action="#dmarc-form">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="check-dmarc">
           {% if custom_domain.dmarc_verified %}
 
