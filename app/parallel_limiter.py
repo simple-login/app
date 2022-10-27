@@ -3,9 +3,12 @@ from datetime import timedelta
 from functools import wraps
 from typing import Callable, Any, Optional
 
+from flask import request
 from flask_login import current_user
 from limits.storage import RedisStorage
 from werkzeug import exceptions
+
+from app import session
 
 lock_redis: Optional[RedisStorage] = None
 
@@ -52,7 +55,10 @@ class _InnerLock:
                 return f(*args, **kwargs)
 
             lock_value = str(uuid.uuid4())[:10]
-            lock_name = f"cl:{current_user.id}:{lock_suffix}"
+            if "id" in dir(current_user):
+                lock_name = f"cl:{current_user.id}:{lock_suffix}"
+            else:
+                lock_name = f"cl:{request.remote_addr}:{lock_suffix}"
             self.acquire_lock(lock_name, lock_value)
             try:
                 return f(*args, **kwargs)
