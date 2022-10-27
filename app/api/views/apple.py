@@ -40,9 +40,10 @@ def apple_process_payment():
     LOG.d("request for /apple/process_payment from %s", user)
     data = request.get_json()
     receipt_data = data.get("receipt_data")
-    is_macapp = "is_macapp" in data
+    is_macapp = "is_macapp" in data and data["is_macapp"] is True
 
     if is_macapp:
+        LOG.d("Use Macapp secret")
         password = MACAPP_APPLE_API_SECRET
     else:
         password = APPLE_API_SECRET
