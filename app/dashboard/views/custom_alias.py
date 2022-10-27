@@ -3,6 +3,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
+from app import parallel_limiter
 from app.alias_suffix import (
     get_alias_suffixes,
     check_suffix_signature,
@@ -28,6 +29,7 @@ from app.models import (
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
 @limiter.limit(ALIAS_LIMIT, methods=["POST"])
 @login_required
+@parallel_limiter.lock(name="alias_creation")
 def custom_alias():
     # check if user has not exceeded the alias quota
     if not current_user.can_create_new_alias():

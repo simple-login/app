@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
-from app import alias_utils
+from app import alias_utils, parallel_limiter
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
 from app.config import ALIAS_LIMIT, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
@@ -58,6 +58,10 @@ def get_stats(user: User) -> Stats:
     exempt_when=lambda: request.form.get("form-name") != "create-random-email",
 )
 @login_required
+@parallel_limiter.lock(
+    name="alias_creation",
+    only_when=lambda: request.form.get("form-name") == "create-random-email",
+)
 def index():
     query = request.args.get("query") or ""
     sort = request.args.get("sort") or ""

@@ -9,7 +9,7 @@ from sqlalchemy import and_, func, case
 from wtforms import StringField, validators, ValidationError
 
 # Need to import directly from config to allow modification from the tests
-from app import config
+from app import config, parallel_limiter
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import (
@@ -231,6 +231,7 @@ def delete_contact(alias: Alias, contact_id: int):
 
 @dashboard_bp.route("/alias_contact_manager/<int:alias_id>/", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(name="contact_creation")
 def alias_contact_manager(alias_id):
     highlight_contact_id = None
     if request.args.get("highlight_contact_id"):

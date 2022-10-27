@@ -111,7 +111,7 @@ from app.newsletter_utils import send_newsletter_to_user
 from app.oauth.base import oauth_bp
 from app.onboarding.base import onboarding_bp
 from app.phone.base import phone_bp
-from app.session import set_redis_session
+from app.redis_services import initialize_redis_services
 from app.utils import random_string
 
 if SENTRY_DSN:
@@ -167,7 +167,7 @@ def create_app() -> Flask:
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     if MEM_STORE_URI:
         app.config[flask_limiter.extension.C.STORAGE_URL] = MEM_STORE_URI
-        set_redis_session(app, MEM_STORE_URI)
+        initialize_redis_services(app, MEM_STORE_URI)
 
     limiter.init_app(app)
 

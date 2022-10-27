@@ -2,6 +2,7 @@ import tldextract
 from flask import g
 from flask import jsonify, request
 
+from app import parallel_limiter
 from app.alias_suffix import get_alias_suffixes
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
@@ -20,6 +21,7 @@ from app.utils import convert_to_id
 @api_bp.route("/alias/random/new", methods=["POST"])
 @limiter.limit(ALIAS_LIMIT)
 @require_api_auth
+@parallel_limiter.lock(name="alias_creation")
 def new_random_alias():
     """
     Create a new random alias

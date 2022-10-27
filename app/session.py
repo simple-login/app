@@ -2,9 +2,9 @@ import uuid
 from typing import Optional
 
 import flask
-import limits.storage
 from flask import current_app, session
 from flask_login import logout_user
+
 
 try:
     import cPickle as pickle
@@ -109,21 +109,6 @@ class RedisSessionStore(SessionInterface):
             domain=domain,
             path=path,
             secure=secure,
-        )
-
-
-def set_redis_session(app: flask.Flask, redis_url: str):
-    if redis_url.startswith("redis://"):
-        storage = limits.storage.RedisStorage(redis_url)
-        app.session_interface = RedisSessionStore(storage.storage, storage.storage, app)
-    elif redis_url.startswith("redis+sentinel://"):
-        storage = limits.storage.RedisSentinelStorage(redis_url)
-        app.session_interface = RedisSessionStore(
-            storage.storage, storage.storage_slave, app
-        )
-    else:
-        raise RuntimeError(
-            f"Tried to set_redis_session with an invalid redis url: ${redis_url}"
         )
 
 
