@@ -66,11 +66,12 @@
                 <div class="d-flex">
                   {{ dir.name }}
                   <form method="post">
+                    {{ toggle_dir_form.csrf_token }}
                     <input type="hidden" name="form-name" value="toggle-directory">
-                    <input type="hidden" name="dir-id" value="{{ dir.id }}">
+                    {{ toggle_dir_form.directory_id( type="hidden", value=dir.id) }}
                     <label class="custom-switch cursor" style="padding-left: 1rem" data-toggle="tooltip" {% if dir.disabled %}
                        title="Enable directory on-the-fly alias creation" {% else %} title="Disable directory on-the-fly alias creation" {% endif %}>
-                      <input type="checkbox" class="custom-switch-input" name="dir-status" {{ "" if dir.disabled else "checked" }}>
+                      {{ toggle_dir_form.directory_enabled( class="custom-switch-input", checked=(not dir.disabled) ) }}
                       <span class="custom-switch-indicator"></span>
                     </label>
                   </form>
@@ -92,8 +93,9 @@
                 <br />
                 {% set dir_mailboxes=dir.mailboxes %}
                 <form method="post" class="mt-2">
+                  {{ update_dir_form.csrf_token }}
                   <input type="hidden" name="form-name" value="update">
-                  <input type="hidden" name="dir-id" value="{{ dir.id }}">
+                  {{ update_dir_form.directory_id( type="hidden", value=dir.id) }}
                   <select data-width="100%"
                           required
                           class="mailbox-select"
@@ -115,9 +117,9 @@
               <div class="row">
                 <div class="col">
                   <form method="post">
+                    {{ delete_dir_form.csrf_token }}
                     <input type="hidden" name="form-name" value="delete">
-                    <input type="hidden" class="dir-name" value="{{ dir.name }}">
-                    <input type="hidden" name="dir-id" value="{{ dir.id }}">
+                    {{ delete_dir_form.directory_id( type="hidden", value=dir.id) }}
                     <span class="card-link btn btn-link float-right text-danger delete-dir">Delete</span>
                   </form>
                 </div>
@@ -173,18 +175,20 @@
 
   <script>
     $(".delete-dir").on("click", function (e) {
-      let directory = $(this).parent().find(".dir-name").val();
+      let directory_name = $(this).parent().find("#directory_name").val();
 
-      const unsanitizedMessage = `All aliases associated with <b>${directory}</b> directory will also be deleted. ` +
+      const element = document.createElement('div');
+      element.innerText = directory_name;
+      const sanitized_name = element.innerHTML;
+
+      const message = `All aliases associated with <b>${sanitized_name}</b> directory will also be deleted. ` +
         `As a deleted directory can't be used by someone else, deleting a directory doesn't reset your directory quota. ` +
         `Your directory quota will be {{ current_user.directory_quota }} after the deletion, ` +
         " please confirm.";
-      const element = document.createElement('div');
-      element.innerText = unsanitizedMessage;
-      const sanitizedMessage = element.innerHTML;
+
 
       bootbox.confirm({
-        message: sanitizedMessage,
+        message: message,
         buttons: {
           confirm: {
             label: 'Yes, delete it',

@@ -25,7 +25,7 @@ from app.errors import (
 )
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog, User
-from app.utils import sanitize_email
+from app.utils import sanitize_email, CSRFValidationForm
 
 
 def email_validator():
@@ -258,8 +258,12 @@ def alias_contact_manager(alias_id):
         return redirect(url_for("dashboard.index"))
 
     new_contact_form = NewContactForm()
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "create":
             if new_contact_form.validate():
                 contact_address = new_contact_form.email.data.strip()
@@ -323,4 +327,5 @@ def alias_contact_manager(alias_id):
         query=query,
         nb_contact=nb_contact,
         can_create_contacts=user_can_create_contacts(current_user),
+        csrf_form=csrf_form,
     )

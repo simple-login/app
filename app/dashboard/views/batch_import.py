@@ -8,7 +8,7 @@ from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.log import LOG
 from app.models import File, BatchImport, Job
-from app.utils import random_string
+from app.utils import random_string, CSRFValidationForm
 
 
 @dashboard_bp.route("/batch_import", methods=["GET", "POST"])
@@ -29,14 +29,21 @@ def batch_import_route():
         user_id=current_user.id, processed=False
     ).all()
 
+    csrf_form = CSRFValidationForm()
+
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            redirect(request.url)
         if len(batch_imports) > 10:
             flash(
                 "You have too many imports already. Wait until some get cleaned up",
                 "error",
             )
             return render_template(
-                "dashboard/batch_import.html", batch_imports=batch_imports
+                "dashboard/batch_import.html",
+                batch_imports=batch_imports,
+                csrf_form=csrf_form,
             )
 
         alias_file = request.files["alias-file"]
@@ -66,4 +73,6 @@ def batch_import_route():
 
         return redirect(url_for("dashboard.batch_import_route"))
 
-    return render_template("dashboard/batch_import.html", batch_imports=batch_imports)
+    return render_template(
+        "dashboard/batch_import.html", batch_imports=batch_imports, csrf_form=csrf_form
+    )

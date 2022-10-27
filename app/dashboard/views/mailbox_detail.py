@@ -17,7 +17,7 @@ from app.log import LOG
 from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key_and_check
-from app.utils import sanitize_email
+from app.utils import sanitize_email, CSRFValidationForm
 
 
 class ChangeEmailForm(FlaskForm):
@@ -35,6 +35,7 @@ def mailbox_detail_route(mailbox_id):
         return redirect(url_for("dashboard.index"))
 
     change_email_form = ChangeEmailForm()
+    csrf_form = CSRFValidationForm()
 
     if mailbox.new_email:
         pending_email = mailbox.new_email
@@ -42,6 +43,9 @@ def mailbox_detail_route(mailbox_id):
         pending_email = None
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if (
             request.form.get("form-name") == "update-email"
             and change_email_form.validate_on_submit()

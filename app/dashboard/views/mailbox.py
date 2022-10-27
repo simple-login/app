@@ -18,6 +18,7 @@ from app.email_utils import (
 )
 from app.log import LOG
 from app.models import Mailbox, Job
+from app.utils import CSRFValidationForm
 
 
 class NewMailboxForm(FlaskForm):
@@ -36,8 +37,12 @@ def mailbox_route():
     )
 
     new_mailbox_form = NewMailboxForm()
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "delete":
             mailbox_id = request.form.get("mailbox-id")
             mailbox = Mailbox.get(mailbox_id)
@@ -127,6 +132,7 @@ def mailbox_route():
         "dashboard/mailbox.html",
         mailboxes=mailboxes,
         new_mailbox_form=new_mailbox_form,
+        csrf_form=csrf_form,
     )
 
 

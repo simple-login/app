@@ -28,7 +28,7 @@ from app.models import (
     Job,
 )
 from app.regex_utils import regex_match
-from app.utils import random_string
+from app.utils import random_string, CSRFValidationForm
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
@@ -47,6 +47,7 @@ def domain_detail_dns(custom_domain_id):
     spf_record = f"v=spf1 include:{EMAIL_DOMAIN} ~all"
 
     domain_validator = CustomDomainValidation(EMAIL_DOMAIN)
+    csrf_form = CSRFValidationForm()
 
     dmarc_record = "v=DMARC1; p=quarantine; pct=100; adkim=s; aspf=s"
 
@@ -54,6 +55,9 @@ def domain_detail_dns(custom_domain_id):
     mx_errors = spf_errors = dkim_errors = dmarc_errors = ownership_errors = []
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "check-ownership":
             txt_records = get_txt_record(custom_domain.domain)
 
@@ -165,6 +169,7 @@ def domain_detail_dns(custom_domain_id):
 @dashboard_bp.route("/domains/<int:custom_domain_id>/info", methods=["GET", "POST"])
 @login_required
 def domain_detail(custom_domain_id):
+    csrf_form = CSRFValidationForm()
     custom_domain: CustomDomain = CustomDomain.get(custom_domain_id)
     mailboxes = current_user.mailboxes()
 
@@ -173,6 +178,9 @@ def domain_detail(custom_domain_id):
         return redirect(url_for("dashboard.index"))
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "switch-catch-all":
             custom_domain.catch_all = not custom_domain.catch_all
             Session.commit()
@@ -301,12 +309,16 @@ def domain_detail(custom_domain_id):
 @dashboard_bp.route("/domains/<int:custom_domain_id>/trash", methods=["GET", "POST"])
 @login_required
 def domain_detail_trash(custom_domain_id):
+    csrf_form = CSRFValidationForm()
     custom_domain = CustomDomain.get(custom_domain_id)
     if not custom_domain or custom_domain.user_id != current_user.id:
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "empty-all":
             DomainDeletedAlias.filter_by(domain_id=custom_domain.id).delete()
             Session.commit()
@@ -350,6 +362,7 @@ def domain_detail_trash(custom_domain_id):
         "dashboard/domain_detail/trash.html",
         domain_deleted_aliases=domain_deleted_aliases,
         custom_domain=custom_domain,
+        csrf_form=csrf_form,
     )
 
 

@@ -26,6 +26,7 @@
           This transfer URL is <strong>valid for 24 hours</strong>. If it hasn't been used by then it will be automatically disabled.
         </p>
         <form method="post">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="remove">
           <button class="btn btn-warning mt-2">Remove alias transfer URL</button>
           <div class="small-text">If you don't want to share this alias anymore, you can remove the share URL.</div>
@@ -34,9 +35,10 @@
         {% if link_active %}
 
           <p class="alert alert-info">
-            You have an active transfer link. If you don't want to share this alias any more, please delete the link.
+            You have an active transfer link. If you don't want to share this alias anymore, please delete the link.
           </p>
           <form method="post">
+            {{ csrf_form.csrf_token }}
             <input type="hidden" name="form-name" value="remove">
             <button class="btn btn-warning mt-2">Remove alias transfer URL</button>
           </form>
@@ -46,6 +48,7 @@
             please create the <b>Share URL</b> 👇 and send it to the other person.
           </p>
           <form method="post">
+            {{ csrf_form.csrf_token }}
             <input type="hidden" name="form-name" value="create">
             <button class="btn btn-primary mt-2">Generate a new alias transfer URL</button>
           </form>

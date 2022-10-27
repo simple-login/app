@@ -24,6 +24,7 @@
          download>Download CSV Template</a>
       <hr />
       <form method="post" enctype="multipart/form-data" class="mt-4">
+        {{ csrf_form.csrf_token }}
         <input required
                type="file"
                name="alias-file"

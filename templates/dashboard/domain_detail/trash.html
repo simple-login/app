@@ -26,6 +26,7 @@
   {% if domain_deleted_aliases | length > 0 %}
 
     <form method="post">
+      {{ csrf_form.csrf_token }}
       <input type="hidden" name="form-name" value="empty-all">
       <button class="btn btn-outline-danger">Empty Trash</button>
       <div class="small-text">
@@ -42,6 +43,7 @@
     <b>{{ deleted_alias.email }}</b> -
     deleted {{ deleted_alias.created_at | dt }}
     <form method="post">
+      {{ csrf_form.csrf_token }}
       <input type="hidden" name="form-name" value="remove-single">
       <input type="hidden" name="deleted-alias-id" value="{{ deleted_alias.id }}">
       <button class="btn btn-sm btn-outline-warning">Remove from trash</button>

@@ -6,6 +6,7 @@ import urllib.parse
 from functools import wraps
 from typing import List, Optional
 
+from flask_wtf import FlaskForm
 from unidecode import unidecode
 
 from .config import WORDS_FILE_PATH, ALLOWED_REDIRECT_DOMAINS
@@ -126,3 +127,7 @@ def debug_info(func):
         return ret
 
     return wrap
+
+
+class CSRFValidationForm(FlaskForm):
+    pass

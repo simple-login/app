@@ -86,6 +86,7 @@
 
                     <div class="col">
                       <form method="post">
+                        {{ csrf_form.csrf_token }}
                         <input type="hidden" name="form-name" value="set-default">
                         <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
                         <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
@@ -97,6 +98,7 @@
                   {% endif %}
                   <div class="col">
                     <form method="post">
+                      {{ csrf_form.csrf_token }}
                       <input type="hidden" name="form-name" value="delete">
                       <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
                       <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
