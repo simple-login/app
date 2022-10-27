@@ -1254,6 +1254,12 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             envelope.rcpt_options,
             is_forward=False,
         )
+
+        # if alias belongs to several mailboxes, notify other mailboxes about this email
+        other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
+        for mb in other_mailboxes:
+            notify_mailbox(alias, mailbox, mb, msg)
+
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
         EmailLog.delete(email_log.id, commit=True)
@@ -1278,6 +1284,38 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     # return 250 even if error as user is already informed of the incident and can retry sending the email
     return True, status.E200
+
+
+def notify_mailbox(alias, mailbox, other_mb: Mailbox, msg):
+    """Notify another mailbox about an email sent by a mailbox to a reverse alias"""
+    LOG.d(
+        f"notify {other_mb.email} about email sent "
+        f"from {mailbox.email} on behalf of {alias.email} to {msg[headers.TO]}"
+    )
+    notif = add_header(
+        msg,
+        f"""Email sent from alias {alias.email} \n
+To: {msg[headers.TO] or "Empty"} \n
+CC: {msg[headers.CC] or "Empty"}\n
+Sent from mailbox {mailbox.email}""",
+    )
+    add_or_replace_header(notif, headers.FROM, config.NOREPLY)
+    add_or_replace_header(notif, headers.TO, other_mb.email)
+    add_or_replace_header(
+        notif,
+        headers.SUBJECT,
+        f"{mailbox.email} on behalf of {alias.email} to {msg[headers.TO] or '<>'}, cc {msg[headers.CC] or '<>'}",
+    )
+    # add DKIM
+    email_domain = NOREPLY[NOREPLY.find("@") + 1 :]
+    add_dkim_signature(msg, email_domain)
+    transaction = TransactionalEmail.create(email=other_mb.email, commit=True)
+    # use a different envelope sender for each transactional email (aka VERP)
+    sl_sendmail(
+        generate_verp_email(VerpType.transactional, transaction.id),
+        other_mb.email,
+        notif,
+    )
 
 
 def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message):
