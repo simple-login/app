@@ -8,8 +8,6 @@ from flask_login import current_user
 from limits.storage import RedisStorage
 from werkzeug import exceptions
 
-from app import session
-
 lock_redis: Optional[RedisStorage] = None
 
 
