@@ -1,4 +1,3 @@
-import time
 import uuid
 from datetime import timedelta
 from functools import wraps
@@ -22,24 +21,16 @@ class _InnerLock:
         lock_suffix: Optional[str] = None,
         max_wait_secs: int = 5,
         only_when: Optional[Callable[..., bool]] = None,
-        wait_loop_secs: float = 0.1,
     ):
         self.lock_suffix = lock_suffix
         self.max_wait_secs = max_wait_secs
         self.only_when = only_when
-        self.wait_loop_secs = wait_loop_secs
 
-    def acquire_lock(self, lock_name: str, lock_value: str) -> bool:
-        retries = 0
-
-        while not lock_redis.storage.set(
+    def acquire_lock(self, lock_name: str, lock_value: str):
+        if not lock_redis.storage.set(
             lock_name, lock_value, ex=timedelta(seconds=self.max_wait_secs), nx=True
         ):
-            retries += 1
-            if retries > self.max_wait_secs / self.wait_loop_secs:
-                return False
-            time.sleep(self.wait_loop_secs)
-        return True
+            raise exceptions.TooManyRequests()
 
     def release_lock(self, lock_name: str, lock_value: str):
         current_lock_value = lock_redis.storage.get(lock_name)
@@ -62,8 +53,7 @@ class _InnerLock:
 
             lock_value = str(uuid.uuid4())[:10]
             lock_name = f"cl:{current_user.id}:{lock_suffix}"
-            if not self.acquire_lock(lock_name, lock_value):
-                raise exceptions.TooManyRequests()
+            self.acquire_lock(lock_name, lock_value)
             try:
                 return f(*args, **kwargs)
             finally:
@@ -76,6 +66,5 @@ def lock(
     name: Optional[str] = None,
     max_wait_secs: int = 5,
     only_when: Optional[Callable[..., bool]] = None,
-    wait_loop_secs: float = 0.1,
 ):
-    return _InnerLock(name, max_wait_secs, only_when, wait_loop_secs)
+    return _InnerLock(name, max_wait_secs, only_when)
