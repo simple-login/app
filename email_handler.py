@@ -1128,6 +1128,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         + headers.MIME_HEADERS,
     )
 
+    orig_to = msg[headers.TO]
+    orig_cc = msg[headers.CC]
+
     # replace the reverse-alias by the contact email in the email body
     # as this is usually included when replying
     if user.replace_reverse_alias:
@@ -1258,7 +1261,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         # if alias belongs to several mailboxes, notify other mailboxes about this email
         other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
         for mb in other_mailboxes:
-            notify_mailbox(alias, mailbox, mb, msg)
+            notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc)
 
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
@@ -1286,7 +1289,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     return True, status.E200
 
 
-def notify_mailbox(alias, mailbox, other_mb: Mailbox, msg):
+def notify_mailbox(alias, mailbox, other_mb: Mailbox, msg, orig_to, orig_cc):
     """Notify another mailbox about an email sent by a mailbox to a reverse alias"""
     LOG.d(
         f"notify {other_mb.email} about email sent "
@@ -1297,10 +1300,14 @@ def notify_mailbox(alias, mailbox, other_mb: Mailbox, msg):
         f"""Email sent from alias {alias.email} \n
 To: {msg[headers.TO] or "Empty"} \n
 CC: {msg[headers.CC] or "Empty"}\n
-Sent from mailbox {mailbox.email}""",
+Sent from mailbox {mailbox.email}\n,
+**** Don't forget to remove this section when replying ****
+""",
     )
     add_or_replace_header(notif, headers.FROM, config.NOREPLY)
-    add_or_replace_header(notif, headers.TO, other_mb.email)
+    # keep the reverse alias in CC and To header so user can reply more easily
+    add_or_replace_header(notif, headers.TO, orig_to)
+    add_or_replace_header(notif, headers.CC, orig_cc)
     add_or_replace_header(
         notif,
         headers.SUBJECT,
