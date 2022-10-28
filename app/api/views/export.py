@@ -7,6 +7,7 @@ from flask import make_response
 
 from app.api.base import api_bp, require_api_auth
 from app.models import Alias, Client, CustomDomain
+from app.alias_utils import alias_export_csv
 
 
 @api_bp.route("/export/data", methods=["GET"])
@@ -49,24 +50,4 @@ def export_aliases():
         Importable CSV file
 
     """
-    user = g.user
-
-    data = [["alias", "note", "enabled", "mailboxes"]]
-    for alias in Alias.filter_by(user_id=user.id).all():  # type: Alias
-        # Always put the main mailbox first
-        # It is seen a primary while importing
-        alias_mailboxes = alias.mailboxes
-        alias_mailboxes.insert(
-            0, alias_mailboxes.pop(alias_mailboxes.index(alias.mailbox))
-        )
-
-        mailboxes = " ".join([mailbox.email for mailbox in alias_mailboxes])
-        data.append([alias.email, alias.note, alias.enabled, mailboxes])
-
-    si = StringIO()
-    cw = csv.writer(si)
-    cw.writerows(data)
-    output = make_response(si.getvalue())
-    output.headers["Content-Disposition"] = "attachment; filename=aliases.csv"
-    output.headers["Content-type"] = "text/csv"
-    return output
+    return alias_export_csv(g.user)

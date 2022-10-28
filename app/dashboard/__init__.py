@@ -6,6 +6,7 @@ from .views import (
     subdomain,
     billing,
     alias_log,
+    alias_export,
     unsubscribe,
     api_key,
     custom_domain,

@@ -199,3 +199,10 @@ swaks --to e1@sl.local --from hey@google.com --server 127.0.0.1:20381
 ```
 
 Now open http://localhost:1080/ (or http://localhost:1080/ for MailHog), you should see the forwarded email.
+
+## Job runner
+
+Some features require a job handler (such as GDPR data export). To test such feature you need to run the job_runner
+```bash
+python job_runner.py
+```
