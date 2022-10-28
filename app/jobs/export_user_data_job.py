@@ -38,6 +38,7 @@ from app.models import (
 )
 from app.alias_utils import alias_export_csv
 
+
 class ExportUserDataJob:
 
     REMOVE_FIELDS = {
@@ -108,9 +109,7 @@ class ExportUserDataJob:
             zf.writestr(
                 "user.json", json.dumps(ExportUserDataJob._model_to_dict(self._user))
             )
-            zf.writestr(
-                "aliases.csv", alias_export_csv(self._user, True)
-            )
+            zf.writestr("aliases.csv", alias_export_csv(self._user, True))
             for model_name, get_models in [
                 ("aliases", self._get_aliases),
                 ("mailboxes", self._get_mailboxes),

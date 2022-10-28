@@ -369,7 +369,7 @@ def check_alias_prefix(alias_prefix) -> bool:
     return True
 
 
-def alias_export_csv(user, csv_direct_export = False):
+def alias_export_csv(user, csv_direct_export=False):
     """
     Get user aliases as importable CSV file
     Output:
@@ -391,7 +391,7 @@ def alias_export_csv(user, csv_direct_export = False):
     si = StringIO()
     cw = csv.writer(si)
     cw.writerows(data)
-    if csv_direct_export :
+    if csv_direct_export:
         return si.getvalue()
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = "attachment; filename=aliases.csv"
