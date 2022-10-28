@@ -80,6 +80,12 @@ To run the code locally, please create a local setting file based on `example.en
 cp example.env .env
 ```
 
+You need to edit your .env to reflect the postgres exposed port, edit the `DB_URI` to:
+
+```
+DB_URI=postgresql://myuser:mypassword@localhost:35432/simplelogin
+```
+
 Run the postgres database:
 
 ```bash
