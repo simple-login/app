@@ -99,6 +99,7 @@ def test_model_retrieval_and_serialization():
             assert file_info.file_size > 0
     expected_files_in_zip = set(
         (
+            "aliases.csv",
             "user.json",
             "aliases.json",
             "mailboxes.json",
