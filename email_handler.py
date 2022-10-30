@@ -1297,23 +1297,14 @@ def notify_mailbox(alias, mailbox, other_mb: Mailbox, msg, orig_to, orig_cc):
     )
     notif = add_header(
         msg,
-        f"""Email sent from alias {alias.email} \n
-To: {msg[headers.TO] or "Empty"} \n
-CC: {msg[headers.CC] or "Empty"}\n
-Sent from mailbox {mailbox.email}\n
-**** Don't forget to remove this section when replying ****
-""",
+        f"""**** Don't forget to remove this section if you reply to this email ****
+Email sent on behalf of alias {alias.email} using mailbox {mailbox.email}""",
     )
     # use alias as From to hint that the email is sent from the alias
     add_or_replace_header(notif, headers.FROM, alias.email)
     # keep the reverse alias in CC and To header so user can reply more easily
     add_or_replace_header(notif, headers.TO, orig_to)
     add_or_replace_header(notif, headers.CC, orig_cc)
-    add_or_replace_header(
-        notif,
-        headers.SUBJECT,
-        f"{mailbox.email} on behalf of {alias.email} to {msg[headers.TO] or '<>'}, cc {msg[headers.CC] or '<>'}",
-    )
 
     # add DKIM
     email_domain = alias.email[alias.email.find("@") + 1 :]

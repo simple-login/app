@@ -943,7 +943,7 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
         if type(payload) is str:
             clone_msg = copy(msg)
             new_payload = f"""{text_header}
----
+------------------------------
 {decode_text(payload, encoding)}"""
             clone_msg.set_payload(encode_text(new_payload, encoding))
             return clone_msg
