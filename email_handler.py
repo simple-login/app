@@ -1261,7 +1261,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         # if alias belongs to several mailboxes, notify other mailboxes about this email
         other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
         for mb in other_mailboxes:
-            notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc)
+            notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc, alias_domain)
 
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
@@ -1289,7 +1289,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     return True, status.E200
 
 
-def notify_mailbox(alias, mailbox, other_mb: Mailbox, msg, orig_to, orig_cc):
+def notify_mailbox(
+    alias, mailbox, other_mb: Mailbox, msg, orig_to, orig_cc, alias_domain
+):
     """Notify another mailbox about an email sent by a mailbox to a reverse alias"""
     LOG.d(
         f"notify {other_mb.email} about email sent "
@@ -1306,12 +1308,12 @@ Email sent on behalf of alias {alias.email} using mailbox {mailbox.email}""",
     add_or_replace_header(notif, headers.TO, orig_to)
     add_or_replace_header(notif, headers.CC, orig_cc)
 
-    # add DKIM
-    email_domain = alias.email[alias.email.find("@") + 1 :]
-    add_dkim_signature(msg, email_domain)
+    # add DKIM as the email is sent from alias
+    if should_add_dkim_signature(alias_domain):
+        add_dkim_signature(msg, alias_domain)
 
+    # this notif is considered transactional email
     transaction = TransactionalEmail.create(email=other_mb.email, commit=True)
-    # use a different envelope sender for each transactional email (aka VERP)
     sl_sendmail(
         generate_verp_email(VerpType.transactional, transaction.id),
         other_mb.email,
