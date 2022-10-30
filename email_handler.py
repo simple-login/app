@@ -1128,6 +1128,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         + headers.MIME_HEADERS,
     )
 
+    orig_to = msg[headers.TO]
+    orig_cc = msg[headers.CC]
+
     # replace the reverse-alias by the contact email in the email body
     # as this is usually included when replying
     if user.replace_reverse_alias:
@@ -1254,6 +1257,12 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             envelope.rcpt_options,
             is_forward=False,
         )
+
+        # if alias belongs to several mailboxes, notify other mailboxes about this email
+        other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
+        for mb in other_mailboxes:
+            notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc, alias_domain)
+
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
         EmailLog.delete(email_log.id, commit=True)
@@ -1278,6 +1287,38 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     # return 250 even if error as user is already informed of the incident and can retry sending the email
     return True, status.E200
+
+
+def notify_mailbox(
+    alias, mailbox, other_mb: Mailbox, msg, orig_to, orig_cc, alias_domain
+):
+    """Notify another mailbox about an email sent by a mailbox to a reverse alias"""
+    LOG.d(
+        f"notify {other_mb.email} about email sent "
+        f"from {mailbox.email} on behalf of {alias.email} to {msg[headers.TO]}"
+    )
+    notif = add_header(
+        msg,
+        f"""**** Don't forget to remove this section if you reply to this email ****
+Email sent on behalf of alias {alias.email} using mailbox {mailbox.email}""",
+    )
+    # use alias as From to hint that the email is sent from the alias
+    add_or_replace_header(notif, headers.FROM, alias.email)
+    # keep the reverse alias in CC and To header so user can reply more easily
+    add_or_replace_header(notif, headers.TO, orig_to)
+    add_or_replace_header(notif, headers.CC, orig_cc)
+
+    # add DKIM as the email is sent from alias
+    if should_add_dkim_signature(alias_domain):
+        add_dkim_signature(msg, alias_domain)
+
+    # this notif is considered transactional email
+    transaction = TransactionalEmail.create(email=other_mb.email, commit=True)
+    sl_sendmail(
+        generate_verp_email(VerpType.transactional, transaction.id),
+        other_mb.email,
+        notif,
+    )
 
 
 def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message):
