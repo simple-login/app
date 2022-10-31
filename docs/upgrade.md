@@ -7,7 +7,7 @@ Sometimes upgrading to a major version might require running a manual migration.
 If you are running versions prior to 4.x.x, please:
 
 1. first upgrade to 3.4.0 then
-2. upgrade to the latest version which is 4.6.2-beta
+2. upgrade to the latest version which is 4.6.3-beta
 
 <details>
 <summary>After upgrade to 4.x.x from 3.4.0</summary>
@@ -163,11 +163,11 @@ for user in User.query.all():
 </p>
 </details>
 
-## Upgrade to the latest version 4.6.2-beta
+## Upgrade to the latest version 4.6.3-beta
 
 ```bash
 # Pull the latest version
-sudo docker pull simplelogin/app:4.6.2-beta
+sudo docker pull simplelogin/app:4.6.3-beta
 
 # Stop SimpleLogin containers
 sudo docker stop sl-email sl-migration sl-app sl-db sl-job-runner
@@ -199,7 +199,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     -v $(pwd)/simplelogin.env:/code/.env \
     --network="sl-network" \
-    simplelogin/app:4.6.2-beta alembic upgrade head
+    simplelogin/app:4.6.3-beta alembic upgrade head
 
 # Run init data
 sudo docker run --rm \
@@ -210,7 +210,7 @@ sudo docker run --rm \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --network="sl-network" \
-    simplelogin/app:4.6.2-beta python init_app.py
+    simplelogin/app:4.6.3-beta python init_app.py
 
 # Run the webapp container
 sudo docker run -d \
@@ -223,7 +223,7 @@ sudo docker run -d \
     -p 127.0.0.1:7777:7777 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:4.6.2-beta
+    simplelogin/app:4.6.3-beta
 
 # Run the email handler container
 sudo docker run -d \
@@ -236,7 +236,7 @@ sudo docker run -d \
     -p 127.0.0.1:20381:20381 \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:4.6.2-beta python email_handler.py
+    simplelogin/app:4.6.3-beta python email_handler.py
     
 # Run the job runner
 docker run -d \
@@ -248,7 +248,7 @@ docker run -d \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
     --restart always \
     --network="sl-network" \
-    simplelogin/app:4.6.2-beta python job_runner.py
+    simplelogin/app:4.6.3-beta python job_runner.py
     
 ```
 
