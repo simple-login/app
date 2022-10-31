@@ -5,7 +5,7 @@ COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm install
 
 # Main image
-FROM python:3.7
+FROM python:3.10
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -13,7 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Add poetry to PATH
-ENV PATH="${PATH}:/root/.poetry/bin"
+ENV PATH="${PATH}:/root/.local/bin"
 
 WORKDIR /code
 
@@ -24,7 +24,7 @@ COPY poetry.lock pyproject.toml ./
 RUN pip install -U pip \
     && apt-get update \
     && apt install -y curl netcat gcc python3-dev gnupg git libre2-dev \
-    && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python - \
+    && curl -sSL https://install.python-poetry.org | python3 - \
     # Remove curl and netcat from the image
     && apt-get purge -y curl netcat \
     # Run poetry
