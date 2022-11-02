@@ -4,8 +4,40 @@ on:
   push:
 
 jobs:
+  install:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: ["3.9", "3.10"]
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
+
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: ['install']
+    steps:
+      - name: Check formatting & linting
+        run: |
+          poetry run pre-commit run --all-files
+
+
   test:
     runs-on: ubuntu-latest
+    needs: ['install']
     strategy:
       max-parallel: 4
       matrix:
@@ -42,31 +74,6 @@ jobs:
         uses: superchargejs/redis-github-action@1.1.0
         with:
           redis-version: 6
-
-      - name: Check out repo
-        uses: actions/checkout@v3
-
-      - name: Install poetry
-        run: pipx install poetry
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
-
-      - name: Install OS dependencies
-        if: ${{ matrix.python-version }} == '3.10'
-        run: |
-          sudo apt update
-          sudo apt install -y libre2-dev libpq-dev
-
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction 
-
-      - name: Check formatting & linting
-        run: |
-          poetry run pre-commit run --all-files
 
       - name: Run db migration
         run: |
