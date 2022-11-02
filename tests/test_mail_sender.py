@@ -10,7 +10,11 @@ import pytest
 from aiosmtpd.controller import Controller
 
 from app.email import headers
-from app.mail_sender import mail_sender, SendRequest
+from app.mail_sender import (
+    mail_sender,
+    SendRequest,
+    load_unsent_mails_from_fs_and_resend,
+)
 from app import config
 
 
@@ -82,6 +86,15 @@ def smtp_response_server(smtp_response: str) -> Callable[[], int]:
     return inner
 
 
+def compare_send_requests(expected: SendRequest, request: SendRequest):
+    assert request.mail_options == expected.mail_options
+    assert request.rcpt_options == expected.rcpt_options
+    assert request.envelope_to == expected.envelope_to
+    assert request.envelope_from == expected.envelope_from
+    assert request.msg[headers.TO] == expected.msg[headers.TO]
+    assert request.msg[headers.FROM] == expected.msg[headers.FROM]
+
+
 @pytest.mark.parametrize(
     "server_fn",
     [
@@ -97,20 +110,37 @@ def test_mail_sender_save_unsent_to_disk(server_fn):
     config.NOT_SEND_EMAIL = False
     config.POSTFIX_SUBMISSION_TLS = False
     config.POSTFIX_PORT = server_fn()
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config.SAVE_UNSENT_DIR = temp_dir
+            send_request = create_dummy_send_request()
+            mail_sender.send(send_request, 0)
+            found_files = os.listdir(temp_dir)
+            assert len(found_files) == 1
+            loaded_send_request = SendRequest.load_from_file(
+                os.path.join(temp_dir, found_files[0])
+            )
+            compare_send_requests(loaded_send_request, send_request)
+    finally:
+        config.POSTFIX_SERVER = original_postfix_server
+        config.NOT_SEND_EMAIL = True
+
+
+@mail_sender.store_emails_test_decorator
+def test_send_unsent_email_from_fs():
+    original_postfix_server = config.POSTFIX_SERVER
+    config.POSTFIX_SERVER = "localhost"
+    config.NOT_SEND_EMAIL = False
     with tempfile.TemporaryDirectory() as temp_dir:
-        config.SAVE_UNSENT_DIR = temp_dir
-        send_request = create_dummy_send_request()
-        mail_sender.send(send_request, 0)
-        found_files = os.listdir(temp_dir)
-        assert len(found_files) == 1
-        loaded_send_request = SendRequest.load_from_file(
-            os.path.join(temp_dir, found_files[0])
-        )
-        assert send_request.mail_options == loaded_send_request.mail_options
-        assert send_request.rcpt_options == loaded_send_request.rcpt_options
-        assert send_request.envelope_to == loaded_send_request.envelope_to
-        assert send_request.envelope_from == loaded_send_request.envelope_from
-        assert send_request.msg[headers.TO] == loaded_send_request.msg[headers.TO]
-        assert send_request.msg[headers.FROM] == loaded_send_request.msg[headers.FROM]
-    config.POSTFIX_SERVER = original_postfix_server
-    config.NOT_SEND_EMAIL = True
+        try:
+            config.SAVE_UNSENT_DIR = temp_dir
+            send_request = create_dummy_send_request()
+            mail_sender.send(send_request, 0)
+        finally:
+            config.POSTFIX_SERVER = original_postfix_server
+            config.NOT_SEND_EMAIL = True
+        mail_sender.purge_stored_emails()
+        load_unsent_mails_from_fs_and_resend()
+        sent_emails = mail_sender.get_stored_emails()
+        assert len(sent_emails) == 1
+        compare_send_requests(send_request, sent_emails[0])

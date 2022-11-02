@@ -22,6 +22,9 @@ from app.message_utils import message_to_bytes
 
 @dataclass
 class SendRequest:
+
+    SAVE_EXTENSION = "sendrequest"
+
     envelope_from: str
     envelope_to: str
     msg: Message
@@ -169,7 +172,7 @@ class MailSender:
                 self._save_request_to_unsent_dir(send_request)
 
     def _save_request_to_unsent_dir(self, send_request: SendRequest):
-        file_name = f"DeliveryFail-{int(time.time())}-{uuid.uuid4()}.eml"
+        file_name = f"DeliveryFail-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
         file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
         file_contents = send_request.to_bytes()
         with open(file_path, "wb") as fd:
@@ -178,6 +181,27 @@ class MailSender:
 
 
 mail_sender = MailSender()
+
+
+def load_unsent_mails_from_fs_and_resend():
+    if not config.SAVE_UNSENT_DIR:
+        return
+    for filename in os.listdir(config.SAVE_UNSENT_DIR):
+        (_, extension) = os.path.splitext(filename)
+        if extension[1:] != SendRequest.SAVE_EXTENSION:
+            LOG.i(f"Skipping {filename} does not have the proper extension")
+            continue
+        full_file_path = os.path.join(config.SAVE_UNSENT_DIR, filename)
+        if not os.path.isfile(full_file_path):
+            LOG.i(f"Skipping {filename} as it's not a file")
+            continue
+        LOG.i(f"Trying to re-deliver email {filename}")
+        try:
+            send_request = SendRequest.load_from_file(full_file_path)
+        except Exception as e:
+            LOG.error(f"Could not load file {filename}: {e}")
+            continue
+        mail_sender.send(send_request, 2)
 
 
 def sl_sendmail(
