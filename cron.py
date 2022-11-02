@@ -11,20 +11,9 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import Insert
 
-from app import s3
+from app import s3, config
 from app.alias_utils import nb_email_log_for_mailbox
 from app.api.views.apple import verify_receipt
-from app.config import (
-    ADMIN_EMAIL,
-    MACAPP_APPLE_API_SECRET,
-    APPLE_API_SECRET,
-    EMAIL_SERVERS_WITH_PRIORITY,
-    URL,
-    AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
-    HIBP_API_KEYS,
-    HIBP_SCAN_INTERVAL_DAYS,
-    MONITORING_EMAIL,
-)
 from app.db import Session
 from app.dns_utils import get_mx_domains, is_mx_equivalent
 from app.email_utils import (
@@ -39,6 +28,7 @@ from app.email_utils import (
 )
 from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
+from app.mail_sender import load_unsent_mails_from_fs_and_resend
 from app.models import (
     Subscription,
     User,
@@ -219,7 +209,7 @@ def notify_manual_sub_end():
                 retries=3,
             )
 
-    extend_subscription_url = URL + "/dashboard/coinbase_checkout"
+    extend_subscription_url = config.URL + "/dashboard/coinbase_checkout"
     for coinbase_subscription in CoinbaseSubscription.all():
         need_reminder = False
         if (
@@ -270,9 +260,9 @@ def poll_apple_subscription():
 
         user = apple_sub.user
         if "io.simplelogin.macapp.subscription" in apple_sub.product_id:
-            verify_receipt(apple_sub.receipt_data, user, MACAPP_APPLE_API_SECRET)
+            verify_receipt(apple_sub.receipt_data, user, config.MACAPP_APPLE_API_SECRET)
         else:
-            verify_receipt(apple_sub.receipt_data, user, APPLE_API_SECRET)
+            verify_receipt(apple_sub.receipt_data, user, config.APPLE_API_SECRET)
 
     LOG.d("Finish poll_apple_subscription")
 
@@ -508,7 +498,7 @@ def alias_creation_report() -> List[Tuple[str, int]]:
 
 def stats():
     """send admin stats everyday"""
-    if not ADMIN_EMAIL:
+    if not config.ADMIN_EMAIL:
         LOG.w("ADMIN_EMAIL not set, nothing to do")
         return
 
@@ -553,7 +543,7 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
     LOG.d("growth_stats email: %s", growth_stats)
 
     send_email(
-        ADMIN_EMAIL,
+        config.ADMIN_EMAIL,
         subject=f"SimpleLogin Growth Stats for {today}",
         plaintext=growth_stats,
         retries=3,
@@ -595,7 +585,7 @@ nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_p
     LOG.d("monitoring_report email: %s", monitoring_report)
 
     send_email(
-        MONITORING_EMAIL,
+        config.MONITORING_EMAIL,
         subject=f"SimpleLogin Monitoring Report for {today}",
         plaintext=monitoring_report,
         retries=3,
@@ -880,7 +870,7 @@ def check_custom_domain():
 
 def check_single_custom_domain(custom_domain):
     mx_domains = get_mx_domains(custom_domain.domain)
-    if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
+    if not is_mx_equivalent(mx_domains, config.EMAIL_SERVERS_WITH_PRIORITY):
         user = custom_domain.user
         LOG.w(
             "The MX record is not correctly set for %s %s %s",
@@ -893,11 +883,11 @@ def check_single_custom_domain(custom_domain):
 
         # send alert if fail for 5 consecutive days
         if custom_domain.nb_failed_checks > 5:
-            domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
+            domain_dns_url = f"{config.URL}/dashboard/domains/{custom_domain.id}/dns"
             LOG.w("Alert domain MX check fails %s about %s", user, custom_domain)
             send_email_with_rate_control(
                 user,
-                AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
+                config.AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
                 user.email,
                 f"Please update {custom_domain.domain} DNS on SimpleLogin",
                 render(
@@ -1007,7 +997,7 @@ async def check_hibp():
     """
     LOG.d("Checking HIBP API for aliases in breaches")
 
-    if len(HIBP_API_KEYS) == 0:
+    if len(config.HIBP_API_KEYS) == 0:
         LOG.e("No HIBP API keys")
         return
 
@@ -1023,7 +1013,7 @@ async def check_hibp():
 
     LOG.d("Preparing list of aliases to check")
     queue = asyncio.Queue()
-    max_date = arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS)
+    max_date = arrow.now().shift(days=-config.HIBP_SCAN_INTERVAL_DAYS)
     for alias in (
         Alias.filter(
             or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date)
@@ -1040,10 +1030,10 @@ async def check_hibp():
     # Each checking process will take one alias from the queue, get the info
     # and then sleep for 1.5 seconds (due to HIBP API request limits)
     checkers = []
-    for i in range(len(HIBP_API_KEYS)):
+    for i in range(len(config.HIBP_API_KEYS)):
         checker = asyncio.create_task(
             _hibp_check(
-                HIBP_API_KEYS[i],
+                config.HIBP_API_KEYS[i],
                 queue,
             )
         )
@@ -1129,6 +1119,7 @@ if __name__ == "__main__":
             "check_hibp",
             "notify_hibp",
             "cleanup_tokens",
+            "send_undelivered_mails",
         ],
     )
     args = parser.parse_args()
@@ -1170,3 +1161,6 @@ if __name__ == "__main__":
         elif args.job == "cleanup_tokens":
             LOG.d("Cleanup expired tokens")
             delete_expired_tokens()
+        elif args.job == "send_undenlivered_mails":
+            LOG.d("Sending undelivered emails")
+            load_unsent_mails_from_fs_and_resend()
