@@ -39,7 +39,6 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    needs: ['install']
     strategy:
       max-parallel: 4
       matrix:
