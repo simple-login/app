@@ -160,6 +160,7 @@ if "DKIM_PRIVATE_KEY_PATH" in os.environ:
 
 # Database
 DB_URI = os.environ["DB_URI"]
+DB_CONN_NAME = os.environ.get("DB_CONN_NAME", "webapp")
 
 # Flask secret
 FLASK_SECRET = os.environ["FLASK_SECRET"]
