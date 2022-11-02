@@ -1161,6 +1161,6 @@ if __name__ == "__main__":
         elif args.job == "cleanup_tokens":
             LOG.d("Cleanup expired tokens")
             delete_expired_tokens()
-        elif args.job == "send_undenlivered_mails":
+        elif args.job == "send_undelivered_mails":
             LOG.d("Sending undelivered emails")
             load_unsent_mails_from_fs_and_resend()
