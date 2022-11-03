@@ -135,12 +135,44 @@ def test_send_unsent_email_from_fs():
         try:
             config.SAVE_UNSENT_DIR = temp_dir
             send_request = create_dummy_send_request()
-            mail_sender.send(send_request, 0)
+            mail_sender.send(send_request, 1)
         finally:
             config.POSTFIX_SERVER = original_postfix_server
             config.NOT_SEND_EMAIL = True
+        saved_files = os.listdir(config.SAVE_UNSENT_DIR)
+        assert len(saved_files) == 1
         mail_sender.purge_stored_emails()
         load_unsent_mails_from_fs_and_resend()
         sent_emails = mail_sender.get_stored_emails()
         assert len(sent_emails) == 1
         compare_send_requests(send_request, sent_emails[0])
+        assert sent_emails[0].ignore_smtp_errors
+        assert not os.path.exists(os.path.join(config.SAVE_UNSENT_DIR, saved_files[0]))
+
+
+@mail_sender.store_emails_test_decorator
+def test_failed_resend_does_not_delete_file():
+    original_postfix_server = config.POSTFIX_SERVER
+    config.POSTFIX_SERVER = "localhost"
+    config.NOT_SEND_EMAIL = False
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config.SAVE_UNSENT_DIR = temp_dir
+            send_request = create_dummy_send_request()
+            # Send and store email in disk
+            mail_sender.send(send_request, 1)
+            saved_files = os.listdir(config.SAVE_UNSENT_DIR)
+            assert len(saved_files) == 1
+            mail_sender.purge_stored_emails()
+            # Send and keep email in disk
+            load_unsent_mails_from_fs_and_resend()
+            sent_emails = mail_sender.get_stored_emails()
+            assert len(sent_emails) == 1
+            compare_send_requests(send_request, sent_emails[0])
+            assert sent_emails[0].ignore_smtp_errors
+            assert os.path.exists(os.path.join(config.SAVE_UNSENT_DIR, saved_files[0]))
+            # No more emails are stored in disk
+            assert saved_files == os.listdir(config.SAVE_UNSENT_DIR)
+    finally:
+        config.POSTFIX_SERVER = original_postfix_server
+        config.NOT_SEND_EMAIL = True
