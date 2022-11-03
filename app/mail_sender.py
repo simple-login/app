@@ -98,7 +98,7 @@ class MailSender:
     def enable_background_pool(self, max_workers=10):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
-    def send(self, send_request: SendRequest, retries: int = 2):
+    def send(self, send_request: SendRequest, retries: int = 2) -> bool:
         """replace smtp.sendmail"""
         if self._store_emails:
             self._emails_sent.append(send_request)
@@ -109,20 +109,20 @@ class MailSender:
                 send_request.msg[headers.FROM],
                 send_request.msg[headers.TO],
             )
-            return
+            return True
         if not self._pool:
-            self._send_to_smtp(send_request, retries)
+            return self._send_to_smtp(send_request, retries)
         else:
             self._pool.submit(self._send_to_smtp, (send_request, retries))
+            return True
 
-    def _send_to_smtp(self, send_request: SendRequest, retries: int):
+    def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
+        if config.POSTFIX_SUBMISSION_TLS:
+            smtp_port = 587
+        else:
+            smtp_port = config.POSTFIX_PORT
         try:
             start = time.time()
-            if config.POSTFIX_SUBMISSION_TLS:
-                smtp_port = 587
-            else:
-                smtp_port = config.POSTFIX_PORT
-
             with SMTP(config.POSTFIX_SERVER, smtp_port) as smtp:
                 if config.POSTFIX_SUBMISSION_TLS:
                     smtp.starttls()
@@ -160,16 +160,17 @@ class MailSender:
             TimeoutError,
         ) as e:
             if retries > 0:
-                time.sleep(0.3 * send_request.retries)
-                self._send_to_smtp(send_request, retries - 1)
+                time.sleep(0.3 * retries)
+                return self._send_to_smtp(send_request, retries - 1)
             else:
                 if send_request.ignore_smtp_errors:
                     LOG.e(f"Ignore smtp error {e}")
-                    return
+                    return False
                 LOG.e(
                     f"Could not send message to smtp server {config.POSTFIX_SERVER}:{smtp_port}"
                 )
                 self._save_request_to_unsent_dir(send_request)
+                return False
 
     def _save_request_to_unsent_dir(self, send_request: SendRequest):
         file_name = f"DeliveryFail-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
@@ -201,7 +202,16 @@ def load_unsent_mails_from_fs_and_resend():
         except Exception as e:
             LOG.error(f"Could not load file {filename}: {e}")
             continue
-        mail_sender.send(send_request, 2)
+        send_request.ignore_smtp_errors = True
+        if mail_sender.send(send_request, 2):
+            newrelic.agent.record_custom_event(
+                "DeliverUnsentEmail", {"delivered": "true"}
+            )
+            os.unlink(full_file_path)
+        else:
+            newrelic.agent.record_custom_event(
+                "DeliverUnsentEmail", {"delivered": "false"}
+            )
 
 
 def sl_sendmail(
