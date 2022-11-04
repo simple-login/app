@@ -116,6 +116,7 @@ POSTFIX_PORT = int(os.environ.get("POSTFIX_PORT", 25))
 # Use port 587 instead of 25 when sending emails through Postfix
 # Useful when calling Postfix from an external network
 POSTFIX_SUBMISSION_TLS = "POSTFIX_SUBMISSION_TLS" in os.environ
+POSTFIX_TIMEOUT = os.environ.get("POSTFIX_TIMEOUT", 3)
 
 # ["domain1.com", "domain2.com"]
 OTHER_ALIAS_DOMAINS = sl_getenv("OTHER_ALIAS_DOMAINS", list)
