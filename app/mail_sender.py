@@ -6,8 +6,8 @@ import os
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from email.message import Message
 from functools import wraps
-from mailbox import Message
 from smtplib import SMTP, SMTPException
 from typing import Optional, Dict, List, Callable
 

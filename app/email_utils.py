@@ -299,6 +299,7 @@ def send_email(
 
     from_name = from_name or NOREPLY
     from_addr = from_addr or NOREPLY
+    from_domain = get_email_domain_part(from_addr)
 
     if html:
         msg = MIMEMultipart("alternative")
@@ -337,7 +338,7 @@ def send_email(
 
     # use a different envelope sender for each transactional email (aka VERP)
     sl_sendmail(
-        generate_verp_email(VerpType.transactional, transaction.id),
+        generate_verp_email(VerpType.transactional, transaction.id, from_domain),
         to_email,
         msg,
         retries=retries,
