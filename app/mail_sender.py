@@ -117,7 +117,7 @@ class MailSender:
             return True
 
     def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
-        if config.POSTFIX_SUBMISSION_TLS:
+        if config.POSTFIX_SUBMISSION_TLS and config.POSTFIX_PORT == 25:
             smtp_port = 587
         else:
             smtp_port = config.POSTFIX_PORT
