@@ -1315,7 +1315,7 @@ Email sent on behalf of alias {alias.email} using mailbox {mailbox.email}""",
     # this notif is considered transactional email
     transaction = TransactionalEmail.create(email=other_mb.email, commit=True)
     sl_sendmail(
-        generate_verp_email(VerpType.transactional, transaction.id),
+        generate_verp_email(VerpType.transactional, transaction.id, alias_domain),
         other_mb.email,
         notif,
     )
