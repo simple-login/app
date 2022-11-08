@@ -5,7 +5,7 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
-from app.config import CONNECT_WITH_PROTON
+from app.config import CONNECT_WITH_PROTON, PROXY_ALLOW_LOGIN
 from app.events.auth_event import LoginEvent
 from app.extensions import limiter
 from app.log import LOG
@@ -33,14 +33,21 @@ def login():
             LOG.d("user is already authenticated, redirect to dashboard")
             return redirect(url_for("dashboard.index"))
 
-    form = LoginForm(request.form)
+    form = None
 
-    show_resend_activation = False
+    use_email = request.headers.get('X-Auth-Request-Email') if PROXY_ALLOW_LOGIN else None
+    if not use_email:
+        form = LoginForm(request.form)
 
-    if form.validate_on_submit():
-        user = User.filter_by(email=sanitize_email(form.email.data)).first()
+        show_resend_activation = False
 
-        if not user or not user.check_password(form.password.data):
+        if form.validate_on_submit():
+            use_email = form.email.data
+    
+    if use_email:
+        user = User.filter_by(email=sanitize_email(use_email)).first()
+
+        if not user or (form is not None and not user.check_password(form.password.data)):
             # Trigger rate limiter
             g.deduct_limit = True
             form.password.data = None
