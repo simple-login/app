@@ -658,11 +658,12 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             commit=True,
         )
 
+        # by default return 2** instead of 5** to allow user to receive emails again
+        # when alias is enabled or contact is unblocked
         res_status = status.E200
         if user.block_behaviour == BlockBehaviourEnum.return_5xx:
             res_status = status.E502
 
-        # do not return 5** to allow user to receive emails later when alias is enabled or contact is unblocked
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
