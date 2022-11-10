@@ -123,7 +123,9 @@ class MailSender:
             smtp_port = config.POSTFIX_PORT
         try:
             start = time.time()
-            with SMTP(config.POSTFIX_SERVER, smtp_port, config.POSTFIX_TIMEOUT) as smtp:
+            with SMTP(
+                config.POSTFIX_SERVER, smtp_port, timeout=config.POSTFIX_TIMEOUT
+            ) as smtp:
                 if config.POSTFIX_SUBMISSION_TLS:
                     smtp.starttls()
 
@@ -154,6 +156,7 @@ class MailSender:
                 newrelic.agent.record_custom_metric(
                     "Custom/smtp_sending_time", time.time() - start
                 )
+                return True
         except (
             SMTPException,
             ConnectionRefusedError,
@@ -184,6 +187,20 @@ class MailSender:
 mail_sender = MailSender()
 
 
+def save_request_to_failed_dir(exception_name: str, send_request: SendRequest):
+    file_name = f"{exception_name}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
+    failed_file_dir = os.path.join(config.SAVE_UNSENT_DIR, "failed")
+    try:
+        os.makedirs(failed_file_dir)
+    except FileExistsError:
+        pass
+    file_path = os.path.join(failed_file_dir, file_name)
+    file_contents = send_request.to_bytes()
+    with open(file_path, "wb") as fd:
+        fd.write(file_contents)
+    return file_path
+
+
 def load_unsent_mails_from_fs_and_resend():
     if not config.SAVE_UNSENT_DIR:
         return
@@ -200,17 +217,31 @@ def load_unsent_mails_from_fs_and_resend():
         try:
             send_request = SendRequest.load_from_file(full_file_path)
         except Exception as e:
-            LOG.error(f"Could not load file {filename}: {e}")
+            LOG.e(f"Cannot load {filename}. Error {e}")
             continue
-        send_request.ignore_smtp_errors = True
-        if mail_sender.send(send_request, 2):
-            newrelic.agent.record_custom_event(
-                "DeliverUnsentEmail", {"delivered": "true"}
-            )
+        try:
+            send_request.ignore_smtp_errors = True
+            if mail_sender.send(send_request, 2):
+                os.unlink(full_file_path)
+                newrelic.agent.record_custom_event(
+                    "DeliverUnsentEmail", {"delivered": "true"}
+                )
+            else:
+                newrelic.agent.record_custom_event(
+                    "DeliverUnsentEmail", {"delivered": "false"}
+                )
+        except Exception as e:
+            # Unlink original file to avoid re-doing the same
             os.unlink(full_file_path)
-        else:
-            newrelic.agent.record_custom_event(
-                "DeliverUnsentEmail", {"delivered": "false"}
+            LOG.e(
+                "email sending failed with error:%s "
+                "envelope %s -> %s, mail %s -> %s saved to %s",
+                e,
+                send_request.envelope_from,
+                send_request.envelope_to,
+                send_request.msg[headers.FROM],
+                send_request.msg[headers.TO],
+                save_request_to_failed_dir(e.__class__.__name__, send_request),
             )
 
 
