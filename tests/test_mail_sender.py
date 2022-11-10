@@ -114,7 +114,7 @@ def test_mail_sender_save_unsent_to_disk(server_fn):
         with tempfile.TemporaryDirectory() as temp_dir:
             config.SAVE_UNSENT_DIR = temp_dir
             send_request = create_dummy_send_request()
-            mail_sender.send(send_request, 0)
+            assert not mail_sender.send(send_request, 0)
             found_files = os.listdir(temp_dir)
             assert len(found_files) == 1
             loaded_send_request = SendRequest.load_from_file(
@@ -135,7 +135,7 @@ def test_send_unsent_email_from_fs():
         try:
             config.SAVE_UNSENT_DIR = temp_dir
             send_request = create_dummy_send_request()
-            mail_sender.send(send_request, 1)
+            assert not mail_sender.send(send_request, 1)
         finally:
             config.POSTFIX_SERVER = original_postfix_server
             config.NOT_SEND_EMAIL = True
@@ -148,6 +148,8 @@ def test_send_unsent_email_from_fs():
         compare_send_requests(send_request, sent_emails[0])
         assert sent_emails[0].ignore_smtp_errors
         assert not os.path.exists(os.path.join(config.SAVE_UNSENT_DIR, saved_files[0]))
+        saved_files = os.listdir(config.SAVE_UNSENT_DIR)
+        assert len(saved_files) == 0
 
 
 @mail_sender.store_emails_test_decorator
@@ -160,7 +162,7 @@ def test_failed_resend_does_not_delete_file():
             config.SAVE_UNSENT_DIR = temp_dir
             send_request = create_dummy_send_request()
             # Send and store email in disk
-            mail_sender.send(send_request, 1)
+            assert not mail_sender.send(send_request, 1)
             saved_files = os.listdir(config.SAVE_UNSENT_DIR)
             assert len(saved_files) == 1
             mail_sender.purge_stored_emails()
@@ -176,3 +178,14 @@ def test_failed_resend_does_not_delete_file():
     finally:
         config.POSTFIX_SERVER = original_postfix_server
         config.NOT_SEND_EMAIL = True
+
+
+@mail_sender.store_emails_test_decorator
+def test_ok_mail_does_not_generate_unsent_file():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config.SAVE_UNSENT_DIR = temp_dir
+        send_request = create_dummy_send_request()
+        # Send and store email in disk
+        assert mail_sender.send(send_request, 1)
+        saved_files = os.listdir(config.SAVE_UNSENT_DIR)
+        assert len(saved_files) == 0
