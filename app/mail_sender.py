@@ -123,7 +123,7 @@ class MailSender:
             smtp_port = config.POSTFIX_PORT
         try:
             start = time.time()
-            with SMTP(config.POSTFIX_SERVER, smtp_port, config.POSTFIX_TIMEOUT) as smtp:
+            with SMTP(config.POSTFIX_SERVER, smtp_port, timeout=config.POSTFIX_TIMEOUT) as smtp:
                 if config.POSTFIX_SUBMISSION_TLS:
                     smtp.starttls()
 
