@@ -1,6 +1,7 @@
 from __future__ import annotations
 import base64
 import email
+import enum
 import json
 import os
 import time
@@ -8,7 +9,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from email.message import Message
 from functools import wraps
-from smtplib import SMTP, SMTPException
+from smtplib import SMTP, SMTPException, SMTPDataError
 from typing import Optional, Dict, List, Callable
 
 import newrelic.agent
@@ -68,6 +69,12 @@ class SendRequest:
         )
 
 
+class SendResult(enum.Enum):
+    OK = 1
+    Failed = 2
+    Bounced = 3
+
+
 class MailSender:
     def __init__(self):
         self._pool: Optional[ThreadPoolExecutor] = None
@@ -98,7 +105,7 @@ class MailSender:
     def enable_background_pool(self, max_workers=10):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
-    def send(self, send_request: SendRequest, retries: int = 2) -> bool:
+    def send(self, send_request: SendRequest, retries: int = 2) -> SendResult:
         """replace smtp.sendmail"""
         if self._store_emails:
             self._emails_sent.append(send_request)
@@ -109,14 +116,30 @@ class MailSender:
                 send_request.msg[headers.FROM],
                 send_request.msg[headers.TO],
             )
-            return True
+            return SendResult.OK
         if not self._pool:
-            return self._send_to_smtp(send_request, retries)
+            return self._send_with_retries_if_needed(send_request, retries)
         else:
-            self._pool.submit(self._send_to_smtp, (send_request, retries))
-            return True
+            self._pool.submit(
+                self._send_with_retries_if_needed, (send_request, retries)
+            )
+            return SendResult.OK
 
-    def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
+    def _send_with_retries_if_needed(
+        self, send_request: SendRequest, retries: int
+    ) -> SendResult:
+        result = self._send_to_smtp_server(send_request)
+        if result != SendResult.Failed:
+            return result
+        if retries > 0:
+            time.sleep(0.3 * retries)
+            return self._send_with_retries_if_needed(send_request, retries - 1)
+        else:
+            if not send_request.ignore_smtp_errors:
+                self._save_request_to_unsent_dir(send_request)
+            return SendResult.Failed
+
+    def _send_to_smtp_server(self, send_request: SendRequest) -> SendResult:
         if config.POSTFIX_SUBMISSION_TLS and config.POSTFIX_PORT == 25:
             smtp_port = 587
         else:
@@ -156,24 +179,25 @@ class MailSender:
                 newrelic.agent.record_custom_metric(
                     "Custom/smtp_sending_time", time.time() - start
                 )
-                return True
+                return SendResult.OK
+        except SMTPDataError as e:
+            if not send_request.ignore_smtp_errors:
+                LOG.e(
+                    f"Could not send message to smtp server {config.POSTFIX_SERVER}:{smtp_port}"
+                )
+                if e.smtp_code >= 500:
+                    return SendResult.Bounced
+                return SendResult.Failed
         except (
             SMTPException,
             ConnectionRefusedError,
             TimeoutError,
-        ) as e:
-            if retries > 0:
-                time.sleep(0.3 * retries)
-                return self._send_to_smtp(send_request, retries - 1)
-            else:
-                if send_request.ignore_smtp_errors:
-                    LOG.e(f"Ignore smtp error {e}")
-                    return False
+        ):
+            if not send_request.ignore_smtp_errors:
                 LOG.e(
                     f"Could not send message to smtp server {config.POSTFIX_SERVER}:{smtp_port}"
                 )
-                self._save_request_to_unsent_dir(send_request)
-                return False
+            return SendResult.Failed
 
     def _save_request_to_unsent_dir(self, send_request: SendRequest):
         file_name = f"DeliveryFail-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
@@ -221,15 +245,12 @@ def load_unsent_mails_from_fs_and_resend():
             continue
         try:
             send_request.ignore_smtp_errors = True
-            if mail_sender.send(send_request, 2):
+            response = mail_sender.send(send_request, 2)
+            newrelic.agent.record_custom_event(
+                "DeliverUnsentEmail", {"delivered": f"{response.name}"}
+            )
+            if response != SendResult.Failed:
                 os.unlink(full_file_path)
-                newrelic.agent.record_custom_event(
-                    "DeliverUnsentEmail", {"delivered": "true"}
-                )
-            else:
-                newrelic.agent.record_custom_event(
-                    "DeliverUnsentEmail", {"delivered": "false"}
-                )
         except Exception as e:
             # Unlink original file to avoid re-doing the same
             os.unlink(full_file_path)
@@ -254,7 +275,7 @@ def sl_sendmail(
     is_forward: bool = False,
     retries=2,
     ignore_smtp_error=False,
-):
+) -> SendResult:
     send_request = SendRequest(
         envelope_from,
         envelope_to,
