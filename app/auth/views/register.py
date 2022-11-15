@@ -8,7 +8,7 @@ from app import email_utils, config
 from app.auth.base import auth_bp
 from app.config import CONNECT_WITH_PROTON
 from app.auth.views.login_utils import get_referral
-from app.config import URL, HCAPTCHA_SECRET, HCAPTCHA_SITEKEY
+from app.config import URL, HCAPTCHA_SECRET, HCAPTCHA_SITEKEY, PROXY_ALLOW_LOGIN
 from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
@@ -42,6 +42,11 @@ def register():
     form = RegisterForm(request.form)
     next_url = request.args.get("next")
 
+    auth_request_email = request.headers.get("X-Auth-Request-Email") if PROXY_ALLOW_LOGIN else None
+    if auth_request_email:
+        form.email.data = auth_request_email
+        form.email.render_kw = {'disabled': 'disabled'}
+
     if form.validate_on_submit():
         # only check if hcaptcha is enabled
         if HCAPTCHA_SECRET:
@@ -69,6 +74,9 @@ def register():
                     next_url=next_url,
                     HCAPTCHA_SITEKEY=HCAPTCHA_SITEKEY,
                 )
+
+        if auth_request_email:
+            form.email.data = auth_request_email
 
         email = sanitize_email(form.email.data)
         if not email_can_be_used_as_mailbox(email):
