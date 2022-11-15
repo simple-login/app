@@ -51,7 +51,6 @@ from email_validator import validate_email, EmailNotValidError
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import ObjectDeletedError
 
 from app import pgp_utils, s3, config
 from app.alias_utils import try_auto_create
@@ -637,17 +636,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
-    try:
-        contact = get_or_create_contact(from_header, envelope.mail_from, alias)
-    except ObjectDeletedError:
-        LOG.d("maybe alias was deleted in the meantime")
-        alias = Alias.get_by(email=alias_address)
-        if not alias:
-            LOG.i("Alias %s was deleted in the meantime", alias_address)
-            if should_ignore_bounce(envelope.mail_from):
-                return [(True, status.E207)]
-            else:
-                return [(False, status.E515)]
+    contact = get_or_create_contact(from_header, envelope.mail_from, alias)
 
     reply_to_contact = None
     if msg[headers.REPLY_TO]:
@@ -669,11 +658,12 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             commit=True,
         )
 
+        # by default return 2** instead of 5** to allow user to receive emails again
+        # when alias is enabled or contact is unblocked
         res_status = status.E200
         if user.block_behaviour == BlockBehaviourEnum.return_5xx:
             res_status = status.E502
 
-        # do not return 5** to allow user to receive emails later when alias is enabled or contact is unblocked
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
