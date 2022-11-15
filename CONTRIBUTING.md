@@ -62,7 +62,7 @@ To install it in your development environment.
 
 ## Run tests
 
-For most tests, you will need to have ``redis`` installed and started on your machine (listening on port 6379). 
+For most tests, you will need to have ``redis`` installed and started on your machine (listening on port 6379).
 
 ```bash
 sh scripts/run-test.sh
