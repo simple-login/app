@@ -25,10 +25,10 @@ class LoginForm(FlaskForm):
 def enter_sudo():
     password_check_form = LoginForm()
 
-    if password_check_form.validate_on_submit():
+    if password_check_form.validate_on_submit() or current_user.password is None:
         password = password_check_form.password.data
 
-        if current_user.check_password(password):
+        if current_user.check_password(password) or current_user.password is None:
             session["sudo_time"] = int(time())
 
             # User comes to sudo page from another page
