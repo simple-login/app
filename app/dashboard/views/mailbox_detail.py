@@ -1,5 +1,6 @@
 from smtplib import SMTPRecipientsRefused
 
+from email_validator import validate_email, EmailNotValidError
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -98,16 +99,23 @@ def mailbox_detail_route(mailbox_id):
             )
         elif request.form.get("form-name") == "add-authorized-address":
             address = sanitize_email(request.form.get("email"))
-            if AuthorizedAddress.get_by(mailbox_id=mailbox.id, email=address):
-                flash(f"{address} already added", "error")
+            try:
+                validate_email(
+                    address, check_deliverability=False, allow_smtputf8=False
+                ).domain
+            except EmailNotValidError:
+                flash(f"invalid {address}", "error")
             else:
-                AuthorizedAddress.create(
-                    user_id=current_user.id,
-                    mailbox_id=mailbox.id,
-                    email=address,
-                    commit=True,
-                )
-                flash(f"{address} added as authorized address", "success")
+                if AuthorizedAddress.get_by(mailbox_id=mailbox.id, email=address):
+                    flash(f"{address} already added", "error")
+                else:
+                    AuthorizedAddress.create(
+                        user_id=current_user.id,
+                        mailbox_id=mailbox.id,
+                        email=address,
+                        commit=True,
+                    )
+                    flash(f"{address} added as authorized address", "success")
 
             return redirect(
                 url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)

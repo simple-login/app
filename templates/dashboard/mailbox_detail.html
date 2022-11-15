@@ -228,7 +228,7 @@
             <form method="post" action="#authorized-address" class="form-inline">
               {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="add-authorized-address">
-              <input type="email" name="email" size="50" class="form-control">
+              <input type="email" name="email" size="50" class="form-control" required>
               <input type="submit" class="btn btn-primary" value="Add">
             </form>
           </div>
