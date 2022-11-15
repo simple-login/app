@@ -36,18 +36,20 @@ def login():
     form = LoginForm(request.form)
     show_resend_activation = False
 
-    use_email = request.headers.get("X-Auth-Request-Email") if PROXY_ALLOW_LOGIN else None
+    use_email = (
+        request.headers.get("X-Auth-Request-Email") if PROXY_ALLOW_LOGIN else None
+    )
     if not use_email:
         if form.validate_on_submit():
             use_email = form.email.data
-    
+
     if use_email:
         user = User.filter_by(email=sanitize_email(use_email)).first()
 
         if not user:
             if PROXY_ALLOW_LOGIN and not DISABLE_REGISTRATION:
                 return redirect(url_for("auth.register"))
-        
+
             # Trigger rate limiter
             g.deduct_limit = True
             flash("Email or password incorrect", "error")
