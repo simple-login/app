@@ -83,10 +83,11 @@ def test_can_be_used_as_personal_email(flask_client):
     assert not email_can_be_used_as_mailbox(f"hey@{domain}")
 
     # disposable domain
-    assert not email_can_be_used_as_mailbox("abcd@10minutesmail.fr")
-    assert not email_can_be_used_as_mailbox("abcd@temp-mail.com")
+    disposable_domain = random_domain()
+    InvalidMailboxDomain.create(domain=disposable_domain, commit=True)
+    assert not email_can_be_used_as_mailbox(f"abcd@{disposable_domain}")
     # subdomain will not work
-    assert not email_can_be_used_as_mailbox("abcd@sub.temp-mail.com")
+    assert not email_can_be_used_as_mailbox("abcd@sub.{disposable_domain}")
     # valid domains should not be affected
     assert email_can_be_used_as_mailbox("abcd@protonmail.com")
     assert email_can_be_used_as_mailbox("abcd@gmail.com")
