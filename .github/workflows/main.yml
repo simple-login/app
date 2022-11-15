@@ -32,7 +32,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.10"]
 
     # service containers to run with `postgres-job`
     services:
