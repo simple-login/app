@@ -86,6 +86,15 @@
   </head>
   <body>
     <div class="page">
+      {% if current_user.should_show_upgrade_button() %}
+        <div class="alert alert-success text-center mb-0" role="alert">
+          Black Friday Deal: 33% off on the yearly plan ($20/year instead of $30/year) with the coupon code
+          <em data-toggle="tooltip"
+              title="Click to copy"
+              class="clipboard"
+              data-clipboard-text="BF2022">BF2022</em>. Available until November 30.
+        </div>
+      {% endif %}
       {% block announcement %}{% endblock %}
       <div class="container">
         <!-- For flash messages -->
