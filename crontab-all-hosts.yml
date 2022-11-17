@@ -1,0 +1,7 @@
+jobs:
+  - name: SimpleLogin send unsent emails
+    command: python /code/cron.py -j send_undelivered_mails
+    shell: /bin/bash
+    schedule: "*/5 * * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid

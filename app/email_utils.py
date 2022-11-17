@@ -299,6 +299,7 @@ def send_email(
 
     from_name = from_name or NOREPLY
     from_addr = from_addr or NOREPLY
+    from_domain = get_email_domain_part(from_addr)
 
     if html:
         msg = MIMEMultipart("alternative")
@@ -337,7 +338,7 @@ def send_email(
 
     # use a different envelope sender for each transactional email (aka VERP)
     sl_sendmail(
-        generate_verp_email(VerpType.transactional, transaction.id),
+        generate_verp_email(VerpType.transactional, transaction.id, from_domain),
         to_email,
         msg,
         retries=retries,
@@ -934,7 +935,8 @@ def decode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
 
 def add_header(msg: Message, text_header, html_header=None) -> Message:
     if not html_header:
-        html_header = text_header
+        html_header = text_header.replace("\n", "<br>")
+
     content_type = msg.get_content_type().lower()
     if content_type == "text/plain":
         encoding = get_encoding(msg)
@@ -942,7 +944,7 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
         if type(payload) is str:
             clone_msg = copy(msg)
             new_payload = f"""{text_header}
----
+------------------------------
 {decode_text(payload, encoding)}"""
             clone_msg.set_payload(encode_text(new_payload, encoding))
             return clone_msg

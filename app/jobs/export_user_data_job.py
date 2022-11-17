@@ -14,7 +14,12 @@ import sqlalchemy
 from app import config
 from app.db import Session
 from app.email import headers
-from app.email_utils import generate_verp_email, render, add_dkim_signature
+from app.email_utils import (
+    generate_verp_email,
+    render,
+    add_dkim_signature,
+    get_email_domain_part,
+)
 from app.mail_sender import sl_sendmail
 from app.models import (
     Alias,
@@ -147,7 +152,11 @@ class ExportUserDataJob:
 
         transaction = TransactionalEmail.create(email=to_email, commit=True)
         sl_sendmail(
-            generate_verp_email(VerpType.transactional, transaction.id),
+            generate_verp_email(
+                VerpType.transactional,
+                transaction.id,
+                get_email_domain_part(config.NOREPLY),
+            ),
             to_email,
             msg,
             ignore_smtp_error=False,
