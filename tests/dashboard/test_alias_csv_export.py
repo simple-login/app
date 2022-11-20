@@ -1,4 +1,4 @@
-from tests.utils import alias_export
+from tests.utils_test_alias import alias_export
 
 
 def test_alias_export(flask_client):

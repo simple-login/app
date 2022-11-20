@@ -7,7 +7,8 @@ from app.models import (
     BatchImport,
     File,
 )
-from tests.utils import alias_export, login, random_domain, random_token
+from tests.utils_test_alias import alias_export
+from tests.utils import login, random_domain, random_token
 
 
 def test_export(flask_client):
