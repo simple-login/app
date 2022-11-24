@@ -130,6 +130,8 @@ jobs:
       # We need to checkout the repository in order for the "Create Sentry release" to work
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Prepare version file
         run: |
