@@ -127,7 +127,7 @@ class UserAdmin(SLModelView):
         for user in User.filter(User.id.in_(ids)):
             user.disabled = True
 
-            flash(f"Disable user {user.id}")
+            flash(f"Disabled user {user.id}")
             AdminAuditLog.disable_user(
                 current_user.id,user.id
             )
@@ -139,7 +139,7 @@ class UserAdmin(SLModelView):
         "Enable user",
         "Are you sure you want to enable the selected users?",
     )
-    def action_disable_user(self, ids):
+    def action_enable_user(self, ids):
         for user in User.filter(User.id.in_(ids)):
             user.disabled = False
 
