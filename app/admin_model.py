@@ -128,9 +128,7 @@ class UserAdmin(SLModelView):
             user.disabled = True
 
             flash(f"Disabled user {user.id}")
-            AdminAuditLog.disable_user(
-                current_user.id,user.id
-            )
+            AdminAuditLog.disable_user(current_user.id, user.id)
 
         Session.commit()
 
@@ -144,9 +142,7 @@ class UserAdmin(SLModelView):
             user.disabled = False
 
             flash(f"Enabled user {user.id}")
-            AdminAuditLog.enable_user(
-                current_user.id,user.id
-            )
+            AdminAuditLog.enable_user(current_user.id, user.id)
 
         Session.commit()
 

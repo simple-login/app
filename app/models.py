@@ -3200,6 +3200,7 @@ class AdminAuditLog(Base):
             data={},
         )
 
+
 class ProviderComplaintState(EnumE):
     new = 0
     reviewed = 1
