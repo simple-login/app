@@ -1,4 +1,5 @@
 import arrow
+import sys
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -45,7 +46,7 @@ def mailbox_route():
             return redirect(request.url)
         if request.form.get("form-name") == "delete":
             mailbox_id = request.form.get("mailbox-id")
-            mailbox = Mailbox.get(mailbox_id)
+            mailbox = Mailbox.get(id=mailbox_id)
 
             if not mailbox or mailbox.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
@@ -54,6 +55,33 @@ def mailbox_route():
             if mailbox.id == current_user.default_mailbox_id:
                 flash("You cannot delete default mailbox", "error")
                 return redirect(url_for("dashboard.mailbox_route"))
+
+            if request.form.get("transfer_aliases_to", "") and int(request.form.get("transfer_aliases_to")) >= 0:
+                new_mailbox_id = request.form.get("transfer_aliases_to")
+                new_mailbox = Mailbox.get(id=new_mailbox_id)
+
+                if not new_mailbox or new_mailbox.user_id != current_user.id:
+                    flash("You must transfer the aliases to a mailbox you own.")
+                    return redirect(url_for("dashboard.mailbox_route"))
+
+                if new_mailbox_id == mailbox_id:
+                    flash("You can not transfer the aliases to the mailbox you want to delete.")
+                    return redirect(url_for("dashboard.mailbox_route"))
+
+                if not new_mailbox.verified:
+                    flash("Your new mailbox is not verified")
+                    return redirect(url_for("dashboard.mailbox_route"))
+
+                for alias in mailbox.aliases:
+                    if alias.mailbox_id == mailbox.id:
+                        alias.mailbox_id = new_mailbox_id
+                        if new_mailbox in alias._mailboxes:
+                            alias._mailboxes.remove(new_mailbox)
+                    else:
+                        alias._mailboxes.remove(mailbox)
+                        if new_mailbox not in alias._mailboxes:
+                            alias._mailboxes.append(new_mailbox)
+                    Session.commit()
 
             # Schedule delete account job
             LOG.w("schedule delete mailbox job for %s", mailbox)
@@ -134,32 +162,6 @@ def mailbox_route():
         new_mailbox_form=new_mailbox_form,
         csrf_form=csrf_form,
     )
-
-
-def delete_mailbox(mailbox_id: int):
-    from server import create_light_app
-
-    with create_light_app().app_context():
-        mailbox = Mailbox.get(mailbox_id)
-        if not mailbox:
-            return
-
-        mailbox_email = mailbox.email
-        user = mailbox.user
-
-        Mailbox.delete(mailbox_id)
-        Session.commit()
-        LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
-
-        send_email(
-            user.email,
-            f"Your mailbox {mailbox_email} has been deleted",
-            f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
-
-Regards,
-SimpleLogin team.
-        """,
-        )
 
 
 def send_verification_email(user, mailbox):
