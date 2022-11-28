@@ -231,6 +231,8 @@ class AuditLogActionEnum(EnumE):
     logged_as_user = 6
     extend_subscription = 7
     download_provider_complaint = 8
+    disable_user = 9
+    enable_user = 10
 
 
 class Phase(EnumE):
@@ -3178,6 +3180,25 @@ class AdminAuditLog(Base):
             data={},
         )
 
+    @classmethod
+    def disable_user(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.disable_user.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
+
+    @classmethod
+    def enable_user(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.enable_user.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
 
 class ProviderComplaintState(EnumE):
     new = 0
