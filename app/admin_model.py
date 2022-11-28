@@ -119,6 +119,34 @@ class UserAdmin(SLModelView):
     }
 
     @action(
+        "disable_user",
+        "Disable user",
+        "Are you sure you want to disable the selected users?",
+    )
+    def action_disable_user(self, ids):
+        for user in User.filter(User.id.in_(ids)):
+            user.disabled = True
+
+            flash(f"Disabled user {user.id}")
+            AdminAuditLog.disable_user(current_user.id, user.id)
+
+        Session.commit()
+
+    @action(
+        "enable_user",
+        "Enable user",
+        "Are you sure you want to enable the selected users?",
+    )
+    def action_enable_user(self, ids):
+        for user in User.filter(User.id.in_(ids)):
+            user.disabled = False
+
+            flash(f"Enabled user {user.id}")
+            AdminAuditLog.enable_user(current_user.id, user.id)
+
+        Session.commit()
+
+    @action(
         "education_upgrade",
         "Education upgrade",
         "Are you sure you want to edu-upgrade selected users?",
