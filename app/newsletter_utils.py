@@ -20,8 +20,6 @@ def send_newsletter_to_user(newsletter, user) -> (bool, str):
         if not to_email:
             return False, f"{user} not subscribed to newsletter"
 
-        LOG.info("WTF")
-
         send_email(
             to_email,
             newsletter.subject,
