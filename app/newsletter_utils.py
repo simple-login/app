@@ -30,7 +30,9 @@ def send_newsletter_to_user(newsletter, user) -> (bool, str):
             html_template.render(
                 user=user,
                 URL=URL,
+                unsubscribe_link=unsubscribe_link,
             ),
+            unsubscribe_link=unsubscribe_link,
         )
 
         NewsletterUser.create(newsletter_id=newsletter.id, user_id=user.id, commit=True)

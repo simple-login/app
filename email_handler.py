@@ -1125,8 +1125,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # as this is usually included when replying
     if user.replace_reverse_alias:
         LOG.d("Replace reverse-alias %s by contact email %s", reply_email, contact)
-
         msg = replace(msg, reply_email, contact.website_email)
+        LOG.d("Replace mailbox %s by alias email %s", mailbox.email, alias.email)
+        msg = replace(msg, mailbox.email, alias.email)
 
         if config.ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
             start = time.time()
