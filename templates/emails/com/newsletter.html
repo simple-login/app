@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 
 {% block footer %}
-  <p><a href="{{ unsubscribe_link }}">Unsubscribe from our newsletter</a></p>
+
+  <p class="f-fallback sub align-center"
+     style="font-size: 13px;
+            line-height: 1.625;
+            text-align: center;
+            color: #A8AAAF;
+            margin: .4em 0 1.1875em;"
+     a
+     href="{{ unsubscribe_link }}">Unsubscribe from our newsletter</a>
+</p>
 {% endblock %}
