@@ -57,6 +57,7 @@ from app.utils import (
     random_string,
     CSRFValidationForm,
     canonicalize_email,
+    sanitize_email,
 )
 
 
@@ -170,6 +171,7 @@ def setting():
                                 60
                             ),  # todo: make sure the code is unique
                             new_email=new_email,
+                            dirty_email=sanitize_email(change_email_form.email.data),
                         )
                         Session.commit()
                         send_change_email_confirmation(current_user, email_change)
