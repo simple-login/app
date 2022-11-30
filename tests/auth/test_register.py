@@ -62,7 +62,8 @@ def test_register_disabled(flask_client):
 def test_register_non_canonical_if_canonical_exists_is_not_allowed(flask_client):
     """User cannot create new account if the canonical name clashes"""
     email = f"noncan.{random_email()}"
-    create_new_user(email=canonicalize_email(email))
+    canonical_email = canonicalize_email(email)
+    create_new_user(email=canonical_email)
 
     r = flask_client.post(
         url_for("auth.register"),
@@ -70,7 +71,7 @@ def test_register_non_canonical_if_canonical_exists_is_not_allowed(flask_client)
         follow_redirects=True,
     )
 
-    assert f"Email {email}already used".encode("utf-8") in r.data
+    assert f"Email {canonical_email} already used".encode("utf-8") in r.data
 
 
 def test_register_non_canonical_is_canonicalized(flask_client):
