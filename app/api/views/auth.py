@@ -23,7 +23,7 @@ from app.events.auth_event import LoginEvent, RegisterEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
-from app.utils import sanitize_email
+from app.utils import sanitize_email, canonicalize_email
 
 
 @api_bp.route("/auth/login", methods=["POST"])
@@ -49,11 +49,13 @@ def auth_login():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = sanitize_email(data.get("email"))
     password = data.get("password")
     device = data.get("device")
 
-    user = User.filter_by(email=email).first()
+    email = sanitize_email(data.get("email"))
+    canonical_email = canonicalize_email(data.get("email"))
+
+    user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     if not user or not user.check_password(password):
         LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
@@ -89,7 +91,7 @@ def auth_register():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = sanitize_email(data.get("email"))
+    email = canonicalize_email(data.get("email"))
     password = data.get("password")
 
     if DISABLE_REGISTRATION:
@@ -148,9 +150,10 @@ def auth_activate():
         return jsonify(error="request body cannot be empty"), 400
 
     email = sanitize_email(data.get("email"))
+    canonical_email = canonicalize_email(data.get("email"))
     code = data.get("code")
 
-    user = User.get_by(email=email)
+    user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     # do not use a different message to avoid exposing existing email
     if not user or user.activated:
@@ -196,7 +199,9 @@ def auth_reactivate():
         return jsonify(error="request body cannot be empty"), 400
 
     email = sanitize_email(data.get("email"))
-    user = User.get_by(email=email)
+    canonical_email = canonicalize_email(data.get("email"))
+
+    user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     # do not use a different message to avoid exposing existing email
     if not user or user.activated:
@@ -367,8 +372,9 @@ def forgot_password():
         return jsonify(error="request body must contain email"), 400
 
     email = sanitize_email(data.get("email"))
+    canonical_email = canonicalize_email(data.get("email"))
 
-    user = User.get_by(email=email)
+    user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     if user:
         send_reset_password_email(user)

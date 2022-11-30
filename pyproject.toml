@@ -1,5 +1,5 @@
 [tool.black]
-target-version = ['py37']
+target-version = ['py310']
 exclude = '''
 (
   /(

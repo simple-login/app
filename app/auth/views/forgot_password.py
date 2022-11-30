@@ -7,7 +7,7 @@ from app.dashboard.views.setting import send_reset_password_email
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
-from app.utils import sanitize_email
+from app.utils import sanitize_email, canonicalize_email
 
 
 class ForgotPasswordForm(FlaskForm):
@@ -25,12 +25,14 @@ def forgot_password():
         # Trigger rate limiter
         g.deduct_limit = True
 
-        email = sanitize_email(form.email.data)
         flash(
             "If your email is correct, you are going to receive an email to reset your password",
             "success",
         )
-        user = User.get_by(email=email)
+
+        email = sanitize_email(form.email.data)
+        canonical_email = canonicalize_email(email)
+        user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
         if user:
             LOG.d("Send forgot password email to %s", user)
