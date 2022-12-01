@@ -85,7 +85,6 @@ def register():
                 LOG.d("create user %s", email)
                 user = User.create(
                     email=email,
-                    dirty_email=sanitized_email,
                     name="",
                     password=form.password.data,
                     referral=get_referral(),

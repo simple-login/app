@@ -23,7 +23,6 @@ def change_email():
 
     user = email_change.user
     user.email = email_change.new_email
-    user.dirty_email = email_change.dirty_email or email_change.new_email
 
     EmailChange.delete(email_change.id)
     ResetPasswordCode.filter_by(user_id=user.id).delete()
