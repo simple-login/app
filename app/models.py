@@ -320,7 +320,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
-    dirty_email = sa.Column(sa.String(256), unique=False, nullable=True)
 
     name = sa.Column(sa.String(128), nullable=True)
     is_admin = sa.Column(sa.Boolean, nullable=False, default=False)
@@ -2065,7 +2064,6 @@ class EmailChange(Base, ModelMixin):
         index=True,
     )
     new_email = sa.Column(sa.String(256), unique=True, nullable=False)
-    dirty_email = sa.Column(sa.String(256), unique=False, nullable=True)
     code = sa.Column(sa.String(128), unique=True, nullable=False)
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_12h)
 

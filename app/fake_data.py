@@ -43,7 +43,6 @@ def fake_data():
     # Create a user
     user = User.create(
         email="john@wick.com",
-        dirty_email="john@wick.com",
         name="John Wick",
         password="password",
         activated=True,
@@ -235,7 +234,6 @@ def fake_data():
 
     user2 = User.create(
         email="winston@continental.com",
-        dirty_email="winston@continental.com",
         password="password",
         activated=True,
         referral_id=referral.id,
