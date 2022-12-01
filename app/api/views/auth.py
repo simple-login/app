@@ -91,7 +91,8 @@ def auth_register():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = canonicalize_email(data.get("email"))
+    dirty_email = data.get("email")
+    email = canonicalize_email(dirty_email)
     password = data.get("password")
 
     if DISABLE_REGISTRATION:
@@ -112,7 +113,7 @@ def auth_register():
         return jsonify(error="password too long"), 400
 
     LOG.d("create user %s", email)
-    user = User.create(email=email, name="", password=password)
+    user = User.create(email=email, name=dirty_email, password=password)
     Session.flush()
 
     # create activation code
