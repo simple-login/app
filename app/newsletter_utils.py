@@ -6,7 +6,7 @@ from app.config import ROOT_DIR, URL
 from app.email_utils import send_email
 from app.handler.unsubscribe_encoder import UnsubscribeEncoder, UnsubscribeAction
 from app.log import LOG
-from app.models import NewsletterUser, Alias
+from app.models import NewsletterUser
 
 
 def send_newsletter_to_user(newsletter, user) -> (bool, str):
@@ -40,7 +40,7 @@ def send_newsletter_to_user(newsletter, user) -> (bool, str):
                 unsubscribe_oneclick=unsubscribe_oneclick,
             ),
             unsubscribe_link=unsubscribe_link,
-            unsubscribe_via_email=via_email
+            unsubscribe_via_email=via_email,
         )
 
         NewsletterUser.create(newsletter_id=newsletter.id, user_id=user.id, commit=True)

@@ -29,8 +29,14 @@ def onboarding_send_from_alias(user):
     send_email(
         comm_alias.email,
         "SimpleLogin Tip: Send emails from your alias",
-        render("com/onboarding/send-from-alias.txt.j2", user=user, to_email=comm_alias.email),
-        render("com/onboarding/send-from-alias.html", user=user, to_email=comm_alias.email),
+        render(
+            "com/onboarding/send-from-alias.txt.j2",
+            user=user,
+            to_email=comm_alias.email,
+        ),
+        render(
+            "com/onboarding/send-from-alias.html", user=user, to_email=comm_alias.email
+        ),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -63,8 +69,14 @@ def onboarding_browser_extension(user):
     send_email(
         comm_alias.email,
         "SimpleLogin Tip: Chrome/Firefox/Safari extensions and Android/iOS apps",
-        render("com/onboarding/browser-extension.txt", user=user, to_email=comm_alias.email),
-        render("com/onboarding/browser-extension.html", user=user, to_email=comm_alias.email),
+        render(
+            "com/onboarding/browser-extension.txt", user=user, to_email=comm_alias.email
+        ),
+        render(
+            "com/onboarding/browser-extension.html",
+            user=user,
+            to_email=comm_alias.email,
+        ),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -102,7 +114,11 @@ def welcome_proton(user):
             user=user,
             to_email=comm_alias.email,
         ),
-        render("com/onboarding/welcome-proton-user.html", user=user, to_email=comm_alias.email),
+        render(
+            "com/onboarding/welcome-proton-user.html",
+            user=user,
+            to_email=comm_alias.email,
+        ),
         retries=3,
         ignore_smtp_error=True,
     )
