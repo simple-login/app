@@ -91,7 +91,7 @@ DB_URI=postgresql://myuser:mypassword@localhost:35432/simplelogin
 Run the postgres database:
 
 ```bash
-docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 35432:5432 postgres:13
+docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 15432:5432 postgres:13
 ```
 
 To run the server:
