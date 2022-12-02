@@ -928,7 +928,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def two_factor_authentication_enabled(self) -> bool:
         return self.enable_otp or self.fido_enabled()
 
-    def get_communication_email(self) -> (Optional[str], str, bool):
+    def get_communication_email(self) -> (Optional[Alias], str, bool):
         """
         Return
         - the email that user uses to receive email communication. None if user unsubscribes from newsletter
@@ -942,10 +942,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                     unsub = UnsubscribeEncoder.encode(
                         UnsubscribeAction.DisableAlias, alias.id
                     )
-                    return alias.email, unsub.link, unsub.via_email
+                    return alias, unsub.link, unsub.via_email
                 # alias disabled -> user doesn't want to receive newsletter
                 else:
-                    return None, None, False
+                    return None, '', False
             else:
                 # do not handle http POST unsubscribe
                 if config.UNSUBSCRIBER:
@@ -958,7 +958,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                         True,
                     )
 
-        return None, None, False
+        return None, '', False
 
     def available_sl_domains(self) -> [str]:
         """
