@@ -26,6 +26,7 @@
       </h1>
       <div class="card">
         <form method="post">
+          {{ pgp_form.csrf_token }}
           <input type="hidden" name="form-name" value="pgp">
           <div class="card-body">
             <div class="card-title">
