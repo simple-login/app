@@ -110,7 +110,7 @@ def auth_register():
         return jsonify(error="password too long"), 400
 
     LOG.d("create user %s", email)
-    user = User.create(email=email, name=dirty_email, password=password)
+    user = User.create(email=email, name=emaill, password=password)
     Session.flush()
 
     # create activation code
