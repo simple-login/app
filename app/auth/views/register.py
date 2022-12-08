@@ -17,7 +17,7 @@ from app.email_utils import (
 from app.events.auth_event import RegisterEvent
 from app.log import LOG
 from app.models import User, ActivationCode, DailyMetric
-from app.utils import random_string, encode_url, sanitize_email, canonicalize_email
+from app.utils import random_string, encode_url, sanitize_email
 
 
 class RegisterForm(FlaskForm):
@@ -70,15 +70,12 @@ def register():
                     HCAPTCHA_SITEKEY=HCAPTCHA_SITEKEY,
                 )
 
-        email = canonicalize_email(form.email.data)
+        email = sanitize_email(form.email.data)
         if not email_can_be_used_as_mailbox(email):
             flash("You cannot use this email address as your personal inbox.", "error")
             RegisterEvent(RegisterEvent.ActionType.email_in_use).send()
         else:
-            sanitized_email = sanitize_email(form.email.data)
-            if personal_email_already_used(email) or personal_email_already_used(
-                sanitized_email
-            ):
+            if personal_email_already_used(email):
                 flash(f"Email {email} already used", "error")
                 RegisterEvent(RegisterEvent.ActionType.email_in_use).send()
             else:

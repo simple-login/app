@@ -15,7 +15,7 @@ from app.models import (
     Mailbox,
     User,
 )
-from app.utils import sanitize_email, canonicalize_email
+from app.utils import sanitize_email
 from .log import LOG
 
 
@@ -69,7 +69,7 @@ def import_from_csv(batch_import: BatchImport, user: User, lines):
 
         if "mailboxes" in row:
             for mailbox_email in row["mailboxes"].split():
-                mailbox_email = canonicalize_email(mailbox_email)
+                mailbox_email = sanitize_email(mailbox_email)
                 mailbox = Mailbox.get_by(email=mailbox_email)
 
                 if not mailbox or not mailbox.verified or mailbox.user_id != user.id:

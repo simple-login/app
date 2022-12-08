@@ -13,16 +13,12 @@ from app.models import User
 from app.utils import random_string
 
 
-def create_new_user(email: Optional[str] = None, name: Optional[str] = None) -> User:
-    if not email:
-        email = f"user_{random_token(10)}@mailbox.test"
-    if not name:
-        name = f"Test User"
+def create_new_user() -> User:
     # new user has a different email address
     user = User.create(
-        email=email,
+        email=f"user{random.random()}@mailbox.test",
         password="password",
-        name=name,
+        name="Test User",
         activated=True,
         flush=True,
     )
@@ -30,9 +26,8 @@ def create_new_user(email: Optional[str] = None, name: Optional[str] = None) -> 
     return user
 
 
-def login(flask_client, user: Optional[User] = None) -> User:
-    if not user:
-        user = create_new_user()
+def login(flask_client) -> User:
+    user = create_new_user()
 
     r = flask_client.post(
         url_for("auth.login"),

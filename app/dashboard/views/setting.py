@@ -53,11 +53,7 @@ from app.models import (
     UnsubscribeBehaviourEnum,
 )
 from app.proton.utils import get_proton_partner, perform_proton_account_unlink
-from app.utils import (
-    random_string,
-    CSRFValidationForm,
-    canonicalize_email,
-)
+from app.utils import random_string, sanitize_email, CSRFValidationForm
 
 
 class SettingForm(FlaskForm):
@@ -124,8 +120,11 @@ def setting():
             if change_email_form.validate():
                 # whether user can proceed with the email update
                 new_email_valid = True
-                new_email = canonicalize_email(change_email_form.email.data)
-                if new_email != current_user.email and not pending_email:
+                if (
+                    sanitize_email(change_email_form.email.data) != current_user.email
+                    and not pending_email
+                ):
+                    new_email = sanitize_email(change_email_form.email.data)
 
                     # check if this email is not already used
                     if personal_email_already_used(new_email) or Alias.get_by(

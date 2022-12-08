@@ -69,22 +69,6 @@ def encode_url(url):
     return urllib.parse.quote(url, safe="")
 
 
-def canonicalize_email(email_address: str) -> str:
-    email_address = sanitize_email(email_address)
-    parts = email_address.split("@")
-    if len(parts) != 2:
-        return ""
-    first = parts[0]
-    try:
-        plus_idx = first.index("+")
-        first = first[:plus_idx]
-    except ValueError:
-        # No + in the email
-        pass
-    first = first.replace(".", "")
-    return f"{first}@{parts[1]}".lower().strip()
-
-
 def sanitize_email(email_address: str, not_lower=False) -> str:
     if email_address:
         email_address = email_address.strip().replace(" ", "").replace("\n", " ")
