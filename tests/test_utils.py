@@ -4,7 +4,7 @@ from urllib.parse import parse_qs
 import pytest
 
 from app.config import ALLOWED_REDIRECT_DOMAINS
-from app.utils import random_string, random_words, sanitize_next_url, canonicalize_email
+from app.utils import random_string, random_words, sanitize_next_url
 
 
 def test_random_words():
@@ -59,16 +59,3 @@ def test_parse_querystring():
         assert len(res) == len(expected)
         for k, v in expected.items():
             assert res[k] == v
-
-
-canonicalize_email_cases = [
-    ["a@b.c", "a@b.c"],
-    ["a.b@c.d", "ab@c.d"],
-    ["a+b@c.d", "a@c.d"],
-    ["a.b.c@d.e", "abc@d.e"],
-]
-
-
-@pytest.mark.parametrize("dirty,clean", canonicalize_email_cases)
-def test_canonicalize_email(dirty: str, clean: str):
-    assert canonicalize_email(dirty) == clean
