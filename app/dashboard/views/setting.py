@@ -29,6 +29,7 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.errors import ProtonPartnerNotSetUp
+from app.extensions import limiter
 from app.image_validation import detect_image_format, ImageFormat
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
@@ -100,6 +101,7 @@ def get_partner_subscription_and_name(
 
 @dashboard_bp.route("/setting", methods=["GET", "POST"])
 @login_required
+@limiter.limit("5/minute", methods=["POST"])
 def setting():
     form = SettingForm()
     promo_form = PromoCodeForm()
