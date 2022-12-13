@@ -22,15 +22,21 @@ from server import create_light_app
 
 
 def onboarding_send_from_alias(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_alias, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_alias.email:
         return
 
     send_email(
-        to_email,
+        comm_alias.email,
         "SimpleLogin Tip: Send emails from your alias",
-        render("com/onboarding/send-from-alias.txt.j2", user=user, to_email=to_email),
-        render("com/onboarding/send-from-alias.html", user=user, to_email=to_email),
+        render(
+            "com/onboarding/send-from-alias.txt.j2",
+            user=user,
+            to_email=comm_alias.email,
+        ),
+        render(
+            "com/onboarding/send-from-alias.html", user=user, to_email=comm_alias.email
+        ),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -39,15 +45,15 @@ def onboarding_send_from_alias(user):
 
 
 def onboarding_pgp(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_alias, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_alias:
         return
 
     send_email(
-        to_email,
+        comm_alias.email,
         "SimpleLogin Tip: Secure your emails with PGP",
-        render("com/onboarding/pgp.txt", user=user, to_email=to_email),
-        render("com/onboarding/pgp.html", user=user, to_email=to_email),
+        render("com/onboarding/pgp.txt", user=user, to_email=comm_alias.email),
+        render("com/onboarding/pgp.html", user=user, to_email=comm_alias.email),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -56,15 +62,21 @@ def onboarding_pgp(user):
 
 
 def onboarding_browser_extension(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_alias, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_alias:
         return
 
     send_email(
-        to_email,
+        comm_alias.email,
         "SimpleLogin Tip: Chrome/Firefox/Safari extensions and Android/iOS apps",
-        render("com/onboarding/browser-extension.txt", user=user, to_email=to_email),
-        render("com/onboarding/browser-extension.html", user=user, to_email=to_email),
+        render(
+            "com/onboarding/browser-extension.txt", user=user, to_email=comm_alias.email
+        ),
+        render(
+            "com/onboarding/browser-extension.html",
+            user=user,
+            to_email=comm_alias.email,
+        ),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -73,15 +85,15 @@ def onboarding_browser_extension(user):
 
 
 def onboarding_mailbox(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_alias, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_alias:
         return
 
     send_email(
-        to_email,
+        comm_alias.email,
         "SimpleLogin Tip: Multiple mailboxes",
-        render("com/onboarding/mailbox.txt", user=user, to_email=to_email),
-        render("com/onboarding/mailbox.html", user=user, to_email=to_email),
+        render("com/onboarding/mailbox.txt", user=user, to_email=comm_alias.email),
+        render("com/onboarding/mailbox.html", user=user, to_email=comm_alias.email),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -90,19 +102,23 @@ def onboarding_mailbox(user):
 
 
 def welcome_proton(user):
-    to_email, _, _ = user.get_communication_email()
-    if not to_email:
+    comm_alias, _, _ = user.get_communication_email()
+    if not comm_alias:
         return
 
     send_email(
-        to_email,
+        comm_alias.email,
         "Welcome to SimpleLogin, an email masking service provided by Proton",
         render(
             "com/onboarding/welcome-proton-user.txt.jinja2",
             user=user,
-            to_email=to_email,
+            to_email=comm_alias.email,
         ),
-        render("com/onboarding/welcome-proton-user.html", user=user, to_email=to_email),
+        render(
+            "com/onboarding/welcome-proton-user.html",
+            user=user,
+            to_email=comm_alias.email,
+        ),
         retries=3,
         ignore_smtp_error=True,
     )

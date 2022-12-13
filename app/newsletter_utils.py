@@ -4,6 +4,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from app.config import ROOT_DIR, URL
 from app.email_utils import send_email
+from app.handler.unsubscribe_encoder import UnsubscribeEncoder, UnsubscribeAction
 from app.log import LOG
 from app.models import NewsletterUser
 
@@ -16,12 +17,18 @@ def send_newsletter_to_user(newsletter, user) -> (bool, str):
         html_template = env.from_string(newsletter.html)
         text_template = env.from_string(newsletter.plain_text)
 
-        to_email, unsubscribe_link, via_email = user.get_communication_email()
-        if not to_email:
+        comm_alias, unsubscribe_link, via_email = user.get_communication_email()
+        if not comm_alias:
             return False, f"{user} not subscribed to newsletter"
 
+        unsubscribe_oneclick = unsubscribe_link
+        if via_email:
+            unsubscribe_oneclick = UnsubscribeEncoder.encode(
+                UnsubscribeAction.DisableAlias, comm_alias.id
+            )
+
         send_email(
-            to_email,
+            comm_alias.email,
             newsletter.subject,
             text_template.render(
                 user=user,
@@ -30,9 +37,10 @@ def send_newsletter_to_user(newsletter, user) -> (bool, str):
             html_template.render(
                 user=user,
                 URL=URL,
-                unsubscribe_link=unsubscribe_link,
+                unsubscribe_oneclick=unsubscribe_oneclick,
             ),
             unsubscribe_link=unsubscribe_link,
+            unsubscribe_via_email=via_email,
         )
 
         NewsletterUser.create(newsletter_id=newsletter.id, user_id=user.id, commit=True)
