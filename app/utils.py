@@ -74,6 +74,9 @@ def canonicalize_email(email_address: str) -> str:
     parts = email_address.split("@")
     if len(parts) != 2:
         return ""
+    domain = parts[1]
+    if domain not in ("gmail.com", "protonmail.com", "proton.me", "pm.me"):
+        return email_address
     first = parts[0]
     try:
         plus_idx = first.index("+")

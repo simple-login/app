@@ -61,14 +61,14 @@ def test_parse_querystring():
             assert res[k] == v
 
 
-canonicalize_email_cases = [
-    ["a@b.c", "a@b.c"],
-    ["a.b@c.d", "ab@c.d"],
-    ["a+b@c.d", "a@c.d"],
-    ["a.b.c@d.e", "abc@d.e"],
-]
+def canonicalize_email_cases():
+    for domain in ("gmail.com", "protonmail.com", "proton.me", "pm.me"):
+        yield (f"a@{domain}", f"a@{domain}")
+        yield (f"a.b@{domain}", f"ab@{domain}")
+        yield (f"a.b+c@{domain}", f"ab@{domain}")
+    yield (f"a.b+c@other.com", f"a.b+c@other.com")
 
 
-@pytest.mark.parametrize("dirty,clean", canonicalize_email_cases)
+@pytest.mark.parametrize("dirty,clean", canonicalize_email_cases())
 def test_canonicalize_email(dirty: str, clean: str):
     assert canonicalize_email(dirty) == clean
