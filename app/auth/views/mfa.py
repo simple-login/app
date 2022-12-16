@@ -67,7 +67,7 @@ def mfa():
 
         token = otp_token_form.token.data.replace(" ", "")
 
-        if totp.verify(token) and user.last_otp != token:
+        if totp.verify(token, valid_window=2) and user.last_otp != token:
             del session[MFA_USER_ID]
             user.last_otp = token
             Session.commit()
