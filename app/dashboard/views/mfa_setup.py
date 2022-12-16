@@ -35,7 +35,7 @@ def mfa_setup():
     if otp_token_form.validate_on_submit():
         token = otp_token_form.token.data.replace(" ", "")
 
-        if totp.verify(token) and current_user.last_otp != token:
+        if totp.verify(token, valid_window=2) and current_user.last_otp != token:
             current_user.enable_otp = True
             current_user.last_otp = token
             Session.commit()
