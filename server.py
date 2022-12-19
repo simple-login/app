@@ -841,8 +841,8 @@ def register_custom_commands(app):
                 LOG.i(f"User {user_id} was maybe deleted in the meantime")
                 continue
 
-            comm_alias, unsubscribe_link, via_email = user.get_communication_email()
-            if not comm_alias.email:
+            comm_email, unsubscribe_link, via_email = user.get_communication_email()
+            if not comm_email:
                 continue
 
             sent, error_msg = send_newsletter_to_user(newsletter, user)

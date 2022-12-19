@@ -83,15 +83,15 @@ def render(template_name, **kwargs) -> str:
 
 
 def send_welcome_email(user):
-    comm_alias, unsubscribe_link, via_email = user.get_communication_email()
-    if not comm_alias:
+    comm_email, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_email:
         return
 
     # whether this email is sent to an alias
-    alias = comm_alias.email if comm_alias.email != user.email else None
+    alias = comm_email if comm_email != user.email else None
 
     send_email(
-        comm_alias.email,
+        comm_email,
         f"Welcome to SimpleLogin",
         render("com/welcome.txt", user=user, alias=alias),
         render("com/welcome.html", user=user, alias=alias),
