@@ -94,7 +94,7 @@ def onboarding_mailbox(user):
         "SimpleLogin Tip: Multiple mailboxes",
         render("com/onboarding/mailbox.txt", user=user, to_email=comm_email),
         render("com/onboarding/mailbox.html", user=user, to_email=comm_email),
-        *unsubscribe_link,
+        unsubscribe_link,
         via_email,
         retries=3,
         ignore_smtp_error=True,
