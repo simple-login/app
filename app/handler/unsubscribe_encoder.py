@@ -42,9 +42,11 @@ class UnsubscribeLink:
 class UnsubscribeEncoder:
     @staticmethod
     def encode(
-        action: UnsubscribeAction, data: Union[int, UnsubscribeOriginalData]
+        action: UnsubscribeAction,
+        data: Union[int, UnsubscribeOriginalData],
+        force_web: bool = False,
     ) -> UnsubscribeLink:
-        if config.UNSUBSCRIBER:
+        if config.UNSUBSCRIBER and not force_web:
             return UnsubscribeLink(UnsubscribeEncoder.encode_mailto(action, data), True)
         return UnsubscribeLink(UnsubscribeEncoder.encode_url(action, data), False)
 

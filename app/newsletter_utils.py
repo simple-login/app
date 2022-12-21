@@ -27,13 +27,15 @@ def send_newsletter_to_user(newsletter, user) -> (bool, str):
             comm_alias_id = comm_alias.id
 
         unsubscribe_oneclick = unsubscribe_link
-        if via_email:
+        if via_email and comm_alias_id > -1:
             unsubscribe_oneclick = UnsubscribeEncoder.encode(
-                UnsubscribeAction.DisableAlias, comm_alias_id
-            )
+                UnsubscribeAction.DisableAlias,
+                comm_alias_id,
+                force_web=True,
+            ).link
 
         send_email(
-            comm_alias.email,
+            comm_email,
             newsletter.subject,
             text_template.render(
                 user=user,
