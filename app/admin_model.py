@@ -34,7 +34,7 @@ from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_add
 class SLModelView(sqla.ModelView):
     column_default_sort = ("id", True)
     column_display_pk = True
-    page_size = 10
+    page_size = 100
 
     can_edit = False
     can_create = False
