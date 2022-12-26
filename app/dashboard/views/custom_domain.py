@@ -8,7 +8,7 @@ from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import get_email_domain_part
 from app.log import LOG
-from app.models import CustomDomain, Mailbox, DomainMailbox, SLDomain
+from app.models import CustomDomain, Mailbox, DomainMailbox
 
 
 class NewCustomDomainForm(FlaskForm):
