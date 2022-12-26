@@ -43,9 +43,7 @@ def custom_domain():
                 if new_domain.startswith("https://"):
                     new_domain = new_domain[len("https://") :]
 
-                if SLDomain.get_by(domain=new_domain):
-                    flash("A custom domain cannot be a built-in domain.", "error")
-                elif CustomDomain.get_by(domain=new_domain):
+                if CustomDomain.get_by(domain=new_domain):
                     flash(f"{new_domain} already used", "error")
                 elif get_email_domain_part(current_user.email) == new_domain:
                     flash(
