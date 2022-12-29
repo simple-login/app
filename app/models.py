@@ -1350,13 +1350,25 @@ class Alias(Base, ModelMixin):
         return False
 
     @staticmethod
-    def get_custom_domain(alias_address) -> Optional["CustomDomain"]:
+    def get_custom_domain(
+        alias_address, user: Optional[User]
+    ) -> Optional["CustomDomain"]:
         alias_domain = validate_email(
             alias_address, check_deliverability=False, allow_smtputf8=False
         ).domain
 
         # handle the case a SLDomain is also a CustomDomain
-        if SLDomain.get_by(domain=alias_domain) is None:
+        sl_domain = SLDomain.get_by(domain=alias_domain)
+        if sl_domain:
+            # "root" user can have a custom domain that's also a SL domain
+            # in this case prefer this custom domain over the SL one
+            if user:
+                custom_domain = CustomDomain.get_by(
+                    domain=alias_domain, user_id=user.id
+                )
+                if custom_domain:
+                    return custom_domain
+        else:
             custom_domain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain:
                 return custom_domain
@@ -1379,9 +1391,15 @@ class Alias(Base, ModelMixin):
         if DomainDeletedAlias.get_by(email=email):
             raise AliasInTrashError
 
+        user_id = kw.get("user_id")
+        if user_id:
+            user = User.get(user_id)
+        else:
+            user = None
+
         # detect whether alias should belong to a custom domain
         if "custom_domain_id" not in kw:
-            custom_domain = Alias.get_custom_domain(email)
+            custom_domain = Alias.get_custom_domain(email, user)
             if custom_domain:
                 new_alias.custom_domain_id = custom_domain.id
 
