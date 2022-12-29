@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import EMAIL_SERVERS_WITH_PRIORITY
+from app import config
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import get_email_domain_part
@@ -58,7 +58,7 @@ def custom_domain():
                         f"{new_domain} already used in a SimpleLogin mailbox", "error"
                     )
                 else:
-                    new_custom_domain = CustomDomain.create(
+                    new_custom_domain: CustomDomain = CustomDomain.create(
                         domain=new_domain, user_id=current_user.id
                     )
                     # new domain has ownership verified if its parent has the ownership verified
@@ -73,6 +73,13 @@ def custom_domain():
                                 root_cd,
                             )
                             new_custom_domain.ownership_verified = True
+
+                    # in self-hosting, a custom domain can be the same as the root EMAIL_DOMAIN
+                    if new_domain == config.EMAIL_DOMAIN:
+                        new_custom_domain.ownership_verified = True
+                        new_custom_domain.verified = True
+                        new_custom_domain.spf_verified = True
+                        new_custom_domain.dkim_verified = True
 
                     Session.commit()
 
@@ -113,7 +120,7 @@ def custom_domain():
         "dashboard/custom_domain.html",
         custom_domains=custom_domains,
         new_custom_domain_form=new_custom_domain_form,
-        EMAIL_SERVERS_WITH_PRIORITY=EMAIL_SERVERS_WITH_PRIORITY,
+        EMAIL_SERVERS_WITH_PRIORITY=config.EMAIL_SERVERS_WITH_PRIORITY,
         errors=errors,
         mailboxes=mailboxes,
     )
