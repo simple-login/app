@@ -34,7 +34,7 @@ def batch_import_route():
     if request.method == "POST":
         if not csrf_form.validate():
             flash("Invalid request", "warning")
-            redirect(request.url)
+            return redirect(request.url)
         if len(batch_imports) > 10:
             flash(
                 "You have too many imports already. Wait until some get cleaned up",
