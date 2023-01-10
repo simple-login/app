@@ -43,6 +43,7 @@
                 <div class="row">
                   <div class="col">
                     <form method="post">
+                      {{ csrf_form.csrf_token }}
                       <input type="hidden" name="form-name" value="delete">
                       <input type="hidden" name="api-key-id" value="{{ api_key.id }}">
                       <span class="card-link btn btn-link float-right text-danger delete-api-key">Delete</span>
@@ -57,6 +58,7 @@
       {% if api_keys|length > 0 %}
 
         <form method="post">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="delete-all">
           <span class="delete btn btn-outline-danger delete-all-api-keys float-right">
             Delete All &nbsp; &nbsp; <i class="fe fe-trash"></i>
@@ -66,7 +68,7 @@
       {% endif %}
       <hr />
       <form method="post">
-        {{ new_api_key_form.csrf_token }}
+        {{ csrf_form.csrf_token }}
         <input type="hidden" name="form-name" value="create">
         <h2 class="h4">New API Key</h2>
         {{ new_api_key_form.name(class="form-control", placeholder="Chrome") }}

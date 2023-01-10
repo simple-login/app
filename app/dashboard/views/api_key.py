@@ -7,6 +7,7 @@ from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.models import ApiKey
+from app.utils import CSRFValidationForm
 
 
 class NewApiKeyForm(FlaskForm):
@@ -23,9 +24,13 @@ def api_key():
         .all()
     )
 
+    csrf_form = CSRFValidationForm()
     new_api_key_form = NewApiKeyForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "delete":
             api_key_id = request.form.get("api-key-id")
 
@@ -62,5 +67,8 @@ def api_key():
         return redirect(url_for("dashboard.api_key"))
 
     return render_template(
-        "dashboard/api_key.html", api_keys=api_keys, new_api_key_form=new_api_key_form
+        "dashboard/api_key.html",
+        api_keys=api_keys,
+        new_api_key_form=new_api_key_form,
+        csrf_form=csrf_form,
     )
