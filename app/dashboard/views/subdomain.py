@@ -2,6 +2,8 @@ import re
 
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
+from flask_wtf import FlaskForm
+from wtforms import StringField, validators
 
 from app.config import MAX_NB_SUBDOMAIN
 from app.dashboard.base import dashboard_bp
@@ -11,6 +13,15 @@ from app.models import CustomDomain, Mailbox, SLDomain
 
 # Only lowercase letters, numbers, dashes (-)  are currently supported
 _SUBDOMAIN_PATTERN = r"[0-9a-z-]{1,}"
+
+
+class NewSubdomainForm(FlaskForm):
+    domain = StringField(
+        "domain", validators=[validators.DataRequired(), validators.Length(max=64)]
+    )
+    subdomain = StringField(
+        "subdomain", validators=[validators.DataRequired(), validators.Length(max=64)]
+    )
 
 
 @dashboard_bp.route("/subdomain", methods=["GET", "POST"])
@@ -26,9 +37,13 @@ def subdomain_route():
     ).all()
 
     errors = {}
+    new_subdomain_form = NewSubdomainForm()
 
     if request.method == "POST":
         if request.form.get("form-name") == "create":
+            if not new_subdomain_form.validate():
+                flash("Invalid new subdomain", "warning")
+                return redirect(url_for("dashboard.subdomain_route"))
             if not current_user.is_premium():
                 flash("Only premium plan can add subdomain", "warning")
                 return redirect(request.url)
@@ -39,8 +54,8 @@ def subdomain_route():
                 )
                 return redirect(request.url)
 
-            subdomain = request.form.get("subdomain").lower().strip()
-            domain = request.form.get("domain").lower().strip()
+            subdomain = new_subdomain_form.subdomain.data.lower().strip()
+            domain = new_subdomain_form.domain.data.lower().strip()
 
             if len(subdomain) < 3:
                 flash("Subdomain must have at least 3 characters", "error")
@@ -108,4 +123,5 @@ def subdomain_route():
         sl_domains=sl_domains,
         errors=errors,
         subdomains=subdomains,
+        new_subdomain_form=new_subdomain_form,
     )
