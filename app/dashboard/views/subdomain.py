@@ -3,6 +3,7 @@ import re
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
+from app import parallel_limiter
 from app.config import MAX_NB_SUBDOMAIN
 from app.dashboard.base import dashboard_bp
 from app.errors import SubdomainInTrashError
@@ -15,6 +16,7 @@ _SUBDOMAIN_PATTERN = r"[0-9a-z-]{1,}"
 
 @dashboard_bp.route("/subdomain", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(only_when=lambda: request.method == "POST")
 def subdomain_route():
     if not current_user.subdomain_is_available():
         flash("Unknown error, redirect to the home page", "error")
