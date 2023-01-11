@@ -9,6 +9,7 @@ from wtforms import (
     IntegerField,
 )
 
+from app import parallel_limiter
 from app.config import (
     EMAIL_DOMAIN,
     ALIAS_DOMAINS,
@@ -45,6 +46,7 @@ class DeleteDirForm(FlaskForm):
 
 @dashboard_bp.route("/directory", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(only_when=lambda: request.method == "POST")
 def directory():
     dirs = (
         Directory.filter_by(user_id=current_user.id)

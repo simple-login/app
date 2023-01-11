@@ -6,6 +6,7 @@ from itsdangerous import Signer
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
+from app import parallel_limiter
 from app.config import MAILBOX_SECRET, URL, JOB_DELETE_MAILBOX
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -29,6 +30,7 @@ class NewMailboxForm(FlaskForm):
 
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(only_when=lambda: request.method == "POST")
 def mailbox_route():
     mailboxes = (
         Mailbox.filter_by(user_id=current_user.id)
