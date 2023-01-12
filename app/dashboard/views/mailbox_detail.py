@@ -4,7 +4,7 @@ from email_validator import validate_email, EmailNotValidError
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from itsdangerous import Signer
+from itsdangerous import TimestampSigner
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
@@ -210,7 +210,7 @@ def mailbox_detail_route(mailbox_id):
 
 
 def verify_mailbox_change(user, mailbox, new_email):
-    s = Signer(MAILBOX_SECRET)
+    s = TimestampSigner(MAILBOX_SECRET)
     mailbox_id_signed = s.sign(str(mailbox.id)).decode()
     verification_url = (
         f"{URL}/dashboard/mailbox/confirm_change?mailbox_id={mailbox_id_signed}"
@@ -262,11 +262,11 @@ def cancel_mailbox_change_route(mailbox_id):
 
 @dashboard_bp.route("/mailbox/confirm_change")
 def mailbox_confirm_change_route():
-    s = Signer(MAILBOX_SECRET)
+    s = TimestampSigner(MAILBOX_SECRET)
     signed_mailbox_id = request.args.get("mailbox_id")
 
     try:
-        mailbox_id = int(s.unsign(signed_mailbox_id))
+        mailbox_id = int(s.unsign(signed_mailbox_id, max_age=900))
     except Exception:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.index"))
