@@ -72,6 +72,7 @@
             <div class="card-body">
               <h2 class="h4 mb-1">New Subdomain</h2>
               <form method="post" class="mt-2" data-parsley-validate>
+                {{ new_subdomain_form.csrf_token }}
                 <input type="hidden" name="form-name" value="create">
                 <div class="form-group">
                   <label>Subdomain</label>
