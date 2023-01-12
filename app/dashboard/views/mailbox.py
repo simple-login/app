@@ -1,11 +1,10 @@
 import arrow
-import sys
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from itsdangerous import TimestampSigner
 from wtforms import validators
-from wtforms.fields.html5 import EmailField
+from wtforms.fields.html5 import EmailField, IntegerField
 
 from app import parallel_limiter
 from app.config import MAILBOX_SECRET, URL, JOB_DELETE_MAILBOX
@@ -29,6 +28,14 @@ class NewMailboxForm(FlaskForm):
     )
 
 
+class DeleteMailboxForm(FlaskForm):
+    mailbox_id = IntegerField(
+        "mailbox-id",
+        validators=[validators.DataRequired(), validators.NumberRange(min=0)],
+    )
+    transfer_aliases_to_mailbox_id = IntegerField("transfer-mailbox-id")
+
+
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
 @parallel_limiter.lock(only_when=lambda: request.method == "POST")
@@ -41,14 +48,17 @@ def mailbox_route():
 
     new_mailbox_form = NewMailboxForm()
     csrf_form = CSRFValidationForm()
+    delete_mailbox_form = DeleteMailboxForm()
 
     if request.method == "POST":
         if not csrf_form.validate():
             flash("Invalid request", "warning")
             return redirect(request.url)
         if request.form.get("form-name") == "delete":
-            mailbox_id = request.form.get("mailbox-id")
-            mailbox = Mailbox.get(id=mailbox_id)
+            if not delete_mailbox_form.validate():
+                flash("Invalid request", "warning")
+                return redirect(request.url)
+            mailbox = Mailbox.get(delete_mailbox_form.mailbox_id.data)
 
             if not mailbox or mailbox.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
@@ -58,38 +68,34 @@ def mailbox_route():
                 flash("You cannot delete default mailbox", "error")
                 return redirect(url_for("dashboard.mailbox_route"))
 
-            if request.form.get("transfer_aliases_to", "") and int(request.form.get("transfer_aliases_to")) >= 0:
-                new_mailbox_id = request.form.get("transfer_aliases_to")
-                new_mailbox = Mailbox.get(id=new_mailbox_id)
+            transfer_mailbox_id = (
+                delete_mailbox_form.transfer_aliases_to_mailbox_id.data
+            )
+            if transfer_mailbox_id and transfer_mailbox_id > 0:
+                transfer_mailbox = Mailbox.get(transfer_mailbox_id)
 
-                if not new_mailbox or new_mailbox.user_id != current_user.id:
+                if not transfer_mailbox or transfer_mailbox.user_id != current_user.id:
                     flash("You must transfer the aliases to a mailbox you own.")
                     return redirect(url_for("dashboard.mailbox_route"))
 
-                if new_mailbox_id == mailbox_id:
-                    flash("You can not transfer the aliases to the mailbox you want to delete.")
+                if transfer_mailbox.id == mailbox.id:
+                    flash(
+                        "You can not transfer the aliases to the mailbox you want to delete."
+                    )
                     return redirect(url_for("dashboard.mailbox_route"))
 
-                if not new_mailbox.verified:
+                if not transfer_mailbox.verified:
                     flash("Your new mailbox is not verified")
                     return redirect(url_for("dashboard.mailbox_route"))
-
-                for alias in mailbox.aliases:
-                    if alias.mailbox_id == mailbox.id:
-                        alias.mailbox_id = new_mailbox_id
-                        if new_mailbox in alias._mailboxes:
-                            alias._mailboxes.remove(new_mailbox)
-                    else:
-                        alias._mailboxes.remove(mailbox)
-                        if new_mailbox not in alias._mailboxes:
-                            alias._mailboxes.append(new_mailbox)
-                    Session.commit()
 
             # Schedule delete account job
             LOG.w("schedule delete mailbox job for %s", mailbox)
             Job.create(
                 name=JOB_DELETE_MAILBOX,
-                payload={"mailbox_id": mailbox.id},
+                payload={
+                    "mailbox_id": mailbox.id,
+                    "transfer_mailbox_id": transfer_mailbox.id,
+                },
                 run_at=arrow.now(),
                 commit=True,
             )
@@ -140,12 +146,12 @@ def mailbox_route():
                 elif not email_can_be_used_as_mailbox(mailbox_email):
                     flash(f"You cannot use {mailbox_email}.", "error")
                 else:
-                    new_mailbox = Mailbox.create(
+                    transfer_mailbox = Mailbox.create(
                         email=mailbox_email, user_id=current_user.id
                     )
                     Session.commit()
 
-                    send_verification_email(current_user, new_mailbox)
+                    send_verification_email(current_user, transfer_mailbox)
 
                     flash(
                         f"You are going to receive an email to confirm {mailbox_email}.",
@@ -154,7 +160,8 @@ def mailbox_route():
 
                     return redirect(
                         url_for(
-                            "dashboard.mailbox_detail_route", mailbox_id=new_mailbox.id
+                            "dashboard.mailbox_detail_route",
+                            mailbox_id=transfer_mailbox.id,
                         )
                     )
 
