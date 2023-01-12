@@ -334,6 +334,12 @@ smtpd_recipient_restrictions =
    permit
 ```
 
+Check that the ssl certificates `/etc/ssl/certs/ssl-cert-snakeoil.pem` and `/etc/ssl/private/ssl-cert-snakeoil.key` exist. Depending on the linux distribution you are using they may or may not be present. If they are not, you will need to generate them with this command:
+
+```bash
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/ssl/private/ssl-cert-snakeoil.key -out /etc/ssl/certs/ssl-cert-snakeoil.pem
+```
+
 Create the `/etc/postfix/pgsql-relay-domains.cf` file with the following content.
 Make sure that the database config is correctly set, replace `mydomain.com` with your domain, update 'myuser' and 'mypassword' with your postgres credentials.
 
