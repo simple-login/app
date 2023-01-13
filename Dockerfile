@@ -2,7 +2,7 @@
 FROM node:10.17.0-alpine AS npm
 WORKDIR /code
 COPY ./static/package*.json /code/static/
-RUN cd /code/static && npm ci
+RUN cd /code/static && npm install
 
 # Main image
 FROM python:3.10
