@@ -3,8 +3,8 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from itsdangerous import TimestampSigner
-from wtforms import validators
-from wtforms.fields.html5 import EmailField, IntegerField
+from wtforms import validators, IntegerField
+from wtforms.fields.html5 import EmailField
 
 from app import parallel_limiter
 from app.config import MAILBOX_SECRET, URL, JOB_DELETE_MAILBOX
@@ -30,10 +30,9 @@ class NewMailboxForm(FlaskForm):
 
 class DeleteMailboxForm(FlaskForm):
     mailbox_id = IntegerField(
-        "mailbox-id",
-        validators=[validators.DataRequired(), validators.NumberRange(min=0)],
+        validators=[validators.DataRequired()],
     )
-    transfer_aliases_to_mailbox_id = IntegerField("transfer-mailbox-id")
+    transfer_mailbox_id = IntegerField()
 
 
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
@@ -51,9 +50,6 @@ def mailbox_route():
     delete_mailbox_form = DeleteMailboxForm()
 
     if request.method == "POST":
-        if not csrf_form.validate():
-            flash("Invalid request", "warning")
-            return redirect(request.url)
         if request.form.get("form-name") == "delete":
             if not delete_mailbox_form.validate():
                 flash("Invalid request", "warning")
@@ -61,16 +57,14 @@ def mailbox_route():
             mailbox = Mailbox.get(delete_mailbox_form.mailbox_id.data)
 
             if not mailbox or mailbox.user_id != current_user.id:
-                flash("Unknown error. Refresh the page", "warning")
+                flash("Invalid mailbox. Refresh the page", "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
 
             if mailbox.id == current_user.default_mailbox_id:
                 flash("You cannot delete default mailbox", "error")
                 return redirect(url_for("dashboard.mailbox_route"))
 
-            transfer_mailbox_id = (
-                delete_mailbox_form.transfer_aliases_to_mailbox_id.data
-            )
+            transfer_mailbox_id = delete_mailbox_form.transfer_mailbox_id.data
             if transfer_mailbox_id and transfer_mailbox_id > 0:
                 transfer_mailbox = Mailbox.get(transfer_mailbox_id)
 
@@ -89,12 +83,16 @@ def mailbox_route():
                     return redirect(url_for("dashboard.mailbox_route"))
 
             # Schedule delete account job
-            LOG.w("schedule delete mailbox job for %s", mailbox)
+            LOG.w(
+                f"schedule delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
+            )
             Job.create(
                 name=JOB_DELETE_MAILBOX,
                 payload={
                     "mailbox_id": mailbox.id,
-                    "transfer_mailbox_id": transfer_mailbox.id,
+                    "transfer_mailbox_id": transfer_mailbox_id
+                    if transfer_mailbox_id > 0
+                    else None,
                 },
                 run_at=arrow.now(),
                 commit=True,
@@ -108,7 +106,10 @@ def mailbox_route():
 
             return redirect(url_for("dashboard.mailbox_route"))
         if request.form.get("form-name") == "set-default":
-            mailbox_id = request.form.get("mailbox-id")
+            if not csrf_form.validate():
+                flash("Invalid request", "warning")
+                return redirect(request.url)
+            mailbox_id = request.form.get("mailbox_id")
             mailbox = Mailbox.get(mailbox_id)
 
             if not mailbox or mailbox.user_id != current_user.id:
@@ -169,6 +170,7 @@ def mailbox_route():
         "dashboard/mailbox.html",
         mailboxes=mailboxes,
         new_mailbox_form=new_mailbox_form,
+        delete_mailbox_form=delete_mailbox_form,
         csrf_form=csrf_form,
     )
 

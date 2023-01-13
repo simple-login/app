@@ -16,7 +16,7 @@ from app.email_utils import (
     is_valid_email,
 )
 from app.log import LOG
-from app.models import AliasMailbox, Mailbox, Job
+from app.models import Mailbox, Job
 from app.utils import sanitize_email
 
 
@@ -95,35 +95,35 @@ def delete_mailbox(mailbox_id):
         return jsonify(error="You cannot delete the default mailbox"), 400
 
     data = request.get_json() or {}
-    if data.get("transfer_aliases_to") and (int(data.get("transfer_aliases_to")) >= 0):
-        new_mailbox_id = int(data.get("transfer_aliases_to"))
-        new_mailbox = Mailbox.get(id=new_mailbox_id)
+    transfer_mailbox_id = data.get("transfer_aliases_to")
+    if transfer_mailbox_id and int(transfer_mailbox_id) >= 0:
+        transfer_mailbox = Mailbox.get(transfer_mailbox_id)
 
-        if not new_mailbox or new_mailbox.user_id != user.id:
-            return jsonify(error="You must transfer the aliases to a mailbox you own."), 403
+        if not transfer_mailbox or transfer_mailbox.user_id != user.id:
+            return (
+                jsonify(error="You must transfer the aliases to a mailbox you own."),
+                403,
+            )
 
-        if new_mailbox_id == mailbox_id:
-            return jsonify(error="You can not transfer the aliases to the mailbox you want to delete."), 400
+        if transfer_mailbox_id == mailbox_id:
+            return (
+                jsonify(
+                    error="You can not transfer the aliases to the mailbox you want to delete."
+                ),
+                400,
+            )
 
-        if not new_mailbox.verified:
+        if not transfer_mailbox.verified:
             return jsonify(error="Your new mailbox is not verified"), 400
-
-        for alias in mailbox.aliases:
-            if alias.mailbox_id == mailbox.id:
-                alias.mailbox_id = new_mailbox_id
-                if new_mailbox in alias._mailboxes:
-                    alias._mailboxes.remove(new_mailbox)
-            else:
-                alias._mailboxes.remove(mailbox)
-                if new_mailbox not in alias._mailboxes:
-                    alias._mailboxes.append(new_mailbox)
-            Session.commit()
 
     # Schedule delete account job
     LOG.w("schedule delete mailbox job for %s", mailbox)
     Job.create(
         name=JOB_DELETE_MAILBOX,
-        payload={"mailbox_id": mailbox.id},
+        payload={
+            "mailbox_id": mailbox.id,
+            "transfer_mailbox_id": transfer_mailbox_id,
+        },
         run_at=arrow.now(),
         commit=True,
     )

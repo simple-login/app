@@ -91,7 +91,7 @@
                         {{ csrf_form.csrf_token }}
                         <input type="hidden" name="form-name" value="set-default">
                         <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
-                        <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
+                        <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                         <button class="card-link btn btn-link {% if mailbox.id == current_user.default_mailbox_id %} disabled{% endif %}">
                           Set As Default Mailbox
                         </button>
@@ -100,11 +100,11 @@
                   {% endif %}
                   <div class="col">
                     <form method="post">
-                      {{ csrf_form.csrf_token }}
+                      {{ delete_mailbox_form.csrf_token }}
                       <input type="hidden" name="form-name" value="delete">
                       <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
-                      <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
-                      <select hidden name="transfer_aliases_to" value="">
+                      <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                      <select hidden name="transfer_mailbox_id" value="">
                         <option value="-1">
                           Delete my aliases
                         </option>
@@ -147,12 +147,12 @@
         $(".delete-mailbox").on("click", function (e) {
             let mailbox = $(this).parent().find(".mailbox").val();
 
-            let new_mailboxes = $(this).parent().find("select[name='transfer_aliases_to']").find("option")
+            let new_mailboxes = $(this).parent().find("select[name='transfer_mailbox_id']").find("option")
             let inputOptions = new_mailboxes.map((index, option) => { return {["value"]: option.value, ["text"]: option.text}}).toArray()
 
             let that = $(this);
             let message = `All aliases owned by the mailbox <b>${mailbox}</b> will be also deleted.<br>` +
-                "You can choose to transfer them to an other mailbox:<br><br>";
+                "You can choose to transfer them to a different mailbox:<br><br>";
 
             bootbox.prompt({
                 title: '<b>Delete Mailbox</b>',
@@ -172,7 +172,7 @@
                 },
                 callback: function (result) {
                     if (result) {
-                        that.closest("form").find("select[name='transfer_aliases_to']").val(result)
+                        that.closest("form").find("select[name='transfer_mailbox_id']").val(result)
                         that.closest("form").submit();
                     }
                 }
