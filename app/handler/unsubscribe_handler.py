@@ -49,7 +49,7 @@ class UnsubscribeHandler:
             return status.E507
         mailbox = Mailbox.get_by(email=envelope.mail_from)
         if not mailbox:
-            LOG.w("Unknown mailbox %s", msg[headers.SUBJECT])
+            LOG.w("Unknown mailbox %s", envelope.mail_from)
             return status.E507
 
         if unsub_data.action == UnsubscribeAction.DisableAlias:

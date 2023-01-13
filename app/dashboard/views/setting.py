@@ -29,6 +29,7 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.errors import ProtonPartnerNotSetUp
+from app.extensions import limiter
 from app.image_validation import detect_image_format, ImageFormat
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
@@ -53,7 +54,11 @@ from app.models import (
     UnsubscribeBehaviourEnum,
 )
 from app.proton.utils import get_proton_partner, perform_proton_account_unlink
-from app.utils import random_string, sanitize_email, CSRFValidationForm
+from app.utils import (
+    random_string,
+    CSRFValidationForm,
+    canonicalize_email,
+)
 
 
 class SettingForm(FlaskForm):
@@ -100,6 +105,7 @@ def get_partner_subscription_and_name(
 
 @dashboard_bp.route("/setting", methods=["GET", "POST"])
 @login_required
+@limiter.limit("5/minute", methods=["POST"])
 def setting():
     form = SettingForm()
     promo_form = PromoCodeForm()
@@ -120,11 +126,8 @@ def setting():
             if change_email_form.validate():
                 # whether user can proceed with the email update
                 new_email_valid = True
-                if (
-                    sanitize_email(change_email_form.email.data) != current_user.email
-                    and not pending_email
-                ):
-                    new_email = sanitize_email(change_email_form.email.data)
+                new_email = canonicalize_email(change_email_form.email.data)
+                if new_email != current_user.email and not pending_email:
 
                     # check if this email is not already used
                     if personal_email_already_used(new_email) or Alias.get_by(

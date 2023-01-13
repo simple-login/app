@@ -5,6 +5,7 @@ from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.models import RecoveryCode
+from app.utils import CSRFValidationForm
 
 
 @dashboard_bp.route("/mfa_cancel", methods=["GET", "POST"])
@@ -15,8 +16,13 @@ def mfa_cancel():
         flash("you don't have MFA enabled", "warning")
         return redirect(url_for("dashboard.index"))
 
+    csrf_form = CSRFValidationForm()
+
     # user cancels TOTP
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         current_user.enable_otp = False
         current_user.otp_secret = None
         Session.commit()
@@ -28,4 +34,4 @@ def mfa_cancel():
         flash("TOTP is now disabled", "warning")
         return redirect(url_for("dashboard.index"))
 
-    return render_template("dashboard/mfa_cancel.html")
+    return render_template("dashboard/mfa_cancel.html", csrf_form=csrf_form)

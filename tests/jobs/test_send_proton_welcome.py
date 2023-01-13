@@ -10,5 +10,5 @@ def test_send_welcome_proton_email():
     sent_mails = mail_sender.get_stored_emails()
     assert len(sent_mails) == 1
     sent_mail = sent_mails[0]
-    to_email, _, _ = user.get_communication_email()
-    sent_mail.envelope_to = to_email
+    comm_email, _, _ = user.get_communication_email()
+    sent_mail.envelope_to = comm_email

@@ -12,6 +12,7 @@
         or use WebAuthn (FIDO).
       </div>
       <form method="post">
+        {{ csrf_form.csrf_token }}
         <button class="btn btn-danger mt-2">Disable TOTP</button>
       </form>
     </div>

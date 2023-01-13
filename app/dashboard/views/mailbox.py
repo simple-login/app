@@ -3,10 +3,11 @@ import sys
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from itsdangerous import Signer
+from itsdangerous import TimestampSigner
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
+from app import parallel_limiter
 from app.config import MAILBOX_SECRET, URL, JOB_DELETE_MAILBOX
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -30,6 +31,7 @@ class NewMailboxForm(FlaskForm):
 
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(only_when=lambda: request.method == "POST")
 def mailbox_route():
     mailboxes = (
         Mailbox.filter_by(user_id=current_user.id)
@@ -165,7 +167,7 @@ def mailbox_route():
 
 
 def send_verification_email(user, mailbox):
-    s = Signer(MAILBOX_SECRET)
+    s = TimestampSigner(MAILBOX_SECRET)
     mailbox_id_signed = s.sign(str(mailbox.id)).decode()
     verification_url = (
         URL + "/dashboard/mailbox_verify" + f"?mailbox_id={mailbox_id_signed}"
@@ -190,11 +192,11 @@ def send_verification_email(user, mailbox):
 
 @dashboard_bp.route("/mailbox_verify")
 def mailbox_verify():
-    s = Signer(MAILBOX_SECRET)
+    s = TimestampSigner(MAILBOX_SECRET)
     mailbox_id = request.args.get("mailbox_id")
 
     try:
-        r_id = int(s.unsign(mailbox_id))
+        r_id = int(s.unsign(mailbox_id, max_age=900))
     except Exception:
         flash("Invalid link. Please delete and re-add your mailbox", "error")
         return redirect(url_for("dashboard.mailbox_route"))

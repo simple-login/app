@@ -387,7 +387,7 @@ Input:
 
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
-- (Optional) mode: either `uuid` or `word`. By default, use the user setting when creating new random alias.
+- (Optional) mode: either `uuid` or `word` passed in query string. By default, use the user setting when creating new random alias.
 - Request Message Body in json (`Content-Type` is `application/json`)
     - (Optional) note: alias note
 

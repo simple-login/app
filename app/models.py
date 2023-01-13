@@ -945,7 +945,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                     return alias.email, unsub.link, unsub.via_email
                 # alias disabled -> user doesn't want to receive newsletter
                 else:
-                    return None, None, False
+                    return None, "", False
             else:
                 # do not handle http POST unsubscribe
                 if config.UNSUBSCRIBER:
@@ -958,7 +958,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                         True,
                     )
 
-        return None, None, False
+        return None, "", False
 
     def available_sl_domains(self) -> [str]:
         """
