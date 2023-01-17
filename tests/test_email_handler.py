@@ -22,6 +22,7 @@ from app.models import (
     Contact,
     SentAlert,
 )
+from app.utils import random_string, canonicalize_email
 from email_handler import (
     get_mailbox_from_mail_from,
     should_ignore,
@@ -308,3 +309,62 @@ def test_replace_contacts_and_user_in_reply_phase(flask_client):
     payload = sent_mails[0].msg.get_payload()[0].get_payload()
     assert payload.find("Contact is {}".format(contact_real_mail)) > -1
     assert payload.find("Other contact is {}".format(contact2_real_mail)) > -1
+
+
+@mail_sender.store_emails_test_decorator
+def test_send_email_from_non_canonical_address_on_reply(flask_client):
+    email_address = f"{random_string(10)}.suf@gmail.com"
+    user = create_new_user(email=canonicalize_email(email_address))
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random_string(10)}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    envelope = Envelope()
+    envelope.mail_from = email_address
+    envelope.rcpt_tos = [contact.reply_email]
+    msg = EmailMessage()
+    msg[headers.TO] = contact.reply_email
+    msg[headers.SUBJECT] = random_string()
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    email_logs = EmailLog.filter_by(user_id=user.id).all()
+    assert len(email_logs) == 1
+    assert email_logs[0].alias_id == alias.id
+    assert email_logs[0].mailbox_id == user.default_mailbox_id
+
+
+@mail_sender.store_emails_test_decorator
+def test_send_email_from_non_canonical_matches_already_existing_user(flask_client):
+    email_address = f"{random_string(10)}.suf@gmail.com"
+    create_new_user(email=canonicalize_email(email_address))
+    user = create_new_user(email=email_address)
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random_string(10)}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    envelope = Envelope()
+    envelope.mail_from = email_address
+    envelope.rcpt_tos = [contact.reply_email]
+    msg = EmailMessage()
+    msg[headers.TO] = contact.reply_email
+    msg[headers.SUBJECT] = random_string()
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    email_logs = EmailLog.filter_by(user_id=user.id).all()
+    assert len(email_logs) == 1
+    assert email_logs[0].alias_id == alias.id
+    assert email_logs[0].mailbox_id == user.default_mailbox_id

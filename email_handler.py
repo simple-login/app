@@ -168,7 +168,7 @@ from app.pgp_utils import (
     sign_data,
     load_public_key_and_check,
 )
-from app.utils import sanitize_email
+from app.utils import sanitize_email, canonicalize_email
 from init_app import load_pgp_public_keys
 from server import create_light_app
 
@@ -1384,21 +1384,26 @@ def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
     """return the corresponding mailbox given the mail_from and alias
     Usually the mail_from=mailbox.email but it can also be one of the authorized address
     """
-    for mailbox in alias.mailboxes:
-        if mailbox.email == mail_from:
-            return mailbox
 
-        for authorized_address in mailbox.authorized_addresses:
-            if authorized_address.email == mail_from:
-                LOG.d(
-                    "Found an authorized address for %s %s %s",
-                    alias,
-                    mailbox,
-                    authorized_address,
-                )
+    def __check(email_address: str, alias: Alias) -> Optional[Mailbox]:
+        for mailbox in alias.mailboxes:
+            if mailbox.email == email_address:
                 return mailbox
 
-    return None
+            for authorized_address in mailbox.authorized_addresses:
+                if authorized_address.email == email_address:
+                    LOG.d(
+                        "Found an authorized address for %s %s %s",
+                        alias,
+                        mailbox,
+                        authorized_address,
+                    )
+                    return mailbox
+        return None
+
+    # We need to first check for the uncanonicalized version because we still have users in the db with the
+    # email non canonicalized. So if it matches the already existing one use that, otherwise check the canonical one
+    return __check(mail_from, alias) or __check(canonicalize_email(mail_from), alias)
 
 
 def handle_unknown_mailbox(
