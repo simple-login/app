@@ -86,7 +86,7 @@ def delete_mailbox(mailbox_id):
 
     """
     user = g.user
-    mailbox = Mailbox.get(id=mailbox_id)
+    mailbox = Mailbox.get(mailbox_id)
 
     if not mailbox or mailbox.user_id != user.id:
         return jsonify(error="Forbidden"), 403
