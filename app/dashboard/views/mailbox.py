@@ -3,7 +3,7 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from itsdangerous import TimestampSigner
-from wtforms import validators
+from wtforms import validators, IntegerField
 from wtforms.fields.html5 import EmailField
 
 from app import parallel_limiter
@@ -28,6 +28,13 @@ class NewMailboxForm(FlaskForm):
     )
 
 
+class DeleteMailboxForm(FlaskForm):
+    mailbox_id = IntegerField(
+        validators=[validators.DataRequired()],
+    )
+    transfer_mailbox_id = IntegerField()
+
+
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
 @parallel_limiter.lock(only_when=lambda: request.method == "POST")
@@ -40,28 +47,53 @@ def mailbox_route():
 
     new_mailbox_form = NewMailboxForm()
     csrf_form = CSRFValidationForm()
+    delete_mailbox_form = DeleteMailboxForm()
 
     if request.method == "POST":
-        if not csrf_form.validate():
-            flash("Invalid request", "warning")
-            return redirect(request.url)
         if request.form.get("form-name") == "delete":
-            mailbox_id = request.form.get("mailbox-id")
-            mailbox = Mailbox.get(mailbox_id)
+            if not delete_mailbox_form.validate():
+                flash("Invalid request", "warning")
+                return redirect(request.url)
+            mailbox = Mailbox.get(delete_mailbox_form.mailbox_id.data)
 
             if not mailbox or mailbox.user_id != current_user.id:
-                flash("Unknown error. Refresh the page", "warning")
+                flash("Invalid mailbox. Refresh the page", "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
 
             if mailbox.id == current_user.default_mailbox_id:
                 flash("You cannot delete default mailbox", "error")
                 return redirect(url_for("dashboard.mailbox_route"))
 
+            transfer_mailbox_id = delete_mailbox_form.transfer_mailbox_id.data
+            if transfer_mailbox_id and transfer_mailbox_id > 0:
+                transfer_mailbox = Mailbox.get(transfer_mailbox_id)
+
+                if not transfer_mailbox or transfer_mailbox.user_id != current_user.id:
+                    flash("You must transfer the aliases to a mailbox you own.")
+                    return redirect(url_for("dashboard.mailbox_route"))
+
+                if transfer_mailbox.id == mailbox.id:
+                    flash(
+                        "You can not transfer the aliases to the mailbox you want to delete."
+                    )
+                    return redirect(url_for("dashboard.mailbox_route"))
+
+                if not transfer_mailbox.verified:
+                    flash("Your new mailbox is not verified")
+                    return redirect(url_for("dashboard.mailbox_route"))
+
             # Schedule delete account job
-            LOG.w("schedule delete mailbox job for %s", mailbox)
+            LOG.w(
+                f"schedule delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
+            )
             Job.create(
                 name=JOB_DELETE_MAILBOX,
-                payload={"mailbox_id": mailbox.id},
+                payload={
+                    "mailbox_id": mailbox.id,
+                    "transfer_mailbox_id": transfer_mailbox_id
+                    if transfer_mailbox_id > 0
+                    else None,
+                },
                 run_at=arrow.now(),
                 commit=True,
             )
@@ -74,7 +106,10 @@ def mailbox_route():
 
             return redirect(url_for("dashboard.mailbox_route"))
         if request.form.get("form-name") == "set-default":
-            mailbox_id = request.form.get("mailbox-id")
+            if not csrf_form.validate():
+                flash("Invalid request", "warning")
+                return redirect(request.url)
+            mailbox_id = request.form.get("mailbox_id")
             mailbox = Mailbox.get(mailbox_id)
 
             if not mailbox or mailbox.user_id != current_user.id:
@@ -112,12 +147,12 @@ def mailbox_route():
                 elif not email_can_be_used_as_mailbox(mailbox_email):
                     flash(f"You cannot use {mailbox_email}.", "error")
                 else:
-                    new_mailbox = Mailbox.create(
+                    transfer_mailbox = Mailbox.create(
                         email=mailbox_email, user_id=current_user.id
                     )
                     Session.commit()
 
-                    send_verification_email(current_user, new_mailbox)
+                    send_verification_email(current_user, transfer_mailbox)
 
                     flash(
                         f"You are going to receive an email to confirm {mailbox_email}.",
@@ -126,7 +161,8 @@ def mailbox_route():
 
                     return redirect(
                         url_for(
-                            "dashboard.mailbox_detail_route", mailbox_id=new_mailbox.id
+                            "dashboard.mailbox_detail_route",
+                            mailbox_id=transfer_mailbox.id,
                         )
                     )
 
@@ -134,34 +170,9 @@ def mailbox_route():
         "dashboard/mailbox.html",
         mailboxes=mailboxes,
         new_mailbox_form=new_mailbox_form,
+        delete_mailbox_form=delete_mailbox_form,
         csrf_form=csrf_form,
     )
-
-
-def delete_mailbox(mailbox_id: int):
-    from server import create_light_app
-
-    with create_light_app().app_context():
-        mailbox = Mailbox.get(mailbox_id)
-        if not mailbox:
-            return
-
-        mailbox_email = mailbox.email
-        user = mailbox.user
-
-        Mailbox.delete(mailbox_id)
-        Session.commit()
-        LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
-
-        send_email(
-            user.email,
-            f"Your mailbox {mailbox_email} has been deleted",
-            f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
-
-Regards,
-SimpleLogin team.
-        """,
-        )
 
 
 def send_verification_email(user, mailbox):

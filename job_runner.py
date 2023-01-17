@@ -124,6 +124,58 @@ def welcome_proton(user):
     )
 
 
+def delete_mailbox_job(job: Job):
+    mailbox_id = job.payload.get("mailbox_id")
+    mailbox = Mailbox.get(mailbox_id)
+    if not mailbox:
+        return
+
+    transfer_mailbox_id = job.payload.get("transfer_mailbox_id")
+    alias_transferred_to = None
+    if transfer_mailbox_id:
+        transfer_mailbox = Mailbox.get(transfer_mailbox_id)
+        if transfer_mailbox:
+            alias_transferred_to = transfer_mailbox.email
+
+            for alias in mailbox.aliases:
+                if alias.mailbox_id == mailbox.id:
+                    alias.mailbox_id = transfer_mailbox.id
+                    if transfer_mailbox in alias._mailboxes:
+                        alias._mailboxes.remove(transfer_mailbox)
+                else:
+                    alias._mailboxes.remove(mailbox)
+                    if transfer_mailbox not in alias._mailboxes:
+                        alias._mailboxes.append(transfer_mailbox)
+                Session.commit()
+
+    mailbox_email = mailbox.email
+    user = mailbox.user
+    Mailbox.delete(mailbox_id)
+    Session.commit()
+    LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
+
+    if alias_transferred_to:
+        send_email(
+            user.email,
+            f"Your mailbox {mailbox_email} has been deleted",
+            f"""Mailbox {mailbox_email} and its alias have been transferred to {alias_transferred_to}.
+        Regards,
+        SimpleLogin team.
+        """,
+            retries=3,
+        )
+    else:
+        send_email(
+            user.email,
+            f"Your mailbox {mailbox_email} has been deleted",
+            f"""Mailbox {mailbox_email} along with its aliases have been deleted successfully.
+                Regards,
+                SimpleLogin team.
+                """,
+            retries=3,
+        )
+
+
 def process_job(job: Job):
     if job.name == config.JOB_ONBOARDING_1:
         user_id = job.payload.get("user_id")
@@ -178,27 +230,7 @@ def process_job(job: Job):
             retries=3,
         )
     elif job.name == config.JOB_DELETE_MAILBOX:
-        mailbox_id = job.payload.get("mailbox_id")
-        mailbox = Mailbox.get(mailbox_id)
-        if not mailbox:
-            return
-
-        mailbox_email = mailbox.email
-        user = mailbox.user
-
-        Mailbox.delete(mailbox_id)
-        Session.commit()
-        LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
-
-        send_email(
-            user.email,
-            f"Your mailbox {mailbox_email} has been deleted",
-            f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
-Regards,
-SimpleLogin team.
-""",
-            retries=3,
-        )
+        delete_mailbox_job(job)
 
     elif job.name == config.JOB_DELETE_DOMAIN:
         custom_domain_id = job.payload.get("custom_domain_id")

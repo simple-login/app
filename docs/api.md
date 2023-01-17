@@ -764,6 +764,7 @@ Input:
 
 - `Authentication` header that contains the api key
 - `mailbox_id`: in url
+- (optional) `transfer_aliases_to`: in body as json. id of the new mailbox for the aliases. If omitted or set to -1, the aliases will be delete with the mailbox.
 
 Output:
 
