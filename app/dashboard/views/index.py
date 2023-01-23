@@ -150,7 +150,13 @@ def index():
                 flash(f"Alias {alias.email} has been disabled", "success")
 
         return redirect(
-            url_for("dashboard.index", query=query, sort=sort, filter=alias_filter)
+            url_for(
+                "dashboard.index",
+                query=query,
+                sort=sort,
+                filter=alias_filter,
+                page=page,
+            )
         )
 
     mailboxes = current_user.mailboxes()
