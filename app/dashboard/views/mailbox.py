@@ -69,17 +69,20 @@ def mailbox_route():
                 transfer_mailbox = Mailbox.get(transfer_mailbox_id)
 
                 if not transfer_mailbox or transfer_mailbox.user_id != current_user.id:
-                    flash("You must transfer the aliases to a mailbox you own.")
+                    flash(
+                        "You must transfer the aliases to a mailbox you own.", "error"
+                    )
                     return redirect(url_for("dashboard.mailbox_route"))
 
                 if transfer_mailbox.id == mailbox.id:
                     flash(
-                        "You can not transfer the aliases to the mailbox you want to delete."
+                        "You can not transfer the aliases to the mailbox you want to delete.",
+                        "error",
                     )
                     return redirect(url_for("dashboard.mailbox_route"))
 
                 if not transfer_mailbox.verified:
-                    flash("Your new mailbox is not verified")
+                    flash("Your new mailbox is not verified", "error")
                     return redirect(url_for("dashboard.mailbox_route"))
 
             # Schedule delete account job
@@ -147,12 +150,12 @@ def mailbox_route():
                 elif not email_can_be_used_as_mailbox(mailbox_email):
                     flash(f"You cannot use {mailbox_email}.", "error")
                 else:
-                    transfer_mailbox = Mailbox.create(
+                    new_mailbox = Mailbox.create(
                         email=mailbox_email, user_id=current_user.id
                     )
                     Session.commit()
 
-                    send_verification_email(current_user, transfer_mailbox)
+                    send_verification_email(current_user, new_mailbox)
 
                     flash(
                         f"You are going to receive an email to confirm {mailbox_email}.",
@@ -162,7 +165,7 @@ def mailbox_route():
                     return redirect(
                         url_for(
                             "dashboard.mailbox_detail_route",
-                            mailbox_id=transfer_mailbox.id,
+                            mailbox_id=new_mailbox.id,
                         )
                     )
 
