@@ -159,9 +159,9 @@ def delete_mailbox_job(job: Job):
             user.email,
             f"Your mailbox {mailbox_email} has been deleted",
             f"""Mailbox {mailbox_email} and its alias have been transferred to {alias_transferred_to}.
-        Regards,
-        SimpleLogin team.
-        """,
+Regards,
+SimpleLogin team.
+""",
             retries=3,
         )
     else:
@@ -169,9 +169,9 @@ def delete_mailbox_job(job: Job):
             user.email,
             f"Your mailbox {mailbox_email} has been deleted",
             f"""Mailbox {mailbox_email} along with its aliases have been deleted successfully.
-                Regards,
-                SimpleLogin team.
-                """,
+Regards,
+SimpleLogin team.
+""",
             retries=3,
         )
 
