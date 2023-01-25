@@ -69,11 +69,16 @@ def mailbox_route():
                 transfer_mailbox = Mailbox.get(transfer_mailbox_id)
 
                 if not transfer_mailbox or transfer_mailbox.user_id != current_user.id:
-                    flash("You must transfer the aliases to a mailbox you own.", "error")
+                    flash(
+                        "You must transfer the aliases to a mailbox you own.", "error"
+                    )
                     return redirect(url_for("dashboard.mailbox_route"))
 
                 if transfer_mailbox.id == mailbox.id:
-                    flash("You can not transfer the aliases to the mailbox you want to delete.", "error")
+                    flash(
+                        "You can not transfer the aliases to the mailbox you want to delete.",
+                        "error",
+                    )
                     return redirect(url_for("dashboard.mailbox_route"))
 
                 if not transfer_mailbox.verified:
