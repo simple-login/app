@@ -14,6 +14,7 @@ from app.mail_sender import (
     mail_sender,
     SendRequest,
     load_unsent_mails_from_fs_and_resend,
+    SendResult,
 )
 from app import config
 
@@ -96,16 +97,19 @@ def compare_send_requests(expected: SendRequest, request: SendRequest):
 
 
 @pytest.mark.parametrize(
-    "server_fn",
+    "server_fn, should_save",
     [
-        close_on_connect_dummy_server,
-        closed_dummy_server,
-        smtp_response_server("421 Retry"),
-        smtp_response_server("500 error"),
+        (close_on_connect_dummy_server, True),
+        (closed_dummy_server, True),
+        (smtp_response_server("421 Retry"), True),
+        (smtp_response_server("500 error"), False),
     ],
 )
-def test_mail_sender_save_unsent_to_disk(server_fn):
+def test_mail_sender_save_unsent_to_disk_if_failed(
+    server_fn: Callable, should_save: bool
+):
     original_postfix_server = config.POSTFIX_SERVER
+    original_postfix_port = config.POSTFIX_PORT
     config.POSTFIX_SERVER = "localhost"
     config.NOT_SEND_EMAIL = False
     config.POSTFIX_SUBMISSION_TLS = False
@@ -114,16 +118,20 @@ def test_mail_sender_save_unsent_to_disk(server_fn):
         with tempfile.TemporaryDirectory() as temp_dir:
             config.SAVE_UNSENT_DIR = temp_dir
             send_request = create_dummy_send_request()
-            assert not mail_sender.send(send_request, 0)
+            assert mail_sender.send(send_request, 0) != SendResult.OK
             found_files = os.listdir(temp_dir)
-            assert len(found_files) == 1
-            loaded_send_request = SendRequest.load_from_file(
-                os.path.join(temp_dir, found_files[0])
-            )
-            compare_send_requests(loaded_send_request, send_request)
+            if should_save:
+                assert len(found_files) == 1
+                loaded_send_request = SendRequest.load_from_file(
+                    os.path.join(temp_dir, found_files[0])
+                )
+                compare_send_requests(loaded_send_request, send_request)
+            else:
+                assert len(found_files) == 0
     finally:
         config.POSTFIX_SERVER = original_postfix_server
         config.NOT_SEND_EMAIL = True
+        config.POSTFIX_PORT = original_postfix_port
 
 
 @mail_sender.store_emails_test_decorator
@@ -135,7 +143,7 @@ def test_send_unsent_email_from_fs():
         try:
             config.SAVE_UNSENT_DIR = temp_dir
             send_request = create_dummy_send_request()
-            assert not mail_sender.send(send_request, 1)
+            assert mail_sender.send(send_request, 1) == SendResult.Failed
         finally:
             config.POSTFIX_SERVER = original_postfix_server
             config.NOT_SEND_EMAIL = True
@@ -162,7 +170,7 @@ def test_failed_resend_does_not_delete_file():
             config.SAVE_UNSENT_DIR = temp_dir
             send_request = create_dummy_send_request()
             # Send and store email in disk
-            assert not mail_sender.send(send_request, 1)
+            assert mail_sender.send(send_request, 1) == SendResult.Failed
             saved_files = os.listdir(config.SAVE_UNSENT_DIR)
             assert len(saved_files) == 1
             mail_sender.purge_stored_emails()
@@ -186,6 +194,6 @@ def test_ok_mail_does_not_generate_unsent_file():
         config.SAVE_UNSENT_DIR = temp_dir
         send_request = create_dummy_send_request()
         # Send and store email in disk
-        assert mail_sender.send(send_request, 1)
+        assert mail_sender.send(send_request, 1) == SendResult.OK
         saved_files = os.listdir(config.SAVE_UNSENT_DIR)
         assert len(saved_files) == 0

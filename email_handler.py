@@ -145,7 +145,7 @@ from app.handler.spamd_result import (
 from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
-from app.mail_sender import sl_sendmail
+from app.mail_sender import sl_sendmail, SendResult
 from app.message_utils import message_to_bytes
 from app.models import (
     Alias,
@@ -1240,7 +1240,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         add_dkim_signature(msg, alias_domain)
 
     try:
-        sl_sendmail(
+        send_result = sl_sendmail(
             generate_verp_email(VerpType.bounce_reply, email_log.id, alias_domain),
             contact.website_email,
             msg,
@@ -1248,6 +1248,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             envelope.rcpt_options,
             is_forward=False,
         )
+        if send_result == SendResult.Bounced:
+            return False, status.E506
 
         # if alias belongs to several mailboxes, notify other mailboxes about this email
         other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
