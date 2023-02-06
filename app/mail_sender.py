@@ -117,14 +117,12 @@ class MailSender:
             return True
 
     def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
-        if config.POSTFIX_SUBMISSION_TLS and config.POSTFIX_PORT == 25:
-            smtp_port = 587
-        else:
-            smtp_port = config.POSTFIX_PORT
         try:
             start = time.time()
             with SMTP(
-                config.POSTFIX_SERVER, smtp_port, timeout=config.POSTFIX_TIMEOUT
+                config.POSTFIX_SERVER,
+                config.POSTFIX_PORT,
+                timeout=config.POSTFIX_TIMEOUT,
             ) as smtp:
                 if config.POSTFIX_SUBMISSION_TLS:
                     smtp.starttls()
@@ -170,7 +168,7 @@ class MailSender:
                     LOG.e(f"Ignore smtp error {e}")
                     return False
                 LOG.e(
-                    f"Could not send message to smtp server {config.POSTFIX_SERVER}:{smtp_port}"
+                    f"Could not send message to smtp server {config.POSTFIX_SERVER}:{config.POSTFIX_PORT}"
                 )
                 self._save_request_to_unsent_dir(send_request)
                 return False
