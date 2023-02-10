@@ -182,6 +182,10 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
     except ValueError:
         contact_name, contact_email = "", ""
 
+    # Ensure contact_name is within limits
+    if len(contact_name) >= Contact.MAX_NAME_LENGTH:
+        contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
+
     if not is_valid_email(contact_email):
         # From header is wrongly formatted, try with mail_from
         if mail_from and mail_from != "<>":
