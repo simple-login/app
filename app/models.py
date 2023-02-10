@@ -1641,6 +1641,8 @@ class Contact(Base, ModelMixin):
     Store configuration of sender (website-email) and alias.
     """
 
+    MAX_NAME_LENGTH = 512
+
     __tablename__ = "contact"
 
     __table_args__ = (
