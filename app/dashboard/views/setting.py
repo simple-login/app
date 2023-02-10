@@ -23,6 +23,7 @@ from app.config import (
     CONNECT_WITH_PROTON,
 )
 from app.dashboard.base import dashboard_bp
+from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
@@ -105,6 +106,7 @@ def get_partner_subscription_and_name(
 
 @dashboard_bp.route("/setting", methods=["GET", "POST"])
 @login_required
+@sudo_required
 @limiter.limit("5/minute", methods=["POST"])
 def setting():
     form = SettingForm()

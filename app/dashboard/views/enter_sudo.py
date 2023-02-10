@@ -57,14 +57,15 @@ def enter_sudo():
     )
 
 
+def ensure_sudo_active():
+    if "sudo_time" not in session or (time() - int(session["sudo_time"])) > _SUDO_GAP:
+        return redirect(url_for("dashboard.enter_sudo", next=request.path))
+
+
 def sudo_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        if (
-            "sudo_time" not in session
-            or (time() - int(session["sudo_time"])) > _SUDO_GAP
-        ):
-            return redirect(url_for("dashboard.enter_sudo", next=request.path))
+        ensure_sudo_active()
         return f(*args, **kwargs)
 
     return wrap
