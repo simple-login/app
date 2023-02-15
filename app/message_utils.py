@@ -1,3 +1,4 @@
+import re
 from email import policy
 from email.message import Message
 
@@ -19,3 +20,16 @@ def message_to_bytes(msg: Message) -> bytes:
         LOG.w("as_string().encode() fails", exc_info=True)
 
     return msg_string.encode(errors="replace")
+
+
+def message_format_base64_parts(msg: Message) -> Message:
+    for part in msg.walk():
+        if part.get(
+            "content-transfer-encoding"
+        ) == "base64" and part.get_content_type() in ("text/plain", "text/html"):
+            # Remove line breaks
+            body = re.sub("[\r\n]", "", part.get_payload())
+            # Split in 80 column  lines
+            chunks = [body[i : i + 80] for i in range(0, len(body), 80)]
+            part.set_payload("\r\n".join(chunks))
+    return msg
