@@ -620,3 +620,8 @@ class MetricAdmin(SLModelView):
     column_exclude_list = ["created_at", "updated_at", "id"]
 
     can_export = True
+
+
+class InvalidMailboxDomainAdmin(SLModelView):
+    can_create = True
+    can_delete = True

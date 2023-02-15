@@ -44,6 +44,7 @@ from app.admin_model import (
     NewsletterUserAdmin,
     DailyMetricAdmin,
     MetricAdmin,
+    InvalidMailboxDomainAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -105,6 +106,7 @@ from app.models import (
     NewsletterUser,
     DailyMetric,
     Metric2,
+    InvalidMailboxDomain,
 )
 from app.monitor.base import monitor_bp
 from app.newsletter_utils import send_newsletter_to_user
@@ -764,6 +766,7 @@ def init_admin(app):
     admin.add_view(NewsletterUserAdmin(NewsletterUser, Session))
     admin.add_view(DailyMetricAdmin(DailyMetric, Session))
     admin.add_view(MetricAdmin(Metric2, Session))
+    admin.add_view(InvalidMailboxDomainAdmin(InvalidMailboxDomain, Session))
 
 
 def register_custom_commands(app):
