@@ -154,7 +154,6 @@ class MailSender:
                 newrelic.agent.record_custom_metric(
                     "Custom/smtp_sending_time", time.time() - start
                 )
-                self._save_request_to_unsent_dir(send_request, prefix="sentdebug")
                 return True
         except (
             SMTPException,
