@@ -43,4 +43,4 @@ def test_base64_line_breaks():
         if part.get("content-transfer-encoding") == "base64":
             body = part.get_payload()
             for line in body.splitlines():
-                assert len(line) <= 80
+                assert len(line) <= 76
