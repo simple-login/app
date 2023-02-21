@@ -2,6 +2,7 @@ import re
 from email import policy
 from email.message import Message
 
+from app.email import headers
 from app.log import LOG
 
 # Spam assassin might flag as spam with a different line length
@@ -28,7 +29,7 @@ def message_to_bytes(msg: Message) -> bytes:
 def message_format_base64_parts(msg: Message) -> Message:
     for part in msg.walk():
         if part.get(
-            "content-transfer-encoding"
+            headers.CONTENT_TRANSFER_ENCODING
         ) == "base64" and part.get_content_type() in ("text/plain", "text/html"):
             # Remove line breaks
             body = re.sub("[\r\n]", "", part.get_payload())
