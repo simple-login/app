@@ -21,3 +21,4 @@ repos:
       - id: djlint-jinja
         files: '.*\.html'
         entry: djlint --reformat
+

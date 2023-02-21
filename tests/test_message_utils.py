@@ -2,7 +2,8 @@ import email
 from app.email_utils import (
     copy,
 )
-from app.message_utils import message_to_bytes
+from app.message_utils import message_to_bytes, message_format_base64_parts
+from tests.utils import load_eml_file
 
 
 def test_copy():
@@ -33,3 +34,13 @@ def test_to_bytes():
 
     msg = email.message_from_string("éèà€")
     assert message_to_bytes(msg).decode() == "\néèà€"
+
+
+def test_base64_line_breaks():
+    msg = load_eml_file("bad_base64format.eml")
+    msg = message_format_base64_parts(msg)
+    for part in msg.walk():
+        if part.get("content-transfer-encoding") == "base64":
+            body = part.get_payload()
+            for line in body.splitlines():
+                assert len(line) <= 76

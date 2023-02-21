@@ -17,7 +17,7 @@ from attr import dataclass
 from app import config
 from app.email import headers
 from app.log import LOG
-from app.message_utils import message_to_bytes
+from app.message_utils import message_to_bytes, message_format_base64_parts
 
 
 @dataclass
@@ -173,8 +173,12 @@ class MailSender:
                 self._save_request_to_unsent_dir(send_request)
                 return False
 
-    def _save_request_to_unsent_dir(self, send_request: SendRequest):
-        file_name = f"DeliveryFail-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
+    def _save_request_to_unsent_dir(
+        self, send_request: SendRequest, prefix: str = "DeliveryFail"
+    ):
+        file_name = (
+            f"{prefix}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
+        )
         file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
         file_contents = send_request.to_bytes()
         with open(file_path, "wb") as fd:
@@ -256,7 +260,7 @@ def sl_sendmail(
     send_request = SendRequest(
         envelope_from,
         envelope_to,
-        msg,
+        message_format_base64_parts(msg),
         mail_options,
         rcpt_options,
         is_forward,
