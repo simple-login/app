@@ -840,10 +840,12 @@ def forward_email_to_mailbox(
             orig_subject = msg[headers.SUBJECT]
             orig_subject = get_header_unicode(orig_subject)
             add_or_replace_header(msg, "Subject", mailbox.generic_subject)
+            sender = msg[headers.FROM]
+            sender = get_header_unicode(sender)
             msg = add_header(
                 msg,
-                f"""Forwarded by SimpleLogin to {alias.email} with "{orig_subject}" as subject""",
-                f"""Forwarded by SimpleLogin to {alias.email} with <b>{orig_subject}</b> as subject""",
+                f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with "{orig_subject}" as subject""",
+                f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with <b>{orig_subject}</b> as subject""",
             )
 
         try:
