@@ -66,7 +66,7 @@ def canonicalize_email_cases():
         yield (f"a@{domain}", f"a@{domain}")
         yield (f"a.b@{domain}", f"ab@{domain}")
         yield (f"a.b+c@{domain}", f"ab@{domain}")
-    yield (f"a.b+c@other.com", f"a.b+c@other.com")
+        yield ("a.b+c@other.com", "a.b+c@other.com")
 
 
 @pytest.mark.parametrize("dirty,clean", canonicalize_email_cases())

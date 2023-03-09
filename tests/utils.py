@@ -17,7 +17,7 @@ def create_new_user(email: Optional[str] = None, name: Optional[str] = None) -> 
     if not email:
         email = f"user_{random_token(10)}@mailbox.test"
     if not name:
-        name = f"Test User"
+        name = "Test User"
     # new user has a different email address
     user = User.create(
         email=email,
