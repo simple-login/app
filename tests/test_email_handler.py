@@ -384,5 +384,3 @@ def test_break_loop_mailbox_as_alias(flask_client):
     msg[headers.SUBJECT] = random_string()
     result = email_handler.handle(envelope, msg)
     assert result == status.E525
-    sent_mails = mail_sender.get_stored_emails()
-    assert len(sent_mails) == 0

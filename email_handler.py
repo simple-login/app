@@ -701,6 +701,26 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
                 )
                 mailbox.verified = False
                 Session.commit()
+                mailbox_url = f"{URL}/dashboard/mailbox/{mailbox.id}/"
+                send_email_with_rate_control(
+                    user,
+                    ALERT_MAILBOX_IS_ALIAS,
+                    user.email,
+                    f"Your mailbox {mailbox.email} is an alias",
+                    render(
+                        "transactional/mailbox-invalid.txt.jinja2",
+                        mailbox=mailbox,
+                        mailbox_url=mailbox_url,
+                        alias=alias,
+                    ),
+                    render(
+                        "transactional/mailbox-invalid.html",
+                        mailbox=mailbox,
+                        mailbox_url=mailbox_url,
+                        alias=alias,
+                    ),
+                    max_nb_alert=1,
+                )
                 ret.append((False, status.E525))
             else:
                 # create a copy of message for each forward
