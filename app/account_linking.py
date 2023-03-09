@@ -207,7 +207,6 @@ def process_login_case(
 ) -> LinkResult:
     # Sanitize email just in case
     link_request.email = sanitize_email(link_request.email)
-    # TODO; Check that the email is not an alias
     check_alias(link_request.email)
     # Try to find a SimpleLogin user registered with that partner user id
     partner_user = PartnerUser.get_by(
