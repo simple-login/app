@@ -1269,7 +1269,7 @@ def generate_email(
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
         random_email = name + "@" + alias_domain
     else:
-        random_email = random_words() + "@" + alias_domain
+        random_email = random_words(2, 3) + "@" + alias_domain
 
     random_email = random_email.lower().strip()
 

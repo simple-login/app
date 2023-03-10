@@ -1,3 +1,4 @@
+import random
 import re
 import secrets
 import string
@@ -25,11 +26,13 @@ def word_exist(word):
     return word in _words
 
 
-def random_words():
+def random_words(words: int = 2, numbers: int = 0):
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
     # nb_words = random.randint(2, 3)
-    nb_words = 2
-    return "_".join([secrets.choice(_words) for i in range(nb_words)])
+    fields = [secrets.choice(_words) for i in range(words)]
+    if numbers > 0:
+        fields.append("".join([str(random.randint(0, 9)) for i in range(numbers)]))
+    return "_".join(fields)
 
 
 def random_string(length=10, include_digits=False):

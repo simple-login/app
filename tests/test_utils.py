@@ -9,7 +9,12 @@ from app.utils import random_string, random_words, sanitize_next_url, canonicali
 
 def test_random_words():
     s = random_words()
-    assert len(s) > 0
+    assert s.find("_") > 0
+    assert s.count("_") == 1
+    assert len(s) > 3
+    s = random_words(2, 3)
+    assert s.count("_") == 2
+    assert s[-1] in (str(i) for i in range(10))
 
 
 def test_random_string():
