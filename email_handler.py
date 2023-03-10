@@ -1036,6 +1036,13 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         LOG.w(f"No contact with {reply_email} as reverse alias")
         return False, status.E502
 
+    contact_alias_check = Alias.get_by(email=contact.website_email)
+    if contact_alias_check is not None:
+        LOG.w(
+            f"Contact {contact.id} ({contact.reply_email}) has alias {contact_alias_check.id} ({contact.website_email} as real email"
+        )
+        return False, status.E525
+
     alias = contact.alias
     alias_address: str = contact.alias.email
     alias_domain = alias_address[alias_address.find("@") + 1 :]
