@@ -371,7 +371,7 @@ def test_send_email_from_non_canonical_matches_already_existing_user(flask_clien
 
 
 @mail_sender.store_emails_test_decorator
-def test_break_loop_mailbox_as_alias(flask_client):
+def test_break_loop_alias_as_mailbox(flask_client):
     user = create_new_user()
     alias = Alias.create_new_random(user)
     user.default_mailbox.email = alias.email
@@ -387,7 +387,7 @@ def test_break_loop_mailbox_as_alias(flask_client):
 
 
 @mail_sender.store_emails_test_decorator
-def test_break_loop_mailbox_as_reverse_alias(flask_client):
+def test_break_loop_reverse_alias_as_mailbox(flask_client):
     user = create_new_user()
     alias = Alias.create_new_random(user)
     contact = Contact.create(
