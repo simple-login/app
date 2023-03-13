@@ -11,7 +11,7 @@ from app.email_utils import send_welcome_email
 from app.utils import sanitize_email
 from app.errors import (
     AccountAlreadyLinkedToAnotherPartnerException,
-    AccountAlreadyLinkedToAnotherUserException,
+    AccountIsUsingAliasAsEmail,
 )
 from app.log import LOG
 from app.models import (
@@ -199,7 +199,7 @@ def get_login_strategy(
 def check_alias(email: str) -> bool:
     alias = Alias.get_by(email=email)
     if alias is not None:
-        raise AccountAlreadyLinkedToAnotherUserException()
+        raise AccountIsUsingAliasAsEmail()
 
 
 def process_login_case(
