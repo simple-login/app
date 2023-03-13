@@ -368,3 +368,19 @@ def test_send_email_from_non_canonical_matches_already_existing_user(flask_clien
     assert len(email_logs) == 1
     assert email_logs[0].alias_id == alias.id
     assert email_logs[0].mailbox_id == user.default_mailbox_id
+
+
+@mail_sender.store_emails_test_decorator
+def test_break_loop_alias_as_mailbox(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    user.default_mailbox.email = alias.email
+    Session.commit()
+    envelope = Envelope()
+    envelope.mail_from = random_email()
+    envelope.rcpt_tos = [alias.email]
+    msg = EmailMessage()
+    msg[headers.TO] = alias.email
+    msg[headers.SUBJECT] = random_string()
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E525

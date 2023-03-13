@@ -9,13 +9,17 @@ from newrelic import agent
 from app.db import Session
 from app.email_utils import send_welcome_email
 from app.utils import sanitize_email
-from app.errors import AccountAlreadyLinkedToAnotherPartnerException
+from app.errors import (
+    AccountAlreadyLinkedToAnotherPartnerException,
+    AccountAlreadyLinkedToAnotherUserException,
+)
 from app.log import LOG
 from app.models import (
     PartnerSubscription,
     Partner,
     PartnerUser,
     User,
+    Alias,
 )
 from app.utils import random_string
 
@@ -192,11 +196,18 @@ def get_login_strategy(
     return ExistingUnlinkedUserStrategy(link_request, user, partner)
 
 
+def check_alias(email: str) -> bool:
+    alias = Alias.get_by(email=email)
+    if alias is not None:
+        raise AccountAlreadyLinkedToAnotherUserException()
+
+
 def process_login_case(
     link_request: PartnerLinkRequest, partner: Partner
 ) -> LinkResult:
     # Sanitize email just in case
     link_request.email = sanitize_email(link_request.email)
+    check_alias(link_request.email)
     # Try to find a SimpleLogin user registered with that partner user id
     partner_user = PartnerUser.get_by(
         partner_id=partner.id, external_user_id=link_request.external_user_id

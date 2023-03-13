@@ -693,6 +693,36 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             LOG.d("%s unverified, do not forward", mailbox)
             ret.append((False, status.E517))
         else:
+            # Check if the mailbox is also an alias and stop the loop
+            mailbox_as_alias = Alias.get_by(email=mailbox.email)
+            if mailbox_as_alias is not None:
+                LOG.info(
+                    f"Mailbox {mailbox.id} has email {mailbox.email} that is also alias {alias.id}. Stopping loop"
+                )
+                mailbox.verified = False
+                Session.commit()
+                mailbox_url = f"{URL}/dashboard/mailbox/{mailbox.id}/"
+                send_email_with_rate_control(
+                    user,
+                    ALERT_MAILBOX_IS_ALIAS,
+                    user.email,
+                    f"Your mailbox {mailbox.email} is an alias",
+                    render(
+                        "transactional/mailbox-invalid.txt.jinja2",
+                        mailbox=mailbox,
+                        mailbox_url=mailbox_url,
+                        alias=alias,
+                    ),
+                    render(
+                        "transactional/mailbox-invalid.html",
+                        mailbox=mailbox,
+                        mailbox_url=mailbox_url,
+                        alias=alias,
+                    ),
+                    max_nb_alert=1,
+                )
+                ret.append((False, status.E525))
+                continue
             # create a copy of message for each forward
             ret.append(
                 forward_email_to_mailbox(

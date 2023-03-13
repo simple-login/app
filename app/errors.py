@@ -71,7 +71,7 @@ class ErrContactErrorUpgradeNeeded(SLException):
     """raised when user cannot create a contact because the plan doesn't allow it"""
 
     def error_for_user(self) -> str:
-        return f"Please upgrade to premium to create reverse-alias"
+        return "Please upgrade to premium to create reverse-alias"
 
 
 class ErrAddressInvalid(SLException):
@@ -108,3 +108,8 @@ class AccountAlreadyLinkedToAnotherPartnerException(LinkException):
 class AccountAlreadyLinkedToAnotherUserException(LinkException):
     def __init__(self):
         super().__init__("This account is linked to another user")
+
+
+class AccountIsUsingAliasAsEmail(LinkException):
+    def __init__(self):
+        super().__init__("Your account has an alias as it's email address")
