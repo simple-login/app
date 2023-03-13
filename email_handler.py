@@ -726,13 +726,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             # create a copy of message for each forward
             ret.append(
                 forward_email_to_mailbox(
-                    alias,
-                    copy(msg),
-                    contact,
-                    envelope,
-                    mailbox,
-                    user,
-                    reply_to_contact,
+                    alias, copy(msg), contact, envelope, mailbox, user, reply_to_contact
                 )
             )
 
