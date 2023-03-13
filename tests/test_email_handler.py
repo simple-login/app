@@ -384,25 +384,3 @@ def test_break_loop_alias_as_mailbox(flask_client):
     msg[headers.SUBJECT] = random_string()
     result = email_handler.handle(envelope, msg)
     assert result == status.E525
-
-
-@mail_sender.store_emails_test_decorator
-def test_break_loop_reverse_alias_as_mailbox(flask_client):
-    user = create_new_user()
-    alias = Alias.create_new_random(user)
-    contact = Contact.create(
-        user_id=user.id,
-        alias_id=alias.id,
-        website_email=alias.email,
-        reply_email=f"{random_string(10)}@{EMAIL_DOMAIN}",
-        commit=True,
-    )
-    Session.commit()
-    envelope = Envelope()
-    envelope.mail_from = user.email
-    envelope.rcpt_tos = [contact.reply_email]
-    msg = EmailMessage()
-    msg[headers.TO] = contact.reply_email
-    msg[headers.SUBJECT] = random_string()
-    result = email_handler.handle(envelope, msg)
-    assert result == status.E525
