@@ -44,7 +44,6 @@ from app.utils import (
     random_string,
     random_words,
     sanitize_email,
-    random_word,
 )
 
 Base = declarative_base()
@@ -1010,7 +1009,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         """
         if self.random_alias_suffix == AliasSuffixEnum.random_string.value:
             return random_string(config.ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
-        return random_word()
+        return random_words(1, 3)
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
