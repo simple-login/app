@@ -30,9 +30,12 @@ def random_words(words: int = 2, numbers: int = 0):
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
     # nb_words = random.randint(2, 3)
     fields = [secrets.choice(_words) for i in range(words)]
+
     if numbers > 0:
         fields.append("".join([str(random.randint(0, 9)) for i in range(numbers)]))
-    return "".join(fields)
+        return "".join(fields)
+    else:
+        return "_".join(fields)
 
 
 def random_string(length=10, include_digits=False):
