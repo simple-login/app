@@ -209,6 +209,12 @@ def alias_transfer_receive_route():
             token,
         )
         transfer(alias, current_user, mailboxes)
+
+        # reset transfer token
+        alias.transfer_token = None
+        alias.transfer_token_expiration = None
+        Session.commit()
+
         flash(f"You are now owner of {alias.email}", "success")
         return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))
 
