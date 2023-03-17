@@ -120,18 +120,11 @@ def custom_alias():
                     email=full_alias
                 )
                 custom_domain = domain_deleted_alias.domain
-                if domain_deleted_alias.user_id == current_user.id:
-                    flash(
-                        f"You have deleted this alias before. You can restore it on "
-                        f"{custom_domain.domain} 'Deleted Alias' page",
-                        "error",
-                    )
-                else:
-                    # should never happen as user can only choose their domains
-                    LOG.e(
-                        "Deleted Alias %s does not belong to user %s",
-                        domain_deleted_alias,
-                    )
+                flash(
+                    f"You have deleted this alias before. You can restore it on "
+                    f"{custom_domain.domain} 'Deleted Alias' page",
+                    "error",
+                )
 
             elif DeletedAlias.get_by(email=full_alias):
                 flash(general_error_msg, "error")

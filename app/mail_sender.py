@@ -170,7 +170,8 @@ class MailSender:
                 LOG.e(
                     f"Could not send message to smtp server {config.POSTFIX_SERVER}:{config.POSTFIX_PORT}"
                 )
-                self._save_request_to_unsent_dir(send_request)
+                if config.SAVE_UNSENT_DIR:
+                    self._save_request_to_unsent_dir(send_request)
                 return False
 
     def _save_request_to_unsent_dir(
