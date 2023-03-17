@@ -1,7 +1,7 @@
 """
 This is an example on how to integrate SimpleLogin
 with Requests-OAuthlib, a popular library to work with OAuth in Python.
-The step-to-step guide can be found on https://docs.simplelogin.io
+The step-to-step guide can be found on https://https://simplelogin.io/docs/siwsl/app/
 This example is based on
 https://requests-oauthlib.readthedocs.io/en/latest/examples/real_world_example.html
 """
