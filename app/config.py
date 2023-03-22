@@ -357,6 +357,7 @@ ALERT_COMPLAINT_TRANSACTIONAL_PHASE = "alert_complaint_transactional_phase"
 ALERT_QUARANTINE_DMARC = "alert_quarantine_dmarc"
 
 ALERT_DUAL_SUBSCRIPTION_WITH_PARTNER = "alert_dual_sub_with_partner"
+ALERT_WARN_MULTIPLE_SUBSCRIPTIONS = "alert_multiple_subscription"
 
 # <<<<< END ALERT EMAIL >>>>
 
