@@ -218,3 +218,8 @@ textarea.parsley-error {
 .italic {
     font-style: italic;
 }
+
+/* dashed outline to indicate droppable area */
+.dashed-outline {
+    outline: 2px dashed gray;
+}
