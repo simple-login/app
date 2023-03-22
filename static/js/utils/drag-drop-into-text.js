@@ -8,7 +8,8 @@ function enableDragDropForPGPKeys(inputID) {
         let files = event.dataTransfer.files;
         for (let i = 0; i < files.length; i++) {
             let file = files[i];
-            if(file.type !== 'text/plain'){
+            const isValidPgpFile = file.type === 'text/plain' || file.name.endsWith('.asc') || file.name.endsWith('.pub') || file.name.endsWith('.pgp') || file.name.endsWith('.key');
+            if (!isValidPgpFile) {
                 toastr.warning(`File ${file.name} is not a public key file`);
                 continue;
             }
@@ -24,5 +25,13 @@ function enableDragDropForPGPKeys(inputID) {
     }
 
     const dropArea = $(inputID).get(0);
+    dropArea.addEventListener("dragenter", (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+    });
+    dropArea.addEventListener("dragover", (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+    });
     dropArea.addEventListener("drop", drop, false);
 }
