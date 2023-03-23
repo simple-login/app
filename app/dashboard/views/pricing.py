@@ -80,8 +80,9 @@ def pricing():
 @dashboard_bp.route("/subscription_success")
 @login_required
 def subscription_success():
-    flash("Thanks so much for supporting SimpleLogin!", "success")
-    return redirect(url_for("dashboard.index"))
+    return render_template(
+        "dashboard/thank-you.html",
+    )
 
 
 @dashboard_bp.route("/coinbase_checkout")
