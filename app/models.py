@@ -18,7 +18,7 @@ from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
 from jinja2 import FileSystemLoader, Environment
-from sqlalchemy import orm
+from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
@@ -967,13 +967,24 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         """
         return [sl_domain.domain for sl_domain in self.get_sl_domains()]
 
-    def get_sl_domains(self) -> List["SLDomain"]:
-        query = SLDomain.filter_by(hidden=False).order_by(SLDomain.order)
-
-        if self.is_premium():
-            return query.all()
+    def get_sl_domains(self, domain_name: Optional[str] = None) -> list["SLDomain"]:
+        conditions = [SLDomain.hidden == False]  # noqa: E712
+        if domain_name is not None:
+            conditions.append(SLDomain.domain == domain_name)
+        if not self.is_premium():
+            conditions.append(SLDomain.premium_only == False)  # noqa: E712
+        partner_domain_cond = [SLDomain.partner_id == None]  # noqa:E711
+        for partner_user in PartnerUser.filter_by(user_id=self.id).all():
+            if partner_user.flags & PartnerUser.FLAG_CAN_USE_PARTNER_DOMAIN > 0:
+                partner_domain_cond.append(
+                    SLDomain.partner_id == partner_user.partner_id
+                )
+        if len(partner_domain_cond) == 1:
+            conditions.append(partner_domain_cond[0])
         else:
-            return query.filter_by(premium_only=False).all()
+            conditions.append(or_(*partner_domain_cond))
+        query = Session.query(SLDomain).filter(*conditions).order_by(SLDomain.order)
+        return query.all()
 
     def available_alias_domains(self) -> [str]:
         """return all domains that user can use when creating a new alias, including:
@@ -2763,6 +2774,31 @@ class Notification(Base, ModelMixin):
         )
 
 
+class Partner(Base, ModelMixin):
+    __tablename__ = "partner"
+
+    name = sa.Column(sa.String(128), unique=True, nullable=False)
+    contact_email = sa.Column(sa.String(128), unique=True, nullable=False)
+
+    @staticmethod
+    def find_by_token(token: str) -> Optional[Partner]:
+        hmaced = PartnerApiToken.hmac_token(token)
+        res = (
+            Session.query(Partner, PartnerApiToken)
+            .filter(
+                and_(
+                    PartnerApiToken.token == hmaced,
+                    Partner.id == PartnerApiToken.partner_id,
+                )
+            )
+            .first()
+        )
+        if res:
+            partner, partner_api_token = res
+            return partner
+        return None
+
+
 class SLDomain(Base, ModelMixin):
     """SimpleLogin domains"""
 
@@ -2778,6 +2814,13 @@ class SLDomain(Base, ModelMixin):
     # if True, the domain can be used for the subdomain feature
     can_use_subdomain = sa.Column(
         sa.Boolean, nullable=False, default=False, server_default="0"
+    )
+
+    partner_id = sa.Column(
+        sa.ForeignKey(Partner.id, ondelete="cascade"),
+        nullable=True,
+        default=None,
+        sever_default="NULL",
     )
 
     # if enabled, do not show this domain when user creates a custom alias
@@ -3226,31 +3269,6 @@ class ProviderComplaint(Base, ModelMixin):
     refused_email = orm.relationship(RefusedEmail, foreign_keys=[refused_email_id])
 
 
-class Partner(Base, ModelMixin):
-    __tablename__ = "partner"
-
-    name = sa.Column(sa.String(128), unique=True, nullable=False)
-    contact_email = sa.Column(sa.String(128), unique=True, nullable=False)
-
-    @staticmethod
-    def find_by_token(token: str) -> Optional[Partner]:
-        hmaced = PartnerApiToken.hmac_token(token)
-        res = (
-            Session.query(Partner, PartnerApiToken)
-            .filter(
-                and_(
-                    PartnerApiToken.token == hmaced,
-                    Partner.id == PartnerApiToken.partner_id,
-                )
-            )
-            .first()
-        )
-        if res:
-            partner, partner_api_token = res
-            return partner
-        return None
-
-
 class PartnerApiToken(Base, ModelMixin):
     __tablename__ = "partner_api_token"
 
@@ -3286,6 +3304,8 @@ class PartnerApiToken(Base, ModelMixin):
 class PartnerUser(Base, ModelMixin):
     __tablename__ = "partner_user"
 
+    FLAG_CAN_USE_PARTNER_DOMAIN = 1 << 0
+
     user_id = sa.Column(
         sa.ForeignKey("users.id", ondelete="cascade"),
         unique=True,
@@ -3300,6 +3320,14 @@ class PartnerUser(Base, ModelMixin):
 
     user = orm.relationship(User, foreign_keys=[user_id])
     partner = orm.relationship(Partner, foreign_keys=[partner_id])
+
+    # bitwise flags. Allow for future expansion
+    flags = sa.Column(
+        sa.BigInteger,
+        default=0,
+        server_default="0",
+        nullable=False,
+    )
 
     __table_args__ = (
         sa.UniqueConstraint(
