@@ -1,11 +1,15 @@
 from app.db import Session
 from app.models import SLDomain, PartnerUser
 from app.proton.utils import get_proton_partner
+from init_app import add_sl_domains
 from tests.utils import create_new_user, random_token
 
 
 def setup_module():
     Session.query(SLDomain).delete()
+    SLDomain.create(
+        domain="hidden", premium_only=False, flush=True, order=5, hidden=True
+    )
     SLDomain.create(domain="free_non_partner", premium_only=False, flush=True, order=4)
     SLDomain.create(
         domain="premium_non_partner", premium_only=True, flush=True, order=3
@@ -25,6 +29,11 @@ def setup_module():
         order=1,
     )
     Session.commit()
+
+
+def teardown_module():
+    Session.query(SLDomain).delete()
+    add_sl_domains()
 
 
 def test_get_non_partner_domains():
