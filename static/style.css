@@ -221,5 +221,5 @@ textarea.parsley-error {
 
 /* dashed outline to indicate droppable area */
 .dashed-outline {
-    outline: 2px dashed gray;
+    outline: 4px dashed gray;
 }

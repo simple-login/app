@@ -17,6 +17,7 @@ function enableDragDropForPGPKeys(inputID) {
             reader.onloadend = onFileLoaded;
             reader.readAsBinaryString(file);
         }
+        dropArea.classList.remove("dashed-outline");
     }
 
     function onFileLoaded(event) {
@@ -28,10 +29,17 @@ function enableDragDropForPGPKeys(inputID) {
     dropArea.addEventListener("dragenter", (event) => {
         event.stopPropagation();
         event.preventDefault();
+        dropArea.classList.add("dashed-outline");
     });
     dropArea.addEventListener("dragover", (event) => {
         event.stopPropagation();
         event.preventDefault();
+        dropArea.classList.add("dashed-outline");
+    });
+    dropArea.addEventListener("dragleave", (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        dropArea.classList.remove("dashed-outline");
     });
     dropArea.addEventListener("drop", drop, false);
 }
