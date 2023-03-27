@@ -43,7 +43,7 @@
             {% endif %}
             <div class="form-group">
               <label class="form-label">PGP Public Key</label>
-              <textarea name="pgp" {% if not current_user.is_premium() %} disabled {% endif %} class="form-control" rows=10 id="pgp-public-key" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ contact.pgp_public_key or "" }}</textarea>
+              <textarea name="pgp" {% if not current_user.is_premium() %} disabled {% endif %} class="form-control" rows=10 id="pgp-public-key" placeholder="(Drag and drop or paste your pgp public key here)&#10;-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ contact.pgp_public_key or "" }}</textarea>
             </div>
             <button class="btn btn-primary" name="action" {% if not current_user.is_premium() %}
                disabled {% endif %} value="save">
