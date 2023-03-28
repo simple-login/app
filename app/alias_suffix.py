@@ -99,7 +99,12 @@ def get_alias_suffixes(user: User) -> [AliasSuffix]:
     # for each user domain, generate both the domain and a random suffix version
     for custom_domain in user_custom_domains:
         if custom_domain.random_prefix_generation:
-            suffix = "." + user.get_random_alias_suffix() + "@" + custom_domain.domain
+            suffix = (
+                "."
+                + user.get_random_alias_suffix(custom_domain)
+                + "@"
+                + custom_domain.domain
+            )
             alias_suffix = AliasSuffix(
                 is_custom=True,
                 suffix=suffix,
