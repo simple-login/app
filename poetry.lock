@@ -1715,18 +1715,18 @@ files = [
 
 [[package]]
 name = "jwcrypto"
-version = "0.8"
+version = "1.4"
 description = "Implementation of JOSE Web standards"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">= 3.6"
 files = [
-    {file = "jwcrypto-0.8-py2.py3-none-any.whl", hash = "sha256:16e17faa4dce36551ade3a3ccb06236a61e5924ea1db163c9be9827acf935a82"},
-    {file = "jwcrypto-0.8.tar.gz", hash = "sha256:b7fee2635bbefdf145399392f5be26ad54161c8271c66b5fe107b4b452f06c24"},
+    {file = "jwcrypto-1.4.tar.gz", hash = "sha256:30bcfc2d199f2f1a52d04558ffa99112ad81d7b787f29e0d9aa4ef499934307e"},
 ]
 
 [package.dependencies]
 cryptography = ">=2.3"
+deprecated = "*"
 
 [[package]]
 name = "lazy-object-proxy"
@@ -3767,4 +3767,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.7.2"
-content-hash = "c397b2e17e0fb766f1e7beaee1c1e131a5071063454a502188f2ea661a259d44"
+content-hash = "02758ad6b0a921d436163b7c418654dc4ee4694cba202c5013c89bff5f1b24c8"
