@@ -1000,16 +1000,21 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             > 0
         )
 
-    def get_random_alias_suffix(self):
+    def get_random_alias_suffix(self, custom_domain: Optional["CustomDomain"] = None):
         """Get random suffix for an alias based on user's preference.
 
+        Use a shorter suffix in case of custom domain
 
         Returns:
             str: the random suffix generated
         """
         if self.random_alias_suffix == AliasSuffixEnum.random_string.value:
             return random_string(config.ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
-        return random_words(1, 3)
+
+        if custom_domain is None:
+            return random_words(1, 3)
+
+        return random_words(1)
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
