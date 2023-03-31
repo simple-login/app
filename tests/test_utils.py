@@ -13,7 +13,7 @@ def test_random_words():
     assert s.count("_") == 1
     assert len(s) > 3
     s = random_words(2, 3)
-    assert s.count("_") == 0
+    assert s.count("_") == 1
     assert s[-1] in (str(i) for i in range(10))
 
 
