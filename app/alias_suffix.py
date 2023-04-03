@@ -88,7 +88,7 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
 
 def get_alias_suffixes(
     user: User,
-    show_domains_for_partner: Optional[Partner] = False,
+    show_domains_for_partner: Optional[Partner] = None,
     show_sl_domains: bool = True,
 ) -> [AliasSuffix]:
     """
