@@ -3311,8 +3311,6 @@ class PartnerApiToken(Base, ModelMixin):
 class PartnerUser(Base, ModelMixin):
     __tablename__ = "partner_user"
 
-    FLAG_DISPLAY_PARTNER_DOMAINS = 1 << 0
-
     user_id = sa.Column(
         sa.ForeignKey("users.id", ondelete="cascade"),
         unique=True,
@@ -3327,14 +3325,6 @@ class PartnerUser(Base, ModelMixin):
 
     user = orm.relationship(User, foreign_keys=[user_id])
     partner = orm.relationship(Partner, foreign_keys=[partner_id])
-
-    # bitwise flags. Allow for future expansion
-    flags = sa.Column(
-        sa.BigInteger,
-        default=0,
-        server_default="0",
-        nullable=False,
-    )
 
     __table_args__ = (
         sa.UniqueConstraint(
