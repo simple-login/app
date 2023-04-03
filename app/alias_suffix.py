@@ -6,8 +6,7 @@ from typing import Optional
 import itsdangerous
 from app import config
 from app.log import LOG
-from app.models import User
-
+from app.models import User, Partner
 
 signer = itsdangerous.TimestampSigner(config.CUSTOM_ALIAS_SECRET)
 
@@ -87,7 +86,11 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
     return True
 
 
-def get_alias_suffixes(user: User) -> [AliasSuffix]:
+def get_alias_suffixes(
+    user: User,
+    show_domains_for_partner: Optional[Partner] = False,
+    show_sl_domains: bool = True,
+) -> [AliasSuffix]:
     """
     Similar to as get_available_suffixes() but also return custom domain that doesn't have MX set up.
     """
@@ -134,7 +137,7 @@ def get_alias_suffixes(user: User) -> [AliasSuffix]:
             alias_suffixes.append(alias_suffix)
 
     # then SimpleLogin domain
-    for sl_domain in user.get_sl_domains():
+    for sl_domain in user.get_sl_domains(show_domains_for_partner, show_sl_domains):
         suffix = (
             (
                 ""

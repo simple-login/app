@@ -967,18 +967,25 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         """
         return [sl_domain.domain for sl_domain in self.get_sl_domains()]
 
-    def get_sl_domains(self, domain_name: Optional[str] = None) -> list["SLDomain"]:
+    def get_sl_domains(
+        self,
+        show_domains_for_partner: Optional[Partner] = None,
+        show_sl_domains: bool = True,
+    ) -> list["SLDomain"]:
         conditions = [SLDomain.hidden == False]  # noqa: E712
-        if domain_name is not None:
-            conditions.append(SLDomain.domain == domain_name)
         if not self.is_premium():
             conditions.append(SLDomain.premium_only == False)  # noqa: E712
-        partner_domain_cond = [SLDomain.partner_id == None]  # noqa:E711
-        for partner_user in PartnerUser.filter_by(user_id=self.id).all():
-            if partner_user.flags & PartnerUser.FLAG_CAN_USE_PARTNER_DOMAIN > 0:
+        partner_domain_cond = []  # noqa:E711
+        if show_domains_for_partner is not None:
+            partner_user = PartnerUser.filter_by(
+                user_id=self.id, partner_id=show_domains_for_partner.id
+            ).first()
+            if partner_user is not None:
                 partner_domain_cond.append(
                     SLDomain.partner_id == partner_user.partner_id
                 )
+        if show_sl_domains:
+            partner_domain_cond.append(SLDomain.partner_id == None)  # noqa:E711
         if len(partner_domain_cond) == 1:
             conditions.append(partner_domain_cond[0])
         else:
@@ -3304,7 +3311,7 @@ class PartnerApiToken(Base, ModelMixin):
 class PartnerUser(Base, ModelMixin):
     __tablename__ = "partner_user"
 
-    FLAG_CAN_USE_PARTNER_DOMAIN = 1 << 0
+    FLAG_DISPLAY_PARTNER_DOMAINS = 1 << 0
 
     user_id = sa.Column(
         sa.ForeignKey("users.id", ondelete="cascade"),
