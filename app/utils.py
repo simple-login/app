@@ -32,8 +32,8 @@ def random_words(words: int = 2, numbers: int = 0):
     fields = [secrets.choice(_words) for i in range(words)]
 
     if numbers > 0:
-        fields.append("".join([str(random.randint(0, 9)) for i in range(numbers)]))
-        return "".join(fields)
+        digits = "".join([str(random.randint(0, 9)) for i in range(numbers)])
+        return "_".join(fields) + digits
     else:
         return "_".join(fields)
 
