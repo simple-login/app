@@ -41,6 +41,10 @@
       border-width: 2px !important;
     }
 
+    .text-start {
+      text-align: start !important;
+    }
+
 </style>
 {% endblock %}
 {% block announcement %}
@@ -55,7 +59,7 @@
 {% endblock %}
 {% block default_content %}
 
-<div>
+<div class="pb-8">
   <div class="text-center mx-md-auto mb-8 mt-6">
     <h2>Upgrade to unlock premium features</h2>
   </div>
@@ -93,7 +97,7 @@
     <a class="btn btn-outline-primary flex-grow-0 px-8 py-2" id="monthly-plan-tab" data-toggle="tab" href="#monthly-plan" role="tab" aria-controls="monthly-plan" aria-selected="false">Monthly</a>
     <a class="btn btn-outline-primary flex-grow-0 px-8 py-2 position-relative active" id="yearly-plan-tab" data-toggle="tab" href="#yearly-plan" role="tab" aria-controls="yearly-plan" aria-selected="true">Yearly<span class="badge badge-success position-absolute tab-yearly__badge" style="font-size: 12px">Save $18</span></a>
   </div>
-  <div class="tab-content">
+  <div class="tab-content mb-8">
     <!-- monthly tab content -->
     <div class="tab-pane" id="monthly-plan" role="tabpanel" aria-labelledby="monthly-plan-tab">
       <div class="row row-cards">
@@ -193,7 +197,7 @@
               <ul class="list-unstyled">
                 <li class="d-flex">
                   <i class="fe fe-check text-success mr-2 mt-1" aria-hidden="true"></i>
-                  Everything in SimpleLogin Premium
+                  SimpleLogin Premium
                 </li>
                 <li class="d-flex">
                   <i class="fe fe-check text-success mr-2 mt-1" aria-hidden="true"></i>
@@ -335,7 +339,7 @@
               <ul class="list-unstyled">
                 <li class="d-flex">
                   <i class="fe fe-check text-success mr-2 mt-1" aria-hidden="true"></i>
-                  Everything in SimpleLogin Premium
+                  SimpleLogin Premium
                 </li>
                 <li class="d-flex">
                   <i class="fe fe-check text-success mr-2 mt-1" aria-hidden="true"></i>
@@ -379,6 +383,261 @@
     </div>
     <!-- END yearly tab content -->
   </div>
+  <hr />
+  <!-- FAQ section -->
+  <div>
+    <h3 class="text-center mb-5 mt-7">Frequently asked questions</h3>
+    <div id="pricing-faq">
+      <div class="card mb-3">
+        <div class="card-header card-collapse p-0" id="pricing-faq-question-payment-methods">
+          <h5 class="mb-0 w-100">
+            <button class="btn btn-link btn-block d-flex justify-content-between card-btn p-4 collapsed text-decoration-none" data-toggle="collapse" data-target="#pricing-faq-answer-payment-methods" aria-controls="pricing-faq-answer-payment-methods" aria-expanded="false">
+              <span class="text-start">Which payment methods (credit cards, PayPal, cryptocurrencies...) do you support?</span>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </button>
+          </h5>
+        </div>
+        <div id="pricing-faq-answer-payment-methods" class="collapse" aria-labelledby="pricing-faq-question-payment-methods" data-parent="#pricing-faq">
+          <div class="card-body">
+            <p>
+              We use <a href="https://paddle.com" target="_blank" rel="noopener noreferrer">Paddle <i class="fe fe-external-link"></i></a> by default for handling payments via credit cards and PayPal. Paddle currently supports the following payment methods:
+            </p>
+            <ul>
+              <li>
+                Cards (including Mastercard, Visa, Maestro, American Express, Discover, Diners Club, JCB, UnionPay, and Mada)
+              </li>
+              <li>
+                PayPal
+              </li>
+              <li>
+                Apple Pay
+              </li>
+              <li>
+                Wire Transfers (ACH/SEPA/BACS)
+              </li>
+            </ul>
+            <p>
+              More information can be found on <a href="https://paddle.com/support/which-payment-methods-do-you-support/" target="_blank" rel="noopener noreferrer">Paddle supported payment methods <i class="fe fe-external-link"></i></a>.
+            </p>
+            <hr />
+            <p>
+              Furthermore we also support cryptocurrencies for the yearly plan via <a href="https://commerce.coinbase.com" target="_blank" rel="noopener noreferrer">Coinbase Commerce <i class="fe fe-external-link"></i></a>, which currently supports Bitcoin, Bitcoin Cash, DAI, ApeCoin, Dogecoin, Ethereum, Litecoin, SHIBA INU, Tether and USD Coin.
+            </p>
+            <p>
+              In the future, we are going to support Monero as well. In the meantime, please send us an email at <a href="mailto:support@simplelogin.zendesk.com">support@simplelogin.zendesk.com</a> if you want to use this cryptocurrency.
+            </p>
+            <div class="d-flex justify-content-center">
+              <a class="btn btn-outline-primary text-center" href="{{ url_for('dashboard.coinbase_checkout_route') }}" target="_blank" rel="noopener noreferrer">
+                Upgrade to Premium - cryptocurrency
+                <br />
+                $30 / year
+                <i class="fe fe-external-link"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-header card-collapse p-0" id="pricing-faq-question-coupon">
+          <h5 class="mb-0 w-100">
+            <button class="btn btn-link btn-block d-flex justify-content-between card-btn p-4 collapsed text-decoration-none" data-toggle="collapse" data-target="#pricing-faq-answer-coupon" aria-controls="pricing-faq-answer-coupon" aria-expanded="false">
+              <span class="text-start">Where can I redeem / buy a coupon?</span>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </button>
+          </h5>
+        </div>
+        <div id="pricing-faq-answer-coupon" class="collapse" aria-labelledby="pricing-faq-question-coupon" data-parent="#pricing-faq">
+          <div class="card-body">
+            <p>
+              To redeem or buy a coupon, please go to the
+              <a href="{{ url_for('dashboard.coupon_route') }}">coupon page</a>. The coupon code can be used by you or given to someone as a gift.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-header card-collapse p-0" id="pricing-faq-question-aliases-sub-stopped">
+          <h5 class="mb-0 w-100">
+            <button class="btn btn-link btn-block d-flex justify-content-between card-btn p-4 collapsed text-decoration-none" data-toggle="collapse" data-target="#pricing-faq-answer-aliases-sub-stopped" aria-controls="pricing-faq-answer-aliases-sub-stopped" aria-expanded="false">
+              <span class="text-start">What happens to my aliases when I stop the subscription?</span>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </button>
+          </h5>
+        </div>
+        <div id="pricing-faq-answer-aliases-sub-stopped" class="collapse" aria-labelledby="pricing-faq-question-aliases-sub-stopped" data-parent="#pricing-faq">
+          <div class="card-body">
+            <p>
+              When your subscription ends, all aliases you created continue working normally, both on receiving and
+              sending emails. Concretely:
+            </p>
+            <ul>
+              <li>
+                All aliases/domains/directories/mailboxes you have created are kept and continue working normally.
+              </li>
+              <li>
+                You cannot create new aliases if you exceed the free plan limit, i.e. have more than 10 aliases.
+              </li>
+              <li>
+                As features like catch-all or directory allow you to create aliases on-the-fly, those aliases cannot be automatically created if you have more than 10 aliases.
+              </li>
+              <li>
+                You cannot add new domain, directory or mailbox.
+              </li>
+            </ul>
+            <p>
+              For example, if you have 100 aliases by the time your subscription ends, these 100 aliases will continue receiving and sending emails normally. You cannot however create new aliases.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-header card-collapse p-0" id="pricing-faq-question-aliases-max">
+          <h5 class="mb-0 w-100">
+            <button class="btn btn-link btn-block d-flex justify-content-between card-btn p-4 collapsed text-decoration-none" data-toggle="collapse" data-target="#pricing-faq-answer-aliases-max" aria-controls="pricing-faq-answer-aliases-max" aria-expanded="false">
+              <span class="text-start">What happens when I reach the maximum number of alias in free plan?</span>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </button>
+          </h5>
+        </div>
+        <div id="pricing-faq-answer-aliases-max" class="collapse" aria-labelledby="pricing-faq-question-aliases-max" data-parent="#pricing-faq">
+          <div class="card-body">
+            <p>
+              If you are in the free plan, you cannot create new aliases when you reach the maximum number of aliases
+              (i.e. 10 aliases).
+              <br>
+              Aliases that would otherwise be created automatically via the catch-all domain or directory feature also cannot be created.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-header card-collapse p-0" id="pricing-faq-question-discounts">
+          <h5 class="mb-0 w-100">
+            <button class="btn btn-link btn-block d-flex justify-content-between card-btn p-4 collapsed text-decoration-none" data-toggle="collapse" data-target="#pricing-faq-answer-discounts" aria-controls="pricing-faq-answer-discounts" aria-expanded="false">
+              <span class="text-start">Do you offer discounts?</span>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </button>
+          </h5>
+        </div>
+        <div id="pricing-faq-answer-discounts" class="collapse" aria-labelledby="pricing-faq-question-discounts" data-parent="#pricing-faq">
+          <div class="card-body">
+            <p>
+              We offer important discounts or free premium for:
+            </p>
+            <ul>
+              <li>
+                students, professors or technical staffs working at an educational institute
+              </li>
+              <li>
+                activists, dissidents or journalists
+              </li>
+              <li>
+                charity organizations
+              </li>
+            </ul>
+            <p>
+              Please send us an email at <a href="mailto:support@simplelogin.zendesk.com">support@simplelogin.zendesk.com</a> for more info.
+            </p>
+            <p>
+              We used to offer free premium accounts for students but this program ended at June 17 2021. Please note this doesn't affect existing accounts who have already benefited from the program or requests sent before this date.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-header card-collapse p-0" id="pricing-faq-question-refund">
+          <h5 class="mb-0 w-100">
+            <button class="btn btn-link btn-block d-flex justify-content-between card-btn p-4 collapsed text-decoration-none" data-toggle="collapse" data-target="#pricing-faq-answer-refund" aria-controls="pricing-faq-answer-refund" aria-expanded="false">
+              <span class="text-start">Do you have a refund policy?</span>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </button>
+          </h5>
+        </div>
+        <div id="pricing-faq-answer-refund" class="collapse" aria-labelledby="pricing-faq-question-refund" data-parent="#pricing-faq">
+          <div class="card-body">
+            <p>
+              No we don't have a refund policy because SimpleLogin has a trial period where you can try all premium features.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-header card-collapse p-0" id="pricing-faq-question-family">
+          <h5 class="mb-0 w-100">
+            <button class="btn btn-link btn-block d-flex justify-content-between card-btn p-4 collapsed text-decoration-none" data-toggle="collapse" data-target="#pricing-faq-answer-family" aria-controls="pricing-faq-answer-family" aria-expanded="false">
+              <span class="text-start">Do you have a family plan?</span>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </button>
+          </h5>
+        </div>
+        <div id="pricing-faq-answer-family" class="collapse" aria-labelledby="pricing-faq-question-family" data-parent="#pricing-faq">
+          <div class="card-body">
+            <p>
+              No we don't have a family plan but offer 30% reduction for additional subscriptions. Please contact us at <a href="mailto:support@simplelogin.zendesk.com">support@simplelogin.zendesk.com</a> for more information.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-header card-collapse p-0" id="pricing-faq-question-other-ways">
+          <h5 class="mb-0 w-100">
+            <button class="btn btn-link btn-block d-flex justify-content-between card-btn p-4 collapsed text-decoration-none" data-toggle="collapse" data-target="#pricing-faq-answer-other-ways" aria-controls="pricing-faq-answer-other-ways" aria-expanded="false">
+              <span class="text-start">Are there other ways to buy SimpleLogin subscriptions?</span>
+              <span class="if-collapsed">
+                <i class="fe fe-chevron-down"></i>
+              </span>
+              <span class="if-not-collapsed">
+                <i class="fe fe-chevron-up"></i>
+              </span>
+            </button>
+          </h5>
+        </div>
+        <div id="pricing-faq-answer-other-ways" class="collapse" aria-labelledby="pricing-faq-question-other-ways" data-parent="#pricing-faq">
+          <div class="card-body">
+            <p>
+              Yes you can also buy SimpleLogin subscription coupon via <a href="https://proxysto.re/en/index.html" target="_blank">ProxyStore <i class="fe fe-external-link"></i></a>, our official reseller.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END FAQ section -->
 </div>
 <script type="text/javascript">
   Paddle.Setup({ vendor: {{ PADDLE_VENDOR_ID }}});
