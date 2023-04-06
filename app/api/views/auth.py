@@ -357,7 +357,7 @@ def auth_payload(user, device) -> dict:
 
 
 @api_bp.route("/auth/forgot_password", methods=["POST"])
-@limiter.limit("10/minute")
+@limiter.limit("2/minute")
 def forgot_password():
     """
     User forgot password
