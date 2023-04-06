@@ -6,7 +6,7 @@ from typing import Optional
 import itsdangerous
 from app import config
 from app.log import LOG
-from app.models import User, Partner
+from app.models import User, AliasOptions
 
 signer = itsdangerous.TimestampSigner(config.CUSTOM_ALIAS_SECRET)
 
@@ -42,7 +42,9 @@ def check_suffix_signature(signed_suffix: str) -> Optional[str]:
         return None
 
 
-def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
+def verify_prefix_suffix(
+    user: User, alias_prefix, alias_suffix, alias_options: Optional[AliasOptions] = None
+) -> bool:
     """verify if user could create an alias with the given prefix and suffix"""
     if not alias_prefix or not alias_suffix:  # should be caught on frontend
         return False
@@ -63,7 +65,7 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
     # 1) alias_suffix must start with "." and
     # 2) alias_domain_prefix must come from the word list
     if (
-        alias_domain in user.available_sl_domains()
+        alias_domain in user.available_sl_domains(alias_options=alias_options)
         and alias_domain not in user_custom_domains
         # when DISABLE_ALIAS_SUFFIX is true, alias_domain_prefix is empty
         and not config.DISABLE_ALIAS_SUFFIX
@@ -79,7 +81,9 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
                 LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
 
-            if alias_domain not in user.available_sl_domains():
+            if alias_domain not in user.available_sl_domains(
+                alias_options=alias_options
+            ):
                 LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
 
@@ -87,9 +91,7 @@ def verify_prefix_suffix(user: User, alias_prefix, alias_suffix) -> bool:
 
 
 def get_alias_suffixes(
-    user: User,
-    show_domains_for_partner: Optional[Partner] = None,
-    show_sl_domains: bool = True,
+    user: User, alias_options: Optional[AliasOptions] = None
 ) -> [AliasSuffix]:
     """
     Similar to as get_available_suffixes() but also return custom domain that doesn't have MX set up.
@@ -142,7 +144,7 @@ def get_alias_suffixes(
             alias_suffixes.append(alias_suffix)
 
     # then SimpleLogin domain
-    for sl_domain in user.get_sl_domains(show_domains_for_partner, show_sl_domains):
+    for sl_domain in user.get_sl_domains(alias_options=alias_options):
         suffix = (
             (
                 ""
