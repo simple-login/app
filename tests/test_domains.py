@@ -1,5 +1,5 @@
 from app.db import Session
-from app.models import SLDomain, PartnerUser
+from app.models import SLDomain, PartnerUser, AliasOptions
 from app.proton.utils import get_proton_partner
 from init_app import add_sl_domains
 from tests.utils import create_new_user, random_token
@@ -43,12 +43,14 @@ def test_get_non_partner_domains():
     assert len(domains) == 2
     assert domains[0].domain == "premium_non_partner"
     assert domains[1].domain == "free_non_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains()
     # Free
     user.trial_end = None
     Session.flush()
     domains = user.get_sl_domains()
     assert len(domains) == 1
     assert domains[0].domain == "free_non_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains()
 
 
 def test_get_free_with_partner_domains():
@@ -64,17 +66,28 @@ def test_get_free_with_partner_domains():
     # Default
     assert len(domains) == 1
     assert domains[0].domain == "free_non_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains()
     # Show partner domains
-    domains = user.get_sl_domains(show_domains_for_partner=get_proton_partner())
+    options = AliasOptions(
+        show_sl_domains=True, show_partner_domains=get_proton_partner()
+    )
+    domains = user.get_sl_domains(alias_options=options)
     assert len(domains) == 2
     assert domains[0].domain == "free_partner"
     assert domains[1].domain == "free_non_partner"
-    # Only partner domains
-    domains = user.get_sl_domains(
-        show_domains_for_partner=get_proton_partner(), show_sl_domains=False
+    assert [d.domain for d in domains] == user.available_sl_domains(
+        alias_options=options
     )
+    # Only partner domains
+    options = AliasOptions(
+        show_sl_domains=False, show_partner_domains=get_proton_partner()
+    )
+    domains = user.get_sl_domains(alias_options=options)
     assert len(domains) == 1
     assert domains[0].domain == "free_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains(
+        alias_options=options
+    )
 
 
 def test_get_premium_with_partner_domains():
@@ -90,17 +103,28 @@ def test_get_premium_with_partner_domains():
     assert len(domains) == 2
     assert domains[0].domain == "premium_non_partner"
     assert domains[1].domain == "free_non_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains()
     # Show partner domains
-    domains = user.get_sl_domains(show_domains_for_partner=get_proton_partner())
+    options = AliasOptions(
+        show_sl_domains=True, show_partner_domains=get_proton_partner()
+    )
+    domains = user.get_sl_domains(alias_options=options)
     assert len(domains) == 4
     assert domains[0].domain == "premium_partner"
     assert domains[1].domain == "free_partner"
     assert domains[2].domain == "premium_non_partner"
     assert domains[3].domain == "free_non_partner"
-    # Only partner domains
-    domains = user.get_sl_domains(
-        show_domains_for_partner=get_proton_partner(), show_sl_domains=False
+    assert [d.domain for d in domains] == user.available_sl_domains(
+        alias_options=options
     )
+    # Only partner domains
+    options = AliasOptions(
+        show_sl_domains=False, show_partner_domains=get_proton_partner()
+    )
+    domains = user.get_sl_domains(alias_options=options)
     assert len(domains) == 2
     assert domains[0].domain == "premium_partner"
     assert domains[1].domain == "free_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains(
+        alias_options=options
+    )

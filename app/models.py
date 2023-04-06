@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import dataclasses
 import enum
 import hashlib
 import hmac
@@ -271,6 +272,12 @@ class IntEnumType(sa.types.TypeDecorator):
 
     def process_result_value(self, enum_value, dialect):
         return self._enum_type(enum_value)
+
+
+@dataclasses.dataclass
+class AliasOptions:
+    show_sl_domains: bool = True
+    show_partner_domains: Optional[Partner] = None
 
 
 class Hibp(Base, ModelMixin):
@@ -867,14 +874,16 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def custom_domains(self):
         return CustomDomain.filter_by(user_id=self.id, verified=True).all()
 
-    def available_domains_for_random_alias(self) -> List[Tuple[bool, str]]:
+    def available_domains_for_random_alias(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> List[Tuple[bool, str]]:
         """Return available domains for user to create random aliases
         Each result record contains:
         - whether the domain belongs to SimpleLogin
         - the domain
         """
         res = []
-        for domain in self.available_sl_domains():
+        for domain in self.available_sl_domains(alias_options=alias_options):
             res.append((True, domain))
 
         for custom_domain in self.verified_custom_domains():
@@ -959,32 +968,37 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return None, "", False
 
-    def available_sl_domains(self) -> [str]:
+    def available_sl_domains(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> [str]:
         """
         Return all SimpleLogin domains that user can use when creating a new alias, including:
         - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         """
-        return [sl_domain.domain for sl_domain in self.get_sl_domains()]
+        return [
+            sl_domain.domain
+            for sl_domain in self.get_sl_domains(alias_options=alias_options)
+        ]
 
     def get_sl_domains(
-        self,
-        show_domains_for_partner: Optional[Partner] = None,
-        show_sl_domains: bool = True,
+        self, alias_options: Optional[AliasOptions] = None
     ) -> list["SLDomain"]:
+        if alias_options is None:
+            alias_options = AliasOptions()
         conditions = [SLDomain.hidden == False]  # noqa: E712
         if not self.is_premium():
             conditions.append(SLDomain.premium_only == False)  # noqa: E712
         partner_domain_cond = []  # noqa:E711
-        if show_domains_for_partner is not None:
+        if alias_options.show_partner_domains is not None:
             partner_user = PartnerUser.filter_by(
-                user_id=self.id, partner_id=show_domains_for_partner.id
+                user_id=self.id, partner_id=alias_options.show_partner_domains.id
             ).first()
             if partner_user is not None:
                 partner_domain_cond.append(
                     SLDomain.partner_id == partner_user.partner_id
                 )
-        if show_sl_domains:
+        if alias_options.show_sl_domains:
             partner_domain_cond.append(SLDomain.partner_id == None)  # noqa:E711
         if len(partner_domain_cond) == 1:
             conditions.append(partner_domain_cond[0])
@@ -993,14 +1007,16 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         query = Session.query(SLDomain).filter(*conditions).order_by(SLDomain.order)
         return query.all()
 
-    def available_alias_domains(self) -> [str]:
+    def available_alias_domains(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> [str]:
         """return all domains that user can use when creating a new alias, including:
         - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         - Verified custom domains
 
         """
-        domains = self.available_sl_domains()
+        domains = self.available_sl_domains(alias_options=alias_options)
 
         for custom_domain in self.verified_custom_domains():
             domains.append(custom_domain.domain)
