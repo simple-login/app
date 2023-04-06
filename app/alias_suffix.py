@@ -57,7 +57,7 @@ def verify_prefix_suffix(
     alias_domain_prefix, alias_domain = alias_suffix.split("@", 1)
 
     # alias_domain must be either one of user custom domains or built-in domains
-    if alias_domain not in user.available_alias_domains():
+    if alias_domain not in user.available_alias_domains(alias_options=alias_options):
         LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
         return False
 
