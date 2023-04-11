@@ -54,6 +54,7 @@ from app.models import (
     IgnoreBounceSender,
     InvalidMailboxDomain,
     VerpType,
+    available_sl_email,
 )
 from app.utils import (
     random_string,
@@ -1085,9 +1086,7 @@ def generate_reply_email(contact_email: str, alias: Alias) -> str:
             # reply_email = f"ra+{random_string(random_length)}@{config.EMAIL_DOMAIN}"
             reply_email = f"{random_string(random_length)}@{reply_domain}"
 
-        if not Contact.get_by(reply_email=reply_email) and not Alias.get_by(
-            email=reply_email
-        ):
+        if available_sl_email(reply_email):
             return reply_email
 
     raise Exception("Cannot generate reply email")
