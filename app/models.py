@@ -1531,7 +1531,7 @@ class Alias(Base, ModelMixin):
             suffix = user.get_random_alias_suffix()
             email = f"{prefix}.{suffix}@{config.FIRST_ALIAS_DOMAIN}"
 
-            if available_sl_email(email, check_trash=False):
+            if available_sl_email(email):
                 break
 
         return Alias.create(
