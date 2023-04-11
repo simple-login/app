@@ -1297,12 +1297,15 @@ def generate_email(
     scheme: int = AliasGeneratorEnum.word.value,
     in_hex: bool = False,
     alias_domain=config.FIRST_ALIAS_DOMAIN,
+    retries: int = 5,
 ) -> str:
     """generate an email address that does not exist before
     :param alias_domain: the domain used to generate the alias.
     :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
     :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
     """
+    if retries <= 0:
+        raise Exception("Cannot generate alias after many retries")
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
         random_email = name + "@" + alias_domain
@@ -1312,15 +1315,17 @@ def generate_email(
     random_email = random_email.lower().strip()
 
     # check that the client does not exist yet
-    if not Alias.get_by(email=random_email) and not DeletedAlias.get_by(
-        email=random_email
+    if (
+        not Alias.get_by(email=random_email)
+        and not DeletedAlias.get_by(email=random_email)
+        and not Contact.get_by(reply_email=random_email)
     ):
         LOG.d("generate email %s", random_email)
         return random_email
 
     # Rerun the function
     LOG.w("email %s already exists, generate a new email", random_email)
-    return generate_email(scheme=scheme, in_hex=in_hex)
+    return generate_email(scheme=scheme, in_hex=in_hex, retries=retries - 1)
 
 
 class Alias(Base, ModelMixin):
@@ -1580,6 +1585,10 @@ class Alias(Base, ModelMixin):
             return self.mailbox.email
         else:
             return self.user.email
+
+    def get_domain(self) -> str:
+        splitPos = self.email.find("@")
+        return self.email[splitPos + 1 :]
 
     def __repr__(self):
         return f"<Alias {self.id} {self.email}>"

@@ -1043,7 +1043,7 @@ def replace(msg: Union[Message, str], old, new) -> Union[Message, str]:
     return msg
 
 
-def generate_reply_email(contact_email: str, user: User) -> str:
+def generate_reply_email(contact_email: str, alias: Alias) -> str:
     """
     generate a reply_email (aka reverse-alias), make sure it isn't used by any contact
     """
@@ -1054,6 +1054,7 @@ def generate_reply_email(contact_email: str, user: User) -> str:
 
     include_sender_in_reverse_alias = False
 
+    user = alias.user
     # user has set this option explicitly
     if user.include_sender_in_reverse_alias is not None:
         include_sender_in_reverse_alias = user.include_sender_in_reverse_alias
@@ -1068,6 +1069,7 @@ def generate_reply_email(contact_email: str, user: User) -> str:
         contact_email = contact_email.replace(".", "_")
         contact_email = convert_to_alphanumeric(contact_email)
 
+    reply_domain = alias.get_domain()
     # not use while to avoid infinite loop
     for _ in range(1000):
         if include_sender_in_reverse_alias and contact_email:
@@ -1075,15 +1077,17 @@ def generate_reply_email(contact_email: str, user: User) -> str:
             reply_email = (
                 # do not use the ra+ anymore
                 # f"ra+{contact_email}+{random_string(random_length)}@{config.EMAIL_DOMAIN}"
-                f"{contact_email}_{random_string(random_length)}@{config.EMAIL_DOMAIN}"
+                f"{contact_email}_{random_string(random_length)}@{reply_domain}"
             )
         else:
             random_length = random.randint(20, 50)
             # do not use the ra+ anymore
             # reply_email = f"ra+{random_string(random_length)}@{config.EMAIL_DOMAIN}"
-            reply_email = f"{random_string(random_length)}@{config.EMAIL_DOMAIN}"
+            reply_email = f"{random_string(random_length)}@{reply_domain}"
 
-        if not Contact.get_by(reply_email=reply_email):
+        if not Contact.get_by(reply_email=reply_email) and not Alias.get_by(
+            email=reply_email
+        ):
             return reply_email
 
     raise Exception("Cannot generate reply email")

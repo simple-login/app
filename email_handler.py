@@ -243,7 +243,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 website_email=contact_email,
                 name=contact_name,
                 mail_from=mail_from,
-                reply_email=generate_reply_email(contact_email, alias.user)
+                reply_email=generate_reply_email(contact_email, alias)
                 if is_valid_email(contact_email)
                 else NOREPLY,
                 automatic_created=True,
@@ -304,7 +304,7 @@ def get_or_create_reply_to_contact(
                 alias_id=alias.id,
                 website_email=contact_address,
                 name=contact_name,
-                reply_email=generate_reply_email(contact_address, alias.user),
+                reply_email=generate_reply_email(contact_address, alias),
                 automatic_created=True,
             )
             Session.commit()
@@ -372,7 +372,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     alias_id=alias.id,
                     website_email=contact_email,
                     name=full_address.display_name,
-                    reply_email=generate_reply_email(contact_email, alias.user),
+                    reply_email=generate_reply_email(contact_email, alias),
                     is_cc=header.lower() == "cc",
                     automatic_created=True,
                 )

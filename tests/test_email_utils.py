@@ -48,6 +48,7 @@ from app.models import (
     IgnoreBounceSender,
     InvalidMailboxDomain,
     VerpType,
+    AliasGeneratorEnum,
 )
 
 # flake8: noqa: E101, W191
@@ -469,33 +470,37 @@ def test_replace_str():
 
 def test_generate_reply_email(flask_client):
     user = create_new_user()
-    reply_email = generate_reply_email("test@example.org", user)
-    assert reply_email.endswith(EMAIL_DOMAIN)
+    alias = Alias.create_new_random(user, AliasGeneratorEnum.uuid.value)
+    Session.commit()
+    reply_email = generate_reply_email("test@example.org", alias)
+    assert reply_email.endswith(alias.get_domain())
 
-    reply_email = generate_reply_email("", user)
-    assert reply_email.endswith(EMAIL_DOMAIN)
+    reply_email = generate_reply_email("", alias)
+    assert reply_email.endswith(alias.get_domain())
 
 
 def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
     # user enables include_sender_in_reverse_alias
     user = create_new_user()
+    alias = Alias.create_new_random(user, AliasGeneratorEnum.uuid.value)
+    Session.commit()
     user.include_sender_in_reverse_alias = True
 
-    reply_email = generate_reply_email("test@example.org", user)
+    reply_email = generate_reply_email("test@example.org", alias)
     assert reply_email.startswith("test_at_example_org")
-    assert reply_email.endswith(EMAIL_DOMAIN)
+    assert reply_email.endswith(alias.get_domain())
 
-    reply_email = generate_reply_email("", user)
-    assert reply_email.endswith(EMAIL_DOMAIN)
+    reply_email = generate_reply_email("", alias)
+    assert reply_email.endswith(alias.get_domain())
 
-    reply_email = generate_reply_email("👌汉字@example.org", user)
+    reply_email = generate_reply_email("👌汉字@example.org", alias)
     assert reply_email.startswith("yizi_at_example_org")
 
     # make sure reply_email only contain lowercase
-    reply_email = generate_reply_email("TEST@example.org", user)
+    reply_email = generate_reply_email("TEST@example.org", alias)
     assert reply_email.startswith("test_at_example_org")
 
-    reply_email = generate_reply_email("test.dot@example.org", user)
+    reply_email = generate_reply_email("test.dot@example.org", alias)
     assert reply_email.startswith("test_dot_at_example_org")
 
 

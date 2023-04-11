@@ -312,6 +312,6 @@ def test_create_contact_for_noreply(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=NOREPLY,
-        reply_email=generate_reply_email(NOREPLY, user),
+        reply_email=generate_reply_email(NOREPLY, alias),
     )
     assert contact.website_email == NOREPLY

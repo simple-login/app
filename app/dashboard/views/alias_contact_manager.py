@@ -90,7 +90,7 @@ def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
         alias_id=alias.id,
         website_email=contact_email,
         name=contact_name,
-        reply_email=generate_reply_email(contact_email, user),
+        reply_email=generate_reply_email(contact_email, alias),
     )
 
     LOG.d(
