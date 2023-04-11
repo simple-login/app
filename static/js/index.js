@@ -181,11 +181,11 @@ async function handleNoteChange(aliasId, aliasEmail) {
 }
 
 function handleNoteFocus(aliasId) {
-  document.getElementById(`note-focus-message-${aliasId}`).classList.remove('invisible');
+  document.getElementById(`note-focus-message-${aliasId}`).classList.remove('d-none');
 }
 
 function handleNoteBlur(aliasId) {
-  document.getElementById(`note-focus-message-${aliasId}`).classList.add('invisible');
+  document.getElementById(`note-focus-message-${aliasId}`).classList.add('d-none');
 }
 
 async function handleMailboxChange(aliasId, aliasEmail) {
@@ -245,11 +245,11 @@ async function handleDisplayNameChange(aliasId, aliasEmail) {
 }
 
 function handleDisplayNameFocus(aliasId) {
-  document.getElementById(`display-name-focus-message-${aliasId}`).classList.remove('invisible');
+  document.getElementById(`display-name-focus-message-${aliasId}`).classList.remove('d-none');
 }
 
 function handleDisplayNameBlur(aliasId) {
-  document.getElementById(`display-name-focus-message-${aliasId}`).classList.add('invisible');
+  document.getElementById(`display-name-focus-message-${aliasId}`).classList.add('d-none');
 }
 
 new Vue({
