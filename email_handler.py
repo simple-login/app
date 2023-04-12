@@ -945,10 +945,11 @@ def forward_email_to_mailbox(
         envelope.rcpt_options,
     )
 
+    contact_domain = get_email_domain_part(contact.reply_email)
     try:
         sl_sendmail(
             # use a different envelope sender for each forward (aka VERP)
-            generate_verp_email(VerpType.bounce_forward, email_log.id),
+            generate_verp_email(VerpType.bounce_forward, email_log.id, contact_domain),
             mailbox.email,
             msg,
             envelope.mail_options,
