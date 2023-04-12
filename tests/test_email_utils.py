@@ -473,10 +473,12 @@ def test_generate_reply_email(flask_client):
     alias = Alias.create_new_random(user, AliasGeneratorEnum.uuid.value)
     Session.commit()
     reply_email = generate_reply_email("test@example.org", alias)
-    assert reply_email.endswith(alias.get_domain())
+    domain = get_email_domain_part(alias.email)
+    assert reply_email.endswith(domain)
 
     reply_email = generate_reply_email("", alias)
-    assert reply_email.endswith(alias.get_domain())
+    domain = get_email_domain_part(alias.email)
+    assert reply_email.endswith(domain)
 
 
 def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
@@ -488,10 +490,12 @@ def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
 
     reply_email = generate_reply_email("test@example.org", alias)
     assert reply_email.startswith("test_at_example_org")
-    assert reply_email.endswith(alias.get_domain())
+    domain = get_email_domain_part(alias.email)
+    assert reply_email.endswith(domain)
 
     reply_email = generate_reply_email("", alias)
-    assert reply_email.endswith(alias.get_domain())
+    domain = get_email_domain_part(alias.email)
+    assert reply_email.endswith(domain)
 
     reply_email = generate_reply_email("👌汉字@example.org", alias)
     assert reply_email.startswith("yizi_at_example_org")

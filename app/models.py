@@ -1593,10 +1593,6 @@ class Alias(Base, ModelMixin):
         else:
             return self.user.email
 
-    def get_domain(self) -> str:
-        splitPos = self.email.find("@")
-        return self.email[splitPos + 1 :]
-
     def __repr__(self):
         return f"<Alias {self.id} {self.email}>"
 

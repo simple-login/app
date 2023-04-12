@@ -1032,7 +1032,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     alias = contact.alias
     alias_address: str = contact.alias.email
-    alias_domain = alias_address[alias_address.find("@") + 1 :]
+    alias_domain = get_email_domain_part(alias_address)
 
     # Sanity check: verify alias domain is managed by SimpleLogin
     # scenario: a user have removed a domain but due to a bug, the aliases are still there
