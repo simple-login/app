@@ -222,7 +222,7 @@ def alias_transfer_receive_route():
         Session.commit()
 
         flash(f"You are now owner of {alias.email}", "success")
-        return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))
+        return redirect(url_for("dashboard.aliases", alias_id=alias.id))
 
     return render_template(
         "dashboard/alias_transfer_receive.html",
