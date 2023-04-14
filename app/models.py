@@ -1714,7 +1714,7 @@ class Contact(Base, ModelMixin):
     is_cc = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
 
     pgp_public_key = sa.Column(sa.Text, nullable=True)
-    pgp_finger_print = sa.Column(sa.String(512), nullable=True)
+    pgp_finger_print = sa.Column(sa.String(512), nullable=True, index=True)
 
     alias = orm.relationship(Alias, backref="contacts")
     user = orm.relationship(User)
