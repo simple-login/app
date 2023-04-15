@@ -3375,7 +3375,7 @@ class PartnerSubscription(Base, ModelMixin):
     )
 
     # when the partner subscription ends
-    end_at = sa.Column(ArrowType, nullable=False)
+    end_at = sa.Column(ArrowType, nullable=False, index=True)
 
     partner_user = orm.relationship(PartnerUser)
 
