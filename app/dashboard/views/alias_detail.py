@@ -34,10 +34,6 @@ def aliases(alias_id):
             flash("Invalid request", "warning")
             return redirect(request.url)
         if request.form.get("form-name") in ("delete-alias", "disable-alias"):
-            if not alias or alias.user_id != current_user.id:
-                flash("Unknown error, sorry for the inconvenience", "error")
-                return redirect(url_for("dashboard.index"))
-
             if request.form.get("form-name") == "delete-alias":
                 LOG.d("delete alias %s", alias)
                 email = alias.email
