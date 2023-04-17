@@ -1293,10 +1293,12 @@ class OauthToken(Base, ModelMixin):
         return self.expired < arrow.now()
 
 
-def available_sl_email(email: str, check_trash: bool = True) -> bool:
-    if Alias.get_by(email=email) or Contact.get_by(reply_email=email):
-        return False
-    if check_trash and DeletedAlias.get_by(email=email):
+def available_sl_email(email: str) -> bool:
+    if (
+        Alias.get_by(email=email)
+        or Contact.get_by(reply_email=email)
+        or DeletedAlias.get_by(email=email)
+    ):
         return False
     return True
 
