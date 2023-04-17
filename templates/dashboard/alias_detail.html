@@ -5,192 +5,196 @@
 {% block default_content %}
 
   {% set alias = alias_info.alias %}
-  <div>
-    <a href="{{ url_for('dashboard.index') }}" class="btn btn-link p-0">
-      <span class="fa fa-arrow-left"></span> Back to Aliases
-    </a>
-    <div class="d-flex justify-content-center">
-      <h1 class="clipboard cursor d-inline-block text-center"
-          data-toggle="tooltip"
-          title="Click to copy"
-          data-clipboard-text="{{ alias.email }}">
-        {{ alias.email }}
-      </h1>
+  <div class="row">
+    <div class="col-lg-3 order-lg-1 mb-4">
+      <!-- side panel here for alias log and contact manager in the future -->
     </div>
-    {% if alias.automatic_creation %}
+    <div class="col-lg-9">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="clipboard cursor d-inline-block text-break"
+              data-toggle="tooltip"
+              title="Click to copy"
+              data-clipboard-text="{{ alias.email }}">
+            {{ alias.email }}
+          </h3>
+          {% if alias.automatic_creation %}
 
-      <p class="mb-0">
-        <span class="fa fa-inbox" data-toggle="tooltip" title=""></span> Alias automatically generated because of an incoming email
-      </p>
-    {% endif %}
-    {% if alias.hibp_breaches | length > 0 %}
-
-      <p class="mb-0">
-        <span class="fa fa-warning text-danger" data-toggle="tooltip" title=""></span> Found in {{ alias.hibp_breaches | length }} data breaches. <a href="https://haveibeenpwned.com/account/{{ alias.email }}">Check haveibeenpwned.com for more information <span class="fa fa-external-link"></span>
-      </a>
-    </p>
-  {% endif %}
-  {% if alias.custom_domain and not alias.custom_domain.verified %}
-
-    <p class="">
-      <span class="fa fa-warning text-warning" data-toggle="tooltip" title=""></span> Cannot receive emails as the domain doesn't have MX records set up
-    </p>
-  {% endif %}
-  <!-- Email Activity -->
-  <div class="row mb-4">
-    <div class="col">
-      <div>
-        {% if alias_info.latest_email_log != None %}
-
-          {% set email_log = alias_info.latest_email_log %}
-          {% set contact = alias_info.latest_contact %}
-          {% if email_log.is_reply %}
-
-            {{ contact.website_email }}
-            <i class="fa fa-reply mr-2"
-               data-toggle="tooltip"
-               title="Email reply/sent from alias"></i>
-            {{ email_log.created_at | dt }}
-          {% elif email_log.bounced %}
-            <span class="text-danger">
-              {{ contact.website_email }}
-              <i class="fa fa-warning mr-2"
-                 data-toggle="tooltip"
-                 title="Email bounced and cannot be forwarded to your mailbox"></i>
-              {{ email_log.created_at | dt }}
-            </span>
-          {% elif email_log.blocked %}
-            {{ contact.website_email }}
-            <i class="fa fa-ban mr-2 text-danger"
-               data-toggle="tooltip"
-               title="Email blocked"></i>
-            {{ email_log.created_at | dt }}
-          {% else %}
-            {{ contact.website_email }}
-            <i class="fa fa-paper-plane  mr-2"
-               data-toggle="tooltip"
-               title="Email sent to alias"></i>
-            {{ email_log.created_at | dt }}
-            {% include 'partials/toggle_contact.html' %}
-
+            <p class="mb-0">
+              <span class="fa fa-inbox" data-toggle="tooltip" title=""></span> Alias automatically generated because of an incoming email
+            </p>
           {% endif %}
-        {% else %}
-          No emails received/sent in the last 14 days. Created {{ alias.created_at | dt }}.
+          {% if alias.hibp_breaches | length > 0 %}
+
+            <p class="mb-0">
+              <span class="fa fa-warning text-danger" data-toggle="tooltip" title=""></span> Found in {{ alias.hibp_breaches | length }} data breaches. <a href="https://haveibeenpwned.com/account/{{ alias.email }}">Check haveibeenpwned.com for more information <span class="fa fa-external-link"></span>
+            </a>
+          </p>
         {% endif %}
-      </div>
-    </div>
-  </div>
-  <!-- END Email Activity -->
-  <div class="mb-4">
-    <label class="mb-0" for="note-{{ alias.id }}">
-      Alias description <span id="note-focus-message-{{ alias.id }}"
+        {% if alias.custom_domain and not alias.custom_domain.verified %}
+
+          <p class="">
+            <span class="fa fa-warning text-warning" data-toggle="tooltip" title=""></span> Cannot receive emails as the domain doesn't have MX records set up
+          </p>
+        {% endif %}
+        <!-- Email Activity -->
+        <div class="row mb-4">
+          <div class="col">
+            <div class="small-text">
+              {% if alias_info.latest_email_log != None %}
+
+                {% set email_log = alias_info.latest_email_log %}
+                {% set contact = alias_info.latest_contact %}
+                {% if email_log.is_reply %}
+
+                  {{ contact.website_email }}
+                  <i class="fa fa-reply mr-2"
+                     data-toggle="tooltip"
+                     title="Email reply/sent from alias"></i>
+                  {{ email_log.created_at | dt }}
+                {% elif email_log.bounced %}
+                  <span class="text-danger">
+                    {{ contact.website_email }}
+                    <i class="fa fa-warning mr-2"
+                       data-toggle="tooltip"
+                       title="Email bounced and cannot be forwarded to your mailbox"></i>
+                    {{ email_log.created_at | dt }}
+                  </span>
+                {% elif email_log.blocked %}
+                  {{ contact.website_email }}
+                  <i class="fa fa-ban mr-2 text-danger"
+                     data-toggle="tooltip"
+                     title="Email blocked"></i>
+                  {{ email_log.created_at | dt }}
+                {% else %}
+                  {{ contact.website_email }}
+                  <i class="fa fa-paper-plane  mr-2"
+                     data-toggle="tooltip"
+                     title="Email sent to alias"></i>
+                  {{ email_log.created_at | dt }}
+                  {% include 'partials/toggle_contact.html' %}
+
+                {% endif %}
+              {% else %}
+                No emails received/sent in the last 14 days. Created {{ alias.created_at | dt }}.
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <!-- END Email Activity -->
+        <div class="mb-4">
+          <label class="mb-0" for="note-{{ alias.id }}">
+            Alias description <span id="note-focus-message-{{ alias.id }}"
        class="d-none small-text font-italic">(automatically saved when you click outside the field)</span>
-    </label>
-    <textarea id="note-{{ alias.id }}" name="note" class="form-control" rows="2" placeholder="e.g. where the alias is used or why is it created" onchange="handleNoteChange({{ alias.id }}, '{{ alias.email }}')" onfocus="handleNoteFocus({{ alias.id }})" onblur="handleNoteBlur({{ alias.id }})">{{ alias.note or "" }}</textarea>
-  </div>
-  {% if mailboxes|length > 1 %}
+          </label>
+          <textarea id="note-{{ alias.id }}" name="note" class="form-control" rows="2" placeholder="e.g. where the alias is used or why is it created" onchange="handleNoteChange({{ alias.id }}, '{{ alias.email }}')" onfocus="handleNoteFocus({{ alias.id }})" onblur="handleNoteBlur({{ alias.id }})">{{ alias.note or "" }}</textarea>
+        </div>
+        {% if mailboxes|length > 1 %}
 
-    <label class="mb-0" for="mailbox-{{ alias.id }}">Current mailbox</label>
-    <select required
-            id="mailbox-{{ alias.id }}"
-            data-width="100%"
-            class="mailbox-select mb-4"
-            multiple
-            name="mailbox"
-            onchange="handleMailboxChange({{ alias.id }}, '{{ alias.email }}')">
-      {% for mailbox in mailboxes %}
+          <label class="mb-0" for="mailbox-{{ alias.id }}">Current mailbox</label>
+          <select required
+                  id="mailbox-{{ alias.id }}"
+                  data-width="100%"
+                  class="mailbox-select mb-4"
+                  multiple
+                  name="mailbox"
+                  onchange="handleMailboxChange({{ alias.id }}, '{{ alias.email }}')">
+            {% for mailbox in mailboxes %}
 
-        <option value="{{ mailbox.id }}" {% if alias_info.contain_mailbox(mailbox.id) %}
-           selected {% endif %}>
-          {{ mailbox.email }}
-        </option>
-      {% endfor %}
-    </select>
-  {% elif alias_info.mailbox != None and alias_info.mailbox.email != current_user.email %}
-    <div class="small-text mb-4">
-      Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
-    </div>
-  {% endif %}
-  <div class="mb-4">
-    <label class="mb-0" for="alias-name-{{ alias.id }}">Display name</label>
-    <span id="display-name-focus-message-{{ alias.id }}"
-          class="d-none small-text font-italic">(automatically saved when you click outside the field or press Enter)</span>
-    <div class="small-text">
-      When sending an email from this alias, the email will have '{{ alias.name or "Your Display Name" }} &lt;{{ alias.email }}&gt;' as sender.
-    </div>
-    <input id="alias-name-{{ alias.id }}"
-           value="{{ alias.name or '' }}"
-           class="form-control"
-           placeholder="{{ alias.custom_domain.name or "Alias name" }}"
-           onchange="handleDisplayNameChange({{ alias.id }}, '{{ alias.email }}')"
-           onfocus="handleDisplayNameFocus({{ alias.id }})"
-           onblur="handleDisplayNameBlur({{ alias.id }})">
-  </div>
-  {% if alias.mailbox_support_pgp() %}
+              <option value="{{ mailbox.id }}" {% if alias_info.contain_mailbox(mailbox.id) %}
+                 selected {% endif %}>
+                {{ mailbox.email }}
+              </option>
+            {% endfor %}
+          </select>
+        {% elif alias_info.mailbox != None and alias_info.mailbox.email != current_user.email %}
+          <div class="small-text mb-4">
+            Owned by <b>{{ alias_info.mailbox.email }}</b> mailbox
+          </div>
+        {% endif %}
+        <div class="mb-4">
+          <label class="mb-0" for="alias-name-{{ alias.id }}">Display name</label>
+          <span id="display-name-focus-message-{{ alias.id }}"
+                class="d-none small-text font-italic">(automatically saved when you click outside the field or press Enter)</span>
+          <div class="small-text">
+            When sending an email from this alias, the email will have '{{ alias.name or "Your Display Name" }} &lt;{{ alias.email }}&gt;' as sender.
+          </div>
+          <input id="alias-name-{{ alias.id }}"
+                 value="{{ alias.name or '' }}"
+                 class="form-control"
+                 placeholder="{{ alias.custom_domain.name or "Alias name" }}"
+                 onchange="handleDisplayNameChange({{ alias.id }}, '{{ alias.email }}')"
+                 onfocus="handleDisplayNameFocus({{ alias.id }})"
+                 onblur="handleDisplayNameBlur({{ alias.id }})">
+        </div>
+        {% if alias.mailbox_support_pgp() %}
 
-    <div class="d-flex align-items-start mb-4">
-      <label class="custom-switch cursor pl-0 mt-1">
-        <input id="enable-disable-pgp-{{ alias.id }}" type="checkbox" class="enable-disable-pgp custom-switch-input" data-alias="{{ alias.id }}" data-alias-email="{{ alias.email }}" {{ "checked" if alias.pgp_enabled() else "" }}>
-        <span class="custom-switch-indicator"></span>
-      </label>
-      <label for="enable-disable-pgp-{{ alias.id }}" class="ml-2">
-        PGP
-        <br>
-        <span class="small-text">It can be useful to disable PGP if the sender already encrypts the emails</span>
-      </label>
-    </div>
-  {% endif %}
-  <div class="d-flex align-items-start mb-4">
-    <label class="custom-switch cursor pl-0 mt-1">
-      <input type="checkbox" id="enable-disable-alias-{{ alias.id }}" class="enable-disable-alias custom-switch-input" data-alias="{{ alias.id }}" data-alias-email="{{ alias.email }}" {{ "checked" if alias.enabled else "" }}>
-      <span class="custom-switch-indicator"></span>
-    </label>
-    <label for="enable-disable-alias-{{ alias.id }}" class="ml-2">
-      Alias enabled
-      <br>
-      <span class="small-text">{{ "To stop receiving emails sent to this alias, you can disable the alias." if alias.enabled else "Enable the alias to start receiving emails sent to this alias." }}
-      </span>
-    </label>
-  </div>
-  <div class="mb-4">
-    {% if alias_info.latest_email_log != None %}<div>Alias created {{ alias.created_at | dt }}</div>{% endif %}
-    <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwarded,
-    <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocked,
-    <span class="alias-activity">{{ alias_info.nb_reply }}</span> sent
-    in the last 14 days
-    <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
-       class="btn btn-sm btn-link">See All &nbsp;→</a>
-  </div>
-  <div class="d-flex">
-    <div class="mr-auto">
-      <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}"
-         id="send-email-{{ alias.id }}"
-         class="btn btn-sm btn-outline-primary {% if not alias.enabled %}disabled{% endif %} "
-         data-toggle="tooltip"
-         title="Add new contact, manage your existing contacts">
-        Contacts&nbsp; &nbsp;<i class="fe fe-send"></i>
-      </a>
-    </div>
-    <div class="btn-group ml-auto" role="group" aria-label="Basic example">
-      <a href="{{ url_for('dashboard.alias_transfer_send_route', alias_id=alias.id) }}"
-         class="btn btn-sm btn-link">
-        Transfer
-        <i class="ml-0 dropdown-icon fe fe-share-2 text-primary"></i>
-      </a>
-      <form method="post">
-        {{ csrf_form.csrf_token }}
-        <input type="hidden" name="form-name" value="delete-alias">
-        <input type="hidden" name="alias-id" value="{{ alias.id }}">
-        <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
-        <span class="btn btn-link btn-sm float-right text-danger"
-              onclick="confirmDeleteAlias.call(this)"
-              {% if alias.custom_domain %} data-custom-domain-trash-url="{{ alias.custom_domain.get_trash_url() }}"{% endif %}
-              data-alias="{{ alias.id }}"
-              data-alias-email="{{ alias.email }}">
-          Delete
-          <i class="ml-0 dropdown-icon fe fe-trash-2 text-danger"></i>
-        </span>
-      </form>
+          <div class="d-flex align-items-start mb-4">
+            <label class="custom-switch cursor pl-0 mt-1">
+              <input id="enable-disable-pgp-{{ alias.id }}" type="checkbox" class="enable-disable-pgp custom-switch-input" data-alias="{{ alias.id }}" data-alias-email="{{ alias.email }}" {{ "checked" if alias.pgp_enabled() else "" }}>
+              <span class="custom-switch-indicator"></span>
+            </label>
+            <label for="enable-disable-pgp-{{ alias.id }}" class="ml-2">
+              PGP
+              <br>
+              <span class="small-text">It can be useful to disable PGP if the sender already encrypts the emails</span>
+            </label>
+          </div>
+        {% endif %}
+        <div class="d-flex align-items-start mb-4">
+          <label class="custom-switch cursor pl-0 mt-1">
+            <input type="checkbox" id="enable-disable-alias-{{ alias.id }}" class="enable-disable-alias custom-switch-input" data-alias="{{ alias.id }}" data-alias-email="{{ alias.email }}" {{ "checked" if alias.enabled else "" }}>
+            <span class="custom-switch-indicator"></span>
+          </label>
+          <label for="enable-disable-alias-{{ alias.id }}" class="ml-2">
+            Alias enabled
+            <br>
+            <span class="small-text">{{ "To stop receiving emails sent to this alias, you can disable the alias." if alias.enabled else "Enable the alias to start receiving emails sent to this alias." }}
+            </span>
+          </label>
+        </div>
+        <div class="mb-4">
+          {% if alias_info.latest_email_log != None %}<div>Alias created {{ alias.created_at | dt }}</div>{% endif %}
+          <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwarded,
+          <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocked,
+          <span class="alias-activity">{{ alias_info.nb_reply }}</span> sent
+          in the last 14 days
+          <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
+             class="btn btn-sm btn-link">See All &nbsp;→</a>
+        </div>
+        <div class="d-flex">
+          <div class="mr-auto">
+            <a href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id) }}"
+               id="send-email-{{ alias.id }}"
+               class="btn btn-sm btn-outline-primary {% if not alias.enabled %}disabled{% endif %} "
+               data-toggle="tooltip"
+               title="Add new contact, manage your existing contacts">
+              Contacts&nbsp; &nbsp;<i class="fe fe-send"></i>
+            </a>
+          </div>
+          <div class="btn-group ml-auto" role="group" aria-label="Basic example">
+            <a href="{{ url_for('dashboard.alias_transfer_send_route', alias_id=alias.id) }}"
+               class="btn btn-sm btn-link">
+              Transfer
+              <i class="ml-0 dropdown-icon fe fe-share-2 text-primary"></i>
+            </a>
+            <form method="post">
+              {{ csrf_form.csrf_token }}
+              <input type="hidden" name="form-name" value="delete-alias">
+              <input type="hidden" name="alias-id" value="{{ alias.id }}">
+              <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
+              <span class="btn btn-link btn-sm float-right text-danger"
+                    onclick="confirmDeleteAlias.call(this)"
+                    {% if alias.custom_domain %} data-custom-domain-trash-url="{{ alias.custom_domain.get_trash_url() }}"{% endif %}
+                    data-alias="{{ alias.id }}"
+                    data-alias-email="{{ alias.email }}">
+                Delete
+                <i class="ml-0 dropdown-icon fe fe-trash-2 text-danger"></i>
+              </span>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
