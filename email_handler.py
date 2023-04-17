@@ -161,6 +161,7 @@ from app.models import (
     MessageIDMatching,
     Notification,
     VerpType,
+    SLDomain,
 )
 from app.pgp_utils import (
     PGPException,
@@ -1018,8 +1019,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     reply_email = rcpt_to
 
+    reply_domain = get_email_domain_part(reply_email)
     # reply_email must end with EMAIL_DOMAIN
-    if not reply_email.endswith(EMAIL_DOMAIN):
+    if not reply_email.endswith(EMAIL_DOMAIN) or not SLDomain.get_by(
+        domain=reply_domain
+    ):
         LOG.w(f"Reply email {reply_email} has wrong domain")
         return False, status.E501
 
