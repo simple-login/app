@@ -32,6 +32,8 @@ class SendRequest:
     rcpt_options: Dict = {}
     is_forward: bool = False
     ignore_smtp_errors: bool = False
+    retried: int = 0
+    next_retry: Optional[int] = None
 
     def to_bytes(self) -> bytes:
         if not config.SAVE_UNSENT_DIR:
@@ -45,6 +47,8 @@ class SendRequest:
             "mail_options": self.mail_options,
             "rcpt_options": self.rcpt_options,
             "is_forward": self.is_forward,
+            "retried": self.retried,
+            "next_retry": self.next_retry,
         }
         return json.dumps(data).encode("utf-8")
 
@@ -65,6 +69,8 @@ class SendRequest:
             mail_options=decoded_data["mail_options"],
             rcpt_options=decoded_data["rcpt_options"],
             is_forward=decoded_data["is_forward"],
+            retried=decoded_data.get("retried", 0),
+            next_retry=decoded_data.get("next_retry", int(time.time())),
         )
 
 
@@ -222,6 +228,9 @@ def load_unsent_mails_from_fs_and_resend():
         except Exception as e:
             LOG.e(f"Cannot load {filename}. Error {e}")
             continue
+        if send_request.next_retry is None or send_request.next_retry > time.time():
+            LOG.e(f"Will retry in the future {filename}")
+            continue
         try:
             send_request.ignore_smtp_errors = True
             if mail_sender.send(send_request, 2):
@@ -230,6 +239,15 @@ def load_unsent_mails_from_fs_and_resend():
                     "DeliverUnsentEmail", {"delivered": "true"}
                 )
             else:
+                if send_request.retried > 10:
+                    os.unlink(full_file_path)
+                else:
+                    send_request.retried += 1
+                    send_request.next_retry = int(time.time()) + (
+                        50 * send_request.retried
+                    )
+                    with open(full_file_path, "wb") as fd:
+                        fd.write(send_request.to_bytes())
                 newrelic.agent.record_custom_event(
                     "DeliverUnsentEmail", {"delivered": "false"}
                 )
