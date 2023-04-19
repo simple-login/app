@@ -6,6 +6,7 @@ from email.utils import formataddr
 import arrow
 import pytest
 
+from app import config
 from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, ROOT_DIR
 from app.db import Session
 from app.email_utils import (
@@ -49,6 +50,7 @@ from app.models import (
     InvalidMailboxDomain,
     VerpType,
     AliasGeneratorEnum,
+    SLDomain,
 )
 
 # flake8: noqa: E101, W191
@@ -479,6 +481,20 @@ def test_generate_reply_email(flask_client):
     reply_email = generate_reply_email("", alias)
     domain = get_email_domain_part(alias.email)
     assert reply_email.endswith(domain)
+
+
+def test_generate_reply_email_with_default_reply_domain(flask_client):
+    domain = SLDomain.create(domain=random_domain(), use_as_reverse_alias=False)
+    user = create_new_user()
+    alias = Alias.create(
+        user_id=user.id,
+        email=f"test@{domain.domain}",
+        mailbox_id=user.default_mailbox_id,
+    )
+    Session.commit()
+    reply_email = generate_reply_email("test@example.org", alias)
+    domain = get_email_domain_part(reply_email)
+    assert domain == config.EMAIL_DOMAIN
 
 
 def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):

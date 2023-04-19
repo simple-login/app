@@ -1071,7 +1071,8 @@ def generate_reply_email(contact_email: str, alias: Alias) -> str:
         contact_email = convert_to_alphanumeric(contact_email)
 
     reply_domain = get_email_domain_part(alias.email)
-    if not SLDomain.get_by(domain=reply_domain):
+    sl_domain = SLDomain.get_by(domain=reply_domain)
+    if sl_domain is None or not sl_domain.use_as_reverse_alias:
         reply_domain = config.EMAIL_DOMAIN
     # not use while to avoid infinite loop
     for _ in range(1000):

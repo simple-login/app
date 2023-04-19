@@ -2871,6 +2871,10 @@ class SLDomain(Base, ModelMixin):
     # the order in which the domains are shown when user creates a custom alias
     order = sa.Column(sa.Integer, nullable=False, default=0, server_default="0")
 
+    use_as_reverse_alias = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     def __repr__(self):
         return f"<SLDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
 
