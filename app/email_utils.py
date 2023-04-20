@@ -1070,10 +1070,11 @@ def generate_reply_email(contact_email: str, alias: Alias) -> str:
         contact_email = contact_email.replace(".", "_")
         contact_email = convert_to_alphanumeric(contact_email)
 
-    reply_domain = get_email_domain_part(alias.email)
+    reply_domain = config.EMAIL_DOMAIN
     sl_domain = SLDomain.get_by(domain=reply_domain)
-    if sl_domain is None or not sl_domain.use_as_reverse_alias:
-        reply_domain = config.EMAIL_DOMAIN
+    if sl_domain and sl_domain.use_as_reverse_alias:
+        reply_domain = get_email_domain_part(alias.email)
+
     # not use while to avoid infinite loop
     for _ in range(1000):
         if include_sender_in_reverse_alias and contact_email:
