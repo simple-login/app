@@ -54,6 +54,7 @@ from app.models import (
     IgnoreBounceSender,
     InvalidMailboxDomain,
     VerpType,
+    available_sl_email,
 )
 from app.utils import (
     random_string,
@@ -1043,7 +1044,7 @@ def replace(msg: Union[Message, str], old, new) -> Union[Message, str]:
     return msg
 
 
-def generate_reply_email(contact_email: str, user: User) -> str:
+def generate_reply_email(contact_email: str, alias: Alias) -> str:
     """
     generate a reply_email (aka reverse-alias), make sure it isn't used by any contact
     """
@@ -1054,6 +1055,7 @@ def generate_reply_email(contact_email: str, user: User) -> str:
 
     include_sender_in_reverse_alias = False
 
+    user = alias.user
     # user has set this option explicitly
     if user.include_sender_in_reverse_alias is not None:
         include_sender_in_reverse_alias = user.include_sender_in_reverse_alias
@@ -1068,6 +1070,12 @@ def generate_reply_email(contact_email: str, user: User) -> str:
         contact_email = contact_email.replace(".", "_")
         contact_email = convert_to_alphanumeric(contact_email)
 
+    reply_domain = config.EMAIL_DOMAIN
+    alias_domain = get_email_domain_part(alias.email)
+    sl_domain = SLDomain.get_by(domain=alias_domain)
+    if sl_domain and sl_domain.use_as_reverse_alias:
+        reply_domain = alias_domain
+
     # not use while to avoid infinite loop
     for _ in range(1000):
         if include_sender_in_reverse_alias and contact_email:
@@ -1075,15 +1083,15 @@ def generate_reply_email(contact_email: str, user: User) -> str:
             reply_email = (
                 # do not use the ra+ anymore
                 # f"ra+{contact_email}+{random_string(random_length)}@{config.EMAIL_DOMAIN}"
-                f"{contact_email}_{random_string(random_length)}@{config.EMAIL_DOMAIN}"
+                f"{contact_email}_{random_string(random_length)}@{reply_domain}"
             )
         else:
             random_length = random.randint(20, 50)
             # do not use the ra+ anymore
             # reply_email = f"ra+{random_string(random_length)}@{config.EMAIL_DOMAIN}"
-            reply_email = f"{random_string(random_length)}@{config.EMAIL_DOMAIN}"
+            reply_email = f"{random_string(random_length)}@{reply_domain}"
 
-        if not Contact.get_by(reply_email=reply_email):
+        if available_sl_email(reply_email):
             return reply_email
 
     raise Exception("Cannot generate reply email")

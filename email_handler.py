@@ -161,6 +161,7 @@ from app.models import (
     MessageIDMatching,
     Notification,
     VerpType,
+    SLDomain,
 )
 from app.pgp_utils import (
     PGPException,
@@ -243,7 +244,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 website_email=contact_email,
                 name=contact_name,
                 mail_from=mail_from,
-                reply_email=generate_reply_email(contact_email, alias.user)
+                reply_email=generate_reply_email(contact_email, alias)
                 if is_valid_email(contact_email)
                 else NOREPLY,
                 automatic_created=True,
@@ -304,7 +305,7 @@ def get_or_create_reply_to_contact(
                 alias_id=alias.id,
                 website_email=contact_address,
                 name=contact_name,
-                reply_email=generate_reply_email(contact_address, alias.user),
+                reply_email=generate_reply_email(contact_address, alias),
                 automatic_created=True,
             )
             Session.commit()
@@ -372,7 +373,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     alias_id=alias.id,
                     website_email=contact_email,
                     name=full_address.display_name,
-                    reply_email=generate_reply_email(contact_email, alias.user),
+                    reply_email=generate_reply_email(contact_email, alias),
                     is_cc=header.lower() == "cc",
                     automatic_created=True,
                 )
@@ -945,10 +946,11 @@ def forward_email_to_mailbox(
         envelope.rcpt_options,
     )
 
+    contact_domain = get_email_domain_part(contact.reply_email)
     try:
         sl_sendmail(
             # use a different envelope sender for each forward (aka VERP)
-            generate_verp_email(VerpType.bounce_forward, email_log.id),
+            generate_verp_email(VerpType.bounce_forward, email_log.id, contact_domain),
             mailbox.email,
             msg,
             envelope.mail_options,
@@ -1017,8 +1019,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     reply_email = rcpt_to
 
+    reply_domain = get_email_domain_part(reply_email)
     # reply_email must end with EMAIL_DOMAIN
-    if not reply_email.endswith(EMAIL_DOMAIN):
+    if not reply_email.endswith(EMAIL_DOMAIN) or not SLDomain.get_by(
+        domain=reply_domain
+    ):
         LOG.w(f"Reply email {reply_email} has wrong domain")
         return False, status.E501
 
@@ -1032,7 +1037,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     alias = contact.alias
     alias_address: str = contact.alias.email
-    alias_domain = alias_address[alias_address.find("@") + 1 :]
+    alias_domain = get_email_domain_part(alias_address)
 
     # Sanity check: verify alias domain is managed by SimpleLogin
     # scenario: a user have removed a domain but due to a bug, the aliases are still there

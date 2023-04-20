@@ -1298,16 +1298,30 @@ class OauthToken(Base, ModelMixin):
         return self.expired < arrow.now()
 
 
-def generate_email(
+def available_sl_email(email: str) -> bool:
+    if (
+        Alias.get_by(email=email)
+        or Contact.get_by(reply_email=email)
+        or DeletedAlias.get_by(email=email)
+    ):
+        return False
+    return True
+
+
+def generate_random_alias_email(
     scheme: int = AliasGeneratorEnum.word.value,
     in_hex: bool = False,
-    alias_domain=config.FIRST_ALIAS_DOMAIN,
+    alias_domain: str = config.FIRST_ALIAS_DOMAIN,
+    retries: int = 10,
 ) -> str:
     """generate an email address that does not exist before
     :param alias_domain: the domain used to generate the alias.
     :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
+    :param retries: int, How many times we can try to generate an alias in case of collision
     :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
     """
+    if retries <= 0:
+        raise Exception("Cannot generate alias after many retries")
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
         random_email = name + "@" + alias_domain
@@ -1317,15 +1331,15 @@ def generate_email(
     random_email = random_email.lower().strip()
 
     # check that the client does not exist yet
-    if not Alias.get_by(email=random_email) and not DeletedAlias.get_by(
-        email=random_email
-    ):
+    if available_sl_email(random_email):
         LOG.d("generate email %s", random_email)
         return random_email
 
     # Rerun the function
     LOG.w("email %s already exists, generate a new email", random_email)
-    return generate_email(scheme=scheme, in_hex=in_hex)
+    return generate_random_alias_email(
+        scheme=scheme, in_hex=in_hex, retries=retries - 1
+    )
 
 
 class Alias(Base, ModelMixin):
@@ -1524,7 +1538,7 @@ class Alias(Base, ModelMixin):
             suffix = user.get_random_alias_suffix()
             email = f"{prefix}.{suffix}@{config.FIRST_ALIAS_DOMAIN}"
 
-            if not cls.get_by(email=email) and not DeletedAlias.get_by(email=email):
+            if available_sl_email(email):
                 break
 
         return Alias.create(
@@ -1553,7 +1567,7 @@ class Alias(Base, ModelMixin):
 
         if user.default_alias_custom_domain_id:
             custom_domain = CustomDomain.get(user.default_alias_custom_domain_id)
-            random_email = generate_email(
+            random_email = generate_random_alias_email(
                 scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
             )
         elif user.default_alias_public_domain_id:
@@ -1561,12 +1575,12 @@ class Alias(Base, ModelMixin):
             if sl_domain.premium_only and not user.is_premium():
                 LOG.w("%s not premium, cannot use %s", user, sl_domain)
             else:
-                random_email = generate_email(
+                random_email = generate_random_alias_email(
                     scheme=scheme, in_hex=in_hex, alias_domain=sl_domain.domain
                 )
 
         if not random_email:
-            random_email = generate_email(scheme=scheme, in_hex=in_hex)
+            random_email = generate_random_alias_email(scheme=scheme, in_hex=in_hex)
 
         alias = Alias.create(
             user_id=user.id,
@@ -2865,6 +2879,10 @@ class SLDomain(Base, ModelMixin):
 
     # the order in which the domains are shown when user creates a custom alias
     order = sa.Column(sa.Integer, nullable=False, default=0, server_default="0")
+
+    use_as_reverse_alias = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     def __repr__(self):
         return f"<SLDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"

@@ -8,7 +8,7 @@ from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN, NOREPLY
 from app.db import Session
 from app.email_utils import parse_full_address, generate_reply_email
 from app.models import (
-    generate_email,
+    generate_random_alias_email,
     Alias,
     Contact,
     Mailbox,
@@ -22,13 +22,13 @@ from tests.utils import login, create_new_user, random_token
 
 
 def test_generate_email(flask_client):
-    email = generate_email()
+    email = generate_random_alias_email()
     assert email.endswith("@" + EMAIL_DOMAIN)
 
     with pytest.raises(ValueError):
         UUID(email.split("@")[0], version=4)
 
-    email_uuid = generate_email(scheme=2)
+    email_uuid = generate_random_alias_email(scheme=2)
     assert UUID(email_uuid.split("@")[0], version=4)
 
 
@@ -312,6 +312,6 @@ def test_create_contact_for_noreply(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=NOREPLY,
-        reply_email=generate_reply_email(NOREPLY, user),
+        reply_email=generate_reply_email(NOREPLY, alias),
     )
     assert contact.website_email == NOREPLY
