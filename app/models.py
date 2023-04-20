@@ -2862,7 +2862,7 @@ class SLDomain(Base, ModelMixin):
         sa.ForeignKey(Partner.id, ondelete="cascade"),
         nullable=True,
         default=None,
-        sever_default="NULL",
+        server_default="NULL",
     )
 
     # if enabled, do not show this domain when user creates a custom alias
