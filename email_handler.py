@@ -1020,12 +1020,13 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     reply_email = rcpt_to
 
     reply_domain = get_email_domain_part(reply_email)
-    # reply_email must end with EMAIL_DOMAIN
-    if not reply_email.endswith(EMAIL_DOMAIN) or not SLDomain.get_by(
-        domain=reply_domain
-    ):
-        LOG.w(f"Reply email {reply_email} has wrong domain")
-        return False, status.E501
+
+    # reply_email must end with EMAIL_DOMAIN or a domain that can be used as reverse alias domain
+    if not reply_email.endswith(EMAIL_DOMAIN):
+        sl_domain: SLDomain = SLDomain.get_by(domain=reply_domain)
+        if sl_domain is None or not sl_domain.use_as_reverse_alias:
+            LOG.w(f"Reply email {reply_email} has wrong domain")
+            return False, status.E501
 
     # handle case where reply email is generated with non-allowed char
     reply_email = normalize_reply_email(reply_email)
