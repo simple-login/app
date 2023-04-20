@@ -298,7 +298,9 @@ class HibpNotifiedAlias(Base, ModelMixin):
     """
 
     __tablename__ = "hibp_notified_alias"
-    alias_id = sa.Column(sa.ForeignKey("alias.id", ondelete="cascade"), nullable=False)
+    alias_id = sa.Column(
+        sa.ForeignKey("alias.id", ondelete="cascade"), nullable=False, index=True
+    )
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=False)
 
     notified_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
@@ -426,7 +428,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     # newsletter is sent to this address
     newsletter_alias_id = sa.Column(
-        sa.ForeignKey("alias.id", ondelete="SET NULL"), nullable=True, default=None
+        sa.ForeignKey("alias.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+        index=True,
     )
 
     # whether to include the sender address in reverse-alias
@@ -564,7 +569,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     @classmethod
     def create(cls, email, name="", password=None, from_partner=False, **kwargs):
-        user: User = super(User, cls).create(email=email, name=name, **kwargs)
+        user: User = super(User, cls).create(email=email, name=name[:100], **kwargs)
 
         if password:
             user.set_password(password)
@@ -1609,7 +1614,9 @@ class ClientUser(Base, ModelMixin):
     client_id = sa.Column(sa.ForeignKey(Client.id, ondelete="cascade"), nullable=False)
 
     # Null means client has access to user original email
-    alias_id = sa.Column(sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=True)
+    alias_id = sa.Column(
+        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=True, index=True
+    )
 
     # user can decide to send to client another name
     name = sa.Column(
@@ -2139,7 +2146,9 @@ class AliasUsedOn(Base, ModelMixin):
         sa.UniqueConstraint("alias_id", "hostname", name="uq_alias_used"),
     )
 
-    alias_id = sa.Column(sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
+    alias_id = sa.Column(
+        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+    )
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
     alias = orm.relationship(Alias)
@@ -3384,7 +3393,7 @@ class PartnerSubscription(Base, ModelMixin):
     )
 
     # when the partner subscription ends
-    end_at = sa.Column(ArrowType, nullable=False)
+    end_at = sa.Column(ArrowType, nullable=False, index=True)
 
     partner_user = orm.relationship(PartnerUser)
 
