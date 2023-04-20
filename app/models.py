@@ -569,7 +569,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     @classmethod
     def create(cls, email, name="", password=None, from_partner=False, **kwargs):
-        user: User = super(User, cls).create(email=email, name=name, **kwargs)
+        user: User = super(User, cls).create(email=email, name=name[:100], **kwargs)
 
         if password:
             user.set_password(password)
