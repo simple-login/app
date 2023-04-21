@@ -1024,7 +1024,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # reply_email must end with EMAIL_DOMAIN or a domain that can be used as reverse alias domain
     if not reply_email.endswith(EMAIL_DOMAIN):
         sl_domain: SLDomain = SLDomain.get_by(domain=reply_domain)
-        if sl_domain is None or not sl_domain.use_as_reverse_alias:
+        if sl_domain is None:
             LOG.w(f"Reply email {reply_email} has wrong domain")
             return False, status.E501
 
