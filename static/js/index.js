@@ -256,17 +256,27 @@ new Vue({
   el: '#filter-app',
   delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
   data: {
-    showFilter: false
+    showFilter: false,
+    showStats: false
   },
   methods: {
     async toggleFilter() {
       let that = this;
       that.showFilter = !that.showFilter;
       store.set('showFilter', that.showFilter);
+    },
+
+    async toggleStats() {
+      let that = this;
+      that.showStats = !that.showStats;
+      store.set('showStats', that.showStats);
     }
   },
   async mounted() {
     if (store.get("showFilter"))
       this.showFilter = true;
+
+    if (store.get("showStats"))
+      this.showStats = true;
   }
 });
