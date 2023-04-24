@@ -463,6 +463,27 @@
                  onblur="handleDisplayNameBlur({{ alias.id }})">
         </div>
       </div>
+      <div class="small-text">
+          Alias used on
+        </div>
+        <div class="d-flex">
+          <div class="flex-grow-1 mr-2">
+            <select id="alias-used-on-{{ alias.id }}"
+                    data-width="100%"
+                    class="alias-used-on-select"
+                    multiple
+                    name="alias-used-on"
+                    onchange="handleAliasUsedOnChange('{{ alias.id }}', '{{ alias.email }}')">
+              {% for hostname in all_alias_used_on %}
+
+                <option value="{{ hostname }}" {% if hostname in alias_info.alias_used_on %}
+                   selected {% endif %}>
+                  {{ hostname | e }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
       {% if alias.mailbox_support_pgp() %}
 
         <div class="small-text mt-2"

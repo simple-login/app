@@ -24,7 +24,7 @@ from app.errors import (
     ErrContactAlreadyExists,
     ErrAddressInvalid,
 )
-from app.models import Alias, Contact, Mailbox, AliasMailbox
+from app.models import Alias, Contact, Mailbox, AliasMailbox, AliasUsedOn
 
 
 @deprecated
@@ -101,6 +101,7 @@ def get_aliases_v2():
                     - email
                     - name
                     - reverse_alias
+            - alias_used_on
 
 
     """
@@ -308,6 +309,21 @@ def update_alias(alias_id):
             else:
                 AliasMailbox.create(alias_id=alias.id, mailbox_id=mailbox.id)
         # <<< END update alias mailboxes >>>
+
+        changed = True
+
+    if "alias_used_on" in data:
+        alias_used_on = data.get("alias_used_on") if type(data.get("alias_used_on")) == list else list(data.get("alias_used_on"))
+
+        # <<< update alias alias_used_on >>>
+        # first remove all existing alias-alias_used_on links
+        AliasUsedOn.filter_by(alias_id=alias.id).delete()
+        Session.flush()
+
+        # then add all new alias_used_on
+        for hostname in alias_used_on:
+            AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=user.id)
+        # <<< END update alias alias_used_on >>>
 
         changed = True
 

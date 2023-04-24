@@ -1,4 +1,5 @@
 $('.mailbox-select').multipleSelect();
+$('.alias-used-on-select').multipleSelect();
 
 function confirmDeleteAlias() {
   let that = $(this);
@@ -242,6 +243,33 @@ async function handleDisplayNameChange(aliasId, aliasEmail) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
   }
 
+}
+
+async function handleAliasUsedOnChange(aliasId, aliasEmail) {
+  const selectedOptions = document.getElementById(`alias-used-on-${aliasId}`).selectedOptions;
+  const hostnames = Array.from(selectedOptions).map((selectedOption) => selectedOption.value);
+
+  console.log(hostnames);
+
+  try {
+    let res = await fetch(`/api/aliases/${aliasId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        "alias_used_on": hostnames,
+      }),
+    });
+
+      if (res.ok) {
+        toastr.success(`Alias used on updated for ${aliasEmail}`);
+      } else {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+      }
+    } catch (e) {
+      toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+    }
 }
 
 function handleDisplayNameFocus(aliasId) {
