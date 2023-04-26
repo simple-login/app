@@ -179,7 +179,7 @@ def index():
 
     directory_id = None
     if alias_filter and alias_filter.startswith("directory:"):
-        directory_id = int(alias_filter[len("directory:"):])
+        directory_id = int(alias_filter[len("directory:") :])
 
     alias_infos = get_alias_infos_with_pagination_v3(
         current_user,

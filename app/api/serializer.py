@@ -15,7 +15,7 @@ from app.models import (
     AliasMailbox,
     CustomDomain,
     User,
-    AliasUsedOn
+    AliasUsedOn,
 )
 
 
@@ -299,9 +299,8 @@ def get_alias_info_v2(alias: Alias, mailbox=None) -> AliasInfo:
     alias_info.latest_contact = latest_contact
     alias_info.latest_email_log = latest_email_log
 
-    q_alias_used_on = (
-        Session.query(AliasUsedOn.hostname)
-        .filter(AliasUsedOn.alias_id == alias.id)
+    q_alias_used_on = Session.query(AliasUsedOn.hostname).filter(
+        AliasUsedOn.alias_id == alias.id
     )
 
     alias_info.alias_used_on = list(map(lambda res: res.hostname, q_alias_used_on))
@@ -408,7 +407,11 @@ def construct_alias_query(user: User):
         .options(joinedload(Alias.custom_domain))
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
-        .join(alias_used_on_subquery, Alias.id == alias_used_on_subquery.c.id, isouter=True)
+        .join(
+            alias_used_on_subquery,
+            Alias.id == alias_used_on_subquery.c.id,
+            isouter=True,
+        )
         .filter(Alias.id == alias_activity_subquery.c.id)
         .filter(Alias.id == alias_contact_subquery.c.id)
         .filter(

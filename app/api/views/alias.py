@@ -313,7 +313,11 @@ def update_alias(alias_id):
         changed = True
 
     if "alias_used_on" in data:
-        alias_used_on = data.get("alias_used_on") if type(data.get("alias_used_on")) == list else list(data.get("alias_used_on"))
+        alias_used_on = (
+            data.get("alias_used_on")
+            if type(data.get("alias_used_on")) == list
+            else list(data.get("alias_used_on"))
+        )
 
         # <<< update alias alias_used_on >>>
         # first remove all existing alias-alias_used_on links
