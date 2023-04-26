@@ -473,7 +473,9 @@
                     class="alias-used-on-select"
                     multiple
                     name="alias-used-on"
-                    onchange="handleAliasUsedOnChange('{{ alias.id }}', '{{ alias.email }}')">
+                    onchange="handleAliasUsedOnChange('{{ alias.id }}', '{{ alias.email }}')"
+                    placeholder="Websites eg. simplelogin.com"
+                    data-container="alias-used-on-{{ alias.id }}">
               {% for hostname in all_alias_used_on %}
 
                 <option value="{{ hostname }}" {% if hostname in alias_info.alias_used_on %}

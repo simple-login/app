@@ -1,5 +1,9 @@
 $('.mailbox-select').multipleSelect();
-$('.alias-used-on-select').multipleSelect();
+$('.alias-used-on-select').multipleSelect({
+  ellipsis: true,
+  filter: true,
+  onFilter: handleAliasUsedOnFilter,
+});
 
 function confirmDeleteAlias() {
   let that = $(this);
@@ -249,8 +253,6 @@ async function handleAliasUsedOnChange(aliasId, aliasEmail) {
   const selectedOptions = document.getElementById(`alias-used-on-${aliasId}`).selectedOptions;
   const hostnames = Array.from(selectedOptions).map((selectedOption) => selectedOption.value);
 
-  console.log(hostnames);
-
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
@@ -270,6 +272,27 @@ async function handleAliasUsedOnChange(aliasId, aliasEmail) {
     } catch (e) {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
     }
+}
+async function handleAliasUsedOnFilter(text) {
+  const options_data = $(this)[0].data;
+  const no_option_visible = options_data.every((opt) => opt.visible === false );
+
+  // Just a workaround to get the id of the select, we set the "data-container" attribute, which is reflected in $(this), with the same value
+  const select_id = $(this)[0].container;
+
+  $("div.ms-parent.alias-used-on-select").off("keypress");
+  $("div.ms-parent.alias-used-on-select").on("keypress", function (event) {
+    // If press enter, add the value of the filter as an option
+    if (event.keyCode === 13 && no_option_visible) {
+     const $opt = $('<option />', {
+        value: text,
+        text: text,
+        selected: true,
+      });
+     $(`#${select_id}`).append($opt).multipleSelect('refresh');
+     $(`#${select_id}`).trigger("change");
+    }
+  });
 }
 
 function handleDisplayNameFocus(aliasId) {
