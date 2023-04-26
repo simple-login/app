@@ -292,11 +292,14 @@ async function handleAliasUsedOnFilter(text) {
     // If press enter, add the value of the filter as an option
     if (event.keyCode === 13 && no_option_visible) {
      const $opt = $('<option />', {
-        value: text,
-        text: text,
-        selected: true,
-      });
-     $(`#${select_id}`).append($opt).multipleSelect('refresh');
+       value: text,
+       text: text,
+     });
+
+     // We need to add the options to all select here,
+     // otherwise only the current select will have the new option
+     $(`select.alias-used-on-select#${select_id}`).append($opt.prop('selected', true)).multipleSelect('refresh');
+     $(`select.alias-used-on-select:not(#${select_id})`).append($opt.prop('selected', false)).multipleSelect('refresh');
      $(`#${select_id}`).trigger("change");
     }
   });
