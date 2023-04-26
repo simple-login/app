@@ -3,8 +3,15 @@ $('.alias-used-on-select').multipleSelect({
   ellipsis: true,
   filter: true,
   onFilter: handleAliasUsedOnFilter,
+  formatNoMatchesFound: formatNoMatchesFound,
 });
 
+// This function doesn't seem to be documented but can be found in the code here
+// https://github.com/wenzhixin/multiple-select/blob/973e585eff30e39e66f1b01ccd04e0bda4fb6862/src/MultipleSelect.js#L387
+// It is the text displayed, when there is no results after filtering.
+function formatNoMatchesFound () {
+  return 'No match found. Press Enter to add this website.';
+}
 function confirmDeleteAlias() {
   let that = $(this);
   let alias = that.data("alias-email");

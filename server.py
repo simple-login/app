@@ -837,7 +837,7 @@ def register_custom_commands(app):
 
         for user_id in user_ids:
             user = User.get(user_id)
-            # refetch newsletter
+            # fetch newsletter again
             newsletter = Newsletter.get(newsletter_id)
 
             if not user:
