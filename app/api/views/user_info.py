@@ -1,4 +1,5 @@
 import base64
+import dataclasses
 from io import BytesIO
 from typing import Optional
 
@@ -7,6 +8,7 @@ from flask import jsonify, g, request, make_response
 from app import s3, config
 from app.api.base import api_bp, require_api_auth
 from app.config import SESSION_COOKIE_NAME
+from app.dashboard.views.index import get_stats
 from app.db import Session
 from app.models import ApiKey, File, PartnerUser, User
 from app.proton.utils import get_proton_partner
@@ -136,3 +138,22 @@ def logout():
     response.delete_cookie(SESSION_COOKIE_NAME)
 
     return response
+
+
+@api_bp.route("/stats")
+@require_api_auth
+def user_stats():
+    """
+    Return stats
+
+    Output as json
+    - nb_alias
+    - nb_forward
+    - nb_reply
+    - nb_block
+
+    """
+    user = g.user
+    stats = get_stats(user)
+
+    return jsonify(dataclasses.asdict(stats))

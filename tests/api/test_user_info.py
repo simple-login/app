@@ -129,3 +129,12 @@ def test_change_name(flask_client):
     assert r.json["name"] == "new name"
 
     assert user.name == "new name"
+
+
+def test_stats(flask_client):
+    login(flask_client)
+
+    r = flask_client.get("/api/stats")
+
+    assert r.status_code == 200
+    assert r.json == {"nb_alias": 1, "nb_block": 0, "nb_forward": 0, "nb_reply": 0}
