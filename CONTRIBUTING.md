@@ -34,7 +34,7 @@ poetry install
 On Mac, sometimes you might need to install some other packages via `brew`:
 
 ```bash
-brew install pkg-config libffi openssl postgresql
+brew install pkg-config libffi openssl postgresql@13
 ```
 
 You also need to install `gpg` tool, on Mac it can be done with:
