@@ -68,9 +68,14 @@ def coupon_route():
                 )
                 return redirect(request.url)
 
-            coupon.used_by_user_id = current_user.id
-            coupon.used = True
-            Session.commit()
+            updated = (
+                Session.query(Coupon)
+                .filter_by(code=code, used=False)
+                .update({"used_by_user_id": current_user.id, "used": True})
+            )
+            if updated != 1:
+                flash("Coupon is not valid", "error")
+                return redirect(request.url)
 
             manual_sub: ManualSubscription = ManualSubscription.get_by(
                 user_id=current_user.id
