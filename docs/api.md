@@ -694,7 +694,7 @@ Return 200 and `existed=true` if contact is already added.
 
 It can return 403 with an error if the user cannot create reverse alias.
 
-``json
+```json
 {
   "error": "Please upgrade to create a reverse-alias"
 }
