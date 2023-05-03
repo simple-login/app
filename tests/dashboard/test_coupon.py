@@ -5,7 +5,7 @@ from tests.utils import login
 
 
 def test_use_coupon(flask_client):
-    login(flask_client)
+    user = login(flask_client)
     code = random_string(10)
     Coupon.create(code=code, nb_year=1, commit=True)
 
@@ -14,5 +14,7 @@ def test_use_coupon(flask_client):
         data={"code": code},
     )
 
-    assert r.status_code == 200
-    assert Coupon.get_by(code=code).used
+    assert r.status_code == 302
+    coupon = Coupon.get_by(code=code)
+    assert coupon.used
+    assert coupon.used_by_user_id == user.id
