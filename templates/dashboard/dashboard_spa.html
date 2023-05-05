@@ -1,0 +1,275 @@
+{% extends "default.html" %}
+
+{% set active_page = "dashboard" %}
+{% block head %}
+
+  <style>
+    .alias-activity {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .btn-group-border-left {
+      border-left: 1px #fbfbfb4f solid;
+    }
+
+    em {
+      padding: 0px;
+    }
+
+    {# CSS to change collapse button display from https://stackoverflow.com/a/31967516/1428034 #}
+
+    [data-toggle="collapse"].collapsed .if-not-collapsed {
+      display: none;
+    }
+
+    [data-toggle="collapse"]:not(.collapsed) .if-collapsed {
+      display: none;
+    }
+
+    .alias-disabled {
+      opacity: 0.6;
+    }
+
+  </style>
+{% endblock %}
+{% block title %}Aliases{% endblock %}
+{% block default_content %}
+
+  <div id="dashboard-app">
+    <!-- Controls: buttons & search -->
+    <div>
+      <div class="row mb-3">
+        <div class="col d-flex flex-wrap justify-content-between">
+          <div class="mb-1">
+            <div class="btn-group" role="group">
+              <button class="btn btn-primary mr-2">
+                <i class="fa fa-plus"></i> New custom alias
+              </button>
+            </div>
+          </div>
+          <div>
+            <div class="btn-group">
+              <a @click="toggleStats()" class="btn btn-outline-secondary">
+                <span v-if="!showStats">
+                  <i class="fe fe-chevrons-down"></i>
+                  Show stats
+                </span>
+                <span v-else>
+                  <i class="fe fe-chevrons-up"></i>
+                  Hide stats
+                </span>
+              </a>
+            </div>
+            <div class="btn-group">
+              <a @click="toggleFilter()" class="btn btn-outline-secondary">
+                <span v-if="!showFilter">
+                  <i class="fe fe-chevrons-down"></i>
+                  Show filters
+                </span>
+                <span v-else>
+                  <i class="fe fe-chevrons-up"></i>
+                  Hide filters
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- TODO Global Stats -->
+      <div class="row" v-if="showStats"></div>
+      <!-- END Global Stats -->
+      <div class="row mb-2" v-if="showFilter" id="filter-control">
+        <!-- Filter Control -->
+        <div class="col d-flex flex-wrap">
+          <div class="flex-grow-0 mr-2">
+            <select name="filter"
+                    v-model="filter"
+                    @change="loadAliases"
+                    class="form-control mr-3 shadow flex-grow-0">
+              <option value="">
+                All aliases
+              </option>
+              <option value="pinned">
+                Pinned aliases
+              </option>
+              <option value="enabled">
+                Enabled aliases
+              </option>
+              <option value="disabled">
+                Disabled aliases
+              </option>
+            </select>
+          </div>
+          <!-- Search -->
+          <div class="flex-grow-1">
+            <input type="search"
+                   name="query"
+                   v-model="searchString"
+                   placeholder="Enter to search for alias"
+                   class="form-control shadow mr-2"
+                   @keyup.enter="loadAliases">
+          </div>
+          <div v-if="searchString || filter" class="ml-2">
+            <a @click="resetFilter()" class="btn btn-outline-secondary">Reset</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END Controls: buttons & search -->
+    <!-- Alias list -->
+    <div id="alias-list" class="row">
+      <div v-for="(alias, index) in aliasesArray"
+           :key="alias.id"
+           class="col-12 col-md-6">
+        <!-- TODO highlight newly created alias -->
+        <div class="card p-4 shadow-sm"
+             :class="{ 'alias-disabled': !alias.enabled }">
+          <div class="d-flex justify-space-between">
+            <div class="d-flex">
+              <h5 class="clipboard mb-0 text-break d-inline-block cursor"
+                  :data-toggle="alias.enabled ? 'tooltip' : null"
+                  title="Click to copy"
+                  :data-clipboard-text="alias.enabled ? alias.email : null">
+                [[ alias.email ]]
+              </h5>
+              <span v-if="alias.pinned"
+                    data-toggle="tooltip"
+                    title="Click to unpin"
+                    @click="handlePin(alias)"
+                    class="cursor ml-2">
+                <i class="fa fa-thumb-tack"></i>
+              </span>
+            </div>
+            <div class="col text-right">
+              <label class="custom-switch cursor"
+                     data-toggle="tooltip"
+                     :title="alias.enabled ? 'Disable alias - Stop receiving emails sent to this alias' : 'Enable alias - Start receiving emails sent to this alias'">
+                <input type="checkbox"
+                       class="enable-disable-alias custom-switch-input"
+                       v-model="alias.enabled"
+                       @change="toggleAlias(alias)">
+                <span class="custom-switch-indicator"></span>
+              </label>
+            </div>
+          </div>
+          <!-- Email Activity -->
+          <div v-if="!alias.enabled" class="small-text mb-4">
+            Alias is disabled, you will not receive any email from this alias.
+          </div>
+          <div v-else-if="alias.latest_activity" class="small-text mb-4">
+            [[ alias.latest_activity.contact.email ]]
+            <span v-if="alias.latest_activity.action === 'bounched'">
+              <i class="fa fa-exclamation-triangle mr-2"></i> Cannot be forwarded to your mailbox.
+            </span>
+            <span v-if="alias.latest_activity.action === 'block'">
+              <i class="fa fa-ban mr-2"></i> Blocked.
+            </span>
+            <!-- TODO improve date formatting -->
+            Created [[ alias.creation_date ]].
+          </div>
+          <div v-else class="small-text mb-4">
+            No emails received/sent in the last 14 days.
+            Created [[ alias.creation_date ]].
+          </div>
+          <!-- END Email Activity -->
+          <div class="small-text mb-4">
+            <label class="mb-0" :for="`note-${alias.id}`">Alias description</label>
+            <textarea v-model="alias.note" name="note" class="form-control" rows="2" placeholder="e.g. where the alias is used or why is it created" @change="handleNoteChange(alias)">[[ alias.note ]]</textarea>
+          </div>
+          <div v-if="mailboxes && mailboxes.length > 1" class="mb-4">
+            <label class="small-text mb-0" :for="`mailbox-${alias.id}`">Current mailbox</label>
+            <div class="d-flex">
+              <!-- not using Vue's event @change below for compatibility with jquery multipleSelect plugin -->
+              <select required
+                      :id="`mailbox-${alias.id}`"
+                      class="mailbox-select flex-grow-1"
+                      name="mailbox"
+                      :data-alias-id="alias.id"
+                      :data-alias-email="alias.email"
+                      onchange="handleMailboxChange(event)"
+                      multiple>
+                <option v-for="mailbox in mailboxes"
+                        :value="mailbox.id"
+                        :key="mailbox.id"
+                        :selected="alias.mailboxes.find(m => m.id === mailbox.id)">
+                  [[ mailbox.email ]]
+                </option>
+              </select>
+            </div>
+            <!-- TODO mailbox owned by another user -->
+          </div>
+          <div class="small-text mb-2">
+            <label class="mb-0" :for="`alias-name-${alias.id}`">Display name</label>
+            <input :id="`alias-name-${alias.id}`"
+                   type="text"
+                   class="form-control"
+                   placeholder="e.g. John Doe"
+                   v-model="alias.name"
+                   @change="handleDisplayNameChange(alias)">
+            <div>
+              'From: [[ alias.name ]] &lt;[[ alias.email ]]&gt;' will be in the email header when you send an email from this alias.
+            </div>
+          </div>
+          <div v-if="alias.support_pgp" class="d-flex mb-2">
+            <label class="custom-switch cursor pl-0">
+              <input type="checkbox"
+                     class="custom-switch-input"
+                     v-model="alias.disable_pgp"
+                     :true-value="false"
+                     :false-value="true"
+                     @change="handlePgpToggle(alias)">
+              <span class="custom-switch-indicator"></span>
+            </label>
+            <label for="`enable-disable-pgp-${alias.id}`" class="ml-2 mb-0">PGP</label>
+          </div>
+          <div class="d-flex">
+            <button class="btn btn-sm"
+                    :class="[alias.pinned ? 'btn-primary' : 'btn-outline-primary']"
+                    @click="handlePin(alias)">
+              <i class="fa fa-thumb-tack"></i>
+              <span v-if="alias.pinned">Pinned</span>
+              <span v-else>Pin</span>
+            </button>
+            <div class="ml-auto d-flex">
+              <button class="btn btn-link btn-sm">
+                <i class="fe fe-share-2"></i>
+                Transfer
+              </button>
+              <!-- TODO aliasDomainTrashUrl -->
+              <button class="btn btn-link text-danger btn-sm ml-1"
+                      @click="handleDeleteAliasClick(alias)">
+                <i class="fa fa-trash"></i>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END Alias list -->
+    <div v-if="isFetchingAlias" class="row">
+      <div class="col-12 text-center">
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+    </div>
+    <div v-if="!isLastPage && !isFetchingAlias" class="row">
+      <!-- load more aliases button -->
+      <div class="col-12 col-md-6 mb-2">
+        <button class="btn btn-outline-primary btn-block"
+                @click="loadMoreAliases"
+                :disabled="isLoadingMoreAliases">
+          <span class="fe fe-chevron-down"></span>
+          Load more aliases
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block script %}
+
+  <script src="/static/js/dashboard-spa.js"></script>
+  <script>// TODO show intro tutorial with introJs()</script>
+{% endblock %}
