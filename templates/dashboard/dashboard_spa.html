@@ -43,7 +43,9 @@
         <div class="col d-flex flex-wrap justify-content-between">
           <div class="mb-1">
             <div class="btn-group" role="group">
-              <button class="btn btn-primary mr-2">
+              <button @click="handleNewCustomAliasClick"
+                      class="btn btn-primary mr-2"
+                      :disabled="isLoading || !canCreateAlias">
                 <i class="fa fa-plus"></i> New custom alias
               </button>
             </div>
@@ -174,7 +176,7 @@
           </div>
           <!-- END Email Activity -->
           <div class="small-text mb-4">
-            <label class="mb-0" :for="`note-${alias.id}`">Alias description</label>
+            <label class="mb-0" :for="`note-${alias.id}`">Note</label>
             <textarea v-model="alias.note" name="note" class="form-control" rows="2" placeholder="e.g. where the alias is used or why is it created" @change="handleNoteChange(alias)">[[ alias.note ]]</textarea>
           </div>
           <div v-if="mailboxes && mailboxes.length > 1" class="mb-4">
@@ -199,11 +201,12 @@
             </div>
             <!-- TODO mailbox owned by another user -->
           </div>
-          <div class="small-text mb-2">
+          <div class="small-text mb-4">
             <label class="mb-0" :for="`alias-name-${alias.id}`">Display name</label>
             <input :id="`alias-name-${alias.id}`"
                    type="text"
                    class="form-control"
+                   name="display-name"
                    placeholder="e.g. John Doe"
                    v-model="alias.name"
                    @change="handleDisplayNameChange(alias)">
@@ -264,6 +267,46 @@
           <span class="fe fe-chevron-down"></span>
           Load more aliases
         </button>
+      </div>
+    </div>
+    <!-- HTML for create alias modal -->
+    <div style="display: none">
+      <div ref="createAliasModal">
+        <label class="mb-0" for="create-alias-prefix-input">Alias email</label>
+        <div class="row mb-2">
+          <div class="col-sm-6 pr-sm-1" style="min-width: 4em">
+            <input v-model="aliasPrefixInput"
+                   @input="handleAliasPrefixInput"
+                   type="text"
+                   id="create-alias-prefix-input"
+                   name="alias-prefix"
+                   autofocus
+                   class="form-control"
+                   placeholder="newsletter-123_xyz"
+                   required>
+          </div>
+          <div class="col-sm-6 pl-sm-1">
+            <select class="form-control"
+                    v-model="aliasSelectedSignedSuffix"
+                    name="alias-suffix"
+                    required>
+              <option v-for="suffix in aliasSuffixes"
+                      :key="suffix.signed_suffix"
+                      :value="suffix.signed_suffix">
+                [[ suffix.suffix ]]
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="row text-danger"
+             style="font-size: 12px"
+             v-if="aliasPrefixError">
+          <div class="col">[[ aliasPrefixError ]]</div>
+        </div>
+        <label class="w-100">
+          Note (optional)
+          <textarea v-model="aliasNoteInput" name="note" class="form-control" rows="2" placeholder="e.g. where the alias is used or why is it created"></textarea>
+        </label>
       </div>
     </div>
   </div>

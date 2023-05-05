@@ -1,3 +1,7 @@
+// only allow lowercase letters, numbers, dots (.), dashes (-) and underscores (_)
+// don't allow dot at the start or end or consecutive dots
+const ALIAS_PREFIX_REGEX = /^(?!\.)(?!.*\.$)(?!.*\.\.)[0-9a-z-_.]+$/;
+
 new Vue({
   el: '#dashboard-app',
   delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
@@ -6,6 +10,16 @@ new Vue({
     showStats: false,
 
     mailboxes: [],
+
+    // variables for creating alias
+    canCreateAlias: true,
+    isLoading: true,
+    aliasPrefixInput: "",
+    aliasPrefixError: "",
+    aliasSuffixes: [],
+    aliasSelectedSignedSuffix: "",
+    aliasNoteInput: "",
+    defaultMailboxId: "",
 
     // variables for aliases list
     isFetchingAlias: true,
@@ -35,9 +49,12 @@ new Vue({
 
   },
   methods: {
-    // initialize mailboxes and aliases
+    // initialize mailboxes and alias options and aliases
     async loadInitialData() {
+      this.isLoading = true;
       await this.loadMailboxes();
+      await this.loadAliasOptions();
+      this.isLoading = false;
       await this.loadAliases();
     },
 
@@ -47,12 +64,31 @@ new Vue({
         if (res.ok) {
           const result = await res.json();
           this.mailboxes = result.mailboxes;
+          this.defaultMailboxId = this.mailboxes.find((mailbox) => mailbox.default).id;
         } else {
           throw new Error("Could not load mailboxes");
         }
-      } catch (e) {
+      } catch (err) {
         toastr.error("Sorry for the inconvenience! Could you try refreshing the page? ", "Could not load mailboxes");
       }
+    },
+
+    async loadAliasOptions() {
+      this.isLoading = true;
+      try {
+        const res = await fetch("/api/v5/alias/options");
+        if (res.ok) {
+          const aliasOptions = await res.json();
+          this.aliasSuffixes = aliasOptions.suffixes;
+          this.aliasSelectedSignedSuffix = this.aliasSuffixes[0].signed_suffix;
+          this.canCreateAlias = aliasOptions.can_create;
+        } else {
+          throw new Error("Could not load alias options");
+        }
+      } catch (err) {
+        toastr.error("Sorry for the inconvenience! Could you try refreshing the page? ", "Could not load alias options");
+      }
+      this.isLoading = false;
     },
 
     async loadAliases() {
@@ -66,7 +102,7 @@ new Vue({
       this.$nextTick(() => {
         $('.mailbox-select').multipleSelect();
         $('.mailbox-select').removeClass('mailbox-select');
-      })
+      });
     },
 
     async fetchAlias(page, query) {
@@ -86,7 +122,7 @@ new Vue({
         } else {
           throw new Error("Aliases could not be loaded");
         }
-      } catch (e) {
+      } catch (err) {
         toastr.error("Sorry for the inconvenience! Could you try refreshing the page? ", "Aliases could not be loaded");
         this.isFetchingAlias = false;
         return [];
@@ -117,7 +153,7 @@ new Vue({
           throw new Error("Could not disable/enable alias");
         }
 
-      } catch (e) {
+      } catch (err) {
         alias.enabled = !alias.enabled;
         toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Could not disable/enable alias");
       }
@@ -136,13 +172,13 @@ new Vue({
         });
 
         if (res.ok) {
-          toastr.success(`Description saved for ${alias.email}`);
+          toastr.success(`Note saved for ${alias.email}`);
         } else {
-          throw new Error("Could not save alias description");
+          throw new Error("Note could not be saved");
         }
 
-      } catch (e) {
-        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Could not save alias description");
+      } catch (err) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Note could not be saved");
       }
     },
 
@@ -164,7 +200,7 @@ new Vue({
           throw new Error("Could not save Display name");
         }
 
-      } catch (e) {
+      } catch (err) {
         toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Could not save Display name")
       }
 
@@ -291,6 +327,8 @@ new Vue({
           throw new Error("Alias could not be deleted");
         }
 
+        await this.loadAliasOptions();
+
       } catch (err) {
         toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Alias could not be deleted");
       }
@@ -368,7 +406,7 @@ new Vue({
       this.$nextTick(() => {
         $('.mailbox-select').multipleSelect();
         $('.mailbox-select').removeClass('mailbox-select');
-      })
+      });
 
       this.isLoadingMoreAliases = false;
     },
@@ -377,6 +415,90 @@ new Vue({
       this.searchString = "";
       this.filter = "";
       this.loadAliases();
+    },
+
+    // enable or disable the 'Create' button depending on whether the alias prefix is valid or not
+    handleAliasPrefixInput() {
+      this.aliasPrefixInput = this.aliasPrefixInput.toLowerCase();
+      if (this.aliasPrefixInput.match(ALIAS_PREFIX_REGEX)) {
+        document.querySelector('.bootbox-accept').classList.remove('disabled');
+        this.aliasPrefixError = "";
+      } else {
+        document.querySelector('.bootbox-accept').classList.add('disabled');
+        this.aliasPrefixError = this.aliasPrefixInput.length > 0 ? "Only lowercase letters, numbers, dots (.), dashes (-) and underscores (_) are supported." : "";
+      }
+    },
+
+    async createCustomAlias() {
+      try {
+        const res = await fetch("/api/v3/alias/custom/new", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            alias_prefix: this.aliasPrefixInput,
+            signed_suffix: this.aliasSelectedSignedSuffix,
+            mailbox_ids: [this.defaultMailboxId],
+            note: this.aliasNoteInput,
+          }),
+        });
+
+        if (res.ok) {
+          const alias = await res.json();
+          this.aliasesArray.unshift(alias);
+          toastr.success(`Alias ${alias.email} created`);
+
+          // use jquery multiple select plugin after Vue has rendered the aliases in the DOM
+          this.$nextTick(() => {
+            $('.mailbox-select').multipleSelect();
+            $('.mailbox-select').removeClass('mailbox-select');
+          });
+
+        } else {
+          const error = await res.json();
+          toastr.error(error.error, "Alias could not be created");
+        }
+
+      } catch (err) {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Alias could not be created");
+      }
+
+      this.aliasPrefixInput = "";
+      this.aliasNoteInput = "";
+      await this.loadAliasOptions();
+    },
+
+    handleNewCustomAliasClick() {
+      const that = this;
+      bootbox.dialog({
+        title: "Create an alias",
+        message: this.$refs.createAliasModal,
+        size: 'large',
+        onEscape: true,
+        backdrop: true,
+        centerVertical: true,
+        onShown: function (e) {
+          document.getElementById('create-alias-prefix-input').focus();
+          if (that.aliasPrefixInput) {
+            that.handleAliasPrefixInput();
+          }
+        },
+        buttons: {
+          cancel: {
+            label: 'Cancel',
+            className: 'btn-outline-primary'
+          },
+          confirm: {
+            label: 'Create',
+            className: 'btn-primary disabled',
+            callback: function () {
+              that.createCustomAlias();
+            }
+          }
+        }
+      });
+
     },
 
   }
@@ -409,7 +531,7 @@ async function handleMailboxChange(event) {
     } else {
       throw new Error("Mailbox could not be updated");
     }
-  } catch (e) {
+  } catch (err) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Mailbox could not be updated");
   }
 
