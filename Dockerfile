@@ -1,5 +1,5 @@
 # Install npm packages
-FROM node:10.17.0-alpine AS npm
+FROM node:20.1.0-alpine AS npm
 WORKDIR /code
 COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm ci
