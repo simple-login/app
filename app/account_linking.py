@@ -207,13 +207,14 @@ def process_login_case(
 ) -> LinkResult:
     # Sanitize email just in case
     link_request.email = sanitize_email(link_request.email)
-    check_alias(link_request.email)
     # Try to find a SimpleLogin user registered with that partner user id
     partner_user = PartnerUser.get_by(
         partner_id=partner.id, external_user_id=link_request.external_user_id
     )
     if partner_user is None:
         # We didn't find any SimpleLogin user registered with that partner user id
+        # Make sure they aren't using an alias as their link email
+        check_alias(link_request.email)
         # Try to find it using the partner's e-mail address
         user = User.get_by(email=link_request.email)
         return get_login_strategy(link_request, user, partner).process()
