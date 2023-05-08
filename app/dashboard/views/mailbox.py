@@ -7,17 +7,11 @@ from wtforms import validators, IntegerField
 from wtforms.fields.html5 import EmailField
 
 from app import parallel_limiter
-from app.config import MAILBOX_SECRET, URL, JOB_DELETE_MAILBOX
+from app.config import MAILBOX_SECRET, JOB_DELETE_MAILBOX
 from app.dashboard.base import dashboard_bp
 from app.db import Session
-from app.email_utils import (
-    email_can_be_used_as_mailbox,
-    mailbox_already_used,
-    render,
-    send_email,
-    is_valid_email,
-)
 from app.log import LOG
+from app.mailbox_utils import create_mailbox_and_send_verification, verify_mailbox
 from app.models import Mailbox, Job
 from app.utils import CSRFValidationForm
 
@@ -137,37 +131,23 @@ def mailbox_route():
             if not current_user.is_premium():
                 flash("Only premium plan can add additional mailbox", "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
-
-            if new_mailbox_form.validate():
-                mailbox_email = (
-                    new_mailbox_form.email.data.lower().strip().replace(" ", "")
+            mailbox_email = new_mailbox_form.email.data.lower().strip().replace(" ", "")
+            (new_mailbox, error_message) = create_mailbox_and_send_verification(
+                current_user, mailbox_email
+            )
+            if error_message is not None:
+                flash(error_message, "error")
+            else:
+                flash(
+                    f"You are going to receive an email to confirm {mailbox_email}.",
+                    "success",
                 )
-
-                if not is_valid_email(mailbox_email):
-                    flash(f"{mailbox_email} invalid", "error")
-                elif mailbox_already_used(mailbox_email, current_user):
-                    flash(f"{mailbox_email} already used", "error")
-                elif not email_can_be_used_as_mailbox(mailbox_email):
-                    flash(f"You cannot use {mailbox_email}.", "error")
-                else:
-                    new_mailbox = Mailbox.create(
-                        email=mailbox_email, user_id=current_user.id
+                return redirect(
+                    url_for(
+                        "dashboard.mailbox_detail_route",
+                        mailbox_id=new_mailbox.id,
                     )
-                    Session.commit()
-
-                    send_verification_email(current_user, new_mailbox)
-
-                    flash(
-                        f"You are going to receive an email to confirm {mailbox_email}.",
-                        "success",
-                    )
-
-                    return redirect(
-                        url_for(
-                            "dashboard.mailbox_detail_route",
-                            mailbox_id=new_mailbox.id,
-                        )
-                    )
+                )
 
     return render_template(
         "dashboard/mailbox.html",
@@ -175,30 +155,6 @@ def mailbox_route():
         new_mailbox_form=new_mailbox_form,
         delete_mailbox_form=delete_mailbox_form,
         csrf_form=csrf_form,
-    )
-
-
-def send_verification_email(user, mailbox):
-    s = TimestampSigner(MAILBOX_SECRET)
-    mailbox_id_signed = s.sign(str(mailbox.id)).decode()
-    verification_url = (
-        URL + "/dashboard/mailbox_verify" + f"?mailbox_id={mailbox_id_signed}"
-    )
-    send_email(
-        mailbox.email,
-        f"Please confirm your mailbox {mailbox.email}",
-        render(
-            "transactional/verify-mailbox.txt.jinja2",
-            user=user,
-            link=verification_url,
-            mailbox_email=mailbox.email,
-        ),
-        render(
-            "transactional/verify-mailbox.html",
-            user=user,
-            link=verification_url,
-            mailbox_email=mailbox.email,
-        ),
     )
 
 
@@ -218,8 +174,7 @@ def mailbox_verify():
             flash("Invalid link", "error")
             return redirect(url_for("dashboard.mailbox_route"))
 
-        mailbox.verified = True
-        Session.commit()
+        verify_mailbox(mailbox)
 
         LOG.d("Mailbox %s is verified", mailbox)
 
