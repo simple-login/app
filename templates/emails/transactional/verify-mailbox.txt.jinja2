@@ -3,17 +3,11 @@
 {% block content %}
 Hi
 
-You have added {{mailbox.email}} as an additional mailbox.
+You have added {{mailbox_email}} as an additional mailbox.
 
-{% if mailbox.verification_code is not none -%}
-To confirm, please write this code to verify:
-
-{{ mailbox.verification_code.zfill(6) }}
-{% else -%}
 To confirm, please click on this link:
 
 {{link}}
-{% endif %}
 
-This email will only be valid during the next 15 minutes.
+This link will only be valid during the next 15 minutes.
 {% endblock %}

@@ -3,15 +3,9 @@
 {% block content %}
 
   {{ render_text("Hi") }}
-  {{ render_text("You have added <b>"+ mailbox.email +"</b> as an additional mailbox.") }}
-  {% if mailbox.verification_code is not none -%}
-
-    {{ render_text("To confirm, please write this code to verify") }}
-    {{ render_text("<strong>{}</strong>".format(mailbox.verification_code.zfill(6))) }}
-  {% else -%}
-    {{ render_text("To confirm, please click on the button below.") }}
-    {{ render_button("Confirm mailbox", link) }}
-  {% endif %}
+  {{ render_text("You have added <b>"+ mailbox_email +"</b> as an additional mailbox.") }}
+  {{ render_text("To confirm, please click on the button below.") }}
+  {{ render_button("Confirm mailbox", link) }}
   {{ render_text("This email will only be valid for the next 15 minutes.") }}
   {{ render_text('Thanks,
   <br />
