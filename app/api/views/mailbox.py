@@ -14,7 +14,7 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
 )
 from app.log import LOG
-from app.mailbox_utils import create_mailbox_and_send_verification
+from app.mailbox_utils import create_mailbox_and_send_verification, MailboxError
 from app.models import Mailbox, Job
 from app.utils import sanitize_email
 
@@ -45,14 +45,14 @@ def create_mailbox():
 
     if not user.is_premium():
         return jsonify(error=f"Only premium plan can add additional mailbox"), 400
-    mailbox, errorMsg = create_mailbox_and_send_verification(user, mailbox_email)
-    if errorMsg is not None:
-        return jsonify(error=errorMsg), 400
-
-    return (
-        jsonify(mailbox_to_dict(mailbox)),
-        201,
-    )
+    try:
+        mailbox = create_mailbox_and_send_verification(user, mailbox_email)
+        return (
+            jsonify(mailbox_to_dict(mailbox)),
+            201,
+        )
+    except MailboxError as e:
+        return jsonify(error=str(e)), 400
 
 
 @api_bp.route("/mailboxes/<int:mailbox_id>", methods=["DELETE"])

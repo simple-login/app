@@ -1,4 +1,3 @@
-import arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -7,12 +6,17 @@ from wtforms import validators, IntegerField
 from wtforms.fields.html5 import EmailField
 
 from app import parallel_limiter
-from app.config import MAILBOX_SECRET, JOB_DELETE_MAILBOX
+from app.config import MAILBOX_SECRET
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.log import LOG
-from app.mailbox_utils import create_mailbox_and_send_verification, verify_mailbox
-from app.models import Mailbox, Job
+from app.mailbox_utils import (
+    create_mailbox_and_send_verification,
+    set_mailbox_verified,
+    MailboxError,
+    delete_mailbox,
+)
+from app.models import Mailbox
 from app.utils import CSRFValidationForm
 
 
@@ -48,52 +52,11 @@ def mailbox_route():
             if not delete_mailbox_form.validate():
                 flash("Invalid request", "warning")
                 return redirect(request.url)
-            mailbox = Mailbox.get(delete_mailbox_form.mailbox_id.data)
-
-            if not mailbox or mailbox.user_id != current_user.id:
-                flash("Invalid mailbox. Refresh the page", "warning")
+            try:
+                mailbox = delete_mailbox(delete_mailbox_form.mailbox_id.data)
+            except MailboxError as e:
+                flash(str(e), "error")
                 return redirect(url_for("dashboard.mailbox_route"))
-
-            if mailbox.id == current_user.default_mailbox_id:
-                flash("You cannot delete default mailbox", "error")
-                return redirect(url_for("dashboard.mailbox_route"))
-
-            transfer_mailbox_id = delete_mailbox_form.transfer_mailbox_id.data
-            if transfer_mailbox_id and transfer_mailbox_id > 0:
-                transfer_mailbox = Mailbox.get(transfer_mailbox_id)
-
-                if not transfer_mailbox or transfer_mailbox.user_id != current_user.id:
-                    flash(
-                        "You must transfer the aliases to a mailbox you own.", "error"
-                    )
-                    return redirect(url_for("dashboard.mailbox_route"))
-
-                if transfer_mailbox.id == mailbox.id:
-                    flash(
-                        "You can not transfer the aliases to the mailbox you want to delete.",
-                        "error",
-                    )
-                    return redirect(url_for("dashboard.mailbox_route"))
-
-                if not transfer_mailbox.verified:
-                    flash("Your new mailbox is not verified", "error")
-                    return redirect(url_for("dashboard.mailbox_route"))
-
-            # Schedule delete account job
-            LOG.w(
-                f"schedule delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
-            )
-            Job.create(
-                name=JOB_DELETE_MAILBOX,
-                payload={
-                    "mailbox_id": mailbox.id,
-                    "transfer_mailbox_id": transfer_mailbox_id
-                    if transfer_mailbox_id > 0
-                    else None,
-                },
-                run_at=arrow.now(),
-                commit=True,
-            )
 
             flash(
                 f"Mailbox {mailbox.email} scheduled for deletion."
@@ -132,12 +95,10 @@ def mailbox_route():
                 flash("Only premium plan can add additional mailbox", "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
             mailbox_email = new_mailbox_form.email.data.lower().strip().replace(" ", "")
-            (new_mailbox, error_message) = create_mailbox_and_send_verification(
-                current_user, mailbox_email
-            )
-            if error_message is not None:
-                flash(error_message, "error")
-            else:
+            try:
+                new_mailbox = create_mailbox_and_send_verification(
+                    current_user, mailbox_email
+                )
                 flash(
                     f"You are going to receive an email to confirm {mailbox_email}.",
                     "success",
@@ -148,6 +109,8 @@ def mailbox_route():
                         mailbox_id=new_mailbox.id,
                     )
                 )
+            except MailboxError as e:
+                flash(str(e), "error")
 
     return render_template(
         "dashboard/mailbox.html",
@@ -174,7 +137,7 @@ def mailbox_verify():
             flash("Invalid link", "error")
             return redirect(url_for("dashboard.mailbox_route"))
 
-        verify_mailbox(mailbox)
+        set_mailbox_verified(mailbox)
 
         LOG.d("Mailbox %s is verified", mailbox)
 

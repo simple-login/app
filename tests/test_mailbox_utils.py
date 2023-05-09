@@ -1,4 +1,5 @@
 import arrow
+import pytest
 
 from app import config
 from app.db import Session
@@ -6,6 +7,7 @@ from app.mail_sender import mail_sender
 from app.mailbox_utils import (
     create_mailbox_and_send_verification,
     verify_mailbox_with_code,
+    MailboxError,
 )
 from app.models import Mailbox
 from tests.utils import create_new_user, random_email
@@ -25,8 +27,7 @@ def teardown_module():
 
 @mail_sender.store_emails_test_decorator
 def test_mailbox_creation_sends_link_verification():
-    mailbox, errorMsg = create_mailbox_and_send_verification(test_user, random_email())
-    assert errorMsg is None
+    mailbox = create_mailbox_and_send_verification(test_user, random_email())
     assert mailbox is not None
     assert mailbox.verification_code is None
     assert mailbox.verification_expiration is None
@@ -38,10 +39,7 @@ def test_mailbox_creation_sends_link_verification():
 
 @mail_sender.store_emails_test_decorator
 def test_mailbox_creation_sends_code_verification():
-    mailbox, errorMsg = create_mailbox_and_send_verification(
-        test_user, random_email(), True
-    )
-    assert errorMsg is None
+    mailbox = create_mailbox_and_send_verification(test_user, random_email(), True)
     assert mailbox is not None
     assert mailbox.verification_code is not None
     assert mailbox.verification_expiration is not None
@@ -52,15 +50,11 @@ def test_mailbox_creation_sends_code_verification():
 
 
 def test_verification_with_code():
-    mailbox, errorMsg = create_mailbox_and_send_verification(
-        test_user, random_email(), True
-    )
+    mailbox = create_mailbox_and_send_verification(test_user, random_email(), True)
     mailbox_id = mailbox.id
-    assert errorMsg is None
-    verified_mbox, errorMsg = verify_mailbox_with_code(
+    verified_mbox = verify_mailbox_with_code(
         test_user, mailbox_id, mailbox.verification_code
     )
-    assert errorMsg is None
     assert verified_mbox.id == mailbox_id
     assert verified_mbox.verified
     assert verified_mbox.verification_code is None
@@ -69,14 +63,10 @@ def test_verification_with_code():
 
 
 def test_fail_verification_with_code():
-    mailbox, errorMsg = create_mailbox_and_send_verification(
-        test_user, random_email(), True
-    )
+    mailbox = create_mailbox_and_send_verification(test_user, random_email(), True)
     mailbox_id = mailbox.id
-    assert errorMsg is None
-    verified_mbox, errorMsg = verify_mailbox_with_code(test_user, mailbox_id, "INVALID")
-    assert errorMsg is not None
-    assert verified_mbox is None
+    with pytest.raises(MailboxError):
+        verify_mailbox_with_code(test_user, mailbox_id, "INVALID")
     mbox = Mailbox.get_by(id=mailbox_id)
     assert mbox.id == mailbox_id
     assert not mbox.verified
@@ -86,48 +76,33 @@ def test_fail_verification_with_code():
 
 
 def test_fail_verification_with_invalid_mbox_id():
-    verified_mbox, errorMsg = verify_mailbox_with_code(test_user, 99999999, "INVALID")
-    assert errorMsg is not None
-    assert verified_mbox is None
+    with pytest.raises(MailboxError):
+        verify_mailbox_with_code(test_user, 99999999, "INVALID")
 
 
 def test_verification_with_verified_mbox_is_ok():
-    mailbox, errorMsg = create_mailbox_and_send_verification(
-        test_user, random_email(), True
-    )
-    assert errorMsg is None
+    mailbox = create_mailbox_and_send_verification(test_user, random_email(), True)
     mailbox.verified = True
     Session.commit()
-    verified_mbox, errorMsg = verify_mailbox_with_code(test_user, mailbox.id, "INVALID")
-    assert errorMsg is None
+    verified_mbox = verify_mailbox_with_code(test_user, mailbox.id, "INVALID")
     assert verified_mbox.id == mailbox.id
 
 
 def test_try_to_validate_an_expired_code_sends_reminder():
-    mailbox, errorMsg = create_mailbox_and_send_verification(
-        test_user, random_email(), True
-    )
-    assert errorMsg is None
+    mailbox = create_mailbox_and_send_verification(test_user, random_email(), True)
     mailbox.verified = True
     Session.commit()
-    verified_mbox, errorMsg = verify_mailbox_with_code(test_user, mailbox.id, "INVALID")
-    assert errorMsg is None
+    verified_mbox = verify_mailbox_with_code(test_user, mailbox.id, "INVALID")
     assert verified_mbox.id == mailbox.id
 
 
 @mail_sender.store_emails_test_decorator
 def test_validate_expired_sends_a_new_email():
-    mailbox, errorMsg = create_mailbox_and_send_verification(
-        test_user, random_email(), True
-    )
-    assert errorMsg is None
+    mailbox = create_mailbox_and_send_verification(test_user, random_email(), True)
     mailbox.verification_expiration = arrow.utcnow().shift(days=-1)
     mail_sender.purge_stored_emails()
-    verified_mbox, errorMsg = verify_mailbox_with_code(
-        test_user, mailbox.id, mailbox.verification_code
-    )
-    assert errorMsg is not None
-    assert verified_mbox is None
+    with pytest.raises(MailboxError):
+        verify_mailbox_with_code(test_user, mailbox.id, mailbox.verification_code)
     sent_emails = mail_sender.get_stored_emails()
     assert len(sent_emails) == 1
     assert mailbox.verification_code in str(sent_emails[0].msg)
