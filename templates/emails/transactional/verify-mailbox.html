@@ -7,7 +7,7 @@
   {% if mailbox.verification_code is not none -%}
 
     {{ render_text("To confirm, please write this code to verify") }}
-    {{ render_text("<strong>{}</strong>".format(str(mailbox.verification_code).zfill(6))) }}
+    {{ render_text("<strong>{}</strong>".format(mailbox.verification_code.zfill(6))) }}
   {% else -%}
     {{ render_text("To confirm, please click on the button below.") }}
     {{ render_button("Confirm mailbox", link) }}

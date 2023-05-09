@@ -2517,9 +2517,9 @@ class Mailbox(Base, ModelMixin):
     disabled = sa.Column(sa.Boolean, default=False, nullable=False, server_default="0")
 
     generic_subject = sa.Column(sa.String(78), nullable=True)
-    validation_code = sa.Column(sa.String(128), nullable=True)
-    validation_expiration = sa.Column(ArrowType, nullable=True)
-    validation_tries = sa.Column(
+    verification_code = sa.Column(sa.String(128), nullable=True)
+    verification_expiration = sa.Column(ArrowType, nullable=True)
+    verification_tries = sa.Column(
         sa.Integer, nullable=False, default=0, server_default="0"
     )
 

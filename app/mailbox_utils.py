@@ -15,10 +15,12 @@ from app.email_utils import (
 )
 from app.models import User, Mailbox
 
+MAX_MAILBOX_VERIFICATION_TRIES = 3
+
 
 def _attach_new_validation_code_for_mailbox(mailbox: Mailbox) -> Mailbox:
-    mailbox.validation_code = secrets.randbelow(10**6)
-    mailbox.validation_expiration = arrow.utcnow().shift(minutes=15)
+    mailbox.verification_code = secrets.randbelow(10**6)
+    mailbox.verification_expiration = arrow.utcnow().shift(minutes=15)
     Session.commit()
     return mailbox
 
@@ -61,7 +63,7 @@ def create_mailbox_and_send_verification(
 
     new_mailbox = Mailbox.create(email=mailbox_email, user_id=user.id)
     if use_code_validation:
-        new_mailbox.validation_tries = 0
+        new_mailbox.verification_tries = 0
         new_mailbox = _attach_new_validation_code_for_mailbox(new_mailbox)
     Session.commit()
     _send_verification_email(user, new_mailbox)
@@ -69,16 +71,28 @@ def create_mailbox_and_send_verification(
     return new_mailbox, None
 
 
+def send_new_verification_to_mailbox(user: User, mailbox: Mailbox):
+    if mailbox.verified:
+        return
+    if mailbox.verification_tries > MAX_MAILBOX_VERIFICATION_TRIES:
+        mailbox.delete()
+        Session.commit()
+        return
+    mailbox = _attach_new_validation_code_for_mailbox(mailbox)
+    Session.commit()
+    _send_verification_email(user, mailbox)
+
+
 def verify_mailbox(mailbox: Mailbox) -> Mailbox:
     mailbox.verified = True
-    mailbox.validation_code = None
-    mailbox.validation_expiration = None
-    mailbox.validation_tries = 0
+    mailbox.verification_code = None
+    mailbox.verification_expiration = None
+    mailbox.verification_tries = 0
     Session.commit()
     return mailbox
 
 
-def validate_mailbox_with_code(
+def verify_mailbox_with_code(
     user: User, mailbox_id: int, code: str
 ) -> tuple[Optional[Mailbox], Optional[str]]:
     mailbox = Mailbox.get_by(id=mailbox_id)
@@ -87,17 +101,17 @@ def validate_mailbox_with_code(
     if mailbox.user_id != user.id:
         return None, "Invalid mailbox"
     if mailbox.verified:
-        return mailbox
-    if mailbox.validation_expiration > arrow.utcnow():
+        return mailbox, None
+    if mailbox.verification_expiration < arrow.utcnow():
         mailbox = _attach_new_validation_code_for_mailbox(mailbox)
         _send_verification_email(user, mailbox)
         return None, "Code has expired. A new one has been sent"
-    if mailbox.validation_code != code:
-        mailbox.validation_tries += 1
-        if mailbox.validation_tries > 2:
+    if mailbox.verification_code != code:
+        mailbox.verification_tries += 1
+        if mailbox.verification_tries >= MAX_MAILBOX_VERIFICATION_TRIES:
             mailbox.delete()
             Session.commit()
             return None, "Too many tries"
         return None, "Invalid code"
 
-    return verify_mailbox(mailbox)
+    return verify_mailbox(mailbox), None
