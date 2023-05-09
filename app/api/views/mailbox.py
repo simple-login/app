@@ -7,15 +7,14 @@ from flask import request
 
 from app.api.base import api_bp, require_api_auth
 from app.config import JOB_DELETE_MAILBOX
-from app.dashboard.views.mailbox import send_verification_email
 from app.dashboard.views.mailbox_detail import verify_mailbox_change
 from app.db import Session
 from app.email_utils import (
     mailbox_already_used,
     email_can_be_used_as_mailbox,
-    is_valid_email,
 )
 from app.log import LOG
+from app.mailbox_utils import create_mailbox_and_send_verification, MailboxError
 from app.models import Mailbox, Job
 from app.utils import sanitize_email
 
@@ -46,29 +45,14 @@ def create_mailbox():
 
     if not user.is_premium():
         return jsonify(error=f"Only premium plan can add additional mailbox"), 400
-
-    if not is_valid_email(mailbox_email):
-        return jsonify(error=f"{mailbox_email} invalid"), 400
-    elif mailbox_already_used(mailbox_email, user):
-        return jsonify(error=f"{mailbox_email} already used"), 400
-    elif not email_can_be_used_as_mailbox(mailbox_email):
+    try:
+        mailbox = create_mailbox_and_send_verification(user, mailbox_email)
         return (
-            jsonify(
-                error=f"{mailbox_email} cannot be used. Please note a mailbox cannot "
-                f"be a disposable email address"
-            ),
-            400,
-        )
-    else:
-        new_mailbox = Mailbox.create(email=mailbox_email, user_id=user.id)
-        Session.commit()
-
-        send_verification_email(user, new_mailbox)
-
-        return (
-            jsonify(mailbox_to_dict(new_mailbox)),
+            jsonify(mailbox_to_dict(mailbox)),
             201,
         )
+    except MailboxError as e:
+        return jsonify(error=str(e)), 400
 
 
 @api_bp.route("/mailboxes/<int:mailbox_id>", methods=["DELETE"])

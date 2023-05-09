@@ -28,7 +28,7 @@ def test_create_mailbox(flask_client):
     )
 
     assert r.status_code == 400
-    assert r.json == {"error": "gmail.com invalid"}
+    assert r.json == {"error": "Invalid address gmail.com"}
 
 
 def test_create_mailbox_fail_for_free_user(flask_client):
