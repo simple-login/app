@@ -152,7 +152,7 @@ def delete_mailbox(
         payload={
             "mailbox_id": mailbox.id,
             "transfer_mailbox_id": transfer_mailbox_id
-            if transfer_mailbox_id > 0
+            if transfer_mailbox_id is not None
             else None,
         },
         run_at=arrow.now(),
