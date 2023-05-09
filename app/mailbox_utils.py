@@ -131,7 +131,7 @@ def delete_mailbox(
         raise MailboxError("Invalid mailbox")
     if mailbox.id == user.default_mailbox_id:
         raise MailboxError("You cannot delete your default mailbox")
-    if transfer_mailbox_id and transfer_mailbox_id:
+    if transfer_mailbox_id and transfer_mailbox_id > 0:
         transfer_mailbox = Mailbox.get(transfer_mailbox_id)
 
         if not transfer_mailbox or transfer_mailbox.user_id != user.id:

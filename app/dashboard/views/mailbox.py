@@ -53,7 +53,11 @@ def mailbox_route():
                 flash("Invalid request", "warning")
                 return redirect(request.url)
             try:
-                mailbox = delete_mailbox(delete_mailbox_form.mailbox_id.data)
+                mailbox = delete_mailbox(
+                    current_user,
+                    delete_mailbox_form.mailbox_id.data,
+                    delete_mailbox_form.transfer_mailbox_id.data,
+                )
             except MailboxError as e:
                 flash(str(e), "error")
                 return redirect(url_for("dashboard.mailbox_route"))
