@@ -198,6 +198,16 @@ def setting():
                         )
                         return redirect(url_for("dashboard.setting"))
 
+                    if current_user.profile_picture_id is not None:
+                        current_profile_file = File.get_by(
+                            id=current_user.profile_picture_id
+                        )
+                        if (
+                            current_profile_file is not None
+                            and current_profile_file.user_id == current_user.id
+                        ):
+                            s3.delete(current_user.path)
+
                     file_path = random_string(30)
                     file = File.create(user_id=current_user.id, path=file_path)
 
@@ -451,8 +461,13 @@ def send_change_email_confirmation(user: User, email_change: EmailChange):
 
 
 @dashboard_bp.route("/resend_email_change", methods=["GET", "POST"])
+@limiter.limit("5/hour")
 @login_required
 def resend_email_change():
+    form = CSRFValidationForm()
+    if not form.validate():
+        flash("Invalid request. Please try again", "warning")
+        return redirect(url_for("dashboard.setting"))
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
         # extend email change expiration
@@ -472,6 +487,10 @@ def resend_email_change():
 @dashboard_bp.route("/cancel_email_change", methods=["GET", "POST"])
 @login_required
 def cancel_email_change():
+    form = CSRFValidationForm()
+    if not form.validate():
+        flash("Invalid request. Please try again", "warning")
+        return redirect(url_for("dashboard.setting"))
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
         EmailChange.delete(email_change.id)
