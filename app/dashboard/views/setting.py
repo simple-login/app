@@ -451,6 +451,7 @@ def send_change_email_confirmation(user: User, email_change: EmailChange):
 
 
 @dashboard_bp.route("/resend_email_change", methods=["GET", "POST"])
+@limiter.limit("5/hour")
 @login_required
 def resend_email_change():
     email_change = EmailChange.get_by(user_id=current_user.id)
