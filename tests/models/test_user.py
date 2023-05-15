@@ -13,6 +13,7 @@ def test_create_from_partner(flask_client):
     )
     assert user.notification is False
     assert user.trial_end is None
+    assert user.newsletter_alias_id is None
     job = Session.query(Job).order_by(Job.id.desc()).first()
     assert job is not None
     assert job.name == config.JOB_SEND_PROTON_WELCOME_1

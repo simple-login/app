@@ -580,19 +580,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         Session.flush()
         user.default_mailbox_id = mb.id
 
-        # create a first alias mail to show user how to use when they login
-        alias = Alias.create_new(
-            user,
-            prefix="simplelogin-newsletter",
-            mailbox_id=mb.id,
-            note="This is your first alias. It's used to receive SimpleLogin communications "
-            "like new features announcements, newsletters.",
-        )
-        Session.flush()
-
-        user.newsletter_alias_id = alias.id
-        Session.flush()
-
         # generate an alternative_id if needed
         if "alternative_id" not in kwargs:
             user.alternative_id = str(uuid.uuid4())
@@ -610,6 +597,19 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             )
             Session.flush()
             return user
+
+        # create a first alias mail to show user how to use when they login
+        alias = Alias.create_new(
+            user,
+            prefix="simplelogin-newsletter",
+            mailbox_id=mb.id,
+            note="This is your first alias. It's used to receive SimpleLogin communications "
+            "like new features announcements, newsletters.",
+        )
+        Session.flush()
+
+        user.newsletter_alias_id = alias.id
+        Session.flush()
 
         if config.DISABLE_ONBOARDING:
             LOG.d("Disable onboarding emails")
