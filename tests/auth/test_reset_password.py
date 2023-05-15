@@ -5,7 +5,7 @@ from app.models import User, ResetPasswordCode
 from tests.utils import create_new_user, random_token
 
 
-def test_reset_password(flask_client):
+def test_successful_reset_password(flask_client):
     user = create_new_user()
     original_pass_hash = user.password
     user_id = user.id
@@ -19,8 +19,8 @@ def test_reset_password(flask_client):
         data={"password": "1231idsfjaads"},
     )
 
-    assert r.status_code == 200
+    assert r.status_code == 302
 
-    assert len(ResetPasswordCode.get_by(user_id=user_id).all()) == 0
+    assert ResetPasswordCode.get_by(user_id=user_id) is None
     user = User.get(user_id)
     assert user.password != original_pass_hash

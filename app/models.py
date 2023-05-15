@@ -580,19 +580,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         Session.flush()
         user.default_mailbox_id = mb.id
 
-        # create a first alias mail to show user how to use when they login
-        alias = Alias.create_new(
-            user,
-            prefix="simplelogin-newsletter",
-            mailbox_id=mb.id,
-            note="This is your first alias. It's used to receive SimpleLogin communications "
-            "like new features announcements, newsletters.",
-        )
-        Session.flush()
-
-        user.newsletter_alias_id = alias.id
-        Session.flush()
-
         # generate an alternative_id if needed
         if "alternative_id" not in kwargs:
             user.alternative_id = str(uuid.uuid4())
@@ -610,6 +597,19 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             )
             Session.flush()
             return user
+
+        # create a first alias mail to show user how to use when they login
+        alias = Alias.create_new(
+            user,
+            prefix="simplelogin-newsletter",
+            mailbox_id=mb.id,
+            note="This is your first alias. It's used to receive SimpleLogin communications "
+            "like new features announcements, newsletters.",
+        )
+        Session.flush()
+
+        user.newsletter_alias_id = alias.id
+        Session.flush()
 
         if config.DISABLE_ONBOARDING:
             LOG.d("Disable onboarding emails")
@@ -636,7 +636,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return user
 
     def get_active_subscription(
-        self,
+        self, include_partner_subscription: bool = True
     ) -> Optional[
         Union[
             Subscription
@@ -664,19 +664,24 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if coinbase_subscription and coinbase_subscription.is_active():
             return coinbase_subscription
 
-        partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(self.id)
-        if partner_sub and partner_sub.is_active():
-            return partner_sub
+        if include_partner_subscription:
+            partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(
+                self.id
+            )
+            if partner_sub and partner_sub.is_active():
+                return partner_sub
 
         return None
 
     # region Billing
-    def lifetime_or_active_subscription(self) -> bool:
+    def lifetime_or_active_subscription(
+        self, include_partner_subscription: bool = True
+    ) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
 
-        return self.get_active_subscription() is not None
+        return self.get_active_subscription(include_partner_subscription) is not None
 
     def is_paid(self) -> bool:
         """same as _lifetime_or_active_subscription but not include free manual subscription"""
@@ -705,14 +710,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return True
 
-    def is_premium(self) -> bool:
+    def is_premium(self, include_partner_subscription: bool = True) -> bool:
         """
         user is premium if they:
         - have a lifetime deal or
         - in trial period or
         - active subscription
         """
-        if self.lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription(include_partner_subscription):
             return True
 
         if self.trial_end and arrow.now() < self.trial_end:
