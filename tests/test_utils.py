@@ -4,12 +4,17 @@ from urllib.parse import parse_qs
 import pytest
 
 from app.config import ALLOWED_REDIRECT_DOMAINS
-from app.utils import random_string, random_words, sanitize_next_url
+from app.utils import random_string, random_words, sanitize_next_url, canonicalize_email
 
 
 def test_random_words():
     s = random_words()
-    assert len(s) > 0
+    assert s.find("_") > 0
+    assert s.count("_") == 1
+    assert len(s) > 3
+    s = random_words(2, 3)
+    assert s.count("_") == 1
+    assert s[-1] in (str(i) for i in range(10))
 
 
 def test_random_string():
@@ -59,3 +64,16 @@ def test_parse_querystring():
         assert len(res) == len(expected)
         for k, v in expected.items():
             assert res[k] == v
+
+
+def canonicalize_email_cases():
+    for domain in ("gmail.com", "protonmail.com", "proton.me", "pm.me"):
+        yield (f"a@{domain}", f"a@{domain}")
+        yield (f"a.b@{domain}", f"ab@{domain}")
+        yield (f"a.b+c@{domain}", f"ab@{domain}")
+        yield ("a.b+c@other.com", "a.b+c@other.com")
+
+
+@pytest.mark.parametrize("dirty,clean", canonicalize_email_cases())
+def test_canonicalize_email(dirty: str, clean: str):
+    assert canonicalize_email(dirty) == clean

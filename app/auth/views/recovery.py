@@ -42,7 +42,7 @@ def recovery_route():
 
     if recovery_form.validate_on_submit():
         code = recovery_form.code.data
-        recovery_code = RecoveryCode.get_by(user_id=user.id, code=code)
+        recovery_code = RecoveryCode.find_by_user_code(user, code)
 
         if recovery_code:
             if recovery_code.used:

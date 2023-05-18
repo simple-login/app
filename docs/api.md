@@ -15,6 +15,7 @@
 - [GET /api/user/cookie_token](#get-apiusercookie_token): Get a one time use token to exchange it for a valid cookie
 - [PATCH /api/user_info](#patch-apiuser_info): Update user's information.
 - [POST /api/api_key](#post-apiapi_key): Create a new API key.
+- [GET /api/stats](#get-apistats): Get user's stats.
 - [GET /api/logout](#get-apilogout): Log out.
 
 [Alias endpoints](#alias-endpoints)
@@ -226,6 +227,22 @@ Input:
 
 Output: same as GET /api/user_info
 
+#### GET /api/stats
+
+Given the API Key, return stats about the number of aliases, number of emails forwarded/replied/blocked
+
+Input:
+
+- `Authentication` header that contains the api key
+
+Output: if api key is correct, return a json with the following fields:
+
+```json
+{"nb_alias": 1, "nb_block": 0, "nb_forward": 0, "nb_reply": 0}
+```
+
+If api key is incorrect, return 401.
+
 #### PATCH /api/sudo
 
 Enable sudo mode
@@ -387,7 +404,7 @@ Input:
 
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
-- (Optional) mode: either `uuid` or `word`. By default, use the user setting when creating new random alias.
+- (Optional) mode: either `uuid` or `word` passed in query string. By default, use the user setting when creating new random alias.
 - Request Message Body in json (`Content-Type` is `application/json`)
     - (Optional) note: alias note
 
@@ -694,7 +711,7 @@ Return 200 and `existed=true` if contact is already added.
 
 It can return 403 with an error if the user cannot create reverse alias.
 
-``json
+```json
 {
   "error": "Please upgrade to create a reverse-alias"
 }
@@ -764,6 +781,7 @@ Input:
 
 - `Authentication` header that contains the api key
 - `mailbox_id`: in url
+- (optional) `transfer_aliases_to`: in body as json. id of the new mailbox for the aliases. If omitted or set to -1, the aliases will be delete with the mailbox.
 
 Output:
 

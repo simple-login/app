@@ -3,6 +3,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
+from app import parallel_limiter
 from app.alias_suffix import (
     get_alias_suffixes,
     check_suffix_signature,
@@ -28,6 +29,7 @@ from app.models import (
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
 @limiter.limit(ALIAS_LIMIT, methods=["POST"])
 @login_required
+@parallel_limiter.lock(name="alias_creation")
 def custom_alias():
     # check if user has not exceeded the alias quota
     if not current_user.can_create_new_alias():
@@ -118,18 +120,11 @@ def custom_alias():
                     email=full_alias
                 )
                 custom_domain = domain_deleted_alias.domain
-                if domain_deleted_alias.user_id == current_user.id:
-                    flash(
-                        f"You have deleted this alias before. You can restore it on "
-                        f"{custom_domain.domain} 'Deleted Alias' page",
-                        "error",
-                    )
-                else:
-                    # should never happen as user can only choose their domains
-                    LOG.e(
-                        "Deleted Alias %s does not belong to user %s",
-                        domain_deleted_alias,
-                    )
+                flash(
+                    f"You have deleted this alias before. You can restore it on "
+                    f"{custom_domain.domain} 'Deleted Alias' page",
+                    "error",
+                )
 
             elif DeletedAlias.get_by(email=full_alias):
                 flash(general_error_msg, "error")

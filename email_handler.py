@@ -51,7 +51,6 @@ from email_validator import validate_email, EmailNotValidError
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import ObjectDeletedError
 
 from app import pgp_utils, s3, config
 from app.alias_utils import try_auto_create
@@ -162,6 +161,7 @@ from app.models import (
     MessageIDMatching,
     Notification,
     VerpType,
+    SLDomain,
 )
 from app.pgp_utils import (
     PGPException,
@@ -169,7 +169,7 @@ from app.pgp_utils import (
     sign_data,
     load_public_key_and_check,
 )
-from app.utils import sanitize_email
+from app.utils import sanitize_email, canonicalize_email
 from init_app import load_pgp_public_keys
 from server import create_light_app
 
@@ -182,6 +182,10 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
         contact_name, contact_email = parse_full_address(from_header)
     except ValueError:
         contact_name, contact_email = "", ""
+
+    # Ensure contact_name is within limits
+    if len(contact_name) >= Contact.MAX_NAME_LENGTH:
+        contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
 
     if not is_valid_email(contact_email):
         # From header is wrongly formatted, try with mail_from
@@ -240,7 +244,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 website_email=contact_email,
                 name=contact_name,
                 mail_from=mail_from,
-                reply_email=generate_reply_email(contact_email, alias.user)
+                reply_email=generate_reply_email(contact_email, alias)
                 if is_valid_email(contact_email)
                 else NOREPLY,
                 automatic_created=True,
@@ -301,7 +305,7 @@ def get_or_create_reply_to_contact(
                 alias_id=alias.id,
                 website_email=contact_address,
                 name=contact_name,
-                reply_email=generate_reply_email(contact_address, alias.user),
+                reply_email=generate_reply_email(contact_address, alias),
                 automatic_created=True,
             )
             Session.commit()
@@ -369,7 +373,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     alias_id=alias.id,
                     website_email=contact_email,
                     name=full_address.display_name,
-                    reply_email=generate_reply_email(contact_email, alias.user),
+                    reply_email=generate_reply_email(contact_email, alias),
                     is_cc=header.lower() == "cc",
                     automatic_created=True,
                 )
@@ -637,17 +641,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
-    try:
-        contact = get_or_create_contact(from_header, envelope.mail_from, alias)
-    except ObjectDeletedError:
-        LOG.d("maybe alias was deleted in the meantime")
-        alias = Alias.get_by(email=alias_address)
-        if not alias:
-            LOG.i("Alias %s was deleted in the meantime", alias_address)
-            if should_ignore_bounce(envelope.mail_from):
-                return [(True, status.E207)]
-            else:
-                return [(False, status.E515)]
+    contact = get_or_create_contact(from_header, envelope.mail_from, alias)
 
     reply_to_contact = None
     if msg[headers.REPLY_TO]:
@@ -669,11 +663,12 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             commit=True,
         )
 
+        # by default return 2** instead of 5** to allow user to receive emails again
+        # when alias is enabled or contact is unblocked
         res_status = status.E200
         if user.block_behaviour == BlockBehaviourEnum.return_5xx:
             res_status = status.E502
 
-        # do not return 5** to allow user to receive emails later when alias is enabled or contact is unblocked
         return [(True, res_status)]
 
     # Check if we need to reject or quarantine based on dmarc
@@ -699,6 +694,36 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             LOG.d("%s unverified, do not forward", mailbox)
             ret.append((False, status.E517))
         else:
+            # Check if the mailbox is also an alias and stop the loop
+            mailbox_as_alias = Alias.get_by(email=mailbox.email)
+            if mailbox_as_alias is not None:
+                LOG.info(
+                    f"Mailbox {mailbox.id} has email {mailbox.email} that is also alias {alias.id}. Stopping loop"
+                )
+                mailbox.verified = False
+                Session.commit()
+                mailbox_url = f"{URL}/dashboard/mailbox/{mailbox.id}/"
+                send_email_with_rate_control(
+                    user,
+                    ALERT_MAILBOX_IS_ALIAS,
+                    user.email,
+                    f"Your mailbox {mailbox.email} is an alias",
+                    render(
+                        "transactional/mailbox-invalid.txt.jinja2",
+                        mailbox=mailbox,
+                        mailbox_url=mailbox_url,
+                        alias=alias,
+                    ),
+                    render(
+                        "transactional/mailbox-invalid.html",
+                        mailbox=mailbox,
+                        mailbox_url=mailbox_url,
+                        alias=alias,
+                    ),
+                    max_nb_alert=1,
+                )
+                ret.append((False, status.E525))
+                continue
             # create a copy of message for each forward
             ret.append(
                 forward_email_to_mailbox(
@@ -846,10 +871,12 @@ def forward_email_to_mailbox(
             orig_subject = msg[headers.SUBJECT]
             orig_subject = get_header_unicode(orig_subject)
             add_or_replace_header(msg, "Subject", mailbox.generic_subject)
+            sender = msg[headers.FROM]
+            sender = get_header_unicode(sender)
             msg = add_header(
                 msg,
-                f"""Forwarded by SimpleLogin to {alias.email} with "{orig_subject}" as subject""",
-                f"""Forwarded by SimpleLogin to {alias.email} with <b>{orig_subject}</b> as subject""",
+                f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with "{orig_subject}" as subject""",
+                f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with <b>{orig_subject}</b> as subject""",
             )
 
         try:
@@ -919,10 +946,11 @@ def forward_email_to_mailbox(
         envelope.rcpt_options,
     )
 
+    contact_domain = get_email_domain_part(contact.reply_email)
     try:
         sl_sendmail(
             # use a different envelope sender for each forward (aka VERP)
-            generate_verp_email(VerpType.bounce_forward, email_log.id),
+            generate_verp_email(VerpType.bounce_forward, email_log.id, contact_domain),
             mailbox.email,
             msg,
             envelope.mail_options,
@@ -991,10 +1019,14 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     reply_email = rcpt_to
 
-    # reply_email must end with EMAIL_DOMAIN
+    reply_domain = get_email_domain_part(reply_email)
+
+    # reply_email must end with EMAIL_DOMAIN or a domain that can be used as reverse alias domain
     if not reply_email.endswith(EMAIL_DOMAIN):
-        LOG.w(f"Reply email {reply_email} has wrong domain")
-        return False, status.E501
+        sl_domain: SLDomain = SLDomain.get_by(domain=reply_domain)
+        if sl_domain is None:
+            LOG.w(f"Reply email {reply_email} has wrong domain")
+            return False, status.E501
 
     # handle case where reply email is generated with non-allowed char
     reply_email = normalize_reply_email(reply_email)
@@ -1006,7 +1038,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     alias = contact.alias
     alias_address: str = contact.alias.email
-    alias_domain = alias_address[alias_address.find("@") + 1 :]
+    alias_domain = get_email_domain_part(alias_address)
 
     # Sanity check: verify alias domain is managed by SimpleLogin
     # scenario: a user have removed a domain but due to a bug, the aliases are still there
@@ -1128,11 +1160,41 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         + headers.MIME_HEADERS,
     )
 
+    orig_to = msg[headers.TO]
+    orig_cc = msg[headers.CC]
+
     # replace the reverse-alias by the contact email in the email body
     # as this is usually included when replying
     if user.replace_reverse_alias:
         LOG.d("Replace reverse-alias %s by contact email %s", reply_email, contact)
         msg = replace(msg, reply_email, contact.website_email)
+        LOG.d("Replace mailbox %s by alias email %s", mailbox.email, alias.email)
+        msg = replace(msg, mailbox.email, alias.email)
+
+        if config.ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
+            start = time.time()
+            # MAX_NB_REVERSE_ALIAS_REPLACEMENT is there to limit potential attack
+            contact_query = (
+                Contact.query()
+                .filter(Contact.alias_id == alias.id)
+                .limit(config.MAX_NB_REVERSE_ALIAS_REPLACEMENT)
+            )
+
+            # replace reverse alias by real address for all contacts
+            for (reply_email, website_email) in contact_query.values(
+                Contact.reply_email, Contact.website_email
+            ):
+                msg = replace(msg, reply_email, website_email)
+
+            elapsed = time.time() - start
+            LOG.d(
+                "Replace reverse alias by real address for %s contacts takes %s seconds",
+                contact_query.count(),
+                elapsed,
+            )
+            newrelic.agent.record_custom_metric(
+                "Custom/reverse_alias_replacement_time", elapsed
+            )
 
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():
@@ -1171,7 +1233,13 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     add_or_replace_header(msg, headers.FROM, from_header)
 
     try:
-        replace_header_when_reply(msg, alias, headers.TO)
+        if str(msg[headers.TO]).lower() == "undisclosed-recipients:;":
+            # no need to replace TO header
+            LOG.d("email is sent in BCC mode")
+            del msg[headers.TO]
+        else:
+            replace_header_when_reply(msg, alias, headers.TO)
+
         replace_header_when_reply(msg, alias, headers.CC)
     except NonReverseAliasInReplyPhase as e:
         LOG.w("non reverse-alias in reply %s %s %s", e, contact, alias)
@@ -1222,6 +1290,12 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             envelope.rcpt_options,
             is_forward=False,
         )
+
+        # if alias belongs to several mailboxes, notify other mailboxes about this email
+        other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
+        for mb in other_mailboxes:
+            notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc, alias_domain)
+
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
         EmailLog.delete(email_log.id, commit=True)
@@ -1246,6 +1320,38 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     # return 250 even if error as user is already informed of the incident and can retry sending the email
     return True, status.E200
+
+
+def notify_mailbox(
+    alias, mailbox, other_mb: Mailbox, msg, orig_to, orig_cc, alias_domain
+):
+    """Notify another mailbox about an email sent by a mailbox to a reverse alias"""
+    LOG.d(
+        f"notify {other_mb.email} about email sent "
+        f"from {mailbox.email} on behalf of {alias.email} to {msg[headers.TO]}"
+    )
+    notif = add_header(
+        msg,
+        f"""**** Don't forget to remove this section if you reply to this email ****
+Email sent on behalf of alias {alias.email} using mailbox {mailbox.email}""",
+    )
+    # use alias as From to hint that the email is sent from the alias
+    add_or_replace_header(notif, headers.FROM, alias.email)
+    # keep the reverse alias in CC and To header so user can reply more easily
+    add_or_replace_header(notif, headers.TO, orig_to)
+    add_or_replace_header(notif, headers.CC, orig_cc)
+
+    # add DKIM as the email is sent from alias
+    if should_add_dkim_signature(alias_domain):
+        add_dkim_signature(msg, alias_domain)
+
+    # this notif is considered transactional email
+    transaction = TransactionalEmail.create(email=other_mb.email, commit=True)
+    sl_sendmail(
+        generate_verp_email(VerpType.transactional, transaction.id, alias_domain),
+        other_mb.email,
+        notif,
+    )
 
 
 def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message):
@@ -1320,21 +1426,26 @@ def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
     """return the corresponding mailbox given the mail_from and alias
     Usually the mail_from=mailbox.email but it can also be one of the authorized address
     """
-    for mailbox in alias.mailboxes:
-        if mailbox.email == mail_from:
-            return mailbox
 
-        for authorized_address in mailbox.authorized_addresses:
-            if authorized_address.email == mail_from:
-                LOG.d(
-                    "Found an authorized address for %s %s %s",
-                    alias,
-                    mailbox,
-                    authorized_address,
-                )
+    def __check(email_address: str, alias: Alias) -> Optional[Mailbox]:
+        for mailbox in alias.mailboxes:
+            if mailbox.email == email_address:
                 return mailbox
 
-    return None
+            for authorized_address in mailbox.authorized_addresses:
+                if authorized_address.email == email_address:
+                    LOG.d(
+                        "Found an authorized address for %s %s %s",
+                        alias,
+                        mailbox,
+                        authorized_address,
+                    )
+                    return mailbox
+        return None
+
+    # We need to first check for the uncanonicalized version because we still have users in the db with the
+    # email non canonicalized. So if it matches the already existing one use that, otherwise check the canonical one
+    return __check(mail_from, alias) or __check(canonicalize_email(mail_from), alias)
 
 
 def handle_unknown_mailbox(

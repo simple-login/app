@@ -1,6 +1,7 @@
 from flask import g
 from flask import jsonify, request
 
+from app import parallel_limiter
 from app.alias_suffix import check_suffix_signature, verify_prefix_suffix
 from app.alias_utils import check_alias_prefix
 from app.api.base import api_bp, require_api_auth
@@ -27,6 +28,7 @@ from app.utils import convert_to_id
 @api_bp.route("/v2/alias/custom/new", methods=["POST"])
 @limiter.limit(ALIAS_LIMIT)
 @require_api_auth
+@parallel_limiter.lock(name="alias_creation")
 def new_custom_alias_v2():
     """
     Create a new custom alias
@@ -113,6 +115,7 @@ def new_custom_alias_v2():
 @api_bp.route("/v3/alias/custom/new", methods=["POST"])
 @limiter.limit(ALIAS_LIMIT)
 @require_api_auth
+@parallel_limiter.lock(name="alias_creation")
 def new_custom_alias_v3():
     """
     Create a new custom alias

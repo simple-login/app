@@ -1,5 +1,5 @@
 [tool.black]
-target-version = ['py37']
+target-version = ['py310']
 exclude = '''
 (
   /(
@@ -50,7 +50,7 @@ packages = [
   { include = "app/" },
   { include = "migrations/" },
 ]
-include = ["templates/*", "templates/**/*"]
+include = ["templates/*", "templates/**/*", "local_data/*.txt"]
 
 [tool.poetry.dependencies]
 python = "^3.7.2"
@@ -95,13 +95,13 @@ webauthn = "^0.4.7"
 pyspf = "^2.0.14"
 Flask-Limiter = "^1.4"
 memory_profiler = "^0.57.0"
-gevent = "^21.12.0"
+gevent = "22.10.2"
 aiospamc = "^0.6.1"
 email_validator = "^1.1.1"
 PGPy = "0.5.4"
 coinbase-commerce = "^1.0.1"
 requests = "^2.25.1"
-newrelic = "^7.10.0"
+newrelic = "8.8.0"
 flanker = "^0.9.11"
 pyre2 = "^0.3.6"
 tldextract = "^3.1.2"
@@ -110,7 +110,7 @@ twilio = "^7.3.2"
 Deprecated = "^1.2.13"
 cryptography = "37.0.1"
 SQLAlchemy = "1.3.24"
-redis = "^4.3.4"
+redis = "^4.5.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0.0"

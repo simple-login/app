@@ -11,7 +11,7 @@ repos:
     rev: 22.3.0
     hooks:
       - id: black
-  - repo: https://gitlab.com/pycqa/flake8
+  - repo: https://github.com/pycqa/flake8
     rev: 3.9.2
     hooks:
       - id: flake8
@@ -21,7 +21,4 @@ repos:
       - id: djlint-jinja
         files: '.*\.html'
         entry: djlint --reformat
-  - repo: https://github.com/PyCQA/pylint
-    rev: v2.14.4
-    hooks:
-      - id: pylint
+

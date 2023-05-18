@@ -34,7 +34,7 @@ poetry install
 On Mac, sometimes you might need to install some other packages via `brew`:
 
 ```bash
-brew install pkg-config libffi openssl postgresql
+brew install pkg-config libffi openssl postgresql@13
 ```
 
 You also need to install `gpg` tool, on Mac it can be done with:
@@ -62,6 +62,8 @@ To install it in your development environment.
 
 ## Run tests
 
+For most tests, you will need to have ``redis`` installed and started on your machine (listening on port 6379).
+
 ```bash
 sh scripts/run-test.sh
 ```
@@ -80,10 +82,16 @@ To run the code locally, please create a local setting file based on `example.en
 cp example.env .env
 ```
 
+You need to edit your .env to reflect the postgres exposed port, edit the `DB_URI` to:
+
+```
+DB_URI=postgresql://myuser:mypassword@localhost:35432/simplelogin
+```
+
 Run the postgres database:
 
 ```bash
-docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 35432:5432 postgres:13
+docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 15432:5432 postgres:13
 ```
 
 To run the server:
@@ -199,3 +207,10 @@ swaks --to e1@sl.local --from hey@google.com --server 127.0.0.1:20381
 ```
 
 Now open http://localhost:1080/ (or http://localhost:1080/ for MailHog), you should see the forwarded email.
+
+## Job runner
+
+Some features require a job handler (such as GDPR data export). To test such feature you need to run the job_runner
+```bash
+python job_runner.py
+```

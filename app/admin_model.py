@@ -34,6 +34,7 @@ from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_add
 class SLModelView(sqla.ModelView):
     column_default_sort = ("id", True)
     column_display_pk = True
+    page_size = 100
 
     can_edit = False
     can_create = False
@@ -117,6 +118,34 @@ class UserAdmin(SLModelView):
     column_formatters = {
         "upgrade_channel": _user_upgrade_channel_formatter,
     }
+
+    @action(
+        "disable_user",
+        "Disable user",
+        "Are you sure you want to disable the selected users?",
+    )
+    def action_disable_user(self, ids):
+        for user in User.filter(User.id.in_(ids)):
+            user.disabled = True
+
+            flash(f"Disabled user {user.id}")
+            AdminAuditLog.disable_user(current_user.id, user.id)
+
+        Session.commit()
+
+    @action(
+        "enable_user",
+        "Enable user",
+        "Are you sure you want to enable the selected users?",
+    )
+    def action_enable_user(self, ids):
+        for user in User.filter(User.id.in_(ids)):
+            user.disabled = False
+
+            flash(f"Enabled user {user.id}")
+            AdminAuditLog.enable_user(current_user.id, user.id)
+
+        Session.commit()
 
     @action(
         "education_upgrade",
@@ -579,3 +608,20 @@ class NewsletterUserAdmin(SLModelView):
 
     can_edit = False
     can_create = False
+
+
+class DailyMetricAdmin(SLModelView):
+    column_exclude_list = ["created_at", "updated_at", "id"]
+
+    can_export = True
+
+
+class MetricAdmin(SLModelView):
+    column_exclude_list = ["created_at", "updated_at", "id"]
+
+    can_export = True
+
+
+class InvalidMailboxDomainAdmin(SLModelView):
+    can_create = True
+    can_delete = True

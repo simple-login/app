@@ -31,65 +31,14 @@
 {% block title %}Alias{% endblock %}
 {% block default_content %}
 
-  <!-- Global Stats -->
-  <div class="row">
-    <div class="col-12 col-md-6 col-lg-3">
-      <div class="card">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="subheader">Aliases</div>
-            <div class="text-muted"
-                 style="order: 2; margin-left: auto; font-size: .8rem">All time</div>
-          </div>
-          <div class="h1 m-0">{{ stats.nb_alias }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-lg-3">
-      <div class="card">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="subheader">Forwarded</div>
-            <div class="text-muted"
-                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
-          </div>
-          <div class="h1 m-0">{{ stats.nb_forward }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-lg-3">
-      <div class="card">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="subheader">Replies/Sent</div>
-            <div class="text-muted"
-                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
-          </div>
-          <div class="h1 m-0">{{ stats.nb_reply }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-lg-3">
-      <div class="card">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="subheader">Blocked</div>
-            <div class="text-muted"
-                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
-          </div>
-          <div class="h1 m-0">{{ stats.nb_block }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- END Global Stats -->
   <!-- Controls: buttons & search -->
   <div id="filter-app">
     <div class="row mb-3">
-      <div class="col d-flex">
-        <div>
+      <div class="col d-flex flex-wrap justify-content-between">
+        <div class="mb-1">
           <div class="btn-group" role="group">
             <form method="post">
+              {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="create-custom-email">
               <button data-toggle="tooltip"
                       title="Create a custom alias"
@@ -99,6 +48,7 @@
             </form>
             <div class="btn-group" role="group">
               <form method="post">
+                {{ csrf_form.csrf_token }}
                 <input type="hidden" name="form-name" value="create-random-email">
                 <button data-toggle="tooltip"
                         title="Create a totally random alias"
@@ -117,6 +67,7 @@
                    aria-labelledby="btnGroupDrop1">
                 <div>
                   <form method="post">
+                    {{ csrf_form.csrf_token }}
                     <input type="hidden" name="form-name" value="create-random-email">
                     <input type="hidden"
                            name="generator_scheme"
@@ -126,6 +77,7 @@
                 </div>
                 <div>
                   <form method="post">
+                    {{ csrf_form.csrf_token }}
                     <input type="hidden" name="form-name" value="create-random-email">
                     <input type="hidden"
                            name="generator_scheme"
@@ -137,21 +89,91 @@
             </div>
           </div>
         </div>
-        <div style="margin-left: auto">
+        <div>
           <div class="btn-group">
-            <a v-if="!showFilter"
-               @click="toggleFilter()"
-               class="btn btn-outline-secondary">
-              <i class="fe fe-chevrons-down"></i> Filters
+            <a @click="toggleStats()" class="btn btn-outline-secondary">
+              <span v-if="!showStats">
+                <i class="fe fe-chevrons-down"></i>
+                Show stats
+              </span>
+              <span v-else>
+                <i class="fe fe-chevrons-up"></i>
+                Hide stats
+              </span>
+            </a>
+          </div>
+          <div class="btn-group">
+            <a @click="toggleFilter()" class="btn btn-outline-secondary">
+              <span v-if="!showFilter">
+                <i class="fe fe-chevrons-down"></i>
+                Show filters
+              </span>
+              <span v-else>
+                <i class="fe fe-chevrons-up"></i>
+                Hide filters
+              </span>
             </a>
           </div>
         </div>
       </div>
     </div>
+    <!-- Global Stats -->
+    <div class="row" v-if="showStats">
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="card mb-3">
+          <div class="card-body py-3">
+            <div class="d-flex align-items-center">
+              <div class="subheader">Aliases</div>
+              <div class="text-muted"
+                   style="order: 2; margin-left: auto; font-size: .8rem">All time</div>
+            </div>
+            <div class="h1 m-0">{{ stats.nb_alias }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="card mb-3">
+          <div class="card-body py-3">
+            <div class="d-flex align-items-center">
+              <div class="subheader">Forwarded</div>
+              <div class="text-muted"
+                   style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+            </div>
+            <div class="h1 m-0">{{ stats.nb_forward }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="card mb-3">
+          <div class="card-body py-3">
+            <div class="d-flex align-items-center">
+              <div class="subheader">Replies/Sent</div>
+              <div class="text-muted"
+                   style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+            </div>
+            <div class="h1 m-0">{{ stats.nb_reply }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="card mb-3">
+          <div class="card-body py-3">
+            <div class="d-flex align-items-center">
+              <div class="subheader">Blocked</div>
+              <div class="text-muted"
+                   style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+            </div>
+            <div class="h1 m-0">{{ stats.nb_block }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END Global Stats -->
     <div class="row mb-2" v-if="showFilter" id="filter-control">
       <!-- Filter Control -->
       <div class="col d-flex">
         <form method="get" class="form-inline">
+          {{ csrf_form.csrf_token }}
           <select name="sort"
                   onchange="this.form.submit()"
                   class="form-control mr-3 shadow">
@@ -218,11 +240,6 @@
             <a href="{{ url_for('dashboard.index') }}"
                class="btn btn-outline-secondary">Reset</a>
           {% endif %}
-          <a v-if="showFilter"
-             @click="toggleFilter()"
-             class="btn btn-outline-secondary">
-            <i class="fe fe-chevrons-up"></i>
-          </a>
         </div>
       </div>
     </div>
@@ -337,17 +354,11 @@
       </div>
       <!-- END Email Activity -->
       <div class="small-text mt-1">
-        Alias description
+        Alias description <span id="note-focus-message-{{ alias.id }}" class="d-none font-italic">(automatically saved when you click outside the field)</span>
       </div>
       <div class="d-flex mb-2">
         <div class="flex-grow-1 mr-2">
-          <textarea id="note-{{ alias.id }}" name="note" class="form-control" style="font-size: 12px" rows="2" placeholder="e.g. where the alias is used or why is it created">{{ alias.note or "" }}</textarea>
-        </div>
-        <div>
-          <a data-alias="{{ alias.id }}"
-             class="save-note btn btn-sm btn-outline-success w-100">
-            Save
-          </a>
+          <textarea id="note-{{ alias.id }}" name="note" class="form-control" style="font-size: 12px" rows="2" placeholder="e.g. where the alias is used or why is it created" onchange="handleNoteChange({{ alias.id }}, '{{ alias.email }}')" onfocus="handleNoteFocus({{ alias.id }})" onblur="handleNoteBlur({{ alias.id }})">{{ alias.note or "" }}</textarea>
         </div>
       </div>
       <!-- Send Email && More button -->
@@ -416,7 +427,8 @@
                     data-width="100%"
                     class="mailbox-select"
                     multiple
-                    name="mailbox">
+                    name="mailbox"
+                    onchange="handleMailboxChange({{ alias.id }}, '{{ alias.email }}')">
               {% for mailbox in mailboxes %}
 
                 <option value="{{ mailbox.id }}" {% if alias_info.contain_mailbox(mailbox.id) %}
@@ -425,12 +437,6 @@
                 </option>
               {% endfor %}
             </select>
-          </div>
-          <div>
-            <a data-alias="{{ alias.id }}"
-               class="save-mailbox btn btn-sm btn-outline-info w-100">
-              Update
-            </a>
           </div>
         </div>
       {% elif alias_info.mailbox != None and alias_info.mailbox.email != current_user.email %}
@@ -443,19 +449,18 @@
            title="When sending an email from this alias, the email will have 'Display Name <{{ alias.email }}>' as sender.">
         Display name
         <i class="fe fe-help-circle"></i>
+        <span id="display-name-focus-message-{{ alias.id }}"
+              class="d-none font-italic">(automatically saved when you click outside the field or press Enter)</span>
       </div>
       <div class="d-flex">
         <div class="flex-grow-1 mr-2">
           <input id="alias-name-{{ alias.id }}"
                  value="{{ alias.name or '' }}"
                  class="form-control"
-                 placeholder="{{ alias.custom_domain.name or "Alias name" }}">
-        </div>
-        <div>
-          <a data-alias="{{ alias.id }}"
-             class="save-alias-name btn btn-sm btn-outline-primary w-100">
-            Save
-          </a>
+                 placeholder="{{ alias.custom_domain.name or "Alias name" }}"
+                 onchange="handleDisplayNameChange({{ alias.id }}, '{{ alias.email }}')"
+                 onfocus="handleDisplayNameFocus({{ alias.id }})"
+                 onblur="handleDisplayNameBlur({{ alias.id }})">
         </div>
       </div>
       {% if alias.mailbox_support_pgp() %}
@@ -493,6 +498,7 @@
             <i class="ml-0 dropdown-icon fe fe-share-2 text-primary"></i>
           </a>
           <form method="post">
+            {{ csrf_form.csrf_token }}
             <input type="hidden" name="form-name" value="delete-alias">
             <input type="hidden" name="alias-id" value="{{ alias.id }}">
             <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">

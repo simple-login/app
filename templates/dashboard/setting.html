@@ -73,7 +73,8 @@
               Yearly plan subscribed with cryptocurrency which expires on
               {{ coinbase_sub.end_at.format("YYYY-MM-DD") }}.
               <a href="{{ url_for('dashboard.coinbase_checkout_route') }}"
-                 target="_blank">
+                 target="_blank"
+                 rel="noopener noreferrer">
                 Extend Subscription <i class="fe fe-external-link"></i>
               </a>
             </div>
@@ -102,8 +103,6 @@
         {% else %}
           <a href="{{ url_for('dashboard.mfa_cancel') }}"
              class="btn btn-outline-danger">Disable TOTP</a>
-          <a href="{{ url_for('dashboard.recovery_code_route') }}"
-             class="btn btn-outline-secondary">Recovery Codes</a>
         {% endif %}
       </div>
     </div>
@@ -124,8 +123,6 @@
         {% else %}
           <a href="{{ url_for('dashboard.fido_manage') }}"
              class="btn btn-outline-info">Manage WebAuthn</a>
-          <a href="{{ url_for('dashboard.recovery_code_route') }}"
-             class="btn btn-outline-secondary">Recovery Codes</a>
         {% endif %}
       </div>
     </div>
@@ -136,6 +133,7 @@
         <div class="card-title">Newsletters</div>
         <div class="mb-3">We will occasionally send you emails with new feature announcements.</div>
         <form method="post">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="notification-preference">
           <div class="form-check">
             <input type="checkbox"
@@ -183,10 +181,10 @@
     <!-- END change name & profile picture -->
     <!-- Change email -->
     <div class="card">
-      <form method="post" enctype="multipart/form-data">
-        <input type="hidden" name="form-name" value="update-email">
-        {{ change_email_form.csrf_token }}
-        <div class="card-body">
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="form-name" value="update-email">
+          {{ change_email_form.csrf_token }}
           <div class="card-title">Account Email</div>
           <div class="mb-3">
             This email address is used to log in to SimpleLogin.
@@ -201,26 +199,30 @@
             <!-- Not allow user to change email if there's a pending change -->
             {{ change_email_form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
             {{ render_field_errors(change_email_form.email) }}
-            {% if pending_email %}
-
-              <div class="mt-2">
-                <span class="text-danger">Pending email change: {{ pending_email }}</span>
-                <a href="{{ url_for('dashboard.resend_email_change') }}"
-                   class="btn btn-secondary btn-sm">
-                  Resend
-                  confirmation email
-                </a>
-                <a href="{{ url_for('dashboard.cancel_email_change') }}"
-                   class="btn btn-secondary btn-sm">
-                  Cancel email
-                  change
-                </a>
-              </div>
-            {% endif %}
           </div>
           <button class="btn btn-outline-primary">Change Email</button>
-        </div>
-      </form>
+        </form>
+        {% if pending_email %}
+
+          <div class="mt-2">
+            <span class="text-danger float-left">Pending email change: {{ pending_email }}</span>
+            <form method="POST"
+                  action="{{ url_for('dashboard.resend_email_change') }}"
+                  class="float-left ml-2">
+              {{ change_email_form.csrf_token }}
+              <a onclick="this.closest('form').submit()"
+                 class="btn btn-secondary btn-sm">Resend confirmation email</a>
+            </form>
+            <form method="POST"
+                  action="{{ url_for('dashboard.cancel_email_change') }}"
+                  class="float-left ml-2">
+              {{ change_email_form.csrf_token }}
+              <a onclick="this.closest('form').submit()"
+                 class="btn btn-secondary btn-sm">Cancel email change</a>
+            </form>
+          </div>
+        {% endif %}
+      </div>
     </div>
     <!-- END Change email -->
     <!-- Connect with Proton -->
@@ -235,11 +237,14 @@
               Your account is currently linked to the Proton account <b>{{ proton_linked_account }}</b>
               <br />
             </div>
-            <a class="btn btn-primary mt-2 proton-button"
-               href="{{ url_for('dashboard.unlink_proton_account') }}">
-              <img class="mr-2" src="/static/images/proton.svg">
-              Unlink account
-            </a>
+            <form method="post"
+                  action="{{ url_for("dashboard.unlink_proton_account") }}">
+              {{ csrf_form.csrf_token }}
+              <button class="btn btn-primary mt-2 proton-button">
+                <img class="mr-2" src="/static/images/proton.svg">
+                Unlink account
+              </button>
+            </form>
           {% else %}
             <div class="mb-3">
               You can connect your Proton and SimpleLogin accounts.
@@ -268,6 +273,7 @@
           You will receive an email containing instructions on how to change your password.
         </div>
         <form method="post">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="change-password">
           <button class="btn btn-outline-primary">
             Change password
@@ -286,6 +292,7 @@
           Change the way random aliases are generated by default.
         </div>
         <form method="post" action="#random-alias" class="form-inline">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="change-alias-generator">
           <select class="form-control mr-sm-2" name="alias-generator-scheme">
             <option value="{{ AliasGeneratorEnum.word.value }}"
@@ -307,6 +314,7 @@
           Select the default domain for aliases.
         </div>
         <form method="post" action="#random-alias" class="form-inline">
+          {{ csrf_form.csrf_token }}
           <input type="hidden"
                  name="form-name"
                  value="change-random-alias-default-domain">
@@ -338,6 +346,7 @@
           Select the default suffix generator for aliases.
         </div>
         <form method="post" action="#random-alias-suffix" class="form-inline">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="random-alias-suffix">
           <select class="form-control mr-sm-2" name="random-alias-suffix-generator">
             <option value="0"
@@ -370,6 +379,7 @@
           in the original form and needs to <b>transform</b> it to one of the formats below.
         </div>
         <form method="post" action="#sender-format">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="change-sender-format">
           <select class="form-control mr-sm-2" name="sender-format">
             <option value="{{ SenderFormatEnum.AT.value }}"
@@ -416,6 +426,7 @@
           <br />
         </div>
         <form method="post" action="#reverse-alias-replacement-section">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="replace-ra">
           <div class="form-check">
             <input type="checkbox"
@@ -448,6 +459,7 @@
           Please note that existing reverse-aliases won't change.
         </div>
         <form method="post" action="#sender-in-ra">
+          {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="sender-in-ra">
           <div class="form-check">
             <input type="checkbox" id="include-sender-ra" name="enable"
@@ -479,6 +491,7 @@
               <br />
             </div>
             <form method="post" action="#expand-alias-info-section">
+              {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="expand-alias-info">
               <div class="form-check">
                 <input type="checkbox"
@@ -512,6 +525,7 @@
                    style="max-width: 40%">
             </div>
             <form method="post" action="#include_website_in_one_click_alias">
+              {{ csrf_form.csrf_token }}
               <input type="hidden"
                      name="form-name"
                      value="include_website_in_one_click_alias">
@@ -543,6 +557,7 @@
         {#          You can disable these "loop" emails by enabling this option.#}
         {#        </div>#}
         {#        <form method="post" action="#ignore-loop-email-section">#}
+        {#         {{ csrf_form.csrf_token }} #}
         {#          <input type="hidden" name="form-name" value="ignore-loop-email">#}
         {#          <div class="form-check">#}
         {#            <input type="checkbox" id="ignore-loop-email" name="enable"#}
@@ -582,6 +597,7 @@
             <form method="post"
                   action="#one-click-unsubscribe-section"
                   class="form-inline">
+              {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="one-click-unsubscribe">
               <select class="form-control mr-sm-2" name="unsubscribe-behaviour">
                 <option value="{{ UnsubscribeBehaviourEnum.PreserveOriginal.name }}" {% if current_user.unsub_behaviour.value == UnsubscribeBehaviourEnum.PreserveOriginal.value %}
@@ -641,6 +657,7 @@
               <br />
             </div>
             <form method="post" action="#blocked-behaviour" class="form-inline">
+              {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="change-blocked-behaviour">
               <select class="form-control mr-sm-2" name="blocked-behaviour">
                 <option value="{{ BlockBehaviourEnum.return_2xx.value }}"
@@ -673,6 +690,7 @@
               As email headers aren't encrypted, your mailbox service can know the sender address via this header.
             </div>
             <form method="post" action="#sender-header">
+              {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="sender-header">
               <div class="form-check">
                 <input type="checkbox"
@@ -693,14 +711,19 @@
         <div class="card">
           <div class="card-body">
             <div class="card-title">
-              Alias import
+              Alias import/export
             </div>
             <div class="mb-3">
               You can import your aliases created on other platforms into SimpleLogin.
+              You can also export your aliases to a readable csv format for a future batch import.
             </div>
             <a href="{{ url_for('dashboard.batch_import_route') }}"
                class="btn btn-outline-primary">
               Batch Import
+            </a>
+            <a href="{{ url_for('dashboard.alias_export_route') }}"
+               class="btn btn-outline-secondary">
+              Export Aliases
             </a>
           </div>
         </div>
@@ -717,6 +740,7 @@
             <div class="d-flex">
               <div>
                 <form method="post">
+                  {{ csrf_form.csrf_token }}
                   <input type="hidden" name="form-name" value="send-full-user-report">
                   <button class="btn btn-outline-info">
                     Request your data

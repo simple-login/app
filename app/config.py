@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
-
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
@@ -112,13 +111,16 @@ POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 DISABLE_REGISTRATION = os.environ.get("DISABLE_REGISTRATION", 'False').lower() not in ('false', '0', 'f')
 
 # allow using a different postfix port, useful when developing locally
-POSTFIX_PORT = 25
-if "POSTFIX_PORT" in os.environ:
-    POSTFIX_PORT = int(os.environ["POSTFIX_PORT"])
 
 # Use port 587 instead of 25 when sending emails through Postfix
 # Useful when calling Postfix from an external network
 POSTFIX_SUBMISSION_TLS = os.environ.get("POSTFIX_SUBMISSION_TLS", 'False').lower() not in ('false', '0', 'f')
+if POSTFIX_SUBMISSION_TLS:
+    default_postfix_port = 587
+else:
+    default_postfix_port = 25
+POSTFIX_PORT = int(os.environ.get("POSTFIX_PORT", default_postfix_port))
+POSTFIX_TIMEOUT = os.environ.get("POSTFIX_TIMEOUT", 3)
 
 # ["domain1.com", "domain2.com"]
 OTHER_ALIAS_DOMAINS = sl_getenv("OTHER_ALIAS_DOMAINS", list)
@@ -161,6 +163,7 @@ if "DKIM_PRIVATE_KEY_PATH" in os.environ:
 
 # Database
 DB_URI = os.environ["DB_URI"]
+DB_CONN_NAME = os.environ.get("DB_CONN_NAME", "webapp")
 
 # Flask secret
 FLASK_SECRET = os.environ["FLASK_SECRET"]
@@ -354,6 +357,7 @@ ALERT_COMPLAINT_TRANSACTIONAL_PHASE = "alert_complaint_transactional_phase"
 ALERT_QUARANTINE_DMARC = "alert_quarantine_dmarc"
 
 ALERT_DUAL_SUBSCRIPTION_WITH_PARTNER = "alert_dual_sub_with_partner"
+ALERT_WARN_MULTIPLE_SUBSCRIPTIONS = "alert_multiple_subscription"
 
 # <<<<< END ALERT EMAIL >>>>
 
@@ -494,3 +498,37 @@ JOB_TAKEN_RETRY_WAIT_MINS = 30
 
 # MEM_STORE
 MEM_STORE_URI = os.environ.get("MEM_STORE_URI", None)
+
+# Recovery codes hash salt
+RECOVERY_CODE_HMAC_SECRET = os.environ.get("RECOVERY_CODE_HMAC_SECRET") or (
+    FLASK_SECRET + "generatearandomtoken"
+)
+if not RECOVERY_CODE_HMAC_SECRET or len(RECOVERY_CODE_HMAC_SECRET) < 16:
+    raise RuntimeError(
+        "Please define RECOVERY_CODE_HMAC_SECRET in your configuration with a random string at least 16 chars long"
+    )
+
+
+# the minimum rspamd spam score above which emails that fail DMARC should be quarantined
+if "MIN_RSPAMD_SCORE_FOR_FAILED_DMARC" in os.environ:
+    MIN_RSPAMD_SCORE_FOR_FAILED_DMARC = float(
+        os.environ["MIN_RSPAMD_SCORE_FOR_FAILED_DMARC"]
+    )
+else:
+    MIN_RSPAMD_SCORE_FOR_FAILED_DMARC = None
+
+# run over all reverse alias for an alias and replace them with sender address
+ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT = (
+    "ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT" in os.environ
+)
+
+if ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
+    # max number of reverse alias that can be replaced
+    MAX_NB_REVERSE_ALIAS_REPLACEMENT = int(
+        os.environ["MAX_NB_REVERSE_ALIAS_REPLACEMENT"]
+    )
+
+# Only used for tests
+SKIP_MX_LOOKUP_ON_CHECK = False
+
+DISABLE_RATE_LIMIT = "DISABLE_RATE_LIMIT" in os.environ

@@ -2,4 +2,6 @@
 
 {% block content %}
 Your subscription will end on {{ manual_sub.end_at.format("YYYY-MM-DD") }}
+
+Please contact us on https://app.simplelogin.io/dashboard/support to renew your subscription.
 {% endblock %}

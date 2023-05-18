@@ -29,11 +29,10 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app import paddle_utils, config
+from app import paddle_utils, config, paddle_callback
 from app.admin_model import (
     SLAdminIndexView,
     UserAdmin,
-    EmailLogAdmin,
     AliasAdmin,
     MailboxAdmin,
     ManualSubscriptionAdmin,
@@ -43,6 +42,9 @@ from app.admin_model import (
     ProviderComplaintAdmin,
     NewsletterAdmin,
     NewsletterUserAdmin,
+    DailyMetricAdmin,
+    MetricAdmin,
+    InvalidMailboxDomainAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -102,12 +104,16 @@ from app.models import (
     ProviderComplaint,
     Newsletter,
     NewsletterUser,
+    DailyMetric,
+    Metric2,
+    InvalidMailboxDomain,
 )
 from app.monitor.base import monitor_bp
 from app.newsletter_utils import send_newsletter_to_user
 from app.oauth.base import oauth_bp
 from app.onboarding.base import onboarding_bp
 from app.phone.base import phone_bp
+from app.redis_services import initialize_redis_services
 from app.utils import random_string
 
 if SENTRY_DSN:
@@ -163,6 +169,7 @@ def create_app() -> Flask:
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     if MEM_STORE_URI:
         app.config[flask_limiter.extension.C.STORAGE_URL] = MEM_STORE_URI
+        initialize_redis_services(app, MEM_STORE_URI)
 
     limiter.init_app(app)
 
@@ -541,6 +548,11 @@ def setup_paddle_callback(app: Flask):
 
             sub: Subscription = Subscription.get_by(subscription_id=subscription_id)
             if sub:
+                next_bill_date = request.form.get("next_bill_date")
+                if not next_bill_date:
+                    paddle_callback.failed_payment(sub, subscription_id)
+                    return "OK"
+
                 LOG.d(
                     "Update subscription %s %s on %s, next bill date %s",
                     subscription_id,
@@ -745,7 +757,6 @@ def init_admin(app):
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
     admin.add_view(MailboxAdmin(Mailbox, Session))
-    admin.add_view(EmailLogAdmin(EmailLog, Session))
     admin.add_view(CouponAdmin(Coupon, Session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))
@@ -753,6 +764,9 @@ def init_admin(app):
     admin.add_view(ProviderComplaintAdmin(ProviderComplaint, Session))
     admin.add_view(NewsletterAdmin(Newsletter, Session))
     admin.add_view(NewsletterUserAdmin(NewsletterUser, Session))
+    admin.add_view(DailyMetricAdmin(DailyMetric, Session))
+    admin.add_view(MetricAdmin(Metric2, Session))
+    admin.add_view(InvalidMailboxDomainAdmin(InvalidMailboxDomain, Session))
 
 
 def register_custom_commands(app):
@@ -830,8 +844,8 @@ def register_custom_commands(app):
                 LOG.i(f"User {user_id} was maybe deleted in the meantime")
                 continue
 
-            to_email, unsubscribe_link, via_email = user.get_communication_email()
-            if not to_email:
+            comm_email, unsubscribe_link, via_email = user.get_communication_email()
+            if not comm_email:
                 continue
 
             sent, error_msg = send_newsletter_to_user(newsletter, user)

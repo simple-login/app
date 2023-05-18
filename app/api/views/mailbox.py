@@ -78,6 +78,9 @@ def delete_mailbox(mailbox_id):
     Delete mailbox
     Input:
         mailbox_id: in url
+        (optional) transfer_aliases_to: in body. Id of the new mailbox for the aliases.
+                                        If omitted or the value is set to -1,
+                                        the aliases of the mailbox will be deleted too.
     Output:
         200 if deleted successfully
 
@@ -91,11 +94,36 @@ def delete_mailbox(mailbox_id):
     if mailbox.id == user.default_mailbox_id:
         return jsonify(error="You cannot delete the default mailbox"), 400
 
+    data = request.get_json() or {}
+    transfer_mailbox_id = data.get("transfer_aliases_to")
+    if transfer_mailbox_id and int(transfer_mailbox_id) >= 0:
+        transfer_mailbox = Mailbox.get(transfer_mailbox_id)
+
+        if not transfer_mailbox or transfer_mailbox.user_id != user.id:
+            return (
+                jsonify(error="You must transfer the aliases to a mailbox you own."),
+                403,
+            )
+
+        if transfer_mailbox_id == mailbox_id:
+            return (
+                jsonify(
+                    error="You can not transfer the aliases to the mailbox you want to delete."
+                ),
+                400,
+            )
+
+        if not transfer_mailbox.verified:
+            return jsonify(error="Your new mailbox is not verified"), 400
+
     # Schedule delete account job
     LOG.w("schedule delete mailbox job for %s", mailbox)
     Job.create(
         name=JOB_DELETE_MAILBOX,
-        payload={"mailbox_id": mailbox.id},
+        payload={
+            "mailbox_id": mailbox.id,
+            "transfer_mailbox_id": transfer_mailbox_id,
+        },
         run_at=arrow.now(),
         commit=True,
     )

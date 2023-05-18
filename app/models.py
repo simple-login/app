@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import dataclasses
 import enum
 import hashlib
 import hmac
@@ -18,7 +19,7 @@ from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
 from jinja2 import FileSystemLoader, Environment
-from sqlalchemy import orm
+from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
@@ -44,7 +45,6 @@ from app.utils import (
     random_string,
     random_words,
     sanitize_email,
-    random_word,
 )
 
 Base = declarative_base()
@@ -231,6 +231,8 @@ class AuditLogActionEnum(EnumE):
     logged_as_user = 6
     extend_subscription = 7
     download_provider_complaint = 8
+    disable_user = 9
+    enable_user = 10
 
 
 class Phase(EnumE):
@@ -272,6 +274,12 @@ class IntEnumType(sa.types.TypeDecorator):
         return self._enum_type(enum_value)
 
 
+@dataclasses.dataclass
+class AliasOptions:
+    show_sl_domains: bool = True
+    show_partner_domains: Optional[Partner] = None
+
+
 class Hibp(Base, ModelMixin):
     __tablename__ = "hibp"
     name = sa.Column(sa.String(), nullable=False, unique=True, index=True)
@@ -290,7 +298,9 @@ class HibpNotifiedAlias(Base, ModelMixin):
     """
 
     __tablename__ = "hibp_notified_alias"
-    alias_id = sa.Column(sa.ForeignKey("alias.id", ondelete="cascade"), nullable=False)
+    alias_id = sa.Column(
+        sa.ForeignKey("alias.id", ondelete="cascade"), nullable=False, index=True
+    )
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=False)
 
     notified_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
@@ -418,7 +428,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     # newsletter is sent to this address
     newsletter_alias_id = sa.Column(
-        sa.ForeignKey("alias.id", ondelete="SET NULL"), nullable=True, default=None
+        sa.ForeignKey("alias.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+        index=True,
     )
 
     # whether to include the sender address in reverse-alias
@@ -517,7 +530,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     # Keep original unsub behaviour
     unsub_behaviour = sa.Column(
         IntEnumType(UnsubscribeBehaviourEnum),
-        default=UnsubscribeBehaviourEnum.DisableAlias,
+        default=UnsubscribeBehaviourEnum.PreserveOriginal,
         server_default=str(UnsubscribeBehaviourEnum.DisableAlias.value),
         nullable=False,
     )
@@ -556,7 +569,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     @classmethod
     def create(cls, email, name="", password=None, from_partner=False, **kwargs):
-        user: User = super(User, cls).create(email=email, name=name, **kwargs)
+        user: User = super(User, cls).create(email=email, name=name[:100], **kwargs)
 
         if password:
             user.set_password(password)
@@ -566,19 +579,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
         Session.flush()
         user.default_mailbox_id = mb.id
-
-        # create a first alias mail to show user how to use when they login
-        alias = Alias.create_new(
-            user,
-            prefix="simplelogin-newsletter",
-            mailbox_id=mb.id,
-            note="This is your first alias. It's used to receive SimpleLogin communications "
-            "like new features announcements, newsletters.",
-        )
-        Session.flush()
-
-        user.newsletter_alias_id = alias.id
-        Session.flush()
 
         # generate an alternative_id if needed
         if "alternative_id" not in kwargs:
@@ -597,6 +597,19 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             )
             Session.flush()
             return user
+
+        # create a first alias mail to show user how to use when they login
+        alias = Alias.create_new(
+            user,
+            prefix="simplelogin-newsletter",
+            mailbox_id=mb.id,
+            note="This is your first alias. It's used to receive SimpleLogin communications "
+            "like new features announcements, newsletters.",
+        )
+        Session.flush()
+
+        user.newsletter_alias_id = alias.id
+        Session.flush()
 
         if config.DISABLE_ONBOARDING:
             LOG.d("Disable onboarding emails")
@@ -623,7 +636,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return user
 
     def get_active_subscription(
-        self,
+        self, include_partner_subscription: bool = True
     ) -> Optional[
         Union[
             Subscription
@@ -651,19 +664,24 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if coinbase_subscription and coinbase_subscription.is_active():
             return coinbase_subscription
 
-        partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(self.id)
-        if partner_sub and partner_sub.is_active():
-            return partner_sub
+        if include_partner_subscription:
+            partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(
+                self.id
+            )
+            if partner_sub and partner_sub.is_active():
+                return partner_sub
 
         return None
 
     # region Billing
-    def lifetime_or_active_subscription(self) -> bool:
+    def lifetime_or_active_subscription(
+        self, include_partner_subscription: bool = True
+    ) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
 
-        return self.get_active_subscription() is not None
+        return self.get_active_subscription(include_partner_subscription) is not None
 
     def is_paid(self) -> bool:
         """same as _lifetime_or_active_subscription but not include free manual subscription"""
@@ -692,14 +710,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return True
 
-    def is_premium(self) -> bool:
+    def is_premium(self, include_partner_subscription: bool = True) -> bool:
         """
         user is premium if they:
         - have a lifetime deal or
         - in trial period or
         - active subscription
         """
-        if self.lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription(include_partner_subscription):
             return True
 
         if self.trial_end and arrow.now() < self.trial_end:
@@ -866,14 +884,16 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def custom_domains(self):
         return CustomDomain.filter_by(user_id=self.id, verified=True).all()
 
-    def available_domains_for_random_alias(self) -> List[Tuple[bool, str]]:
+    def available_domains_for_random_alias(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> List[Tuple[bool, str]]:
         """Return available domains for user to create random aliases
         Each result record contains:
         - whether the domain belongs to SimpleLogin
         - the domain
         """
         res = []
-        for domain in self.available_sl_domains():
+        for domain in self.available_sl_domains(alias_options=alias_options):
             res.append((True, domain))
 
         for custom_domain in self.verified_custom_domains():
@@ -943,7 +963,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                     return alias.email, unsub.link, unsub.via_email
                 # alias disabled -> user doesn't want to receive newsletter
                 else:
-                    return None, None, False
+                    return None, "", False
             else:
                 # do not handle http POST unsubscribe
                 if config.UNSUBSCRIBER:
@@ -956,32 +976,57 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                         True,
                     )
 
-        return None, None, False
+        return None, "", False
 
-    def available_sl_domains(self) -> [str]:
+    def available_sl_domains(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> [str]:
         """
         Return all SimpleLogin domains that user can use when creating a new alias, including:
         - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         """
-        return [sl_domain.domain for sl_domain in self.get_sl_domains()]
+        return [
+            sl_domain.domain
+            for sl_domain in self.get_sl_domains(alias_options=alias_options)
+        ]
 
-    def get_sl_domains(self) -> List["SLDomain"]:
-        query = SLDomain.filter_by(hidden=False).order_by(SLDomain.order)
-
-        if self.is_premium():
-            return query.all()
+    def get_sl_domains(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> list["SLDomain"]:
+        if alias_options is None:
+            alias_options = AliasOptions()
+        conditions = [SLDomain.hidden == False]  # noqa: E712
+        if not self.is_premium():
+            conditions.append(SLDomain.premium_only == False)  # noqa: E712
+        partner_domain_cond = []  # noqa:E711
+        if alias_options.show_partner_domains is not None:
+            partner_user = PartnerUser.filter_by(
+                user_id=self.id, partner_id=alias_options.show_partner_domains.id
+            ).first()
+            if partner_user is not None:
+                partner_domain_cond.append(
+                    SLDomain.partner_id == partner_user.partner_id
+                )
+        if alias_options.show_sl_domains:
+            partner_domain_cond.append(SLDomain.partner_id == None)  # noqa:E711
+        if len(partner_domain_cond) == 1:
+            conditions.append(partner_domain_cond[0])
         else:
-            return query.filter_by(premium_only=False).all()
+            conditions.append(or_(*partner_domain_cond))
+        query = Session.query(SLDomain).filter(*conditions).order_by(SLDomain.order)
+        return query.all()
 
-    def available_alias_domains(self) -> [str]:
+    def available_alias_domains(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> [str]:
         """return all domains that user can use when creating a new alias, including:
         - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         - Verified custom domains
 
         """
-        domains = self.available_sl_domains()
+        domains = self.available_sl_domains(alias_options=alias_options)
 
         for custom_domain in self.verified_custom_domains():
             domains.append(custom_domain.domain)
@@ -999,16 +1044,21 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             > 0
         )
 
-    def get_random_alias_suffix(self):
+    def get_random_alias_suffix(self, custom_domain: Optional["CustomDomain"] = None):
         """Get random suffix for an alias based on user's preference.
 
+        Use a shorter suffix in case of custom domain
 
         Returns:
             str: the random suffix generated
         """
         if self.random_alias_suffix == AliasSuffixEnum.random_string.value:
             return random_string(config.ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
-        return random_word()
+
+        if custom_domain is None:
+            return random_words(1, 3)
+
+        return random_words(1)
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
@@ -1253,34 +1303,48 @@ class OauthToken(Base, ModelMixin):
         return self.expired < arrow.now()
 
 
-def generate_email(
+def available_sl_email(email: str) -> bool:
+    if (
+        Alias.get_by(email=email)
+        or Contact.get_by(reply_email=email)
+        or DeletedAlias.get_by(email=email)
+    ):
+        return False
+    return True
+
+
+def generate_random_alias_email(
     scheme: int = AliasGeneratorEnum.word.value,
     in_hex: bool = False,
-    alias_domain=config.FIRST_ALIAS_DOMAIN,
+    alias_domain: str = config.FIRST_ALIAS_DOMAIN,
+    retries: int = 10,
 ) -> str:
     """generate an email address that does not exist before
     :param alias_domain: the domain used to generate the alias.
     :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
+    :param retries: int, How many times we can try to generate an alias in case of collision
     :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
     """
+    if retries <= 0:
+        raise Exception("Cannot generate alias after many retries")
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
         random_email = name + "@" + alias_domain
     else:
-        random_email = random_words() + "@" + alias_domain
+        random_email = random_words(2, 3) + "@" + alias_domain
 
     random_email = random_email.lower().strip()
 
     # check that the client does not exist yet
-    if not Alias.get_by(email=random_email) and not DeletedAlias.get_by(
-        email=random_email
-    ):
+    if available_sl_email(random_email):
         LOG.d("generate email %s", random_email)
         return random_email
 
     # Rerun the function
     LOG.w("email %s already exists, generate a new email", random_email)
-    return generate_email(scheme=scheme, in_hex=in_hex)
+    return generate_random_alias_email(
+        scheme=scheme, in_hex=in_hex, retries=retries - 1
+    )
 
 
 class Alias(Base, ModelMixin):
@@ -1457,6 +1521,7 @@ class Alias(Base, ModelMixin):
                 new_alias.custom_domain_id = custom_domain.id
 
         Session.add(new_alias)
+        DailyMetric.get_or_create_today_metric().nb_alias += 1
 
         if commit:
             Session.commit()
@@ -1478,7 +1543,7 @@ class Alias(Base, ModelMixin):
             suffix = user.get_random_alias_suffix()
             email = f"{prefix}.{suffix}@{config.FIRST_ALIAS_DOMAIN}"
 
-            if not cls.get_by(email=email) and not DeletedAlias.get_by(email=email):
+            if available_sl_email(email):
                 break
 
         return Alias.create(
@@ -1507,7 +1572,7 @@ class Alias(Base, ModelMixin):
 
         if user.default_alias_custom_domain_id:
             custom_domain = CustomDomain.get(user.default_alias_custom_domain_id)
-            random_email = generate_email(
+            random_email = generate_random_alias_email(
                 scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
             )
         elif user.default_alias_public_domain_id:
@@ -1515,12 +1580,12 @@ class Alias(Base, ModelMixin):
             if sl_domain.premium_only and not user.is_premium():
                 LOG.w("%s not premium, cannot use %s", user, sl_domain)
             else:
-                random_email = generate_email(
+                random_email = generate_random_alias_email(
                     scheme=scheme, in_hex=in_hex, alias_domain=sl_domain.domain
                 )
 
         if not random_email:
-            random_email = generate_email(scheme=scheme, in_hex=in_hex)
+            random_email = generate_random_alias_email(scheme=scheme, in_hex=in_hex)
 
         alias = Alias.create(
             user_id=user.id,
@@ -1554,7 +1619,9 @@ class ClientUser(Base, ModelMixin):
     client_id = sa.Column(sa.ForeignKey(Client.id, ondelete="cascade"), nullable=False)
 
     # Null means client has access to user original email
-    alias_id = sa.Column(sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=True)
+    alias_id = sa.Column(
+        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=True, index=True
+    )
 
     # user can decide to send to client another name
     name = sa.Column(
@@ -1638,6 +1705,8 @@ class Contact(Base, ModelMixin):
     Store configuration of sender (website-email) and alias.
     """
 
+    MAX_NAME_LENGTH = 512
+
     __tablename__ = "contact"
 
     __table_args__ = (
@@ -1671,7 +1740,7 @@ class Contact(Base, ModelMixin):
     is_cc = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
 
     pgp_public_key = sa.Column(sa.Text, nullable=True)
-    pgp_finger_print = sa.Column(sa.String(512), nullable=True)
+    pgp_finger_print = sa.Column(sa.String(512), nullable=True, index=True)
 
     alias = orm.relationship(Alias, backref="contacts")
     user = orm.relationship(User)
@@ -2082,7 +2151,9 @@ class AliasUsedOn(Base, ModelMixin):
         sa.UniqueConstraint("alias_id", "hostname", name="uq_alias_used"),
     )
 
-    alias_id = sa.Column(sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
+    alias_id = sa.Column(
+        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+    )
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
     alias = orm.relationship(Alias)
@@ -2683,11 +2754,20 @@ class RecoveryCode(Base, ModelMixin):
     __table_args__ = (sa.UniqueConstraint("user_id", "code", name="uq_recovery_code"),)
 
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-    code = sa.Column(sa.String(16), nullable=False)
+    code = sa.Column(sa.String(64), nullable=False)
     used = sa.Column(sa.Boolean, nullable=False, default=False)
     used_at = sa.Column(ArrowType, nullable=True, default=None)
 
     user = orm.relationship(User)
+
+    @classmethod
+    def _hash_code(cls, code: str) -> str:
+        code_hmac = hmac.new(
+            config.RECOVERY_CODE_HMAC_SECRET.encode("utf-8"),
+            code.encode("utf-8"),
+            "sha3_224",
+        )
+        return base64.urlsafe_b64encode(code_hmac.digest()).decode("utf-8").rstrip("=")
 
     @classmethod
     def generate(cls, user):
@@ -2697,14 +2777,27 @@ class RecoveryCode(Base, ModelMixin):
         Session.flush()
 
         nb_code = 0
+        raw_codes = []
         while nb_code < _NB_RECOVERY_CODE:
-            code = random_string(_RECOVERY_CODE_LENGTH)
-            if not cls.get_by(user_id=user.id, code=code):
-                cls.create(user_id=user.id, code=code)
+            raw_code = random_string(_RECOVERY_CODE_LENGTH)
+            encoded_code = cls._hash_code(raw_code)
+            if not cls.get_by(user_id=user.id, code=encoded_code):
+                cls.create(user_id=user.id, code=encoded_code)
+                raw_codes.append(raw_code)
                 nb_code += 1
 
         LOG.d("Create recovery codes for %s", user)
         Session.commit()
+        return raw_codes
+
+    @classmethod
+    def find_by_user_code(cls, user: User, code: str):
+        hashed_code = cls._hash_code(code)
+        # TODO: Only return hashed codes once there aren't unhashed codes in the db.
+        found_code = cls.get_by(user_id=user.id, code=hashed_code)
+        if found_code:
+            return found_code
+        return cls.get_by(user_id=user.id, code=code)
 
     @classmethod
     def empty(cls, user):
@@ -2737,6 +2830,31 @@ class Notification(Base, ModelMixin):
         )
 
 
+class Partner(Base, ModelMixin):
+    __tablename__ = "partner"
+
+    name = sa.Column(sa.String(128), unique=True, nullable=False)
+    contact_email = sa.Column(sa.String(128), unique=True, nullable=False)
+
+    @staticmethod
+    def find_by_token(token: str) -> Optional[Partner]:
+        hmaced = PartnerApiToken.hmac_token(token)
+        res = (
+            Session.query(Partner, PartnerApiToken)
+            .filter(
+                and_(
+                    PartnerApiToken.token == hmaced,
+                    Partner.id == PartnerApiToken.partner_id,
+                )
+            )
+            .first()
+        )
+        if res:
+            partner, partner_api_token = res
+            return partner
+        return None
+
+
 class SLDomain(Base, ModelMixin):
     """SimpleLogin domains"""
 
@@ -2754,11 +2872,22 @@ class SLDomain(Base, ModelMixin):
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    partner_id = sa.Column(
+        sa.ForeignKey(Partner.id, ondelete="cascade"),
+        nullable=True,
+        default=None,
+        server_default="NULL",
+    )
+
     # if enabled, do not show this domain when user creates a custom alias
     hidden = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
 
     # the order in which the domains are shown when user creates a custom alias
     order = sa.Column(sa.Integer, nullable=False, default=0, server_default="0")
+
+    use_as_reverse_alias = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
+    )
 
     def __repr__(self):
         return f"<SLDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
@@ -2868,6 +2997,34 @@ class Metric2(Base, ModelMixin):
     nb_deleted_subdomain = sa.Column(sa.Float, nullable=True)
 
     nb_app = sa.Column(sa.Float, nullable=True)
+
+
+class DailyMetric(Base, ModelMixin):
+    """
+    For storing daily event-based metrics.
+    The difference between DailyEventMetric and Metric2 is Metric2 stores the total
+    whereas DailyEventMetric is reset for a new day
+    """
+
+    __tablename__ = "daily_metric"
+    date = sa.Column(sa.Date, nullable=False, unique=True)
+
+    # users who sign up via web without using "Login with Proton"
+    nb_new_web_non_proton_user = sa.Column(
+        sa.Integer, nullable=False, server_default="0", default=0
+    )
+
+    nb_alias = sa.Column(sa.Integer, nullable=False, server_default="0", default=0)
+
+    @staticmethod
+    def get_or_create_today_metric() -> DailyMetric:
+        today = arrow.utcnow().date()
+        daily_metric = DailyMetric.get_by(date=today)
+        if not daily_metric:
+            daily_metric = DailyMetric.create(
+                date=today, nb_new_web_non_proton_user=0, nb_alias=0
+            )
+        return daily_metric
 
 
 class Bounce(Base, ModelMixin):
@@ -3127,6 +3284,26 @@ class AdminAuditLog(Base):
             data={},
         )
 
+    @classmethod
+    def disable_user(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.disable_user.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
+
+    @classmethod
+    def enable_user(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.enable_user.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
+
 
 class ProviderComplaintState(EnumE):
     new = 0
@@ -3150,31 +3327,6 @@ class ProviderComplaint(Base, ModelMixin):
 
     user = orm.relationship(User, foreign_keys=[user_id])
     refused_email = orm.relationship(RefusedEmail, foreign_keys=[refused_email_id])
-
-
-class Partner(Base, ModelMixin):
-    __tablename__ = "partner"
-
-    name = sa.Column(sa.String(128), unique=True, nullable=False)
-    contact_email = sa.Column(sa.String(128), unique=True, nullable=False)
-
-    @staticmethod
-    def find_by_token(token: str) -> Optional[Partner]:
-        hmaced = PartnerApiToken.hmac_token(token)
-        res = (
-            Session.query(Partner, PartnerApiToken)
-            .filter(
-                and_(
-                    PartnerApiToken.token == hmaced,
-                    Partner.id == PartnerApiToken.partner_id,
-                )
-            )
-            .first()
-        )
-        if res:
-            partner, partner_api_token = res
-            return partner
-        return None
 
 
 class PartnerApiToken(Base, ModelMixin):
@@ -3246,7 +3398,7 @@ class PartnerSubscription(Base, ModelMixin):
     )
 
     # when the partner subscription ends
-    end_at = sa.Column(ArrowType, nullable=False)
+    end_at = sa.Column(ArrowType, nullable=False, index=True)
 
     partner_user = orm.relationship(PartnerUser)
 
@@ -3301,7 +3453,6 @@ class NewsletterUser(Base, ModelMixin):
 
 
 class ApiToCookieToken(Base, ModelMixin):
-
     __tablename__ = "api_cookie_token"
     code = sa.Column(sa.String(128), unique=True, nullable=False)
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)

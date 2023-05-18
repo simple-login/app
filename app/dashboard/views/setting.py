@@ -29,6 +29,7 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.errors import ProtonPartnerNotSetUp
+from app.extensions import limiter
 from app.image_validation import detect_image_format, ImageFormat
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
@@ -53,7 +54,11 @@ from app.models import (
     UnsubscribeBehaviourEnum,
 )
 from app.proton.utils import get_proton_partner, perform_proton_account_unlink
-from app.utils import random_string, sanitize_email
+from app.utils import (
+    random_string,
+    CSRFValidationForm,
+    canonicalize_email,
+)
 
 
 class SettingForm(FlaskForm):
@@ -100,10 +105,12 @@ def get_partner_subscription_and_name(
 
 @dashboard_bp.route("/setting", methods=["GET", "POST"])
 @login_required
+@limiter.limit("5/minute", methods=["POST"])
 def setting():
     form = SettingForm()
     promo_form = PromoCodeForm()
     change_email_form = ChangeEmailForm()
+    csrf_form = CSRFValidationForm()
 
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
@@ -112,15 +119,15 @@ def setting():
         pending_email = None
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(url_for("dashboard.setting"))
         if request.form.get("form-name") == "update-email":
             if change_email_form.validate():
                 # whether user can proceed with the email update
                 new_email_valid = True
-                if (
-                    sanitize_email(change_email_form.email.data) != current_user.email
-                    and not pending_email
-                ):
-                    new_email = sanitize_email(change_email_form.email.data)
+                new_email = canonicalize_email(change_email_form.email.data)
+                if new_email != current_user.email and not pending_email:
 
                     # check if this email is not already used
                     if personal_email_already_used(new_email) or Alias.get_by(
@@ -190,6 +197,16 @@ def setting():
                             "error",
                         )
                         return redirect(url_for("dashboard.setting"))
+
+                    if current_user.profile_picture_id is not None:
+                        current_profile_file = File.get_by(
+                            id=current_user.profile_picture_id
+                        )
+                        if (
+                            current_profile_file is not None
+                            and current_profile_file.user_id == current_user.id
+                        ):
+                            s3.delete(current_user.path)
 
                     file_path = random_string(30)
                     file = File.create(user_id=current_user.id, path=file_path)
@@ -395,6 +412,7 @@ def setting():
 
     return render_template(
         "dashboard/setting.html",
+        csrf_form=csrf_form,
         form=form,
         PlanEnum=PlanEnum,
         SenderFormatEnum=SenderFormatEnum,
@@ -443,8 +461,13 @@ def send_change_email_confirmation(user: User, email_change: EmailChange):
 
 
 @dashboard_bp.route("/resend_email_change", methods=["GET", "POST"])
+@limiter.limit("5/hour")
 @login_required
 def resend_email_change():
+    form = CSRFValidationForm()
+    if not form.validate():
+        flash("Invalid request. Please try again", "warning")
+        return redirect(url_for("dashboard.setting"))
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
         # extend email change expiration
@@ -464,6 +487,10 @@ def resend_email_change():
 @dashboard_bp.route("/cancel_email_change", methods=["GET", "POST"])
 @login_required
 def cancel_email_change():
+    form = CSRFValidationForm()
+    if not form.validate():
+        flash("Invalid request. Please try again", "warning")
+        return redirect(url_for("dashboard.setting"))
     email_change = EmailChange.get_by(user_id=current_user.id)
     if email_change:
         EmailChange.delete(email_change.id)
@@ -477,9 +504,14 @@ def cancel_email_change():
         return redirect(url_for("dashboard.setting"))
 
 
-@dashboard_bp.route("/unlink_proton_account", methods=["GET", "POST"])
+@dashboard_bp.route("/unlink_proton_account", methods=["POST"])
 @login_required
 def unlink_proton_account():
+    csrf_form = CSRFValidationForm()
+    if not csrf_form.validate():
+        flash("Invalid request", "warning")
+        return redirect(url_for("dashboard.setting"))
+
     perform_proton_account_unlink(current_user)
     flash("Your Proton account has been unlinked", "success")
     return redirect(url_for("dashboard.setting"))

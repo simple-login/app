@@ -6,8 +6,8 @@ import os
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from email.message import Message
 from functools import wraps
-from mailbox import Message
 from smtplib import SMTP, SMTPException
 from typing import Optional, Dict, List, Callable
 
@@ -17,11 +17,14 @@ from attr import dataclass
 from app import config
 from app.email import headers
 from app.log import LOG
-from app.message_utils import message_to_bytes
+from app.message_utils import message_to_bytes, message_format_base64_parts
 
 
 @dataclass
 class SendRequest:
+
+    SAVE_EXTENSION = "sendrequest"
+
     envelope_from: str
     envelope_to: str
     msg: Message
@@ -95,7 +98,7 @@ class MailSender:
     def enable_background_pool(self, max_workers=10):
         self._pool = ThreadPoolExecutor(max_workers=max_workers)
 
-    def send(self, send_request: SendRequest, retries: int = 2):
+    def send(self, send_request: SendRequest, retries: int = 2) -> bool:
         """replace smtp.sendmail"""
         if self._store_emails:
             self._emails_sent.append(send_request)
@@ -106,21 +109,21 @@ class MailSender:
                 send_request.msg[headers.FROM],
                 send_request.msg[headers.TO],
             )
-            return
+            return True
         if not self._pool:
-            self._send_to_smtp(send_request, retries)
+            return self._send_to_smtp(send_request, retries)
         else:
             self._pool.submit(self._send_to_smtp, (send_request, retries))
+            return True
 
-    def _send_to_smtp(self, send_request: SendRequest, retries: int):
+    def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
         try:
             start = time.time()
-            if config.POSTFIX_SUBMISSION_TLS:
-                smtp_port = 587
-            else:
-                smtp_port = config.POSTFIX_PORT
-
-            with SMTP(config.POSTFIX_SERVER, smtp_port) as smtp:
+            with SMTP(
+                config.POSTFIX_SERVER,
+                config.POSTFIX_PORT,
+                timeout=config.POSTFIX_TIMEOUT,
+            ) as smtp:
                 if config.POSTFIX_SUBMISSION_TLS:
                     smtp.starttls()
 
@@ -151,25 +154,32 @@ class MailSender:
                 newrelic.agent.record_custom_metric(
                     "Custom/smtp_sending_time", time.time() - start
                 )
+                return True
         except (
             SMTPException,
             ConnectionRefusedError,
             TimeoutError,
         ) as e:
             if retries > 0:
-                time.sleep(0.3 * send_request.retries)
-                self._send_to_smtp(send_request, retries - 1)
+                time.sleep(0.3 * retries)
+                return self._send_to_smtp(send_request, retries - 1)
             else:
                 if send_request.ignore_smtp_errors:
                     LOG.e(f"Ignore smtp error {e}")
-                    return
+                    return False
                 LOG.e(
-                    f"Could not send message to smtp server {config.POSTFIX_SERVER}:{smtp_port}"
+                    f"Could not send message to smtp server {config.POSTFIX_SERVER}:{config.POSTFIX_PORT}"
                 )
-                self._save_request_to_unsent_dir(send_request)
+                if config.SAVE_UNSENT_DIR:
+                    self._save_request_to_unsent_dir(send_request)
+                return False
 
-    def _save_request_to_unsent_dir(self, send_request: SendRequest):
-        file_name = f"DeliveryFail-{int(time.time())}-{uuid.uuid4()}.eml"
+    def _save_request_to_unsent_dir(
+        self, send_request: SendRequest, prefix: str = "DeliveryFail"
+    ):
+        file_name = (
+            f"{prefix}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
+        )
         file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
         file_contents = send_request.to_bytes()
         with open(file_path, "wb") as fd:
@@ -178,6 +188,64 @@ class MailSender:
 
 
 mail_sender = MailSender()
+
+
+def save_request_to_failed_dir(exception_name: str, send_request: SendRequest):
+    file_name = f"{exception_name}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
+    failed_file_dir = os.path.join(config.SAVE_UNSENT_DIR, "failed")
+    try:
+        os.makedirs(failed_file_dir)
+    except FileExistsError:
+        pass
+    file_path = os.path.join(failed_file_dir, file_name)
+    file_contents = send_request.to_bytes()
+    with open(file_path, "wb") as fd:
+        fd.write(file_contents)
+    return file_path
+
+
+def load_unsent_mails_from_fs_and_resend():
+    if not config.SAVE_UNSENT_DIR:
+        return
+    for filename in os.listdir(config.SAVE_UNSENT_DIR):
+        (_, extension) = os.path.splitext(filename)
+        if extension[1:] != SendRequest.SAVE_EXTENSION:
+            LOG.i(f"Skipping {filename} does not have the proper extension")
+            continue
+        full_file_path = os.path.join(config.SAVE_UNSENT_DIR, filename)
+        if not os.path.isfile(full_file_path):
+            LOG.i(f"Skipping {filename} as it's not a file")
+            continue
+        LOG.i(f"Trying to re-deliver email {filename}")
+        try:
+            send_request = SendRequest.load_from_file(full_file_path)
+        except Exception as e:
+            LOG.e(f"Cannot load {filename}. Error {e}")
+            continue
+        try:
+            send_request.ignore_smtp_errors = True
+            if mail_sender.send(send_request, 2):
+                os.unlink(full_file_path)
+                newrelic.agent.record_custom_event(
+                    "DeliverUnsentEmail", {"delivered": "true"}
+                )
+            else:
+                newrelic.agent.record_custom_event(
+                    "DeliverUnsentEmail", {"delivered": "false"}
+                )
+        except Exception as e:
+            # Unlink original file to avoid re-doing the same
+            os.unlink(full_file_path)
+            LOG.e(
+                "email sending failed with error:%s "
+                "envelope %s -> %s, mail %s -> %s saved to %s",
+                e,
+                send_request.envelope_from,
+                send_request.envelope_to,
+                send_request.msg[headers.FROM],
+                send_request.msg[headers.TO],
+                save_request_to_failed_dir(e.__class__.__name__, send_request),
+            )
 
 
 def sl_sendmail(
@@ -193,7 +261,7 @@ def sl_sendmail(
     send_request = SendRequest(
         envelope_from,
         envelope_to,
-        msg,
+        message_format_base64_parts(msg),
         mail_options,
         rcpt_options,
         is_forward,

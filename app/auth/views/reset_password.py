@@ -60,8 +60,8 @@ def reset_password():
         # this can be served to activate user too
         user.activated = True
 
-        # remove the reset password code
-        ResetPasswordCode.delete(reset_password_code.id)
+        # remove all reset password codes
+        ResetPasswordCode.filter_by(user_id=user.id).delete()
 
         # change the alternative_id to log user out on other browsers
         user.alternative_id = str(uuid.uuid4())

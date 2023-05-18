@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
+from app import parallel_limiter
 from app.config import EMAIL_SERVERS_WITH_PRIORITY
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -19,6 +20,7 @@ class NewCustomDomainForm(FlaskForm):
 
 @dashboard_bp.route("/custom_domain", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(only_when=lambda: request.method == "POST")
 def custom_domain():
     custom_domains = CustomDomain.filter_by(
         user_id=current_user.id, is_sl_subdomain=False

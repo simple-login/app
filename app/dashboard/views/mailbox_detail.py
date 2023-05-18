@@ -1,9 +1,10 @@
 from smtplib import SMTPRecipientsRefused
 
+from email_validator import validate_email, EmailNotValidError
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from itsdangerous import Signer
+from itsdangerous import TimestampSigner
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
@@ -17,7 +18,7 @@ from app.log import LOG
 from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key_and_check
-from app.utils import sanitize_email
+from app.utils import sanitize_email, CSRFValidationForm
 
 
 class ChangeEmailForm(FlaskForm):
@@ -35,6 +36,7 @@ def mailbox_detail_route(mailbox_id):
         return redirect(url_for("dashboard.index"))
 
     change_email_form = ChangeEmailForm()
+    csrf_form = CSRFValidationForm()
 
     if mailbox.new_email:
         pending_email = mailbox.new_email
@@ -42,6 +44,9 @@ def mailbox_detail_route(mailbox_id):
         pending_email = None
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if (
             request.form.get("form-name") == "update-email"
             and change_email_form.validate_on_submit()
@@ -94,16 +99,23 @@ def mailbox_detail_route(mailbox_id):
             )
         elif request.form.get("form-name") == "add-authorized-address":
             address = sanitize_email(request.form.get("email"))
-            if AuthorizedAddress.get_by(mailbox_id=mailbox.id, email=address):
-                flash(f"{address} already added", "error")
+            try:
+                validate_email(
+                    address, check_deliverability=False, allow_smtputf8=False
+                ).domain
+            except EmailNotValidError:
+                flash(f"invalid {address}", "error")
             else:
-                AuthorizedAddress.create(
-                    user_id=current_user.id,
-                    mailbox_id=mailbox.id,
-                    email=address,
-                    commit=True,
-                )
-                flash(f"{address} added as authorized address", "success")
+                if AuthorizedAddress.get_by(mailbox_id=mailbox.id, email=address):
+                    flash(f"{address} already added", "error")
+                else:
+                    AuthorizedAddress.create(
+                        user_id=current_user.id,
+                        mailbox_id=mailbox.id,
+                        email=address,
+                        commit=True,
+                    )
+                    flash(f"{address} added as authorized address", "success")
 
             return redirect(
                 url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
@@ -198,7 +210,7 @@ def mailbox_detail_route(mailbox_id):
 
 
 def verify_mailbox_change(user, mailbox, new_email):
-    s = Signer(MAILBOX_SECRET)
+    s = TimestampSigner(MAILBOX_SECRET)
     mailbox_id_signed = s.sign(str(mailbox.id)).decode()
     verification_url = (
         f"{URL}/dashboard/mailbox/confirm_change?mailbox_id={mailbox_id_signed}"
@@ -250,11 +262,11 @@ def cancel_mailbox_change_route(mailbox_id):
 
 @dashboard_bp.route("/mailbox/confirm_change")
 def mailbox_confirm_change_route():
-    s = Signer(MAILBOX_SECRET)
+    s = TimestampSigner(MAILBOX_SECRET)
     signed_mailbox_id = request.args.get("mailbox_id")
 
     try:
-        mailbox_id = int(s.unsign(signed_mailbox_id))
+        mailbox_id = int(s.unsign(signed_mailbox_id, max_age=900))
     except Exception:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.index"))

@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from aiosmtpd.handlers import Message
 from aiosmtpd.smtp import Envelope
 
-from app import s3
+from app import s3, config
 from app.config import (
     DMARC_CHECK_ENABLED,
     ALERT_QUARANTINE_DMARC,
@@ -34,6 +34,37 @@ def apply_dmarc_policy_for_forward_phase(
 
     from_header = get_header_unicode(msg[headers.FROM])
 
+    warning_plain_text = f"""This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content.
+More info on https://simplelogin.io/docs/getting-started/anti-phishing/
+            """
+    warning_html = f"""
+        <p style="color:red">
+            This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content.
+            More info on <a href="https://simplelogin.io/docs/getting-started/anti-phishing/">anti-phishing measure</a>
+        </p>
+        """
+
+    # do not quarantine an email if fails DMARC but has a small rspamd score
+    if (
+        config.MIN_RSPAMD_SCORE_FOR_FAILED_DMARC is not None
+        and spam_result.rspamd_score < config.MIN_RSPAMD_SCORE_FOR_FAILED_DMARC
+        and spam_result.dmarc
+        in (
+            DmarcCheckResult.quarantine,
+            DmarcCheckResult.reject,
+        )
+    ):
+        LOG.w(
+            f"email fails DMARC but has a small rspamd score, from contact {contact.email} to alias {alias.email}."
+            f"mail_from:{envelope.mail_from}, from_header: {from_header}"
+        )
+        changed_msg = add_header(
+            msg,
+            warning_plain_text,
+            warning_html,
+        )
+        return changed_msg, None
+
     if spam_result.dmarc == DmarcCheckResult.soft_fail:
         LOG.w(
             f"dmarc forward: soft_fail from contact {contact.email} to alias {alias.email}."
@@ -41,15 +72,8 @@ def apply_dmarc_policy_for_forward_phase(
         )
         changed_msg = add_header(
             msg,
-            f"""This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content.
-More info on https://simplelogin.io/docs/getting-started/anti-phishing/
-            """,
-            f"""
-        <p style="color:red">
-            This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content.
-            More info on <a href="https://simplelogin.io/docs/getting-started/anti-phishing/">anti-phishing measure</a>
-        </p>
-        """,
+            warning_plain_text,
+            warning_html,
         )
         return changed_msg, None
 
@@ -133,6 +157,7 @@ def apply_dmarc_policy_for_reply_phase(
         DmarcCheckResult.soft_fail,
     ):
         return None
+
     LOG.w(
         f"dmarc reply: Put email from {alias_from.email} to {contact_recipient} into quarantine. {spam_result.event_data()}, "
         f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"

@@ -10,6 +10,7 @@
   <h3 class="mb-1">Auto create/on the fly alias</h3>
   <div>
     <form method="post">
+      {{ csrf_form.csrf_token }}
       <input type="hidden" name="form-name" value="switch-catch-all">
       <label class="custom-switch cursor mt-2 pl-0" data-toggle="tooltip" {% if custom_domain.catch_all %}
          title="Disable catch-all" {% else %} title="Enable catch-all" {% endif %}>
@@ -41,6 +42,7 @@
     </div>
     {% set domain_mailboxes=custom_domain.mailboxes %}
     <form method="post" class="mt-2">
+      {{ csrf_form.csrf_token }}
       <input type="hidden" name="form-name" value="update">
       <input type="hidden" name="domain-id" value="{{ custom_domain.id }}">
       <div class="d-flex">
@@ -73,6 +75,7 @@
   </div>
   <div>
     <form method="post" class="form-inline">
+      {{ csrf_form.csrf_token }}
       <input type="hidden" name="form-name" value="set-name">
       <div class="form-group">
         <input class="form-control mr-2"
@@ -94,6 +97,7 @@
   <div>Add a random prefix for this domain when creating a new alias.</div>
   <div>
     <form method="post">
+      {{ csrf_form.csrf_token }}
       <input type="hidden"
              name="form-name"
              value="switch-random-prefix-generation">
@@ -134,6 +138,7 @@
     {% endif %}
   </div>
   <form method="post">
+    {{ csrf_form.csrf_token }}
     <input type="hidden" name="form-name" value="delete">
     <span class="delete-custom-domain btn btn-danger">Delete {{ custom_domain.domain }}</span>
   </form>

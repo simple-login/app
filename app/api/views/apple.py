@@ -40,9 +40,10 @@ def apple_process_payment():
     LOG.d("request for /apple/process_payment from %s", user)
     data = request.get_json()
     receipt_data = data.get("receipt_data")
-    is_macapp = "is_macapp" in data
+    is_macapp = "is_macapp" in data and data["is_macapp"] is True
 
     if is_macapp:
+        LOG.d("Use Macapp secret")
         password = MACAPP_APPLE_API_SECRET
     else:
         password = APPLE_API_SECRET
@@ -474,7 +475,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     # }
 
     if data["status"] != 0:
-        LOG.w(
+        LOG.e(
             "verifyReceipt status !=0, probably invalid receipt. User %s, data %s",
             user,
             data,
@@ -521,9 +522,10 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
 
     if apple_sub:
         LOG.d(
-            "Update AppleSubscription for user %s, expired at %s, plan %s",
+            "Update AppleSubscription for user %s, expired at %s (%s), plan %s",
             user,
             expires_date,
+            expires_date.humanize(),
             plan,
         )
         apple_sub.receipt_data = receipt_data

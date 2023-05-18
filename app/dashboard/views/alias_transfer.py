@@ -22,6 +22,7 @@ from app.models import (
     ClientUser,
 )
 from app.models import Mailbox
+from app.utils import CSRFValidationForm
 
 
 def transfer(alias, new_user, new_mailboxes: [Mailbox]):
@@ -105,8 +106,12 @@ def alias_transfer_send_route(alias_id):
         return redirect(url_for("dashboard.index"))
 
     alias_transfer_url = None
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         # generate a new transfer_token
         if request.form.get("form-name") == "create":
             transfer_token = f"{alias.id}.{secrets.token_urlsafe(32)}"
@@ -133,6 +138,7 @@ def alias_transfer_send_route(alias_id):
         alias_transfer_url=alias_transfer_url,
         link_active=alias.transfer_token_expiration is not None
         and alias.transfer_token_expiration > arrow.utcnow(),
+        csrf_form=csrf_form,
     )
 
 
@@ -209,6 +215,12 @@ def alias_transfer_receive_route():
             token,
         )
         transfer(alias, current_user, mailboxes)
+
+        # reset transfer token
+        alias.transfer_token = None
+        alias.transfer_token_expiration = None
+        Session.commit()
+
         flash(f"You are now owner of {alias.email}", "success")
         return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))
 

@@ -1,3 +1,4 @@
+import random
 import re
 import secrets
 import string
@@ -6,6 +7,7 @@ import urllib.parse
 from functools import wraps
 from typing import List, Optional
 
+from flask_wtf import FlaskForm
 from unidecode import unidecode
 
 from .config import WORDS_FILE_PATH, ALLOWED_REDIRECT_DOMAINS
@@ -24,11 +26,16 @@ def word_exist(word):
     return word in _words
 
 
-def random_words():
+def random_words(words: int = 2, numbers: int = 0):
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
     # nb_words = random.randint(2, 3)
-    nb_words = 2
-    return "_".join([secrets.choice(_words) for i in range(nb_words)])
+    fields = [secrets.choice(_words) for i in range(words)]
+
+    if numbers > 0:
+        digits = "".join([str(random.randint(0, 9)) for i in range(numbers)])
+        return "_".join(fields) + digits
+    else:
+        return "_".join(fields)
 
 
 def random_string(length=10, include_digits=False):
@@ -66,6 +73,25 @@ def convert_to_alphanumeric(s: str) -> str:
 
 def encode_url(url):
     return urllib.parse.quote(url, safe="")
+
+
+def canonicalize_email(email_address: str) -> str:
+    email_address = sanitize_email(email_address)
+    parts = email_address.split("@")
+    if len(parts) != 2:
+        return ""
+    domain = parts[1]
+    if domain not in ("gmail.com", "protonmail.com", "proton.me", "pm.me"):
+        return email_address
+    first = parts[0]
+    try:
+        plus_idx = first.index("+")
+        first = first[:plus_idx]
+    except ValueError:
+        # No + in the email
+        pass
+    first = first.replace(".", "")
+    return f"{first}@{parts[1]}".lower().strip()
 
 
 def sanitize_email(email_address: str, not_lower=False) -> str:
@@ -126,3 +152,7 @@ def debug_info(func):
         return ret
 
     return wrap
+
+
+class CSRFValidationForm(FlaskForm):
+    pass

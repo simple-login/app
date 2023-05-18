@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
+from app import parallel_limiter
 from app.config import PADDLE_VENDOR_ID, PADDLE_COUPON_ID
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -24,6 +25,7 @@ class CouponForm(FlaskForm):
 
 @dashboard_bp.route("/coupon", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock()
 def coupon_route():
     coupon_form = CouponForm()
 
@@ -66,9 +68,14 @@ def coupon_route():
                 )
                 return redirect(request.url)
 
-            coupon.used_by_user_id = current_user.id
-            coupon.used = True
-            Session.commit()
+            updated = (
+                Session.query(Coupon)
+                .filter_by(code=code, used=False)
+                .update({"used_by_user_id": current_user.id, "used": True})
+            )
+            if updated != 1:
+                flash("Coupon is not valid", "error")
+                return redirect(request.url)
 
             manual_sub: ManualSubscription = ManualSubscription.get_by(
                 user_id=current_user.id

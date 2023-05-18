@@ -155,10 +155,8 @@ $(".pin-alias").change(async function () {
   }
 });
 
-$(".save-note").on("click", async function () {
-  let oldValue;
-  let aliasId = $(this).data("alias");
-  let note = $(`#note-${aliasId}`).val();
+async function handleNoteChange(aliasId, aliasEmail) {
+  const note = document.getElementById(`note-${aliasId}`).value;
 
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
@@ -172,26 +170,27 @@ $(".save-note").on("click", async function () {
     });
 
     if (res.ok) {
-      toastr.success(`Saved`);
+      toastr.success(`Description saved for ${aliasEmail}`);
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-      // reset to the original value
-      oldValue = !$(this).prop("checked");
-      $(this).prop("checked", oldValue);
     }
   } catch (e) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-    // reset to the original value
-    oldValue = !$(this).prop("checked");
-    $(this).prop("checked", oldValue);
   }
 
-});
+}
 
-$(".save-mailbox").on("click", async function () {
-  let oldValue;
-  let aliasId = $(this).data("alias");
-  let mailbox_ids = $(`#mailbox-${aliasId}`).val();
+function handleNoteFocus(aliasId) {
+  document.getElementById(`note-focus-message-${aliasId}`).classList.remove('d-none');
+}
+
+function handleNoteBlur(aliasId) {
+  document.getElementById(`note-focus-message-${aliasId}`).classList.add('d-none');
+}
+
+async function handleMailboxChange(aliasId, aliasEmail) {
+  const selectedOptions = document.getElementById(`mailbox-${aliasId}`).selectedOptions;
+  const mailbox_ids = Array.from(selectedOptions).map((selectedOption) => selectedOption.value);
 
   if (mailbox_ids.length === 0) {
     toastr.error("You must select at least a mailbox", "Error");
@@ -210,25 +209,18 @@ $(".save-mailbox").on("click", async function () {
     });
 
     if (res.ok) {
-      toastr.success(`Mailbox Updated`);
+      toastr.success(`Mailbox updated for ${aliasEmail}`);
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-      // reset to the original value
-      oldValue = !$(this).prop("checked");
-      $(this).prop("checked", oldValue);
     }
   } catch (e) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-    // reset to the original value
-    oldValue = !$(this).prop("checked");
-    $(this).prop("checked", oldValue);
   }
 
-});
+}
 
-$(".save-alias-name").on("click", async function () {
-  let aliasId = $(this).data("alias");
-  let name = $(`#alias-name-${aliasId}`).val();
+async function handleDisplayNameChange(aliasId, aliasEmail) {
+  const name = document.getElementById(`alias-name-${aliasId}`).value;
 
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
@@ -242,7 +234,7 @@ $(".save-alias-name").on("click", async function () {
     });
 
     if (res.ok) {
-      toastr.success(`Alias Name Saved`);
+      toastr.success(`Display name saved for ${aliasEmail}`);
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
     }
@@ -250,24 +242,41 @@ $(".save-alias-name").on("click", async function () {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
   }
 
-});
+}
 
+function handleDisplayNameFocus(aliasId) {
+  document.getElementById(`display-name-focus-message-${aliasId}`).classList.remove('d-none');
+}
+
+function handleDisplayNameBlur(aliasId) {
+  document.getElementById(`display-name-focus-message-${aliasId}`).classList.add('d-none');
+}
 
 new Vue({
   el: '#filter-app',
   delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
   data: {
-    showFilter: false
+    showFilter: false,
+    showStats: false
   },
   methods: {
     async toggleFilter() {
       let that = this;
       that.showFilter = !that.showFilter;
       store.set('showFilter', that.showFilter);
+    },
+
+    async toggleStats() {
+      let that = this;
+      that.showStats = !that.showStats;
+      store.set('showStats', that.showStats);
     }
   },
   async mounted() {
     if (store.get("showFilter"))
       this.showFilter = true;
+
+    if (store.get("showStats"))
+      this.showStats = true;
   }
 });

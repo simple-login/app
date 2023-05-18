@@ -10,7 +10,7 @@ from app.events.auth_event import LoginEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
-from app.utils import sanitize_email, sanitize_next_url
+from app.utils import sanitize_email, sanitize_next_url, canonicalize_email
 
 
 class LoginForm(FlaskForm):
@@ -38,7 +38,9 @@ def login():
     show_resend_activation = False
 
     if form.validate_on_submit():
-        user = User.filter_by(email=sanitize_email(form.email.data)).first()
+        email = sanitize_email(form.email.data)
+        canonical_email = canonicalize_email(email)
+        user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
         if not user or not user.check_password(form.password.data):
             # Trigger rate limiter

@@ -34,30 +34,7 @@ from flanker.addresslib.address import EmailAddress
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import func
 
-from app.config import (
-    ROOT_DIR,
-    POSTFIX_SERVER,
-    DKIM_SELECTOR,
-    DKIM_PRIVATE_KEY,
-    ALIAS_DOMAINS,
-    POSTFIX_SUBMISSION_TLS,
-    MAX_NB_EMAIL_FREE_PLAN,
-    MAX_ALERT_24H,
-    POSTFIX_PORT,
-    URL,
-    LANDING_PAGE_URL,
-    EMAIL_DOMAIN,
-    ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
-    ALERT_SPF,
-    ALERT_INVALID_TOTP_LOGIN,
-    TEMP_DIR,
-    ALIAS_AUTOMATIC_DISABLE,
-    RSPAMD_SIGN_DKIM,
-    NOREPLY,
-    VERP_PREFIX,
-    VERP_MESSAGE_LIFETIME,
-    VERP_EMAIL_SECRET,
-)
+from app import config
 from app.db import Session
 from app.dns_utils import get_mx_domains
 from app.email import headers
@@ -77,6 +54,7 @@ from app.models import (
     IgnoreBounceSender,
     InvalidMailboxDomain,
     VerpType,
+    available_sl_email,
 )
 from app.utils import (
     random_string,
@@ -91,30 +69,30 @@ VERP_HMAC_ALGO = "sha3-224"
 
 
 def render(template_name, **kwargs) -> str:
-    templates_dir = os.path.join(ROOT_DIR, "templates", "emails")
+    templates_dir = os.path.join(config.ROOT_DIR, "templates", "emails")
     env = Environment(loader=FileSystemLoader(templates_dir))
 
     template = env.get_template(template_name)
 
     return template.render(
-        MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN,
-        URL=URL,
-        LANDING_PAGE_URL=LANDING_PAGE_URL,
+        MAX_NB_EMAIL_FREE_PLAN=config.MAX_NB_EMAIL_FREE_PLAN,
+        URL=config.URL,
+        LANDING_PAGE_URL=config.LANDING_PAGE_URL,
         YEAR=arrow.now().year,
         **kwargs,
     )
 
 
 def send_welcome_email(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_email, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_email:
         return
 
     # whether this email is sent to an alias
-    alias = to_email if to_email != user.email else None
+    alias = comm_email if comm_email != user.email else None
 
     send_email(
-        to_email,
+        comm_email,
         f"Welcome to SimpleLogin",
         render("com/welcome.txt", user=user, alias=alias),
         render("com/welcome.html", user=user, alias=alias),
@@ -187,7 +165,7 @@ def send_change_email(new_email, current_email, link):
 def send_invalid_totp_login_email(user, totp_type):
     send_email_with_rate_control(
         user,
-        ALERT_INVALID_TOTP_LOGIN,
+        config.ALERT_INVALID_TOTP_LOGIN,
         user.email,
         "Unsuccessful attempt to login to your SimpleLogin account",
         render(
@@ -245,7 +223,7 @@ def send_cannot_create_directory_alias_disabled(user, alias_address, directory_n
     """
     send_email_with_rate_control(
         user,
-        ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
+        config.ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
         user.email,
         f"Alias {alias_address} cannot be created",
         render(
@@ -297,8 +275,9 @@ def send_email(
 
     LOG.d("send email to %s, subject '%s'", to_email, subject)
 
-    from_name = from_name or NOREPLY
-    from_addr = from_addr or NOREPLY
+    from_name = from_name or config.NOREPLY
+    from_addr = from_addr or config.NOREPLY
+    from_domain = get_email_domain_part(from_addr)
 
     if html:
         msg = MIMEMultipart("alternative")
@@ -313,13 +292,14 @@ def send_email(
     msg[headers.FROM] = f'"{from_name}" <{from_addr}>'
     msg[headers.TO] = to_email
 
-    msg_id_header = make_msgid(domain=EMAIL_DOMAIN)
+    msg_id_header = make_msgid(domain=config.EMAIL_DOMAIN)
     msg[headers.MESSAGE_ID] = msg_id_header
 
     date_header = formatdate()
     msg[headers.DATE] = date_header
 
-    msg[headers.MIME_VERSION] = "1.0"
+    if headers.MIME_VERSION not in msg:
+        msg[headers.MIME_VERSION] = "1.0"
 
     if unsubscribe_link:
         add_or_replace_header(msg, headers.LIST_UNSUBSCRIBE, f"<{unsubscribe_link}>")
@@ -336,7 +316,7 @@ def send_email(
 
     # use a different envelope sender for each transactional email (aka VERP)
     sl_sendmail(
-        generate_verp_email(VerpType.transactional, transaction.id),
+        generate_verp_email(VerpType.transactional, transaction.id, from_domain),
         to_email,
         msg,
         retries=retries,
@@ -351,7 +331,7 @@ def send_email_with_rate_control(
     subject,
     plaintext,
     html=None,
-    max_nb_alert=MAX_ALERT_24H,
+    max_nb_alert=config.MAX_ALERT_24H,
     nb_day=1,
     ignore_smtp_error=False,
     retries=0,
@@ -448,7 +428,7 @@ def get_email_domain_part(address):
 
 
 def add_dkim_signature(msg: Message, email_domain: str):
-    if RSPAMD_SIGN_DKIM:
+    if config.RSPAMD_SIGN_DKIM:
         LOG.d("DKIM signature will be added by rspamd")
         msg[headers.SL_WANT_SIGNING] = "yes"
         return
@@ -463,9 +443,9 @@ def add_dkim_signature(msg: Message, email_domain: str):
             continue
 
     # To investigate why some emails can't be DKIM signed. todo: remove
-    if TEMP_DIR:
+    if config.TEMP_DIR:
         file_name = str(uuid.uuid4()) + ".eml"
-        with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
+        with open(os.path.join(config.TEMP_DIR, file_name), "wb") as f:
             f.write(msg.as_bytes())
 
         LOG.w("email saved to %s", file_name)
@@ -480,12 +460,12 @@ def add_dkim_signature_with_header(
 
     # Specify headers in "byte" form
     # Generate message signature
-    if DKIM_PRIVATE_KEY:
+    if config.DKIM_PRIVATE_KEY:
         sig = dkim.sign(
             message_to_bytes(msg),
-            DKIM_SELECTOR,
+            config.DKIM_SELECTOR,
             email_domain.encode(),
-            DKIM_PRIVATE_KEY.encode(),
+            config.DKIM_PRIVATE_KEY.encode(),
             include_headers=dkim_headers,
         )
         sig = sig.decode()
@@ -537,7 +517,7 @@ def delete_all_headers_except(msg: Message, headers: [str]):
 def can_create_directory_for_address(email_address: str) -> bool:
     """return True if an email ends with one of the alias domains provided by SimpleLogin"""
     # not allow creating directory with premium domain
-    for domain in ALIAS_DOMAINS:
+    for domain in config.ALIAS_DOMAINS:
         if email_address.endswith("@" + domain):
             return True
 
@@ -594,7 +574,7 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
     mx_domains = get_mx_domain_list(domain)
 
     # if no MX record, email is not valid
-    if not mx_domains:
+    if not config.SKIP_MX_LOOKUP_ON_CHECK and not mx_domains:
         LOG.d("No MX record for domain %s", domain)
         return False
 
@@ -933,7 +913,8 @@ def decode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
 
 def add_header(msg: Message, text_header, html_header=None) -> Message:
     if not html_header:
-        html_header = text_header
+        html_header = text_header.replace("\n", "<br>")
+
     content_type = msg.get_content_type().lower()
     if content_type == "text/plain":
         encoding = get_encoding(msg)
@@ -941,7 +922,7 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
         if type(payload) is str:
             clone_msg = copy(msg)
             new_payload = f"""{text_header}
----
+------------------------------
 {decode_text(payload, encoding)}"""
             clone_msg.set_payload(encode_text(new_payload, encoding))
             return clone_msg
@@ -1063,7 +1044,7 @@ def replace(msg: Union[Message, str], old, new) -> Union[Message, str]:
     return msg
 
 
-def generate_reply_email(contact_email: str, user: User) -> str:
+def generate_reply_email(contact_email: str, alias: Alias) -> str:
     """
     generate a reply_email (aka reverse-alias), make sure it isn't used by any contact
     """
@@ -1074,6 +1055,7 @@ def generate_reply_email(contact_email: str, user: User) -> str:
 
     include_sender_in_reverse_alias = False
 
+    user = alias.user
     # user has set this option explicitly
     if user.include_sender_in_reverse_alias is not None:
         include_sender_in_reverse_alias = user.include_sender_in_reverse_alias
@@ -1088,22 +1070,28 @@ def generate_reply_email(contact_email: str, user: User) -> str:
         contact_email = contact_email.replace(".", "_")
         contact_email = convert_to_alphanumeric(contact_email)
 
+    reply_domain = config.EMAIL_DOMAIN
+    alias_domain = get_email_domain_part(alias.email)
+    sl_domain = SLDomain.get_by(domain=alias_domain)
+    if sl_domain and sl_domain.use_as_reverse_alias:
+        reply_domain = alias_domain
+
     # not use while to avoid infinite loop
     for _ in range(1000):
         if include_sender_in_reverse_alias and contact_email:
             random_length = random.randint(5, 10)
             reply_email = (
                 # do not use the ra+ anymore
-                # f"ra+{contact_email}+{random_string(random_length)}@{EMAIL_DOMAIN}"
-                f"{contact_email}_{random_string(random_length)}@{EMAIL_DOMAIN}"
+                # f"ra+{contact_email}+{random_string(random_length)}@{config.EMAIL_DOMAIN}"
+                f"{contact_email}_{random_string(random_length)}@{reply_domain}"
             )
         else:
             random_length = random.randint(20, 50)
             # do not use the ra+ anymore
-            # reply_email = f"ra+{random_string(random_length)}@{EMAIL_DOMAIN}"
-            reply_email = f"{random_string(random_length)}@{EMAIL_DOMAIN}"
+            # reply_email = f"ra+{random_string(random_length)}@{config.EMAIL_DOMAIN}"
+            reply_email = f"{random_string(random_length)}@{reply_domain}"
 
-        if not Contact.get_by(reply_email=reply_email):
+        if available_sl_email(reply_email):
             return reply_email
 
     raise Exception("Cannot generate reply email")
@@ -1114,7 +1102,7 @@ def is_reverse_alias(address: str) -> bool:
     if Contact.get_by(reply_email=address):
         return True
 
-    return address.endswith(f"@{EMAIL_DOMAIN}") and (
+    return address.endswith(f"@{config.EMAIL_DOMAIN}") and (
         address.startswith("reply+") or address.startswith("ra+")
     )
 
@@ -1148,7 +1136,7 @@ def should_disable(alias: Alias) -> (bool, str):
         LOG.w("%s cannot be disabled", alias)
         return False, ""
 
-    if not ALIAS_AUTOMATIC_DISABLE:
+    if not config.ALIAS_AUTOMATIC_DISABLE:
         return False, ""
 
     yesterday = arrow.now().shift(days=-1)
@@ -1263,14 +1251,14 @@ def spf_pass(
                 subject = get_header_unicode(msg[headers.SUBJECT])
                 send_email_with_rate_control(
                     user,
-                    ALERT_SPF,
+                    config.ALERT_SPF,
                     mailbox.email,
                     f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
                     render(
                         "transactional/spf-fail.txt",
                         alias=alias.email,
                         ip=ip,
-                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                        mailbox_url=config.URL + f"/dashboard/mailbox/{mailbox.id}#spf",
                         to_email=contact_email,
                         subject=subject,
                         time=arrow.now(),
@@ -1278,7 +1266,7 @@ def spf_pass(
                     render(
                         "transactional/spf-fail.html",
                         ip=ip,
-                        mailbox_url=URL + f"/dashboard/mailbox/{mailbox.id}#spf",
+                        mailbox_url=config.URL + f"/dashboard/mailbox/{mailbox.id}#spf",
                         to_email=contact_email,
                         subject=subject,
                         time=arrow.now(),
@@ -1301,11 +1289,11 @@ def spf_pass(
 @cached(cache=TTLCache(maxsize=2, ttl=20))
 def get_smtp_server():
     LOG.d("get a smtp server")
-    if POSTFIX_SUBMISSION_TLS:
-        smtp = SMTP(POSTFIX_SERVER, 587)
+    if config.POSTFIX_SUBMISSION_TLS:
+        smtp = SMTP(config.POSTFIX_SERVER, 587)
         smtp.starttls()
     else:
-        smtp = SMTP(POSTFIX_SERVER, POSTFIX_PORT)
+        smtp = SMTP(config.POSTFIX_SERVER, config.POSTFIX_PORT)
 
     return smtp
 
@@ -1377,12 +1365,12 @@ def save_email_for_debugging(msg: Message, file_name_prefix=None) -> str:
     """Save email for debugging to temporary location
     Return the file path
     """
-    if TEMP_DIR:
+    if config.TEMP_DIR:
         file_name = str(uuid.uuid4()) + ".eml"
         if file_name_prefix:
             file_name = "{}-{}".format(file_name_prefix, file_name)
 
-        with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
+        with open(os.path.join(config.TEMP_DIR, file_name), "wb") as f:
             f.write(msg.as_bytes())
 
         LOG.d("email saved to %s", file_name)
@@ -1395,12 +1383,12 @@ def save_envelope_for_debugging(envelope: Envelope, file_name_prefix=None) -> st
     """Save envelope for debugging to temporary location
     Return the file path
     """
-    if TEMP_DIR:
+    if config.TEMP_DIR:
         file_name = str(uuid.uuid4()) + ".eml"
         if file_name_prefix:
             file_name = "{}-{}".format(file_name_prefix, file_name)
 
-        with open(os.path.join(TEMP_DIR, file_name), "wb") as f:
+        with open(os.path.join(config.TEMP_DIR, file_name), "wb") as f:
             f.write(envelope.original_content)
 
         LOG.d("envelope saved to %s", file_name)
@@ -1426,12 +1414,15 @@ def generate_verp_email(
     # Signing without itsdangereous because it uses base64 that includes +/= symbols and lower and upper case letters.
     # We need to encode in base32
     payload_hmac = hmac.new(
-        VERP_EMAIL_SECRET.encode("utf-8"), json_payload, VERP_HMAC_ALGO
+        config.VERP_EMAIL_SECRET.encode("utf-8"), json_payload, VERP_HMAC_ALGO
     ).digest()[:8]
     encoded_payload = base64.b32encode(json_payload).rstrip(b"=").decode("utf-8")
     encoded_signature = base64.b32encode(payload_hmac).rstrip(b"=").decode("utf-8")
     return "{}.{}.{}@{}".format(
-        VERP_PREFIX, encoded_payload, encoded_signature, sender_domain or EMAIL_DOMAIN
+        config.VERP_PREFIX,
+        encoded_payload,
+        encoded_signature,
+        sender_domain or config.EMAIL_DOMAIN,
     ).lower()
 
 
@@ -1444,7 +1435,7 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
         return None
     username = email[:idx]
     fields = username.split(".")
-    if len(fields) != 3 or fields[0] != VERP_PREFIX:
+    if len(fields) != 3 or fields[0] != config.VERP_PREFIX:
         return None
     try:
         padding = (8 - (len(fields[1]) % 8)) % 8
@@ -1456,7 +1447,7 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     except binascii.Error:
         return None
     expected_signature = hmac.new(
-        VERP_EMAIL_SECRET.encode("utf-8"), payload, VERP_HMAC_ALGO
+        config.VERP_EMAIL_SECRET.encode("utf-8"), payload, VERP_HMAC_ALGO
     ).digest()[:8]
     if expected_signature != signature:
         return None
@@ -1464,7 +1455,7 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     # verp type, object_id, time
     if len(data) != 3:
         return None
-    if data[2] > (time.time() + VERP_MESSAGE_LIFETIME - VERP_TIME_START) / 60:
+    if data[2] > (time.time() + config.VERP_MESSAGE_LIFETIME - VERP_TIME_START) / 60:
         return None
     return VerpType(data[0]), data[1]
 

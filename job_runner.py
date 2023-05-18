@@ -22,15 +22,19 @@ from server import create_light_app
 
 
 def onboarding_send_from_alias(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_email, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_email:
         return
 
     send_email(
-        to_email,
+        comm_email,
         "SimpleLogin Tip: Send emails from your alias",
-        render("com/onboarding/send-from-alias.txt.j2", user=user, to_email=to_email),
-        render("com/onboarding/send-from-alias.html", user=user, to_email=to_email),
+        render(
+            "com/onboarding/send-from-alias.txt.j2",
+            user=user,
+            to_email=comm_email,
+        ),
+        render("com/onboarding/send-from-alias.html", user=user, to_email=comm_email),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -39,15 +43,15 @@ def onboarding_send_from_alias(user):
 
 
 def onboarding_pgp(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_email, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_email:
         return
 
     send_email(
-        to_email,
+        comm_email,
         "SimpleLogin Tip: Secure your emails with PGP",
-        render("com/onboarding/pgp.txt", user=user, to_email=to_email),
-        render("com/onboarding/pgp.html", user=user, to_email=to_email),
+        render("com/onboarding/pgp.txt", user=user, to_email=comm_email),
+        render("com/onboarding/pgp.html", user=user, to_email=comm_email),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -56,15 +60,23 @@ def onboarding_pgp(user):
 
 
 def onboarding_browser_extension(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_email, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_email:
         return
 
     send_email(
-        to_email,
+        comm_email,
         "SimpleLogin Tip: Chrome/Firefox/Safari extensions and Android/iOS apps",
-        render("com/onboarding/browser-extension.txt", user=user, to_email=to_email),
-        render("com/onboarding/browser-extension.html", user=user, to_email=to_email),
+        render(
+            "com/onboarding/browser-extension.txt",
+            user=user,
+            to_email=comm_email,
+        ),
+        render(
+            "com/onboarding/browser-extension.html",
+            user=user,
+            to_email=comm_email,
+        ),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -73,15 +85,15 @@ def onboarding_browser_extension(user):
 
 
 def onboarding_mailbox(user):
-    to_email, unsubscribe_link, via_email = user.get_communication_email()
-    if not to_email:
+    comm_email, unsubscribe_link, via_email = user.get_communication_email()
+    if not comm_email:
         return
 
     send_email(
-        to_email,
+        comm_email,
         "SimpleLogin Tip: Multiple mailboxes",
-        render("com/onboarding/mailbox.txt", user=user, to_email=to_email),
-        render("com/onboarding/mailbox.html", user=user, to_email=to_email),
+        render("com/onboarding/mailbox.txt", user=user, to_email=comm_email),
+        render("com/onboarding/mailbox.html", user=user, to_email=comm_email),
         unsubscribe_link,
         via_email,
         retries=3,
@@ -90,22 +102,78 @@ def onboarding_mailbox(user):
 
 
 def welcome_proton(user):
-    to_email, _, _ = user.get_communication_email()
-    if not to_email:
+    comm_email, _, _ = user.get_communication_email()
+    if not comm_email:
         return
 
     send_email(
-        to_email,
+        comm_email,
         "Welcome to SimpleLogin, an email masking service provided by Proton",
         render(
             "com/onboarding/welcome-proton-user.txt.jinja2",
             user=user,
-            to_email=to_email,
+            to_email=comm_email,
         ),
-        render("com/onboarding/welcome-proton-user.html", user=user, to_email=to_email),
+        render(
+            "com/onboarding/welcome-proton-user.html",
+            user=user,
+            to_email=comm_email,
+        ),
         retries=3,
         ignore_smtp_error=True,
     )
+
+
+def delete_mailbox_job(job: Job):
+    mailbox_id = job.payload.get("mailbox_id")
+    mailbox = Mailbox.get(mailbox_id)
+    if not mailbox:
+        return
+
+    transfer_mailbox_id = job.payload.get("transfer_mailbox_id")
+    alias_transferred_to = None
+    if transfer_mailbox_id:
+        transfer_mailbox = Mailbox.get(transfer_mailbox_id)
+        if transfer_mailbox:
+            alias_transferred_to = transfer_mailbox.email
+
+            for alias in mailbox.aliases:
+                if alias.mailbox_id == mailbox.id:
+                    alias.mailbox_id = transfer_mailbox.id
+                    if transfer_mailbox in alias._mailboxes:
+                        alias._mailboxes.remove(transfer_mailbox)
+                else:
+                    alias._mailboxes.remove(mailbox)
+                    if transfer_mailbox not in alias._mailboxes:
+                        alias._mailboxes.append(transfer_mailbox)
+                Session.commit()
+
+    mailbox_email = mailbox.email
+    user = mailbox.user
+    Mailbox.delete(mailbox_id)
+    Session.commit()
+    LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
+
+    if alias_transferred_to:
+        send_email(
+            user.email,
+            f"Your mailbox {mailbox_email} has been deleted",
+            f"""Mailbox {mailbox_email} and its alias have been transferred to {alias_transferred_to}.
+Regards,
+SimpleLogin team.
+""",
+            retries=3,
+        )
+    else:
+        send_email(
+            user.email,
+            f"Your mailbox {mailbox_email} has been deleted",
+            f"""Mailbox {mailbox_email} along with its aliases have been deleted successfully.
+Regards,
+SimpleLogin team.
+""",
+            retries=3,
+        )
 
 
 def process_job(job: Job):
@@ -162,27 +230,7 @@ def process_job(job: Job):
             retries=3,
         )
     elif job.name == config.JOB_DELETE_MAILBOX:
-        mailbox_id = job.payload.get("mailbox_id")
-        mailbox = Mailbox.get(mailbox_id)
-        if not mailbox:
-            return
-
-        mailbox_email = mailbox.email
-        user = mailbox.user
-
-        Mailbox.delete(mailbox_id)
-        Session.commit()
-        LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
-
-        send_email(
-            user.email,
-            f"Your mailbox {mailbox_email} has been deleted",
-            f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
-Regards,
-SimpleLogin team.
-""",
-            retries=3,
-        )
+        delete_mailbox_job(job)
 
     elif job.name == config.JOB_DELETE_DOMAIN:
         custom_domain_id = job.payload.get("custom_domain_id")

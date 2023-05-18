@@ -25,17 +25,18 @@
       <div class="alert alert-primary collapse {% if mailboxes|length == 1 %} show{% endif %}"
            id="howtouse"
            role="alert">
-        A <em>mailbox</em> is just another personal email address. When creating a new alias, you could choose the
+        A <em>mailbox</em> is just another personal email address. When creating a new alias, you could choose
+        the
         mailbox that <em>owns</em> this alias, i.e:
-        <br />
+        <br/>
         - all emails sent to this alias will be forwarded to this mailbox
-        <br />
+        <br/>
         - from this mailbox, you can reply/send emails from the alias.
-        <br />
-        <br />
+        <br/>
+        <br/>
         When you signed up, a mailbox is automatically created with your email <b>{{ current_user.email }}</b>
-        <br />
-        <br />
+        <br/>
+        <br/>
         The mailbox doesn't have to be your email: it can be your friend's email
         if you want to create aliases for your buddy.
       </div>
@@ -74,11 +75,12 @@
                 </h5>
                 <h6 class="card-subtitle mb-2 text-muted">
                   Created {{ mailbox.created_at | dt }}
-                  <br />
+                  <br/>
                   <span class="font-weight-bold">{{ mailbox.nb_alias() }}</span> aliases.
-                  <br />
+                  <br/>
                 </h6>
-                <a href="{{ url_for('dashboard.mailbox_detail_route', mailbox_id=mailbox.id) }}">Edit ➡</a>
+                <a href="{{ url_for('dashboard.mailbox_detail_route', mailbox_id=mailbox.id) }}">Edit
+                ➡</a>
               </div>
               <div class="card-footer p-0">
                 <div class="row">
@@ -86,9 +88,10 @@
 
                     <div class="col">
                       <form method="post">
+                        {{ csrf_form.csrf_token }}
                         <input type="hidden" name="form-name" value="set-default">
                         <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
-                        <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
+                        <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                         <button class="card-link btn btn-link {% if mailbox.id == current_user.default_mailbox_id %} disabled{% endif %}">
                           Set As Default Mailbox
                         </button>
@@ -97,9 +100,24 @@
                   {% endif %}
                   <div class="col">
                     <form method="post">
+                      {{ delete_mailbox_form.csrf_token }}
                       <input type="hidden" name="form-name" value="delete">
                       <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
-                      <input type="hidden" name="mailbox-id" value="{{ mailbox.id }}">
+                      <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                      <select hidden name="transfer_mailbox_id" value="">
+                        <option value="-1">
+                          Delete my aliases
+                        </option>
+                        {% for mailbox_opt in mailboxes %}
+
+                          {% if mailbox_opt.verified and mailbox_opt.id != mailbox.id %}
+
+                            <option value="{{ mailbox_opt.id }}">
+                              {{ mailbox_opt.email }}
+                            </option>
+                          {% endif %}
+                        {% endfor %}
+                      </select>
                       <span class="card-link btn btn-link text-danger float-right delete-mailbox {% if mailbox.id == current_user.default_mailbox_id %} disabled{% endif %}">
                         Delete
                       </span>
@@ -126,31 +144,39 @@
 {% block script %}
 
   <script>
-    $(".delete-mailbox").on("click", function (e) {
-      let mailbox = $(this).parent().find(".mailbox").val();
+        $(".delete-mailbox").on("click", function (e) {
+            let mailbox = $(this).parent().find(".mailbox").val();
 
-      let that = $(this);
-      let message = `All aliases owned by this mailbox <b>${mailbox}</b> will be also deleted, ` +
-        " please confirm.";
+            let new_mailboxes = $(this).parent().find("select[name='transfer_mailbox_id']").find("option")
+            let inputOptions = new_mailboxes.map((index, option) => { return {["value"]: option.value, ["text"]: option.text}}).toArray()
 
-      bootbox.confirm({
-        message: message,
-        buttons: {
-          confirm: {
-            label: 'Yes, delete it',
-            className: 'btn-danger'
-          },
-          cancel: {
-            label: 'Cancel',
-            className: 'btn-outline-primary'
-          }
-        },
-        callback: function (result) {
-          if (result) {
-            that.closest("form").submit();
-          }
-        }
-      })
-    });
+            let that = $(this);
+            let message = `All aliases owned by the mailbox <b>${mailbox}</b> will be also deleted.<br>` +
+                "You can choose to transfer them to a different mailbox:<br><br>";
+
+            bootbox.prompt({
+                title: '<b>Delete Mailbox</b>',
+                message: message,
+                value: ["-1"],
+                inputType: 'select',
+                inputOptions: inputOptions,
+                buttons: {
+                    confirm: {
+                        label: 'Yes, delete it',
+                        className: 'btn-danger'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-outline-primary mr-auto'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        that.closest("form").find("select[name='transfer_mailbox_id']").val(result)
+                        that.closest("form").submit();
+                    }
+                }
+            })
+        });
   </script>
 {% endblock %}

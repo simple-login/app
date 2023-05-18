@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
-from app import alias_utils
+from app import alias_utils, parallel_limiter
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
 from app.config import ALIAS_LIMIT, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
@@ -17,6 +17,7 @@ from app.models import (
     EmailLog,
     Contact,
 )
+from app.utils import CSRFValidationForm
 
 
 @dataclass
@@ -57,6 +58,10 @@ def get_stats(user: User) -> Stats:
     exempt_when=lambda: request.form.get("form-name") != "create-random-email",
 )
 @login_required
+@parallel_limiter.lock(
+    name="alias_creation",
+    only_when=lambda: request.form.get("form-name") == "create-random-email",
+)
 def index():
     query = request.args.get("query") or ""
     sort = request.args.get("sort") or ""
@@ -75,8 +80,12 @@ def index():
                 "highlight_alias_id must be a number, received %s",
                 request.args.get("highlight_alias_id"),
             )
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "create-custom-email":
             if current_user.can_create_new_alias():
                 return redirect(url_for("dashboard.custom_alias"))
@@ -141,7 +150,13 @@ def index():
                 flash(f"Alias {alias.email} has been disabled", "success")
 
         return redirect(
-            url_for("dashboard.index", query=query, sort=sort, filter=alias_filter)
+            url_for(
+                "dashboard.index",
+                query=query,
+                sort=sort,
+                filter=alias_filter,
+                page=page,
+            )
         )
 
     mailboxes = current_user.mailboxes()
@@ -204,6 +219,7 @@ def index():
         sort=sort,
         filter=alias_filter,
         stats=stats,
+        csrf_form=csrf_form,
     )
 
 

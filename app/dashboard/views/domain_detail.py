@@ -7,13 +7,13 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators, IntegerField
 
 from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN, JOB_DELETE_DOMAIN
+from app.custom_domain_validation import CustomDomainValidation
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.dns_utils import (
     get_mx_domains,
     get_spf_domain,
     get_txt_record,
-    get_cname_record,
     is_mx_equivalent,
 )
 from app.log import LOG
@@ -28,7 +28,7 @@ from app.models import (
     Job,
 )
 from app.regex_utils import regex_match
-from app.utils import random_string
+from app.utils import random_string, CSRFValidationForm
 
 
 @dashboard_bp.route("/domains/<int:custom_domain_id>/dns", methods=["GET", "POST"])
@@ -46,8 +46,8 @@ def domain_detail_dns(custom_domain_id):
 
     spf_record = f"v=spf1 include:{EMAIL_DOMAIN} ~all"
 
-    # hardcode the DKIM selector here
-    dkim_cname = f"dkim._domainkey.{EMAIL_DOMAIN}"
+    domain_validator = CustomDomainValidation(EMAIL_DOMAIN)
+    csrf_form = CSRFValidationForm()
 
     dmarc_record = "v=DMARC1; p=quarantine; pct=100; adkim=s; aspf=s"
 
@@ -55,6 +55,9 @@ def domain_detail_dns(custom_domain_id):
     mx_errors = spf_errors = dkim_errors = dmarc_errors = ownership_errors = []
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "check-ownership":
             txt_records = get_txt_record(custom_domain.domain)
 
@@ -122,23 +125,17 @@ def domain_detail_dns(custom_domain_id):
                 spf_errors = get_txt_record(custom_domain.domain)
 
         elif request.form.get("form-name") == "check-dkim":
-            dkim_record = get_cname_record("dkim._domainkey." + custom_domain.domain)
-            if dkim_record == dkim_cname:
+            dkim_errors = domain_validator.validate_dkim_records(custom_domain)
+            if len(dkim_errors) == 0:
                 flash("DKIM is setup correctly.", "success")
-                custom_domain.dkim_verified = True
-                Session.commit()
-
                 return redirect(
                     url_for(
                         "dashboard.domain_detail_dns", custom_domain_id=custom_domain.id
                     )
                 )
             else:
-                custom_domain.dkim_verified = False
-                Session.commit()
-                flash("DKIM: the CNAME record is not correctly set", "warning")
                 dkim_ok = False
-                dkim_errors = [dkim_record or "[Empty]"]
+                flash("DKIM: the CNAME record is not correctly set", "warning")
 
         elif request.form.get("form-name") == "check-dmarc":
             txt_records = get_txt_record("_dmarc." + custom_domain.domain)
@@ -164,6 +161,7 @@ def domain_detail_dns(custom_domain_id):
     return render_template(
         "dashboard/domain_detail/dns.html",
         EMAIL_SERVERS_WITH_PRIORITY=EMAIL_SERVERS_WITH_PRIORITY,
+        dkim_records=domain_validator.get_dkim_records(),
         **locals(),
     )
 
@@ -171,6 +169,7 @@ def domain_detail_dns(custom_domain_id):
 @dashboard_bp.route("/domains/<int:custom_domain_id>/info", methods=["GET", "POST"])
 @login_required
 def domain_detail(custom_domain_id):
+    csrf_form = CSRFValidationForm()
     custom_domain: CustomDomain = CustomDomain.get(custom_domain_id)
     mailboxes = current_user.mailboxes()
 
@@ -179,6 +178,9 @@ def domain_detail(custom_domain_id):
         return redirect(url_for("dashboard.index"))
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "switch-catch-all":
             custom_domain.catch_all = not custom_domain.catch_all
             Session.commit()
@@ -307,12 +309,16 @@ def domain_detail(custom_domain_id):
 @dashboard_bp.route("/domains/<int:custom_domain_id>/trash", methods=["GET", "POST"])
 @login_required
 def domain_detail_trash(custom_domain_id):
+    csrf_form = CSRFValidationForm()
     custom_domain = CustomDomain.get(custom_domain_id)
     if not custom_domain or custom_domain.user_id != current_user.id:
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "empty-all":
             DomainDeletedAlias.filter_by(domain_id=custom_domain.id).delete()
             Session.commit()
@@ -356,6 +362,7 @@ def domain_detail_trash(custom_domain_id):
         "dashboard/domain_detail/trash.html",
         domain_deleted_aliases=domain_deleted_aliases,
         custom_domain=custom_domain,
+        csrf_form=csrf_form,
     )
 
 

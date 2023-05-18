@@ -1,8 +1,11 @@
+import csv
+from io import StringIO
 import re
 from typing import Optional, Tuple
 
 from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import IntegrityError, DataError
+from flask import make_response
 
 from app.config import (
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
@@ -364,3 +367,33 @@ def check_alias_prefix(alias_prefix) -> bool:
         return False
 
     return True
+
+
+def alias_export_csv(user, csv_direct_export=False):
+    """
+    Get user aliases as importable CSV file
+    Output:
+        Importable CSV file
+
+    """
+    data = [["alias", "note", "enabled", "mailboxes"]]
+    for alias in Alias.filter_by(user_id=user.id).all():  # type: Alias
+        # Always put the main mailbox first
+        # It is seen a primary while importing
+        alias_mailboxes = alias.mailboxes
+        alias_mailboxes.insert(
+            0, alias_mailboxes.pop(alias_mailboxes.index(alias.mailbox))
+        )
+
+        mailboxes = " ".join([mailbox.email for mailbox in alias_mailboxes])
+        data.append([alias.email, alias.note, alias.enabled, mailboxes])
+
+    si = StringIO()
+    cw = csv.writer(si)
+    cw.writerows(data)
+    if csv_direct_export:
+        return si.getvalue()
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=aliases.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output

@@ -23,7 +23,7 @@
     <!-- Yandex -->
     <meta name="yandex-verification" content="c9e5d4d68bc983a1" />
     <meta name="description"
-          content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, spams."/>
+          content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, or spam."/>
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
     <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="canonical" href="{{ CANONICAL_URL }}" />
@@ -181,8 +181,8 @@
 
     </script>
     <script src="{{ url_for('static', filename='local-storage-polyfill.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/an.js', v='2') }}"></script>
     <!-- For additional script -->
     {% block script %}{% endblock %}
-    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
   </body>
 </html>

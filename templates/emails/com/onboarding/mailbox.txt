@@ -4,7 +4,7 @@ Unsubscribe from our emails on {{URL}}/dashboard/setting#notification
 
 Hi
 
-If you have several email addresses, e.g. Gmail for work and Protonmail for personal stuffs, you can add them into SimpleLogin and create aliases for them.
+If you have several email addresses, e.g. Gmail for work and Proton Mail for personal stuffs, you can add them into SimpleLogin and create aliases for them.
 
 A (real) email address is called *mailbox* in SimpleLogin.
 

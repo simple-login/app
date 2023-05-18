@@ -2,18 +2,29 @@ import pytest
 import unicodedata
 from flask import url_for
 
+from app import config
 from app.db import Session
 from app.models import User, AccountActivation
+from tests.utils import random_email
 
 PASSWORD_1 = "Aurélie"
 PASSWORD_2 = unicodedata.normalize("NFKD", PASSWORD_1)
 assert PASSWORD_1 != PASSWORD_2
 
 
+def setup_module():
+    config.SKIP_MX_LOOKUP_ON_CHECK = True
+
+
+def teardown_module():
+    config.SKIP_MX_LOOKUP_ON_CHECK = False
+
+
 @pytest.mark.parametrize("mfa", (True, False), ids=("MFA", "no MFA"))
 def test_auth_login_success(flask_client, mfa: bool):
+    email = random_email()
     User.create(
-        email="abcd@gmail.com",
+        email=email,
         password=PASSWORD_1,
         name="Test User",
         activated=True,
@@ -24,7 +35,7 @@ def test_auth_login_success(flask_client, mfa: bool):
     r = flask_client.post(
         "/api/auth/login",
         json={
-            "email": "abcd@gmail.com",
+            "email": email,
             "password": PASSWORD_2,
             "device": "Test Device",
         },
@@ -45,15 +56,14 @@ def test_auth_login_success(flask_client, mfa: bool):
 
 
 def test_auth_login_device_exist(flask_client):
-    User.create(
-        email="abcd@gmail.com", password="password", name="Test User", activated=True
-    )
+    email = random_email()
+    User.create(email=email, password="password", name="Test User", activated=True)
     Session.commit()
 
     r = flask_client.post(
         url_for("api.auth_login"),
         json={
-            "email": "abcd@gmail.com",
+            "email": email,
             "password": "password",
             "device": "Test Device",
         },
@@ -69,7 +79,7 @@ def test_auth_login_device_exist(flask_client):
     r = flask_client.post(
         url_for("api.auth_login"),
         json={
-            "email": "abcd@gmail.com",
+            "email": email,
             "password": "password",
             "device": "Test Device",
         },
@@ -78,11 +88,12 @@ def test_auth_login_device_exist(flask_client):
 
 
 def test_auth_register_success(flask_client):
+    email = random_email()
     assert AccountActivation.first() is None
 
     r = flask_client.post(
         url_for("api.auth_register"),
-        json={"email": "abcd@gmail.com", "password": "password"},
+        json={"email": email, "password": "password"},
     )
 
     assert r.status_code == 200
@@ -96,9 +107,10 @@ def test_auth_register_success(flask_client):
 
 
 def test_auth_register_too_short_password(flask_client):
+    email = random_email()
     r = flask_client.post(
         url_for("api.auth_register"),
-        json={"email": "abcd@gmail.com", "password": "short"},
+        json={"email": email, "password": "short"},
     )
 
     assert r.status_code == 400
@@ -106,9 +118,10 @@ def test_auth_register_too_short_password(flask_client):
 
 
 def test_auth_register_too_long_password(flask_client):
+    email = random_email()
     r = flask_client.post(
         url_for("api.auth_register"),
-        json={"email": "abcd@gmail.com", "password": "0123456789" * 11},
+        json={"email": email, "password": "0123456789" * 11},
     )
 
     assert r.status_code == 400
@@ -116,9 +129,10 @@ def test_auth_register_too_long_password(flask_client):
 
 
 def test_auth_activate_success(flask_client):
+    email = random_email()
     r = flask_client.post(
         url_for("api.auth_register"),
-        json={"email": "abcd@gmail.com", "password": "password"},
+        json={"email": email, "password": "password"},
     )
 
     assert r.status_code == 200
@@ -131,7 +145,7 @@ def test_auth_activate_success(flask_client):
 
     r = flask_client.post(
         url_for("api.auth_activate"),
-        json={"email": "abcd@gmail.com", "code": act_code.code},
+        json={"email": email, "code": act_code.code},
     )
     assert r.status_code == 200
 
@@ -144,21 +158,21 @@ def test_auth_activate_wrong_email(flask_client):
 
 
 def test_auth_activate_user_already_activated(flask_client):
-    User.create(
-        email="abcd@gmail.com", password="password", name="Test User", activated=True
-    )
+    email = random_email()
+    User.create(email=email, password="password", name="Test User", activated=True)
     Session.commit()
 
     r = flask_client.post(
-        url_for("api.auth_activate"), json={"email": "abcd@gmail.com", "code": "123456"}
+        url_for("api.auth_activate"), json={"email": email, "code": "123456"}
     )
     assert r.status_code == 400
 
 
 def test_auth_activate_wrong_code(flask_client):
+    email = random_email()
     r = flask_client.post(
         url_for("api.auth_register"),
-        json={"email": "abcd@gmail.com", "password": "password"},
+        json={"email": email, "password": "password"},
     )
 
     assert r.status_code == 200
@@ -175,7 +189,7 @@ def test_auth_activate_wrong_code(flask_client):
 
     r = flask_client.post(
         url_for("api.auth_activate"),
-        json={"email": "abcd@gmail.com", "code": wrong_code},
+        json={"email": email, "code": wrong_code},
     )
     assert r.status_code == 400
 
@@ -185,9 +199,10 @@ def test_auth_activate_wrong_code(flask_client):
 
 
 def test_auth_activate_too_many_wrong_code(flask_client):
+    email = random_email()
     r = flask_client.post(
         url_for("api.auth_register"),
-        json={"email": "abcd@gmail.com", "password": "password"},
+        json={"email": email, "password": "password"},
     )
 
     assert r.status_code == 200
@@ -205,14 +220,14 @@ def test_auth_activate_too_many_wrong_code(flask_client):
     for _ in range(2):
         r = flask_client.post(
             url_for("api.auth_activate"),
-            json={"email": "abcd@gmail.com", "code": wrong_code},
+            json={"email": email, "code": wrong_code},
         )
         assert r.status_code == 400
 
     # the activation code is deleted
     r = flask_client.post(
         url_for("api.auth_activate"),
-        json={"email": "abcd@gmail.com", "code": wrong_code},
+        json={"email": email, "code": wrong_code},
     )
 
     assert r.status_code == 410
@@ -222,12 +237,11 @@ def test_auth_activate_too_many_wrong_code(flask_client):
 
 
 def test_auth_reactivate_success(flask_client):
-    User.create(email="abcd@gmail.com", password="password", name="Test User")
+    email = random_email()
+    User.create(email=email, password="password", name="Test User")
     Session.commit()
 
-    r = flask_client.post(
-        url_for("api.auth_reactivate"), json={"email": "abcd@gmail.com"}
-    )
+    r = flask_client.post(url_for("api.auth_reactivate"), json={"email": email})
     assert r.status_code == 200
 
     # make sure an activation code is created
@@ -238,14 +252,13 @@ def test_auth_reactivate_success(flask_client):
 
 
 def test_auth_login_forgot_password(flask_client):
-    User.create(
-        email="abcd@gmail.com", password="password", name="Test User", activated=True
-    )
+    email = random_email()
+    User.create(email=email, password="password", name="Test User", activated=True)
     Session.commit()
 
     r = flask_client.post(
         url_for("api.forgot_password"),
-        json={"email": "abcd@gmail.com"},
+        json={"email": email},
     )
 
     assert r.status_code == 200
@@ -253,7 +266,7 @@ def test_auth_login_forgot_password(flask_client):
     # No such email, still return 200
     r = flask_client.post(
         url_for("api.forgot_password"),
-        json={"email": "not-exist@b.c"},
+        json={"email": random_email()},
     )
 
     assert r.status_code == 200

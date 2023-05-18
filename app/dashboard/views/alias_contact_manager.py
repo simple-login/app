@@ -9,7 +9,7 @@ from sqlalchemy import and_, func, case
 from wtforms import StringField, validators, ValidationError
 
 # Need to import directly from config to allow modification from the tests
-from app import config
+from app import config, parallel_limiter
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import (
@@ -25,7 +25,7 @@ from app.errors import (
 )
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog, User
-from app.utils import sanitize_email
+from app.utils import sanitize_email, CSRFValidationForm
 
 
 def email_validator():
@@ -90,7 +90,7 @@ def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
         alias_id=alias.id,
         website_email=contact_email,
         name=contact_name,
-        reply_email=generate_reply_email(contact_email, user),
+        reply_email=generate_reply_email(contact_email, alias),
     )
 
     LOG.d(
@@ -231,6 +231,7 @@ def delete_contact(alias: Alias, contact_id: int):
 
 @dashboard_bp.route("/alias_contact_manager/<int:alias_id>/", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(name="contact_creation")
 def alias_contact_manager(alias_id):
     highlight_contact_id = None
     if request.args.get("highlight_contact_id"):
@@ -258,8 +259,12 @@ def alias_contact_manager(alias_id):
         return redirect(url_for("dashboard.index"))
 
     new_contact_form = NewContactForm()
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "create":
             if new_contact_form.validate():
                 contact_address = new_contact_form.email.data.strip()
@@ -323,4 +328,5 @@ def alias_contact_manager(alias_id):
         query=query,
         nb_contact=nb_contact,
         can_create_contacts=user_can_create_contacts(current_user),
+        csrf_form=csrf_form,
     )

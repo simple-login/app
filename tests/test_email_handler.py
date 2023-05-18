@@ -11,6 +11,7 @@ from app.config import EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHASE
 from app.db import Session
 from app.email import headers, status
 from app.email_utils import generate_verp_email
+from app.mail_sender import mail_sender
 from app.models import (
     Alias,
     AuthorizedAddress,
@@ -21,12 +22,13 @@ from app.models import (
     Contact,
     SentAlert,
 )
+from app.utils import random_string, canonicalize_email
 from email_handler import (
     get_mailbox_from_mail_from,
     should_ignore,
     is_automatic_out_of_office,
 )
-from tests.utils import load_eml_file, create_new_user
+from tests.utils import load_eml_file, create_new_user, random_email
 
 
 def test_get_mailbox_from_mail_from(flask_client):
@@ -266,3 +268,119 @@ def test_references_header(flask_client):
     envelope.rcpt_tos = [alias.email]
     result = email_handler.handle(envelope, msg)
     assert result == status.E200
+
+
+@mail_sender.store_emails_test_decorator
+def test_replace_contacts_and_user_in_reply_phase(flask_client):
+    user = create_new_user()
+    user.replace_reverse_alias = True
+    alias = Alias.create_new_random(user)
+    Session.flush()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random.random()}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    contact_real_mail = contact.website_email
+    contact2 = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random.random()}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    contact2_real_mail = contact2.website_email
+    msg = load_eml_file(
+        "replacement_on_reply_phase.eml",
+        {
+            "contact_reply_email": contact.reply_email,
+            "other_contact_reply_email": contact2.reply_email,
+        },
+    )
+    envelope = Envelope()
+    envelope.mail_from = alias.mailbox.email
+    envelope.rcpt_tos = [contact.reply_email]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    payload = sent_mails[0].msg.get_payload()[0].get_payload()
+    assert payload.find("Contact is {}".format(contact_real_mail)) > -1
+    assert payload.find("Other contact is {}".format(contact2_real_mail)) > -1
+
+
+@mail_sender.store_emails_test_decorator
+def test_send_email_from_non_canonical_address_on_reply(flask_client):
+    email_address = f"{random_string(10)}.suf@gmail.com"
+    user = create_new_user(email=canonicalize_email(email_address))
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random_string(10)}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    envelope = Envelope()
+    envelope.mail_from = email_address
+    envelope.rcpt_tos = [contact.reply_email]
+    msg = EmailMessage()
+    msg[headers.TO] = contact.reply_email
+    msg[headers.SUBJECT] = random_string()
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    email_logs = EmailLog.filter_by(user_id=user.id).all()
+    assert len(email_logs) == 1
+    assert email_logs[0].alias_id == alias.id
+    assert email_logs[0].mailbox_id == user.default_mailbox_id
+
+
+@mail_sender.store_emails_test_decorator
+def test_send_email_from_non_canonical_matches_already_existing_user(flask_client):
+    email_address = f"{random_string(10)}.suf@gmail.com"
+    create_new_user(email=canonicalize_email(email_address))
+    user = create_new_user(email=email_address)
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random_string(10)}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    envelope = Envelope()
+    envelope.mail_from = email_address
+    envelope.rcpt_tos = [contact.reply_email]
+    msg = EmailMessage()
+    msg[headers.TO] = contact.reply_email
+    msg[headers.SUBJECT] = random_string()
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    email_logs = EmailLog.filter_by(user_id=user.id).all()
+    assert len(email_logs) == 1
+    assert email_logs[0].alias_id == alias.id
+    assert email_logs[0].mailbox_id == user.default_mailbox_id
+
+
+@mail_sender.store_emails_test_decorator
+def test_break_loop_alias_as_mailbox(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    user.default_mailbox.email = alias.email
+    Session.commit()
+    envelope = Envelope()
+    envelope.mail_from = random_email()
+    envelope.rcpt_tos = [alias.email]
+    msg = EmailMessage()
+    msg[headers.TO] = alias.email
+    msg[headers.SUBJECT] = random_string()
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E525

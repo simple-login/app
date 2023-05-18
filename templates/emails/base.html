@@ -587,10 +587,20 @@
                                 color: #A8AAAF;
                                 margin: .4em 0 1.1875em;"
                          align="center">
-                        © {{ YEAR }} SimpleLogin. All rights reserved.
+                        © {{ YEAR }} SimpleLogin - a Proton product. All rights reserved.
                         <br />
                         {% block footer %}{% endblock %}
                       </p>
+                      {% if unsubscribe_oneclick is defined %}
+
+                        <p class="f-fallback sub align-center"
+                           style="font-size: 13px;
+                                  line-height: 1.625;
+                                  text-align: center;
+                                  margin: .4em 0 1.1875em;">
+                          <a href="{{ unsubscribe_oneclick }}">Unsubscribe from our newsletter</a>
+                        </p>
+                      {% endif %}
                       <p class="f-fallback sub align-center"
                          style="font-size: 13px;
                                 line-height: 1.625;
