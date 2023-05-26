@@ -72,11 +72,10 @@ def test_webhook_with_subscription():
 def test_webhook_with_apple_subscription():
     user = create_new_user()
     end_at = arrow.utcnow().shift(days=2).replace(hour=0, minute=0, second=0)
-    now = arrow.now()
     AppleSubscription.create(
         user_id=user.id,
-        receipt_data=now,
-        expires_date=end_at.date(),
+        receipt_data=arrow.now().date().strftime("%Y-%m-%d"),
+        expires_date=end_at.date().strftime("%Y-%m-%d"),
         original_transaction_id="",
         plan="yearly",
         product_id="",
@@ -91,7 +90,9 @@ def test_webhook_with_apple_subscription():
 def test_webhook_with_coinbase_subscription():
     user = create_new_user()
     end_at = arrow.utcnow().shift(days=3).replace(hour=0, minute=0, second=0)
-    CoinbaseSubscription.create(user_id=user.id, end_at=end_at.date(), flush=True)
+    CoinbaseSubscription.create(
+        user_id=user.id, end_at=end_at.date().strftime("%Y-%m-%d"), flush=True
+    )
 
     execute_subscription_webhook(user)
     assert last_http_request["user_id"] == user.id
@@ -102,7 +103,9 @@ def test_webhook_with_coinbase_subscription():
 def test_webhook_with_manual_subscription():
     user = create_new_user()
     end_at = arrow.utcnow().shift(days=3).replace(hour=0, minute=0, second=0)
-    ManualSubscription.create(user_id=user.id, end_at=end_at, flush=True)
+    ManualSubscription.create(
+        user_id=user.id, end_at=end_at.date().strftime("%Y-%m-%d"), flush=True
+    )
 
     execute_subscription_webhook(user)
     assert last_http_request["user_id"] == user.id
