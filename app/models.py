@@ -673,6 +673,22 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return None
 
+    def get_active_subscription_end(
+        self, include_partner_subscription: bool = True
+    ) -> Optional[arrow.Arrow]:
+        sub = self.get_active_subscription(
+            include_partner_subscription=include_partner_subscription
+        )
+        if isinstance(sub, Subscription):
+            return arrow.get(sub.next_bill_date)
+        if isinstance(sub, AppleSubscription):
+            return sub.expires_date
+        if isinstance(sub, ManualSubscription):
+            return sub.end_at
+        if isinstance(sub, CoinbaseSubscription):
+            return sub.end_at
+        return None
+
     # region Billing
     def lifetime_or_active_subscription(
         self, include_partner_subscription: bool = True
