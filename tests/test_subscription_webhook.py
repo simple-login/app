@@ -11,7 +11,7 @@ from app.models import (
     CoinbaseSubscription,
     ManualSubscription,
 )
-from tests.utils import create_new_user
+from tests.utils import create_new_user, random_token
 
 from app.subscription_webhook import execute_subscription_webhook
 
@@ -57,7 +57,7 @@ def test_webhook_with_subscription():
         user_id=user.id,
         cancel_url="",
         update_url="",
-        subscription_id="",
+        subscription_id=random_token(10),
         event_time=arrow.now(),
         next_bill_date=end_at.date(),
         plan="yearly",
@@ -76,7 +76,7 @@ def test_webhook_with_apple_subscription():
         user_id=user.id,
         receipt_data=arrow.now().date().strftime("%Y-%m-%d"),
         expires_date=end_at.date().strftime("%Y-%m-%d"),
-        original_transaction_id="",
+        original_transaction_id=random_token(10),
         plan="yearly",
         product_id="",
         flush=True,
