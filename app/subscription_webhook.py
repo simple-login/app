@@ -22,7 +22,7 @@ def execute_subscription_webhook(user: User):
         "active_subscription_end": sl_subscription_end,
     }
     try:
-        response = requests.post(webhook_url, json=payload)
+        response = requests.post(webhook_url, json=payload, timeout=2)
         if response.status_code == 200:
             LOG.i("Sent request to subscription update webhook successfully")
         else:
