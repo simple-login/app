@@ -91,13 +91,9 @@ def verify_prefix_suffix(
 
 
 def _get_sl_domain_suffix(
-    user: User, domain: str, is_premium: bool, is_verified: bool
+    user: User, prefix: str, domain: str, is_premium: bool, is_verified: bool
 ) -> AliasSuffix:
-    suffix = (
-        ("" if config.DISABLE_ALIAS_SUFFIX else "." + user.get_random_alias_suffix())
-        + "@"
-        + domain
-    )
+    suffix = f".{prefix}" if prefix else "" + "@" + domain
     return AliasSuffix(
         is_custom=False,
         suffix=suffix,
@@ -123,21 +119,23 @@ def get_alias_suffixes(
     for custom_domain in user_custom_domains:
         if custom_domain.random_prefix_generation:
             alias_suffix = _get_sl_domain_suffix(
-                user, custom_domain.domain, False, custom_domain.verified
+                user=user,
+                prefix=user.get_random_alias_suffix(custom_domain),
+                domain=custom_domain.domain,
+                is_premium=False,
+                is_verified=custom_domain.verified,
             )
             if user.default_alias_custom_domain_id == custom_domain.id:
                 alias_suffixes.insert(0, alias_suffix)
             else:
                 alias_suffixes.append(alias_suffix)
 
-        suffix = "@" + custom_domain.domain
-        alias_suffix = AliasSuffix(
-            is_custom=True,
-            suffix=suffix,
-            signed_suffix=signer.sign(suffix).decode(),
-            is_premium=False,
+        alias_suffix = _get_sl_domain_suffix(
+            user=user,
+            prefix="",
             domain=custom_domain.domain,
-            mx_verified=custom_domain.verified,
+            is_premium=False,
+            is_verified=custom_domain.verified,
         )
 
         # put the default domain to top
@@ -154,8 +152,13 @@ def get_alias_suffixes(
     sl_domains = user.get_sl_domains(alias_options=alias_options)
     default_domain_found = False
     for sl_domain in sl_domains:
+        prefix = "" if config.DISABLE_ALIAS_SUFFIX else user.get_random_alias_suffix()
         alias_suffix = _get_sl_domain_suffix(
-            user, sl_domain.domain, sl_domain.premium_only, True
+            user=user,
+            prefix=prefix,
+            domain=sl_domain.domain,
+            is_premium=sl_domain.premium_only,
+            is_verified=True,
         )
         # No default or this is not the default
         if (
@@ -172,8 +175,15 @@ def get_alias_suffixes(
     if not default_domain_found:
         sl_domain = SLDomain.get(user.default_alias_public_domain_id)
         if sl_domain:
+            prefix = (
+                "" if config.DISABLE_ALIAS_SUFFIX else user.get_random_alias_suffix()
+            )
             alias_suffix = _get_sl_domain_suffix(
-                user, sl_domain.domain, sl_domain.premium_only, True
+                user=user,
+                prefix=prefix,
+                domain=sl_domain.domain,
+                is_premium=sl_domain.premium_only,
+                is_verified=True,
             )
             alias_suffixes.insert(0, alias_suffix)
 
