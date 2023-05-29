@@ -90,20 +90,6 @@ def verify_prefix_suffix(
     return True
 
 
-def _get_sl_domain_suffix(
-    user: User, prefix: str, domain: str, is_premium: bool, is_verified: bool
-) -> AliasSuffix:
-    suffix = (f".{prefix}" if prefix else "") + "@" + domain
-    return AliasSuffix(
-        is_custom=False,
-        suffix=suffix,
-        signed_suffix=signer.sign(suffix).decode(),
-        is_premium=is_premium,
-        domain=domain,
-        mx_verified=is_verified,
-    )
-
-
 def get_alias_suffixes(
     user: User, alias_options: Optional[AliasOptions] = None
 ) -> [AliasSuffix]:
