@@ -78,5 +78,10 @@ def test_suffixes_are_valid():
     )
     alias_suffixes = get_alias_suffixes(user, alias_options=options)
     valid_re = re.compile(r"^(\.[\w_]+)?@[\.\w]+$")
+    has_prefix = 0
     for suffix in alias_suffixes:
-        assert valid_re.match(suffix.suffix)
+        match = valid_re.match(suffix.suffix)
+        assert match is not None
+        if len(match.groups()) >= 1:
+            has_prefix += 1
+    assert has_prefix > 0
