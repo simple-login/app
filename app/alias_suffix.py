@@ -157,16 +157,17 @@ def get_alias_suffixes(
         alias_suffix = _get_sl_domain_suffix(
             user, sl_domain.domain, sl_domain.premium_only, True
         )
-        # put the default domain to top
-        if user.default_alias_public_domain_id is None:
+        # No default or this is not the default
+        if (
+            user.default_alias_public_domain_id is None
+            or user.default_alias_public_domain_id != sl_domain.id
+        ):
+            alias_suffixes.append(alias_suffix)
             # If no default domain mark it as found
-            default_domain_found = True
+            default_domain_found = user.default_alias_public_domain_id is None
         else:
-            if user.default_alias_public_domain_id == sl_domain.id:
-                default_domain_found = True
-                alias_suffixes.insert(0, alias_suffix)
-            else:
-                alias_suffixes.append(alias_suffix)
+            default_domain_found = True
+            alias_suffixes.insert(0, alias_suffix)
 
     if not default_domain_found:
         sl_domain = SLDomain.get(user.default_alias_public_domain_id)
