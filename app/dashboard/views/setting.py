@@ -206,7 +206,7 @@ def setting():
                             current_profile_file is not None
                             and current_profile_file.user_id == current_user.id
                         ):
-                            s3.delete(current_user.path)
+                            s3.delete(current_profile_file.path)
 
                     file_path = random_string(30)
                     file = File.create(user_id=current_user.id, path=file_path)
