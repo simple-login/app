@@ -60,6 +60,30 @@ def test_get_default_domain_even_if_is_not_allowed():
     assert suffixes[0].domain == default_domain.domain
 
 
+def test_get_default_domain_hidden():
+    user = create_new_user()
+    PartnerUser.create(
+        partner_id=get_proton_partner().id,
+        user_id=user.id,
+        external_user_id=random_token(10),
+        flush=True,
+    )
+    user.trial_end = None
+    default_domain = SLDomain.filter_by(
+        hidden=True, partner_id=None, premium_only=False
+    ).first()
+    user.default_alias_public_domain_id = default_domain.id
+    Session.flush()
+    options = AliasOptions(
+        show_sl_domains=False, show_partner_domains=get_proton_partner()
+    )
+    suffixes = get_alias_suffixes(user, alias_options=options)
+    for suffix in suffixes:
+        domain = SLDomain.get_by(domain=suffix.domain)
+        assert not domain.hidden
+    assert suffixes[0].domain != default_domain.domain
+
+
 def test_suffixes_are_valid():
     user = create_new_user()
     PartnerUser.create(
