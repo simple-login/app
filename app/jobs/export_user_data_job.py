@@ -41,7 +41,7 @@ from app.models import (
 class ExportUserDataJob:
 
     REMOVE_FIELDS = {
-        "User": ("otp_secret",),
+        "User": ("otp_secret", "password"),
         "Alias": ("ts_vector", "transfer_token", "hibp_last_check"),
         "CustomDomain": ("ownership_txt_token",),
     }
