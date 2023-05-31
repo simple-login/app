@@ -30,4 +30,4 @@ def execute_subscription_webhook(user: User):
                 f"Request to webhook failed with statue {response.status_code}: {response.text}"
             )
     except RequestException as e:
-        LOG.warn(f"Subscription request exception: {e}")
+        LOG.error(f"Subscription request exception: {e}")
