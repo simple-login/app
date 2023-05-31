@@ -511,7 +511,7 @@ def setup_paddle_callback(app: Flask):
                 ).date()
 
                 Session.commit()
-            execute_subscription_webhook(sub.user)
+                execute_subscription_webhook(sub.user)
 
         elif request.form.get("alert_name") == "subscription_cancelled":
             subscription_id = request.form.get("subscription_id")
