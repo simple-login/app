@@ -57,6 +57,8 @@ def get_user_if_alias_would_auto_create(
     domain_and_rule = check_if_alias_can_be_auto_created_for_custom_domain(
         address, notify_user=notify_user
     )
+    if DomainDeletedAlias.get_by(email=address):
+        return None
     if domain_and_rule:
         return domain_and_rule[0].user
     directory = check_if_alias_can_be_auto_created_for_a_directory(

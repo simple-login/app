@@ -16,6 +16,7 @@ from app.models import (
     Directory,
     DirectoryMailbox,
     User,
+    DomainDeletedAlias,
 )
 from tests.utils import create_new_user, random_domain, random_token
 
@@ -83,6 +84,11 @@ def get_auto_create_alias_tests(user: User) -> List:
         regex="ok-.*",
         flush=True,
     )
+    deleted_alias = f"deletedalias@{catchall.domain}"
+    Session.add(
+        DomainDeletedAlias(email=deleted_alias, domain_id=catchall.id, user_id=user.id)
+    )
+    Session.flush()
     dir_name = random_token()
     directory = Directory.create(name=dir_name, user_id=user.id, flush=True)
     DirectoryMailbox.create(
@@ -101,6 +107,7 @@ def get_auto_create_alias_tests(user: User) -> List:
         (f"{dir_name}+something@{ALIAS_DOMAINS[0]}", True),
         (f"{dir_name}#something@{ALIAS_DOMAINS[0]}", True),
         (f"{dir_name}/something@{ALIAS_DOMAINS[0]}", True),
+        (deleted_alias, False),
     ]
 
 
