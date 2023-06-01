@@ -84,6 +84,28 @@ def test_get_default_domain_hidden():
     assert suffixes[0].domain != default_domain.domain
 
 
+def test_get_default_domain_is_premium_for_free_user():
+    user = create_new_user()
+    PartnerUser.create(
+        partner_id=get_proton_partner().id,
+        user_id=user.id,
+        external_user_id=random_token(10),
+        flush=True,
+    )
+    user.trial_end = None
+    default_domain = SLDomain.filter_by(partner_id=None, premium_only=True).first()
+    user.default_alias_public_domain_id = default_domain.id
+    Session.flush()
+    options = AliasOptions(
+        show_sl_domains=False, show_partner_domains=get_proton_partner()
+    )
+    suffixes = get_alias_suffixes(user, alias_options=options)
+    for suffix in suffixes:
+        domain = SLDomain.get_by(domain=suffix.domain)
+        assert not domain.premium_only
+    assert suffixes[0].domain != default_domain.domain
+
+
 def test_suffixes_are_valid():
     user = create_new_user()
     PartnerUser.create(

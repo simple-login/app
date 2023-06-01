@@ -169,8 +169,11 @@ def get_alias_suffixes(
             alias_suffixes.insert(0, alias_suffix)
 
     if not default_domain_found:
-        sl_domain = SLDomain.get(user.default_alias_public_domain_id)
-        if sl_domain and not sl_domain.hidden:
+        domain_conditions = {"id": user.default_alias_public_domain_id, "hidden": False}
+        if not user.is_premium():
+            domain_conditions["premium_only"] = False
+        sl_domain = SLDomain.get_by(**domain_conditions)
+        if sl_domain:
             prefix = (
                 ""
                 if config.DISABLE_ALIAS_SUFFIX
