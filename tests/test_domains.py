@@ -130,7 +130,7 @@ def test_get_premium_with_partner_domains():
     )
 
 
-def test_get_partner_and_default_domain():
+def test_get_partner_and_free_default_domain():
     user = create_new_user()
     PartnerUser.create(
         partner_id=get_proton_partner().id,
@@ -142,7 +142,6 @@ def test_get_partner_and_default_domain():
         SLDomain.filter_by(partner_id=None, hidden=False).first().id
     )
     Session.flush()
-    # Show partner domains
     options = AliasOptions(
         show_sl_domains=False, show_partner_domains=get_proton_partner()
     )
@@ -151,6 +150,52 @@ def test_get_partner_and_default_domain():
     assert domains[0].domain == "premium_partner"
     assert domains[1].domain == "free_partner"
     assert domains[2].domain == "free_non_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains(
+        alias_options=options
+    )
+
+
+def test_get_free_partner_and_premium_default_domain():
+    user = create_new_user()
+    user.trial_end = None
+    PartnerUser.create(
+        partner_id=get_proton_partner().id,
+        user_id=user.id,
+        external_user_id=random_token(10),
+        flush=True,
+    )
+    user.default_alias_public_domain_id = (
+        SLDomain.filter_by(partner_id=None, hidden=False, premium_only=True).first().id
+    )
+    Session.flush()
+    options = AliasOptions(
+        show_sl_domains=False, show_partner_domains=get_proton_partner()
+    )
+    domains = user.get_sl_domains(alias_options=options)
+    assert len(domains) == 1
+    assert domains[0].domain == "free_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains(
+        alias_options=options
+    )
+
+
+def test_get_free_partner_and_hidden_default_domain():
+    user = create_new_user()
+    user.trial_end = None
+    PartnerUser.create(
+        partner_id=get_proton_partner().id,
+        user_id=user.id,
+        external_user_id=random_token(10),
+        flush=True,
+    )
+    user.default_alias_public_domain_id = SLDomain.filter_by(hidden=True).first().id
+    Session.flush()
+    options = AliasOptions(
+        show_sl_domains=False, show_partner_domains=get_proton_partner()
+    )
+    domains = user.get_sl_domains(alias_options=options)
+    assert len(domains) == 1
+    assert domains[0].domain == "free_partner"
     assert [d.domain for d in domains] == user.available_sl_domains(
         alias_options=options
     )
