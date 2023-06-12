@@ -131,3 +131,22 @@ def test_suffixes_are_valid():
         if len(match.groups()) >= 1:
             has_prefix += 1
     assert has_prefix > 0
+
+
+def test_get_default_domain_is_only_shown_once():
+    user = create_new_user()
+    default_domain = SLDomain.filter_by(hidden=False).order_by(SLDomain.order).first()
+    user.default_alias_public_domain_id = default_domain.id
+    Session.flush()
+    options = AliasOptions(
+        show_sl_domains=True, show_partner_domains=get_proton_partner()
+    )
+    suffixes = get_alias_suffixes(user, alias_options=options)
+    found_default = False
+    found_domains = set()
+    for suffix in suffixes:
+        assert suffix.domain not in found_domains
+        found_domains.add(suffix.domain)
+        if default_domain.domain == suffix.domain:
+            found_default = True
+    assert found_default

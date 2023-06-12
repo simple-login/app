@@ -162,8 +162,6 @@ def get_alias_suffixes(
             or user.default_alias_public_domain_id != sl_domain.id
         ):
             alias_suffixes.append(alias_suffix)
-            # If no default domain mark it as found
-            default_domain_found = user.default_alias_public_domain_id is None
         else:
             default_domain_found = True
             alias_suffixes.insert(0, alias_suffix)
