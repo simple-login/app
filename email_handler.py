@@ -846,22 +846,21 @@ def forward_email_to_mailbox(
             f"""Email sent to {alias.email} from an invalid address and cannot be replied""",
         )
 
-    delete_all_headers_except(
-        msg,
-        [
-            headers.FROM,
-            headers.TO,
-            headers.CC,
-            headers.SUBJECT,
-            headers.DATE,
-            # do not delete original message id
-            headers.MESSAGE_ID,
-            # References and In-Reply-To are used for keeping the email thread
-            headers.REFERENCES,
-            headers.IN_REPLY_TO,
-        ]
-        + headers.MIME_HEADERS,
-    )
+    headers_to_keep = [
+        headers.FROM,
+        headers.TO,
+        headers.CC,
+        headers.SUBJECT,
+        headers.DATE,
+        # do not delete original message id
+        headers.MESSAGE_ID,
+        # References and In-Reply-To are used for keeping the email thread
+        headers.REFERENCES,
+        headers.IN_REPLY_TO,
+    ] + headers.MIME_HEADERS
+    if user.include_header_email_header:
+        headers_to_keep.append(headers.AUTHENTICATION_RESULTS)
+    delete_all_headers_except(msg, headers_to_keep)
 
     # create PGP email if needed
     if mailbox.pgp_enabled() and user.is_premium() and not alias.disable_pgp:
