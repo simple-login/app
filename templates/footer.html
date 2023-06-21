@@ -286,6 +286,7 @@
 
     },
     async mounted() {
+      Object.freeze(Object.prototype);
       let that = this;
       let res = await fetch(`/api/notifications?page=${that.page}`, {
         method: "GET",
