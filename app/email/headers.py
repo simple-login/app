@@ -20,6 +20,7 @@ X_SPAM_STATUS = "X-Spam-Status"
 LIST_UNSUBSCRIBE = "List-Unsubscribe"
 LIST_UNSUBSCRIBE_POST = "List-Unsubscribe-Post"
 RETURN_PATH = "Return-Path"
+AUTHENTICATION_RESULTS = "Authentication-Results"
 
 # headers used to DKIM sign in order of preference
 DKIM_HEADERS = [
