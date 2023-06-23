@@ -28,6 +28,7 @@ def test_original_headers_from_preserved():
     assert len(send_requests) == 1
     request = send_requests[0]
     assert request.msg[headers.SL_ENVELOPE_FROM] == envelope.mail_from
+    assert request.msg[headers.SL_ORIGINAL_FROM] == original_sender_address
     assert (
         request.msg[headers.AUTHENTICATION_RESULTS]
         == msg[headers.AUTHENTICATION_RESULTS]
