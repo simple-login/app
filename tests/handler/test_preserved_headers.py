@@ -17,7 +17,11 @@ def test_original_headers_from_preserved():
     original_sender_address = random_email()
     msg = load_eml_file(
         "replacement_on_forward_phase.eml",
-        {"sender_address": original_sender_address, "recipient_address": alias.email},
+        {
+            "sender_address": original_sender_address,
+            "recipient_address": alias.email,
+            "cc_address": random_email(),
+        },
     )
     envelope = Envelope()
     envelope.mail_from = f"env.{original_sender_address}"
