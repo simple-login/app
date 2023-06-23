@@ -24,6 +24,7 @@ References:
  <af07e94a66ece6564ae30a2aaac7a34c@frontapp.com>
 From: {{ sender_address }}
 To: {{ recipient_address }}
+CC: {{ cc_address }}
 Subject: Something
 Message-ID: <af07e94a66ece6564ae30a2aaac7a34c@frontapp.com>
 X-Mailer: Front (1.0; +https://frontapp.com;

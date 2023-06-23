@@ -17,7 +17,11 @@ def test_original_headers_from_preserved():
     original_sender_address = random_email()
     msg = load_eml_file(
         "replacement_on_forward_phase.eml",
-        {"sender_address": original_sender_address, "recipient_address": alias.email},
+        {
+            "sender_address": original_sender_address,
+            "recipient_address": alias.email,
+            "cc_address": random_email(),
+        },
     )
     envelope = Envelope()
     envelope.mail_from = f"env.{original_sender_address}"
@@ -28,6 +32,7 @@ def test_original_headers_from_preserved():
     assert len(send_requests) == 1
     request = send_requests[0]
     assert request.msg[headers.SL_ENVELOPE_FROM] == envelope.mail_from
+    assert request.msg[headers.SL_ORIGINAL_FROM] == original_sender_address
     assert (
         request.msg[headers.AUTHENTICATION_RESULTS]
         == msg[headers.AUTHENTICATION_RESULTS]
