@@ -445,7 +445,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     random_alias_suffix = sa.Column(
         sa.Integer,
         nullable=False,
-        default=AliasSuffixEnum.random_string.value,
+        default=AliasSuffixEnum.word.value,
         server_default=str(AliasSuffixEnum.random_string.value),
     )
 
