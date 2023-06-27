@@ -64,8 +64,8 @@ class UnsubscribeGenerator:
             return message
         elif not mailto_unsubs:
             LOG.debug("No unsubs. Deleting all unsub headers")
-            message = delete_header(message, headers.LIST_UNSUBSCRIBE)
-            message = delete_header(message, headers.LIST_UNSUBSCRIBE_POST)
+            delete_header(message, headers.LIST_UNSUBSCRIBE)
+            delete_header(message, headers.LIST_UNSUBSCRIBE_POST)
             return message
         unsub_data = UnsubscribeData(
             UnsubscribeAction.OriginalUnsubscribeMailto,
