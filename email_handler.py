@@ -857,6 +857,8 @@ def forward_email_to_mailbox(
         # References and In-Reply-To are used for keeping the email thread
         headers.REFERENCES,
         headers.IN_REPLY_TO,
+        headers.LIST_UNSUBSCRIBE,
+        headers.LIST_UNSUBSCRIBE_POST,
     ] + headers.MIME_HEADERS
     if user.include_header_email_header:
         headers_to_keep.append(headers.AUTHENTICATION_RESULTS)

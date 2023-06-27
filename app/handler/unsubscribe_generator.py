@@ -9,6 +9,7 @@ from app.handler.unsubscribe_encoder import (
     UnsubscribeData,
     UnsubscribeOriginalData,
 )
+from app.log import LOG
 from app.models import Alias, Contact, UnsubscribeBehaviourEnum
 
 
@@ -30,6 +31,7 @@ class UnsubscribeGenerator:
         """
         unsubscribe_data = message[headers.LIST_UNSUBSCRIBE]
         if not unsubscribe_data:
+            LOG.info("Email has no unsubscribe header")
             return message
         raw_methods = [method.strip() for method in unsubscribe_data.split(",")]
         mailto_unsubs = None
@@ -44,7 +46,9 @@ class UnsubscribeGenerator:
             if url_data.scheme == "mailto":
                 query_data = urllib.parse.parse_qs(url_data.query)
                 mailto_unsubs = (url_data.path, query_data.get("subject", [""])[0])
+                LOG.debug(f"Unsub is mailto to {mailto_unsubs}")
             else:
+                LOG.debug(f"Unsub has {url_data.scheme} scheme")
                 other_unsubs.append(method)
         # If there are non mailto unsubscribe methods, use those in the header
         if other_unsubs:
@@ -56,18 +60,19 @@ class UnsubscribeGenerator:
             add_or_replace_header(
                 message, headers.LIST_UNSUBSCRIBE_POST, "List-Unsubscribe=One-Click"
             )
+            LOG.debug(f"Adding click unsub methods to header {other_unsubs}")
             return message
-        if not mailto_unsubs:
+        elif not mailto_unsubs:
+            LOG.debug("No unsubs. Deleting all unsub headers")
             message = delete_header(message, headers.LIST_UNSUBSCRIBE)
             message = delete_header(message, headers.LIST_UNSUBSCRIBE_POST)
             return message
-        return self._add_unsubscribe_header(
-            message,
-            UnsubscribeData(
-                UnsubscribeAction.OriginalUnsubscribeMailto,
-                UnsubscribeOriginalData(alias.id, mailto_unsubs[0], mailto_unsubs[1]),
-            ),
+        unsub_data = UnsubscribeData(
+            UnsubscribeAction.OriginalUnsubscribeMailto,
+            UnsubscribeOriginalData(alias.id, mailto_unsubs[0], mailto_unsubs[1]),
         )
+        LOG.debug(f"Adding unsub data {unsub_data}")
+        return self._add_unsubscribe_header(message, unsub_data)
 
     def _add_unsubscribe_header(
         self, message: Message, unsub: UnsubscribeData
