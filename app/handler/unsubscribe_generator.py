@@ -43,13 +43,12 @@ class UnsubscribeGenerator:
                 continue
             method = raw_method[start + 1 : end]
             url_data = urllib.parse.urlparse(method)
-            LOG.debug(f"Unsub header has raw method {raw_method}")
             if url_data.scheme == "mailto":
                 query_data = urllib.parse.parse_qs(url_data.query)
                 mailto_unsubs = (url_data.path, query_data.get("subject", [""])[0])
                 LOG.debug(f"Unsub is mailto to {mailto_unsubs}")
             else:
-                LOG.debug(f"Unsub has other scheme")
+                LOG.debug(f"Unsub has {url_data.scheme} scheme")
                 other_unsubs.append(method)
         # If there are non mailto unsubscribe methods, use those in the header
         if other_unsubs:
@@ -61,10 +60,10 @@ class UnsubscribeGenerator:
             add_or_replace_header(
                 message, headers.LIST_UNSUBSCRIBE_POST, "List-Unsubscribe=One-Click"
             )
-            LOG.debug(f"Adding other unsub methods to header {other_unsubs}")
+            LOG.debug(f"Adding click unsub methods to header {other_unsubs}")
             return message
-        if not mailto_unsubs:
-            LOG.debug("No mailto unsubs. deleting all headers")
+        elif not mailto_unsubs:
+            LOG.debug("No unsubs. Deleting all unsub headers")
             message = delete_header(message, headers.LIST_UNSUBSCRIBE)
             message = delete_header(message, headers.LIST_UNSUBSCRIBE_POST)
             return message
