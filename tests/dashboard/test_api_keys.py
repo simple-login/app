@@ -1,10 +1,13 @@
 from time import time
 
+import arrow
 from flask import url_for
 
+from app import config
+from app.dashboard.views.api_key import clean_up_unused_or_old_api_keys
 from app.db import Session
 from app.models import User, ApiKey
-from tests.utils import login
+from tests.utils import login, create_new_user
 
 
 def test_api_key_page_requires_password(flask_client):
@@ -87,3 +90,26 @@ def test_delete_all_api_keys(flask_client):
     assert (
         ApiKey.filter(ApiKey.user_id == user_2.id).count() == 1
     )  # assert that user 2 still has 1 API key
+
+
+def test_cleanup_api_keys():
+    user = create_new_user()
+    ApiKey.create(
+        user_id=user.id, name="used", last_used=arrow.utcnow().shift(days=-3), times=1
+    )
+    ApiKey.create(
+        user_id=user.id, name="keep 1", last_used=arrow.utcnow().shift(days=-2), times=1
+    )
+    ApiKey.create(
+        user_id=user.id, name="keep 2", last_used=arrow.utcnow().shift(days=-1), times=1
+    )
+    ApiKey.create(user_id=user.id, name="not used", last_used=None, times=1)
+    Session.flush()
+    old_max_api_keys = config.MAX_API_KEYS
+    config.MAX_API_KEYS = 2
+    clean_up_unused_or_old_api_keys(user.id)
+    keys = ApiKey.filter_by(user_id=user.id).all()
+    assert len(keys) == 2
+    assert keys[0].name.find("keep") == 0
+    assert keys[1].name.find("keep") == 0
+    config.MAX_API_KEYS = old_max_api_keys
