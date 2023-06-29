@@ -899,7 +899,11 @@ def forward_email_to_mailbox(
     msg[headers.SL_EMAIL_LOG_ID] = str(email_log.id)
     if user.include_header_email_header:
         msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
-        msg[headers.SL_ORIGINAL_FROM] = contact.website_email
+        if contact.name:
+            original_from = f"{contact.name} <{contact.website_email}>"
+        else:
+            original_from = contact.website_email
+        msg[headers.SL_ORIGINAL_FROM] = original_from
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
     msg[headers.SL_ENVELOPE_TO] = alias.email
 
