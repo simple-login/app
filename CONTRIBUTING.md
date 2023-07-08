@@ -169,7 +169,7 @@ For HTML templates, we use `djlint`. Before creating a pull request, please run
 poetry run djlint --check templates
 ```
 
-If some files aren't properly formatted, you can format all files with 
+If some files aren't properly formatted, you can format all files with
 
 ```bash
 poetry run djlint --reformat .
