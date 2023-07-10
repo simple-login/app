@@ -74,8 +74,8 @@ class UnsubscribeEncoder:
         )
         signed_data = cls._get_signer().sign(serialized_data).decode("utf-8")
         encoded_request = f"{UNSUB_PREFIX}.{signed_data}"
-        if len(encoded_request) > 256:
-            LOG.e("Encoded request is longer than 256 chars")
+        if len(encoded_request) > 512:
+            LOG.w("Encoded request is longer than 512 chars")
         return encoded_request
 
     @staticmethod
