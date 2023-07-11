@@ -46,6 +46,7 @@ class SendRequest:
             "mail_options": self.mail_options,
             "rcpt_options": self.rcpt_options,
             "is_forward": self.is_forward,
+            "retries": self.retries,
         }
         return json.dumps(data).encode("utf-8")
 
@@ -66,6 +67,7 @@ class SendRequest:
             mail_options=decoded_data["mail_options"],
             rcpt_options=decoded_data["rcpt_options"],
             is_forward=decoded_data["is_forward"],
+            retries=decoded_data.get("retries", 1),
         )
 
     def save_request_to_unsent_dir(self, prefix: str = "DeliveryFail"):
