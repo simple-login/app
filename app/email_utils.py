@@ -959,7 +959,14 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
 
     elif content_type in ("multipart/mixed", "multipart/signed"):
         new_parts = []
-        parts = list(msg.get_payload())
+        payload = msg.get_payload()
+        if isinstance(payload, str):
+            # The message is badly formatted inject as new
+            new_parts = [MIMEText(text_header, "plain"), MIMEText(payload, "plain")]
+            clone_msg = copy(msg)
+            clone_msg.set_payload(new_parts)
+            return clone_msg
+        parts = list(payload)
         LOG.d("only add header for the first part for %s", content_type)
         for ix, part in enumerate(parts):
             if ix == 0:
