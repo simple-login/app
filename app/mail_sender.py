@@ -77,7 +77,6 @@ class SendRequest:
         file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
         self.save_request_to_file(file_path)
 
-    @staticmethod
     def save_request_to_failed_dir(self, prefix: str = "DeliveryRetryFail"):
         file_name = (
             f"{prefix}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
@@ -255,8 +254,11 @@ def load_unsent_mails_from_fs_and_resend():
                     "DeliverUnsentEmail", {"delivered": "false"}
                 )
         except Exception as e:
-            # Unlink original file to avoid re-doing the same
-            os.unlink(full_file_path)
+            try:
+                # Unlink original file to avoid re-doing the same
+                os.unlink(full_file_path)
+            except FileNotFoundError:
+                pass
             LOG.e(
                 "email sending failed with error:%s "
                 "envelope %s -> %s, mail %s -> %s saved to %s",
