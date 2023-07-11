@@ -1,0 +1,21 @@
+Sender: somebody@somewhere.net
+Content-Type: multipart/mixed; boundary="----=_Part_3946_1099248058.1688752298149"
+
+--0c916c9b5fe3c925d7bafeb988bb6794
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+notification test
+
+--0c916c9b5fe3c925d7bafeb988bb6794
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html><head><meta http-equiv=3D"Content-Type" content=3D"text/html; charset=
+=3DUTF-8"><meta http-equiv=3D"X-UA-Compatible" content=3D"IE=3Dedge"><meta =
+name=3D"format-detection" content=3D"telephone=3Dno"><meta name=3D"viewport=
+" content=3D"width=3Ddevice-width, initial-scale=3D1.0">
+
+--0c916c9b5fe3c925d7bafeb988bb6794--
+
+

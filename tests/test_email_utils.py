@@ -822,3 +822,10 @@ def test_sl_formataddr():
     # test that the same name-address can't be handled by the built-in formataddr
     with pytest.raises(UnicodeEncodeError):
         formataddr(("é", "è@ç.à"))
+
+
+def test_add_header_to_invalid_multipart():
+    msg = load_eml_file("add_header_multipart.eml")
+    msg = add_header(msg, "test", "test")
+    data = msg.as_string()
+    assert data != ""
