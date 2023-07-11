@@ -810,7 +810,7 @@ def test_add_header_multipart_with_invalid_part():
         if i < 2:
             assert part.get_payload().index("INJECT") > -1
         else:
-            assert part == "invalid"
+            assert part.get_payload() == "invalid"
 
 
 def test_sl_formataddr():
