@@ -951,6 +951,8 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
         for part in msg.get_payload():
             if isinstance(part, Message):
                 new_parts.append(add_header(part, text_header, html_header))
+            elif isinstance(part, str):
+                new_parts.append(MIMEText(part))
             else:
                 new_parts.append(part)
         clone_msg = copy(msg)
