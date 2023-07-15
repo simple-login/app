@@ -67,7 +67,7 @@ For additional security, we recommend you take some extra steps.
 
 [Certificate Authority Authorization](https://letsencrypt.org/docs/caa/) is a step you can take to restrict the list of certificate authorities that are allowed to issue certificates for your domains.
 
-Create a **CAA record* that contains the following text: 
+Create a **CAA record** that contains the following text: 
 
 To verify if the DNS works, the following command
 
