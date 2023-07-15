@@ -1,4 +1,4 @@
-# SSL, HTTPS, and HSTS
+# SSL, HTTPS, HSTS and additional security measures
 
 It's highly recommended to enable SSL/TLS on your server, both for the web app and email server.
 
@@ -57,4 +57,26 @@ Now, reload Nginx:
 
 ```bash
 sudo systemctl reload nginx
+```
+
+## Additional security measures
+
+For additional security, we recommend you take some extra steps.
+
+### Enable Certificate Authority Authorization (CAA)
+
+[Certificate Authority Authorization](https://letsencrypt.org/docs/caa/) is a step you can take to restrict the list of certificate authorities that are allowed to issue certificates for your domains.
+
+Create a **CAA record* that contains the following text: 
+
+To verify if the DNS works, the following command
+
+```bash
+dig @1.1.1.1 mydomain.com caa
+```
+
+should return:
+
+```
+mydomain.com.	3600	IN	CAA	0 issue "letsencrypt.org"
 ```
