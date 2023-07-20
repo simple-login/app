@@ -85,4 +85,4 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 if __name__ == "__main__":
     app.secret_key = os.urandom(24)
-    app.run(debug=True)
+    app.run(debug=False)

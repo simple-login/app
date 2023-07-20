@@ -904,7 +904,7 @@ def local_main():
     # duration = time.time() - conn.info['query_start_time'].pop(-1)
     # app.config["DEBUG_TB_PANELS"] += ("flask_debugtoolbar_sqlalchemy.SQLAlchemyPanel",)
 
-    app.run(debug=True, port=7777)
+    app.run(debug=False, port=7777)
 
     # uncomment to run https locally
     # LOG.d("enable https")
