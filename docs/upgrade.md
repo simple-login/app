@@ -179,7 +179,7 @@ sudo docker rm -f sl-email sl-migration sl-app sl-db sl-job-runner
 mkdir -p ./sl/upload/
 
 # Run the database container. Make sure to replace `myuser` and `mypassword`
-docker run -d \
+sudo docker run -d \
     --name sl-db \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
@@ -239,7 +239,7 @@ sudo docker run -d \
     simplelogin/app:4.6.5-beta python email_handler.py
     
 # Run the job runner
-docker run -d \
+sudo docker run -d \
     --name sl-job-runner \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/sl/upload:/code/static/upload \
