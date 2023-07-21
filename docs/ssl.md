@@ -75,7 +75,7 @@ Use [SSLMate’s CAA Record Generator](https://sslmate.com/caa/) to create a **C
 
 To verify if the DNS works, the following command
 
-```
+```bash
 dig @1.1.1.1 mydomain.com caa
 ```
 
