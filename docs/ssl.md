@@ -63,6 +63,28 @@ sudo systemctl reload nginx
 
 For additional security, we recommend you take some extra steps.
 
+### Enable Certificate Authority Authorization (CAA)
+
+[Certificate Authority Authorization](https://letsencrypt.org/docs/caa/) is a step you can take to restrict the list of certificate authorities that are allowed to issue certificates for your domains.
+
+Use [SSLMate’s CAA Record Generator](https://sslmate.com/caa/) to create a **CAA record** with the following configuration:
+
+- `flags`: `0`
+- `tag`: `issue`
+- `value`: `"letsencrypt.org"`
+
+To verify if the DNS works, the following command
+
+```bash
+dig @1.1.1.1 mydomain.com caa
+```
+
+should return:
+
+```
+mydomain.com.	3600	IN	CAA	0 issue "letsencrypt.org"
+```
+
 ### SMTP MTA Strict Transport Security (MTA-STS)
 
 [MTA-STS](https://datatracker.ietf.org/doc/html/rfc8461) is an extra step you can take to broadcast the ability of your instance to receive and, optionally enforce, TSL-secure SMTP connections to protect email traffic.
