@@ -877,7 +877,7 @@ def forward_email_to_mailbox(
             msg = add_header(
                 msg,
                 f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with "{orig_subject}" as subject""",
-                f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with <b>{orig_subject}</b> as subject""",
+                f"""Forwarded by SimpleLogin to {alias.email} from <b>{sender}</b> with <b>{orig_subject}</b> as subject""",
             )
 
         try:
