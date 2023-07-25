@@ -54,7 +54,7 @@ include = ["templates/*", "templates/**/*", "local_data/*.txt"]
 
 [tool.poetry.dependencies]
 python = "^3.7.2"
-flask = "^1.1.2"
+flask = "^2.2.5"
 flask_login = "^0.5.0"
 wtforms = "^2.3.3"
 unidecode = "^1.1.1"
