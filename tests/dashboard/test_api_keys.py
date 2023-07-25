@@ -37,6 +37,17 @@ def test_create_delete_api_key(flask_client):
     assert ApiKey.filter(ApiKey.user_id == user.id).count() == 1
     assert api_key.name == "for test"
 
+    # create second api_key
+    create_r = flask_client.post(
+        url_for("dashboard.api_key"),
+        data={"form-name": "create", "name": "for test 2"},
+        follow_redirects=True,
+    )
+    assert create_r.status_code == 200
+    api_key_2 = ApiKey.filter_by(user_id=user.id).order_by(ApiKey.id.desc()).first()
+    assert ApiKey.filter(ApiKey.user_id == user.id).count() == 2
+    assert api_key_2.name == "for test 2"
+
     # delete api_key
     delete_r = flask_client.post(
         url_for("dashboard.api_key"),
@@ -44,7 +55,7 @@ def test_create_delete_api_key(flask_client):
         follow_redirects=True,
     )
     assert delete_r.status_code == 200
-    assert ApiKey.count() == nb_api_key
+    assert ApiKey.count() == nb_api_key + 1
 
 
 def test_delete_all_api_keys(flask_client):

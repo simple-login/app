@@ -18,6 +18,8 @@ class NewApiKeyForm(FlaskForm):
 
 def clean_up_unused_or_old_api_keys(user_id: int):
     total_keys = ApiKey.filter_by(user_id=user_id).count()
+    if total_keys <= config.MAX_API_KEYS:
+        return
     # Remove oldest unused
     for api_key in (
         ApiKey.filter_by(user_id=user_id, last_used=None)
