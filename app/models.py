@@ -1472,7 +1472,6 @@ class Alias(Base, ModelMixin):
             postgresql_ops={"note": "gin_trgm_ops"},
             postgresql_using="gin",
         ),
-        Index("ix_alias_created_at", "created_at"),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id])
@@ -3065,7 +3064,7 @@ class Bounce(Base, ModelMixin):
     email = sa.Column(sa.String(256), nullable=False, index=True)
     info = sa.Column(sa.Text, nullable=True)
 
-    __table_args__ = (sa.UniqueConstraint("created_at", name="ix_bounce_created_at"),)
+    __table_args__ = (sa.Index("ix_bounce_created_at", "created_at"),)
 
 
 class TransactionalEmail(Base, ModelMixin):
@@ -3076,9 +3075,7 @@ class TransactionalEmail(Base, ModelMixin):
     __tablename__ = "transactional_email"
     email = sa.Column(sa.String(256), nullable=False, unique=False)
 
-    __table_args__ = (
-        sa.UniqueConstraint("created_at", name="ix_transactional_email_created_at"),
-    )
+    __table_args__ = (sa.Index("ix_transactional_email_created_at", "created_at"),)
 
 
 class Payout(Base, ModelMixin):

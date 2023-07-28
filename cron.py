@@ -671,9 +671,7 @@ def set_custom_domain_for_alias():
 def sanitize_alias_address_name():
     count = 0
     # using Alias.all() will take all the memory
-    for alias in Alias.filter(
-        Alias.created_at > arrow.now().shift(days=-7)
-    ).yield_per_query():
+    for alias in Alias.yield_per_query():
         if count % 1000 == 0:
             LOG.d("process %s", count)
 
