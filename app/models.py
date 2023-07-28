@@ -341,7 +341,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=True, nullable=False, server_default="1"
     )
 
-    activated = sa.Column(sa.Boolean, default=False, nullable=False)
+    activated = sa.Column(sa.Boolean, default=False, nullable=False, index=True)
 
     # an account can be disabled if having harmful behavior
     disabled = sa.Column(sa.Boolean, default=False, nullable=False, server_default="0")
@@ -411,7 +411,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     )
 
     referral_id = sa.Column(
-        sa.ForeignKey("referral.id", ondelete="SET NULL"), nullable=True, default=None
+        sa.ForeignKey("referral.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+        index=True,
     )
 
     referral = orm.relationship("Referral", foreign_keys=[referral_id])
@@ -532,6 +535,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         default=UnsubscribeBehaviourEnum.PreserveOriginal,
         server_default=str(UnsubscribeBehaviourEnum.DisableAlias.value),
         nullable=False,
+    )
+
+    __table_args__ = (
+        sa.Index(
+            "ix_users_activated_trial_end_lifetime", activated, trial_end, lifetime
+        ),
     )
 
     @property
@@ -1445,7 +1454,7 @@ class Alias(Base, ModelMixin):
     )
 
     # have I been pwned
-    hibp_last_check = sa.Column(ArrowType, default=None)
+    hibp_last_check = sa.Column(ArrowType, default=None, index=True)
     hibp_breaches = orm.relationship("Hibp", secondary="alias_hibp")
 
     # to use Postgres full text search. Only applied on "note" column for now
@@ -1463,6 +1472,7 @@ class Alias(Base, ModelMixin):
             postgresql_ops={"note": "gin_trgm_ops"},
             postgresql_using="gin",
         ),
+        Index("ix_alias_created_at", "created_at"),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id])
@@ -2928,6 +2938,8 @@ class Monitoring(Base, ModelMixin):
     active_queue = sa.Column(sa.Integer, nullable=False)
     deferred_queue = sa.Column(sa.Integer, nullable=False)
 
+    __table_args__ = (Index("ix_monitoring_created_at", "created_at"),)
+
 
 class BatchImport(Base, ModelMixin):
     __tablename__ = "batch_import"
@@ -3053,6 +3065,8 @@ class Bounce(Base, ModelMixin):
     email = sa.Column(sa.String(256), nullable=False, index=True)
     info = sa.Column(sa.Text, nullable=True)
 
+    __table_args__ = (sa.UniqueConstraint("created_at", name="ix_bounce_created_at"),)
+
 
 class TransactionalEmail(Base, ModelMixin):
     """Storing all email addresses that receive transactional emails, including account email and mailboxes.
@@ -3061,6 +3075,10 @@ class TransactionalEmail(Base, ModelMixin):
 
     __tablename__ = "transactional_email"
     email = sa.Column(sa.String(256), nullable=False, unique=False)
+
+    __table_args__ = (
+        sa.UniqueConstraint("created_at", name="ix_transactional_email_created_at"),
+    )
 
 
 class Payout(Base, ModelMixin):
