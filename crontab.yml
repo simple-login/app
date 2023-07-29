@@ -35,12 +35,6 @@ jobs:
     schedule: "0 12 * * *"
     captureStderr: true
 
-  - name: SimpleLogin Sanity Check
-    command: python /code/cron.py -j sanity_check
-    shell: /bin/bash
-    schedule: "0 2 * * *"
-    captureStderr: true
-
   - name: SimpleLogin Delete Old Monitoring records
     command: python /code/cron.py -j delete_old_monitoring
     shell: /bin/bash

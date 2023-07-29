@@ -104,7 +104,9 @@ def delete_logs():
 
 
 def delete_refused_emails():
-    for refused_email in RefusedEmail.filter_by(deleted=False).all():
+    for refused_email in (
+        RefusedEmail.filter_by(deleted=False).order_by(RefusedEmail.id).all()
+    ):
         if arrow.now().shift(days=1) > refused_email.delete_at >= arrow.now():
             LOG.d("Delete refused email %s", refused_email)
             if refused_email.path:
