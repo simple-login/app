@@ -1025,7 +1025,8 @@ async def check_hibp():
         )
         .filter(Alias.enabled)
         .order_by(Alias.hibp_last_check.asc())
-        .all()
+        .yield_per(500)
+        .enable_eagerloads(False)
     ):
         await queue.put(alias.id)
 
