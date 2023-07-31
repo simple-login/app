@@ -276,7 +276,11 @@ def compute_metric2() -> Metric2:
     _24h_ago = now.shift(days=-1)
 
     nb_referred_user_paid = 0
-    for user in User.filter(User.referral_id.isnot(None)).yield_per_query():
+    for user in (
+        User.filter(User.referral_id.isnot(None))
+        .yield_per(500)
+        .enable_eagerloads(False)
+    ):
         if user.is_paid():
             nb_referred_user_paid += 1
 
