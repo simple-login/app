@@ -66,12 +66,14 @@ from server import create_light_app
 
 def notify_trial_end():
     for user in User.filter(
-        User.activated.is_(True), User.trial_end.isnot(None), User.lifetime.is_(False)
+        User.activated.is_(True),
+        User.trial_end.isnot(None),
+        User.trial_end >= arrow.now().shift(days=2),
+        User.trial_end < arrow.now().shift(days=3),
+        User.lifetime.is_(False),
     ).all():
         try:
-            if user.in_trial() and arrow.now().shift(
-                days=3
-            ) > user.trial_end >= arrow.now().shift(days=2):
+            if user.in_trial():
                 LOG.d("Send trial end email to user %s", user)
                 send_trial_end_soon_email(user)
         # happens if user has been deleted in the meantime
@@ -274,7 +276,11 @@ def compute_metric2() -> Metric2:
     _24h_ago = now.shift(days=-1)
 
     nb_referred_user_paid = 0
-    for user in User.filter(User.referral_id.isnot(None)):
+    for user in (
+        User.filter(User.referral_id.isnot(None))
+        .yield_per(500)
+        .enable_eagerloads(False)
+    ):
         if user.is_paid():
             nb_referred_user_paid += 1
 
@@ -1022,7 +1028,8 @@ async def check_hibp():
         )
         .filter(Alias.enabled)
         .order_by(Alias.hibp_last_check.asc())
-        .all()
+        .yield_per(500)
+        .enable_eagerloads(False)
     ):
         await queue.put(alias.id)
 
