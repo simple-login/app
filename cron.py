@@ -66,7 +66,10 @@ from server import create_light_app
 
 def notify_trial_end():
     for user in User.filter(
-        User.activated.is_(True), User.trial_end.isnot(None), User.lifetime.is_(False)
+        User.activated.is_(True),
+        User.trial_end.isnot(None),
+        User.trial_end > arrow.now().shift(days=2),
+        User.lifetime.is_(False),
     ).all():
         try:
             if user.in_trial() and arrow.now().shift(
@@ -274,7 +277,7 @@ def compute_metric2() -> Metric2:
     _24h_ago = now.shift(days=-1)
 
     nb_referred_user_paid = 0
-    for user in User.filter(User.referral_id.isnot(None)):
+    for user in User.filter(User.referral_id.isnot(None)).yield_per_query():
         if user.is_paid():
             nb_referred_user_paid += 1
 
