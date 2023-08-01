@@ -13,8 +13,8 @@ from app.db import Session
 from app.email_utils import (
     mailbox_already_used,
     email_can_be_used_as_mailbox,
-    is_valid_email,
 )
+from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import Mailbox, Job
 from app.utils import sanitize_email

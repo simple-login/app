@@ -106,8 +106,6 @@ from app.email_utils import (
     get_header_unicode,
     generate_reply_email,
     is_reverse_alias,
-    normalize_reply_email,
-    is_valid_email,
     replace,
     should_disable,
     parse_id_from_bounce,
@@ -123,6 +121,7 @@ from app.email_utils import (
     generate_verp_email,
     sl_formataddr,
 )
+from app.email_validation import is_valid_email, normalize_reply_email
 from app.errors import (
     NonReverseAliasInReplyPhase,
     VERPTransactional,

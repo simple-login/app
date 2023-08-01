@@ -30,11 +30,13 @@ from sqlalchemy_utils import ArrowType
 from app import config
 from app import s3
 from app.db import Session
+from app.email_validation import is_valid_email, normalize_reply_email
 from app.errors import (
     AliasInTrashError,
     DirectoryInTrashError,
     SubdomainInTrashError,
     CannotCreateContactForReverseAlias,
+    InvalidContactEmailError,
 )
 from app.handler.unsubscribe_encoder import UnsubscribeAction, UnsubscribeEncoder
 from app.log import LOG
@@ -577,6 +579,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     @classmethod
     def create(cls, email, name="", password=None, from_partner=False, **kwargs):
+        email = sanitize_email(email)
         user: User = super(User, cls).create(email=email, name=name[:100], **kwargs)
 
         if password:
@@ -1802,11 +1805,11 @@ class Contact(Base, ModelMixin):
         commit = kw.pop("commit", False)
         flush = kw.pop("flush", False)
 
-        new_contact = cls(**kw)
-
-        website_email = kw["website_email"]
         # make sure email is lowercase and doesn't have any whitespace
-        website_email = sanitize_email(website_email)
+        website_email = sanitize_email(kw["website_email"]).replace("\u200f", "")
+        kw["website_email"] = website_email
+        if "reply_email" in kw:
+            kw["reply_email"] = normalize_reply_email(sanitize_email(kw["reply_email"]))
 
         # make sure contact.website_email isn't a reverse alias
         if website_email != config.NOREPLY:
@@ -1814,6 +1817,10 @@ class Contact(Base, ModelMixin):
             if orig_contact:
                 raise CannotCreateContactForReverseAlias(str(orig_contact))
 
+        if not is_valid_email(website_email):
+            raise InvalidContactEmailError(website_email)
+
+        new_contact = cls(**kw)
         Session.add(new_contact)
 
         if commit:
@@ -2300,6 +2307,7 @@ class CustomDomain(Base, ModelMixin):
     @classmethod
     def create(cls, **kwargs):
         domain = kwargs.get("domain")
+        kwargs["domain"] = domain.replace("\n", "")
         if DeletedSubdomain.get_by(domain=domain):
             raise SubdomainInTrashError
 
@@ -2598,6 +2606,26 @@ class Mailbox(Base, ModelMixin):
             ret.append(am.alias)
 
         return ret
+
+    @classmethod
+    def create(cls, **kw):
+        # whether to call Session.commit
+        commit = kw.pop("commit", False)
+        flush = kw.pop("flush", False)
+
+        if "email" in kw:
+            kw["email"] = sanitize_email(kw["email"])
+
+        r = cls(**kw)
+        Session.add(r)
+
+        if commit:
+            Session.commit()
+
+        if flush:
+            Session.flush()
+
+        return r
 
     def __repr__(self):
         return f"<Mailbox {self.id} {self.email}>"

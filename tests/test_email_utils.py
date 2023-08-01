@@ -19,10 +19,8 @@ from app.email_utils import (
     copy,
     get_spam_from_header,
     get_header_from_bounce,
-    is_valid_email,
     add_header,
     generate_reply_email,
-    normalize_reply_email,
     get_encoding,
     encode_text,
     EmailEncoding,
@@ -41,6 +39,7 @@ from app.email_utils import (
     get_verp_info_from_email,
     sl_formataddr,
 )
+from app.email_validation import is_valid_email, normalize_reply_email
 from app.models import (
     CustomDomain,
     Alias,
