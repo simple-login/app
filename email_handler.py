@@ -541,12 +541,20 @@ def sign_msg(msg: Message) -> Message:
     signature.add_header("Content-Disposition", 'attachment; filename="signature.asc"')
 
     try:
-        signature.set_payload(sign_data(message_to_bytes(msg).replace(b"\n", b"\r\n")))
+        payload = sign_data(message_to_bytes(msg).replace(b"\n", b"\r\n"))
+
+        if not payload:
+            LOG.e(f"Empty payload when signing {msg}")
+
+        signature.set_payload(payload)
     except Exception:
         LOG.e("Cannot sign, try using pgpy")
-        signature.set_payload(
-            sign_data_with_pgpy(message_to_bytes(msg).replace(b"\n", b"\r\n"))
-        )
+        payload = sign_data_with_pgpy(message_to_bytes(msg).replace(b"\n", b"\r\n"))
+
+        if not payload:
+            LOG.e(f"Empty payload when signing with pgpy {msg}")
+
+        signature.set_payload(payload)
 
     container.attach(signature)
 
