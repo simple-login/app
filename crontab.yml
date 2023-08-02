@@ -2,7 +2,7 @@ jobs:
   - name: SimpleLogin growth stats
     command: python /code/cron.py -j stats
     shell: /bin/bash
-    schedule: "15 0 * * *"
+    schedule: "0 0 * * *"
     captureStderr: true
 
   - name: SimpleLogin Delete Old Monitoring records
