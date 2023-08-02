@@ -99,7 +99,7 @@ def sanitize_email(email_address: str, not_lower=False) -> str:
         email_address = email_address.strip().replace(" ", "").replace("\n", " ")
         if not not_lower:
             email_address = email_address.lower()
-    return email_address
+    return email_address.replace("\u200f", "")
 
 
 class NextUrlSanitizer:

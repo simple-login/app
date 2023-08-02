@@ -1806,7 +1806,7 @@ class Contact(Base, ModelMixin):
         flush = kw.pop("flush", False)
 
         # make sure email is lowercase and doesn't have any whitespace
-        website_email = sanitize_email(kw["website_email"]).replace("\u200f", "")
+        website_email = sanitize_email(kw["website_email"])
         kw["website_email"] = website_email
         if "reply_email" in kw:
             kw["reply_email"] = normalize_reply_email(sanitize_email(kw["reply_email"]))
@@ -2609,23 +2609,9 @@ class Mailbox(Base, ModelMixin):
 
     @classmethod
     def create(cls, **kw):
-        # whether to call Session.commit
-        commit = kw.pop("commit", False)
-        flush = kw.pop("flush", False)
-
         if "email" in kw:
             kw["email"] = sanitize_email(kw["email"])
-
-        r = cls(**kw)
-        Session.add(r)
-
-        if commit:
-            Session.commit()
-
-        if flush:
-            Session.flush()
-
-        return r
+        return super().create(**kw)
 
     def __repr__(self):
         return f"<Mailbox {self.id} {self.email}>"
