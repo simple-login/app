@@ -22,10 +22,9 @@ from app.email_utils import (
     render,
     email_can_be_used_as_mailbox,
     send_email_with_rate_control,
-    normalize_reply_email,
-    is_valid_email,
     get_email_domain_part,
 )
+from app.email_validation import is_valid_email, normalize_reply_email
 from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
 from app.mail_sender import load_unsent_mails_from_fs_and_resend

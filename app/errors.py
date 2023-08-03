@@ -84,6 +84,14 @@ class ErrAddressInvalid(SLException):
         return f"{self.address} is not a valid email address"
 
 
+class InvalidContactEmailError(SLException):
+    def __init__(self, website_email: str):  # noqa: F821
+        self.website_email = website_email
+
+    def error_for_user(self) -> str:
+        return f"Cannot create contact with invalid email {self.website_email}"
+
+
 class ErrContactAlreadyExists(SLException):
     """raised when a contact already exists"""
 
