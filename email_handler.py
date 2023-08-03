@@ -543,7 +543,7 @@ def sign_msg(msg: Message) -> Message:
         payload = sign_data(message_to_bytes(msg).replace(b"\n", b"\r\n"))
 
         if not payload:
-            LOG.e(f"Empty payload when signing {msg}")
+            raise PGPException("Empty signature by gnupg")
 
         signature.set_payload(payload)
     except Exception:
@@ -551,7 +551,7 @@ def sign_msg(msg: Message) -> Message:
         payload = sign_data_with_pgpy(message_to_bytes(msg).replace(b"\n", b"\r\n"))
 
         if not payload:
-            LOG.e(f"Empty payload when signing with pgpy {msg}")
+            raise PGPException("Empty signature by pgpy")
 
         signature.set_payload(payload)
 
