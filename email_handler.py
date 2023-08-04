@@ -261,7 +261,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
 
             Session.commit()
         except IntegrityError:
-            LOG.w("Contact %s %s already exist", alias, contact_email)
+            LOG.w(f"Contact with email {contact_email} for alias {alias} already exist")
             Session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
 
