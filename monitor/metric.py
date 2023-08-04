@@ -4,6 +4,7 @@ from typing import List
 
 @dataclass
 class UpcloudRecord:
+    db_role: str
     label: str
     time: str
     value: float

@@ -27,7 +27,13 @@ def get_metric(json: Any, metric: str) -> UpcloudMetric:
 
             if value is not None:
                 label = cols[column_idx]
-                records.append(UpcloudRecord(time=time, label=label, value=value))
+                if "(master)" in label:
+                    db_role = "master"
+                else:
+                    db_role = "standby"
+                records.append(
+                    UpcloudRecord(time=time, db_role=db_role, label=label, value=value)
+                )
             else:
                 LOG.warn(f"Could not get value for metric {metric}")
 

@@ -139,11 +139,13 @@ def test_get_metrics():
                 metric_name="cpu_usage",
                 records=[
                     UpcloudRecord(
+                        db_role="master",
                         label="test-1 " "(master)",
                         time="2022-01-21T13:12:00Z",
                         value=3.275132296130991,
                     ),
                     UpcloudRecord(
+                        db_role="standby",
                         label="test-2 " "(standby)",
                         time="2022-01-21T13:12:00Z",
                         value=4.196249043309251,
@@ -154,11 +156,13 @@ def test_get_metrics():
                 metric_name="disk_usage",
                 records=[
                     UpcloudRecord(
+                        db_role="master",
                         label="test-1 " "(master)",
                         time="2022-01-21T13:11:30Z",
                         value=5.654416415900109,
                     ),
                     UpcloudRecord(
+                        db_role="standby",
                         label="test-2 " "(standby)",
                         time="2022-01-21T13:11:30Z",
                         value=5.58959125727556,
@@ -169,9 +173,13 @@ def test_get_metrics():
                 metric_name="diskio_reads",
                 records=[
                     UpcloudRecord(
-                        label="test-1 " "(master)", time="2022-01-21T13:11:30Z", value=0
+                        db_role="master",
+                        label="test-1 " "(master)",
+                        time="2022-01-21T13:11:30Z",
+                        value=0,
                     ),
                     UpcloudRecord(
+                        db_role="standby",
                         label="test-2 " "(standby)",
                         time="2022-01-21T13:11:30Z",
                         value=0,
@@ -182,9 +190,13 @@ def test_get_metrics():
                 metric_name="diskio_writes",
                 records=[
                     UpcloudRecord(
-                        label="test-1 " "(master)", time="2022-01-21T13:11:30Z", value=4
+                        db_role="master",
+                        label="test-1 " "(master)",
+                        time="2022-01-21T13:11:30Z",
+                        value=4,
                     ),
                     UpcloudRecord(
+                        db_role="standby",
                         label="test-2 " "(standby)",
                         time="2022-01-21T13:11:30Z",
                         value=3,
@@ -195,11 +207,13 @@ def test_get_metrics():
                 metric_name="load_average",
                 records=[
                     UpcloudRecord(
+                        db_role="master",
                         label="test-1 " "(master)",
                         time="2022-01-21T13:11:30Z",
                         value=0.14,
                     ),
                     UpcloudRecord(
+                        db_role="standby",
                         label="test-2 " "(standby)",
                         time="2022-01-21T13:11:30Z",
                         value=0.09,
@@ -210,11 +224,13 @@ def test_get_metrics():
                 metric_name="mem_usage",
                 records=[
                     UpcloudRecord(
+                        db_role="master",
                         label="test-1 " "(master)",
                         time="2022-01-21T13:11:30Z",
                         value=11.488581675749048,
                     ),
                     UpcloudRecord(
+                        db_role="standby",
                         label="test-2 " "(standby)",
                         time="2022-01-21T13:11:30Z",
                         value=12.272260458006759,
@@ -225,11 +241,13 @@ def test_get_metrics():
                 metric_name="net_receive",
                 records=[
                     UpcloudRecord(
+                        db_role="master",
                         label="test-1 " "(master)",
                         time="2022-01-21T13:11:30Z",
                         value=466,
                     ),
                     UpcloudRecord(
+                        db_role="standby",
                         label="test-2 " "(standby)",
                         time="2022-01-21T13:11:30Z",
                         value=458,
@@ -240,11 +258,13 @@ def test_get_metrics():
                 metric_name="net_send",
                 records=[
                     UpcloudRecord(
+                        db_role="master",
                         label="test-1 " "(master)",
                         time="2022-01-21T13:11:30Z",
                         value=694,
                     ),
                     UpcloudRecord(
+                        db_role="standby",
                         label="test-2 " "(standby)",
                         time="2022-01-21T13:11:30Z",
                         value=573,

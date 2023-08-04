@@ -18,7 +18,7 @@ class NewRelicClient:
                     GaugeMetric(
                         name=f"upcloud.db.{metric.metric_name}",
                         value=record.value,
-                        tags={"host": record.label},
+                        tags={"host": record.label, "db_role": record.db_role},
                     )
                 )
 
