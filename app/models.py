@@ -1806,7 +1806,7 @@ class Contact(Base, ModelMixin):
         flush = kw.pop("flush", False)
 
         # make sure email is lowercase and doesn't have any whitespace
-        website_email = sanitize_email(kw["website_email"])
+        website_email = sanitize_email(kw["website_email"], not_lower=True)
         kw["website_email"] = website_email
         if "reply_email" in kw:
             kw["reply_email"] = normalize_reply_email(sanitize_email(kw["reply_email"]))
