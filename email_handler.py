@@ -279,6 +279,9 @@ def get_or_create_reply_to_contact(
     except ValueError:
         return
 
+    if len(contact_name) >= Contact.MAX_NAME_LENGTH:
+        contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
+
     if not is_valid_email(contact_address):
         LOG.w(
             "invalid reply-to address %s. Parse from %s",
@@ -347,6 +350,10 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             continue
 
         contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+        contact_name = full_address.display_name
+        if len(contact_name) >= Contact.MAX_NAME_LENGTH:
+            contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
+
         if contact:
             # update the contact name if needed
             if contact.name != full_address.display_name:
@@ -354,9 +361,9 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     "Update contact %s name %s to %s",
                     contact,
                     contact.name,
-                    full_address.display_name,
+                    contact_name,
                 )
-                contact.name = full_address.display_name
+                contact.name = contact_name
                 Session.commit()
         else:
             LOG.d(
@@ -371,7 +378,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     user_id=alias.user_id,
                     alias_id=alias.id,
                     website_email=contact_email,
-                    name=full_address.display_name,
+                    name=contact_name,
                     reply_email=generate_reply_email(contact_email, alias),
                     is_cc=header.lower() == "cc",
                     automatic_created=True,
