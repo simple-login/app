@@ -828,19 +828,6 @@ def should_add_dkim_signature(domain: str) -> bool:
     return False
 
 
-def is_valid_email(email_address: str) -> bool:
-    """
-    Used to check whether an email address is valid
-    NOT run MX check.
-    NOT allow unicode.
-    """
-    try:
-        validate_email(email_address, check_deliverability=False, allow_smtputf8=False)
-        return True
-    except EmailNotValidError:
-        return False
-
-
 class EmailEncoding(enum.Enum):
     BASE64 = "base64"
     QUOTED = "quoted-printable"
@@ -951,6 +938,8 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
         for part in msg.get_payload():
             if isinstance(part, Message):
                 new_parts.append(add_header(part, text_header, html_header))
+            elif isinstance(part, str):
+                new_parts.append(MIMEText(part))
             else:
                 new_parts.append(part)
         clone_msg = copy(msg)
@@ -959,7 +948,14 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
 
     elif content_type in ("multipart/mixed", "multipart/signed"):
         new_parts = []
-        parts = list(msg.get_payload())
+        payload = msg.get_payload()
+        if isinstance(payload, str):
+            # The message is badly formatted inject as new
+            new_parts = [MIMEText(text_header, "plain"), MIMEText(payload, "plain")]
+            clone_msg = copy(msg)
+            clone_msg.set_payload(new_parts)
+            return clone_msg
+        parts = list(payload)
         LOG.d("only add header for the first part for %s", content_type)
         for ix, part in enumerate(parts):
             if ix == 0:
@@ -1105,26 +1101,6 @@ def is_reverse_alias(address: str) -> bool:
     return address.endswith(f"@{config.EMAIL_DOMAIN}") and (
         address.startswith("reply+") or address.startswith("ra+")
     )
-
-
-# allow also + and @ that are present in a reply address
-_ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.+@"
-
-
-def normalize_reply_email(reply_email: str) -> str:
-    """Handle the case where reply email contains *strange* char that was wrongly generated in the past"""
-    if not reply_email.isascii():
-        reply_email = convert_to_id(reply_email)
-
-    ret = []
-    # drop all control characters like shift, separator, etc
-    for c in reply_email:
-        if c not in _ALLOWED_CHARS:
-            ret.append("_")
-        else:
-            ret.append(c)
-
-    return "".join(ret)
 
 
 def should_disable(alias: Alias) -> (bool, str):

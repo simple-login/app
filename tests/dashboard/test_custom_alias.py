@@ -316,6 +316,10 @@ def test_add_alias_in_global_trash(flask_client):
 def test_add_alias_in_custom_domain_trash(flask_client):
     user = login(flask_client)
 
+    for deleted_domain in DomainDeletedAlias.all():
+        Session.delete(deleted_domain)
+    Session.flush()
+
     domain = random_domain()
     custom_domain = CustomDomain.create(
         user_id=user.id, domain=domain, ownership_verified=True, commit=True

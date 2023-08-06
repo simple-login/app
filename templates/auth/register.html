@@ -9,10 +9,13 @@
       <h1 class="card-title">Create new account</h1>
       <div class="form-group">
         <label class="form-label">Email address</label>
-        {{ form.email(class="form-control", type="email") }}
+        {{ form.email(class="form-control", type="email", placeholder="YourName@protonmail.com") }}
         <div class="small-text alert alert-info" style="margin-top: 1px">
           Emails sent to your alias will be forwarded to this email address.
+          <br>
           It can't be a disposable or forwarding email address.
+          <br>
+          We recommend using a <a href="https://proton.me/mail" target="_blank">Proton Mail</a> address
         </div>
         {{ render_field_errors(form.email) }}
       </div>

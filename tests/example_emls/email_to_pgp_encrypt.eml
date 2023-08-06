@@ -1,0 +1,27 @@
+From: {{sender_address}}
+To: {{recipient_address}}
+Subject: Test subject
+Content-Type: multipart/alternative; boundary="MLF8fvg556fdhFDH7=_?:
+
+--MLF8fvg556fdhFDH7=_?:
+Content-Type: text/plain;
+    charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+*************************************************************************
+
+This five-part limited series, based on the brilliant graphic novel by Me
+
+--MLF8fvg556fdhFDH7=_?:
+Content-Type: text/html;
+     charset="utf-8"
+Content-Transfer-Encoding: 8bit
+--MLF8fvg556fdhFDH7=_?:
+Content-Type: text/plain;
+    charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+*************************************************************************
+*************************************************************************
+
+

@@ -341,7 +341,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=True, nullable=False, server_default="1"
     )
 
-    activated = sa.Column(sa.Boolean, default=False, nullable=False)
+    activated = sa.Column(sa.Boolean, default=False, nullable=False, index=True)
 
     # an account can be disabled if having harmful behavior
     disabled = sa.Column(sa.Boolean, default=False, nullable=False, server_default="0")
@@ -411,7 +411,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     )
 
     referral_id = sa.Column(
-        sa.ForeignKey("referral.id", ondelete="SET NULL"), nullable=True, default=None
+        sa.ForeignKey("referral.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+        index=True,
     )
 
     referral = orm.relationship("Referral", foreign_keys=[referral_id])
@@ -445,7 +448,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     random_alias_suffix = sa.Column(
         sa.Integer,
         nullable=False,
-        default=AliasSuffixEnum.random_string.value,
+        default=AliasSuffixEnum.word.value,
         server_default=str(AliasSuffixEnum.random_string.value),
     )
 
@@ -514,9 +517,8 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         server_default=BlockBehaviourEnum.return_2xx.name,
     )
 
-    # to keep existing behavior, the server default is TRUE whereas for new user, the default value is FALSE
     include_header_email_header = sa.Column(
-        sa.Boolean, default=False, nullable=False, server_default="1"
+        sa.Boolean, default=True, nullable=False, server_default="1"
     )
 
     # bitwise flags. Allow for future expansion
@@ -533,6 +535,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         default=UnsubscribeBehaviourEnum.PreserveOriginal,
         server_default=str(UnsubscribeBehaviourEnum.DisableAlias.value),
         nullable=False,
+    )
+
+    __table_args__ = (
+        sa.Index(
+            "ix_users_activated_trial_end_lifetime", activated, trial_end, lifetime
+        ),
     )
 
     @property
@@ -569,6 +577,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     @classmethod
     def create(cls, email, name="", password=None, from_partner=False, **kwargs):
+        email = sanitize_email(email)
         user: User = super(User, cls).create(email=email, name=name[:100], **kwargs)
 
         if password:
@@ -579,19 +588,6 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
         Session.flush()
         user.default_mailbox_id = mb.id
-
-        # create a first alias mail to show user how to use when they login
-        alias = Alias.create_new(
-            user,
-            prefix="simplelogin-newsletter",
-            mailbox_id=mb.id,
-            note="This is your first alias. It's used to receive SimpleLogin communications "
-            "like new features announcements, newsletters.",
-        )
-        Session.flush()
-
-        user.newsletter_alias_id = alias.id
-        Session.flush()
 
         # generate an alternative_id if needed
         if "alternative_id" not in kwargs:
@@ -610,6 +606,19 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             )
             Session.flush()
             return user
+
+        # create a first alias mail to show user how to use when they login
+        alias = Alias.create_new(
+            user,
+            prefix="simplelogin-newsletter",
+            mailbox_id=mb.id,
+            note="This is your first alias. It's used to receive SimpleLogin communications "
+            "like new features announcements, newsletters.",
+        )
+        Session.flush()
+
+        user.newsletter_alias_id = alias.id
+        Session.flush()
 
         if config.DISABLE_ONBOARDING:
             LOG.d("Disable onboarding emails")
@@ -636,7 +645,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return user
 
     def get_active_subscription(
-        self,
+        self, include_partner_subscription: bool = True
     ) -> Optional[
         Union[
             Subscription
@@ -664,19 +673,40 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if coinbase_subscription and coinbase_subscription.is_active():
             return coinbase_subscription
 
-        partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(self.id)
-        if partner_sub and partner_sub.is_active():
-            return partner_sub
+        if include_partner_subscription:
+            partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(
+                self.id
+            )
+            if partner_sub and partner_sub.is_active():
+                return partner_sub
 
         return None
 
+    def get_active_subscription_end(
+        self, include_partner_subscription: bool = True
+    ) -> Optional[arrow.Arrow]:
+        sub = self.get_active_subscription(
+            include_partner_subscription=include_partner_subscription
+        )
+        if isinstance(sub, Subscription):
+            return arrow.get(sub.next_bill_date)
+        if isinstance(sub, AppleSubscription):
+            return sub.expires_date
+        if isinstance(sub, ManualSubscription):
+            return sub.end_at
+        if isinstance(sub, CoinbaseSubscription):
+            return sub.end_at
+        return None
+
     # region Billing
-    def lifetime_or_active_subscription(self) -> bool:
+    def lifetime_or_active_subscription(
+        self, include_partner_subscription: bool = True
+    ) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
 
-        return self.get_active_subscription() is not None
+        return self.get_active_subscription(include_partner_subscription) is not None
 
     def is_paid(self) -> bool:
         """same as _lifetime_or_active_subscription but not include free manual subscription"""
@@ -705,14 +735,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return True
 
-    def is_premium(self) -> bool:
+    def is_premium(self, include_partner_subscription: bool = True) -> bool:
         """
         user is premium if they:
         - have a lifetime deal or
         - in trial period or
         - active subscription
         """
-        if self.lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription(include_partner_subscription):
             return True
 
         if self.trial_end and arrow.now() < self.trial_end:
@@ -995,6 +1025,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if not self.is_premium():
             conditions.append(SLDomain.premium_only == False)  # noqa: E712
         partner_domain_cond = []  # noqa:E711
+        if self.default_alias_public_domain_id is not None:
+            partner_domain_cond.append(
+                SLDomain.id == self.default_alias_public_domain_id
+            )
         if alias_options.show_partner_domains is not None:
             partner_user = PartnerUser.filter_by(
                 user_id=self.id, partner_id=alias_options.show_partner_domains.id
@@ -1421,7 +1455,7 @@ class Alias(Base, ModelMixin):
     )
 
     # have I been pwned
-    hibp_last_check = sa.Column(ArrowType, default=None)
+    hibp_last_check = sa.Column(ArrowType, default=None, index=True)
     hibp_breaches = orm.relationship("Hibp", secondary="alias_hibp")
 
     # to use Postgres full text search. Only applied on "note" column for now
@@ -2267,6 +2301,7 @@ class CustomDomain(Base, ModelMixin):
     @classmethod
     def create(cls, **kwargs):
         domain = kwargs.get("domain")
+        kwargs["domain"] = domain.replace("\n", "")
         if DeletedSubdomain.get_by(domain=domain):
             raise SubdomainInTrashError
 
@@ -2565,6 +2600,12 @@ class Mailbox(Base, ModelMixin):
             ret.append(am.alias)
 
         return ret
+
+    @classmethod
+    def create(cls, **kw):
+        if "email" in kw:
+            kw["email"] = sanitize_email(kw["email"])
+        return super().create(**kw)
 
     def __repr__(self):
         return f"<Mailbox {self.id} {self.email}>"
@@ -2904,6 +2945,8 @@ class Monitoring(Base, ModelMixin):
     active_queue = sa.Column(sa.Integer, nullable=False)
     deferred_queue = sa.Column(sa.Integer, nullable=False)
 
+    __table_args__ = (Index("ix_monitoring_created_at", "created_at"),)
+
 
 class BatchImport(Base, ModelMixin):
     __tablename__ = "batch_import"
@@ -3029,6 +3072,8 @@ class Bounce(Base, ModelMixin):
     email = sa.Column(sa.String(256), nullable=False, index=True)
     info = sa.Column(sa.Text, nullable=True)
 
+    __table_args__ = (sa.Index("ix_bounce_created_at", "created_at"),)
+
 
 class TransactionalEmail(Base, ModelMixin):
     """Storing all email addresses that receive transactional emails, including account email and mailboxes.
@@ -3037,6 +3082,8 @@ class TransactionalEmail(Base, ModelMixin):
 
     __tablename__ = "transactional_email"
     email = sa.Column(sa.String(256), nullable=False, unique=False)
+
+    __table_args__ = (sa.Index("ix_transactional_email_created_at", "created_at"),)
 
 
 class Payout(Base, ModelMixin):

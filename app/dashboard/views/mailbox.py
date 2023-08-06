@@ -1,3 +1,7 @@
+import base64
+import binascii
+import json
+
 import arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -15,8 +19,8 @@ from app.email_utils import (
     mailbox_already_used,
     render,
     send_email,
-    is_valid_email,
 )
+from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import Mailbox, Job
 from app.utils import CSRFValidationForm
@@ -180,7 +184,9 @@ def mailbox_route():
 
 def send_verification_email(user, mailbox):
     s = TimestampSigner(MAILBOX_SECRET)
-    mailbox_id_signed = s.sign(str(mailbox.id)).decode()
+    encoded_data = json.dumps([mailbox.id, mailbox.email]).encode("utf-8")
+    b64_data = base64.urlsafe_b64encode(encoded_data)
+    mailbox_id_signed = s.sign(b64_data).decode()
     verification_url = (
         URL + "/dashboard/mailbox_verify" + f"?mailbox_id={mailbox_id_signed}"
     )
@@ -205,22 +211,34 @@ def send_verification_email(user, mailbox):
 @dashboard_bp.route("/mailbox_verify")
 def mailbox_verify():
     s = TimestampSigner(MAILBOX_SECRET)
-    mailbox_id = request.args.get("mailbox_id")
-
+    mailbox_verify_request = request.args.get("mailbox_id")
     try:
-        r_id = int(s.unsign(mailbox_id, max_age=900))
+        mailbox_raw_data = s.unsign(mailbox_verify_request, max_age=900)
     except Exception:
         flash("Invalid link. Please delete and re-add your mailbox", "error")
         return redirect(url_for("dashboard.mailbox_route"))
-    else:
-        mailbox = Mailbox.get(r_id)
-        if not mailbox:
-            flash("Invalid link", "error")
-            return redirect(url_for("dashboard.mailbox_route"))
+    try:
+        decoded_data = base64.urlsafe_b64decode(mailbox_raw_data)
+    except binascii.Error:
+        flash("Invalid link. Please delete and re-add your mailbox", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+    mailbox_data = json.loads(decoded_data)
+    if not isinstance(mailbox_data, list) or len(mailbox_data) != 2:
+        flash("Invalid link. Please delete and re-add your mailbox", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+    mailbox_id = mailbox_data[0]
+    mailbox = Mailbox.get(mailbox_id)
+    if not mailbox:
+        flash("Invalid link", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+    mailbox_email = mailbox_data[1]
+    if mailbox_email != mailbox.email:
+        flash("Invalid link", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
 
-        mailbox.verified = True
-        Session.commit()
+    mailbox.verified = True
+    Session.commit()
 
-        LOG.d("Mailbox %s is verified", mailbox)
+    LOG.d("Mailbox %s is verified", mailbox)
 
-        return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)
+    return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)

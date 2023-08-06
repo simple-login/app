@@ -19,10 +19,8 @@ from app.email_utils import (
     copy,
     get_spam_from_header,
     get_header_from_bounce,
-    is_valid_email,
     add_header,
     generate_reply_email,
-    normalize_reply_email,
     get_encoding,
     encode_text,
     EmailEncoding,
@@ -41,6 +39,7 @@ from app.email_utils import (
     get_verp_info_from_email,
     sl_formataddr,
 )
+from app.email_validation import is_valid_email, normalize_reply_email
 from app.models import (
     CustomDomain,
     Alias,
@@ -810,7 +809,7 @@ def test_add_header_multipart_with_invalid_part():
         if i < 2:
             assert part.get_payload().index("INJECT") > -1
         else:
-            assert part == "invalid"
+            assert part.get_payload() == "invalid"
 
 
 def test_sl_formataddr():
@@ -822,3 +821,10 @@ def test_sl_formataddr():
     # test that the same name-address can't be handled by the built-in formataddr
     with pytest.raises(UnicodeEncodeError):
         formataddr(("é", "è@ç.à"))
+
+
+def test_add_header_to_invalid_multipart():
+    msg = load_eml_file("add_header_multipart.eml")
+    msg = add_header(msg, "test", "test")
+    data = msg.as_string()
+    assert data != ""

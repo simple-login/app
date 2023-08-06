@@ -106,8 +106,6 @@ from app.email_utils import (
     get_header_unicode,
     generate_reply_email,
     is_reverse_alias,
-    normalize_reply_email,
-    is_valid_email,
     replace,
     should_disable,
     parse_id_from_bounce,
@@ -123,6 +121,7 @@ from app.email_utils import (
     generate_verp_email,
     sl_formataddr,
 )
+from app.email_validation import is_valid_email, normalize_reply_email
 from app.errors import (
     NonReverseAliasInReplyPhase,
     VERPTransactional,
@@ -262,7 +261,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
 
             Session.commit()
         except IntegrityError:
-            LOG.w("Contact %s %s already exist", alias, contact_email)
+            LOG.w(f"Contact with email {contact_email} for alias {alias} already exist")
             Session.rollback()
             contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
 
@@ -279,6 +278,9 @@ def get_or_create_reply_to_contact(
         contact_name, contact_address = parse_full_address(reply_to_header)
     except ValueError:
         return
+
+    if len(contact_name) >= Contact.MAX_NAME_LENGTH:
+        contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
 
     if not is_valid_email(contact_address):
         LOG.w(
@@ -348,6 +350,10 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             continue
 
         contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+        contact_name = full_address.display_name
+        if len(contact_name) >= Contact.MAX_NAME_LENGTH:
+            contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
+
         if contact:
             # update the contact name if needed
             if contact.name != full_address.display_name:
@@ -355,9 +361,9 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     "Update contact %s name %s to %s",
                     contact,
                     contact.name,
-                    full_address.display_name,
+                    contact_name,
                 )
-                contact.name = full_address.display_name
+                contact.name = contact_name
                 Session.commit()
         else:
             LOG.d(
@@ -372,7 +378,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
                     user_id=alias.user_id,
                     alias_id=alias.id,
                     website_email=contact_email,
-                    name=full_address.display_name,
+                    name=contact_name,
                     reply_email=generate_reply_email(contact_email, alias),
                     is_cc=header.lower() == "cc",
                     automatic_created=True,
@@ -541,12 +547,20 @@ def sign_msg(msg: Message) -> Message:
     signature.add_header("Content-Disposition", 'attachment; filename="signature.asc"')
 
     try:
-        signature.set_payload(sign_data(message_to_bytes(msg).replace(b"\n", b"\r\n")))
+        payload = sign_data(message_to_bytes(msg).replace(b"\n", b"\r\n"))
+
+        if not payload:
+            raise PGPException("Empty signature by gnupg")
+
+        signature.set_payload(payload)
     except Exception:
         LOG.e("Cannot sign, try using pgpy")
-        signature.set_payload(
-            sign_data_with_pgpy(message_to_bytes(msg).replace(b"\n", b"\r\n"))
-        )
+        payload = sign_data_with_pgpy(message_to_bytes(msg).replace(b"\n", b"\r\n"))
+
+        if not payload:
+            raise PGPException("Empty signature by pgpy")
+
+        signature.set_payload(payload)
 
     container.attach(signature)
 
@@ -846,22 +860,23 @@ def forward_email_to_mailbox(
             f"""Email sent to {alias.email} from an invalid address and cannot be replied""",
         )
 
-    delete_all_headers_except(
-        msg,
-        [
-            headers.FROM,
-            headers.TO,
-            headers.CC,
-            headers.SUBJECT,
-            headers.DATE,
-            # do not delete original message id
-            headers.MESSAGE_ID,
-            # References and In-Reply-To are used for keeping the email thread
-            headers.REFERENCES,
-            headers.IN_REPLY_TO,
-        ]
-        + headers.MIME_HEADERS,
-    )
+    headers_to_keep = [
+        headers.FROM,
+        headers.TO,
+        headers.CC,
+        headers.SUBJECT,
+        headers.DATE,
+        # do not delete original message id
+        headers.MESSAGE_ID,
+        # References and In-Reply-To are used for keeping the email thread
+        headers.REFERENCES,
+        headers.IN_REPLY_TO,
+        headers.LIST_UNSUBSCRIBE,
+        headers.LIST_UNSUBSCRIBE_POST,
+    ] + headers.MIME_HEADERS
+    if user.include_header_email_header:
+        headers_to_keep.append(headers.AUTHENTICATION_RESULTS)
+    delete_all_headers_except(msg, headers_to_keep)
 
     # create PGP email if needed
     if mailbox.pgp_enabled() and user.is_premium() and not alias.disable_pgp:
@@ -898,6 +913,11 @@ def forward_email_to_mailbox(
     msg[headers.SL_EMAIL_LOG_ID] = str(email_log.id)
     if user.include_header_email_header:
         msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+        if contact.name:
+            original_from = f"{contact.name} <{contact.website_email}>"
+        else:
+            original_from = contact.website_email
+        msg[headers.SL_ORIGINAL_FROM] = original_from
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
     msg[headers.SL_ENVELOPE_TO] = alias.email
 

@@ -8,6 +8,7 @@ from wtforms import PasswordField, validators
 
 from app.config import CONNECT_WITH_PROTON
 from app.dashboard.base import dashboard_bp
+from app.extensions import limiter
 from app.log import LOG
 from app.models import PartnerUser
 from app.proton.utils import get_proton_partner
@@ -21,6 +22,7 @@ class LoginForm(FlaskForm):
 
 
 @dashboard_bp.route("/enter_sudo", methods=["GET", "POST"])
+@limiter.limit("3/minute")
 @login_required
 def enter_sudo():
     password_check_form = LoginForm()

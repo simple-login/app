@@ -13,10 +13,10 @@ from app import config, parallel_limiter
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.email_utils import (
-    is_valid_email,
     generate_reply_email,
     parse_full_address,
 )
+from app.email_validation import is_valid_email
 from app.errors import (
     CannotCreateContactForReverseAlias,
     ErrContactErrorUpgradeNeeded,

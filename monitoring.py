@@ -1,3 +1,4 @@
+import configparser
 import os
 import subprocess
 from time import sleep
@@ -7,6 +8,7 @@ import newrelic.agent
 
 from app.db import Session
 from app.log import LOG
+from monitor.metric_exporter import MetricExporter
 
 # the number of consecutive fails
 # if more than _max_nb_fails, alert
@@ -18,6 +20,18 @@ _max_nb_fails = 10
 
 # the maximum number of emails in incoming & active queue
 _max_incoming = 50
+
+_NR_CONFIG_FILE_LOCATION_VAR = "NEW_RELIC_CONFIG_FILE"
+
+
+def get_newrelic_license() -> str:
+    nr_file = os.environ.get(_NR_CONFIG_FILE_LOCATION_VAR, None)
+    if nr_file is None:
+        raise Exception(f"{_NR_CONFIG_FILE_LOCATION_VAR} not defined")
+
+    config = configparser.ConfigParser()
+    config.read(nr_file)
+    return config["newrelic"]["license_key"]
 
 
 @newrelic.agent.background_task()
@@ -80,10 +94,13 @@ def log_nb_db_connection():
 
 
 if __name__ == "__main__":
+    exporter = MetricExporter(get_newrelic_license())
     while True:
         log_postfix_metrics()
         log_nb_db_connection()
         Session.close()
+
+        exporter.run()
 
         # 1 min
         sleep(60)

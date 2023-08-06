@@ -20,6 +20,7 @@ X_SPAM_STATUS = "X-Spam-Status"
 LIST_UNSUBSCRIBE = "List-Unsubscribe"
 LIST_UNSUBSCRIBE_POST = "List-Unsubscribe-Post"
 RETURN_PATH = "Return-Path"
+AUTHENTICATION_RESULTS = "Authentication-Results"
 
 # headers used to DKIM sign in order of preference
 DKIM_HEADERS = [
@@ -32,6 +33,7 @@ DKIM_HEADERS = [
 SL_DIRECTION = "X-SimpleLogin-Type"
 SL_EMAIL_LOG_ID = "X-SimpleLogin-EmailLog-ID"
 SL_ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
+SL_ORIGINAL_FROM = "X-SimpleLogin-Original-From"
 SL_ENVELOPE_TO = "X-SimpleLogin-Envelope-To"
 SL_CLIENT_IP = "X-SimpleLogin-Client-IP"
 

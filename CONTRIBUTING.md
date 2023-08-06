@@ -169,6 +169,12 @@ For HTML templates, we use `djlint`. Before creating a pull request, please run
 poetry run djlint --check templates
 ```
 
+If some files aren't properly formatted, you can format all files with
+
+```bash
+poetry run djlint --reformat .
+```
+
 ## Test sending email
 
 [swaks](http://www.jetmore.org/john/code/swaks/) is used for sending test emails to the `email_handler`.

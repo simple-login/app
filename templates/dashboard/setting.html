@@ -181,10 +181,10 @@
     <!-- END change name & profile picture -->
     <!-- Change email -->
     <div class="card">
-      <form method="post" enctype="multipart/form-data">
-        <input type="hidden" name="form-name" value="update-email">
-        {{ change_email_form.csrf_token }}
-        <div class="card-body">
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="form-name" value="update-email">
+          {{ change_email_form.csrf_token }}
           <div class="card-title">Account Email</div>
           <div class="mb-3">
             This email address is used to log in to SimpleLogin.
@@ -199,26 +199,30 @@
             <!-- Not allow user to change email if there's a pending change -->
             {{ change_email_form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
             {{ render_field_errors(change_email_form.email) }}
-            {% if pending_email %}
-
-              <div class="mt-2">
-                <span class="text-danger">Pending email change: {{ pending_email }}</span>
-                <a href="{{ url_for('dashboard.resend_email_change') }}"
-                   class="btn btn-secondary btn-sm">
-                  Resend
-                  confirmation email
-                </a>
-                <a href="{{ url_for('dashboard.cancel_email_change') }}"
-                   class="btn btn-secondary btn-sm">
-                  Cancel email
-                  change
-                </a>
-              </div>
-            {% endif %}
           </div>
           <button class="btn btn-outline-primary">Change Email</button>
-        </div>
-      </form>
+        </form>
+        {% if pending_email %}
+
+          <div class="mt-2">
+            <span class="text-danger float-left">Pending email change: {{ pending_email }}</span>
+            <form method="POST"
+                  action="{{ url_for('dashboard.resend_email_change') }}"
+                  class="float-left ml-2">
+              {{ change_email_form.csrf_token }}
+              <a onclick="this.closest('form').submit()"
+                 class="btn btn-secondary btn-sm">Resend confirmation email</a>
+            </form>
+            <form method="POST"
+                  action="{{ url_for('dashboard.cancel_email_change') }}"
+                  class="float-left ml-2">
+              {{ change_email_form.csrf_token }}
+              <a onclick="this.closest('form').submit()"
+                 class="btn btn-secondary btn-sm">Cancel email change</a>
+            </form>
+          </div>
+        {% endif %}
+      </div>
     </div>
     <!-- END Change email -->
     <!-- Connect with Proton -->
@@ -265,11 +269,15 @@
     <div class="card" id="change_password">
       <div class="card-body">
         <div class="card-title">Password</div>
-        <div class="mb-3">You will receive an email containing instructions on how to change your password.</div>
+        <div class="mb-3">
+          You will receive an email containing instructions on how to change your password.
+        </div>
         <form method="post">
           {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="change-password">
-          <button class="btn btn-outline-primary">Change password</button>
+          <button class="btn btn-outline-primary">
+            Change password
+          </button>
         </form>
       </div>
     </div>
@@ -676,7 +684,8 @@
               SimpleLogin forwards emails to your mailbox from the <b>reverse-alias</b> and not from the <b>original</b>
               sender address.
               <br />
-              If this option is enabled, the original sender addresses is stored in the email header <b>X-SimpleLogin-Envelope-From</b>.
+              If this option is enabled, the original sender addresses is stored in the email header <b>X-SimpleLogin-Envelope-From</b>
+              and the original From header is stored in <b>X-SimpleLogin-Original-From<b>.
               You can choose to display this header in your email client.
               <br />
               As email headers aren't encrypted, your mailbox service can know the sender address via this header.

@@ -78,20 +78,20 @@ def test_website_send_to(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=f"{prefix}@example.com",
-        reply_email="rep@SL",
+        reply_email="rep@sl",
         name="First Last",
     )
-    assert c1.website_send_to() == f'"First Last | {prefix} at example.com" <rep@SL>'
+    assert c1.website_send_to() == f'"First Last | {prefix} at example.com" <rep@sl>'
 
     # empty name, ascii website_from, easy case
     c1.name = None
     c1.website_from = f"First Last <{prefix}@example.com>"
-    assert c1.website_send_to() == f'"First Last | {prefix} at example.com" <rep@SL>'
+    assert c1.website_send_to() == f'"First Last | {prefix} at example.com" <rep@sl>'
 
     # empty name, RFC 2047 website_from
     c1.name = None
     c1.website_from = f"=?UTF-8?B?TmjGoW4gTmd1eeG7hW4=?= <{prefix}@example.com>"
-    assert c1.website_send_to() == f'"Nhơn Nguyễn | {prefix} at example.com" <rep@SL>'
+    assert c1.website_send_to() == f'"Nhơn Nguyễn | {prefix} at example.com" <rep@sl>'
 
 
 def test_new_addr_default_sender_format(flask_client):
@@ -103,16 +103,16 @@ def test_new_addr_default_sender_format(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=f"{prefix}@example.com",
-        reply_email="rep@SL",
+        reply_email="rep@sl",
         name="First Last",
         commit=True,
     )
 
-    assert contact.new_addr() == f'"First Last - {prefix} at example.com" <rep@SL>'
+    assert contact.new_addr() == f'"First Last - {prefix} at example.com" <rep@sl>'
 
     # Make sure email isn't duplicated if sender name equals email
     contact.name = f"{prefix}@example.com"
-    assert contact.new_addr() == f'"{prefix} at example.com" <rep@SL>'
+    assert contact.new_addr() == f'"{prefix} at example.com" <rep@sl>'
 
 
 def test_new_addr_a_sender_format(flask_client):
@@ -126,12 +126,12 @@ def test_new_addr_a_sender_format(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=f"{prefix}@example.com",
-        reply_email="rep@SL",
+        reply_email="rep@sl",
         name="First Last",
         commit=True,
     )
 
-    assert contact.new_addr() == f'"First Last - {prefix}(a)example.com" <rep@SL>'
+    assert contact.new_addr() == f'"First Last - {prefix}(a)example.com" <rep@sl>'
 
 
 def test_new_addr_no_name_sender_format(flask_client):
@@ -145,12 +145,12 @@ def test_new_addr_no_name_sender_format(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=f"{prefix}@example.com",
-        reply_email="rep@SL",
+        reply_email="rep@sl",
         name="First Last",
         commit=True,
     )
 
-    assert contact.new_addr() == "rep@SL"
+    assert contact.new_addr() == "rep@sl"
 
 
 def test_new_addr_name_only_sender_format(flask_client):
@@ -164,12 +164,12 @@ def test_new_addr_name_only_sender_format(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=f"{prefix}@example.com",
-        reply_email="rep@SL",
+        reply_email="rep@sl",
         name="First Last",
         commit=True,
     )
 
-    assert contact.new_addr() == "First Last <rep@SL>"
+    assert contact.new_addr() == "First Last <rep@sl>"
 
 
 def test_new_addr_at_only_sender_format(flask_client):
@@ -183,12 +183,12 @@ def test_new_addr_at_only_sender_format(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=f"{prefix}@example.com",
-        reply_email="rep@SL",
+        reply_email="rep@sl",
         name="First Last",
         commit=True,
     )
 
-    assert contact.new_addr() == f'"{prefix} at example.com" <rep@SL>'
+    assert contact.new_addr() == f'"{prefix} at example.com" <rep@sl>'
 
 
 def test_new_addr_unicode(flask_client):
@@ -200,14 +200,14 @@ def test_new_addr_unicode(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email=f"{random_prefix}@example.com",
-        reply_email="rep@SL",
+        reply_email="rep@sl",
         name="Nhơn Nguyễn",
         commit=True,
     )
 
     assert (
         contact.new_addr()
-        == f"=?utf-8?q?Nh=C6=A1n_Nguy=E1=BB=85n_-_{random_prefix}_at_example=2Ecom?= <rep@SL>"
+        == f"=?utf-8?q?Nh=C6=A1n_Nguy=E1=BB=85n_-_{random_prefix}_at_example=2Ecom?= <rep@sl>"
     )
 
     # sanity check

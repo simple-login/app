@@ -32,6 +32,7 @@ class SendRequest:
     rcpt_options: Dict = {}
     is_forward: bool = False
     ignore_smtp_errors: bool = False
+    retries: int = 0
 
     def to_bytes(self) -> bytes:
         if not config.SAVE_UNSENT_DIR:
@@ -45,6 +46,7 @@ class SendRequest:
             "mail_options": self.mail_options,
             "rcpt_options": self.rcpt_options,
             "is_forward": self.is_forward,
+            "retries": self.retries,
         }
         return json.dumps(data).encode("utf-8")
 
@@ -65,7 +67,32 @@ class SendRequest:
             mail_options=decoded_data["mail_options"],
             rcpt_options=decoded_data["rcpt_options"],
             is_forward=decoded_data["is_forward"],
+            retries=decoded_data.get("retries", 1),
         )
+
+    def save_request_to_unsent_dir(self, prefix: str = "DeliveryFail"):
+        file_name = (
+            f"{prefix}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
+        )
+        file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
+        self.save_request_to_file(file_path)
+
+    @staticmethod
+    def save_request_to_failed_dir(self, prefix: str = "DeliveryRetryFail"):
+        file_name = (
+            f"{prefix}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
+        )
+        dir_name = os.path.join(config.SAVE_UNSENT_DIR, "failed")
+        if not os.path.isdir(dir_name):
+            os.makedirs(dir_name)
+        file_path = os.path.join(dir_name, file_name)
+        self.save_request_to_file(file_path)
+
+    def save_request_to_file(self, file_path: str):
+        file_contents = self.to_bytes()
+        with open(file_path, "wb") as fd:
+            fd.write(file_contents)
+        LOG.i(f"Saved unsent message {file_path}")
 
 
 class MailSender:
@@ -171,20 +198,8 @@ class MailSender:
                     f"Could not send message to smtp server {config.POSTFIX_SERVER}:{config.POSTFIX_PORT}"
                 )
                 if config.SAVE_UNSENT_DIR:
-                    self._save_request_to_unsent_dir(send_request)
+                    send_request.save_request_to_unsent_dir()
                 return False
-
-    def _save_request_to_unsent_dir(
-        self, send_request: SendRequest, prefix: str = "DeliveryFail"
-    ):
-        file_name = (
-            f"{prefix}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
-        )
-        file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
-        file_contents = send_request.to_bytes()
-        with open(file_path, "wb") as fd:
-            fd.write(file_contents)
-        LOG.i(f"Saved unsent message {file_path}")
 
 
 mail_sender = MailSender()
@@ -219,6 +234,7 @@ def load_unsent_mails_from_fs_and_resend():
         LOG.i(f"Trying to re-deliver email {filename}")
         try:
             send_request = SendRequest.load_from_file(full_file_path)
+            send_request.retries += 1
         except Exception as e:
             LOG.e(f"Cannot load {filename}. Error {e}")
             continue
@@ -230,6 +246,11 @@ def load_unsent_mails_from_fs_and_resend():
                     "DeliverUnsentEmail", {"delivered": "true"}
                 )
             else:
+                if send_request.retries > 2:
+                    os.unlink(full_file_path)
+                    send_request.save_request_to_failed_dir()
+                else:
+                    send_request.save_request_to_file(full_file_path)
                 newrelic.agent.record_custom_event(
                     "DeliverUnsentEmail", {"delivered": "false"}
                 )
