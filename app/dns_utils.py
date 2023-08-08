@@ -34,7 +34,7 @@ def get_cname_record(hostname) -> Optional[str]:
 
 
 def get_mx_domains(hostname) -> [(int, str)]:
-    """return list of (priority, domain name).
+    """return list of (priority, domain name) sorted by priority (lowest priority first)
     domain name ends with a "." at the end.
     """
     try:
@@ -50,7 +50,8 @@ def get_mx_domains(hostname) -> [(int, str)]:
 
         ret.append((int(parts[0]), parts[1]))
 
-    return ret
+    return sorted(ret, key=lambda prio_domain: prio_domain[0])
+    
 
 
 _include_spf = "include:"

@@ -30,6 +30,8 @@ from sqlalchemy_utils import ArrowType
 from app import config
 from app import s3
 from app.db import Session
+from app.dns_utils import get_mx_domains
+
 from app.errors import (
     AliasInTrashError,
     DirectoryInTrashError,
@@ -2568,6 +2570,27 @@ class Mailbox(Base, ModelMixin):
             AliasMailbox.filter_by(mailbox_id=self.id).count()
             + Alias.filter_by(mailbox_id=self.id).count()
         )
+
+    def is_proton(self) -> bool:
+        if (
+            self.email.endswith("@proton.me")
+            or self.email.endswith("@protonmail.com")
+            or self.email.endswith("@protonmail.ch")
+            or self.email.endswith("@pm.me")
+        ):
+            return True
+
+        from app.email_utils import get_email_local_part
+
+        mx_domains: [(int, str)] = get_mx_domains(get_email_local_part(self.email))
+        # Proton is the first domain
+        if mx_domains and mx_domains[0][1] in (
+            "mail.protonmail.ch.",
+            "mailsec.protonmail.ch.",
+        ):
+            return True
+
+        return False
 
     @classmethod
     def delete(cls, obj_id):
