@@ -51,7 +51,6 @@ def get_mx_domains(hostname) -> [(int, str)]:
         ret.append((int(parts[0]), parts[1]))
 
     return sorted(ret, key=lambda prio_domain: prio_domain[0])
-    
 
 
 _include_spf = "include:"

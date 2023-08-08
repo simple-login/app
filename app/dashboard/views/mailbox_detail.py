@@ -143,9 +143,12 @@ def mailbox_detail_route(mailbox_id):
                     return redirect(
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                     )
-                
+
                 if mailbox.is_proton():
-                    flash("Enabling PGP for a Proton Mail mailbox is redundant and does not add any security benefit", "info")
+                    flash(
+                        "Enabling PGP for a Proton Mail mailbox is redundant and does not add any security benefit",
+                        "info",
+                    )
                     return redirect(
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                     )
