@@ -30,7 +30,7 @@ class ChangeEmailForm(FlaskForm):
 @dashboard_bp.route("/mailbox/<int:mailbox_id>/", methods=["GET", "POST"])
 @login_required
 def mailbox_detail_route(mailbox_id):
-    mailbox = Mailbox.get(mailbox_id)
+    mailbox: Mailbox = Mailbox.get(mailbox_id)
     if not mailbox or mailbox.user_id != current_user.id:
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
@@ -140,6 +140,15 @@ def mailbox_detail_route(mailbox_id):
             if request.form.get("action") == "save":
                 if not current_user.is_premium():
                     flash("Only premium plan can add PGP Key", "warning")
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
+
+                if mailbox.is_proton():
+                    flash(
+                        "Enabling PGP for a Proton Mail mailbox is redundant and does not add any security benefit",
+                        "info",
+                    )
                     return redirect(
                         url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
                     )
