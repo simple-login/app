@@ -121,3 +121,10 @@ class AccountAlreadyLinkedToAnotherUserException(LinkException):
 class AccountIsUsingAliasAsEmail(LinkException):
     def __init__(self):
         super().__init__("Your account has an alias as it's email address")
+
+
+class ProtonAccountNotVerified(LinkException):
+    def __init__(self):
+        super().__init__(
+            "The Proton account you are trying to use has not been verified"
+        )
