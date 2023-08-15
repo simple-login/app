@@ -61,7 +61,7 @@
                 <img src="{{ user_info[scope.value] }}" class="avatar">
               {% elif scope == Scope.EMAIL %}
                 {{ scope.value }}:
-                <a href="mailto:{{ user_info[scope.value] }}">{{ user_info[scope.value] }}</a>
+                <a href="mailto:{{ user_info[scope.value] }}" target="_blank">{{ user_info[scope.value] }}</a>
               {% elif scope == Scope.NAME %}
                 {{ scope.value }}: <b>{{ user_info[scope.value] }}</b>
               {% endif %}
