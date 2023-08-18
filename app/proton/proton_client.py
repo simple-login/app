@@ -7,11 +7,12 @@ from typing import Optional
 
 from app.account_linking import SLPlan, SLPlanType
 from app.config import PROTON_EXTRA_HEADER_NAME, PROTON_EXTRA_HEADER_VALUE
+from app.errors import ProtonAccountNotVerified
 from app.log import LOG
 
 _APP_VERSION = "OauthClient_1.0.0"
 
-PROTON_ERROR_CODE_NOT_EXISTS = 2501
+PROTON_ERROR_CODE_HV_NEEDED = 9001
 
 PLAN_FREE = 1
 PLAN_PREMIUM = 2
@@ -55,6 +56,15 @@ def convert_access_token(access_token_response: str) -> AccessCredentials:
         session_id=parts[1],
         access_token=parts[2],
     )
+
+
+def handle_response_not_ok(status: int, body: dict, text: str) -> Exception:
+    if status == HTTPStatus.UNPROCESSABLE_ENTITY:
+        res_code = body.get("Code")
+        if res_code == PROTON_ERROR_CODE_HV_NEEDED:
+            return ProtonAccountNotVerified()
+
+    return Exception(f"Unexpected status code. Wanted 200 and got {status}: " + text)
 
 
 class ProtonClient(ABC):
@@ -124,11 +134,11 @@ class HttpProtonClient(ProtonClient):
     @staticmethod
     def __validate_response(res: Response) -> dict:
         status = res.status_code
-        if status != HTTPStatus.OK:
-            raise Exception(
-                f"Unexpected status code. Wanted 200 and got {status}: " + res.text
-            )
         as_json = res.json()
+        if status != HTTPStatus.OK:
+            raise HttpProtonClient.__handle_response_not_ok(
+                status=status, body=as_json, text=res.text
+            )
         res_code = as_json.get("Code")
         if not res_code or res_code != 1000:
             raise Exception(
