@@ -137,28 +137,21 @@
             </form>
           </div>
         </div>
-        <div class="card" {% if not mailbox.pgp_enabled() %}
-           disabled {% endif %}>
+        <div class="card">
           <form method="post">
             {{ csrf_form.csrf_token }}
             <input type="hidden" name="form-name" value="generic-subject">
             <div class="card-body">
               <div class="card-title">
-                Hide email subject when PGP is enabled
+                Hide email subject
                 <div class="small-text mt-1">
-                  When PGP is enabled, you can choose to use a <b>generic</b> subject for the forwarded emails.
-                  The original subject is then added into the email body.
+                  The original subject will be added to the email body and all forwarded emails will have the generic subject.
                   <br />
-                  As PGP does not encrypt the email subject and the email subject might contain sensitive information,
-                  this option will allow a further protection of your email content.
+                  This option is often used when PGP is enabled.
+                  As PGP does not encrypt the email subject, it allows a further protection of your email content.
                 </div>
               </div>
-              <div class="alert alert-info">
-                As the email is encrypted, a subject like "Email for you"
-                will probably be rejected by your mailbox since it sounds like a spam.
-                <br />
-                Something like "Encrypted Email" would work much better :).
-              </div>
+              
               <div class="form-group">
                 <label class="form-label">Generic Subject</label>
                 <input name="generic-subject" {% if not mailbox.pgp_enabled() %}
