@@ -878,21 +878,22 @@ def forward_email_to_mailbox(
         headers_to_keep.append(headers.AUTHENTICATION_RESULTS)
     delete_all_headers_except(msg, headers_to_keep)
 
+    if mailbox.generic_subject:
+        LOG.d("Use a generic subject for %s", mailbox)
+        orig_subject = msg[headers.SUBJECT]
+        orig_subject = get_header_unicode(orig_subject)
+        add_or_replace_header(msg, "Subject", mailbox.generic_subject)
+        sender = msg[headers.FROM]
+        sender = get_header_unicode(sender)
+        msg = add_header(
+            msg,
+            f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with "{orig_subject}" as subject""",
+            f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with <b>{orig_subject}</b> as subject""",
+        )
+
     # create PGP email if needed
     if mailbox.pgp_enabled() and user.is_premium() and not alias.disable_pgp:
         LOG.d("Encrypt message using mailbox %s", mailbox)
-        if mailbox.generic_subject:
-            LOG.d("Use a generic subject for %s", mailbox)
-            orig_subject = msg[headers.SUBJECT]
-            orig_subject = get_header_unicode(orig_subject)
-            add_or_replace_header(msg, "Subject", mailbox.generic_subject)
-            sender = msg[headers.FROM]
-            sender = get_header_unicode(sender)
-            msg = add_header(
-                msg,
-                f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with "{orig_subject}" as subject""",
-                f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with <b>{orig_subject}</b> as subject""",
-            )
 
         try:
             msg = prepare_pgp_message(

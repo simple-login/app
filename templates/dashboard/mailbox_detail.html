@@ -137,116 +137,115 @@
             </form>
           </div>
         </div>
-        <div class="card">
-          <form method="post">
-            {{ csrf_form.csrf_token }}
-            <input type="hidden" name="form-name" value="generic-subject">
-            <div class="card-body">
-              <div class="card-title">
-                Hide email subject
-                <div class="small-text mt-1">
-                  The original subject will be added to the email body and all forwarded emails will have the generic subject.
-                  <br />
-                  This option is often used when PGP is enabled.
-                  As PGP does not encrypt the email subject, it allows a further protection of your email content.
-                </div>
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Generic Subject</label>
-                <input name="generic-subject" {% if not mailbox.pgp_enabled() %}
-                   disabled {% endif %} class="form-control" maxlength="78" placeholder="Generic Subject" value="{{ mailbox.generic_subject or "" }}">
-                </div>
-                <button class="btn btn-primary" name="action" {% if not mailbox.pgp_enabled() %}
-                   disabled {% endif %} value="save">
-                  Save
-                </button>
-                {% if mailbox.generic_subject %}
-
-                  <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
-                {% endif %}
-              </div>
-            </form>
-          </div>
-        </div>
-        <hr />
-        <h2 class="h4">Advanced Options</h2>
-        {% if spf_available %}
-
-          <div class="card" id="spf">
-            <form method="post">
-              {{ csrf_form.csrf_token }}
-              <input type="hidden" name="form-name" value="force-spf">
-              <div class="card-body">
-                <div class="card-title">
-                  Enforce SPF
-                  <div class="small-text">
-                    To avoid email-spoofing, SimpleLogin blocks email that
-                    <em data-toggle="tooltip"
-                        title="Email that has your mailbox as envelope-sender address">seems</em> to come from your
-                    mailbox
-                    but sent from <em data-toggle="tooltip"
-     title="IP Address that is not known by your mailbox email service">unknown</em>
-                    IP address.
-                    <br />
-                    Only turn off this option if you know what you're doing :).
-                  </div>
-                </div>
-                <label class="custom-switch cursor mt-2 pl-0" data-toggle="tooltip" {% if mailbox.force_spf %}
-                   title="Disable SPF enforcement" {% else %} title="Enable SPF enforcement" {% endif %}>
-                  <input type="checkbox" name="spf-status" class="custom-switch-input" {{ "checked" if mailbox.force_spf else "" }}>
-                  <span class="custom-switch-indicator"></span>
-                </label>
-              </div>
-            </form>
-          </div>
-        {% endif %}
-        <div class="card" id="authorized-address">
+      </div>
+      <div class="card" id="generic-subject">
+        <form method="post" action="#generic-subject">
+          {{ csrf_form.csrf_token }}
+          <input type="hidden" name="form-name" value="generic-subject">
           <div class="card-body">
             <div class="card-title">
-              Authorized addresses
-              <div class="small-text">
-                Emails sent from these addresses to a <b>reverse-alias</b> are considered as being sent
-                from {{ mailbox.email }}
+              Hide email subject
+              <div class="small-text mt-1">
+                The original subject will be added to the email body and all forwarded emails will have the generic subject.
+                <br />
+                This option is often used when PGP is enabled.
+                As PGP does not encrypt the email subject, it allows a further protection of your email content.
               </div>
             </div>
-            {% if mailbox.authorized_addresses | length == 0 %}
+            <div class="form-group">
+              <label class="form-label">Generic Subject</label>
+              <input name="generic-subject"
+                     class="form-control"
+                     maxlength="78"
+                     placeholder="Generic Subject"
+                     value="{{ mailbox.generic_subject or "" }}">
+            </div>
+            <button class="btn btn-primary" name="action" value="save">Save</button>
+            {% if mailbox.generic_subject %}
 
-            {% else %}
-              <ul>
-                {% for authorized_address in mailbox.authorized_addresses %}
-
-                  <li>
-                    {{ authorized_address.email }}
-                    <form method="post" action="#authorized-address" style="display: inline">
-                      {{ csrf_form.csrf_token }}
-                      <input type="hidden" name="form-name" value="delete-authorized-address">
-                      <input type="hidden"
-                             name="authorized-address-id"
-                             value="{{ authorized_address.id }}">
-                      <input type="submit" class="btn btn-sm btn-outline-warning" value="Delete">
-                    </form>
-                  </li>
-                {% endfor %}
-              </ul>
+              <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
             {% endif %}
-            <form method="post" action="#authorized-address" class="form-inline">
-              {{ csrf_form.csrf_token }}
-              <input type="hidden" name="form-name" value="add-authorized-address">
-              <input type="email" name="email" size="50" class="form-control" required>
-              <input type="submit" class="btn btn-primary" value="Add">
-            </form>
           </div>
+        </form>
+      </div>
+      <hr />
+      <h2 class="h4">Advanced Options</h2>
+      {% if spf_available %}
+
+        <div class="card" id="spf">
+          <form method="post">
+            {{ csrf_form.csrf_token }}
+            <input type="hidden" name="form-name" value="force-spf">
+            <div class="card-body">
+              <div class="card-title">
+                Enforce SPF
+                <div class="small-text">
+                  To avoid email-spoofing, SimpleLogin blocks email that
+                  <em data-toggle="tooltip"
+                      title="Email that has your mailbox as envelope-sender address">seems</em> to come from your
+                  mailbox
+                  but sent from <em data-toggle="tooltip"
+     title="IP Address that is not known by your mailbox email service">unknown</em>
+                  IP address.
+                  <br />
+                  Only turn off this option if you know what you're doing :).
+                </div>
+              </div>
+              <label class="custom-switch cursor mt-2 pl-0" data-toggle="tooltip" {% if mailbox.force_spf %}
+                 title="Disable SPF enforcement" {% else %} title="Enable SPF enforcement" {% endif %}>
+                <input type="checkbox" name="spf-status" class="custom-switch-input" {{ "checked" if mailbox.force_spf else "" }}>
+                <span class="custom-switch-indicator"></span>
+              </label>
+            </div>
+          </form>
+        </div>
+      {% endif %}
+      <div class="card" id="authorized-address">
+        <div class="card-body">
+          <div class="card-title">
+            Authorized addresses
+            <div class="small-text">
+              Emails sent from these addresses to a <b>reverse-alias</b> are considered as being sent
+              from {{ mailbox.email }}
+            </div>
+          </div>
+          {% if mailbox.authorized_addresses | length == 0 %}
+
+          {% else %}
+            <ul>
+              {% for authorized_address in mailbox.authorized_addresses %}
+
+                <li>
+                  {{ authorized_address.email }}
+                  <form method="post" action="#authorized-address" style="display: inline">
+                    {{ csrf_form.csrf_token }}
+                    <input type="hidden" name="form-name" value="delete-authorized-address">
+                    <input type="hidden"
+                           name="authorized-address-id"
+                           value="{{ authorized_address.id }}">
+                    <input type="submit" class="btn btn-sm btn-outline-warning" value="Delete">
+                  </form>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <form method="post" action="#authorized-address" class="form-inline">
+            {{ csrf_form.csrf_token }}
+            <input type="hidden" name="form-name" value="add-authorized-address">
+            <input type="email" name="email" size="50" class="form-control" required>
+            <input type="submit" class="btn btn-primary" value="Add">
+          </form>
         </div>
       </div>
     </div>
-  {% endblock %}
-  {% block script %}
-    <script src="/static/js/utils/drag-drop-into-text.js"></script>
-    <script>
+  </div>
+{% endblock %}
+{% block script %}
+  <script src="/static/js/utils/drag-drop-into-text.js"></script>
+  <script>
     $(".custom-switch-input").change(function (e) {
       $(this).closest("form").submit();
     });
     enableDragDropForPGPKeys('#pgp-public-key');
-    </script>
-  {% endblock %}
+  </script>
+{% endblock %}
