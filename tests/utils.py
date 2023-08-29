@@ -71,7 +71,7 @@ def load_eml_file(
         if not template_values:
             template_values = {}
         rendered = template.render(**template_values)
-        return email.message_from_string(rendered)
+        return email.message_from_bytes(rendered.encode("utf-8"))
 
 
 def random_email() -> str:
