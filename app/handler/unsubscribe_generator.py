@@ -1,4 +1,5 @@
 import urllib
+from email.header import Header
 from email.message import Message
 
 from app.email import headers
@@ -33,6 +34,8 @@ class UnsubscribeGenerator:
         if not unsubscribe_data:
             LOG.info("Email has no unsubscribe header")
             return message
+        if isinstance(unsubscribe_data, Header):
+            unsubscribe_data = str(unsubscribe_data.encode)
         raw_methods = [method.strip() for method in unsubscribe_data.split(",")]
         mailto_unsubs = None
         other_unsubs = []
