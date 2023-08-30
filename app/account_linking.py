@@ -12,6 +12,7 @@ from app.utils import sanitize_email
 from app.errors import (
     AccountAlreadyLinkedToAnotherPartnerException,
     AccountIsUsingAliasAsEmail,
+    AccountAlreadyLinkedToAnotherUserException,
 )
 from app.log import LOG
 from app.models import (
@@ -179,7 +180,7 @@ class ExistingUnlinkedUserStrategy(ClientMergeStrategy):
 
 class LinkedWithAnotherPartnerUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
-        raise AccountAlreadyLinkedToAnotherPartnerException()
+        raise AccountAlreadyLinkedToAnotherUserException()
 
 
 def get_login_strategy(
