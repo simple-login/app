@@ -1,4 +1,4 @@
-from app.dashboard.views import alias_transfer
+import app.alias_utils
 from app.db import Session
 from app.models import (
     Alias,
@@ -29,7 +29,7 @@ def test_alias_transfer(flask_client):
         user_id=new_user.id, email="hey2@example.com", verified=True, commit=True
     )
 
-    alias_transfer.transfer(alias, new_user, new_user.mailboxes())
+    app.alias_utils.transfer_alias(alias, new_user, new_user.mailboxes())
 
     # refresh from db
     alias = Alias.get(alias.id)

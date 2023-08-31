@@ -7,77 +7,17 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 
 from app import config
+from app.alias_utils import transfer_alias
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
-from app.email_utils import send_email, render
 from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     Alias,
-    Contact,
-    AliasUsedOn,
-    AliasMailbox,
-    User,
-    ClientUser,
 )
 from app.models import Mailbox
 from app.utils import CSRFValidationForm
-
-
-def transfer(alias, new_user, new_mailboxes: [Mailbox]):
-    # cannot transfer alias which is used for receiving newsletter
-    if User.get_by(newsletter_alias_id=alias.id):
-        raise Exception("Cannot transfer alias that's used to receive newsletter")
-
-    # update user_id
-    Session.query(Contact).filter(Contact.alias_id == alias.id).update(
-        {"user_id": new_user.id}
-    )
-
-    Session.query(AliasUsedOn).filter(AliasUsedOn.alias_id == alias.id).update(
-        {"user_id": new_user.id}
-    )
-
-    Session.query(ClientUser).filter(ClientUser.alias_id == alias.id).update(
-        {"user_id": new_user.id}
-    )
-
-    # remove existing mailboxes from the alias
-    Session.query(AliasMailbox).filter(AliasMailbox.alias_id == alias.id).delete()
-
-    # set mailboxes
-    alias.mailbox_id = new_mailboxes.pop().id
-    for mb in new_mailboxes:
-        AliasMailbox.create(alias_id=alias.id, mailbox_id=mb.id)
-
-    # alias has never been transferred before
-    if not alias.original_owner_id:
-        alias.original_owner_id = alias.user_id
-
-    # inform previous owner
-    old_user = alias.user
-    send_email(
-        old_user.email,
-        f"Alias {alias.email} has been received",
-        render(
-            "transactional/alias-transferred.txt",
-            alias=alias,
-        ),
-        render(
-            "transactional/alias-transferred.html",
-            alias=alias,
-        ),
-    )
-
-    # now the alias belongs to the new user
-    alias.user_id = new_user.id
-
-    # set some fields back to default
-    alias.disable_pgp = False
-    alias.pinned = False
-
-    Session.commit()
 
 
 def hmac_alias_transfer_token(transfer_token: str) -> str:
@@ -214,7 +154,7 @@ def alias_transfer_receive_route():
             mailboxes,
             token,
         )
-        transfer(alias, current_user, mailboxes)
+        transfer_alias(alias, current_user, mailboxes)
 
         # reset transfer token
         alias.transfer_token = None
