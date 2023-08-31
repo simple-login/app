@@ -21,6 +21,8 @@ from app.email_utils import (
     send_cannot_create_directory_alias_disabled,
     get_email_local_part,
     send_cannot_create_domain_alias,
+    send_email,
+    render,
 )
 from app.errors import AliasInTrashError
 from app.log import LOG
@@ -36,6 +38,8 @@ from app.models import (
     EmailLog,
     Contact,
     AutoCreateRule,
+    AliasUsedOn,
+    ClientUser,
 )
 from app.regex_utils import regex_match
 
@@ -399,3 +403,58 @@ def alias_export_csv(user, csv_direct_export=False):
     output.headers["Content-Disposition"] = "attachment; filename=aliases.csv"
     output.headers["Content-type"] = "text/csv"
     return output
+
+
+def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
+    # cannot transfer alias which is used for receiving newsletter
+    if User.get_by(newsletter_alias_id=alias.id):
+        raise Exception("Cannot transfer alias that's used to receive newsletter")
+
+    # update user_id
+    Session.query(Contact).filter(Contact.alias_id == alias.id).update(
+        {"user_id": new_user.id}
+    )
+
+    Session.query(AliasUsedOn).filter(AliasUsedOn.alias_id == alias.id).update(
+        {"user_id": new_user.id}
+    )
+
+    Session.query(ClientUser).filter(ClientUser.alias_id == alias.id).update(
+        {"user_id": new_user.id}
+    )
+
+    # remove existing mailboxes from the alias
+    Session.query(AliasMailbox).filter(AliasMailbox.alias_id == alias.id).delete()
+
+    # set mailboxes
+    alias.mailbox_id = new_mailboxes.pop().id
+    for mb in new_mailboxes:
+        AliasMailbox.create(alias_id=alias.id, mailbox_id=mb.id)
+
+    # alias has never been transferred before
+    if not alias.original_owner_id:
+        alias.original_owner_id = alias.user_id
+
+    # inform previous owner
+    old_user = alias.user
+    send_email(
+        old_user.email,
+        f"Alias {alias.email} has been received",
+        render(
+            "transactional/alias-transferred.txt",
+            alias=alias,
+        ),
+        render(
+            "transactional/alias-transferred.html",
+            alias=alias,
+        ),
+    )
+
+    # now the alias belongs to the new user
+    alias.user_id = new_user.id
+
+    # set some fields back to default
+    alias.disable_pgp = False
+    alias.pinned = False
+
+    Session.commit()
