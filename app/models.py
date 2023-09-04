@@ -2576,6 +2576,7 @@ class Mailbox(Base, ModelMixin):
             self.email.endswith("@proton.me")
             or self.email.endswith("@protonmail.com")
             or self.email.endswith("@protonmail.ch")
+            or self.email.endswith("@proton.ch")
             or self.email.endswith("@pm.me")
         ):
             return True
