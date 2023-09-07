@@ -61,7 +61,12 @@ jobs:
     schedule: "15 10 * * *"
     captureStderr: true
 
-
+  - name: SimpleLogin delete users scheduled to be deleted
+    command: echo disabled_user_deletion #python /code/cron.py -j delete_scheduled_users
+    shell: /bin/bash
+    schedule: "15 11 * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid
 
   - name: SimpleLogin send unsent emails
     command: python /code/cron.py -j send_undelivered_mails
