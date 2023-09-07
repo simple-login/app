@@ -546,6 +546,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Index(
             "ix_users_activated_trial_end_lifetime", activated, trial_end, lifetime
         ),
+        sa.Index("ix_users_delete_on", delete_on),
     )
 
     @property
