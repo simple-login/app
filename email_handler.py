@@ -637,8 +637,11 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     user = alias.user
 
-    if user.disabled:
-        LOG.w("User %s disabled, disable forwarding emails for %s", user, alias)
+    if user.disabled or user.delete_on is not None:
+        reason = "disabled"
+        if user.delete_on is not None:
+            reason = "scheduled for deletion"
+        LOG.w(f"User {user} {reason}, disable forwarding emails for {alias}")
         if should_ignore_bounce(envelope.mail_from):
             return [(True, status.E207)]
         else:
@@ -1070,13 +1073,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     user = alias.user
     mail_from = envelope.mail_from
 
-    if user.disabled:
-        LOG.e(
-            "User %s disabled, disable sending emails from %s to %s",
-            user,
-            alias,
-            contact,
-        )
+    if user.disabled or user.delete_on is not None:
+        reason = "disabled"
+        if user.delete_on is not None:
+            reason = "scheduled for deletion"
+        LOG.w(f"User {user} {reason}, disable sending emails from {alias} to {contact}")
         return False, status.E504
 
     # Check if we need to reject or quarantine based on dmarc

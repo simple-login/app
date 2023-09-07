@@ -539,6 +539,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         nullable=False,
     )
 
+    # Trigger hard deletion of the account at this time
+    delete_on = sa.Column(ArrowType, default=None)
+
     __table_args__ = (
         sa.Index(
             "ix_users_activated_trial_end_lifetime", activated, trial_end, lifetime
