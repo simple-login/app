@@ -837,6 +837,17 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                 < self.max_alias_for_free_account()
             )
 
+    def can_send_or_receive(self) -> bool:
+        if self.disabled:
+            LOG.i(f"User {self} is disabled. Cannot receive or send emails")
+            return False
+        if self.delete_on is not None:
+            LOG.i(
+                f"User {self} is scheduled to be deleted. Cannot receive or send emails"
+            )
+            return False
+        return True
+
     def profile_picture_url(self):
         if self.profile_picture_id:
             return self.profile_picture.get_url()
