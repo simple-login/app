@@ -1114,7 +1114,7 @@ def clear_users_scheduled_to_be_deleted():
         LOG.i(
             f"Scheduled deletion of user {user} with scheduled delete on {user.delete_on}"
         )
-        user.delete(user.id)
+        User.delete(user.id)
         Session.commit()
 
 
@@ -1186,3 +1186,4 @@ if __name__ == "__main__":
             load_unsent_mails_from_fs_and_resend()
         elif args.job == "delete_scheduled_users":
             LOG.d("Deleting users scheduled to be deleted")
+            clear_users_scheduled_to_be_deleted()
