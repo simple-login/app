@@ -539,10 +539,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         nullable=False,
     )
 
+    # Trigger hard deletion of the account at this time
+    delete_on = sa.Column(ArrowType, default=None)
+
     __table_args__ = (
         sa.Index(
             "ix_users_activated_trial_end_lifetime", activated, trial_end, lifetime
         ),
+        sa.Index("ix_users_delete_on", delete_on),
     )
 
     @property
@@ -832,6 +836,17 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                 Alias.filter_by(user_id=self.id).count()
                 < self.max_alias_for_free_account()
             )
+
+    def can_send_or_receive(self) -> bool:
+        if self.disabled:
+            LOG.i(f"User {self} is disabled. Cannot receive or send emails")
+            return False
+        if self.delete_on is not None:
+            LOG.i(
+                f"User {self} is scheduled to be deleted. Cannot receive or send emails"
+            )
+            return False
+        return True
 
     def profile_picture_url(self):
         if self.profile_picture_id:

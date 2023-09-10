@@ -315,3 +315,13 @@ def test_create_contact_for_noreply(flask_client):
         reply_email=generate_reply_email(NOREPLY, alias),
     )
     assert contact.website_email == NOREPLY
+
+
+def test_user_can_send_receive():
+    user = create_new_user()
+    assert user.can_send_or_receive()
+    user.disabled = True
+    assert not user.can_send_or_receive()
+    user.disabled = False
+    user.delete_on = arrow.now()
+    assert not user.can_send_or_receive()

@@ -9,6 +9,7 @@ class LoginEvent:
         failed = 1
         disabled_login = 2
         not_activated = 3
+        scheduled_to_be_deleted = 4
 
     class Source(EnumE):
         web = 0

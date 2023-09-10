@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import arrow
 import requests
-from sqlalchemy import func, desc, or_
+from sqlalchemy import func, desc, or_, and_
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import ObjectDeletedError
@@ -1106,6 +1106,18 @@ def notify_hibp():
         Session.commit()
 
 
+def clear_users_scheduled_to_be_deleted():
+    users = User.filter(
+        and_(User.delete_on.isnot(None), User.delete_on < arrow.now())
+    ).all()
+    for user in users:
+        LOG.i(
+            f"Scheduled deletion of user {user} with scheduled delete on {user.delete_on}"
+        )
+        User.delete(user.id)
+        Session.commit()
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -1172,3 +1184,6 @@ if __name__ == "__main__":
         elif args.job == "send_undelivered_mails":
             LOG.d("Sending undelivered emails")
             load_unsent_mails_from_fs_and_resend()
+        elif args.job == "delete_scheduled_users":
+            LOG.d("Deleting users scheduled to be deleted")
+            clear_users_scheduled_to_be_deleted()

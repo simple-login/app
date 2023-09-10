@@ -63,6 +63,11 @@ def auth_login():
     elif user.disabled:
         LoginEvent(LoginEvent.ActionType.disabled_login, LoginEvent.Source.api).send()
         return jsonify(error="Account disabled"), 400
+    elif user.delete_on is not None:
+        LoginEvent(
+            LoginEvent.ActionType.scheduled_to_be_deleted, LoginEvent.Source.api
+        ).send()
+        return jsonify(error="Account scheduled for deletion"), 400
     elif not user.activated:
         LoginEvent(LoginEvent.ActionType.not_activated, LoginEvent.Source.api).send()
         return jsonify(error="Account not activated"), 422

@@ -1,18 +1,17 @@
 import arrow
 
-from app.models import CoinbaseSubscription, ApiToCookieToken, ApiKey
-from cron import notify_manual_sub_end, delete_expired_tokens
+import cron
+from app.db import Session
+from app.models import CoinbaseSubscription, ApiToCookieToken, ApiKey, User
 from tests.utils import create_new_user
 
 
 def test_notify_manual_sub_end(flask_client):
     user = create_new_user()
-
     CoinbaseSubscription.create(
         user_id=user.id, end_at=arrow.now().shift(days=13, hours=2), commit=True
     )
-
-    notify_manual_sub_end()
+    cron.notify_manual_sub_end()
 
 
 def test_cleanup_tokens(flask_client):
@@ -33,6 +32,22 @@ def test_cleanup_tokens(flask_client):
         api_key_id=api_key.id,
         commit=True,
     ).id
-    delete_expired_tokens()
+    cron.delete_expired_tokens()
     assert ApiToCookieToken.get(id_to_clean) is None
     assert ApiToCookieToken.get(id_to_keep) is not None
+
+
+def test_cleanup_users():
+    u_delete_none_id = create_new_user().id
+    u_delete_after = create_new_user()
+    u_delete_after_id = u_delete_after.id
+    u_delete_before = create_new_user()
+    u_delete_before_id = u_delete_before.id
+    now = arrow.now()
+    u_delete_after.delete_on = now.shift(minutes=1)
+    u_delete_before.delete_on = now.shift(minutes=-1)
+    Session.flush()
+    cron.clear_users_scheduled_to_be_deleted()
+    assert User.get(u_delete_none_id) is not None
+    assert User.get(u_delete_after_id) is not None
+    assert User.get(u_delete_before_id) is None

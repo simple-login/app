@@ -54,6 +54,12 @@ def login():
                 "error",
             )
             LoginEvent(LoginEvent.ActionType.disabled_login).send()
+        elif user.delete_on is not None:
+            flash(
+                f"Your account is scheduled to be deleted on {user.delete_on}",
+                "error",
+            )
+            LoginEvent(LoginEvent.ActionType.scheduled_to_be_deleted).send()
         elif not user.activated:
             show_resend_activation = True
             flash(

@@ -256,6 +256,17 @@ class UserAdmin(SLModelView):
 
         Session.commit()
 
+    @action(
+        "clear_delete_on",
+        "Remove scheduled deletion of user",
+        "This will remove the scheduled deletion for this users",
+    )
+    def clean_delete_on(self, ids):
+        for user in User.filter(User.id.in_(ids)):
+            user.delete_on = None
+
+        Session.commit()
+
     # @action(
     #     "login_as",
     #     "Login as this user",
