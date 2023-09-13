@@ -1027,7 +1027,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         top_conds = [SLDomain.hidden == False]  # noqa: E712
         or_conds = []  # noqa:E711
         if self.default_alias_public_domain_id is not None:
-            or_conds.append(SLDomain.id == self.default_alias_public_domain_id)
+            default_domain_conds = [SLDomain.id == self.default_alias_public_domain_id]
+            if not self.is_premium():
+                default_domain_conds.append(
+                    SLDomain.premium_only == False  # noqa: E712
+                )
+            or_conds.append(and_(*default_domain_conds).self_group())
         if alias_options.show_partner_domains is not None:
             partner_user = PartnerUser.filter_by(
                 user_id=self.id, partner_id=alias_options.show_partner_domains.id
