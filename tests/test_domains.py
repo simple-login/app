@@ -199,3 +199,31 @@ def test_get_free_partner_and_hidden_default_domain():
     assert [d.domain for d in domains] == user.available_sl_domains(
         alias_options=options
     )
+
+
+def test_get_free_partner_and_premium_partner():
+    user = create_new_user()
+    user.trial_end = None
+    PartnerUser.create(
+        partner_id=get_proton_partner().id,
+        user_id=user.id,
+        external_user_id=random_token(10),
+        flush=True,
+    )
+    user.default_alias_public_domain_id = (
+        SLDomain.filter_by(hidden=False, premium_only=False).first().id
+    )
+    Session.flush()
+    options = AliasOptions(
+        show_sl_domains=False,
+        show_partner_domains=get_proton_partner(),
+        show_partner_premium=True,
+    )
+    domains = user.get_sl_domains(alias_options=options)
+    assert len(domains) == 3
+    assert domains[0].domain == "premium_partner"
+    assert domains[1].domain == "free_partner"
+    assert domains[2].domain == "free_non_partner"
+    assert [d.domain for d in domains] == user.available_sl_domains(
+        alias_options=options
+    )

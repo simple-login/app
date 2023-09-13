@@ -280,6 +280,7 @@ class IntEnumType(sa.types.TypeDecorator):
 class AliasOptions:
     show_sl_domains: bool = True
     show_partner_domains: Optional[Partner] = None
+    show_partner_premium: Optional[bool] = None
 
 
 class Hibp(Base, ModelMixin):
@@ -1038,29 +1039,35 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     ) -> list["SLDomain"]:
         if alias_options is None:
             alias_options = AliasOptions()
-        conditions = [SLDomain.hidden == False]  # noqa: E712
-        if not self.is_premium():
-            conditions.append(SLDomain.premium_only == False)  # noqa: E712
-        partner_domain_cond = []  # noqa:E711
+        top_conds = [SLDomain.hidden == False]  # noqa: E712
+        or_conds = []  # noqa:E711
         if self.default_alias_public_domain_id is not None:
-            partner_domain_cond.append(
-                SLDomain.id == self.default_alias_public_domain_id
-            )
+            default_domain_conds = [SLDomain.id == self.default_alias_public_domain_id]
+            if not self.is_premium():
+                default_domain_conds.append(
+                    SLDomain.premium_only == False  # noqa: E712
+                )
+            or_conds.append(and_(*default_domain_conds).self_group())
         if alias_options.show_partner_domains is not None:
             partner_user = PartnerUser.filter_by(
                 user_id=self.id, partner_id=alias_options.show_partner_domains.id
             ).first()
             if partner_user is not None:
-                partner_domain_cond.append(
-                    SLDomain.partner_id == partner_user.partner_id
-                )
+                partner_domain_cond = [SLDomain.partner_id == partner_user.partner_id]
+                if alias_options.show_partner_premium is None:
+                    alias_options.show_partner_premium = self.is_premium()
+                if not alias_options.show_partner_premium:
+                    partner_domain_cond.append(
+                        SLDomain.premium_only == False  # noqa: E712
+                    )
+                or_conds.append(and_(*partner_domain_cond).self_group())
         if alias_options.show_sl_domains:
-            partner_domain_cond.append(SLDomain.partner_id == None)  # noqa:E711
-        if len(partner_domain_cond) == 1:
-            conditions.append(partner_domain_cond[0])
-        else:
-            conditions.append(or_(*partner_domain_cond))
-        query = Session.query(SLDomain).filter(*conditions).order_by(SLDomain.order)
+            sl_conds = [SLDomain.partner_id == None]  # noqa: E711
+            if not self.is_premium():
+                sl_conds.append(SLDomain.premium_only == False)  # noqa: E712
+            or_conds.append(and_(*sl_conds).self_group())
+        top_conds.append(or_(*or_conds))
+        query = Session.query(SLDomain).filter(*top_conds).order_by(SLDomain.order)
         return query.all()
 
     def available_alias_domains(
