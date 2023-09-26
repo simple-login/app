@@ -1252,7 +1252,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         if str(msg[headers.TO]).lower() == "undisclosed-recipients:;":
             # no need to replace TO header
             LOG.d("email is sent in BCC mode")
-            del msg[headers.TO]
         else:
             replace_header_when_reply(msg, alias, headers.TO)
 
