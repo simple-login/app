@@ -85,10 +85,10 @@ def delete_logs():
     delete_refused_emails()
     delete_old_monitoring()
 
-    for t in TransactionalEmail.filter(
+    for worker in TransactionalEmail.filter(
         TransactionalEmail.created_at < arrow.now().shift(days=-7)
     ):
-        TransactionalEmail.delete(t.id)
+        TransactionalEmail.delete(worker.id)
 
     for b in Bounce.filter(Bounce.created_at < arrow.now().shift(days=-7)):
         Bounce.delete(b.id)
@@ -99,15 +99,24 @@ def delete_logs():
 
     total_deleted = 0
     batch_size = 100
+    max_dt = arrow.now().shift(weeks=-2)
     while True:
+        rows = (
+            Session.query(EmailLog.id)
+            .filter(EmailLog.created_at < max_dt)
+            .limit(batch_size)
+            .all()
+        )
+        if len(rows) == 0:
+            break
+        ids = ",".join([str(row[0]) for row in rows])
         deleted_count = Session.execute(
-            f"delete from email_log where id in ( select id from email_log where created_at < now() - interval '15 day' limit {batch_size})"
+            f"DELETE FROM email_log WHERE id in ({ids})"
         ).rowcount
         total_deleted += deleted_count
+        LOG.i(f"Deleted {total_deleted} EmailLog entries")
         if deleted_count < batch_size:
             break
-
-    Session.commit()
 
     LOG.i("Deleted %s email logs", total_deleted)
 
