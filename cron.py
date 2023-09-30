@@ -95,13 +95,21 @@ def delete_logs():
 
     Session.commit()
 
-    LOG.d("Delete EmailLog older than 2 weeks")
+    LOG.d("Deleting EmailLog entries older than 2 weeks")
 
-    max_dt = arrow.now().shift(weeks=-2)
-    nb_deleted = EmailLog.filter(EmailLog.created_at < max_dt).delete()
+    total_deleted = 0
+    batch_size = 100
+    while True:
+        deleted_count = Session.execute(
+            f"delete from email_log where id in ( select id from email_log where created_at < now() - interval '15 day' limit {batch_size})"
+        ).rowcount
+        total_deleted += deleted_count
+        if deleted_count < batch_size:
+            break
+
     Session.commit()
 
-    LOG.i("Delete %s email logs", nb_deleted)
+    LOG.i("Deleted %s email logs", total_deleted)
 
 
 def delete_refused_emails():
