@@ -95,26 +95,20 @@ def delete_logs():
 
     Session.commit()
 
-    LOG.d("Deleting EmailLog entries older than 2 weeks")
+    LOG.d("Deleting EmailLog older than 2 weeks")
 
     total_deleted = 0
-    batch_size = 100
-    max_dt = arrow.now().shift(weeks=-2)
+    batch_size = 500
+    Session.execute("set session statement_timeout=30000").rowcount
+    queries_done = 0
     while True:
-        rows = (
-            Session.query(EmailLog.id)
-            .filter(EmailLog.created_at < max_dt)
-            .limit(batch_size)
-            .all()
-        )
-        if len(rows) == 0:
-            break
-        ids = ",".join([str(row[0]) for row in rows])
         deleted_count = Session.execute(
-            f"DELETE FROM email_log WHERE id in ({ids})"
+            f"DELETE FROM email_log WHERE id IN (SELECT id FROM email_log WHERE created_at < now() - interval '15' day order by created_at limit {batch_size})"
         ).rowcount
+        Session.commit()
         total_deleted += deleted_count
-        LOG.i(f"Deleted {total_deleted} EmailLog entries")
+        queries_done += 1
+        LOG.i(f"[{queries_done}] Deleted {total_deleted} EmailLog entries")
         if deleted_count < batch_size:
             break
 
