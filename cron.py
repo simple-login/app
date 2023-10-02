@@ -9,7 +9,7 @@ from sqlalchemy import func, desc, or_, and_
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import ObjectDeletedError
-from sqlalchemy.sql import Insert
+from sqlalchemy.sql import Insert, text
 
 from app import s3, config
 from app.alias_utils import nb_email_log_for_mailbox
@@ -101,14 +101,23 @@ def delete_logs():
     batch_size = 500
     Session.execute("set session statement_timeout=30000").rowcount
     queries_done = 0
-    while True:
+    cutoff_time = arrow.now().shift(days=-14)
+    rows_to_delete = EmailLog.filter(EmailLog.created_at < cutoff_time).count()
+    expected_queries = int(rows_to_delete / batch_size)
+    sql = text(
+        f"DELETE FROM email_log WHERE id IN (SELECT id FROM email_log WHERE created_at < :cutoff_time order by created_at limit :batch_size)"
+    )
+    str_cutoff_time = cutoff_time.isoformat()
+    while total_deleted < rows_to_delete:
         deleted_count = Session.execute(
-            f"DELETE FROM email_log WHERE id IN (SELECT id FROM email_log WHERE created_at < now() - interval '15' day order by created_at limit {batch_size})"
+            sql, {"cutoff_time": str_cutoff_time, "batch_size": batch_size}
         ).rowcount
         Session.commit()
         total_deleted += deleted_count
         queries_done += 1
-        LOG.i(f"[{queries_done}] Deleted {total_deleted} EmailLog entries")
+        LOG.i(
+            f"[{queries_done}/{expected_queries}] Deleted {total_deleted} EmailLog entries"
+        )
         if deleted_count < batch_size:
             break
 
