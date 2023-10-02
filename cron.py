@@ -85,10 +85,10 @@ def delete_logs():
     delete_refused_emails()
     delete_old_monitoring()
 
-    for worker in TransactionalEmail.filter(
+    for t_email in TransactionalEmail.filter(
         TransactionalEmail.created_at < arrow.now().shift(days=-7)
     ):
-        TransactionalEmail.delete(worker.id)
+        TransactionalEmail.delete(t_email.id)
 
     for b in Bounce.filter(Bounce.created_at < arrow.now().shift(days=-7)):
         Bounce.delete(b.id)
