@@ -104,23 +104,21 @@ def delete_logs():
     cutoff_time = arrow.now().shift(days=-14)
     rows_to_delete = EmailLog.filter(EmailLog.created_at < cutoff_time).count()
     expected_queries = int(rows_to_delete / batch_size)
+    sql = text(
+        f"DELETE FROM email_log WHERE id IN (SELECT id FROM email_log WHERE created_at < :cutoff_time order by created_at limit :batch_size)"
+    )
+    str_cutoff_time = cutoff_time.isoformat()
     while total_deleted < rows_to_delete:
-        email_log_rows = (
-            Session.query(EmailLog.id)
-            .filter(EmailLog.created_at < cutoff_time)
-            .limit(batch_size)
-            .all()
-        )
-        email_log_ids = tuple(row[0] for row in email_log_rows)
-        delete_sql = text(f"DELETE FROM email_log WHERE id IN :ids")
-        deleted_count = Session.execute(delete_sql, {"ids": email_log_ids}).rowcount
+        deleted_count = Session.execute(
+            sql, {"cutoff_time": str_cutoff_time, "batch_size": batch_size}
+        ).rowcount
         Session.commit()
         total_deleted += deleted_count
         queries_done += 1
         LOG.i(
             f"[{queries_done}/{expected_queries}] Deleted {total_deleted} EmailLog entries"
         )
-        if len(email_log_ids) < batch_size:
+        if deleted_count < batch_size:
             break
 
     LOG.i("Deleted %s email logs", total_deleted)
