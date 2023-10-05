@@ -3184,7 +3184,7 @@ class MessageIDMatching(Base, ModelMixin):
 
     # to track what email_log that has created this matching
     email_log_id = sa.Column(
-        sa.ForeignKey("email_log.id", ondelete="cascade"), nullable=True
+        sa.ForeignKey("email_log.id", ondelete="cascade"), nullable=True, index=True
     )
 
     email_log = orm.relationship("EmailLog")
