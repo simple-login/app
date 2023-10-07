@@ -300,9 +300,9 @@ mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 10.0.0.0/24
 
 # Set your domain here
 mydestination =
-myhostname = sl.example.com
-mydomain = example.com
-myorigin = example.com
+myhostname = app.mydomain.com
+mydomain = mydomain.com
+myorigin = mydomain.com
 
 relay_domains = pgsql:/etc/postfix/pgsql-relay-domains.cf
 transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf
