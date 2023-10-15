@@ -89,7 +89,6 @@ aghast
 agile
 agility
 aging
-agnostic
 agonize
 agonizing
 agony
@@ -375,8 +374,6 @@ augmented
 august
 authentic
 author
-autism
-autistic
 autograph
 automaker
 automated
@@ -446,7 +443,6 @@ backyard
 bacon
 bacteria
 bacterium
-badass
 badge
 badland
 badly
@@ -3340,7 +3336,6 @@ identical
 identify
 identity
 ideology
-idiocy
 idiom
 idly
 igloo
@@ -3357,7 +3352,6 @@ imaging
 imbecile
 imitate
 imitation
-immature
 immerse
 immersion
 imminent
@@ -3387,12 +3381,10 @@ implode
 implosion
 implosive
 imply
-impolite
 important
 importer
 impose
 imposing
-impotence
 impotency
 impotent
 impound
@@ -3424,8 +3416,6 @@ irritable
 irritably
 irritant
 irritate
-islamic
-islamist
 isolated
 isolating
 isolation
@@ -3524,7 +3514,6 @@ june
 junior
 juniper
 junkie
-junkman
 junkyard
 jurist
 juror
@@ -4446,7 +4435,6 @@ palpitate
 paltry
 pampered
 pamperer
-pampers
 pamphlet
 panama
 pancake
@@ -5155,7 +5143,6 @@ recount
 recoup
 recovery
 recreate
-rectal
 rectangle
 rectified
 rectify
@@ -5928,8 +5915,6 @@ silent
 silica
 silicon
 silk
-silliness
-silly
 silo
 silt
 silver
@@ -7078,7 +7063,6 @@ undocked
 undoing
 undone
 undrafted
-undress
 undrilled
 undusted
 undying
