@@ -3385,8 +3385,6 @@ important
 importer
 impose
 imposing
-impotency
-impotent
 impound
 imprecise
 imprint
