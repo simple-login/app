@@ -1102,7 +1102,6 @@ clinic
 clinking
 clip
 clique
-cloak
 clobber
 clock
 clone
@@ -1772,7 +1771,6 @@ diagnosis
 diagram
 dial
 diameter
-diaper
 diaphragm
 diary
 dice
@@ -2028,9 +2026,6 @@ duffel
 dugout
 duh
 duke
-duller
-dullness
-duly
 dumping
 dumpling
 dumpster
@@ -2523,8 +2518,6 @@ feisty
 feline
 felt-tip
 feminine
-feminism
-feminist
 feminize
 femur
 fence
@@ -2663,7 +2656,6 @@ fondness
 fondue
 font
 food
-fool
 footage
 football
 footbath
@@ -2773,7 +2765,6 @@ gag
 gainfully
 gaining
 gains
-gala
 gallantly
 galleria
 gallery
@@ -3160,8 +3151,6 @@ hardware
 hardwired
 hardwood
 hardy
-harmful
-harmless
 harmonica
 harmonics
 harmonize
@@ -3557,9 +3546,6 @@ king
 kinship
 kinsman
 kinswoman
-kissable
-kisser
-kissing
 kitchen
 kite
 kitten
@@ -3636,7 +3622,6 @@ laundry
 laurel
 lavender
 lavish
-laxative
 lazily
 laziness
 lazy
@@ -3677,7 +3662,6 @@ liable
 liberty
 librarian
 library
-licking
 licorice
 lid
 life
@@ -3728,8 +3712,6 @@ livestock
 lividly
 living
 lizard
-lubricant
-lubricate
 lucid
 luckily
 luckiness
@@ -3865,7 +3847,6 @@ marshland
 marshy
 marsupial
 marvelous
-marxism
 mascot
 masculine
 mashed
@@ -3901,8 +3882,6 @@ maximum
 maybe
 mayday
 mayflower
-moaner
-moaning
 mobile
 mobility
 mobilize
@@ -4111,7 +4090,6 @@ nemeses
 nemesis
 neon
 nephew
-nerd
 nervous
 nervy
 nest
@@ -4126,7 +4104,6 @@ never
 next
 nibble
 nickname
-nicotine
 niece
 nifty
 nimble
@@ -4154,14 +4131,10 @@ nuptials
 nursery
 nursing
 nurture
-nutcase
 nutlike
 nutmeg
 nutrient
 nutshell
-nuttiness
-nutty
-nuzzle
 nylon
 oaf
 oak
@@ -4192,7 +4165,6 @@ obstinate
 obstruct
 obtain
 obtrusive
-obtuse
 obvious
 occultist
 occupancy
@@ -4637,7 +4609,6 @@ plated
 platform
 plating
 platinum
-platonic
 platter
 platypus
 plausible
@@ -4763,8 +4734,6 @@ prancing
 pranker
 prankish
 prankster
-prayer
-praying
 preacher
 preaching
 preachy
@@ -4782,8 +4751,6 @@ prefix
 preflight
 preformed
 pregame
-pregnancy
-pregnant
 preheated
 prelaunch
 prelaw
@@ -4923,7 +4890,6 @@ prudishly
 prune
 pruning
 pry
-psychic
 public
 publisher
 pucker
@@ -4943,8 +4909,7 @@ punctual
 punctuate
 punctured
 pungent
-punisher
-punk
+punishe
 pupil
 puppet
 puppy
@@ -5026,7 +4991,6 @@ quote
 rabid
 race
 racing
-racism
 rack
 racoon
 radar
@@ -5607,7 +5571,6 @@ sarcastic
 sardine
 sash
 sasquatch
-sassy
 satchel
 satiable
 satin
@@ -5636,7 +5599,6 @@ scaling
 scallion
 scallop
 scalping
-scam
 scandal
 scanner
 scanning
@@ -6179,7 +6141,6 @@ splinter
 splotchy
 splurge
 spoilage
-spoiled
 spoiler
 spoiling
 spoils
