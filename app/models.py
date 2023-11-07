@@ -3517,7 +3517,7 @@ class PartnerSubscription(Base, ModelMixin):
 
 class Newsletter(Base, ModelMixin):
     __tablename__ = "newsletter"
-    subject = sa.Column(sa.String(), nullable=False, unique=True, index=True)
+    subject = sa.Column(sa.String(), nullable=False, index=True)
 
     html = sa.Column(sa.Text)
     plain_text = sa.Column(sa.Text)
