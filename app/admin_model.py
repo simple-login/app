@@ -611,6 +611,26 @@ class NewsletterAdmin(SLModelView):
             else:
                 flash(error_msg, "error")
 
+    @action(
+        "clone_newsletter",
+        "Clone this newsletter",
+    )
+    def clone_newsletter(self, newsletter_ids):
+        if len(newsletter_ids) != 1:
+            flash("you can only select 1 newsletter", "error")
+            return
+
+        newsletter_id = newsletter_ids[0]
+        newsletter: Newsletter = Newsletter.get(newsletter_id)
+        new_newsletter = Newsletter.create(
+            subject=newsletter.subject,
+            html=newsletter.html,
+            plain_text=newsletter.plain_text,
+            commit=True,
+        )
+
+        flash(f"Newsletter {new_newsletter.subject} has been cloned", "success")
+
 
 class NewsletterUserAdmin(SLModelView):
     column_searchable_list = ["id"]
