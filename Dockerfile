@@ -23,7 +23,7 @@ COPY poetry.lock pyproject.toml ./
 # Install and setup poetry
 RUN pip install -U pip \
     && apt-get update \
-    && apt install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev \
+    && apt install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev cmake ninja-build\
     && curl -sSL https://install.python-poetry.org | python3 - \
     # Remove curl and netcat from the image
     && apt-get purge -y curl netcat-traditional \
@@ -31,7 +31,7 @@ RUN pip install -U pip \
     && poetry config virtualenvs.create false \
     && poetry install  --no-interaction --no-ansi --no-root \
     # Clear apt cache \
-    && apt-get purge -y libre2-dev \
+    && apt-get purge -y libre2-dev cmake ninja-build\
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
