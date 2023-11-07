@@ -18,7 +18,7 @@ from app.db import Session
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
 from app.models import Partner, PartnerUser, User
 from app.proton.utils import get_proton_partner
-from app.utils import random_string
+from app.utils import random_string, canonicalize_email
 from tests.utils import random_email
 
 
@@ -377,3 +377,48 @@ def test_link_account_with_uppercase(flask_client):
     )
     assert partner_user.partner_id == get_proton_partner().id
     assert partner_user.external_user_id == partner_user_id
+
+
+def test_login_to_account_with_canonical_email(flask_client):
+    email = "a.{rand}@gmail.com".format(rand=random_string(10))
+    canonical_email = canonicalize_email(email)
+    assert email != canonical_email
+    partner_user_id = random_string()
+    link_request = random_link_request(
+        external_user_id=partner_user_id, email=email.upper()
+    )
+    user = create_user(canonical_email)
+    assert user.email == canonical_email
+    res = process_login_case(link_request, get_proton_partner())
+    assert res.user.id == user.id
+
+
+def test_login_to_account_with_canonical_email_if_there_is_also_non_canonical(
+    flask_client,
+):
+    email = "a.{rand}@gmail.com".format(rand=random_string(10))
+    canonical_email = canonicalize_email(email)
+    assert email != canonical_email
+    partner_user_id = random_string()
+    link_request = random_link_request(
+        external_user_id=partner_user_id, email=email.upper()
+    )
+    user = create_user(canonical_email)
+    create_user(email)
+    assert user.email == canonical_email
+    res = process_login_case(link_request, get_proton_partner())
+    assert res.user.id == user.id
+
+
+def test_login_creates_account_with_canonical_email(
+    flask_client,
+):
+    email = "a.{rand}@gmail.com".format(rand=random_string(10))
+    canonical_email = canonicalize_email(email)
+    assert email != canonical_email
+    partner_user_id = random_string()
+    link_request = random_link_request(
+        external_user_id=partner_user_id, email=email.upper()
+    )
+    res = process_login_case(link_request, get_proton_partner())
+    assert res.user.email == canonical_email
