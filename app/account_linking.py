@@ -5,10 +5,11 @@ from typing import Optional
 
 from arrow import Arrow
 from newrelic import agent
+from sqlalchemy import or_
 
 from app.db import Session
 from app.email_utils import send_welcome_email
-from app.utils import sanitize_email
+from app.utils import sanitize_email, canonicalize_email
 from app.errors import (
     AccountAlreadyLinkedToAnotherPartnerException,
     AccountIsUsingAliasAsEmail,
@@ -131,8 +132,9 @@ class ClientMergeStrategy(ABC):
 class NewUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
         # Will create a new SL User with a random password
+        canonical_email = canonicalize_email(self.link_request.email)
         new_user = User.create(
-            email=self.link_request.email,
+            email=canonical_email,
             name=self.link_request.name,
             password=random_string(20),
             activated=True,
@@ -213,11 +215,21 @@ def process_login_case(
         partner_id=partner.id, external_user_id=link_request.external_user_id
     )
     if partner_user is None:
+        canonical_email = canonicalize_email(link_request.email)
         # We didn't find any SimpleLogin user registered with that partner user id
         # Make sure they aren't using an alias as their link email
         check_alias(link_request.email)
+        check_alias(canonical_email)
         # Try to find it using the partner's e-mail address
-        user = User.get_by(email=link_request.email)
+        users = User.filter(
+            or_(User.email == link_request.email, User.email == canonical_email)
+        ).all()
+        if len(users) > 1:
+            user = [user for user in users if user.email == canonical_email][0]
+        elif len(users) == 1:
+            user = users[0]
+        else:
+            user = None
         return get_login_strategy(link_request, user, partner).process()
     else:
         # We found the SL user registered with that partner user id
