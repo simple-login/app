@@ -13,6 +13,7 @@ from app.log import LOG
 from app.models import (
     Alias,
     AliasGeneratorEnum,
+    AliasUsedOn,
     User,
     EmailLog,
     Contact,
@@ -63,9 +64,9 @@ def get_stats(user: User) -> Stats:
     only_when=lambda: request.form.get("form-name") == "create-random-email",
 )
 def index():
-    query = request.args.get("query") or ""
-    sort = request.args.get("sort") or ""
-    alias_filter = request.args.get("filter") or ""
+    query = request.args.get("query", "")
+    sort = request.args.get("sort", "")
+    alias_filter = request.args.get("filter", "")
 
     page = 0
     if request.args.get("page"):
@@ -206,6 +207,14 @@ def index():
         if highlight_alias_info:
             alias_infos.insert(0, highlight_alias_info)
 
+    q_all_alias_used_on = (
+        Session.query(AliasUsedOn.hostname)
+        .filter(current_user.id == AliasUsedOn.user_id)
+        .group_by(AliasUsedOn.hostname)
+    )
+
+    all_alias_used_on = list(map(lambda res: res.hostname, q_all_alias_used_on))
+
     return render_template(
         "dashboard/index.html",
         alias_infos=alias_infos,
@@ -220,6 +229,7 @@ def index():
         filter=alias_filter,
         stats=stats,
         csrf_form=csrf_form,
+        all_alias_used_on=all_alias_used_on,
     )
 
 

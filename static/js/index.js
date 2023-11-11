@@ -1,5 +1,17 @@
 $('.mailbox-select').multipleSelect();
+$('.alias-used-on-select').multipleSelect({
+  ellipsis: true,
+  filter: true,
+  onFilter: handleAliasUsedOnFilter,
+  formatNoMatchesFound: formatNoMatchesFound,
+});
 
+// This function doesn't seem to be documented but can be found in the code here
+// https://github.com/wenzhixin/multiple-select/blob/973e585eff30e39e66f1b01ccd04e0bda4fb6862/src/MultipleSelect.js#L387
+// It is the text displayed, when there is no results after filtering.
+function formatNoMatchesFound () {
+  return 'No match found. Press Enter to add this website.';
+}
 function confirmDeleteAlias() {
   let that = $(this);
   let alias = that.data("alias-email");
@@ -242,6 +254,55 @@ async function handleDisplayNameChange(aliasId, aliasEmail) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
   }
 
+}
+
+async function handleAliasUsedOnChange(aliasId, aliasEmail) {
+  const selectedOptions = document.getElementById(`alias-used-on-${aliasId}`).selectedOptions;
+  const hostnames = Array.from(selectedOptions).map((selectedOption) => selectedOption.value);
+
+  try {
+    let res = await fetch(`/api/aliases/${aliasId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        "alias_used_on": hostnames,
+      }),
+    });
+
+      if (res.ok) {
+        toastr.success(`Alias used on updated for ${aliasEmail}`);
+      } else {
+        toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+      }
+    } catch (e) {
+      toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
+    }
+}
+async function handleAliasUsedOnFilter(text) {
+  const options_data = $(this)[0].data;
+  const no_option_visible = options_data.every((opt) => opt.visible === false );
+
+  // Just a workaround to get the id of the select, we set the "data-container" attribute, which is reflected in $(this), with the same value
+  const select_id = $(this)[0].container;
+
+  $("div.ms-parent.alias-used-on-select").off("keypress");
+  $("div.ms-parent.alias-used-on-select").on("keypress", function (event) {
+    // If press enter, add the value of the filter as an option
+    if (event.keyCode === 13 && no_option_visible) {
+     const $opt = $('<option />', {
+       value: text,
+       text: text,
+     });
+
+     // We need to add the options to all select here,
+     // otherwise only the current select will have the new option
+     $(`select.alias-used-on-select#${select_id}`).append($opt.prop('selected', true)).multipleSelect('refresh');
+     $(`select.alias-used-on-select:not(#${select_id})`).append($opt.prop('selected', false)).multipleSelect('refresh');
+     $(`#${select_id}`).trigger("change");
+    }
+  });
 }
 
 function handleDisplayNameFocus(aliasId) {

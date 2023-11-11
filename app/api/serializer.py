@@ -15,6 +15,7 @@ from app.models import (
     AliasMailbox,
     CustomDomain,
     User,
+    AliasUsedOn,
 )
 
 
@@ -31,6 +32,7 @@ class AliasInfo:
     latest_email_log: EmailLog = None
     latest_contact: Contact = None
     custom_domain: Optional[CustomDomain] = None
+    alias_used_on: Optional[AliasUsedOn] = None
 
     def contain_mailbox(self, mailbox_id: int) -> bool:
         return mailbox_id in [m.id for m in self.mailboxes]
@@ -62,6 +64,7 @@ def serialize_alias_info_v2(alias_info: AliasInfo) -> dict:
         "enabled": alias_info.alias.enabled,
         "note": alias_info.alias.note,
         "name": alias_info.alias.name,
+        "alias_used_on": alias_info.alias_used_on,
         # activity
         "nb_forward": alias_info.nb_forward,
         "nb_block": alias_info.nb_blocked,
@@ -204,7 +207,7 @@ def get_alias_infos_with_pagination_v3(
     q = list(q.limit(page_limit).offset(page_id * page_size))
 
     ret = []
-    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in q:
+    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward, hostnames in q:
         ret.append(
             AliasInfo(
                 alias=alias,
@@ -216,6 +219,7 @@ def get_alias_infos_with_pagination_v3(
                 latest_email_log=email_log,
                 latest_contact=contact,
                 custom_domain=alias.custom_domain,
+                alias_used_on=hostnames,
             )
         )
 
@@ -295,6 +299,12 @@ def get_alias_info_v2(alias: Alias, mailbox=None) -> AliasInfo:
     alias_info.latest_contact = latest_contact
     alias_info.latest_email_log = latest_email_log
 
+    q_alias_used_on = Session.query(AliasUsedOn.hostname).filter(
+        AliasUsedOn.alias_id == alias.id
+    )
+
+    alias_info.alias_used_on = list(map(lambda res: res.hostname, q_alias_used_on))
+
     return alias_info
 
 
@@ -318,7 +328,7 @@ def get_alias_info_v3(user: User, alias_id: int) -> AliasInfo:
     q = construct_alias_query(user)
     q = q.filter(Alias.id == alias_id)
 
-    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in q:
+    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward, hostnames in q:
         return AliasInfo(
             alias=alias,
             mailbox=alias.mailbox,
@@ -329,6 +339,7 @@ def get_alias_info_v3(user: User, alias_id: int) -> AliasInfo:
             latest_email_log=email_log,
             latest_contact=contact,
             custom_domain=alias.custom_domain,
+            alias_used_on=hostnames,
         )
 
 
@@ -374,6 +385,14 @@ def construct_alias_query(user: User):
         .subquery()
     )
 
+    alias_used_on_subquery = (
+        Session.query(Alias.id, func.array_agg(AliasUsedOn.hostname).label("hostnames"))
+        .join(AliasUsedOn, Alias.id == AliasUsedOn.alias_id, isouter=True)
+        .filter(Alias.user_id == user.id)
+        .group_by(Alias.id)
+        .subquery()
+    )
+
     return (
         Session.query(
             Alias,
@@ -382,11 +401,17 @@ def construct_alias_query(user: User):
             alias_activity_subquery.c.nb_reply,
             alias_activity_subquery.c.nb_blocked,
             alias_activity_subquery.c.nb_forward,
+            alias_used_on_subquery.c.hostnames,
         )
         .options(joinedload(Alias.hibp_breaches))
         .options(joinedload(Alias.custom_domain))
         .join(Contact, Alias.id == Contact.alias_id, isouter=True)
         .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
+        .join(
+            alias_used_on_subquery,
+            Alias.id == alias_used_on_subquery.c.id,
+            isouter=True,
+        )
         .filter(Alias.id == alias_activity_subquery.c.id)
         .filter(Alias.id == alias_contact_subquery.c.id)
         .filter(
