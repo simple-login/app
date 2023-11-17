@@ -16,3 +16,22 @@ from .views import (
     sudo,
     user,
 )
+
+__all__ = [
+    "alias_options",
+    "new_custom_alias",
+    "custom_domain",
+    "new_random_alias",
+    "user_info",
+    "auth",
+    "auth_mfa",
+    "alias",
+    "apple",
+    "mailbox",
+    "notification",
+    "setting",
+    "export",
+    "phone",
+    "sudo",
+    "user",
+]

@@ -168,7 +168,6 @@ class NewUserStrategy(ClientMergeStrategy):
 
 class ExistingUnlinkedUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
-
         partner_user = ensure_partner_user_exists_for_user(
             self.link_request, self.user, self.partner
         )

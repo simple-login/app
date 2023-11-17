@@ -7,7 +7,7 @@ import arrow
 import pytest
 
 from app import config
-from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, ROOT_DIR
+from app.config import MAX_ALERT_24H, ROOT_DIR
 from app.db import Session
 from app.email_utils import (
     get_email_domain_part,
@@ -16,7 +16,6 @@ from app.email_utils import (
     delete_header,
     add_or_replace_header,
     send_email_with_rate_control,
-    copy,
     get_spam_from_header,
     get_header_from_bounce,
     add_header,

@@ -39,7 +39,6 @@ class _InnerLock:
             lock_redis.storage.delete(lock_name)
 
     def __call__(self, f: Callable[..., Any]):
-
         if self.lock_suffix is None:
             lock_suffix = f.__name__
         else:

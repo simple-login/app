@@ -221,7 +221,7 @@ def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
         return True
 
     if is_deleted_alias(msg_info.sender_address):
-        LOG.i(f"Complaint is for deleted alias. Do nothing")
+        LOG.i("Complaint is for deleted alias. Do nothing")
         return True
 
     contact = Contact.get_by(reply_email=msg_info.sender_address)
@@ -231,7 +231,7 @@ def handle_complaint(message: Message, origin: ProviderComplaintOrigin) -> bool:
         alias = find_alias_with_address(msg_info.rcpt_address)
 
     if is_deleted_alias(msg_info.rcpt_address):
-        LOG.i(f"Complaint is for deleted alias. Do nothing")
+        LOG.i("Complaint is for deleted alias. Do nothing")
         return True
 
     if not alias:

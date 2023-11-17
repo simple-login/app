@@ -56,13 +56,15 @@ def test_get_jobs_to_run(flask_client):
         run_at=now.shift(hours=3),
     )
     # Job out of attempts
-    Job.create(
-        name="",
-        payload="",
-        state=JobState.taken.value,
-        taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
-        attempts=config.JOB_MAX_ATTEMPTS + 1,
-    ),
+    (
+        Job.create(
+            name="",
+            payload="",
+            state=JobState.taken.value,
+            taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
+            attempts=config.JOB_MAX_ATTEMPTS + 1,
+        ),
+    )
     Session.commit()
     jobs = get_jobs_to_run()
     assert len(jobs) == len(expected_jobs_to_run)

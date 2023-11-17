@@ -18,6 +18,9 @@ exclude = '''
 )
 '''
 
+[tool.ruff]
+ignore-init-module-imports = true
+
 [tool.djlint]
 indent = 2
 profile = "jinja"
@@ -120,6 +123,9 @@ pre-commit = "^2.17.0"
 black = "^22.1.0"
 djlint = "^1.3.0"
 pylint = "^2.14.4"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.5"
 
 [build-system]
 requires = ["poetry>=0.12"]

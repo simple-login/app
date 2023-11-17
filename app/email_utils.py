@@ -93,7 +93,7 @@ def send_welcome_email(user):
 
     send_email(
         comm_email,
-        f"Welcome to SimpleLogin",
+        "Welcome to SimpleLogin",
         render("com/welcome.txt", user=user, alias=alias),
         render("com/welcome.html", user=user, alias=alias),
         unsubscribe_link,
@@ -104,7 +104,7 @@ def send_welcome_email(user):
 def send_trial_end_soon_email(user):
     send_email(
         user.email,
-        f"Your trial will end soon",
+        "Your trial will end soon",
         render("transactional/trial-end.txt.jinja2", user=user),
         render("transactional/trial-end.html", user=user),
         ignore_smtp_error=True,
@@ -114,7 +114,7 @@ def send_trial_end_soon_email(user):
 def send_activation_email(email, activation_link):
     send_email(
         email,
-        f"Just one more step to join SimpleLogin",
+        "Just one more step to join SimpleLogin",
         render(
             "transactional/activation.txt",
             activation_link=activation_link,
@@ -768,7 +768,7 @@ def get_header_unicode(header: Union[str, Header]) -> str:
     ret = ""
     for to_decoded_str, charset in decode_header(header):
         if charset is None:
-            if type(to_decoded_str) is bytes:
+            if isinstance(to_decoded_str, bytes):
                 decoded_str = to_decoded_str.decode()
             else:
                 decoded_str = to_decoded_str
@@ -805,13 +805,13 @@ def to_bytes(msg: Message):
     for generator_policy in [None, policy.SMTP, policy.SMTPUTF8]:
         try:
             return msg.as_bytes(policy=generator_policy)
-        except:
+        except Exception:
             LOG.w("as_bytes() fails with %s policy", policy, exc_info=True)
 
     msg_string = msg.as_string()
     try:
         return msg_string.encode()
-    except:
+    except Exception:
         LOG.w("as_string().encode() fails", exc_info=True)
 
     return msg_string.encode(errors="replace")
@@ -906,7 +906,7 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
     if content_type == "text/plain":
         encoding = get_encoding(msg)
         payload = msg.get_payload()
-        if type(payload) is str:
+        if isinstance(payload, str):
             clone_msg = copy(msg)
             new_payload = f"""{text_header}
 ------------------------------
@@ -916,7 +916,7 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
     elif content_type == "text/html":
         encoding = get_encoding(msg)
         payload = msg.get_payload()
-        if type(payload) is str:
+        if isinstance(payload, str):
             new_payload = f"""<table width="100%" style="width: 100%; -premailer-width: 100%; -premailer-cellpadding: 0;
   -premailer-cellspacing: 0; margin: 0; padding: 0;">
     <tr>
@@ -972,7 +972,7 @@ def add_header(msg: Message, text_header, html_header=None) -> Message:
 
 
 def replace(msg: Union[Message, str], old, new) -> Union[Message, str]:
-    if type(msg) is str:
+    if isinstance(msg, str):
         msg = msg.replace(old, new)
         return msg
 
@@ -995,7 +995,7 @@ def replace(msg: Union[Message, str], old, new) -> Union[Message, str]:
     if content_type in ("text/plain", "text/html"):
         encoding = get_encoding(msg)
         payload = msg.get_payload()
-        if type(payload) is str:
+        if isinstance(payload, str):
             if encoding == EmailEncoding.QUOTED:
                 LOG.d("handle quoted-printable replace %s -> %s", old, new)
                 # first decode the payload

@@ -17,7 +17,7 @@ def test_encode_decode(flask_client):
 
     jwt_token = make_id_token(client_user)
 
-    assert type(jwt_token) is str
+    assert isinstance(jwt_token, str)
     assert verify_id_token(jwt_token)
 
 

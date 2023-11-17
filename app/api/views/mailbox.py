@@ -45,7 +45,7 @@ def create_mailbox():
     mailbox_email = sanitize_email(request.get_json().get("email"))
 
     if not user.is_premium():
-        return jsonify(error=f"Only premium plan can add additional mailbox"), 400
+        return jsonify(error="Only premium plan can add additional mailbox"), 400
 
     if not is_valid_email(mailbox_email):
         return jsonify(error=f"{mailbox_email} invalid"), 400

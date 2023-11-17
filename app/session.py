@@ -75,7 +75,7 @@ class RedisSessionStore(SessionInterface):
             try:
                 data = pickle.loads(val)
                 return ServerSession(data, session_id=session_id)
-            except:
+            except Exception:
                 pass
         return ServerSession(session_id=str(uuid.uuid4()))
 

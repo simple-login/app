@@ -67,7 +67,7 @@ def directory():
     if request.method == "POST":
         if request.form.get("form-name") == "delete":
             if not delete_dir_form.validate():
-                flash(f"Invalid request", "warning")
+                flash("Invalid request", "warning")
                 return redirect(url_for("dashboard.directory"))
             dir_obj = Directory.get(delete_dir_form.directory_id.data)
 
@@ -87,7 +87,7 @@ def directory():
 
         if request.form.get("form-name") == "toggle-directory":
             if not toggle_dir_form.validate():
-                flash(f"Invalid request", "warning")
+                flash("Invalid request", "warning")
                 return redirect(url_for("dashboard.directory"))
             dir_id = toggle_dir_form.directory_id.data
             dir_obj = Directory.get(dir_id)
@@ -109,7 +109,7 @@ def directory():
 
         elif request.form.get("form-name") == "update":
             if not update_dir_form.validate():
-                flash(f"Invalid request", "warning")
+                flash("Invalid request", "warning")
                 return redirect(url_for("dashboard.directory"))
             dir_id = update_dir_form.directory_id.data
             dir_obj = Directory.get(dir_id)

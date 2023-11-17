@@ -64,7 +64,7 @@ def _split_arg(arg_input: Union[str, list]) -> Set[str]:
     - the response_type/scope passed as a list ?scope=scope_1&scope=scope_2
     """
     res = set()
-    if type(arg_input) is str:
+    if isinstance(arg_input, str):
         if " " in arg_input:
             for x in arg_input.split(" "):
                 if x:

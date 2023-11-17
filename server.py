@@ -641,7 +641,7 @@ def setup_paddle_callback(app: Flask):
 
     @app.route("/paddle_coupon", methods=["GET", "POST"])
     def paddle_coupon():
-        LOG.d(f"paddle coupon callback %s", request.form)
+        LOG.d("paddle coupon callback %s", request.form)
 
         if not paddle_utils.verify_incoming_request(dict(request.form)):
             LOG.e("request not coming from paddle. Request data:%s", dict(request.form))
