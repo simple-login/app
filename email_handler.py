@@ -32,8 +32,10 @@ It should contain the following info:
 """
 import argparse
 import email
+import smail
 import time
 import uuid
+from asn1crypto import pem, x509
 from email import encoders
 from email.encoders import encode_noop
 from email.message import Message
@@ -535,6 +537,21 @@ def prepare_pgp_message(
     return msg
 
 
+def prepare_smime_message(orig_msg: Message, public_key: str) -> Message:
+    # clone orig message to avoid modifying it
+    clone_msg = copy(orig_msg)
+
+    # create certificate object using public key
+    _, _, der_bytes = pem.unarmor(public_key.encode())
+    cert = x509.Certificate.load(der_bytes)
+
+    # encrypt the message
+    clone_msg = smail.encrypt_message(clone_msg, [cert])
+
+    # return the message
+    return clone_msg
+
+
 def sign_msg(msg: Message) -> Message:
     container = MIMEMultipart(
         "signed", protocol="application/pgp-signature", micalg="pgp-sha256"
@@ -906,6 +923,26 @@ def forward_email_to_mailbox(
             msg = add_header(
                 msg,
                 f"""PGP encryption fails with {mailbox.email}'s PGP key""",
+            )
+
+    # create SMIME email if needed
+    if mailbox.smime_enabled() and user.is_premium():
+        LOG.d("Encrypt message using S/MIME for mailbox %s", mailbox)
+
+        try:
+            msg = prepare_smime_message(msg, mailbox.smime_public_key)
+        except Exception as exceptasdf:
+            LOG.w(
+                "Cannot S/MIME encrypt message %s -> %s. %s %s",
+                contact,
+                alias,
+                mailbox,
+                user,
+            )
+            LOG.w(exceptasdf)
+            msg = add_header(
+                msg,
+                f"""S/MIME encryption fails with {mailbox.email}'s S/MIME key""",
             )
 
     # add custom header

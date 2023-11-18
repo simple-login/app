@@ -138,6 +138,53 @@
           </div>
         </div>
       </div>
+      <!-- START S/MIME -->
+      <div class="card">
+        <div class="card-body">
+          <div class="cart-title">
+            <div class="d-flex">
+              S/MIME
+              {% if mailbox.smime_public_key %}
+
+                <form method="post">
+                  {{ csrf_form.csrf_token }}
+                  <input type="hidden" name="form-name" value="toggle-smime">
+                  <label class="custom-switch cursor" style="padding-left: 1rem" data-toggle="tooltip" {% if mailbox.disable_smime %}
+                     title="Enable S/MIME" {% else %} title="Disable S/MIME" {% endif %}>
+                    <input type="checkbox" class="custom-switch-input" name="smime-enabled" {{ "" if mailbox.disable_smime else "checked" }}>
+                    <span class="custom-switch-indicator"></span>
+                  </label>
+                </form>
+              {% endif %}
+            </div>
+            <div class="small-text mt-1">
+              By importing your S/MIME Public Key into SimpleLogin, all emails sent to {{ mailbox.email }} are
+              <b>encrypted</b> with your key.
+            </div>
+          </div>
+          {% if not current_user.is_premium() %}
+
+            <div class="alert alert-danger" role="alert">This feature is only available in premium plan.</div>
+          {% endif %}
+          <form method="post">
+            {{ csrf_form.csrf_token }}
+            <div class="form-group">
+              <label class="form-label">S/MIME Public Key</label>
+              <textarea name="smime" {% if not current_user.is_premium() %} disabled {% endif %} class="form-control" rows=10 id="smime-public-key" placeholder="(Drag and drop or paste your smime public key here)&#10;-----BEGIN SMIME PUBLIC KEY BLOCK-----">{{ mailbox.smime_public_key or "" }}</textarea>
+            </div>
+            <input type="hidden" name="form-name" value="smime">
+            <button class="btn btn-primary" name="action" {% if not current_user.is_premium() %}
+               disabled {% endif %} value="save">
+              Save
+            </button>
+            {% if mailbox.smime_public_key %}
+
+              <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+      <!-- END S/MIME -->
       <div class="card" id="generic-subject">
         <form method="post" action="#generic-subject">
           {{ csrf_form.csrf_token }}

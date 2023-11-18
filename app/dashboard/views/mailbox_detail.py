@@ -179,11 +179,52 @@ def mailbox_detail_route(mailbox_id):
 
         elif request.form.get("form-name") == "toggle-pgp":
             if request.form.get("pgp-enabled") == "on":
+                if not mailbox.disable_smime:
+                    mailbox.disable_smime = True
+                    flash(f"S/MIME is disabled on {mailbox.email}", "warning")
                 mailbox.disable_pgp = False
                 flash(f"PGP is enabled on {mailbox.email}", "success")
             else:
                 mailbox.disable_pgp = True
                 flash(f"PGP is disabled on {mailbox.email}", "info")
+
+            Session.commit()
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+            )
+        elif request.form.get("form-name") == "smime":
+            if request.form.get("action") == "save":
+                if not current_user.is_premium():
+                    flash("Only premium plan can add S/MIME Key", "warning")
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
+
+                mailbox.smime_public_key = request.form.get("smime")
+                Session.commit()
+                flash("Your S/MIME public key is saved successfully", "success")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                )
+            elif request.form.get("action") == "remove":
+                # Free user can decide to remove their added S/MIME key
+                mailbox.smime_public_key = None
+                mailbox.disable_smime = False
+                Session.commit()
+                flash("Your S/MIME public key is removed successfully", "success")
+                return redirect(
+                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                )
+        elif request.form.get("form-name") == "toggle-smime":
+            if request.form.get("smime-enabled") == "on":
+                if not mailbox.disable_pgp:
+                    mailbox.disable_pgp = True
+                    flash(f"PGP is disabled on {mailbox.email}", "warning")
+                mailbox.disable_smime = False
+                flash(f"S/MIME is enabled on {mailbox.email}", "success")
+            else:
+                mailbox.disable_smime = True
+                flash(f"S/MIME is disabled on {mailbox.email}", "info")
 
             Session.commit()
             return redirect(
