@@ -2566,6 +2566,12 @@ class Mailbox(Base, ModelMixin):
         sa.Boolean, default=False, nullable=False, server_default="0"
     )
 
+    # smime
+    smime_public_key = sa.Column(sa.Text, nullable=True)
+    disable_smime = sa.Column(
+        sa.Boolean, default=True, nullable=False, server_default="0"
+    )
+
     # incremented when a check is failed on the mailbox
     # alert when the number exceeds a threshold
     # used in sanity_check()
@@ -2584,6 +2590,12 @@ class Mailbox(Base, ModelMixin):
 
     def pgp_enabled(self) -> bool:
         if self.pgp_finger_print and not self.disable_pgp:
+            return True
+
+        return False
+
+    def smime_enabled(self) -> bool:
+        if self.smime_public_key and not self.disable_smime:
             return True
 
         return False
