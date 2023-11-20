@@ -57,6 +57,10 @@ def get_stats(user: User) -> Stats:
     methods=["POST"],
     exempt_when=lambda: request.form.get("form-name") != "create-random-email",
 )
+@limiter.limit(
+    "10/minute",
+    methods=["GET"],
+)
 @login_required
 @parallel_limiter.lock(
     name="alias_creation",
