@@ -73,7 +73,7 @@ def get_aliases():
 
 @api_bp.route("/v2/aliases", methods=["GET", "POST"])
 @limiter.limit(
-    "15/minute",
+    "5/minute",
 )
 @require_api_auth
 def get_aliases_v2():
