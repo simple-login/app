@@ -24,6 +24,7 @@ from app.errors import (
     ErrContactAlreadyExists,
     ErrAddressInvalid,
 )
+from app.extensions import limiter
 from app.models import Alias, Contact, Mailbox, AliasMailbox
 
 
@@ -71,6 +72,9 @@ def get_aliases():
 
 
 @api_bp.route("/v2/aliases", methods=["GET", "POST"])
+@limiter.limit(
+    "15/minute",
+)
 @require_api_auth
 def get_aliases_v2():
     """
