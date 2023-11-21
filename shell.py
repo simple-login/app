@@ -1,13 +1,12 @@
-from time import sleep
-
 import flask_migrate
 from IPython import embed
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from app import models
 from app.config import DB_URI
-from app.models import *
-
+from app.db import Session
+from app.log import LOG
+from app.models import User, RecoveryCode
 
 if False:
     # noinspection PyUnreachableCode

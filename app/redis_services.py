@@ -6,7 +6,6 @@ from app.session import RedisSessionStore
 
 
 def initialize_redis_services(app: flask.Flask, redis_url: str):
-
     if redis_url.startswith("redis://") or redis_url.startswith("rediss://"):
         storage = limits.storage.RedisStorage(redis_url)
         app.session_interface = RedisSessionStore(storage.storage, storage.storage, app)

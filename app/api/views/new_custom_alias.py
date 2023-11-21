@@ -150,7 +150,7 @@ def new_custom_alias_v3():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    if type(data) is not dict:
+    if not isinstance(data, dict):
         return jsonify(error="request body does not follow the required format"), 400
 
     alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
@@ -168,7 +168,7 @@ def new_custom_alias_v3():
         return jsonify(error="alias prefix invalid format or too long"), 400
 
     # check if mailbox is not tempered with
-    if type(mailbox_ids) is not list:
+    if not isinstance(mailbox_ids, list):
         return jsonify(error="mailbox_ids must be an array of id"), 400
     mailboxes = []
     for mailbox_id in mailbox_ids:

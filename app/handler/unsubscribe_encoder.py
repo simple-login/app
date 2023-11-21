@@ -54,9 +54,8 @@ class UnsubscribeEncoder:
     def encode_subject(
         cls, action: UnsubscribeAction, data: Union[int, UnsubscribeOriginalData]
     ) -> str:
-        if (
-            action != UnsubscribeAction.OriginalUnsubscribeMailto
-            and type(data) is not int
+        if action != UnsubscribeAction.OriginalUnsubscribeMailto and not isinstance(
+            data, int
         ):
             raise ValueError(f"Data has to be an int for an action of type {action}")
         if action == UnsubscribeAction.OriginalUnsubscribeMailto:

@@ -75,12 +75,11 @@ def block_contact(contact_id):
 @dashboard_bp.route("/unsubscribe/encoded/<encoded_request>", methods=["GET"])
 @login_required
 def encoded_unsubscribe(encoded_request: str):
-
     unsub_data = UnsubscribeHandler().handle_unsubscribe_from_request(
         current_user, encoded_request
     )
     if not unsub_data:
-        flash(f"Invalid unsubscribe request", "error")
+        flash("Invalid unsubscribe request", "error")
         return redirect(url_for("dashboard.index"))
     if unsub_data.action == UnsubscribeAction.DisableAlias:
         alias = Alias.get(unsub_data.data)
@@ -97,14 +96,14 @@ def encoded_unsubscribe(encoded_request: str):
             )
         )
     if unsub_data.action == UnsubscribeAction.UnsubscribeNewsletter:
-        flash(f"You've unsubscribed from the newsletter", "success")
+        flash("You've unsubscribed from the newsletter", "success")
         return redirect(
             url_for(
                 "dashboard.index",
             )
         )
     if unsub_data.action == UnsubscribeAction.OriginalUnsubscribeMailto:
-        flash(f"The original unsubscribe request has been forwarded", "success")
+        flash("The original unsubscribe request has been forwarded", "success")
         return redirect(
             url_for(
                 "dashboard.index",

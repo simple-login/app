@@ -70,7 +70,6 @@ def verify_prefix_suffix(
         # when DISABLE_ALIAS_SUFFIX is true, alias_domain_prefix is empty
         and not config.DISABLE_ALIAS_SUFFIX
     ):
-
         if not alias_domain_prefix.startswith("."):
             LOG.e("User %s submits a wrong alias suffix %s", user, alias_suffix)
             return False

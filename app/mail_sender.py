@@ -22,7 +22,6 @@ from app.message_utils import message_to_bytes, message_format_base64_parts
 
 @dataclass
 class SendRequest:
-
     SAVE_EXTENSION = "sendrequest"
 
     envelope_from: str

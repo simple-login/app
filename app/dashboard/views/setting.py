@@ -128,7 +128,6 @@ def setting():
                 new_email_valid = True
                 new_email = canonicalize_email(change_email_form.email.data)
                 if new_email != current_user.email and not pending_email:
-
                     # check if this email is not already used
                     if personal_email_already_used(new_email) or Alias.get_by(
                         email=new_email

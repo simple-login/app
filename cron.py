@@ -105,7 +105,7 @@ def delete_logs():
     rows_to_delete = EmailLog.filter(EmailLog.created_at < cutoff_time).count()
     expected_queries = int(rows_to_delete / batch_size)
     sql = text(
-        f"DELETE FROM email_log WHERE id IN (SELECT id FROM email_log WHERE created_at < :cutoff_time order by created_at limit :batch_size)"
+        "DELETE FROM email_log WHERE id IN (SELECT id FROM email_log WHERE created_at < :cutoff_time order by created_at limit :batch_size)"
     )
     str_cutoff_time = cutoff_time.isoformat()
     while total_deleted < rows_to_delete:
@@ -161,7 +161,7 @@ def notify_premium_end():
 
             send_email(
                 user.email,
-                f"Your subscription will end soon",
+                "Your subscription will end soon",
                 render(
                     "transactional/subscription-end.txt",
                     user=user,
@@ -218,7 +218,7 @@ def notify_manual_sub_end():
             LOG.d("Remind user %s that their manual sub is ending soon", user)
             send_email(
                 user.email,
-                f"Your subscription will end soon",
+                "Your subscription will end soon",
                 render(
                     "transactional/manual-subscription-end.txt",
                     user=user,
@@ -590,21 +590,21 @@ nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_p
     """
 
     monitoring_report += "\n====================================\n"
-    monitoring_report += f"""
+    monitoring_report += """
 # Account bounce report:
 """
 
     for email, bounces in bounce_report():
         monitoring_report += f"{email}: {bounces}\n"
 
-    monitoring_report += f"""\n
+    monitoring_report += """\n
 # Alias creation report:
 """
 
     for email, nb_alias, date in alias_creation_report():
         monitoring_report += f"{email}, {date}: {nb_alias}\n"
 
-    monitoring_report += f"""\n
+    monitoring_report += """\n
 # Full bounce detail report:
 """
     monitoring_report += all_bounce_report()
@@ -1099,14 +1099,14 @@ def notify_hibp():
         )
 
         LOG.d(
-            f"Send new breaches found email to %s for %s breaches aliases",
+            "Send new breaches found email to %s for %s breaches aliases",
             user,
             len(breached_aliases),
         )
 
         send_email(
             user.email,
-            f"You were in a data breach",
+            "You were in a data breach",
             render(
                 "transactional/hibp-new-breaches.txt.jinja2",
                 user=user,

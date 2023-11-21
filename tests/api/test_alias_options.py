@@ -58,7 +58,7 @@ def test_different_scenarios_v4_2(flask_client):
     assert r.json["suffixes"]
     assert r.json["prefix_suggestion"] == ""  # no hostname => no suggestion
 
-    for (suffix, signed_suffix) in r.json["suffixes"]:
+    for suffix, signed_suffix in r.json["suffixes"]:
         assert signed_suffix.startswith(suffix)
 
     # <<< with hostname >>>

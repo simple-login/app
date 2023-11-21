@@ -235,7 +235,6 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             contact.mail_from = mail_from
             Session.commit()
     else:
-
         try:
             contact = Contact.create(
                 user_id=alias.user_id,
@@ -1197,7 +1196,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             )
 
             # replace reverse alias by real address for all contacts
-            for (reply_email, website_email) in contact_query.values(
+            for reply_email, website_email in contact_query.values(
                 Contact.reply_email, Contact.website_email
             ):
                 msg = replace(msg, reply_email, website_email)
@@ -1952,7 +1951,7 @@ def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
             for is_delivered, smtp_status in handle_forward(envelope, msg, alias.email):
                 res.append((is_delivered, smtp_status))
 
-            for (is_success, smtp_status) in res:
+            for is_success, smtp_status in res:
                 # Consider all deliveries successful if 1 delivery is successful
                 if is_success:
                     return smtp_status
@@ -2272,7 +2271,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
     if nb_success > 0 and nb_non_success > 0:
         LOG.e(f"some deliveries fail and some success, {mail_from}, {rcpt_tos}, {res}")
 
-    for (is_success, smtp_status) in res:
+    for is_success, smtp_status in res:
         # Consider all deliveries successful if 1 delivery is successful
         if is_success:
             return smtp_status

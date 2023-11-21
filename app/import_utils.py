@@ -30,7 +30,7 @@ def handle_batch_import(batch_import: BatchImport):
 
     LOG.d("Download file %s from %s", batch_import.file, file_url)
     r = requests.get(file_url)
-    lines = [line.decode() for line in r.iter_lines()]
+    lines = [line.decode("utf-8") for line in r.iter_lines()]
 
     import_from_csv(batch_import, user, lines)
 

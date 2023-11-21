@@ -53,7 +53,7 @@ def recovery_route():
                 del session[MFA_USER_ID]
 
                 login_user(user)
-                flash(f"Welcome back!", "success")
+                flash("Welcome back!", "success")
 
                 recovery_code.used = True
                 recovery_code.used_at = arrow.now()

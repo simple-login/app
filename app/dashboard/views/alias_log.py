@@ -87,6 +87,6 @@ def get_alias_log(alias: Alias, page_id=0) -> [AliasLog]:
             contact=contact,
         )
         logs.append(al)
-    logs = sorted(logs, key=lambda l: l.when, reverse=True)
+    logs = sorted(logs, key=lambda log: log.when, reverse=True)
 
     return logs
