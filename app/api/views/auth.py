@@ -1,5 +1,4 @@
 import secrets
-import string
 
 import facebook
 import google.oauth2.credentials
@@ -10,7 +9,7 @@ from itsdangerous import Signer
 
 from app import email_utils
 from app.api.base import api_bp
-from app.config import FLASK_SECRET, DISABLE_REGISTRATION
+from app.config import ACTIVATION_CODE_NUM_DIGITS, FLASK_SECRET, DISABLE_REGISTRATION
 from app.dashboard.views.setting import send_reset_password_email
 from app.db import Session
 from app.email_utils import (
@@ -122,7 +121,9 @@ def auth_register():
     Session.flush()
 
     # create activation code
-    code = "".join([str(secrets.choice(string.digits)) for _ in range(6)])
+    code = str(secrets.randbelow(10**ACTIVATION_CODE_NUM_DIGITS)).zfill(
+        ACTIVATION_CODE_NUM_DIGITS
+    )
     AccountActivation.create(user_id=user.id, code=code)
     Session.commit()
 
@@ -219,7 +220,9 @@ def auth_reactivate():
         Session.commit()
 
     # create activation code
-    code = "".join([str(secrets.choice(string.digits)) for _ in range(6)])
+    code = str(secrets.randbelow(10**ACTIVATION_CODE_NUM_DIGITS)).zfill(
+        ACTIVATION_CODE_NUM_DIGITS
+    )
     AccountActivation.create(user_id=user.id, code=code)
     Session.commit()
 
