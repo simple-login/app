@@ -407,8 +407,10 @@ def jinja2_filter(app):
 
     @app.context_processor
     def inject_stage_and_region():
+        now = arrow.now()
         return dict(
-            YEAR=arrow.now().year,
+            YEAR=now.year,
+            NOW=now,
             URL=URL,
             SENTRY_DSN=SENTRY_FRONT_END_DSN,
             VERSION=SHA1,
