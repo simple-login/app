@@ -86,7 +86,7 @@
   </head>
   <body>
     <div class="page">
-      {% if current_user.is_authenticated and current_user.should_show_upgrade_button() %}
+      {% if NOW.timestamp < 1701475201 and current_user.is_authenticated and current_user.should_show_upgrade_button() %}
 
         <div class="alert alert-success text-center mb-0" role="alert">
           Black Friday: $20 for the first year instead of $30. Available until December 1st.
