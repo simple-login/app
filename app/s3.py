@@ -13,17 +13,29 @@ from app.config import (
     LOCAL_FILE_UPLOAD,
     UPLOAD_DIR,
     URL,
+    AWS_ENDPOINT_URL,
 )
-
-if not LOCAL_FILE_UPLOAD:
-    _session = boto3.Session(
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION,
-    )
+from app.log import LOG
 
 
-def upload_from_bytesio(key: str, bs: BytesIO, content_type="string"):
+_s3_client = None
+
+
+def _get_s3client():
+    global _s3_client
+    if _s3_client is None:
+        args = {
+            "aws_access_key_id": AWS_ACCESS_KEY_ID,
+            "aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
+            "region_name": AWS_REGION,
+        }
+        if AWS_ENDPOINT_URL:
+            args["endpoint_url"] = AWS_ENDPOINT_URL
+        _s3_client = boto3.client("s3", **args)
+    return _s3_client
+
+
+def upload_from_bytesio(key: str, bs: BytesIO, content_type="application/octet-stream"):
     bs.seek(0)
 
     if LOCAL_FILE_UPLOAD:
@@ -34,11 +46,13 @@ def upload_from_bytesio(key: str, bs: BytesIO, content_type="string"):
             f.write(bs.read())
 
     else:
-        _session.resource("s3").Bucket(BUCKET).put_object(
+        out = _get_s3client().put_object(
+            Bucket=BUCKET,
             Key=key,
             Body=bs,
             ContentType=content_type,
         )
+        print(out)
 
 
 def upload_email_from_bytesio(path: str, bs: BytesIO, filename):
@@ -52,7 +66,8 @@ def upload_email_from_bytesio(path: str, bs: BytesIO, filename):
             f.write(bs.read())
 
     else:
-        _session.resource("s3").Bucket(BUCKET).put_object(
+        _get_s3client().put_object(
+            Bucket=BUCKET,
             Key=path,
             Body=bs,
             # Support saving a remote file using Http header
@@ -67,12 +82,9 @@ def download_email(path: str) -> Optional[str]:
         file_path = os.path.join(UPLOAD_DIR, path)
         with open(file_path, "rb") as f:
             return f.read()
-    resp = (
-        _session.resource("s3")
-        .Bucket(BUCKET)
-        .get_object(
-            Key=path,
-        )
+    resp = _get_s3client().get_object(
+        Bucket=BUCKET,
+        Key=path,
     )
     if not resp or "Body" not in resp:
         return None
@@ -88,8 +100,7 @@ def get_url(key: str, expires_in=3600) -> str:
     if LOCAL_FILE_UPLOAD:
         return URL + "/static/upload/" + key
     else:
-        s3_client = _session.client("s3")
-        return s3_client.generate_presigned_url(
+        return _get_s3client().generate_presigned_url(
             ExpiresIn=expires_in,
             ClientMethod="get_object",
             Params={"Bucket": BUCKET, "Key": key},
@@ -100,5 +111,15 @@ def delete(path: str):
     if LOCAL_FILE_UPLOAD:
         os.remove(os.path.join(UPLOAD_DIR, path))
     else:
-        o = _session.resource("s3").Bucket(BUCKET).Object(path)
-        o.delete()
+        _get_s3client().delete_object(Bucket=BUCKET, Key=path)
+
+
+def create_bucket_if_not_exists():
+    s3client = _get_s3client()
+    buckets = s3client.list_buckets()
+    for bucket in buckets["Buckets"]:
+        if bucket["Name"] == BUCKET:
+            LOG.i("Bucket already exists")
+            return
+    s3client.create_bucket(Bucket=BUCKET)
+    LOG.i(f"Bucket {BUCKET} created")
