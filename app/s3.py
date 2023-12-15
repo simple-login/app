@@ -46,13 +46,12 @@ def upload_from_bytesio(key: str, bs: BytesIO, content_type="application/octet-s
             f.write(bs.read())
 
     else:
-        out = _get_s3client().put_object(
+        _get_s3client().put_object(
             Bucket=BUCKET,
             Key=key,
             Body=bs,
             ContentType=content_type,
         )
-        print(out)
 
 
 def upload_email_from_bytesio(path: str, bs: BytesIO, filename):
