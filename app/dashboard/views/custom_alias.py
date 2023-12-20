@@ -24,6 +24,7 @@ from app.models import (
     AliasMailbox,
     DomainDeletedAlias,
 )
+from app.utils import CSRFValidationForm
 
 
 @dashboard_bp.route("/custom_alias", methods=["GET", "POST"])
@@ -48,9 +49,13 @@ def custom_alias():
             at_least_a_premium_domain = True
             break
 
+    csrf_form = CSRFValidationForm()
     mailboxes = current_user.mailboxes()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         alias_prefix = request.form.get("prefix").strip().lower().replace(" ", "")
         signed_alias_suffix = request.form.get("signed-alias-suffix")
         mailbox_ids = request.form.getlist("mailboxes")
@@ -164,4 +169,5 @@ def custom_alias():
         alias_suffixes=alias_suffixes,
         at_least_a_premium_domain=at_least_a_premium_domain,
         mailboxes=mailboxes,
+        csrf_form=csrf_form,
     )
