@@ -392,7 +392,10 @@ def alias_export_csv(user, csv_direct_export=False):
         )
 
         mailboxes = " ".join([mailbox.email for mailbox in alias_mailboxes])
-        data.append([alias.email, alias.note, alias.enabled, mailboxes])
+        alias_note = alias.note or ""
+        data.append(
+            [alias.email, alias_note.replace("\n", " "), alias.enabled, mailboxes]
+        )
 
     si = StringIO()
     cw = csv.writer(si)
