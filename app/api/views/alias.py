@@ -74,7 +74,7 @@ def get_aliases():
 
 @api_bp.route("/v2/aliases", methods=["GET", "POST"])
 @require_api_auth
-@limiter.limit("10/minute", key_func=lambda: g.user.id)
+@limiter.limit("50/minute", key_func=lambda: g.user.id)
 def get_aliases_v2():
     """
     Get aliases
