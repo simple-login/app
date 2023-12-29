@@ -388,7 +388,7 @@ Input:
 - (Optional but recommended) `hostname` passed in query string
 - Request Message Body in json (`Content-Type` is `application/json`)
     - alias_prefix: string. The first part of the alias that user can choose.
-    - signed_suffix: should be one of the suffixes returned in the `GET /api/v4/alias/options` endpoint.
+    - signed_suffix: should be one of the suffixes returned in the `GET /api/v5/alias/options` endpoint.
     - mailbox_ids: list of mailbox_id that "owns" this alias
     - (Optional) note: alias note
     - (Optional) name: alias name
