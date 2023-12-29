@@ -708,7 +708,6 @@ blocks
 blokes
 blonde
 blonds
-bloods
 blooms
 bloops
 blotch
@@ -916,8 +915,6 @@ buffer
 buffet
 bugged
 builds
-bulged
-bulges
 bulked
 bulled
 bullet
@@ -1713,8 +1710,6 @@ dainty
 daises
 damage
 damask
-dammed
-damned
 damped
 dampen
 damper
