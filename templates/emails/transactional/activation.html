@@ -4,6 +4,7 @@
 
   {{ render_text("Thank you for choosing SimpleLogin.") }}
   {{ render_text("To get started, please confirm that <b>" + email + "</b> is your email address by clicking on the button below within 1 hour.") }}
+  {{ render_text("If it wasn't you, maybe someone entered your email by mistake. In this case you can ignore this mail.") }}
   {{ render_button("Verify email", activation_link) }}
   {{ render_text('Thanks,
   <br />
