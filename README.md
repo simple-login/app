@@ -515,6 +515,8 @@ server {
 }
 ```
 
+Note: If `/etc/nginx/sites-enabled/default` exists, delete it or certbot will fail due to the conflict. The `simplelogin` file should be the only file in `sites-enabled`.
+
 Reload Nginx with the command below
 
 ```bash
