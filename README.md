@@ -74,7 +74,7 @@ Setting up DKIM is highly recommended to reduce the chance your emails ending up
 First you need to generate a private and public key for DKIM:
 
 ```bash
-openssl genrsa -out dkim.key 1024
+openssl genrsa -out dkim.key -traditional 1024
 openssl rsa -in dkim.key -pubout -out dkim.pub.key
 ```
 
