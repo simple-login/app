@@ -1944,7 +1944,6 @@ dosage
 dose
 dotted
 doubling
-douche
 dove
 down
 dowry
@@ -3015,7 +3014,6 @@ groom
 groove
 grooving
 groovy
-grope
 ground
 grouped
 grout
@@ -3135,7 +3133,6 @@ happiness
 happy
 harbor
 hardcopy
-hardcore
 hardcover
 harddisk
 hardened
@@ -6553,7 +6550,6 @@ swimmer
 swimming
 swimsuit
 swimwear
-swinger
 swinging
 swipe
 swirl

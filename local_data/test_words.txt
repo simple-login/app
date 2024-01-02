@@ -638,14 +638,12 @@ bigwig
 bijoux
 bikers
 biking
-bikini
 bilges
 bilked
 bilker
 billed
 billet
 billow
-bimbos
 binary
 binder
 binged
@@ -710,8 +708,6 @@ blocks
 blokes
 blonde
 blonds
-bloods
-bloody
 blooms
 bloops
 blotch
@@ -817,8 +813,6 @@ bounds
 bounty
 bovine
 bovver
-bowels
-bowers
 bowing
 bowled
 bowleg
@@ -827,10 +821,8 @@ bowman
 bowmen
 bowwow
 boxcar
-boxers
 boxier
 boxing
-boyish
 braced
 bracer
 braces
@@ -861,7 +853,6 @@ breach
 breads
 breaks
 breams
-breast
 breath
 breech
 breeds
@@ -872,9 +863,6 @@ brevet
 brewed
 brewer
 briars
-bribed
-briber
-bribes
 bricks
 bridal
 brides
@@ -926,13 +914,7 @@ buffed
 buffer
 buffet
 bugged
-bugger
-bugled
-bugler
-bugles
 builds
-bulged
-bulges
 bulked
 bulled
 bullet
@@ -1728,9 +1710,6 @@ dainty
 daises
 damage
 damask
-dammed
-dammit
-damned
 damped
 dampen
 damper
@@ -1754,7 +1733,6 @@ darers
 daring
 darken
 darker
-darkie
 darkly
 darned
 darner
@@ -1921,7 +1899,6 @@ dharma
 dhotis
 diadem
 dialog
-diaper
 diatom
 dibble
 dicier
@@ -1943,7 +1920,6 @@ digits
 diking
 diktat
 dilate
-dildos
 dilute
 dimity
 dimmed
@@ -2058,7 +2034,6 @@ dotted
 double
 doubly
 doubts
-douche
 doughy
 dourer
 dourly
@@ -2333,7 +2308,6 @@ erects
 ermine
 eroded
 erodes
-erotic
 errand
 errant
 errata
@@ -2344,7 +2318,6 @@ eructs
 erupts
 escape
 eschew
-escort
 escrow
 escudo
 espied
@@ -2363,7 +2336,6 @@ ethnic
 etudes
 euchre
 eulogy
-eunuch
 eureka
 evaded
 evader
@@ -2440,7 +2412,6 @@ faeces
 faerie
 faffed
 fagged
-faggot
 failed
 faille
 fainer
@@ -2473,7 +2444,6 @@ faring
 farmed
 farmer
 farrow
-farted
 fascia
 fasted
 fasten
@@ -2532,7 +2502,6 @@ fesses
 festal
 fester
 feting
-fetish
 fetter
 fettle
 feudal
@@ -2617,9 +2586,7 @@ flaked
 flakes
 flambe
 flamed
-flamer
 flames
-flange
 flanks
 flared
 flares
@@ -2795,8 +2762,6 @@ fryers
 frying
 ftpers
 ftping
-fucked
-fucker
 fuddle
 fudged
 fudges
@@ -3104,7 +3069,6 @@ grimed
 grimes
 grimly
 grinds
-gringo
 griped
 griper
 gripes
@@ -3407,7 +3371,6 @@ hoofed
 hoofer
 hookah
 hooked
-hooker
 hookup
 hooped
 hoopla
@@ -3814,11 +3777,7 @@ kidded
 kidder
 kiddie
 kiddos
-kidnap
 kidney
-killed
-killer
-kilned
 kilted
 kilter
 kimono
@@ -3827,15 +3786,11 @@ kinder
 kindle
 kindly
 kingly
-kinked
 kiosks
 kipped
 kipper
 kirsch
 kismet
-kissed
-kisser
-kisses
 kiting
 kitsch
 kitted
@@ -4721,9 +4676,6 @@ nickel
 nicker
 nickle
 nieces
-niggas
-niggaz
-nigger
 niggle
 nigher
 nights
@@ -4736,7 +4688,6 @@ ninjas
 ninths
 nipped
 nipper
-nipple
 nitric
 nitwit
 nixing
@@ -4787,7 +4738,6 @@ nudged
 nudges
 nudism
 nudist
-nudity
 nugget
 nuking
 numbed
@@ -4804,7 +4754,6 @@ nutter
 nuzzle
 nybble
 nylons
-nympho
 nymphs
 oafish
 oaring
@@ -4897,7 +4846,6 @@ ordeal
 orders
 ordure
 organs
-orgasm
 orgies
 oriels
 orient
@@ -5078,7 +5026,6 @@ pebble
 pebbly
 pecans
 pecked
-pecker
 pectic
 pectin
 pedalo
@@ -5228,9 +5175,6 @@ piques
 piracy
 pirate
 pirogi
-pissed
-pisser
-pisses
 pistes
 pistil
 pistol
@@ -5422,7 +5366,6 @@ preyed
 priced
 prices
 pricey
-pricks
 prided
 prides
 priers
@@ -5661,8 +5604,6 @@ rapers
 rapids
 rapier
 rapine
-raping
-rapist
 rapped
 rappel
 rapper
@@ -5747,7 +5688,6 @@ recoup
 rectal
 rector
 rectos
-rectum
 recurs
 recuse
 redact
@@ -5891,7 +5831,6 @@ resume
 retail
 retain
 retake
-retard
 retell
 retest
 retied
@@ -6125,8 +6064,6 @@ sadden
 sadder
 saddle
 sadhus
-sadism
-sadist
 safari
 safely
 safest
@@ -6432,7 +6369,6 @@ shirks
 shirrs
 shirts
 shirty
-shitty
 shiver
 shoals
 shoats
@@ -6672,7 +6608,6 @@ snarks
 snarky
 snarls
 snarly
-snatch
 snazzy
 sneaks
 sneaky
@@ -6716,7 +6651,6 @@ socket
 sodded
 sodden
 sodium
-sodomy
 soever
 soften
 softer
@@ -7468,7 +7402,6 @@ torrid
 torsos
 tortes
 tossed
-tosser
 tosses
 tossup
 totals
@@ -7793,7 +7726,6 @@ vacant
 vacate
 vacuum
 vagary
-vagina
 vaguer
 vainer
 vainly
@@ -7930,7 +7862,6 @@ votive
 vowels
 vowing
 voyage
-voyeur
 vulgar
 vulvae
 wabbit
@@ -7975,7 +7906,6 @@ wander
 wangle
 waning
 wanked
-wanker
 wanner
 wanted
 wanton
