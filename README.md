@@ -74,7 +74,7 @@ Setting up DKIM is highly recommended to reduce the chance your emails ending up
 First you need to generate a private and public key for DKIM:
 
 ```bash
-openssl genrsa -out dkim.key 1024
+openssl genrsa -out dkim.key -traditional 1024
 openssl rsa -in dkim.key -pubout -out dkim.pub.key
 ```
 
@@ -514,6 +514,8 @@ server {
     }
 }
 ```
+
+Note: If `/etc/nginx/sites-enabled/default` exists, delete it or certbot will fail due to the conflict. The `simplelogin` file should be the only file in `sites-enabled`.
 
 Reload Nginx with the command below
 
