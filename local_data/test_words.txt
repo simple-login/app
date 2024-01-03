@@ -192,7 +192,6 @@ amigos
 amines
 amnion
 amoeba
-amoral
 amount
 amours
 ampere
@@ -215,7 +214,6 @@ animus
 anions
 ankles
 anklet
-annals
 anneal
 annoys
 annual
@@ -364,7 +362,6 @@ auntie
 aureus
 aurora
 author
-autism
 autumn
 avails
 avatar
@@ -1322,8 +1319,6 @@ clingy
 clinic
 clinks
 clique
-cloaca
-cloaks
 cloche
 clocks
 clomps
@@ -1430,7 +1425,6 @@ comply
 compos
 conchs
 concur
-condom
 condor
 condos
 coneys
@@ -1550,8 +1544,6 @@ cranes
 cranks
 cranky
 cranny
-crapes
-crappy
 crated
 crater
 crates
@@ -1567,7 +1559,6 @@ crazes
 creaks
 creaky
 creams
-creamy
 crease
 create
 creche
@@ -1576,8 +1567,6 @@ credos
 creeds
 creeks
 creels
-creeps
-creepy
 cremes
 creole
 crepes
@@ -1741,8 +1730,6 @@ darter
 dashed
 dasher
 dashes
-daters
-dating
 dative
 daubed
 dauber
@@ -2114,15 +2101,6 @@ duenna
 duffed
 duffer
 dugout
-dulcet
-dulled
-duller
-dumber
-dumbly
-dumbos
-dumdum
-dumped
-dumper
 dunces
 dunged
 dunked
@@ -2260,7 +2238,6 @@ endows
 endued
 endues
 endure
-enemas
 energy
 enfold
 engage
@@ -2364,7 +2341,6 @@ exempt
 exerts
 exeunt
 exhale
-exhort
 exhume
 exiled
 exiles
@@ -2387,7 +2363,6 @@ extant
 extend
 extent
 extols
-extort
 extras
 exuded
 exudes
@@ -2448,13 +2423,6 @@ fascia
 fasted
 fasten
 faster
-father
-fathom
-fating
-fatsos
-fatten
-fatter
-fatwas
 faucet
 faults
 faulty
@@ -2721,8 +2689,6 @@ franks
 frappe
 frauds
 frayed
-freaks
-freaky
 freely
 freest
 freeze
@@ -2856,10 +2822,7 @@ gasbag
 gashed
 gashes
 gasket
-gasman
-gasmen
 gasped
-gassed
 gasses
 gateau
 gather
@@ -3150,8 +3113,6 @@ gypsum
 gyrate
 gyving
 habits
-hacked
-hacker
 hackle
 hadith
 haggis
@@ -3159,8 +3120,6 @@ haggle
 hailed
 hairdo
 haired
-hajjes
-hajjis
 halest
 haling
 halite
@@ -3187,11 +3146,8 @@ happen
 haptic
 harass
 harden
-harder
-hardly
 harems
 haring
-harked
 harlot
 harmed
 harped
@@ -3422,8 +3378,6 @@ huffed
 hugely
 hugest
 hugged
-hulled
-huller
 humane
 humans
 humble
@@ -3630,8 +3584,6 @@ jacket
 jading
 jagged
 jaguar
-jailed
-jailer
 jalopy
 jammed
 jangle
@@ -3652,8 +3604,6 @@ jejune
 jelled
 jellos
 jennet
-jerked
-jerkin
 jersey
 jested
 jester
@@ -3802,10 +3752,6 @@ kluges
 klutzy
 knacks
 knaves
-kneads
-kneels
-knells
-knifed
 knifes
 knight
 knives
@@ -4165,8 +4111,6 @@ lunges
 lupine
 lupins
 luring
-lurked
-lurker
 lusher
 lushes
 lushly
@@ -4563,7 +4507,6 @@ muggle
 mukluk
 mulcts
 mulish
-mullah
 mulled
 mullet
 mumble
@@ -4732,14 +4675,6 @@ nozzle
 nuance
 nubbin
 nubile
-nuclei
-nudest
-nudged
-nudges
-nudism
-nudist
-nugget
-nuking
 numbed
 number
 numbly
@@ -4834,7 +4769,6 @@ opting
 option
 opuses
 oracle
-orally
 orange
 orated
 orates
@@ -4941,10 +4875,6 @@ pander
 panels
 panics
 panned
-panted
-pantie
-pantos
-pantry
 papacy
 papaya
 papers
@@ -5098,9 +5028,6 @@ phenom
 phials
 phlegm
 phloem
-phobia
-phobic
-phoebe
 phoned
 phones
 phoney
@@ -5255,8 +5182,6 @@ pogrom
 points
 pointy
 poised
-poises
-poison
 pokers
 pokeys
 pokier
@@ -5545,14 +5470,9 @@ rabbit
 rabble
 rabies
 raceme
-racers
-racial
 racier
 racily
 racing
-racism
-racist
-racked
 racket
 radars
 radial
@@ -6301,16 +6221,6 @@ severs
 sewage
 sewers
 sewing
-sexier
-sexily
-sexing
-sexism
-sexist
-sexpot
-sextet
-sexton
-sexual
-shabby
 shacks
 shaded
 shades
@@ -6320,10 +6230,7 @@ shaggy
 shaken
 shaker
 shakes
-shalom
 shaman
-shamed
-shames
 shandy
 shanks
 shanty
@@ -6511,9 +6418,6 @@ slangy
 slants
 slated
 slates
-slaved
-slaver
-slaves
 slayed
 slayer
 sleaze
@@ -7619,7 +7523,6 @@ unhook
 unhurt
 unions
 unique
-unisex
 unison
 united
 unites
@@ -7862,8 +7765,6 @@ votive
 vowels
 vowing
 voyage
-vulgar
-vulvae
 wabbit
 wacker
 wackos
