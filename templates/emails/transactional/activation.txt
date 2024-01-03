@@ -4,4 +4,6 @@
 Thank you for choosing SimpleLogin.
 
 To get started, please confirm that {{email}} is your email address using this link {{activation_link}} within 1 hour.
+
+If it wasn't you, maybe someone entered your email by mistake. In this case you can ignore this mail.
 {% endblock %}
