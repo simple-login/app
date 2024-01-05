@@ -20,6 +20,7 @@ exclude = '''
 
 [tool.ruff]
 ignore-init-module-imports = true
+exclude = [".venv", "migrations"]
 
 [tool.djlint]
 indent = 2
