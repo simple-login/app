@@ -52,13 +52,13 @@ def get_stats(user: User) -> Stats:
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
+@login_required
 @limiter.limit(
     ALIAS_LIMIT,
     methods=["POST"],
     exempt_when=lambda: request.form.get("form-name") != "create-random-email",
 )
 @limiter.limit("10/minute", methods=["GET"], key_func=lambda: current_user.id)
-@login_required
 @parallel_limiter.lock(
     name="alias_creation",
     only_when=lambda: request.form.get("form-name") == "create-random-email",
