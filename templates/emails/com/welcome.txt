@@ -26,6 +26,8 @@ No worries: all aliases you create during this period will continue to work norm
 
 At any time, you can reach out to us by simply replying to this email.
 
-For any question, feedback or feature request, please join our GitHub forum at https://github.com/simple-login/app/discussions
+For any question or feedback, please join our official forum at https://forum.simplelogin.io/
+
+If you want to request a feature, please submit it on our GitHub repo at https://github.com/simple-login/app/discussions
 
 You can also join our Reddit at https://www.reddit.com/r/Simplelogin/ follow our Twitter at https://twitter.com/simplelogin
