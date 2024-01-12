@@ -1506,7 +1506,8 @@ class Alias(Base, ModelMixin):
     def mailboxes(self):
         ret = [self.mailbox]
         for m in self._mailboxes:
-            ret.append(m)
+            if m.id is not self.mailbox.id:
+                ret.append(m)
 
         ret = [mb for mb in ret if mb.verified]
         ret = sorted(ret, key=lambda mb: mb.email)
