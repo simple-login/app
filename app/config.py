@@ -489,7 +489,9 @@ def setup_nameservers():
 
 NAMESERVERS = setup_nameservers()
 
-DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = False
+DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = os.environ.get(
+    "DISABLE_CREATE_CONTACTS_FOR_FREE_USERS", False
+)
 PARTNER_API_TOKEN_SECRET = os.environ.get("PARTNER_API_TOKEN_SECRET") or (
     FLASK_SECRET + "partnerapitoken"
 )
