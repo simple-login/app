@@ -1113,6 +1113,13 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return random_words(1)
 
+    def can_create_contacts(self) -> bool:
+        if self.is_premium():
+            return True
+        if self.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS == 0:
+            return True
+        return not config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
+
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
 
