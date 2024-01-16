@@ -32,6 +32,7 @@ def user_to_dict(user: User) -> dict:
         "in_trial": user.in_trial(),
         "max_alias_free_plan": user.max_alias_for_free_account(),
         "connected_proton_address": None,
+        "can_create_reverse_alias": user.can_create_contacts(),
     }
 
     if config.CONNECT_WITH_PROTON:
@@ -58,6 +59,7 @@ def user_info():
     - in_trial
     - max_alias_free
     - is_connected_with_proton
+    - can_create_reverse_alias
     """
     user = g.user
 

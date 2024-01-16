@@ -1,6 +1,7 @@
 from flask import url_for
 
 from app import config
+from app.db import Session
 from app.models import User, PartnerUser
 from app.proton.utils import get_proton_partner
 from tests.api.utils import get_new_user_and_api_key
@@ -23,6 +24,7 @@ def test_user_in_trial(flask_client):
         "profile_picture_url": None,
         "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
         "connected_proton_address": None,
+        "can_create_reverse_alias": True,
     }
 
 
@@ -52,7 +54,22 @@ def test_user_linked_to_proton(flask_client):
         "profile_picture_url": None,
         "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
         "connected_proton_address": partner_email,
+        "can_create_reverse_alias": user.can_create_contacts(),
     }
+
+
+def test_cannot_create_reverse_alias(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    user.trial_end = None
+    Session.flush()
+    config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = True
+
+    r = flask_client.get(
+        url_for("api.user_info"), headers={"Authentication": api_key.code}
+    )
+
+    assert r.status_code == 200
+    assert not r.json["can_create_reverse_alias"]
 
 
 def test_wrong_api_key(flask_client):

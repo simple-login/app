@@ -59,26 +59,29 @@
       </div>
     </div>
   </div>
-  <div class="row mb-5">
-    <div class="col-12 col-lg-6 pt-1">
-      <form method="post">
-        <input type="hidden" name="form-name" value="create" />
-        {{ new_contact_form.csrf_token }}
-        {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>", autofocus=True) }}
-        {{ render_field_errors(new_contact_form.email) }}
-        <div class="small-text">Where do you want to send the email?</div>
-        {% if can_create_contacts %}
+  {% if can_create_contacts %}
 
-          <button class="btn btn-primary mt-2">Create reverse-alias</button>
-        {% else %}
-          <button disabled
-                  title="Upgrade to premium to create reverse-aliases"
-                  class="btn btn-primary mt-2">
-            Create reverse-alias
-          </button>
-        {% endif %}
-      </form>
-    </div>
+    <div class="row mb-5">
+      <div class="col-12 col-lg-6 pt-1">
+        <form method="post">
+          <input type="hidden" name="form-name" value="create" />
+          {{ new_contact_form.csrf_token }}
+          {{ new_contact_form.email(class="form-control", placeholder="First Last <email@example.com>", autofocus=True) }}
+          {{ render_field_errors(new_contact_form.email) }}
+          <div class="small-text">Where do you want to send the email?</div>
+          {% if can_create_contacts %}
+
+            <button class="btn btn-primary mt-2">Create reverse-alias</button>
+          {% else %}
+            <button disabled
+                    title="Upgrade to premium to create reverse-aliases"
+                    class="btn btn-primary mt-2">
+              Create reverse-alias
+            </button>
+          {% endif %}
+        </form>
+      </div>
+    {% endif %}
     <div class="col-12 col-lg-6 pt-1">
       <div class="float-right d-flex">
         <form method="post">

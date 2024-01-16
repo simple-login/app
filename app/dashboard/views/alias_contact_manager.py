@@ -51,14 +51,6 @@ def email_validator():
     return _check
 
 
-def user_can_create_contacts(user: User) -> bool:
-    if user.is_premium():
-        return True
-    if user.flags & User.FLAG_FREE_DISABLE_CREATE_ALIAS == 0:
-        return True
-    return not config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
-
-
 def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
     """
     Create a contact for a user. Can be restricted for new free users by enabling DISABLE_CREATE_CONTACTS_FOR_FREE_USERS.
@@ -82,7 +74,7 @@ def create_contact(user: User, alias: Alias, contact_address: str) -> Contact:
     if contact:
         raise ErrContactAlreadyExists(contact)
 
-    if not user_can_create_contacts(user):
+    if not user.can_create_contacts():
         raise ErrContactErrorUpgradeNeeded()
 
     contact = Contact.create(
@@ -327,6 +319,6 @@ def alias_contact_manager(alias_id):
         last_page=last_page,
         query=query,
         nb_contact=nb_contact,
-        can_create_contacts=user_can_create_contacts(current_user),
+        can_create_contacts=current_user.can_create_contacts(),
         csrf_form=csrf_form,
     )
