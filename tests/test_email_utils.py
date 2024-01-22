@@ -118,8 +118,10 @@ def test_disabled_user_with_secondary_mailbox_prevents_email_from_being_used_as_
     email = f"user_{random_token(10)}@mailbox.test"
     assert email_can_be_used_as_mailbox(email)
     user = create_new_user()
-    user.disabled = True
     Mailbox.create(user_id=user.id, email=email)
+    Session.flush()
+    assert email_can_be_used_as_mailbox(email)
+    user.disabled = True
     Session.flush()
     assert not email_can_be_used_as_mailbox(email)
 
