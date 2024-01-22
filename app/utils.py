@@ -49,11 +49,11 @@ def random_string(length=10, include_digits=False):
 
 def convert_to_id(s: str):
     """convert a string to id-like: remove space, remove special accent"""
-    s = s.replace(" ", "")
     s = s.lower()
     s = unidecode(s)
+    s = s.replace(" ", "")
 
-    return s
+    return s[:256]
 
 
 _ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-."
