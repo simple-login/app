@@ -49,10 +49,25 @@ from app.models import (
     VerpType,
     AliasGeneratorEnum,
     SLDomain,
+    Mailbox,
 )
 
 # flake8: noqa: E101, W191
-from tests.utils import login, load_eml_file, create_new_user, random_domain
+from tests.utils import (
+    login,
+    load_eml_file,
+    create_new_user,
+    random_domain,
+    random_token,
+)
+
+
+def setup_module(module):
+    config.SKIP_MX_LOOKUP_ON_CHECK = True
+
+
+def teardown_module(module):
+    config.SKIP_MX_LOOKUP_ON_CHECK = False
 
 
 def test_get_email_domain_part():
@@ -68,10 +83,6 @@ def test_email_belongs_to_alias_domains():
     assert not can_create_directory_for_address("hey@d3.test")
 
 
-@pytest.mark.skipif(
-    "GITHUB_ACTIONS_TEST" in os.environ,
-    reason="this test requires DNS lookup that does not work on Github CI",
-)
 def test_can_be_used_as_personal_email(flask_client):
     # default alias domain
     assert not email_can_be_used_as_mailbox("ab@sl.local")
@@ -92,6 +103,27 @@ def test_can_be_used_as_personal_email(flask_client):
     # valid domains should not be affected
     assert email_can_be_used_as_mailbox("abcd@protonmail.com")
     assert email_can_be_used_as_mailbox("abcd@gmail.com")
+
+
+def test_disabled_user_prevents_email_from_being_used_as_mailbox():
+    email = f"user_{random_token(10)}@mailbox.test"
+    assert email_can_be_used_as_mailbox(email)
+    user = create_new_user(email)
+    user.disabled = True
+    Session.flush()
+    assert not email_can_be_used_as_mailbox(email)
+
+
+def test_disabled_user_with_secondary_mailbox_prevents_email_from_being_used_as_mailbox():
+    email = f"user_{random_token(10)}@mailbox.test"
+    assert email_can_be_used_as_mailbox(email)
+    user = create_new_user()
+    Mailbox.create(user_id=user.id, email=email)
+    Session.flush()
+    assert email_can_be_used_as_mailbox(email)
+    user.disabled = True
+    Session.flush()
+    assert not email_can_be_used_as_mailbox(email)
 
 
 def test_delete_header():
