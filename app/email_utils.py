@@ -583,12 +583,12 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
             LOG.d("MX Domain %s %s is invalid mailbox domain", mx_domain, domain)
             return False
 
-    for existing_user in User.filter_by(email=email_address).all():
-        if existing_user.disabled:
-            LOG.d(
-                f"User {existing_user} is disabled. {email_address} cannot be used for other mailbox"
-            )
-            return False
+    existing_user = User.get_by(email=email_address)
+    if existing_user and existing_user.disabled:
+        LOG.d(
+            f"User {existing_user} is disabled. {email_address} cannot be used for other mailbox"
+        )
+        return False
 
     for existing_user in (
         User.query()
