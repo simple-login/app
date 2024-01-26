@@ -510,7 +510,8 @@ server {
     server_name  app.mydomain.com;
 
     location / {
-        proxy_pass http://localhost:7777;
+        proxy_pass              http://localhost:7777;
+    	proxy_set_header        Host $host;
     }
 }
 ```
