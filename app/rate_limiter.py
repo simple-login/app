@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 import redis.exceptions
@@ -14,13 +15,16 @@ def set_redis_concurrent_lock(redis: RedisStorage):
     lock_redis = redis
 
 
-def check_limit(
+def check_bucket_limit(
     lock_name: Optional[str] = None,
     max_hits: int = 5,
-    limit_seconds: int = 3600,
+    bucket_seconds: int = 3600,
 ):
+    # Calculate current bucket time
+    bucket_id = int(datetime.utcnow().timestamp()) % bucket_seconds
+    bucket_lock_name = f"bl:{lock_name}:{bucket_id}"
     try:
-        value = lock_redis.incr(lock_name, limit_seconds)
+        value = lock_redis.incr(bucket_lock_name, bucket_seconds)
         if value > max_hits:
             return RateLimitExceeded(lock_name)
     except redis.exceptions.RedisError:
