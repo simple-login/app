@@ -27,7 +27,7 @@ from sqlalchemy.orm import deferred
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
-from app import config
+from app import config, rate_limiter
 from app import s3
 from app.db import Session
 from app.dns_utils import get_mx_domains
@@ -1563,6 +1563,15 @@ class Alias(Base, ModelMixin):
         flush = kw.pop("flush", False)
 
         new_alias = cls(**kw)
+        user = User.get(new_alias.user_id)
+        if user.is_premium():
+            limits = ((50, 1), (200, 7))
+        else:
+            limits = ((10, 1), (20, 7))
+        # limits is array of (hits,days)
+        for limit in limits:
+            key = f"alias_create_{limit[1]}d:{user.id}"
+            rate_limiter.check_bucket_limit(key, limit[0], limit[1] * 86400)
 
         email = kw["email"]
         # make sure email is lowercase and doesn't have any whitespace
