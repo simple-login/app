@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 import redis.exceptions
-from flask_limiter import RateLimitExceeded
+import werkzeug.exceptions
 from limits.storage import RedisStorage
 
 from app.log import log
@@ -26,6 +26,6 @@ def check_bucket_limit(
     try:
         value = lock_redis.incr(bucket_lock_name, bucket_seconds)
         if value > max_hits:
-            return RateLimitExceeded(lock_name)
+            raise werkzeug.exceptions.TooManyRequests()
     except redis.exceptions.RedisError:
         log.e("Cannot connect to redis")
