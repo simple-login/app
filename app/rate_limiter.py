@@ -17,10 +17,10 @@ def set_redis_concurrent_lock(redis: RedisStorage):
 def check_limit(
     lock_name: Optional[str] = None,
     max_hits: int = 5,
-    expiration_time: int = 3600,
+    limit_seconds: int = 3600,
 ):
     try:
-        value = lock_redis.incr(lock_name, expiration_time)
+        value = lock_redis.incr(lock_name, limit_seconds)
         if value > max_hits:
             return RateLimitExceeded(lock_name)
     except redis.exceptions.RedisError:

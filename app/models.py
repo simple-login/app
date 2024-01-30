@@ -1568,9 +1568,10 @@ class Alias(Base, ModelMixin):
             limits = ((30, 1), (100, 7))
         else:
             limits = ((10, 1), (30, 7))
+        # limits is array of (hits,days)
         for limit in limits:
             key = f"alias_create_{limit[1]}d:{user.id}"
-            rate_limiter.check_limit(key, limit[0], limit[1])
+            rate_limiter.check_limit(key, limit[0], limit[1] * 86400)
 
         email = kw["email"]
         # make sure email is lowercase and doesn't have any whitespace
