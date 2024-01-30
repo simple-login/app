@@ -1565,9 +1565,9 @@ class Alias(Base, ModelMixin):
         new_alias = cls(**kw)
         user = User.get(new_alias.user_id)
         if user.is_premium():
-            limits = ((30, 1), (100, 7))
+            limits = ((50, 1), (200, 7))
         else:
-            limits = ((10, 1), (30, 7))
+            limits = ((10, 1), (20, 7))
         # limits is array of (hits,days)
         for limit in limits:
             key = f"alias_create_{limit[1]}d:{user.id}"
