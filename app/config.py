@@ -492,6 +492,31 @@ NAMESERVERS = setup_nameservers()
 DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = os.environ.get(
     "DISABLE_CREATE_CONTACTS_FOR_FREE_USERS", False
 )
+
+
+# Expect format hits,seconds:hits,seconds...
+# Example 1,10:4,60 means 1 in the last 10 secs or 4 in the last 60 secs
+def getRateLimitFromConfig(
+    env_var: string, default: string = ""
+) -> list[tuple[int, int]]:
+    value = os.environ.get(env_var, default)
+    if not value:
+        return []
+    entries = [entry for entry in value.split(":")]
+    limits = []
+    for entry in entries:
+        fields = entry.split(",")
+        limit = (int(fields[0]), int(fields[1]))
+        limits.append(limit)
+    return limits
+
+
+ALIAS_CREATE_RATE_LIMIT_FREE = getRateLimitFromConfig(
+    "ALIAS_CREATE_RATE_LIMIT_FREE", "10,900:50,3600"
+)
+ALIAS_CREATE_RATE_LIMIT_PAID = getRateLimitFromConfig(
+    "ALIAS_CREATE_RATE_LIMIT_PAID", "50,900:200,3600"
+)
 PARTNER_API_TOKEN_SECRET = os.environ.get("PARTNER_API_TOKEN_SECRET") or (
     FLASK_SECRET + "partnerapitoken"
 )
