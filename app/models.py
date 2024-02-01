@@ -1500,6 +1500,8 @@ class Alias(Base, ModelMixin):
         TSVector(), sa.Computed("to_tsvector('english', note)", persisted=True)
     )
 
+    last_email_log_id = sa.Column(sa.Integer, default=None, nullable=True)
+
     __table_args__ = (
         Index("ix_video___ts_vector__", ts_vector, postgresql_using="gin"),
         # index on note column using pg_trgm
