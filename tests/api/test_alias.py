@@ -121,9 +121,11 @@ def test_get_aliases_v2(flask_client):
         reply_email="re0@SL",
         commit=True,
     )
-    EmailLog.create(
-        contact_id=c0.id, user_id=user.id, alias_id=c0.alias_id, commit=True
+    elog = EmailLog.create(
+        contact_id=c0.id, user_id=user.id, alias_id=c0.alias_id, commit=False
     )
+    a0.last_email_log_id = elog.id
+    Session.commit()
 
     # a1 has more recent activity
     c1 = Contact.create(
@@ -133,9 +135,11 @@ def test_get_aliases_v2(flask_client):
         reply_email="re1@SL",
         commit=True,
     )
-    EmailLog.create(
+    elog = EmailLog.create(
         contact_id=c1.id, user_id=user.id, alias_id=c1.alias_id, commit=True
     )
+    a1.last_email_log_id = elog.id
+    Session.commit()
 
     r = flask_client.get("/api/v2/aliases?page_id=0")
     assert r.status_code == 200
