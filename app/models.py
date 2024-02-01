@@ -1565,13 +1565,13 @@ class Alias(Base, ModelMixin):
         new_alias = cls(**kw)
         user = User.get(new_alias.user_id)
         if user.is_premium():
-            limits = ((50, 1), (200, 7))
+            limits = config.ALIAS_CREATE_RATE_LIMIT_PAID
         else:
-            limits = ((10, 1), (20, 7))
+            limits = config.ALIAS_CREATE_RATE_LIMIT_FREE
         # limits is array of (hits,days)
         for limit in limits:
             key = f"alias_create_{limit[1]}d:{user.id}"
-            rate_limiter.check_bucket_limit(key, limit[0], limit[1] * 86400)
+            rate_limiter.check_bucket_limit(key, limit[0], limit[1])
 
         email = kw["email"]
         # make sure email is lowercase and doesn't have any whitespace
