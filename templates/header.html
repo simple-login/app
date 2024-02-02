@@ -89,86 +89,87 @@
                   Github repo
                   <i class="fa fa-external-link" aria-hidden="true"></i>
                 </a>
-                <div class="dropdown-item">
-                  <a href="https://forum.simplelogin.io"
-                     target="_blank"
-                     rel="noopener noreferrer">
-                    Forum
-                    <i class="fa fa-external-link" aria-hidden="true"></i>
-                  </a>
-                </div>
-                <div class="dropdown-item">
-                  <a href="/dashboard/support">Support</a>
-                </div>
+              </div>
+              <div class="dropdown-item">
+                <a href="https://forum.simplelogin.io"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  Forum
+                  <i class="fa fa-external-link" aria-hidden="true"></i>
+                </a>
+              </div>
+              <div class="dropdown-item">
+                <a href="/dashboard/support">Support</a>
               </div>
             </div>
-          {% else %}
-            <div class="nav-item">
-              <a href="https://simplelogin.io/docs/"
-                 target="_blank"
-                 rel="noopener noreferrer">
-                Docs
-                <i class="fa fa-external-link" aria-hidden="true"></i>
-              </a>
-            </div>
-          {% endif %}
-          {% if current_user.should_show_upgrade_button() %}
-
-            <div class="nav-item">
-              <a href="{{ url_for('dashboard.pricing') }}"
-                 class="btn btn-sm btn-outline-primary">Upgrade</a>
-            </div>
-          {% endif %}
-          <div class="dropdown">
-            <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
-              {% if current_user.profile_picture_id %}
-
-                <span class="avatar"
-                      style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
-              {% else %}
-                <span class="avatar avatar-blue">{{ current_user.get_name_initial() or "👻" }}</span>
-              {% endif %}
-              <span class="ml-2 d-none d-lg-block">
-                <span class="text-default text-break">{{ current_user.name or current_user.email }}</span>
-                {% if current_user.in_trial() %}
-
-                  <small class="text-success d-block mt-1"
-                         data-toggle="tooltip"
-                         title="When you signed up, you have a free 7-day Premium trial. After that your account will automatically be downgraded to the Free plan. During the trial, the only limit is you can't create more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.">
-                    Premium expires {{ current_user.trial_end|dt }}
-                    <i class="fe fe-info"></i>
-                  </small>
-                {% elif current_user.is_premium() %}
-                  <small class="text-success d-block mt-1">Premium</small>
-                {% endif %}
-              </span>
+          </div>
+        {% else %}
+          <div class="nav-item">
+            <a href="https://simplelogin.io/docs/"
+               target="_blank"
+               rel="noopener noreferrer">
+              Docs
+              <i class="fa fa-external-link" aria-hidden="true"></i>
             </a>
-            <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-              <a class="dropdown-item mb-3" href="{{ url_for('dashboard.api_key') }}">
-                <i class="dropdown-icon fa fa-key"></i> API Keys
-              </a>
-              <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
-                <i class="dropdown-icon fe fe-log-out"></i> Sign out
-              </a>
-            </div>
+          </div>
+        {% endif %}
+        {% if current_user.should_show_upgrade_button() %}
+
+          <div class="nav-item">
+            <a href="{{ url_for('dashboard.pricing') }}"
+               class="btn btn-sm btn-outline-primary">Upgrade</a>
+          </div>
+        {% endif %}
+        <div class="dropdown">
+          <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
+            {% if current_user.profile_picture_id %}
+
+              <span class="avatar"
+                    style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
+            {% else %}
+              <span class="avatar avatar-blue">{{ current_user.get_name_initial() or "👻" }}</span>
+            {% endif %}
+            <span class="ml-2 d-none d-lg-block">
+              <span class="text-default text-break">{{ current_user.name or current_user.email }}</span>
+              {% if current_user.in_trial() %}
+
+                <small class="text-success d-block mt-1"
+                       data-toggle="tooltip"
+                       title="When you signed up, you have a free 7-day Premium trial. After that your account will automatically be downgraded to the Free plan. During the trial, the only limit is you can't create more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.">
+                  Premium expires {{ current_user.trial_end|dt }}
+                  <i class="fe fe-info"></i>
+                </small>
+              {% elif current_user.is_premium() %}
+                <small class="text-success d-block mt-1">Premium</small>
+              {% endif %}
+            </span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+            <a class="dropdown-item mb-3" href="{{ url_for('dashboard.api_key') }}">
+              <i class="dropdown-icon fa fa-key"></i> API Keys
+            </a>
+            <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+              <i class="dropdown-icon fe fe-log-out"></i> Sign out
+            </a>
           </div>
         </div>
-        <a href="#"
-           class="header-toggler d-lg-none ml-3 ml-lg-0"
-           data-toggle="collapse"
-           data-target="#headerMenuCollapse">
-          <span class="header-toggler-icon"></span>
-        </a>
       </div>
+      <a href="#"
+         class="header-toggler d-lg-none ml-3 ml-lg-0"
+         data-toggle="collapse"
+         data-target="#headerMenuCollapse">
+        <span class="header-toggler-icon"></span>
+      </a>
     </div>
   </div>
-  <div class="header collapse d-lg-flex p-0" id="headerMenuCollapse">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg order-lg-first">
-          {% include "menu.html" %}
+</div>
+<div class="header collapse d-lg-flex p-0" id="headerMenuCollapse">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg order-lg-first">
+        {% include "menu.html" %}
 
-        </div>
       </div>
     </div>
   </div>
+</div>
