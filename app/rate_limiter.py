@@ -23,9 +23,11 @@ def check_bucket_limit(
     # Calculate current bucket time
     bucket_id = int(datetime.utcnow().timestamp()) % bucket_seconds
     bucket_lock_name = f"bl:{lock_name}:{bucket_id}"
+    if not lock_redis:
+        return
     try:
         value = lock_redis.incr(bucket_lock_name, bucket_seconds)
         if value > max_hits:
             raise werkzeug.exceptions.TooManyRequests()
-    except redis.exceptions.RedisError:
+    except (redis.exceptions.RedisError, AttributeError):
         log.e("Cannot connect to redis")
