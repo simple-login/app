@@ -183,15 +183,12 @@ def test_get_alias_infos_with_email_log_no_contact():
         reply_email=random_email(),
         flush=True,
     )
-    elog = EmailLog.create(
+    EmailLog.create(
         user_id=user.id,
         alias_id=user.newsletter_alias_id,
         contact_id=contact.id,
-        flush=True,
+        commit=True,
     )
-    alias = Alias.get(id=user.newsletter_alias_id)
-    alias.last_email_log_id = elog.id
-    Session.commit()
     alias_infos = get_alias_infos_with_pagination_v3(user)
     assert len(alias_infos) == 1
     row = alias_infos[0]
@@ -199,4 +196,5 @@ def test_get_alias_infos_with_email_log_no_contact():
     assert row.latest_contact is not None
     assert row.latest_contact.id == contact.id
     assert row.latest_email_log is not None
+    alias = Alias.get(id=user.newsletter_alias_id)
     assert row.latest_email_log.id == alias.last_email_log_id
