@@ -235,6 +235,7 @@ class AuditLogActionEnum(EnumE):
     download_provider_complaint = 8
     disable_user = 9
     enable_user = 10
+    stop_trial = 11
 
 
 class Phase(EnumE):
@@ -3337,6 +3338,15 @@ class AdminAuditLog(Base):
                 "trial_end": trial_end.format(arrow.FORMAT_RFC3339),
                 "extend_time": extend_time,
             },
+        )
+
+    @classmethod
+    def stop_trial(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.stop_trial.value,
+            model="User",
+            model_id=user_id,
         )
 
     @classmethod

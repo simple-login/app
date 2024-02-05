@@ -215,6 +215,20 @@ class UserAdmin(SLModelView):
         Session.commit()
 
     @action(
+        "remove trial",
+        "Stop trial period",
+        "Remove trial for this user?",
+    )
+    def stop_trial(self, ids):
+        for user in User.filter(User.id.in_(ids)):
+            user.trial_end = None
+
+            flash(f"Stopped trial for {user}", "success")
+            AdminAuditLog.stop_trial(current_user.id, user.id)
+
+        Session.commit()
+
+    @action(
         "disable_otp_fido",
         "Disable OTP & FIDO",
         "Disable OTP & FIDO?",
