@@ -668,15 +668,13 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     if not alias.enabled or contact.block_forward:
         LOG.d("%s is disabled, do not forward", alias)
-        email_log = EmailLog.create(
+        EmailLog.create(
             contact_id=contact.id,
             user_id=contact.user_id,
             blocked=True,
             alias_id=contact.alias_id,
-            flush=True,
+            commit=True,
         )
-        alias.last_email_log_id = email_log.id
-        Session.commit()
 
         # by default return 2** instead of 5** to allow user to receive emails again
         # when alias is enabled or contact is unblocked
@@ -806,10 +804,8 @@ def forward_email_to_mailbox(
         mailbox_id=mailbox.id,
         alias_id=contact.alias_id,
         message_id=str(msg[headers.MESSAGE_ID]),
-        flush=True,
+        commit=True,
     )
-    alias.last_email_log_id = email_log.id
-    Session.commit()
     LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
     if ENABLE_SPAM_ASSASSIN:
@@ -1115,10 +1111,8 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         user_id=contact.user_id,
         mailbox_id=mailbox.id,
         message_id=msg[headers.MESSAGE_ID],
-        flush=True,
+        commit=True,
     )
-    alias.last_email_log_id = email_log.id
-    Session.commit()
     LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
     # Spam check
