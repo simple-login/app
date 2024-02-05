@@ -2066,8 +2066,11 @@ class EmailLog(Base, ModelMixin):
         commit = kwargs.pop("commit", False)
         email_log = super().create(*args, **kwargs)
         Session.flush()
-        sql = "UPDATE alias SET last_email_log_id = :el_id WHERE id = :alias_id"
-        Session.execute(sql, {"el_id": email_log.id, "alias_id": kwargs["alias_id"]})
+        if "alias_id" in kwargs:
+            sql = "UPDATE alias SET last_email_log_id = :el_id WHERE id = :alias_id"
+            Session.execute(
+                sql, {"el_id": email_log.id, "alias_id": kwargs["alias_id"]}
+            )
         if commit:
             Session.commit()
         return email_log
