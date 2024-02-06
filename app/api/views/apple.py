@@ -17,8 +17,13 @@ from app.models import PlanEnum, AppleSubscription
 _MONTHLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.monthly"
 _YEARLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.yearly"
 
+# SL Mac app used to be in SL account
 _MACAPP_MONTHLY_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.monthly"
 _MACAPP_YEARLY_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.yearly"
+
+# SL Mac app is moved to Proton account
+_MACAPP_MONTHLY_PRODUCT_ID_NEW = "me.proton.simplelogin.macos.premium.monthly"
+_MACAPP_YEARLY_PRODUCT_ID_NEW = "me.proton.simplelogin.macos.premium.yearly"
 
 # Apple API URL
 _SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt"
@@ -263,7 +268,11 @@ def apple_update_notification():
         plan = (
             PlanEnum.monthly
             if transaction["product_id"]
-            in (_MONTHLY_PRODUCT_ID, _MACAPP_MONTHLY_PRODUCT_ID)
+            in (
+                _MONTHLY_PRODUCT_ID,
+                _MACAPP_MONTHLY_PRODUCT_ID,
+                _MACAPP_MONTHLY_PRODUCT_ID_NEW,
+            )
             else PlanEnum.yearly
         )
 
@@ -517,7 +526,11 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     plan = (
         PlanEnum.monthly
         if latest_transaction["product_id"]
-        in (_MONTHLY_PRODUCT_ID, _MACAPP_MONTHLY_PRODUCT_ID)
+        in (
+            _MONTHLY_PRODUCT_ID,
+            _MACAPP_MONTHLY_PRODUCT_ID,
+            _MACAPP_MONTHLY_PRODUCT_ID_NEW,
+        )
         else PlanEnum.yearly
     )
 
