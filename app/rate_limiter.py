@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
+import newrelic.agent
 import redis.exceptions
 import werkzeug.exceptions
 from limits.storage import RedisStorage
@@ -28,6 +29,10 @@ def check_bucket_limit(
     try:
         value = lock_redis.incr(bucket_lock_name, bucket_seconds)
         if value > max_hits:
+            newrelic.agent.record_custom_event(
+                "BucketRateLimit",
+                {"lock_name": lock_name, "bucket_seconds": bucket_seconds},
+            )
             raise werkzeug.exceptions.TooManyRequests()
     except (redis.exceptions.RedisError, AttributeError):
         log.e("Cannot connect to redis")
