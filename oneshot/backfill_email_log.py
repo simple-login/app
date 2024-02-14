@@ -14,7 +14,8 @@ updated = 0
 for batch_start in range(0, max_alias_id, step):
     rows = Session.execute(el_query, {"start": batch_start, "end": batch_start + step})
     for row in rows:
-        rows = Session.execute(alias_query, {"alias_id": row[0], "el_id": row[1]})
+        Session.execute(alias_query, {"alias_id": row[0], "el_id": row[1]})
+        Session.commit()
         updated += 1
     print(f"\rAlias {batch_start}/{max_alias_id} {updated}")
 print("")
