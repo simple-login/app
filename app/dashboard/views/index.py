@@ -192,11 +192,6 @@ def index():
         # load 1 alias more to know whether this is the last page
         page_limit=PAGE_LIMIT + 1,
     )
-    for alias_info in alias_infos:
-        if alias_info.latest_email_log is not None:
-            print(f"a_id {alias_info.alias.id} el {alias_info.latest_email_log.id}")
-        else:
-            print(f"a_id {alias_info.alias.id} el None")
 
     last_page = len(alias_infos) <= PAGE_LIMIT
     # remove the last alias that's added to know whether this is the last page
