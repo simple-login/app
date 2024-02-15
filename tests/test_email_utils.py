@@ -57,6 +57,7 @@ from tests.utils import (
     login,
     load_eml_file,
     create_new_user,
+    random_email,
     random_domain,
     random_token,
 )
@@ -186,13 +187,14 @@ def test_parse_full_address():
 
 def test_send_email_with_rate_control(flask_client):
     user = create_new_user()
+    email = random_email()
 
     for _ in range(MAX_ALERT_24H):
         assert send_email_with_rate_control(
-            user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
+            user, "test alert type", email, "subject", "plaintext"
         )
     assert not send_email_with_rate_control(
-        user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
+        user, "test alert type", email, "subject", "plaintext"
     )
 
 

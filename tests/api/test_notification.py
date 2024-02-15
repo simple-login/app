@@ -40,14 +40,16 @@ def test_get_notifications(flask_client):
 def test_mark_notification_as_read(flask_client):
     user, api_key = get_new_user_and_api_key()
 
-    Notification.create(id=1, user_id=user.id, message="Test message 1")
+    notif_id = Notification.create(
+        user_id=user.id, message="Test message 1", flush=True
+    ).id
     Session.commit()
 
     r = flask_client.post(
-        url_for("api.mark_as_read", notification_id=1),
+        url_for("api.mark_as_read", notification_id=notif_id),
         headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 200
-    notification = Notification.first()
+    notification = Notification.filter_by(id=notif_id).first()
     assert notification.read

@@ -1,8 +1,8 @@
 from app.api.serializer import get_alias_infos_with_pagination_v3
 from app.config import PAGE_LIMIT
 from app.db import Session
-from app.models import Alias, Mailbox, Contact
-from tests.utils import create_new_user
+from app.models import Alias, Mailbox, Contact, EmailLog
+from tests.utils import create_new_user, random_email
 
 
 def test_get_alias_infos_with_pagination_v3(flask_client):
@@ -155,3 +155,46 @@ def test_get_alias_infos_pinned_alias(flask_client):
     # pinned alias isn't included in the search
     alias_infos = get_alias_infos_with_pagination_v3(user, query="no match")
     assert len(alias_infos) == 0
+
+
+def test_get_alias_infos_with_no_last_email_log(flask_client):
+    user = create_new_user()
+    alias_infos = get_alias_infos_with_pagination_v3(user)
+    assert len(alias_infos) == 1
+    row = alias_infos[0]
+    assert row.alias.id == user.newsletter_alias_id
+    assert row.latest_contact is None
+    assert row.latest_email_log is None
+
+
+def test_get_alias_infos_with_email_log_no_contact():
+    user = create_new_user()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=user.newsletter_alias_id,
+        website_email="a@a.com",
+        reply_email=random_email(),
+        flush=True,
+    )
+    Contact.create(
+        user_id=user.id,
+        alias_id=user.newsletter_alias_id,
+        website_email="unused@a.com",
+        reply_email=random_email(),
+        flush=True,
+    )
+    EmailLog.create(
+        user_id=user.id,
+        alias_id=user.newsletter_alias_id,
+        contact_id=contact.id,
+        commit=True,
+    )
+    alias_infos = get_alias_infos_with_pagination_v3(user)
+    assert len(alias_infos) == 1
+    row = alias_infos[0]
+    assert row.alias.id == user.newsletter_alias_id
+    assert row.latest_contact is not None
+    assert row.latest_contact.id == contact.id
+    assert row.latest_email_log is not None
+    alias = Alias.get(id=user.newsletter_alias_id)
+    assert row.latest_email_log.id == alias.last_email_log_id

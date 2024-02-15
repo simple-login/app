@@ -1500,6 +1500,8 @@ class Alias(Base, ModelMixin):
         TSVector(), sa.Computed("to_tsvector('english', note)", persisted=True)
     )
 
+    last_email_log_id = sa.Column(sa.Integer, default=None, nullable=True)
+
     __table_args__ = (
         Index("ix_video___ts_vector__", ts_vector, postgresql_using="gin"),
         # index on note column using pg_trgm
@@ -2058,6 +2060,20 @@ class EmailLog(Base, ModelMixin):
 
     def get_dashboard_url(self):
         return f"{config.URL}/dashboard/refused_email?highlight_id={self.id}"
+
+    @classmethod
+    def create(cls, *args, **kwargs):
+        commit = kwargs.pop("commit", False)
+        email_log = super().create(*args, **kwargs)
+        Session.flush()
+        if "alias_id" in kwargs:
+            sql = "UPDATE alias SET last_email_log_id = :el_id WHERE id = :alias_id"
+            Session.execute(
+                sql, {"el_id": email_log.id, "alias_id": kwargs["alias_id"]}
+            )
+        if commit:
+            Session.commit()
+        return email_log
 
     def __repr__(self):
         return f"<EmailLog {self.id}>"

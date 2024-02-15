@@ -131,7 +131,7 @@ def quarantine_dmarc_failed_forward_email(alias, contact, envelope, msg) -> Emai
     refused_email = RefusedEmail.create(
         full_report_path=s3_report_path, user_id=alias.user_id, flush=True
     )
-    return EmailLog.create(
+    email_log = EmailLog.create(
         user_id=alias.user_id,
         mailbox_id=alias.mailbox_id,
         contact_id=contact.id,
@@ -142,6 +142,7 @@ def quarantine_dmarc_failed_forward_email(alias, contact, envelope, msg) -> Emai
         blocked=True,
         commit=True,
     )
+    return email_log
 
 
 def apply_dmarc_policy_for_reply_phase(
