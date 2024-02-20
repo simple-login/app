@@ -6,7 +6,7 @@ import redis.exceptions
 import werkzeug.exceptions
 from limits.storage import RedisStorage
 
-from app.log import log
+from app.log import LOG
 
 lock_redis: Optional[RedisStorage] = None
 
@@ -22,17 +22,19 @@ def check_bucket_limit(
     bucket_seconds: int = 3600,
 ):
     # Calculate current bucket time
-    bucket_id = int(datetime.utcnow().timestamp()) % bucket_seconds
+    int_time = int(datetime.utcnow().timestamp())
+    bucket_id = int_time - (int_time % bucket_seconds)
     bucket_lock_name = f"bl:{lock_name}:{bucket_id}"
     if not lock_redis:
         return
     try:
         value = lock_redis.incr(bucket_lock_name, bucket_seconds)
         if value > max_hits:
+            LOG.i(f"Rate limit hit for {bucket_lock_name} -> {value}/{max_hits}")
             newrelic.agent.record_custom_event(
                 "BucketRateLimit",
                 {"lock_name": lock_name, "bucket_seconds": bucket_seconds},
             )
             raise werkzeug.exceptions.TooManyRequests()
     except (redis.exceptions.RedisError, AttributeError):
-        log.e("Cannot connect to redis")
+        LOG.e("Cannot connect to redis")
