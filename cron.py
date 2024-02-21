@@ -1128,13 +1128,14 @@ def notify_hibp():
 
 def clear_users_scheduled_to_be_deleted():
     users = User.filter(
-        and_(User.delete_on.isnot(None), User.delete_on < arrow.now())
+        and_(User.delete_on.isnot(None), User.delete_on < arrow.now().shift(days=-30))
     ).all()
     for user in users:
         LOG.i(
             f"Scheduled deletion of user {user} with scheduled delete on {user.delete_on}"
         )
-        User.delete(user.id)
+        # TODO: Uncomment when we've checked that this doesn't delete anything that it's not supposed to
+        # User.delete(user.id)
         Session.commit()
 
 

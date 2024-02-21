@@ -727,6 +727,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return True
 
+    def is_active(self) -> bool:
+        if self.delete_on is None:
+            return True
+        return self.delete_on < arrow.now()
+
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
         if self.lifetime_or_active_subscription():
@@ -828,6 +833,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         Whether user can create a new alias. User can't create a new alias if
         - has more than 15 aliases in the free plan, *even in the free trial*
         """
+        if not self.is_active():
+            return False
+
         if self.disabled:
             return False
 

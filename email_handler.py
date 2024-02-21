@@ -636,6 +636,10 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     user = alias.user
 
+    if not user.is_active():
+        LOG.w(f"User {user} has been soft deleted")
+        return False, status.E502
+
     if not user.can_send_or_receive():
         LOG.i(f"User {user} cannot receive emails")
         if should_ignore_bounce(envelope.mail_from):
@@ -1054,6 +1058,9 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     contact = Contact.get_by(reply_email=reply_email)
     if not contact:
         LOG.w(f"No contact with {reply_email} as reverse alias")
+        return False, status.E502
+    if not contact.user.is_active():
+        LOG.w(f"User {contact.user} has been soft deleted")
         return False, status.E502
 
     alias = contact.alias
@@ -1921,6 +1928,9 @@ def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
         contact,
         alias,
     )
+    if not email_log.user.is_active():
+        LOG.d(f"User {email_log.user} is not active")
+        return status.E510
 
     if email_log.is_reply:
         content_type = msg.get_content_type().lower()
@@ -1981,6 +1991,9 @@ def send_no_reply_response(mail_from: str, msg: Message):
     mailbox = Mailbox.get_by(email=mail_from)
     if not mailbox:
         LOG.d("Unknown sender. Skipping reply from {}".format(NOREPLY))
+        return
+    if not mailbox.user.is_active():
+        LOG.d(f"User {mailbox.user} is soft-deleted. Skipping sending reply response")
         return
     send_email_at_most_times(
         mailbox.user,
