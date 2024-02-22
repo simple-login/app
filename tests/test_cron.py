@@ -39,15 +39,17 @@ def test_cleanup_tokens(flask_client):
 
 def test_cleanup_users():
     u_delete_none_id = create_new_user().id
-    u_delete_after = create_new_user()
-    u_delete_after_id = u_delete_after.id
-    u_delete_before = create_new_user()
-    u_delete_before_id = u_delete_before.id
+    u_delete_grace_has_expired = create_new_user()
+    u_delete_grace_has_expired_id = u_delete_grace_has_expired.id
+    u_delete_grace_has_not_expired = create_new_user()
+    u_delete_grace_has_not_expired_id = u_delete_grace_has_not_expired.id
     now = arrow.now()
-    u_delete_after.delete_on = now.shift(minutes=1)
-    u_delete_before.delete_on = now.shift(minutes=-1)
+    u_delete_grace_has_expired.delete_on = now.shift(days=-(cron.DELETE_GRACE_DAYS + 1))
+    u_delete_grace_has_not_expired.delete_on = now.shift(
+        days=-(cron.DELETE_GRACE_DAYS - 1)
+    )
     Session.flush()
     cron.clear_users_scheduled_to_be_deleted()
     assert User.get(u_delete_none_id) is not None
-    assert User.get(u_delete_after_id) is not None
-    assert User.get(u_delete_before_id) is None
+    assert User.get(u_delete_grace_has_not_expired_id) is not None
+    assert User.get(u_delete_grace_has_expired_id) is None
