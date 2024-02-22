@@ -62,6 +62,8 @@ from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
 from server import create_light_app
 
+DELETE_GRACE_DAYS = 30
+
 
 def notify_trial_end():
     for user in User.filter(
@@ -1126,14 +1128,19 @@ def notify_hibp():
         Session.commit()
 
 
-def clear_users_scheduled_to_be_deleted():
+def clear_users_scheduled_to_be_deleted(dry_run=False):
     users = User.filter(
-        and_(User.delete_on.isnot(None), User.delete_on < arrow.now())
+        and_(
+            User.delete_on.isnot(None),
+            User.delete_on <= arrow.now().shift(days=-DELETE_GRACE_DAYS),
+        )
     ).all()
     for user in users:
         LOG.i(
             f"Scheduled deletion of user {user} with scheduled delete on {user.delete_on}"
         )
+        if dry_run:
+            continue
         User.delete(user.id)
         Session.commit()
 
@@ -1206,4 +1213,4 @@ if __name__ == "__main__":
             load_unsent_mails_from_fs_and_resend()
         elif args.job == "delete_scheduled_users":
             LOG.d("Deleting users scheduled to be deleted")
-            clear_users_scheduled_to_be_deleted()
+            clear_users_scheduled_to_be_deleted(dry_run=True)

@@ -33,6 +33,9 @@ def authorize_request() -> Optional[Tuple[str, int]]:
     if g.user.disabled:
         return jsonify(error="Disabled account"), 403
 
+    if not g.user.is_active():
+        return jsonify(error="Account does not exist"), 401
+
     g.api_key = api_key
     return None
 

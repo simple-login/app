@@ -168,6 +168,8 @@ class NewUserStrategy(ClientMergeStrategy):
 
 class ExistingUnlinkedUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
+        # IF it was scheduled to be deleted. Unschedule it.
+        self.user.delete_on = None
         partner_user = ensure_partner_user_exists_for_user(
             self.link_request, self.user, self.partner
         )
@@ -246,6 +248,8 @@ def link_user(
 ) -> LinkResult:
     # Sanitize email just in case
     link_request.email = sanitize_email(link_request.email)
+    # If it was scheduled to be deleted. Unschedule it.
+    current_user.delete_on = None
     partner_user = ensure_partner_user_exists_for_user(
         link_request, current_user, partner
     )

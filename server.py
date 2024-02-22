@@ -228,6 +228,8 @@ def load_user(alternative_id):
         sentry_sdk.set_user({"email": user.email, "id": user.id})
         if user.disabled:
             return None
+        if not user.is_active():
+            return None
 
     return user
 
