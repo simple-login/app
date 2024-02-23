@@ -1,8 +1,8 @@
-from flask import url_for  # Importing the url_for function from Flask
+from flask import url_for
 
-from app.db import Session  # Importing the Session object from app.db module
-from app.utils import canonicalize_email, random_string  # Importing specific functions from app.utils module
-from tests.utils import create_new_user  # Importing the create_new_user function from tests.utils module
+from app.db import Session
+from app.utils import canonicalize_email, random_string
+from tests.utils import create_new_user
 
 
 def test_unactivated_user_login(flask_client):
