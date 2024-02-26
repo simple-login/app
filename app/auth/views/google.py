@@ -7,7 +7,7 @@ from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from app.db import Session
 from app.log import LOG
 from app.models import User, File, SocialAuth
-from app.utils import random_string, sanitize_email
+from app.utils import random_string, sanitize_email, sanitize_next_url
 from .login_utils import after_login
 
 _authorization_base_url = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -29,7 +29,7 @@ def google_login():
     # to avoid flask-login displaying the login error message
     session.pop("_flashes", None)
 
-    next_url = request.args.get("next")
+    next_url = sanitize_next_url(request.args.get("next"))
 
     # Google does not allow to append param to redirect_url
     # we need to pass the next url by session
