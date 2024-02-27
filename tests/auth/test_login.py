@@ -49,7 +49,9 @@ def test_non_canonical_login(flask_client):
     """
     email = f"pre.{random_string(10)}@gmail.com"  # Generating a non-canonical email
     name = f"NAME-{random_string(10)}"  # Generating a random name
-    user = create_new_user(email, name)  # Creating a new user with the generated email and name
+    user = create_new_user(
+        email, name
+    )  # Creating a new user with the generated email and name
     Session.commit()  # Committing the session changes
 
     # Sending a POST request to the login route with user credentials and following redirects
@@ -65,7 +67,9 @@ def test_non_canonical_login(flask_client):
 
     # Canonicalizing the email
     canonical_email = canonicalize_email(email)
-    assert canonical_email != email  # Checking if the canonical email is different from the original email
+    assert (
+        canonical_email != email
+    )  # Checking if the canonical email is different from the original email
 
     flask_client.get(url_for("auth.logout"))  # Logging out the user
 
@@ -98,7 +102,9 @@ def test_canonical_login_with_non_canonical_email(flask_client):
     canonical_email = f"pre{suffix}"  # Generating a canonical email
     non_canonical_email = f"pre.{suffix}"  # Generating a non-canonical email
     name = f"NAME-{random_string(10)}"  # Generating a random name
-    create_new_user(canonical_email, name)  # Creating a new user with the canonical email
+    create_new_user(
+        canonical_email, name
+    )  # Creating a new user with the canonical email
     Session.commit()  # Committing the session changes
 
     # Sending a POST request to the login route with the non-canonical email and following redirects
