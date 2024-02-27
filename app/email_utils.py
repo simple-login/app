@@ -1403,7 +1403,7 @@ def generate_verp_email(
     # Time is in minutes granularity and start counting on 2022-01-01 to reduce bytes to represent time
     data = [
         verp_type.value,
-        object_id,
+        object_id or 0,
         int((time.time() - VERP_TIME_START) / 60),
     ]
     json_payload = json.dumps(data).encode("utf-8")
