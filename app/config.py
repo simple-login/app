@@ -567,3 +567,5 @@ MAX_API_KEYS = int(os.environ.get("MAX_API_KEYS", 30))
 UPCLOUD_USERNAME = os.environ.get("UPCLOUD_USERNAME", None)
 UPCLOUD_PASSWORD = os.environ.get("UPCLOUD_PASSWORD", None)
 UPCLOUD_DB_ID = os.environ.get("UPCLOUD_DB_ID", None)
+
+STORE_TRANSACTIONAL_EMAILS = "STORE_TRANSACTIONAL_EMAILS" in os.environ

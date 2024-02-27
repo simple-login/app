@@ -3178,6 +3178,20 @@ class TransactionalEmail(Base, ModelMixin):
 
     __table_args__ = (sa.Index("ix_transactional_email_created_at", "created_at"),)
 
+    @classmethod
+    def create(cls, **kw):
+        # whether to call Session.commit
+        commit = kw.pop("commit", False)
+
+        r = cls(**kw)
+        if not config.STORE_TRANSACTIONAL_EMAILS:
+            return r
+
+        Session.add(r)
+        if commit:
+            Session.commit()
+        return r
+
 
 class Payout(Base, ModelMixin):
     """Referral payouts"""
