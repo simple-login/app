@@ -236,15 +236,16 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             Session.commit()
     else:
         try:
+            contact_email_for_reply = (
+                contact_email if is_valid_email(contact_email) else ""
+            )
             contact = Contact.create(
                 user_id=alias.user_id,
                 alias_id=alias.id,
                 website_email=contact_email,
                 name=contact_name,
                 mail_from=mail_from,
-                reply_email=generate_reply_email(contact_email, alias)
-                if is_valid_email(contact_email)
-                else NOREPLY,
+                reply_email=generate_reply_email(contact_email_for_reply, alias),
                 automatic_created=True,
             )
             if not contact_email:
