@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 from app import s3
 from app.config import JOB_BATCH_IMPORT
 from app.dashboard.base import dashboard_bp
+from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.log import LOG
 from app.models import File, BatchImport, Job
@@ -13,6 +14,7 @@ from app.utils import random_string, CSRFValidationForm
 
 @dashboard_bp.route("/batch_import", methods=["GET", "POST"])
 @login_required
+@sudo_required
 def batch_import_route():
     # only for users who have custom domains
     if not current_user.verified_custom_domains():

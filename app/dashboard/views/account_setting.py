@@ -24,6 +24,7 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.extensions import limiter
+from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import (
     BlockBehaviourEnum,
@@ -33,10 +34,7 @@ from app.models import (
     User,
     Alias,
     AliasGeneratorEnum,
-    ManualSubscription,
     SenderFormatEnum,
-    CoinbaseSubscription,
-    AppleSubscription,
     UnsubscribeBehaviourEnum,
 )
 from app.proton.utils import perform_proton_account_unlink
@@ -129,11 +127,15 @@ def account_setting():
             )
             send_reset_password_email(current_user)
             return redirect(url_for("dashboard.account_setting"))
+        elif request.form.get("form-name") == "send-full-user-report":
+            if ExportUserDataJob(current_user).store_job_in_db():
+                flash(
+                    "You will receive your SimpleLogin data via email shortly",
+                    "success",
+                )
+            else:
+                flash("An export of your data is currently in progress", "error")
 
-    manual_sub = ManualSubscription.get_by(user_id=current_user.id)
-    apple_sub = AppleSubscription.get_by(user_id=current_user.id)
-    coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
-    paddle_sub = current_user.get_paddle_subscription()
     partner_sub = None
     partner_name = None
 
@@ -147,12 +149,8 @@ def account_setting():
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
         UnsubscribeBehaviourEnum=UnsubscribeBehaviourEnum,
-        manual_sub=manual_sub,
         partner_sub=partner_sub,
         partner_name=partner_name,
-        apple_sub=apple_sub,
-        paddle_sub=paddle_sub,
-        coinbase_sub=coinbase_sub,
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
         connect_with_proton=CONNECT_WITH_PROTON,
