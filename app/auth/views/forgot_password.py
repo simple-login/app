@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
-from app.dashboard.views.sudo_setting import send_reset_password_email
+from app.dashboard.views.account_setting import send_reset_password_email
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User

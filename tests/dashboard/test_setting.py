@@ -13,7 +13,7 @@ def test_setup_done(flask_client):
     noncanonical_email = f"nonca.{random_email()}"
 
     r = flask_client.post(
-        url_for("dashboard.sudo_setting"),
+        url_for("dashboard.account_setting"),
         data={
             "form-name": "update-email",
             "email": noncanonical_email,

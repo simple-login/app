@@ -47,11 +47,11 @@ from app.utils import (
 )
 
 
-@dashboard_bp.route("/sudo_setting", methods=["GET", "POST"])
+@dashboard_bp.route("/account_setting", methods=["GET", "POST"])
 @login_required
 @sudo_required
 @limiter.limit("5/minute", methods=["POST"])
-def sudo_setting():
+def account_setting():
     change_email_form = ChangeEmailForm()
     csrf_form = CSRFValidationForm()
 
@@ -121,14 +121,14 @@ def sudo_setting():
                             "A confirmation email is on the way, please check your inbox",
                             "success",
                         )
-                        return redirect(url_for("dashboard.sudo_setting"))
+                        return redirect(url_for("dashboard.account_setting"))
         elif request.form.get("form-name") == "change-password":
             flash(
                 "You are going to receive an email containing instructions to change your password",
                 "success",
             )
             send_reset_password_email(current_user)
-            return redirect(url_for("dashboard.sudo_setting"))
+            return redirect(url_for("dashboard.account_setting"))
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
@@ -138,7 +138,7 @@ def sudo_setting():
     partner_name = None
 
     return render_template(
-        "dashboard/sudo_setting.html",
+        "dashboard/account_setting.html",
         csrf_form=csrf_form,
         PlanEnum=PlanEnum,
         SenderFormatEnum=SenderFormatEnum,
