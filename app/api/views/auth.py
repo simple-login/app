@@ -11,7 +11,7 @@ from itsdangerous import Signer
 from app import email_utils
 from app.api.base import api_bp
 from app.config import FLASK_SECRET, DISABLE_REGISTRATION
-from app.dashboard.views.setting import send_reset_password_email
+from app.dashboard.views.account_setting import send_reset_password_email
 from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,

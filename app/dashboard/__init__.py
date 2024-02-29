@@ -32,6 +32,7 @@ from .views import (
     delete_account,
     notification,
     support,
+    account_setting,
 )
 
 __all__ = [
@@ -68,4 +69,5 @@ __all__ = [
     "delete_account",
     "notification",
     "support",
+    "account_setting",
 ]
