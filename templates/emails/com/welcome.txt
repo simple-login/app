@@ -7,7 +7,7 @@ Hi!
   if you don't need any of  these.
 {% endif %}
 
-To better secure your account, we recommend enabling Multi-Factor Authentication (MFA) or WebAuthn (Yubikey)
+To better secure your account, we recommend enabling Multi-Factor Authentication (MFA) or WebAuth (Yubikey)
 on your setting page at {{URL}}/dashboard/setting
 
 

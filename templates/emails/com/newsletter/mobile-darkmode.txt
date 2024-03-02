@@ -57,9 +57,9 @@ If you happen to use one of these social login options, please create a password
 
 You can still sign in using these social login until 2020-05-31. After this date, they will be removed.
 
-5) WebAuthn (Beta)
+5) WebAuth (Beta)
 
-Thanks to one of SimpleLogin users, the WebAuthn is now available in Beta.
+Thanks to one of SimpleLogin users, the WebAuth is now available in Beta.
 Please reply to this email if you want to try this out.
 
 We want to say thank you to all users who have helped to improve SimpleLogin code and even contribute important features.

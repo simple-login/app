@@ -100,10 +100,10 @@
       </div>
     </div>
     <!-- END TOTP -->
-    <!-- WebAuthn -->
+    <!-- WebAuth -->
     <div class="card">
       <div class="card-body">
-        <div class="card-title">Security Key (WebAuthn)</div>
+        <div class="card-title">Security Key (WebAuth)</div>
         <div class="mb-3">
           You can secure your account by linking either your FIDO-supported physical key such as Yubikey, Google
           Titan,
@@ -112,14 +112,14 @@
         {% if current_user.fido_uuid is none %}
 
           <a href="{{ url_for('dashboard.fido_setup') }}"
-             class="btn btn-outline-primary">Setup WebAuthn</a>
+             class="btn btn-outline-primary">Setup WebAuth</a>
         {% else %}
           <a href="{{ url_for('dashboard.fido_manage') }}"
-             class="btn btn-outline-info">Manage WebAuthn</a>
+             class="btn btn-outline-info">Manage WebAuth</a>
         {% endif %}
       </div>
     </div>
-    <!-- END WebAuthn -->
+    <!-- END WebAuth -->
     <!-- Alias import/export -->
     <div class="card">
       <div class="card-body">
