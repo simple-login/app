@@ -8,4 +8,5 @@ Your current email is {{current_email}}.
 To confirm, please click on this link:
 
 {{link}}
+If it wasn't you, maybe someone entered your email by mistake. In this case you can ignore this mail.
 {% endblock %}
