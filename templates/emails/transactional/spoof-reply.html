@@ -10,6 +10,16 @@
 {% endcall %}
 
 {% call text() %}
+- From: <b>{{ alias }}</b>
+<br />
+- To: <b>{{ to_email }}</b>
+<br />
+- Subject: <b>{{ subject }}</b>
+<br />
+- Time: <b>{{ time.humanize() }}</b>
+{% endcall %}
+
+{% call text() %}
 To protect against <b>email spoofing</b>, only your mailbox can send emails on behalf of your alias.
 SimpleLogin also refuses emails that claim to come from your mailbox but fail DMARC.
 {% endcall %}
