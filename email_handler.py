@@ -1891,6 +1891,11 @@ def handle_transactional_bounce(
     envelope: Envelope, msg, rcpt_to, transactional_id=None
 ):
     LOG.d("handle transactional bounce sent to %s", rcpt_to)
+    if transactional_id is None:
+        LOG.i(
+            f"No transactional record for {envelope.mail_from} -> {envelope.rcpt_tos}"
+        )
+        return
 
     transactional = TransactionalEmail.get(transactional_id)
     # a transaction might have been deleted in delete_logs()
