@@ -4,6 +4,11 @@
 Unauthorized attempt to send an email to {{ contact.email }} from your alias {{ alias.email }} using
 {{ sender }} has been blocked.
 
+- From: {{alias}}
+- To: {{to_email}}
+- Subject: {{subject}}
+- Time: {{ time.humanize() }}
+
 To protect against email spoofing, only your mailbox can send emails on behalf of your alias.
 SimpleLogin also refuses emails that claim to come from your mailbox but fail DMARC.
 {% endblock %}
