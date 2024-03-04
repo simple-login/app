@@ -18,6 +18,14 @@ to create aliases in one click (literally).
 Firefox: https://addons.mozilla.org/firefox/addon/simplelogin/
 Chrome: https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn
 
+SimpleLogin is also available on:
+- Android:
+https://play.google.com/store/apps/details?id=io.simplelogin.android
+- iOS:
+https://apps.apple.com/app/id149435985
+
+You can also find SimpleLogin on F-Droid https://f-droid.org/en/packages/io.simplelogin.android.fdroid/.
+
 {% if user.in_trial() and user.trial_end %}
 When you signed up, you can use all premium features like custom domain, alias directory, mailbox, PGP
 without any limit during 7 days (the "trial period").
