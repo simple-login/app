@@ -421,6 +421,8 @@ try:
 except Exception:
     HIBP_SCAN_INTERVAL_DAYS = 7
 HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
+HIBP_MAX_ALIAS_CHECK = 10_000
+HIBP_RPM = 100
 
 POSTMASTER = os.environ.get("POSTMASTER")
 
