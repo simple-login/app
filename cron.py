@@ -973,10 +973,10 @@ async def _hibp_check(api_key, queue):
 
         alias = Alias.get(alias_id)
         if not alias:
-            return
+            continue
         user = alias.user
         if user.disabled or not user.is_paid():
-            return
+            continue
 
         LOG.d("Checking HIBP for %s", alias)
 
