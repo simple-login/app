@@ -14,8 +14,12 @@ Firefox: https://addons.mozilla.org/firefox/addon/simplelogin/
 Safari: https://apps.apple.com/app/id1494051017
 
 You can also manage your aliases using SimpleLogin mobile apps, available at
-- Play Store https://play.google.com/store/apps/details?id=io.simplelogin.android
-- App Store https://apps.apple.com/app/id1494359858
+- Play Store
+https://play.google.com/store/apps/details?id=io.simplelogin.android
+- App Store
+https://apps.apple.com/app/id1494359858
+- F-Droid
+https://f-droid.org/en/packages/io.simplelogin.android.fdroid/
 
 As usual, let us know if you have any question by replying to this email.
 
