@@ -1892,23 +1892,24 @@ def handle_transactional_bounce(
 ):
     LOG.d("handle transactional bounce sent to %s", rcpt_to)
 
-    # parse the TransactionalEmail
-    transactional_id = transactional_id or parse_id_from_bounce(rcpt_to)
     transactional = TransactionalEmail.get(transactional_id)
-
     # a transaction might have been deleted in delete_logs()
-    if transactional:
-        LOG.i("Create bounce for %s", transactional.email)
-        bounce_info = get_mailbox_bounce_info(msg)
-        if bounce_info:
-            Bounce.create(
-                email=transactional.email,
-                info=bounce_info.as_bytes().decode(),
-                commit=True,
-            )
-        else:
-            LOG.w("cannot get bounce info, debug at %s", save_email_for_debugging(msg))
-            Bounce.create(email=transactional.email, commit=True)
+    if not transactional:
+        LOG.i(
+            f"No transactional record for {envelope.mail_from} -> {envelope.rcpt_tos}"
+        )
+        return
+    LOG.i("Create bounce for %s", transactional.email)
+    bounce_info = get_mailbox_bounce_info(msg)
+    if bounce_info:
+        Bounce.create(
+            email=transactional.email,
+            info=bounce_info.as_bytes().decode(),
+            commit=True,
+        )
+    else:
+        LOG.w("cannot get bounce info, debug at %s", save_email_for_debugging(msg))
+        Bounce.create(email=transactional.email, commit=True)
 
 
 def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
