@@ -3,6 +3,7 @@ from email.header import Header
 from email.message import Message
 
 from app.email import headers
+from app import config
 from app.email_utils import add_or_replace_header, delete_header
 from app.handler.unsubscribe_encoder import (
     UnsubscribeEncoder,
@@ -47,6 +48,11 @@ class UnsubscribeGenerator:
             method = raw_method[start + 1 : end]
             url_data = urllib.parse.urlparse(method)
             if url_data.scheme == "mailto":
+                if url_data.path == config.UNSUBSCRIBER:
+                    LOG.debug(
+                        f"Skipping replacing unsubscribe since the original email already points to {config.UNSUBSCRIBER}"
+                    )
+                    return message
                 query_data = urllib.parse.parse_qs(url_data.query)
                 mailto_unsubs = (url_data.path, query_data.get("subject", [""])[0])
                 LOG.debug(f"Unsub is mailto to {mailto_unsubs}")

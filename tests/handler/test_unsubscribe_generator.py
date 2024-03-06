@@ -13,8 +13,7 @@ from app.handler.unsubscribe_encoder import (
 )
 from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.models import Alias, Contact, UnsubscribeBehaviourEnum
-from tests.utils import create_new_user
-
+from tests.utils import create_new_user, random_email
 
 TEST_UNSUB_EMAIL = "unsub@sl.com"
 
@@ -204,3 +203,23 @@ def test_unsub_preserve_original(
         assert message[headers.LIST_UNSUBSCRIBE_POST] is None
     else:
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
+
+
+def test_unsub_preserves_sl_unsubscriber():
+    user = create_new_user()
+    user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    config.UNSUBSCRIBER = random_email()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.local",
+        commit=True,
+    )
+    message = Message()
+    original_header = f"<mailto:{config.UNSUBSCRIBER}?subject=dummysubject>"
+    message[headers.LIST_UNSUBSCRIBE] = original_header
+    message = UnsubscribeGenerator().add_header_to_message(alias, contact, message)
+    assert original_header == message[headers.LIST_UNSUBSCRIBE]
