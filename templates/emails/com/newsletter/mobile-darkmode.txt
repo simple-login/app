@@ -15,7 +15,6 @@ Now you can quickly create aliases on-the-go with SimpleLogin Android and iOS ap
 Download:
 - the Android app on Play Store https://play.google.com/store/apps/details?id=io.simplelogin.android
 - the iOS app on App Store https://apps.apple.com/app/id1494359858
-- or find us on F-Droid: https://f-droid.org/en/packages/io.simplelogin.android.fdroid/
 
 With the release of the mobile apps, SimpleLogin now covers most major platforms:
 
