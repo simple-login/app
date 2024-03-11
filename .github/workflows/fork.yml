@@ -16,3 +16,7 @@ jobs:
           base: master
           head: master
           ignore_fail: true
+        continue-on-error: true
+
+      - run: echo "🍏 This job's status is ${{ job.status }}."
+    
