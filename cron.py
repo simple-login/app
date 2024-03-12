@@ -1064,7 +1064,10 @@ async def check_hibp():
             or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date),
             Alias.user_id.notin_(user_ids),
         )
-        .filter(Alias.enabled)
+        .filter(
+            Alias.enabled,
+            Alias.flags.op("&")(Alias.FLAG_PARTNER_CREATED) == 0,
+        )
         .order_by(nullsfirst(Alias.hibp_last_check.asc()), Alias.id.asc())
         .yield_per(500)
         .enable_eagerloads(False)
