@@ -2,6 +2,8 @@ name: Test and lint
 
 on:
   push:
+    paths:
+      - '.github/workflows/main.yml'
 
 jobs:
   lint:
