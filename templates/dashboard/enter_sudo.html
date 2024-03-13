@@ -22,11 +22,20 @@
           <p>Alternatively you can use your Proton credentials to ensure it's you.</p>
         </div>
         <a class="btn btn-primary btn-block mt-2 proton-button w-25"
-           href="{{ url_for("auth.proton_login", next=next) }}">
+           href="{{ url_for('auth.proton_login', next=next) }}">
           <img class="mr-2" src="/static/images/proton.svg" />
           Authenticate with Proton
         </a>
       {% endif %}
+      {% if connect_with_oidc %}
+
+        <div class="my-3">
+          <p>Alternatively you can use your SSO credentials to ensure it's you.</p>
+          <a class="btn btn-primary btn-block mt-2 btn-social w-25"
+             href="{{ url_for('auth.oidc_login', next=next) }}">
+            <i class="fa {{ connect_with_oidc_icon }}"></i> Authenticate with SSO
+          </a>
+        {% endif %}
+      </div>
     </div>
-  </div>
-{% endblock %}
+  {% endblock %}

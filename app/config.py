@@ -234,7 +234,7 @@ else:
 
     print("WARNING: Use a temp directory for GNUPGHOME", GNUPGHOME)
 
-# Github, Google, Facebook client id and secrets
+# Github, Google, Facebook, OIDC client id and secrets
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
 
@@ -243,6 +243,15 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 
 FACEBOOK_CLIENT_ID = os.environ.get("FACEBOOK_CLIENT_ID")
 FACEBOOK_CLIENT_SECRET = os.environ.get("FACEBOOK_CLIENT_SECRET")
+
+CONNECT_WITH_OIDC_ICON = os.environ.get("CONNECT_WITH_OIDC_ICON")
+OIDC_AUTHORIZATION_URL = os.environ.get("OIDC_AUTHORIZATION_URL")
+OIDC_USER_INFO_URL = os.environ.get("OIDC_USER_INFO_URL")
+OIDC_TOKEN_URL = os.environ.get("OIDC_TOKEN_URL")
+OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
+OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
+OIDC_SCOPES = os.environ.get("OIDC_SCOPES")
+OIDC_NAME_FIELD = os.environ.get("OIDC_NAME_FIELD", "name")
 
 PROTON_CLIENT_ID = os.environ.get("PROTON_CLIENT_ID")
 PROTON_CLIENT_SECRET = os.environ.get("PROTON_CLIENT_SECRET")
