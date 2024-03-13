@@ -16,6 +16,7 @@ from .views import (
     social,
     recovery,
     api_to_cookie,
+    oidc,
 )
 
 __all__ = [
@@ -36,4 +37,5 @@ __all__ = [
     "social",
     "recovery",
     "api_to_cookie",
+    "oidc",
 ]

@@ -38,9 +38,19 @@
           <span>or</span>
         </div>
         <a class="btn btn-primary btn-block mt-2 proton-button"
-           href="{{ url_for("auth.proton_login", next=next_url) }}">
+           href="{{ url_for('auth.proton_login', next=next_url) }}">
           <img class="mr-2" src="/static/images/proton.svg" />
           Log in with Proton
+        </a>
+      {% endif %}
+      {% if connect_with_oidc %}
+
+        <div class="text-center my-2 text-gray">
+          <span>or</span>
+        </div>
+        <a class="btn btn-primary btn-block mt-2 btn-social"
+           href="{{ url_for('auth.oidc_login', next=next_url) }}">
+          <i class="fa {{ connect_with_oidc_icon }}"></i> Log in with SSO
         </a>
       {% endif %}
     </div>

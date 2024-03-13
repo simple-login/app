@@ -5,7 +5,7 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
-from app.config import CONNECT_WITH_PROTON
+from app.config import CONNECT_WITH_PROTON, CONNECT_WITH_OIDC_ICON, OIDC_CLIENT_ID
 from app.events.auth_event import LoginEvent
 from app.extensions import limiter
 from app.log import LOG
@@ -77,4 +77,6 @@ def login():
         next_url=next_url,
         show_resend_activation=show_resend_activation,
         connect_with_proton=CONNECT_WITH_PROTON,
+        connect_with_oidc=OIDC_CLIENT_ID is not None,
+        connect_with_oidc_icon=CONNECT_WITH_OIDC_ICON,
     )
