@@ -432,6 +432,7 @@ except Exception:
 HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
 HIBP_MAX_ALIAS_CHECK = 10_000
 HIBP_RPM = 100
+HIBP_SKIP_PARTNER_ALIAS = os.environ.get("HIBP_SKIP_PARTNER_ALIAS")
 
 POSTMASTER = os.environ.get("POSTMASTER")
 

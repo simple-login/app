@@ -1422,6 +1422,9 @@ def generate_random_alias_email(
 
 class Alias(Base, ModelMixin):
     __tablename__ = "alias"
+
+    FLAG_PARTNER_CREATED = 1 << 0
+
     user_id = sa.Column(
         sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
     )
@@ -1431,6 +1434,9 @@ class Alias(Base, ModelMixin):
     name = sa.Column(sa.String(128), nullable=True, default=None)
 
     enabled = sa.Column(sa.Boolean(), default=True, nullable=False)
+    flags = sa.Column(
+        sa.BigInteger(), default=0, server_default="0", nullable=False, index=True
+    )
 
     custom_domain_id = sa.Column(
         sa.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True, index=True
@@ -2586,9 +2592,12 @@ class Job(Base, ModelMixin):
         nullable=False,
         server_default=str(JobState.ready.value),
         default=JobState.ready.value,
+        index=True,
     )
     attempts = sa.Column(sa.Integer, nullable=False, server_default="0", default=0)
     taken_at = sa.Column(ArrowType, nullable=True)
+
+    __table_args__ = (Index("ix_state_run_at_taken_at", state, run_at, taken_at),)
 
     def __repr__(self):
         return f"<Job {self.id} {self.name} {self.payload}>"
@@ -2937,7 +2946,9 @@ class RecoveryCode(Base, ModelMixin):
 
 class Notification(Base, ModelMixin):
     __tablename__ = "notification"
-    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    user_id = sa.Column(
+        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+    )
     message = sa.Column(sa.Text, nullable=False)
     title = sa.Column(sa.String(512))
 

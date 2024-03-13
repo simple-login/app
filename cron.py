@@ -1059,13 +1059,15 @@ async def check_hibp():
     LOG.d("Preparing list of aliases to check")
     queue = asyncio.Queue()
     max_date = arrow.now().shift(days=-config.HIBP_SCAN_INTERVAL_DAYS)
+    alias_query = Alias.filter(
+        or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date),
+        Alias.user_id.notin_(user_ids),
+        Alias.enabled,
+    )
+    if config.HIBP_SKIP_PARTNER_ALIAS:
+        alias_query = alias_query(Alias.flags.op("&")(Alias.FLAG_PARTNER_CREATED) == 0)
     for alias in (
-        Alias.filter(
-            or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date),
-            Alias.user_id.notin_(user_ids),
-        )
-        .filter(Alias.enabled)
-        .order_by(nullsfirst(Alias.hibp_last_check.asc()), Alias.id.asc())
+        alias_query.order_by(nullsfirst(Alias.hibp_last_check.asc()), Alias.id.asc())
         .yield_per(500)
         .enable_eagerloads(False)
     ):
