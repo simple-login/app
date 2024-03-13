@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(
 )
 args = parser.parse_args()
 
-max_alias_id = Session.query(func.max(Alias.id)).scalar()
+max_alias_id: int = Session.query(func.max(Alias.id)).scalar()
 
 start = time.time()
 tests = 1000
