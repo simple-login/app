@@ -10,8 +10,6 @@ from app.db import Session
 parser = argparse.ArgumentParser(
     prog="Mark partner created aliases with the PARTNER_CREATED flag",
 )
-args = parser.parse_args()
-
 parser.add_argument(
     "-s", "--start_alias_id", default=0, type=int, help="Initial alias_id"
 )
