@@ -1,7 +1,6 @@
 name: Test and lint
 
-on:
-  push:
+on: [push, pull_request]
 
 jobs:
   lint:
@@ -139,6 +138,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
@@ -158,6 +163,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
