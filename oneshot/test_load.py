@@ -3,6 +3,7 @@ import argparse
 import random
 import time
 
+from sqlalchemy import func
 
 from app import config
 from app.models import Alias, Contact
@@ -14,8 +15,7 @@ parser = argparse.ArgumentParser(
 )
 args = parser.parse_args()
 
-rows = Session.execute("select MAX(id) from alias")
-max_alias_id = rows.fetchone()[0]
+max_alias_id = Session.query(func.max(Alias.id)).scalar()
 
 start = time.time()
 tests = 1000
