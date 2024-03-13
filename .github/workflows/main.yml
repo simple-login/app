@@ -1,9 +1,6 @@
 name: Test and lint
 
-on:
-  push:
-    paths:
-      - '.github/workflows/main.yml'
+on: [push, pull_request]
 
 jobs:
   lint:
