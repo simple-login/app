@@ -151,10 +151,10 @@ Here are the small sum-ups of the directory structures and their roles:
 
 ## Pull request
 
-The code is formatted using https://github.com/psf/black, to format the code, simply run
+The code is formatted using [ruff](https://github.com/astral-sh/ruff), to format the code, simply run
 
 ```
-poetry run black .
+poetry run ruff format .
 ```
 
 The code is also checked with `flake8`, make sure to run `flake8` before creating the pull request by
