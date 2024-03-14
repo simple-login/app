@@ -583,6 +583,23 @@
             </form>
           </div>
         </div>
+        <!-- Alias import/export -->
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title">
+              Alias import/export
+            </div>
+            <div class="mb-3">
+              You can import your aliases created on other platforms into SimpleLogin.
+              You can also export your aliases to a readable csv format for a future batch import.
+            </div>
+            <a href="{{ url_for('dashboard.batch_import_route') }}"
+               class="btn btn-outline-primary">Batch Import</a>
+            <a href="{{ url_for('dashboard.alias_export_route') }}"
+               class="btn btn-outline-secondary">Export Aliases</a>
+          </div>
+        </div>
+        <!-- END Alias import/export -->
       </div>
     {% endblock %}
     {% block script %}
