@@ -24,7 +24,6 @@ from app.email_utils import (
     personal_email_already_used,
 )
 from app.extensions import limiter
-from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import (
     BlockBehaviourEnum,
@@ -127,14 +126,6 @@ def account_setting():
             )
             send_reset_password_email(current_user)
             return redirect(url_for("dashboard.account_setting"))
-        elif request.form.get("form-name") == "send-full-user-report":
-            if ExportUserDataJob(current_user).store_job_in_db():
-                flash(
-                    "You will receive your SimpleLogin data via email shortly",
-                    "success",
-                )
-            else:
-                flash("An export of your data is currently in progress", "error")
 
     partner_sub = None
     partner_name = None

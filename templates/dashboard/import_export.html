@@ -1,0 +1,71 @@
+{% extends "default.html" %}
+
+{% set active_page = "setting" %}
+{% block title %}Import/Export{% endblock %}
+{% block head %}
+
+  <style>
+        .card-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .highlighted{
+            border: solid 2px #5675E2;
+        }
+        li {
+            margin-top: 8px;
+        }
+
+  </style>
+{% endblock %}
+{% block default_content %}
+
+  <div class="col pb-3">
+    <!-- Alias import/export -->
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Alias import/export</div>
+        <div class="mb-3">
+          You can import your aliases created on other platforms into SimpleLogin.
+          You can also export your aliases to a readable csv format for a future batch import.
+        </div>
+        <a href="{{ url_for('dashboard.batch_import_route') }}"
+           class="btn btn-outline-primary">Batch Import</a>
+        <a href="{{ url_for('dashboard.alias_export_route') }}"
+           class="btn btn-outline-secondary">Export Aliases</a>
+      </div>
+    </div>
+    <!-- END Alias import/export -->
+    <!-- data export -->
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">SimpleLogin data export</div>
+        <div class="mb-3">
+          As per GDPR (General Data Protection Regulation) law, you can request a copy of your data which are stored on
+          SimpleLogin.
+          A zip file that contains all information will be sent to your SimpleLogin account address.
+        </div>
+        <div class="d-flex">
+          <div>
+            <form method="post">
+              {{ csrf_form.csrf_token }}
+              <input type="hidden" name="form-name" value="send-full-user-report">
+              <button class="btn btn-outline-info">Request your data</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END data export -->
+  </div>
+{% endblock %}
+{% block script %}
+
+  <script>
+        let anchor = window.location.hash;
+        $(anchor).addClass("highlighted")
+
+
+  </script>
+{% endblock %}
