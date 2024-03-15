@@ -6,7 +6,7 @@ import arrow
 from app import s3, config
 from app.models import File, BatchImport
 from tasks.cleanup_old_imports import cleanup_old_imports
-from utils import random_token, create_new_user
+from tests.utils import random_token, create_new_user
 
 
 def test_cleanup_old_imports():
