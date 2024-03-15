@@ -2,7 +2,7 @@ import arrow
 
 from app.models import Notification
 from tasks.cleanup_old_notifications import cleanup_old_notifications
-from utils import create_new_user
+from tests.utils import create_new_user
 
 
 def test_cleanup_old_notifications():
