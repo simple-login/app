@@ -494,9 +494,10 @@ def delete_header(msg: Message, header: str):
 
 def sanitize_header(msg: Message, header: str):
     """remove trailing space and remove linebreak from a header"""
+    header_lowercase = header.lower()
     for i in reversed(range(len(msg._headers))):
         header_name = msg._headers[i][0].lower()
-        if header_name == header.lower():
+        if header_name == header_lowercase:
             # msg._headers[i] is a tuple like ('From', 'hey@google.com')
             if msg._headers[i][1]:
                 msg._headers[i] = (

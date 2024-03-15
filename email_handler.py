@@ -2040,10 +2040,11 @@ def handle(envelope: Envelope, msg: Message) -> str:
         return status.E204
 
     # sanitize email headers
-    sanitize_header(msg, "from")
-    sanitize_header(msg, "to")
-    sanitize_header(msg, "cc")
-    sanitize_header(msg, "reply-to")
+    sanitize_header(msg, headers.FROM)
+    sanitize_header(msg, headers.TO)
+    sanitize_header(msg, headers.CC)
+    sanitize_header(msg, headers.REPLY_TO)
+    sanitize_header(msg, headers.MESSAGE_ID)
 
     LOG.d(
         "==>> Handle mail_from:%s, rcpt_tos:%s, header_from:%s, header_to:%s, "
