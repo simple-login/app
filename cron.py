@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import arrow
 import requests
-from sqlalchemy import func, desc, or_, and_, nullsfirst
+from sqlalchemy import func, desc, or_, and_
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import ObjectDeletedError
@@ -1033,6 +1033,60 @@ async def _hibp_check(api_key, queue):
         await asyncio.sleep(rate_sleep)
 
 
+def get_alias_to_check_hibp(
+    oldest_hibp_allowed: arrow.Arrow,
+    user_ids_to_skip: list[int],
+    min_alias_id: int,
+    max_alias_id: int,
+):
+    now = arrow.now()
+    alias_query = (
+        Session.query(Alias)
+        .join(User, User.id == Alias.user_id)
+        .join(Subscription, User.id == Subscription.user_id, isouter=True)
+        .join(ManualSubscription, User.id == ManualSubscription.user_id, isouter=True)
+        .join(AppleSubscription, User.id == AppleSubscription.user_id, isouter=True)
+        .join(
+            CoinbaseSubscription,
+            User.id == CoinbaseSubscription.user_id,
+            isouter=True,
+        )
+        .join(PartnerUser, User.id == PartnerUser.user_id, isouter=True)
+        .join(
+            PartnerSubscription,
+            PartnerSubscription.partner_user_id == PartnerUser.id,
+            isouter=True,
+        )
+        .filter(
+            or_(
+                Alias.hibp_last_check.is_(None),
+                Alias.hibp_last_check < oldest_hibp_allowed,
+            ),
+            Alias.user_id.notin_(user_ids_to_skip),
+            Alias.enabled,
+            Alias.id >= min_alias_id,
+            Alias.id < max_alias_id,
+            User.disabled == False,  # noqa: E712
+            or_(
+                User.lifetime,
+                ManualSubscription.end_at > now,
+                Subscription.next_bill_date > now.date(),
+                AppleSubscription.expires_date > now,
+                CoinbaseSubscription.end_at > now,
+                PartnerSubscription.end_at > now,
+            ),
+        )
+    )
+    if config.HIBP_SKIP_PARTNER_ALIAS:
+        alias_query = alias_query.filter(
+            Alias.flags.op("&")(Alias.FLAG_PARTNER_CREATED) == 0
+        )
+    for alias in (
+        alias_query.order_by(Alias.id.asc()).enable_eagerloads(False).yield_per(500)
+    ):
+        yield alias
+
+
 async def check_hibp():
     """
     Check all aliases on the HIBP (Have I Been Pwned) API
@@ -1063,28 +1117,20 @@ async def check_hibp():
     queue = asyncio.Queue()
     min_alias_id = 0
     max_alias_id = Session.query(func.max(Alias.id)).scalar()
-    step = 500
-    max_date = arrow.now().shift(days=-config.HIBP_SCAN_INTERVAL_DAYS)
+    step = 10000
+    now = arrow.now()
+    oldest_hibp_allowed = now.shift(days=-config.HIBP_SCAN_INTERVAL_DAYS)
     alias_checked = 0
     for alias_batch_id in range(min_alias_id, max_alias_id, step):
-        alias_query = Alias.filter(
-            or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date),
-            Alias.user_id.notin_(user_ids),
-            Alias.enabled,
-            Alias.id >= alias_batch_id,
-            Alias.id < alias_batch_id + step,
-        )
-        if config.HIBP_SKIP_PARTNER_ALIAS:
-            alias_query = alias_query(
-                Alias.flags.op("&")(Alias.FLAG_PARTNER_CREATED) == 0
-            )
-        for alias in alias_query.order_by(
-            nullsfirst(Alias.hibp_last_check.asc()), Alias.id.asc()
-        ).enable_eagerloads(False):
+        for alias in get_alias_to_check_hibp(
+            oldest_hibp_allowed, user_ids, alias_batch_id, alias_batch_id + step
+        ):
             await queue.put(alias.id)
 
         alias_checked += queue.qsize()
-        LOG.d("Need to check about %s aliases in this loop", queue.qsize())
+        LOG.d(
+            f"Need to check about {queue.qsize()} aliases in this loop {alias_batch_id}/{max_alias_id}"
+        )
 
         # Start one checking process per API key
         # Each checking process will take one alias from the queue, get the info
