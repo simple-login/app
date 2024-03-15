@@ -5,7 +5,7 @@ import arrow
 
 from app import s3, config
 from app.models import File, BatchImport
-from tasks.cleanup_old_imports import cleanup_imports
+from tasks.cleanup_old_imports import cleanup_old_imports
 from utils import random_token, create_new_user
 
 
@@ -30,6 +30,6 @@ def test_cleanup_old_imports():
             created_at=now.shift(minutes=+1),
             commit=True,
         ).id
-        cleanup_imports(now)
+        cleanup_old_imports(now)
         assert BatchImport.get(id=delete_batch_import_id) is None
         assert BatchImport.get(id=keep_batch_import_id) is not None

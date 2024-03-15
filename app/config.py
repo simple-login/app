@@ -434,6 +434,8 @@ HIBP_MAX_ALIAS_CHECK = 10_000
 HIBP_RPM = 100
 HIBP_SKIP_PARTNER_ALIAS = os.environ.get("HIBP_SKIP_PARTNER_ALIAS")
 
+KEEP_OLD_DATA_DAYS = 30
+
 POSTMASTER = os.environ.get("POSTMASTER")
 
 # store temporary files, especially for debugging

@@ -61,6 +61,9 @@ from app.pgp_utils import load_public_key_and_check, PGPException
 from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
 from server import create_light_app
+from tasks.cleanup_old_imports import cleanup_old_imports
+from tasks.cleanup_old_jobs import cleanup_old_jobs
+from tasks.cleanup_old_notifications import cleanup_old_notifications
 
 DELETE_GRACE_DAYS = 30
 
@@ -1221,6 +1224,13 @@ def clear_users_scheduled_to_be_deleted(dry_run=False):
         Session.commit()
 
 
+def delete_old_data():
+    oldest_valid = arrow.now().shift(days=-config.KEEP_OLD_DATA_DAYS)
+    cleanup_old_imports(oldest_valid)
+    cleanup_old_jobs(oldest_valid)
+    cleanup_old_notifications(oldest_valid)
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -1235,6 +1245,7 @@ if __name__ == "__main__":
             "notify_manual_subscription_end",
             "notify_premium_end",
             "delete_logs",
+            "delete_old_data",
             "poll_apple_subscription",
             "sanity_check",
             "delete_old_monitoring",
@@ -1263,6 +1274,9 @@ if __name__ == "__main__":
         elif args.job == "delete_logs":
             LOG.d("Deleted Logs")
             delete_logs()
+        elif args.job == "delete_old_data":
+            LOG.d("Delete old data")
+            delete_old_data()
         elif args.job == "poll_apple_subscription":
             LOG.d("Poll Apple Subscriptions")
             poll_apple_subscription()

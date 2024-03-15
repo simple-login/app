@@ -7,6 +7,7 @@ from app.models import Job, JobState
 
 
 def cleanup_old_jobs(oldest_allowed: arrow.Arrow):
+    LOG.i(f"Deleting jobs older than {oldest_allowed}")
     count = Job.filter(
         or_(
             Job.state == JobState.done.value,
