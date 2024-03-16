@@ -2,12 +2,18 @@
 
 {% block content %}
 
-  {{ render_text("Thank you for choosing SimpleLogin.") }}
-  {{ render_text("To get started, please confirm that <b>" + email + "</b> is your email address by clicking on the button below within 1 hour.") }}
-  {{ render_text("If it wasn't you, maybe someone entered your email by mistake. In this case you can ignore this mail.") }}
-  {{ render_button("Verify email", activation_link) }}
-  {{ render_text('Thanks,
-  <br />
-  SimpleLogin Team.') }}
-  {{ raw_url(activation_link) }}
+ {{ render_text("Thank you for choosing SimpleLogin.") }}
+
+ {{ render_text("Before proceeding, please read the following prohibited actions and then click the button below to continue.") }}
+ {{ render_text("<strong>No Mass Signups:</strong><br>Do not use SimpleLogin to create large numbers of accounts on other websites or services.") }}
+ {{ render_text("<strong>No Multiple Free Accounts:</strong><br>Do not create multiple free accounts as this is not considered an acceptable use of the service.") }}
+ {{ render_text("<strong>No Marking Emails as Spam:</strong><br>Do not mark emails forwarded to you by SimpleLogin as spam.") }}
+
+ {{ render_text("To get started, please confirm that <b>" + email + "</b> is your email address by clicking on the button below within 1 hour.") }}
+ {{ render_text("If it wasn't you, maybe someone entered your email by mistake. In this case you can ignore this mail.") }}
+ {{ render_button("Verify email", activation_link) }}
+ {{ render_text('Thanks,
+ <br />
+ SimpleLogin Team.') }}
+ {{ raw_url(activation_link) }}
 {% endblock %}
