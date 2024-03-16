@@ -3,6 +3,17 @@
 {% block content %}
 Thank you for choosing SimpleLogin.
 
+Before proceeding, please read the following prohibited actions and then click the button below to continue.
+
+No Mass Signups:
+Do not use SimpleLogin to create large numbers of accounts on other websites or services.
+
+No Multiple Free Accounts:
+Do not create multiple free accounts as this is not considered an acceptable use of the service.
+
+No Marking Emails as Spam:
+Do not mark emails forwarded to you by SimpleLogin as spam.
+
 To get started, please confirm that {{email}} is your email address using this link {{activation_link}} within 1 hour.
 
 If it wasn't you, maybe someone entered your email by mistake. In this case you can ignore this mail.
