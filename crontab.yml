@@ -37,6 +37,12 @@ jobs:
     schedule: "15 5 * * *"
     captureStderr: true
 
+  - name: SimpleLogin Delete Old data
+    command: python /code/cron.py -j delete_old_data
+    shell: /bin/bash
+    schedule: "30 5 * * *"
+    captureStderr: true
+
   - name: SimpleLogin Poll Apple Subscriptions
     command: python /code/cron.py -j poll_apple_subscription
     shell: /bin/bash
