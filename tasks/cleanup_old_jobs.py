@@ -2,6 +2,7 @@ import arrow
 from sqlalchemy import or_, and_
 
 from app import config
+from app.db import Session
 from app.log import LOG
 from app.models import Job, JobState
 
@@ -19,4 +20,5 @@ def cleanup_old_jobs(oldest_allowed: arrow.Arrow):
         ),
         Job.updated_at < oldest_allowed,
     ).delete()
+    Session.commit()
     LOG.i(f"Deleted {count} jobs")

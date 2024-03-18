@@ -16,4 +16,4 @@ def cleanup_old_imports(oldest_allowed: arrow.Arrow):
         file = batch_import.file
         if file is not None:
             s3.delete(file.path)
-        BatchImport.delete(batch_import.id)
+        BatchImport.delete(batch_import.id, commit=True)
