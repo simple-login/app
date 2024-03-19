@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import arrow
 import requests
-from sqlalchemy import func, desc, or_, and_, nullsfirst
+from sqlalchemy import func, desc, or_, and_
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import ObjectDeletedError
@@ -61,6 +61,9 @@ from app.pgp_utils import load_public_key_and_check, PGPException
 from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
 from server import create_light_app
+from tasks.cleanup_old_imports import cleanup_old_imports
+from tasks.cleanup_old_jobs import cleanup_old_jobs
+from tasks.cleanup_old_notifications import cleanup_old_notifications
 
 DELETE_GRACE_DAYS = 30
 
@@ -976,6 +979,9 @@ async def _hibp_check(api_key, queue):
             continue
         user = alias.user
         if user.disabled or not user.is_paid():
+            # Mark it as hibp done to skip it as if it had been checked
+            alias.hibp_last_check = arrow.utcnow()
+            Session.commit()
             continue
 
         LOG.d("Checking HIBP for %s", alias)
@@ -1030,6 +1036,60 @@ async def _hibp_check(api_key, queue):
         await asyncio.sleep(rate_sleep)
 
 
+def get_alias_to_check_hibp(
+    oldest_hibp_allowed: arrow.Arrow,
+    user_ids_to_skip: list[int],
+    min_alias_id: int,
+    max_alias_id: int,
+):
+    now = arrow.now()
+    alias_query = (
+        Session.query(Alias)
+        .join(User, User.id == Alias.user_id)
+        .join(Subscription, User.id == Subscription.user_id, isouter=True)
+        .join(ManualSubscription, User.id == ManualSubscription.user_id, isouter=True)
+        .join(AppleSubscription, User.id == AppleSubscription.user_id, isouter=True)
+        .join(
+            CoinbaseSubscription,
+            User.id == CoinbaseSubscription.user_id,
+            isouter=True,
+        )
+        .join(PartnerUser, User.id == PartnerUser.user_id, isouter=True)
+        .join(
+            PartnerSubscription,
+            PartnerSubscription.partner_user_id == PartnerUser.id,
+            isouter=True,
+        )
+        .filter(
+            or_(
+                Alias.hibp_last_check.is_(None),
+                Alias.hibp_last_check < oldest_hibp_allowed,
+            ),
+            Alias.user_id.notin_(user_ids_to_skip),
+            Alias.enabled,
+            Alias.id >= min_alias_id,
+            Alias.id < max_alias_id,
+            User.disabled == False,  # noqa: E712
+            or_(
+                User.lifetime,
+                ManualSubscription.end_at > now,
+                Subscription.next_bill_date > now.date(),
+                AppleSubscription.expires_date > now,
+                CoinbaseSubscription.end_at > now,
+                PartnerSubscription.end_at > now,
+            ),
+        )
+    )
+    if config.HIBP_SKIP_PARTNER_ALIAS:
+        alias_query = alias_query.filter(
+            Alias.flags.op("&")(Alias.FLAG_PARTNER_CREATED) == 0
+        )
+    for alias in (
+        alias_query.order_by(Alias.id.asc()).enable_eagerloads(False).yield_per(500)
+    ):
+        yield alias
+
+
 async def check_hibp():
     """
     Check all aliases on the HIBP (Have I Been Pwned) API
@@ -1056,43 +1116,43 @@ async def check_hibp():
     user_ids = [row[0] for row in rows]
     LOG.d("Got %d users to skip" % len(user_ids))
 
-    LOG.d("Preparing list of aliases to check")
+    LOG.d("Checking aliases")
     queue = asyncio.Queue()
-    max_date = arrow.now().shift(days=-config.HIBP_SCAN_INTERVAL_DAYS)
-    alias_query = Alias.filter(
-        or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date),
-        Alias.user_id.notin_(user_ids),
-        Alias.enabled,
-    )
-    if config.HIBP_SKIP_PARTNER_ALIAS:
-        alias_query = alias_query(Alias.flags.op("&")(Alias.FLAG_PARTNER_CREATED) == 0)
-    for alias in (
-        alias_query.order_by(nullsfirst(Alias.hibp_last_check.asc()), Alias.id.asc())
-        .yield_per(500)
-        .enable_eagerloads(False)
-    ):
-        await queue.put(alias.id)
+    min_alias_id = 0
+    max_alias_id = Session.query(func.max(Alias.id)).scalar()
+    step = 10000
+    now = arrow.now()
+    oldest_hibp_allowed = now.shift(days=-config.HIBP_SCAN_INTERVAL_DAYS)
+    alias_checked = 0
+    for alias_batch_id in range(min_alias_id, max_alias_id, step):
+        for alias in get_alias_to_check_hibp(
+            oldest_hibp_allowed, user_ids, alias_batch_id, alias_batch_id + step
+        ):
+            await queue.put(alias.id)
 
-    LOG.d("Need to check about %s aliases", queue.qsize())
-
-    # Start one checking process per API key
-    # Each checking process will take one alias from the queue, get the info
-    # and then sleep for 1.5 seconds (due to HIBP API request limits)
-    checkers = []
-    for i in range(len(config.HIBP_API_KEYS)):
-        checker = asyncio.create_task(
-            _hibp_check(
-                config.HIBP_API_KEYS[i],
-                queue,
-            )
+        alias_checked += queue.qsize()
+        LOG.d(
+            f"Need to check about {queue.qsize()} aliases in this loop {alias_batch_id}/{max_alias_id}"
         )
-        checkers.append(checker)
 
-    # Wait until all checking processes are done
-    for checker in checkers:
-        await checker
+        # Start one checking process per API key
+        # Each checking process will take one alias from the queue, get the info
+        # and then sleep for 1.5 seconds (due to HIBP API request limits)
+        checkers = []
+        for i in range(len(config.HIBP_API_KEYS)):
+            checker = asyncio.create_task(
+                _hibp_check(
+                    config.HIBP_API_KEYS[i],
+                    queue,
+                )
+            )
+            checkers.append(checker)
 
-    LOG.d("Done checking HIBP API for aliases in breaches")
+        # Wait until all checking processes are done
+        for checker in checkers:
+            await checker
+
+    LOG.d(f"Done checking {alias_checked} HIBP API for aliases in breaches")
 
 
 def notify_hibp():
@@ -1164,6 +1224,13 @@ def clear_users_scheduled_to_be_deleted(dry_run=False):
         Session.commit()
 
 
+def delete_old_data():
+    oldest_valid = arrow.now().shift(days=-config.KEEP_OLD_DATA_DAYS)
+    cleanup_old_imports(oldest_valid)
+    cleanup_old_jobs(oldest_valid)
+    cleanup_old_notifications(oldest_valid)
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -1178,6 +1245,7 @@ if __name__ == "__main__":
             "notify_manual_subscription_end",
             "notify_premium_end",
             "delete_logs",
+            "delete_old_data",
             "poll_apple_subscription",
             "sanity_check",
             "delete_old_monitoring",
@@ -1206,6 +1274,9 @@ if __name__ == "__main__":
         elif args.job == "delete_logs":
             LOG.d("Deleted Logs")
             delete_logs()
+        elif args.job == "delete_old_data":
+            LOG.d("Delete old data")
+            delete_old_data()
         elif args.job == "poll_apple_subscription":
             LOG.d("Poll Apple Subscriptions")
             poll_apple_subscription()
