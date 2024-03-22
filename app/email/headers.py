@@ -21,6 +21,7 @@ LIST_UNSUBSCRIBE = "List-Unsubscribe"
 LIST_UNSUBSCRIBE_POST = "List-Unsubscribe-Post"
 RETURN_PATH = "Return-Path"
 AUTHENTICATION_RESULTS = "Authentication-Results"
+SL_QUEUE_ID = "X-SL-Queue-Id"
 
 # headers used to DKIM sign in order of preference
 DKIM_HEADERS = [

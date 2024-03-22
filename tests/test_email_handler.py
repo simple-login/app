@@ -384,3 +384,30 @@ def test_break_loop_alias_as_mailbox(flask_client):
     msg[headers.SUBJECT] = random_string()
     result = email_handler.handle(envelope, msg)
     assert result == status.E525
+
+
+@mail_sender.store_emails_test_decorator
+def test_preserve_headers(flask_client):
+    headers_to_keep = [
+        headers.SUBJECT,
+        headers.DATE,
+        headers.MESSAGE_ID,
+        headers.REFERENCES,
+        headers.IN_REPLY_TO,
+        headers.SL_QUEUE_ID,
+    ] + headers.MIME_HEADERS
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    envelope = Envelope()
+    envelope.mail_from = "somewhere@lo.cal"
+    envelope.rcpt_tos = [alias.email]
+    msg = EmailMessage()
+    for header in headers_to_keep:
+        msg[header] = header + "keep"
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    msg = sent_mails[0].msg
+    for header in headers_to_keep:
+        assert msg[header] == header + "keep"
