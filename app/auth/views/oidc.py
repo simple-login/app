@@ -1,6 +1,8 @@
 from flask import request, session, redirect, flash, url_for
 from requests_oauthlib import OAuth2Session
 
+import requests
+
 from app import config
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import after_login
@@ -16,7 +18,7 @@ from app.db import Session
 from app.email_utils import send_welcome_email
 from app.log import LOG
 from app.models import User, SocialAuth
-from app.utils import encode_url, sanitize_email, sanitize_next_url
+from app.utils import sanitize_email, sanitize_next_url
 
 
 # need to set explicitly redirect_uri instead of leaving the lib to pre-fill redirect_uri
@@ -24,6 +26,7 @@ from app.utils import encode_url, sanitize_email, sanitize_next_url
 _redirect_uri = URL + "/auth/oidc/callback"
 
 SESSION_STATE_KEY = "oauth_state"
+SESSION_NEXT_KEY = "oauth_redirect_next"
 
 
 @auth_bp.route("/oidc/login")
@@ -32,18 +35,21 @@ def oidc_login():
         return redirect(url_for("auth.login"))
 
     next_url = sanitize_next_url(request.args.get("next"))
-    if next_url:
-        redirect_uri = _redirect_uri + "?next=" + encode_url(next_url)
-    else:
-        redirect_uri = _redirect_uri
+
+    auth_url = OIDC_AUTHORIZATION_URL
+    if config.OIDC_WELL_KNOWN_URL is not None:
+        auth_url = requests.get(config.OIDC_WELL_KNOWN_URL).json()[
+            "authorization_endpoint"
+        ]
 
     oidc = OAuth2Session(
-        config.OIDC_CLIENT_ID, scope=[OIDC_SCOPES], redirect_uri=redirect_uri
+        config.OIDC_CLIENT_ID, scope=[OIDC_SCOPES], redirect_uri=_redirect_uri
     )
-    authorization_url, state = oidc.authorization_url(OIDC_AUTHORIZATION_URL)
+    authorization_url, state = oidc.authorization_url(auth_url)
 
     # State is used to prevent CSRF, keep this for later.
     session[SESSION_STATE_KEY] = state
+    session[SESSION_NEXT_KEY] = next_url
     return redirect(authorization_url)
 
 
@@ -60,6 +66,13 @@ def oidc_callback():
         flash("Please use another sign in method then", "warning")
         return redirect("/")
 
+    token_url = OIDC_TOKEN_URL
+    user_info_url = OIDC_USER_INFO_URL
+    if config.OIDC_WELL_KNOWN_URL is not None:
+        oidc_configuration = requests.get(config.OIDC_WELL_KNOWN_URL).json()
+        user_info_url = oidc_configuration["userinfo_endpoint"]
+        token_url = oidc_configuration["token_endpoint"]
+
     oidc = OAuth2Session(
         config.OIDC_CLIENT_ID,
         state=session[SESSION_STATE_KEY],
@@ -67,12 +80,12 @@ def oidc_callback():
         redirect_uri=_redirect_uri,
     )
     oidc.fetch_token(
-        OIDC_TOKEN_URL,
+        token_url,
         client_secret=config.OIDC_CLIENT_SECRET,
         authorization_response=request.url,
     )
 
-    oidc_user_data = oidc.get(OIDC_USER_INFO_URL)
+    oidc_user_data = oidc.get(user_info_url)
     if oidc_user_data.status_code != 200:
         LOG.e(
             f"cannot get oidc user data {oidc_user_data.status_code} {oidc_user_data.text}"
@@ -111,7 +124,8 @@ def oidc_callback():
         Session.commit()
 
     # The activation link contains the original page, for ex authorize page
-    next_url = sanitize_next_url(request.args.get("next")) if request.args else None
+    next_url = session[SESSION_NEXT_KEY]
+    session[SESSION_NEXT_KEY] = None
 
     return after_login(user, next_url)
 
