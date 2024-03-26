@@ -155,12 +155,12 @@ def apply_dmarc_policy_for_reply_phase(
         LOG.i("DMARC check disabled")
         return None
 
+    LOG.i(f"Spam check result is {spam_result}")
     if spam_result.dmarc not in (
         DmarcCheckResult.quarantine,
         DmarcCheckResult.reject,
         DmarcCheckResult.soft_fail,
     ):
-        LOG.i(f"Spam check result is {spam_result}")
         return None
 
     LOG.w(
