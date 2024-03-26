@@ -30,7 +30,9 @@ def apply_dmarc_policy_for_forward_phase(
 ) -> Tuple[Message, Optional[str]]:
     spam_result = SpamdResult.extract_from_headers(msg, Phase.forward)
     if not DMARC_CHECK_ENABLED or not spam_result:
+        LOG.i("DMARC check disabled")
         return msg, None
+    LOG.i(f"Spam check result in {spam_result}")
 
     from_header = get_header_unicode(msg[headers.FROM])
 
@@ -150,6 +152,7 @@ def apply_dmarc_policy_for_reply_phase(
 ) -> Optional[str]:
     spam_result = SpamdResult.extract_from_headers(msg, Phase.reply)
     if not DMARC_CHECK_ENABLED or not spam_result:
+        LOG.i("DMARC check disabled")
         return None
 
     if spam_result.dmarc not in (
@@ -157,6 +160,7 @@ def apply_dmarc_policy_for_reply_phase(
         DmarcCheckResult.reject,
         DmarcCheckResult.soft_fail,
     ):
+        LOG.i(f"Spam check result is {spam_result}")
         return None
 
     LOG.w(
