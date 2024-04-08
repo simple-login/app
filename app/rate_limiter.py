@@ -30,7 +30,9 @@ def check_bucket_limit(
     try:
         value = lock_redis.incr(bucket_lock_name, bucket_seconds)
         if value > max_hits:
-            LOG.i(f"Rate limit hit for {bucket_lock_name} -> {value}/{max_hits}")
+            LOG.i(
+                f"Rate limit hit for {lock_name} (bucket it {bucket_id} -> {value}/{max_hits}"
+            )
             newrelic.agent.record_custom_event(
                 "BucketRateLimit",
                 {"lock_name": lock_name, "bucket_seconds": bucket_seconds},
