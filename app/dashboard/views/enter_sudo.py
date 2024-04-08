@@ -14,7 +14,7 @@ from app.models import PartnerUser, SocialAuth
 from app.proton.utils import get_proton_partner
 from app.utils import sanitize_next_url
 
-_SUDO_GAP = 900
+_SUDO_GAP = 120
 
 
 class LoginForm(FlaskForm):
