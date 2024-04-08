@@ -141,7 +141,7 @@ def index():
                 )
 
             if request.form.get("form-name") == "delete-alias":
-                LOG.d("delete alias %s", alias)
+                LOG.i(f"User {current_user} requested deletion of alias {alias}")
                 email = alias.email
                 alias_utils.delete_alias(alias, current_user)
                 flash(f"Alias {email} has been deleted", "success")

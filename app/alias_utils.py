@@ -308,28 +308,29 @@ def delete_alias(alias: Alias, user: User):
     Delete an alias and add it to either global or domain trash
     Should be used instead of Alias.delete, DomainDeletedAlias.create, DeletedAlias.create
     """
-    # save deleted alias to either global or domain trash
+    LOG.i(f"User {user} has deleted alias {alias}")
+    # save deleted alias to either global or domain tra
     if alias.custom_domain_id:
         if not DomainDeletedAlias.get_by(
             email=alias.email, domain_id=alias.custom_domain_id
         ):
-            LOG.d("add %s to domain %s trash", alias, alias.custom_domain_id)
-            Session.add(
-                DomainDeletedAlias(
-                    user_id=user.id,
-                    email=alias.email,
-                    domain_id=alias.custom_domain_id,
-                )
+            domain_deleted_alias = DomainDeletedAlias(
+                user_id=user.id,
+                email=alias.email,
+                domain_id=alias.custom_domain_id,
             )
+            Session.add(domain_deleted_alias)
             Session.commit()
-
+            LOG.i(
+                f"Moving {alias} to domain {alias.custom_domain_id} trash {domain_deleted_alias}"
+            )
     else:
         if not DeletedAlias.get_by(email=alias.email):
-            LOG.d("add %s to global trash", alias)
-            Session.add(DeletedAlias(email=alias.email))
+            deleted_alias = DeletedAlias(email=alias.email)
+            Session.add(deleted_alias)
             Session.commit()
+            LOG.i(f"Moving {alias} to global trash {deleted_alias}")
 
-    LOG.i("delete alias %s", alias)
     Alias.filter(Alias.id == alias.id).delete()
     Session.commit()
 
