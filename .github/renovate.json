@@ -3,4 +3,3 @@
     "forkProcessing": true,
     "extends": ["config:recommended"]
   }
-  
