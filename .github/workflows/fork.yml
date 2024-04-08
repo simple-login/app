@@ -19,3 +19,13 @@ jobs:
         continue-on-error: true
 
       - run: echo "🍏 This job's status is ${{ job.status }}."
+
+  auto-approve:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    if: github.actor == 'github-actions[bot]'
+    steps:
+      - uses: hmarr/auto-approve-action@v4
+        with:
+          review-message: "Auto approved automated PR"
