@@ -327,7 +327,7 @@ def delete_alias(alias: Alias, user: User):
     else:
         if not DeletedAlias.get_by(email=alias.email):
             deleted_alias = DeletedAlias(email=alias.email)
-            Session.add()
+            Session.add(deleted_alias)
             Session.commit()
             LOG.i(f"Moving {alias} to global trash {deleted_alias}")
 
