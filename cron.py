@@ -1070,7 +1070,7 @@ def get_alias_to_check_hibp(
             Alias.id >= min_alias_id,
             Alias.id < max_alias_id,
             User.disabled == False,  # noqa: E712
-            User.enable_data_breach_check == True,
+            User.enable_data_breach_check,
             or_(
                 User.lifetime,
                 ManualSubscription.end_at > now,
