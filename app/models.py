@@ -525,6 +525,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=True, nullable=False, server_default="1"
     )
 
+    # user opted in for data breach check
+    enable_data_breach_check = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="0"
+    )
+
     # bitwise flags. Allow for future expansion
     flags = sa.Column(
         sa.BigInteger,
