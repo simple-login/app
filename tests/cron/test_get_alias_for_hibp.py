@@ -31,6 +31,7 @@ def test_get_alias_for_free_user_has_no_alias():
 def test_get_alias_for_lifetime_with_null_hibp_date():
     user = create_new_user()
     user.lifetime = True
+    user.enable_data_breach_check = True
     alias_id = Alias.create_new_random(user).id
     Session.commit()
     aliases = list(
@@ -42,6 +43,7 @@ def test_get_alias_for_lifetime_with_null_hibp_date():
 def test_get_alias_for_lifetime_with_old_hibp_date():
     user = create_new_user()
     user.lifetime = True
+    user.enable_data_breach_check = True
     alias = Alias.create_new_random(user)
     alias.hibp_last_check = arrow.now().shift(days=-1)
     alias_id = alias.id
@@ -97,6 +99,7 @@ sub_generator_list = [
 @pytest.mark.parametrize("sub_generator", sub_generator_list)
 def test_get_alias_for_sub(sub_generator):
     user = create_new_user()
+    user.enable_data_breach_check = True
     sub_generator(user)
     alias_id = Alias.create_new_random(user).id
     Session.commit()
