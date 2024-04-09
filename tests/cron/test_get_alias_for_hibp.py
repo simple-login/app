@@ -140,3 +140,26 @@ def test_already_checked_is_not_checked():
         cron.get_alias_to_check_hibp(arrow.now(), [user.id], alias_id, alias_id + 1)
     )
     assert len(aliases) == 0
+
+
+def test_outed_in_user_is_checked():
+    user = create_new_user()
+    user.lifetime = True
+    user.enable_data_breach_check = True
+    alias_id = Alias.create_new_random(user).id
+    Session.commit()
+    aliases = list(
+        cron.get_alias_to_check_hibp(arrow.now(), [], alias_id, alias_id + 1)
+    )
+    assert len(aliases) == 1
+
+
+def test_outed_out_user_is_not_checked():
+    user = create_new_user()
+    user.lifetime = True
+    alias_id = Alias.create_new_random(user).id
+    Session.commit()
+    aliases = list(
+        cron.get_alias_to_check_hibp(arrow.now(), [], alias_id, alias_id + 1)
+    )
+    assert len(aliases) == 0
