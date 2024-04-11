@@ -230,14 +230,16 @@ def setting():
         elif request.form.get("form-name") == "enable_data_breach_check":
             if not current_user.is_premium():
                 flash(
-                    "Only premium plan can add enable data breach monitoring", "warning"
+                    "Only premium plan can enable data breach monitoring", "warning"
                 )
                 return redirect(url_for("dashboard.setting"))
             choose = request.form.get("enable_data_breach_check")
             if choose == "on":
+                LOG.i("User {current_user} has enabled data breach monitoring")
                 current_user.enable_data_breach_check = True
                 flash("Data breach monitoring is enabled", "success")
             else:
+                LOG.i("User {current_user} has disabled data breach monitoring")
                 current_user.enable_data_breach_check = False
                 flash("Data breach monitoring is disabled", "info")
             Session.commit()
