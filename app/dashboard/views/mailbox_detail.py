@@ -179,8 +179,15 @@ def mailbox_detail_route(mailbox_id):
 
         elif request.form.get("form-name") == "toggle-pgp":
             if request.form.get("pgp-enabled") == "on":
-                mailbox.disable_pgp = False
-                flash(f"PGP is enabled on {mailbox.email}", "success")
+                if mailbox.is_proton():
+                    mailbox.disable_pgp = True
+                    flash(
+                        "Enabling PGP for a Proton Mail mailbox is redundant and does not add any security benefit",
+                        "info",
+                    )
+                else:
+                    mailbox.disable_pgp = False
+                    flash(f"PGP is enabled on {mailbox.email}", "info")
             else:
                 mailbox.disable_pgp = True
                 flash(f"PGP is disabled on {mailbox.email}", "info")
