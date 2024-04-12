@@ -68,6 +68,12 @@ For most tests, you will need to have ``redis`` installed and started on your ma
 sh scripts/run-test.sh
 ```
 
+You can also run tests using a local Postgres DB to speed things up. This can be done by
+
+- creating an empty test DB and running the database migration by `dropdb test && createdb test && DB_URI=postgresql://localhost:5432/test alembic upgrade head`
+
+- replacing the `DB_URI` in `test.env` file by `DB_URI=postgresql://localhost:5432/test`
+
 ## Run the code locally
 
 Install npm packages
