@@ -3,11 +3,13 @@ from flask_login import login_user
 
 from app.auth.base import auth_bp
 from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import EmailChange, ResetPasswordCode
 
 
 @auth_bp.route("/change_email", methods=["GET", "POST"])
+@limiter.limit("3/hour")
 def change_email():
     code = request.args.get("code")
 
