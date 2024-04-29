@@ -2649,10 +2649,15 @@ class Mailbox(Base, ModelMixin):
         return False
 
     def nb_alias(self):
-        return (
-            AliasMailbox.filter_by(mailbox_id=self.id).count()
-            + Alias.filter_by(mailbox_id=self.id).count()
+        alias_ids = set(
+            am.alias_id
+            for am in AliasMailbox.filter_by(mailbox_id=self.id).values(
+                AliasMailbox.alias_id
+            )
         )
+        for alias in Alias.filter_by(mailbox_id=self.id).values(Alias.id):
+            alias_ids.add(alias.id)
+        return len(alias_ids)
 
     def is_proton(self) -> bool:
         if (
@@ -2701,12 +2706,15 @@ class Mailbox(Base, ModelMixin):
 
     @property
     def aliases(self) -> [Alias]:
-        ret = Alias.filter_by(mailbox_id=self.id).all()
+        ret = dict(
+            (alias.id, alias) for alias in Alias.filter_by(mailbox_id=self.id).all()
+        )
 
         for am in AliasMailbox.filter_by(mailbox_id=self.id):
-            ret.append(am.alias)
+            if am.alias_id not in ret:
+                ret[am.alias_id] = am.alias
 
-        return ret
+        return list(ret.values())
 
     @classmethod
     def create(cls, **kw):
