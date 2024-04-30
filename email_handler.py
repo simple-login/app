@@ -1180,6 +1180,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             # References and In-Reply-To are used for keeping the email thread
             headers.REFERENCES,
             headers.IN_REPLY_TO,
+            headers.SL_QUEUE_ID,
         ]
         + headers.MIME_HEADERS,
     )
