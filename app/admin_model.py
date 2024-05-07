@@ -46,7 +46,8 @@ class SLModelView(sqla.ModelView):
 
     def inaccessible_callback(self, name, **kwargs):
         # redirect to login page if user doesn't have access
-        return redirect(url_for("auth.login", next=request.url))
+        flash("You don't have access to the admin page", "error")
+        return redirect(url_for("dashboard.index", next=request.url))
 
     def on_model_change(self, form, model, is_created):
         changes = {}
