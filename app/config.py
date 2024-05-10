@@ -429,7 +429,7 @@ except Exception:
     HIBP_SCAN_INTERVAL_DAYS = 7
 HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
 HIBP_MAX_ALIAS_CHECK = 10_000
-HIBP_RPM = 100
+HIBP_RPM = int(os.environ.get("HIBP_API_RPM", 100))
 HIBP_SKIP_PARTNER_ALIAS = os.environ.get("HIBP_SKIP_PARTNER_ALIAS")
 
 KEEP_OLD_DATA_DAYS = 30
