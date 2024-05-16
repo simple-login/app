@@ -11,6 +11,7 @@ from app.config import ZENDESK_HOST, ZENDESK_API_TOKEN
 from app.dashboard.base import dashboard_bp
 from app.extensions import limiter
 from app.log import LOG
+from app.utils import CSRFValidationForm
 
 VALID_MIME_TYPES = ["text/plain", "message/rfc822"]
 
@@ -90,7 +91,12 @@ def support_route():
         flash("Support isn't enabled", "error")
         return redirect(url_for("dashboard.index"))
 
+    csrf_form = CSRFValidationForm()
+
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(url_for("dashboard.setting"))
         content = request.form.get("ticket_content")
         email = request.form.get("ticket_email")
 
@@ -121,4 +127,8 @@ def support_route():
         )
         return redirect(url_for("dashboard.index"))
 
-    return render_template("dashboard/support.html", ticket_email=current_user.email)
+    return render_template(
+        "dashboard/support.html",
+        ticket_email=current_user.email,
+        csrf_form=csrf_form,
+    )
