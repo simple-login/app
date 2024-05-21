@@ -3675,7 +3675,6 @@ class SyncEvent(Base, ModelMixin):
         SET taken_time = :taken_time
         WHERE id = :sync_event_id
           AND taken_time IS NULL
-      ORDER BY id
         """
         args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
         res = Session.execute(sql, args)

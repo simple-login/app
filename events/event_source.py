@@ -38,7 +38,7 @@ class PostgresEventSource(EventSource):
                 while self.__connection.notifies:
                     notify = self.__connection.notifies.pop(0)
                     LOG.debug(
-                        f"Got NOTIFY: pid={notify.pipd} channel={notify.channel} payload={notify.payload}"
+                        f"Got NOTIFY: pid={notify.pid} channel={notify.channel} payload={notify.payload}"
                     )
                     try:
                         webhook_id = int(notify.payload)
@@ -60,7 +60,7 @@ class DeadLetterEventSource(EventSource):
                     minutes=-_DEAD_LETTER_THRESHOLD_MINUTES
                 )
                 events = SyncEvent.get_dead_letter(older_than=threshold)
-                if events is not None:
+                if events:
                     LOG.info(f"Got {len(events)} dead letter events")
                     if events:
                         newrelic.agent.record_custom_metric(
