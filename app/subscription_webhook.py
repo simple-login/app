@@ -34,5 +34,5 @@ def execute_subscription_webhook(user: User):
     except RequestException as e:
         LOG.error(f"Subscription request exception: {e}")
 
-    event = UserPlanChange(plan_end_time=subscription_end.timestamp)
+    event = UserPlanChange(plan_end_time=sl_subscription_end)
     EventDispatcher.send_event(user, EventContent(user_plan_change=event))
