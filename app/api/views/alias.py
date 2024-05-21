@@ -184,7 +184,7 @@ def toggle_alias(alias_id):
     if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    alias.enabled = not alias.enabled
+    alias_utils.change_alias_status(alias, enabled=not alias.enabled)
     Session.commit()
 
     return jsonify(enabled=alias.enabled), 200

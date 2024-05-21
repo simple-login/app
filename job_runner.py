@@ -14,6 +14,8 @@ from app.email_utils import (
     send_email,
     render,
 )
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import EventContent, UserDeleted
 from app.import_utils import handle_batch_import
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
@@ -219,6 +221,7 @@ def process_job(job: Job):
 
         user_email = user.email
         LOG.w("Delete user %s", user)
+        EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
         User.delete(user.id)
         Session.commit()
 

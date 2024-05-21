@@ -2,6 +2,8 @@ import requests
 from requests import RequestException
 
 from app import config
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import EventContent, UserPlanChange
 from app.log import LOG
 from app.models import User
 
@@ -31,3 +33,5 @@ def execute_subscription_webhook(user: User):
             )
     except RequestException as e:
         LOG.error(f"Subscription request exception: {e}")
+
+    EventDispatcher.send_event(user, EventContent(user_plan_change=UserPlanChange()))

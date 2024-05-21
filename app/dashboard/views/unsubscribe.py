@@ -8,6 +8,7 @@ from app.db import Session
 from flask import redirect, url_for, flash, request, render_template
 from flask_login import login_required, current_user
 
+from app import alias_utils
 from app.dashboard.base import dashboard_bp
 from app.handler.unsubscribe_encoder import UnsubscribeAction
 from app.handler.unsubscribe_handler import UnsubscribeHandler
@@ -31,7 +32,7 @@ def unsubscribe(alias_id):
 
     # automatic unsubscribe, according to https://tools.ietf.org/html/rfc8058
     if request.method == "POST":
-        alias.enabled = False
+        alias_utils.change_alias_status(alias, False)
         flash(f"Alias {alias.email} has been blocked", "success")
         Session.commit()
 

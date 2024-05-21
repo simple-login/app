@@ -1625,6 +1625,13 @@ class Alias(Base, ModelMixin):
         if flush:
             Session.flush()
 
+        from app.events.event_dispatcher import EventDispatcher
+        from app.events.generated.event_pb2 import AliasCreated, EventContent
+
+        EventDispatcher.send_event(
+            user, EventContent(alias_created=AliasCreated(alias_id=new_alias.id))
+        )
+
         return new_alias
 
     @classmethod
@@ -3650,15 +3657,41 @@ class ApiToCookieToken(Base, ModelMixin):
         return super().create(code=code, **kwargs)
 
 
-class WebhookEvent(Base, ModelMixin):
+class SyncEvent(Base, ModelMixin):
     """This model holds the events that need to be sent to the webhook"""
 
-    __tablename__ = "webhook_event"
+    __tablename__ = "sync_event"
     content = sa.Column(sa.LargeBinary, unique=False, nullable=False)
     taken_time = sa.Column(ArrowType, default=None, nullable=True, server_default=None)
 
     def mark_as_taken(self) -> bool:
-        sql = "UPDATE webhook_event SET taken_time = :taken_time WHERE id = :webhook_event_id AND taken_time IS NULL"
-        args = {"taken_time": arrow.now().datetime, "webhook_event_id": self.id}
+        sql = """
+        UPDATE sync_event
+        SET taken_time = :taken_time
+        WHERE id = :sync_event_id
+          AND taken_time IS NULL
+      ORDER BY id
+        """
+        args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
         res = Session.execute(sql, args)
         return res.rowcount > 0
+
+    @classmethod
+    def get_dead_letter(cls, older_than: Arrow) -> [SyncEvent]:
+        return (
+            SyncEvent.filter(
+                (
+                    (
+                        SyncEvent.taken_time.isnot(None)
+                        & (SyncEvent.taken_time < older_than)
+                    )
+                    | (
+                        SyncEvent.taken_time.is_(None)
+                        & (SyncEvent.created_at < older_than)
+                    )
+                )
+            )
+            .order_by(SyncEvent.id)
+            .limit(100)
+            .all()
+        )
