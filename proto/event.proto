@@ -13,6 +13,7 @@ message AliasCreated {
   uint32 alias_id = 1;
   string alias_email = 2;
   string alias_note = 3;
+  bool enabled = 4;
 }
 
 message AliasStatusChange {

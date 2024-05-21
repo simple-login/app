@@ -1625,12 +1625,17 @@ class Alias(Base, ModelMixin):
         if flush:
             Session.flush()
 
+        # Internal import to avoid global import cycles
         from app.events.event_dispatcher import EventDispatcher
         from app.events.generated.event_pb2 import AliasCreated, EventContent
 
-        EventDispatcher.send_event(
-            user, EventContent(alias_created=AliasCreated(alias_id=new_alias.id))
+        event = AliasCreated(
+            alias_id=new_alias.id,
+            alias_email=new_alias.email,
+            alias_note=new_alias.note,
+            enabled=True,
         )
+        EventDispatcher.send_event(user, EventContent(alias_created=event))
 
         return new_alias
 

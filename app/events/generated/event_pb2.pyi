@@ -1,11 +1,6 @@
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import (
-    ClassVar as _ClassVar,
-    Mapping as _Mapping,
-    Optional as _Optional,
-    Union as _Union,
-)
+from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -20,19 +15,16 @@ class UserDeleted(_message.Message):
     def __init__(self) -> None: ...
 
 class AliasCreated(_message.Message):
-    __slots__ = ("alias_id", "alias_email", "alias_note")
+    __slots__ = ("alias_id", "alias_email", "alias_note", "enabled")
     ALIAS_ID_FIELD_NUMBER: _ClassVar[int]
     ALIAS_EMAIL_FIELD_NUMBER: _ClassVar[int]
     ALIAS_NOTE_FIELD_NUMBER: _ClassVar[int]
+    ENABLED_FIELD_NUMBER: _ClassVar[int]
     alias_id: int
     alias_email: str
     alias_note: str
-    def __init__(
-        self,
-        alias_id: _Optional[int] = ...,
-        alias_email: _Optional[str] = ...,
-        alias_note: _Optional[str] = ...,
-    ) -> None: ...
+    enabled: bool
+    def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ..., alias_note: _Optional[str] = ..., enabled: bool = ...) -> None: ...
 
 class AliasStatusChange(_message.Message):
     __slots__ = ("alias_id", "alias_email", "enabled")
@@ -42,12 +34,7 @@ class AliasStatusChange(_message.Message):
     alias_id: int
     alias_email: str
     enabled: bool
-    def __init__(
-        self,
-        alias_id: _Optional[int] = ...,
-        alias_email: _Optional[str] = ...,
-        enabled: bool = ...,
-    ) -> None: ...
+    def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ..., enabled: bool = ...) -> None: ...
 
 class AliasDeleted(_message.Message):
     __slots__ = ("alias_id", "alias_email")
@@ -55,18 +42,10 @@ class AliasDeleted(_message.Message):
     ALIAS_EMAIL_FIELD_NUMBER: _ClassVar[int]
     alias_id: int
     alias_email: str
-    def __init__(
-        self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ...
-    ) -> None: ...
+    def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ...) -> None: ...
 
 class EventContent(_message.Message):
-    __slots__ = (
-        "user_plan_change",
-        "user_deleted",
-        "alias_created",
-        "alias_status_change",
-        "alias_deleted",
-    )
+    __slots__ = ("user_plan_change", "user_deleted", "alias_created", "alias_status_change", "alias_deleted")
     USER_PLAN_CHANGE_FIELD_NUMBER: _ClassVar[int]
     USER_DELETED_FIELD_NUMBER: _ClassVar[int]
     ALIAS_CREATED_FIELD_NUMBER: _ClassVar[int]
@@ -77,14 +56,7 @@ class EventContent(_message.Message):
     alias_created: AliasCreated
     alias_status_change: AliasStatusChange
     alias_deleted: AliasDeleted
-    def __init__(
-        self,
-        user_plan_change: _Optional[_Union[UserPlanChange, _Mapping]] = ...,
-        user_deleted: _Optional[_Union[UserDeleted, _Mapping]] = ...,
-        alias_created: _Optional[_Union[AliasCreated, _Mapping]] = ...,
-        alias_status_change: _Optional[_Union[AliasStatusChange, _Mapping]] = ...,
-        alias_deleted: _Optional[_Union[AliasDeleted, _Mapping]] = ...,
-    ) -> None: ...
+    def __init__(self, user_plan_change: _Optional[_Union[UserPlanChange, _Mapping]] = ..., user_deleted: _Optional[_Union[UserDeleted, _Mapping]] = ..., alias_created: _Optional[_Union[AliasCreated, _Mapping]] = ..., alias_status_change: _Optional[_Union[AliasStatusChange, _Mapping]] = ..., alias_deleted: _Optional[_Union[AliasDeleted, _Mapping]] = ...) -> None: ...
 
 class Event(_message.Message):
     __slots__ = ("user_id", "external_user_id", "partner_id", "content")
@@ -96,10 +68,4 @@ class Event(_message.Message):
     external_user_id: str
     partner_id: int
     content: EventContent
-    def __init__(
-        self,
-        user_id: _Optional[int] = ...,
-        external_user_id: _Optional[str] = ...,
-        partner_id: _Optional[int] = ...,
-        content: _Optional[_Union[EventContent, _Mapping]] = ...,
-    ) -> None: ...
+    def __init__(self, user_id: _Optional[int] = ..., external_user_id: _Optional[str] = ..., partner_id: _Optional[int] = ..., content: _Optional[_Union[EventContent, _Mapping]] = ...) -> None: ...
