@@ -3648,3 +3648,17 @@ class ApiToCookieToken(Base, ModelMixin):
         code = secrets.token_urlsafe(32)
 
         return super().create(code=code, **kwargs)
+
+
+class WebhookEvent(Base, ModelMixin):
+    """This model holds the events that need to be sent to the webhook"""
+
+    __tablename__ = "webhook_event"
+    content = sa.Column(sa.LargeBinary, unique=False, nullable=False)
+    taken_time = sa.Column(ArrowType, default=None, nullable=True, server_default=None)
+
+    def mark_as_taken(self) -> bool:
+        sql = "UPDATE webhook_event SET taken_time = :taken_time WHERE id = :webhook_event_id AND taken_time IS NULL"
+        args = {"taken_time": arrow.now().datetime, "webhook_event_id": self.id}
+        res = Session.execute(sql, args)
+        return res.rowcount > 0
