@@ -52,6 +52,7 @@ class PostgresEventSource(EventSource):
 
 
 class DeadLetterEventSource(EventSource):
+    @newrelic.agent.background_task()
     def run(self, on_event: Callable[[SyncEvent], NoReturn]):
         while True:
             try:
@@ -61,10 +62,11 @@ class DeadLetterEventSource(EventSource):
                 events = SyncEvent.get_dead_letter(older_than=threshold)
                 if events is not None:
                     LOG.info(f"Got {len(events)} dead letter events")
-                    for event in events:
+                    if events:
                         newrelic.agent.record_custom_metric(
-                            "Custom/dead_letter_events_processed", 1
+                            "Custom/dead_letter_events_to_process", len(events)
                         )
+                    for event in events:
                         on_event(event)
                 else:
                     LOG.debug("No dead letter events")

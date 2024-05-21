@@ -15,6 +15,7 @@ class Runner:
     def run(self):
         self.__source.run(self.__on_event)
 
+    @newrelic.agent.background_task()
     def __on_event(self, event: SyncEvent):
         try:
             can_process = event.mark_as_taken()
