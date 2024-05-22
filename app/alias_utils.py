@@ -467,12 +467,13 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
     Session.commit()
 
 
-def change_alias_status(alias: Alias, enabled: bool, commit: bool = True):
+def change_alias_status(alias: Alias, enabled: bool, commit: bool = False):
     alias.enabled = enabled
-    if commit:
-        Session.commit()
 
     event = AliasStatusChange(
         alias_id=alias.id, alias_email=alias.email, enabled=enabled
     )
     EventDispatcher.send_event(alias.user, EventContent(alias_status_change=event))
+
+    if commit:
+        Session.commit()

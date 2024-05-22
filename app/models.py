@@ -1619,12 +1619,6 @@ class Alias(Base, ModelMixin):
         Session.add(new_alias)
         DailyMetric.get_or_create_today_metric().nb_alias += 1
 
-        if commit:
-            Session.commit()
-
-        if flush:
-            Session.flush()
-
         # Internal import to avoid global import cycles
         from app.events.event_dispatcher import EventDispatcher
         from app.events.generated.event_pb2 import AliasCreated, EventContent
@@ -1636,6 +1630,12 @@ class Alias(Base, ModelMixin):
             enabled=True,
         )
         EventDispatcher.send_event(user, EventContent(alias_created=event))
+
+        if commit:
+            Session.commit()
+
+        if flush:
+            Session.flush()
 
         return new_alias
 
