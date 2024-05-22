@@ -48,15 +48,16 @@
   {#      SIWSL#}
   {#    </a>#}
   {#  </li>#}
-  {#  {% if current_user.should_show_app_page() %}#}
-  {#    <li class="nav-item">#}
-  {#      <a href="{{ url_for('dashboard.app_route') }}"#}
-  {#         class="nav-link {{ 'active' if active_page == 'app' }}">#}
-  {#        <i class="fe fe-grid"></i>#}
-  {#        Apps#}
-  {#      </a>#}
-  {#    </li>#}
-  {#  {% endif %}#}
+  {% if current_user.should_show_app_page() %}
+
+    <li class="nav-item">
+      <a href="{{ url_for('dashboard.app_route') }}"
+         class="nav-link {{ 'active' if active_page == 'app' }}">
+        <i class="fe fe-grid"></i>
+        Apps
+      </a>
+    </li>
+  {% endif %}
   <li class="nav-item">
     <a href="{{ url_for('dashboard.setting') }}"
        class="nav-link {{ 'active' if active_page == 'setting' }}">
