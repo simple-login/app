@@ -467,6 +467,7 @@ def add_dkim_signature_with_header(
             email_domain.encode(),
             config.DKIM_PRIVATE_KEY.encode(),
             include_headers=dkim_headers,
+            signature_algorithm=b'ed25519-sha256',
         )
         sig = sig.decode()
 
