@@ -8,15 +8,16 @@ from app.models import SyncEvent
 
 class EventSink(ABC):
     @abstractmethod
-    def process(self, event: SyncEvent):
+    def process(self, event: SyncEvent) -> bool:
         pass
 
 
 class HttpEventSink(EventSink):
-    def process(self, event: SyncEvent):
+    def process(self, event: SyncEvent) -> bool:
         if not EVENT_WEBHOOK:
             LOG.warning("Skipping sending event because there is no webhook configured")
-            return
+            return False
+
         LOG.info(f"Sending event {event.id} to {EVENT_WEBHOOK}")
 
         res = requests.post(
@@ -29,8 +30,10 @@ class HttpEventSink(EventSink):
             LOG.warning(
                 f"Failed to send event to webhook: {res.status_code} {res.text}"
             )
+            return False
         else:
             LOG.info(f"Event {event.id} sent successfully to webhook")
+            return True
 
 
 class ConsoleEventSink(EventSink):
