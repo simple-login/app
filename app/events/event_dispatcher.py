@@ -34,6 +34,9 @@ class EventDispatcher:
         dispatcher: Dispatcher = PostgresDispatcher.get(),
         skip_if_webhook_missing: bool = True,
     ):
+        if config.EVENT_WEBHOOK_DISABLE:
+            return
+
         if not config.EVENT_WEBHOOK and skip_if_webhook_missing:
             return
 

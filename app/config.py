@@ -586,3 +586,4 @@ EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
 
 # We want it disabled by default, so only skip if defined
 EVENT_WEBHOOK_SKIP_VERIFY_SSL = "EVENT_WEBHOOK_SKIP_VERIFY_SSL" in os.environ
+EVENT_WEBHOOK_DISABLE = "EVENT_WEBHOOK_DISABLE" in os.environ
