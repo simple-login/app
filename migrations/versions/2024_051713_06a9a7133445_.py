@@ -27,6 +27,8 @@ def upgrade():
     sa.Column('taken_time', sqlalchemy_utils.types.arrow.ArrowType(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_sync_event_created_at'), 'sync_event', ['created_at'], unique=False)
+    op.create_index(op.f('ix_sync_event_taken_time'), 'sync_event', ['taken_time'], unique=False)
     # ### end Alembic commands ###
 
 
