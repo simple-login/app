@@ -15,7 +15,7 @@ class EventSink(ABC):
 class HttpEventSink(EventSink):
     def process(self, event: SyncEvent):
         if not EVENT_WEBHOOK:
-            LOG.warning("No event webhook configured")
+            LOG.warning("Skipping sending event because there is no webhook configured")
             return
         LOG.info(f"Sending event {event.id} to {EVENT_WEBHOOK}")
 
