@@ -657,6 +657,21 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return user
 
+    @classmethod
+    def delete(cls, obj_id, commit=False):
+        # Internal import to avoid global import cycles
+        from app.events.event_dispatcher import EventDispatcher
+        from app.events.generated.event_pb2 import UserDeleted, EventContent
+
+        user: User = cls.get(obj_id)
+        EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
+
+        res = super(User, cls).delete(obj_id)
+        if commit:
+            Session.commit()
+
+        return res
+
     def get_active_subscription(
         self, include_partner_subscription: bool = True
     ) -> Optional[

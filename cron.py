@@ -16,8 +16,6 @@ from app.alias_utils import nb_email_log_for_mailbox
 from app.api.views.apple import verify_receipt
 from app.db import Session
 from app.dns_utils import get_mx_domains, is_mx_equivalent
-from app.events.event_dispatcher import EventDispatcher
-from app.events.generated.event_pb2 import EventContent, UserDeleted
 from app.email_utils import (
     send_email,
     send_trial_end_soon_email,
@@ -1223,7 +1221,6 @@ def clear_users_scheduled_to_be_deleted(dry_run=False):
         )
         if dry_run:
             continue
-        EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
         User.delete(user.id)
         Session.commit()
 
