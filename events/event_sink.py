@@ -37,5 +37,6 @@ class HttpEventSink(EventSink):
 
 
 class ConsoleEventSink(EventSink):
-    def process(self, event: SyncEvent):
+    def process(self, event: SyncEvent) -> bool:
         LOG.info(f"Handling event {event.id}")
+        return True
