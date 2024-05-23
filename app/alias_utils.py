@@ -25,6 +25,8 @@ from app.email_utils import (
     render,
 )
 from app.errors import AliasInTrashError
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import AliasDeleted, AliasStatusChange, EventContent
 from app.log import LOG
 from app.models import (
     Alias,
@@ -334,6 +336,10 @@ def delete_alias(alias: Alias, user: User):
     Alias.filter(Alias.id == alias.id).delete()
     Session.commit()
 
+    EventDispatcher.send_event(
+        user, EventContent(alias_deleted=AliasDeleted(alias_id=alias.id))
+    )
+
 
 def aliases_for_mailbox(mailbox: Mailbox) -> [Alias]:
     """
@@ -459,3 +465,15 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
     alias.pinned = False
 
     Session.commit()
+
+
+def change_alias_status(alias: Alias, enabled: bool, commit: bool = False):
+    alias.enabled = enabled
+
+    event = AliasStatusChange(
+        alias_id=alias.id, alias_email=alias.email, enabled=enabled
+    )
+    EventDispatcher.send_event(alias.user, EventContent(alias_status_change=event))
+
+    if commit:
+        Session.commit()

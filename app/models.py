@@ -657,6 +657,21 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return user
 
+    @classmethod
+    def delete(cls, obj_id, commit=False):
+        # Internal import to avoid global import cycles
+        from app.events.event_dispatcher import EventDispatcher
+        from app.events.generated.event_pb2 import UserDeleted, EventContent
+
+        user: User = cls.get(obj_id)
+        EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
+
+        res = super(User, cls).delete(obj_id)
+        if commit:
+            Session.commit()
+
+        return res
+
     def get_active_subscription(
         self, include_partner_subscription: bool = True
     ) -> Optional[
@@ -1618,6 +1633,18 @@ class Alias(Base, ModelMixin):
 
         Session.add(new_alias)
         DailyMetric.get_or_create_today_metric().nb_alias += 1
+
+        # Internal import to avoid global import cycles
+        from app.events.event_dispatcher import EventDispatcher
+        from app.events.generated.event_pb2 import AliasCreated, EventContent
+
+        event = AliasCreated(
+            alias_id=new_alias.id,
+            alias_email=new_alias.email,
+            alias_note=new_alias.note,
+            enabled=True,
+        )
+        EventDispatcher.send_event(user, EventContent(alias_created=event))
 
         if commit:
             Session.commit()
@@ -3648,3 +3675,49 @@ class ApiToCookieToken(Base, ModelMixin):
         code = secrets.token_urlsafe(32)
 
         return super().create(code=code, **kwargs)
+
+
+class SyncEvent(Base, ModelMixin):
+    """This model holds the events that need to be sent to the webhook"""
+
+    __tablename__ = "sync_event"
+    content = sa.Column(sa.LargeBinary, unique=False, nullable=False)
+    taken_time = sa.Column(
+        ArrowType, default=None, nullable=True, server_default=None, index=True
+    )
+
+    __table_args__ = (
+        sa.Index("ix_sync_event_created_at", "created_at"),
+        sa.Index("ix_sync_event_taken_time", "taken_time"),
+    )
+
+    def mark_as_taken(self) -> bool:
+        sql = """
+        UPDATE sync_event
+        SET taken_time = :taken_time
+        WHERE id = :sync_event_id
+          AND taken_time IS NULL
+        """
+        args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
+        res = Session.execute(sql, args)
+        return res.rowcount > 0
+
+    @classmethod
+    def get_dead_letter(cls, older_than: Arrow) -> [SyncEvent]:
+        return (
+            SyncEvent.filter(
+                (
+                    (
+                        SyncEvent.taken_time.isnot(None)
+                        & (SyncEvent.taken_time < older_than)
+                    )
+                    | (
+                        SyncEvent.taken_time.is_(None)
+                        & (SyncEvent.created_at < older_than)
+                    )
+                )
+            )
+            .order_by(SyncEvent.id)
+            .limit(100)
+            .all()
+        )

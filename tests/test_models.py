@@ -17,6 +17,7 @@ from app.models import (
     Subscription,
     PlanEnum,
     PADDLE_SUBSCRIPTION_GRACE_DAYS,
+    SyncEvent,
 )
 from tests.utils import login, create_new_user, random_token
 
@@ -325,3 +326,51 @@ def test_user_can_send_receive():
     user.disabled = False
     user.delete_on = arrow.now()
     assert not user.can_send_or_receive()
+
+
+def test_sync_event_dead_letter():
+    # remove all SyncEvents before the test
+    all_events = SyncEvent.all()
+    for event in all_events:
+        SyncEvent.delete(event.id, commit=True)
+
+    # create an expired not taken event
+    e1 = SyncEvent.create(
+        content=b"content",
+        created_at=arrow.now().shift(minutes=-15),
+        taken_time=None,
+        commit=True,
+    )
+
+    # create an expired taken event (but too long ago)
+    e2 = SyncEvent.create(
+        content=b"content",
+        created_at=arrow.now().shift(minutes=-15),
+        taken_time=arrow.now().shift(minutes=-14),
+        commit=True,
+    )
+
+    # create an expired taken event (but recently)
+    e3 = SyncEvent.create(
+        content=b"content",
+        created_at=arrow.now().shift(minutes=-15),
+        taken_time=arrow.now().shift(minutes=-1),
+        commit=True,
+    )
+
+    # create a normal event
+    e4 = SyncEvent.create(
+        content=b"content",
+        created_at=arrow.now(),
+        commit=True,
+    )
+
+    # get dead letter events
+    dead_letter_events = SyncEvent.get_dead_letter(
+        older_than=arrow.now().shift(minutes=-10)
+    )
+    assert len(dead_letter_events) == 2
+    assert e1 in dead_letter_events
+    assert e2 in dead_letter_events
+    assert e3 not in dead_letter_events
+    assert e4 not in dead_letter_events
