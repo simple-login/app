@@ -3682,7 +3682,14 @@ class SyncEvent(Base, ModelMixin):
 
     __tablename__ = "sync_event"
     content = sa.Column(sa.LargeBinary, unique=False, nullable=False)
-    taken_time = sa.Column(ArrowType, default=None, nullable=True, server_default=None)
+    taken_time = sa.Column(
+        ArrowType, default=None, nullable=True, server_default=None, index=True
+    )
+
+    __table_args__ = (
+        sa.Index("ix_sync_event_created_at", "created_at"),
+        sa.Index("ix_sync_event_taken_time", "taken_time"),
+    )
 
     def mark_as_taken(self) -> bool:
         sql = """
