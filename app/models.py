@@ -3699,7 +3699,10 @@ class SyncEvent(Base, ModelMixin):
           AND taken_time IS NULL
         """
         args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
+
         res = Session.execute(sql, args)
+        Session.commit()
+
         return res.rowcount > 0
 
     @classmethod

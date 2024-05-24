@@ -18,31 +18,25 @@ class Runner:
     @newrelic.agent.background_task()
     def __on_event(self, event: SyncEvent):
         try:
-            can_process = event.mark_as_taken()
-            if can_process:
-                event_created_at = event.created_at
-                start_time = arrow.now()
-                success = self.__sink.process(event)
-                if success:
-                    event_id = event.id
-                    SyncEvent.delete(event.id, commit=True)
-                    LOG.info(f"Marked {event_id} as done")
+            event_created_at = event.created_at
+            start_time = arrow.now()
+            success = self.__sink.process(event)
+            if success:
+                event_id = event.id
+                SyncEvent.delete(event.id, commit=True)
+                LOG.info(f"Marked {event_id} as done")
 
-                    end_time = arrow.now() - start_time
-                    time_between_taken_and_created = start_time - event_created_at
+                end_time = arrow.now() - start_time
+                time_between_taken_and_created = start_time - event_created_at
 
-                    newrelic.agent.record_custom_metric(
-                        "Custom/sync_event_processed", 1
-                    )
-                    newrelic.agent.record_custom_metric(
-                        "Custom/sync_event_process_time", end_time.total_seconds()
-                    )
-                    newrelic.agent.record_custom_metric(
-                        "Custom/sync_event_elapsed_time",
-                        time_between_taken_and_created.total_seconds(),
-                    )
-            else:
-                LOG.info(f"{event.id} was handled by another runner")
+                newrelic.agent.record_custom_metric("Custom/sync_event_processed", 1)
+                newrelic.agent.record_custom_metric(
+                    "Custom/sync_event_process_time", end_time.total_seconds()
+                )
+                newrelic.agent.record_custom_metric(
+                    "Custom/sync_event_elapsed_time",
+                    time_between_taken_and_created.total_seconds(),
+                )
         except Exception as e:
             LOG.warn(f"Exception processing event [id={event.id}]: {e}")
             newrelic.agent.record_custom_metric("Custom/sync_event_failed", 1)

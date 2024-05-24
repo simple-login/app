@@ -93,11 +93,23 @@ def log_nb_db_connection():
     newrelic.agent.record_custom_metric("Custom/nb_db_connections", nb_connection)
 
 
+@newrelic.agent.background_task()
+def log_pending_to_process_events():
+    r = Session.execute("select count(*) from sync_events WHERE taken_time IS NULL;")
+    events_pending = list(r)[0][0]
+
+    LOG.d("number of events pending to process %s", events_pending)
+    newrelic.agent.record_custom_metric(
+        "Custom/sync_events_pending_to_process", events_pending
+    )
+
+
 if __name__ == "__main__":
     exporter = MetricExporter(get_newrelic_license())
     while True:
         log_postfix_metrics()
         log_nb_db_connection()
+        log_pending_to_process_events()
         Session.close()
 
         exporter.run()

@@ -13,6 +13,8 @@ from typing import Callable, NoReturn
 _DEAD_LETTER_THRESHOLD_MINUTES = 10
 _DEAD_LETTER_INTERVAL_SECONDS = 30
 
+_POSTGRES_RECONNECT_INTERVAL_SECONDS = 5
+
 
 class EventSource(ABC):
     @abstractmethod
@@ -22,9 +24,19 @@ class EventSource(ABC):
 
 class PostgresEventSource(EventSource):
     def __init__(self, connection_string: str):
-        self.__connection = psycopg2.connect(connection_string)
+        self.__connection_string = connection_string
+        self.__connect()
 
     def run(self, on_event: Callable[[SyncEvent], NoReturn]):
+        while True:
+            try:
+                self.__listen(on_event)
+            except Exception as e:
+                LOG.warn(f"Error listening to events: {e}")
+                sleep(_POSTGRES_RECONNECT_INTERVAL_SECONDS)
+                self.__connect()
+
+    def __listen(self, on_event: Callable[[SyncEvent], NoReturn]):
         self.__connection.set_isolation_level(
             psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
         )
@@ -44,11 +56,23 @@ class PostgresEventSource(EventSource):
                         webhook_id = int(notify.payload)
                         event = SyncEvent.get_by(id=webhook_id)
                         if event is not None:
-                            on_event(event)
+                            if event.mark_as_taken():
+                                on_event(event)
+                            else:
+                                LOG.info(
+                                    f"Event {event.id} was handled by another runner"
+                                )
                         else:
                             LOG.info(f"Could not find event with id={notify.payload}")
                     except Exception as e:
                         LOG.warn(f"Error getting event: {e}")
+
+    def __connect(self):
+        self.__connection = psycopg2.connect(self.__connection_string)
+
+        from app.db import Session
+
+        Session.close()
 
 
 class DeadLetterEventSource(EventSource):
@@ -73,3 +97,4 @@ class DeadLetterEventSource(EventSource):
                     sleep(_DEAD_LETTER_INTERVAL_SECONDS)
             except Exception as e:
                 LOG.warn(f"Error getting dead letter event: {e}")
+                sleep(_DEAD_LETTER_INTERVAL_SECONDS)
