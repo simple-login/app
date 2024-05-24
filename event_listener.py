@@ -40,7 +40,7 @@ def main(mode: Mode, dry_run: bool):
         LOG.i("Starting with HttpEventSink")
         sink = HttpEventSink()
 
-    runner = Runner(source=source, sink=sink, force_execution=mode == Mode.DEAD_LETTER)
+    runner = Runner(source=source, sink=sink)
     runner.run()
 
 

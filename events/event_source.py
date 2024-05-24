@@ -56,7 +56,12 @@ class PostgresEventSource(EventSource):
                         webhook_id = int(notify.payload)
                         event = SyncEvent.get_by(id=webhook_id)
                         if event is not None:
-                            on_event(event)
+                            if event.mark_as_taken():
+                                on_event(event)
+                            else:
+                                LOG.info(
+                                    f"Event {event.id} was handled by another runner"
+                                )
                         else:
                             LOG.info(f"Could not find event with id={notify.payload}")
                     except Exception as e:
