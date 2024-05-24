@@ -95,7 +95,7 @@ def log_nb_db_connection():
 
 @newrelic.agent.background_task()
 def log_pending_to_process_events():
-    r = Session.execute("select count(*) from sync_events WHERE taken_time IS NULL;")
+    r = Session.execute("select count(*) from sync_event WHERE taken_time IS NULL;")
     events_pending = list(r)[0][0]
 
     LOG.d("number of events pending to process %s", events_pending)
