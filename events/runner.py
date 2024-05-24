@@ -8,9 +8,12 @@ from events.event_source import EventSource
 
 
 class Runner:
-    def __init__(self, source: EventSource, sink: EventSink):
+    def __init__(
+        self, source: EventSource, sink: EventSink, force_execution: bool = False
+    ):
         self.__source = source
         self.__sink = sink
+        self.__force_execution = force_execution
 
     def run(self):
         self.__source.run(self.__on_event)
@@ -19,7 +22,7 @@ class Runner:
     def __on_event(self, event: SyncEvent):
         try:
             can_process = event.mark_as_taken()
-            if can_process:
+            if can_process or self.__force_execution:
                 event_created_at = event.created_at
                 start_time = arrow.now()
                 success = self.__sink.process(event)
