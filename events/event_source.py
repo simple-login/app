@@ -65,6 +65,10 @@ class PostgresEventSource(EventSource):
     def __connect(self):
         self.__connection = psycopg2.connect(self.__connection_string)
 
+        from app.db import Session
+
+        Session.close()
+
 
 class DeadLetterEventSource(EventSource):
     @newrelic.agent.background_task()
