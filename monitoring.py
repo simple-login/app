@@ -4,6 +4,7 @@ import subprocess
 from time import sleep
 from typing import List, Dict
 
+import arrow
 import newrelic.agent
 
 from app.db import Session
@@ -104,12 +105,33 @@ def log_pending_to_process_events():
     )
 
 
+@newrelic.agent.background_task()
+def log_events_pending_dead_letter():
+    since = arrow.now().shift(minutes=-10).datetime
+    r = Session.execute(
+        """
+        SELECT COUNT(*)
+        FROM sync_event
+        WHERE (taken_time IS NOT NULL AND taken_time < :since)
+           OR (taken_time IS NULL AND created_at < :since)
+        """,
+        {"since": since},
+    )
+    events_pending = list(r)[0][0]
+
+    LOG.d("number of events pending dead letter %s", events_pending)
+    newrelic.agent.record_custom_metric(
+        "Custom/sync_events_pending_dead_letter", events_pending
+    )
+
+
 if __name__ == "__main__":
     exporter = MetricExporter(get_newrelic_license())
     while True:
         log_postfix_metrics()
         log_nb_db_connection()
         log_pending_to_process_events()
+        log_events_pending_dead_letter()
         Session.close()
 
         exporter.run()
