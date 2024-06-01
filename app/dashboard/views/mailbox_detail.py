@@ -11,9 +11,11 @@ from wtforms.fields.html5 import EmailField
 from app.config import ENFORCE_SPF, MAILBOX_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
+from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.email_utils import email_can_be_used_as_mailbox
 from app.email_utils import mailbox_already_used, render, send_email
+from app.extensions import limiter
 from app.log import LOG
 from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
@@ -29,6 +31,8 @@ class ChangeEmailForm(FlaskForm):
 
 @dashboard_bp.route("/mailbox/<int:mailbox_id>/", methods=["GET", "POST"])
 @login_required
+@sudo_required
+@limiter.limit("20/minute", methods=["POST"])
 def mailbox_detail_route(mailbox_id):
     mailbox: Mailbox = Mailbox.get(mailbox_id)
     if not mailbox or mailbox.user_id != current_user.id:
@@ -179,8 +183,15 @@ def mailbox_detail_route(mailbox_id):
 
         elif request.form.get("form-name") == "toggle-pgp":
             if request.form.get("pgp-enabled") == "on":
-                mailbox.disable_pgp = False
-                flash(f"PGP is enabled on {mailbox.email}", "success")
+                if mailbox.is_proton():
+                    mailbox.disable_pgp = True
+                    flash(
+                        "Enabling PGP for a Proton Mail mailbox is redundant and does not add any security benefit",
+                        "info",
+                    )
+                else:
+                    mailbox.disable_pgp = False
+                    flash(f"PGP is enabled on {mailbox.email}", "info")
             else:
                 mailbox.disable_pgp = True
                 flash(f"PGP is disabled on {mailbox.email}", "info")

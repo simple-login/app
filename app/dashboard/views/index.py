@@ -146,7 +146,7 @@ def index():
                 alias_utils.delete_alias(alias, current_user)
                 flash(f"Alias {email} has been deleted", "success")
             elif request.form.get("form-name") == "disable-alias":
-                alias.enabled = False
+                alias_utils.change_alias_status(alias, enabled=False)
                 Session.commit()
                 flash(f"Alias {alias.email} has been disabled", "success")
 

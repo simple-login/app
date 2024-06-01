@@ -53,7 +53,7 @@ from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
 
 from app import pgp_utils, s3, config
-from app.alias_utils import try_auto_create
+from app.alias_utils import try_auto_create, change_alias_status
 from app.config import (
     EMAIL_DOMAIN,
     URL,
@@ -1180,6 +1180,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             # References and In-Reply-To are used for keeping the email thread
             headers.REFERENCES,
             headers.IN_REPLY_TO,
+            headers.SL_QUEUE_ID,
         ]
         + headers.MIME_HEADERS,
     )
@@ -1584,7 +1585,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         LOG.w(
             f"Disable alias {alias} because {reason}. {alias.mailboxes} {alias.user}. Last contact {contact}"
         )
-        alias.enabled = False
+        change_alias_status(alias, enabled=False)
 
         Notification.create(
             user_id=user.id,

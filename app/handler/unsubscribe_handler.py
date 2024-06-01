@@ -5,6 +5,7 @@ from typing import Optional
 from aiosmtpd.smtp import Envelope
 
 from app import config
+from app import alias_utils
 from app.db import Session
 from app.email import headers, status
 from app.email_utils import (
@@ -101,7 +102,7 @@ class UnsubscribeHandler:
             mailbox.email, alias
         ):
             return status.E509
-        alias.enabled = False
+        alias_utils.change_alias_status(alias, enabled=False)
         Session.commit()
         enable_alias_url = config.URL + f"/dashboard/?highlight_alias_id={alias.id}"
         for mailbox in alias.mailboxes:

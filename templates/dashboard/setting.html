@@ -249,6 +249,42 @@
       </div>
     </div>
     <!-- END Random alias -->
+    <!-- Data breach check -->
+    <div class="card" id="data-breach">
+      <div class="card-body">
+        <div class="card-title">Data breach monitoring</div>
+        <div class="mt-1 mb-3">
+          {% if not current_user.is_premium() %}
+
+            <div class="alert alert-info" role="alert">
+              This feature is only available on Premium plan.
+              <a href="{{ url_for('dashboard.pricing') }}"
+                 target="_blank"
+                 rel="noopener noreferrer">
+                Upgrade<i class="fe fe-external-link"></i>
+              </a>
+            </div>
+          {% endif %}
+          If enabled, we will inform you via email if one of your aliases appears in a data breach.
+          <br>
+          SimpleLogin uses <a href="https://haveibeenpwned.com/">HaveIBeenPwned</a> API for checking for data breaches.
+        </div>
+        <form method="post" action="#data-breach">
+          {{ csrf_form.csrf_token }}
+          <input type="hidden" name="form-name" value="enable_data_breach_check">
+          <div class="form-check">
+            <input type="checkbox"
+                   id="enable_data_breach_check"
+                   name="enable_data_breach_check"
+                   {% if current_user.enable_data_breach_check %} checked{% endif %}
+                   class="form-check-input">
+            <label for="enable_data_breach_check">Enable data breach monitoring</label>
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Update</button>
+        </form>
+      </div>
+    </div>
+    <!-- END Data breach check -->
     <!-- Sender Format -->
     <div class="card" id="sender-format">
       <div class="card-body">
@@ -285,7 +321,9 @@
               No Name (i.e. only reverse-alias)
             </option>
           </select>
-          <button class="btn btn-outline-primary mt-3">Update</button>
+          <button class="btn btn-outline-primary mt-3">
+            Update
+          </button>
         </form>
       </div>
     </div>
@@ -295,7 +333,9 @@
       <div class="card-body">
         <div class="card-title">
           Reverse Alias Replacement
-          <div class="badge badge-warning">Experimental</div>
+          <div class="badge badge-warning">
+            Experimental
+          </div>
         </div>
         <div class="mb-3">
           When replying to a forwarded email, the <b>reverse-alias</b> can be automatically included
@@ -312,9 +352,13 @@
                    name="replace-ra"
                    {% if current_user.replace_reverse_alias %} checked{% endif %}
                    class="form-check-input">
-            <label for="replace-ra">Enable replacing reverse alias</label>
+            <label for="replace-ra">
+              Enable replacing reverse alias
+            </label>
           </div>
-          <button type="submit" class="btn btn-outline-primary">Update</button>
+          <button type="submit" class="btn btn-outline-primary">
+            Update
+          </button>
         </form>
       </div>
     </div>
