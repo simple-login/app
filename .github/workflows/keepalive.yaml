@@ -1,0 +1,16 @@
+name: Keepalive
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+permissions:
+  actions: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keepalive Workflow
+        uses: liskin/gh-workflow-keepalive@v1.2.1
