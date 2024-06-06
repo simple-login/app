@@ -1,6 +1,7 @@
+from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -44,19 +45,27 @@ class AliasDeleted(_message.Message):
     alias_email: str
     def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ...) -> None: ...
 
+class AliasCreateList(_message.Message):
+    __slots__ = ("event",)
+    EVENT_FIELD_NUMBER: _ClassVar[int]
+    event: _containers.RepeatedCompositeFieldContainer[AliasCreated]
+    def __init__(self, event: _Optional[_Iterable[_Union[AliasCreated, _Mapping]]] = ...) -> None: ...
+
 class EventContent(_message.Message):
-    __slots__ = ("user_plan_change", "user_deleted", "alias_created", "alias_status_change", "alias_deleted")
+    __slots__ = ("user_plan_change", "user_deleted", "alias_created", "alias_status_change", "alias_deleted", "alias_create_list")
     USER_PLAN_CHANGE_FIELD_NUMBER: _ClassVar[int]
     USER_DELETED_FIELD_NUMBER: _ClassVar[int]
     ALIAS_CREATED_FIELD_NUMBER: _ClassVar[int]
     ALIAS_STATUS_CHANGE_FIELD_NUMBER: _ClassVar[int]
     ALIAS_DELETED_FIELD_NUMBER: _ClassVar[int]
+    ALIAS_CREATE_LIST_FIELD_NUMBER: _ClassVar[int]
     user_plan_change: UserPlanChange
     user_deleted: UserDeleted
     alias_created: AliasCreated
     alias_status_change: AliasStatusChange
     alias_deleted: AliasDeleted
-    def __init__(self, user_plan_change: _Optional[_Union[UserPlanChange, _Mapping]] = ..., user_deleted: _Optional[_Union[UserDeleted, _Mapping]] = ..., alias_created: _Optional[_Union[AliasCreated, _Mapping]] = ..., alias_status_change: _Optional[_Union[AliasStatusChange, _Mapping]] = ..., alias_deleted: _Optional[_Union[AliasDeleted, _Mapping]] = ...) -> None: ...
+    alias_create_list: AliasCreateList
+    def __init__(self, user_plan_change: _Optional[_Union[UserPlanChange, _Mapping]] = ..., user_deleted: _Optional[_Union[UserDeleted, _Mapping]] = ..., alias_created: _Optional[_Union[AliasCreated, _Mapping]] = ..., alias_status_change: _Optional[_Union[AliasStatusChange, _Mapping]] = ..., alias_deleted: _Optional[_Union[AliasDeleted, _Mapping]] = ..., alias_create_list: _Optional[_Union[AliasCreateList, _Mapping]] = ...) -> None: ...
 
 class Event(_message.Message):
     __slots__ = ("user_id", "external_user_id", "partner_id", "content")
