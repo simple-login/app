@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x65vent.proto\x12\x12simplelogin_events\"\'\n\x0eUserPlanChange\x12\x15\n\rplan_end_time\x18\x01 \x01(\r\"\r\n\x0bUserDeleted\"Z\n\x0c\x41liasCreated\x12\x10\n\x08\x61lias_id\x18\x01 \x01(\r\x12\x13\n\x0b\x61lias_email\x18\x02 \x01(\t\x12\x12\n\nalias_note\x18\x03 \x01(\t\x12\x0f\n\x07\x65nabled\x18\x04 \x01(\x08\"K\n\x11\x41liasStatusChange\x12\x10\n\x08\x61lias_id\x18\x01 \x01(\r\x12\x13\n\x0b\x61lias_email\x18\x02 \x01(\t\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\"5\n\x0c\x41liasDeleted\x12\x10\n\x08\x61lias_id\x18\x01 \x01(\r\x12\x13\n\x0b\x61lias_email\x18\x02 \x01(\t\"\xce\x02\n\x0c\x45ventContent\x12>\n\x10user_plan_change\x18\x01 \x01(\x0b\x32\".simplelogin_events.UserPlanChangeH\x00\x12\x37\n\x0cuser_deleted\x18\x02 \x01(\x0b\x32\x1f.simplelogin_events.UserDeletedH\x00\x12\x39\n\ralias_created\x18\x03 \x01(\x0b\x32 .simplelogin_events.AliasCreatedH\x00\x12\x44\n\x13\x61lias_status_change\x18\x04 \x01(\x0b\x32%.simplelogin_events.AliasStatusChangeH\x00\x12\x39\n\ralias_deleted\x18\x05 \x01(\x0b\x32 .simplelogin_events.AliasDeletedH\x00\x42\t\n\x07\x63ontent\"y\n\x05\x45vent\x12\x0f\n\x07user_id\x18\x01 \x01(\r\x12\x18\n\x10\x65xternal_user_id\x18\x02 \x01(\t\x12\x12\n\npartner_id\x18\x03 \x01(\r\x12\x31\n\x07\x63ontent\x18\x04 \x01(\x0b\x32 .simplelogin_events.EventContentb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x65vent.proto\x12\x12simplelogin_events\"\'\n\x0eUserPlanChange\x12\x15\n\rplan_end_time\x18\x01 \x01(\r\"\r\n\x0bUserDeleted\"Z\n\x0c\x41liasCreated\x12\x10\n\x08\x61lias_id\x18\x01 \x01(\r\x12\x13\n\x0b\x61lias_email\x18\x02 \x01(\t\x12\x12\n\nalias_note\x18\x03 \x01(\t\x12\x0f\n\x07\x65nabled\x18\x04 \x01(\x08\"K\n\x11\x41liasStatusChange\x12\x10\n\x08\x61lias_id\x18\x01 \x01(\r\x12\x13\n\x0b\x61lias_email\x18\x02 \x01(\t\x12\x0f\n\x07\x65nabled\x18\x03 \x01(\x08\"5\n\x0c\x41liasDeleted\x12\x10\n\x08\x61lias_id\x18\x01 \x01(\r\x12\x13\n\x0b\x61lias_email\x18\x02 \x01(\t\"B\n\x0f\x41liasCreateList\x12/\n\x05\x65vent\x18\x01 \x03(\x0b\x32 .simplelogin_events.AliasCreated\"\x90\x03\n\x0c\x45ventContent\x12>\n\x10user_plan_change\x18\x01 \x01(\x0b\x32\".simplelogin_events.UserPlanChangeH\x00\x12\x37\n\x0cuser_deleted\x18\x02 \x01(\x0b\x32\x1f.simplelogin_events.UserDeletedH\x00\x12\x39\n\ralias_created\x18\x03 \x01(\x0b\x32 .simplelogin_events.AliasCreatedH\x00\x12\x44\n\x13\x61lias_status_change\x18\x04 \x01(\x0b\x32%.simplelogin_events.AliasStatusChangeH\x00\x12\x39\n\ralias_deleted\x18\x05 \x01(\x0b\x32 .simplelogin_events.AliasDeletedH\x00\x12@\n\x11\x61lias_create_list\x18\x06 \x01(\x0b\x32#.simplelogin_events.AliasCreateListH\x00\x42\t\n\x07\x63ontent\"y\n\x05\x45vent\x12\x0f\n\x07user_id\x18\x01 \x01(\r\x12\x18\n\x10\x65xternal_user_id\x18\x02 \x01(\t\x12\x12\n\npartner_id\x18\x03 \x01(\r\x12\x31\n\x07\x63ontent\x18\x04 \x01(\x0b\x32 .simplelogin_events.EventContentb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -31,8 +31,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_ALIASSTATUSCHANGE']._serialized_end=258
   _globals['_ALIASDELETED']._serialized_start=260
   _globals['_ALIASDELETED']._serialized_end=313
-  _globals['_EVENTCONTENT']._serialized_start=316
-  _globals['_EVENTCONTENT']._serialized_end=650
-  _globals['_EVENT']._serialized_start=652
-  _globals['_EVENT']._serialized_end=773
+  _globals['_ALIASCREATELIST']._serialized_start=315
+  _globals['_ALIASCREATELIST']._serialized_end=381
+  _globals['_EVENTCONTENT']._serialized_start=384
+  _globals['_EVENTCONTENT']._serialized_end=784
+  _globals['_EVENT']._serialized_start=786
+  _globals['_EVENT']._serialized_end=907
 # @@protoc_insertion_point(module_scope)
