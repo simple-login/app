@@ -472,6 +472,7 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
 
 
 def change_alias_status(alias: Alias, enabled: bool, commit: bool = False):
+    LOG.i(f"Changing alias {alias} enabled to {enabled}")
     alias.enabled = enabled
 
     event = AliasStatusChanged(

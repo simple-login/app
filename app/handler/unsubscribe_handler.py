@@ -102,6 +102,7 @@ class UnsubscribeHandler:
             mailbox.email, alias
         ):
             return status.E509
+        LOG.i(f"User disabled alias {alias} via unsubscribe header")
         alias_utils.change_alias_status(alias, enabled=False)
         Session.commit()
         enable_alias_url = config.URL + f"/dashboard/?highlight_alias_id={alias.id}"
