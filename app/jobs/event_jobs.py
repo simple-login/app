@@ -17,7 +17,6 @@ def send_alias_creation_events_for_user(
         .filter_by(user_id=user.id)
         .order_by(Alias.id.asc())
     ):
-        LOG.i(alias)
         event_list.append(
             AliasCreated(
                 alias_id=alias.id,
