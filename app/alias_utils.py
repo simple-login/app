@@ -26,7 +26,11 @@ from app.email_utils import (
 )
 from app.errors import AliasInTrashError
 from app.events.event_dispatcher import EventDispatcher
-from app.events.generated.event_pb2 import AliasDeleted, AliasStatusChange, EventContent
+from app.events.generated.event_pb2 import (
+    AliasDeleted,
+    AliasStatusChanged,
+    EventContent,
+)
 from app.log import LOG
 from app.models import (
     Alias,
@@ -468,9 +472,10 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
 
 
 def change_alias_status(alias: Alias, enabled: bool, commit: bool = False):
+    LOG.i(f"Changing alias {alias} enabled to {enabled}")
     alias.enabled = enabled
 
-    event = AliasStatusChange(
+    event = AliasStatusChanged(
         alias_id=alias.id, alias_email=alias.email, enabled=enabled
     )
     EventDispatcher.send_event(alias.user, EventContent(alias_status_change=event))

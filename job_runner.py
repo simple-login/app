@@ -15,6 +15,7 @@ from app.email_utils import (
     render,
 )
 from app.import_utils import handle_batch_import
+from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
@@ -264,8 +265,14 @@ SimpleLogin team.
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
         if user and user.activated:
-            LOG.d("send proton welcome email to user %s", user)
+            LOG.d("Send proton welcome email to user %s", user)
             welcome_proton(user)
+    elif job.name == config.JOB_SEND_ALIAS_CREATION_EVENTS:
+        user_id = job.payload.get("user_id")
+        user = User.get(user_id)
+        if user and user.activated:
+            LOG.d(f"Sending alias creation events for {user}")
+            send_alias_creation_events_for_user(user)
     else:
         LOG.e("Unknown job name %s", job.name)
 

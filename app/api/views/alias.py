@@ -25,6 +25,7 @@ from app.errors import (
     ErrAddressInvalid,
 )
 from app.extensions import limiter
+from app.log import LOG
 from app.models import Alias, Contact, Mailbox, AliasMailbox
 
 
@@ -185,6 +186,7 @@ def toggle_alias(alias_id):
         return jsonify(error="Forbidden"), 403
 
     alias_utils.change_alias_status(alias, enabled=not alias.enabled)
+    LOG.i(f"User {user} changed alias {alias} enabled status to {alias.enabled}")
     Session.commit()
 
     return jsonify(enabled=alias.enabled), 200
