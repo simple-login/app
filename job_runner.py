@@ -271,7 +271,7 @@ SimpleLogin team.
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
         if user and user.activated:
-            LOG.d("Send proton welcome email to user %s", user)
+            LOG.d(f"Sending alias creation events for {user}")
             send_alias_creation_events_for_user(user)
     else:
         LOG.e("Unknown job name %s", job.name)

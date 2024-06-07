@@ -28,7 +28,7 @@ message AliasDeleted {
 }
 
 message AliasCreatedList {
-  repeated AliasCreated event = 1;
+  repeated AliasCreated events = 1;
 }
 
 message EventContent {

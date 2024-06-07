@@ -1,9 +1,10 @@
 from app import config
 from app.db import Session
 from app.events.event_dispatcher import Dispatcher
+from app.events.generated import event_pb2
 from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.models import Alias
-from tests.utils import create_new_user
+from tests.utils import create_partner_linked_user
 
 
 class MemStoreDispatcher(Dispatcher):
@@ -11,7 +12,7 @@ class MemStoreDispatcher(Dispatcher):
         self.events = []
 
     def send(self, event: bytes):
-        self.events.apend(event)
+        self.events.append(event)
 
 
 def setup_module():
@@ -23,9 +24,23 @@ def teardown_module():
 
 
 def test_send_alias_creation_events():
-    user = create_new_user()
+    [user, partner_user] = create_partner_linked_user()
     aliases = [Alias.create_new_random(user) for i in range(2)]
-    Session.commit()
+    Session.flush()
     dispatcher = MemStoreDispatcher()
     send_alias_creation_events_for_user(user, dispatcher=dispatcher, chunk_size=2)
-    assert len(dispatcher.events) == len(aliases)
+    # 2 batches. 1st newsletter + first alias. 2nd last alias
+    assert len(dispatcher.events) == 2
+    decoded_event = event_pb2.Event.FromString(dispatcher.events[0])
+    assert decoded_event.user_id == user.id
+    assert decoded_event.external_user_id == partner_user.external_user_id
+    event_list = decoded_event.content.alias_create_list.events
+    assert len(event_list) == 2
+    # 0 is newsletter alias
+    assert event_list[1].alias_id == aliases[0].id
+    decoded_event = event_pb2.Event.FromString(dispatcher.events[1])
+    assert decoded_event.user_id == user.id
+    assert decoded_event.external_user_id == partner_user.external_user_id
+    event_list = decoded_event.content.alias_create_list.events
+    assert len(event_list) == 1
+    assert event_list[0].alias_id == aliases[1].id

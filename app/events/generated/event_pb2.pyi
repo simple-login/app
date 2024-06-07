@@ -46,10 +46,10 @@ class AliasDeleted(_message.Message):
     def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ...) -> None: ...
 
 class AliasCreatedList(_message.Message):
-    __slots__ = ("event",)
-    EVENT_FIELD_NUMBER: _ClassVar[int]
-    event: _containers.RepeatedCompositeFieldContainer[AliasCreated]
-    def __init__(self, event: _Optional[_Iterable[_Union[AliasCreated, _Mapping]]] = ...) -> None: ...
+    __slots__ = ("events",)
+    EVENTS_FIELD_NUMBER: _ClassVar[int]
+    events: _containers.RepeatedCompositeFieldContainer[AliasCreated]
+    def __init__(self, events: _Optional[_Iterable[_Union[AliasCreated, _Mapping]]] = ...) -> None: ...
 
 class EventContent(_message.Message):
     __slots__ = ("user_plan_change", "user_deleted", "alias_created", "alias_status_change", "alias_deleted", "alias_create_list")
