@@ -27,7 +27,7 @@ message AliasDeleted {
   string alias_email = 2;
 }
 
-message AliasCreateList {
+message AliasCreatedList {
   repeated AliasCreated event = 1;
 }
 
@@ -38,7 +38,7 @@ message EventContent {
     AliasCreated alias_created = 3;
     AliasStatusChange alias_status_change = 4;
     AliasDeleted alias_deleted = 5;
-    AliasCreateList alias_create_list = 6;
+    AliasCreatedList alias_create_list = 6;
   }
 }
 
