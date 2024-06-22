@@ -2973,7 +2973,6 @@ class RecoveryCode(Base, ModelMixin):
         hashed_code = cls._hash_code(code)
         # TODO: Only return hashed codes once there aren't unhashed codes in the db.
         return cls.get_by(user_id=user.id, code=hashed_code)
-        
 
     @classmethod
     def empty(cls, user):
