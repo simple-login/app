@@ -2,6 +2,7 @@ from newrelic import agent
 from typing import Optional
 
 from app.db import Session
+from app.log import LOG
 from app.errors import ProtonPartnerNotSetUp
 from app.models import Partner, PartnerUser, User
 
@@ -30,6 +31,7 @@ def perform_proton_account_unlink(current_user: User):
         user_id=current_user.id, partner_id=proton_partner.id
     )
     if partner_user is not None:
+        LOG.info(f"User {current_user} has unlinked the account from {partner_user}")
         PartnerUser.delete(partner_user.id)
     Session.commit()
     agent.record_custom_event("AccountUnlinked", {"partner": proton_partner.name})
