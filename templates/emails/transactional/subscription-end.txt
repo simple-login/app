@@ -9,6 +9,7 @@ When the subscription ends:
 
 - All aliases/domains/directories you have created are kept and continue working.
 - You cannot create new aliases if you exceed the free plan limit, i.e. have more than {{MAX_NB_EMAIL_FREE_PLAN}} aliases.
+- You cannot create new reverse aliases.
 - As features like "catch-all" or "directory" allow you to create aliases on-the-fly,
     those aliases cannot be automatically created if you have more than {{MAX_NB_EMAIL_FREE_PLAN}} aliases.
 - You cannot add new domain or directory.
