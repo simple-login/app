@@ -1,8 +1,8 @@
 {% if USE_PARTNER_TEMPLATE %}
 
-  {% include "base_partner.html"  %}
+  {% extends "base_partner.html" %}
 
 {% else %}
-  {% include "base_sl.html"  %}
+  {% extends "base_sl.html" %}
 
 {% endif %}
