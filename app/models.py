@@ -330,6 +330,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     FLAG_FREE_DISABLE_CREATE_ALIAS = 1 << 0
     FLAG_CREATED_FROM_PARTNER = 1 << 1
     FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
+    FLAG_CREATED_ALIAS_FROM_PARTNER = 1 << 3
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
@@ -1645,6 +1646,12 @@ class Alias(Base, ModelMixin):
             enabled=True,
         )
         EventDispatcher.send_event(user, EventContent(alias_created=event))
+
+        if (
+            new_alias.flags & cls.FLAG_PARTNER_CREATED > 0
+            and new_alias.user.flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER == 0
+        ):
+            user.flags = user.flags | User.FLAG_CREATED_ALIAS_FROM_PARTNER
 
         if commit:
             Session.commit()

@@ -33,6 +33,7 @@ from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import func
+from flask_login import current_user
 
 from app import config
 from app.db import Session
@@ -74,11 +75,20 @@ def render(template_name, **kwargs) -> str:
 
     template = env.get_template(template_name)
 
+    use_partner_template = False
+    if current_user.is_authenticated:
+        use_partner_template = (
+            current_user.flags
+            & (User.FLAG_CREATED_ALIAS_FROM_PARTNER | User.FLAG_CREATED_FROM_PARTNER)
+            > 0
+        )
+
     return template.render(
         MAX_NB_EMAIL_FREE_PLAN=config.MAX_NB_EMAIL_FREE_PLAN,
         URL=config.URL,
         LANDING_PAGE_URL=config.LANDING_PAGE_URL,
         YEAR=arrow.now().year,
+        USE_PARTNER_TEMPLATE=use_partner_template,
         **kwargs,
     )
 
