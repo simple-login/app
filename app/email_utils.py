@@ -77,11 +77,7 @@ def render(template_name, **kwargs) -> str:
 
     use_partner_template = False
     if current_user and current_user.is_authenticated:
-        use_partner_template = (
-            current_user.flags
-            & (User.FLAG_CREATED_ALIAS_FROM_PARTNER | User.FLAG_CREATED_FROM_PARTNER)
-            > 0
-        )
+        use_partner_template = current_user.has_used_alias_from_partner()
 
     return template.render(
         MAX_NB_EMAIL_FREE_PLAN=config.MAX_NB_EMAIL_FREE_PLAN,

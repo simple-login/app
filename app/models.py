@@ -1154,6 +1154,13 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             return True
         return not config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
 
+    def has_used_alias_from_partner(self) -> bool:
+        return (
+            self.flags
+            & (User.FLAG_CREATED_ALIAS_FROM_PARTNER | User.FLAG_CREATED_FROM_PARTNER)
+            > 0
+        )
+
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
 
