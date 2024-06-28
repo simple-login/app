@@ -1,5 +1,5 @@
 from app.db import Session
-from app.models import Alias, Mailbox, AliasMailbox
+from app.models import Alias, Mailbox, AliasMailbox, User
 from tests.utils import create_new_user, random_email
 
 
@@ -15,3 +15,17 @@ def test_duplicated_mailbox_is_returned_only_once():
     alias_mailbox_id = [mailbox.id for mailbox in alias_mailboxes]
     assert user.default_mailbox_id in alias_mailbox_id
     assert other_mailbox.id in alias_mailbox_id
+
+
+def test_alias_create_from_partner_flags_also_the_user():
+    user = create_new_user()
+    Session.flush()
+    email = random_email()
+    alias = Alias.create(
+        user_id=user.id,
+        email=email,
+        mailbox_id=user.default_mailbox_id,
+        flags=Alias.FLAG_PARTNER_CREATED,
+        flush=True,
+    )
+    assert alias.user.flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER > 0
