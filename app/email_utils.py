@@ -76,7 +76,7 @@ def render(template_name, **kwargs) -> str:
     template = env.get_template(template_name)
 
     use_partner_template = False
-    if current_user.is_authenticated:
+    if current_user is not None and current_user.is_authenticated:
         use_partner_template = (
             current_user.flags
             & (User.FLAG_CREATED_ALIAS_FROM_PARTNER | User.FLAG_CREATED_FROM_PARTNER)
