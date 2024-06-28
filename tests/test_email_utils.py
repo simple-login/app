@@ -9,6 +9,7 @@ import pytest
 from app import config
 from app.config import MAX_ALERT_24H, ROOT_DIR
 from app.db import Session
+from app.email import headers
 from app.email_utils import (
     get_email_domain_part,
     can_create_directory_for_address,
@@ -352,6 +353,33 @@ def test_is_valid_email():
     assert not is_valid_email("with space@gmail.com")
     assert not is_valid_email("strange char !ç@gmail.com")
     assert not is_valid_email("emoji👌@gmail.com")
+
+
+def test_add_subject_prefix():
+    msg = email.message_from_string(
+        """Subject: Potato
+Content-Transfer-Encoding: 7bit
+
+hello
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header", subject_prefix="[TEST]")
+    assert "text header" in new_msg.as_string()
+    assert "html header" not in new_msg.as_string()
+    assert new_msg[headers.SUBJECT] == "[TEST] Potato"
+
+
+def test_add_subject_prefix_with_no_header():
+    msg = email.message_from_string(
+        """Content-Transfer-Encoding: 7bit
+
+hello
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header", subject_prefix="[TEST]")
+    assert "text header" in new_msg.as_string()
+    assert "html header" not in new_msg.as_string()
+    assert new_msg[headers.SUBJECT] == "[TEST]"
 
 
 def test_add_header_plain_text():
