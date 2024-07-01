@@ -82,6 +82,7 @@ def render(template_name: str, user: Optional[User], **kwargs) -> str:
     use_partner_template = False
     if user:
         use_partner_template = user.has_used_alias_from_partner()
+        kwargs["user"] = user
 
     return template.render(
         MAX_NB_EMAIL_FREE_PLAN=config.MAX_NB_EMAIL_FREE_PLAN,
