@@ -27,6 +27,7 @@ def failed_payment(sub: Subscription, subscription_id: str):
         "SimpleLogin - your subscription has failed to be renewed",
         render(
             "transactional/subscription-cancel.txt",
+            user=user,
             end_date=arrow.arrow.datetime.utcnow(),
         ),
     )

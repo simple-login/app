@@ -20,7 +20,7 @@ def final():
     if form.validate_on_submit():
         alias = Alias.get_by(email=form.email.data)
         if alias and alias.user_id == current_user.id:
-            send_test_email_alias(alias.email, current_user.name)
+            send_test_email_alias(current_user, alias.email)
             flash("An email is sent to your alias", "success")
 
     return render_template(

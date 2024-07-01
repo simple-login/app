@@ -266,11 +266,13 @@ def notify_manual_sub_end():
                 "Your SimpleLogin subscription will end soon",
                 render(
                     "transactional/coinbase/reminder-subscription.txt",
+                    user=user,
                     coinbase_subscription=coinbase_subscription,
                     extend_subscription_url=extend_subscription_url,
                 ),
                 render(
                     "transactional/coinbase/reminder-subscription.html",
+                    user=user,
                     coinbase_subscription=coinbase_subscription,
                     extend_subscription_url=extend_subscription_url,
                 ),
@@ -826,10 +828,12 @@ def check_mailbox_valid_domain():
                         f"Mailbox {mailbox.email} is disabled",
                         render(
                             "transactional/disable-mailbox-warning.txt.jinja2",
+                            user=mailbox.user,
                             mailbox=mailbox,
                         ),
                         render(
                             "transactional/disable-mailbox-warning.html",
+                            user=mailbox.user,
                             mailbox=mailbox,
                         ),
                         retries=3,
@@ -884,6 +888,7 @@ def check_mailbox_valid_pgp_keys():
                 f"Mailbox {mailbox.email}'s PGP Key is invalid",
                 render(
                     "transactional/invalid-mailbox-pgp-key.txt.jinja2",
+                    user=mailbox.user,
                     mailbox=mailbox,
                 ),
                 retries=3,
@@ -924,6 +929,7 @@ def check_single_custom_domain(custom_domain):
                 f"Please update {custom_domain.domain} DNS on SimpleLogin",
                 render(
                     "transactional/custom-domain-dns-issue.txt.jinja2",
+                    user=user,
                     custom_domain=custom_domain,
                     domain_dns_url=domain_dns_url,
                 ),

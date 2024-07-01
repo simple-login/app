@@ -129,8 +129,8 @@ def auth_register():
     send_email(
         email,
         "Just one more step to join SimpleLogin",
-        render("transactional/code-activation.txt.jinja2", code=code),
-        render("transactional/code-activation.html", code=code),
+        render("transactional/code-activation.txt.jinja2", user=user, code=code),
+        render("transactional/code-activation.html", user=user, code=code),
     )
 
     RegisterEvent(RegisterEvent.ActionType.success, RegisterEvent.Source.api).send()
@@ -226,8 +226,8 @@ def auth_reactivate():
     send_email(
         email,
         "Just one more step to join SimpleLogin",
-        render("transactional/code-activation.txt.jinja2", code=code),
-        render("transactional/code-activation.html", code=code),
+        render("transactional/code-activation.txt.jinja2", user=user, code=code),
+        render("transactional/code-activation.html", user=user, code=code),
     )
 
     return jsonify(msg="User needs to confirm their account"), 200

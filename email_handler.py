@@ -601,12 +601,14 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
         f"Email sent to {alias.email} from its own mailbox {from_addr}",
         render(
             "transactional/cycle-email.txt.jinja2",
+            user=user,
             alias=alias,
             from_addr=from_addr,
             refused_email_url=refused_email_url,
         ),
         render(
             "transactional/cycle-email.html",
+            user=user,
             alias=alias,
             from_addr=from_addr,
             refused_email_url=refused_email_url,
@@ -728,12 +730,14 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
                     f"Your mailbox {mailbox.email} is an alias",
                     render(
                         "transactional/mailbox-invalid.txt.jinja2",
+                        user=mailbox.user,
                         mailbox=mailbox,
                         mailbox_url=mailbox_url,
                         alias=alias,
                     ),
                     render(
                         "transactional/mailbox-invalid.html",
+                        user=mailbox.user,
                         mailbox=mailbox,
                         mailbox_url=mailbox_url,
                         alias=alias,
@@ -786,12 +790,14 @@ def forward_email_to_mailbox(
             f"Your mailbox {mailbox.email} and alias {alias.email} use the same domain",
             render(
                 "transactional/mailbox-invalid.txt.jinja2",
+                user=mailbox.user,
                 mailbox=mailbox,
                 mailbox_url=mailbox_url,
                 alias=alias,
             ),
             render(
                 "transactional/mailbox-invalid.html",
+                user=mailbox.user,
                 mailbox=mailbox,
                 mailbox_url=mailbox_url,
                 alias=alias,
@@ -1276,6 +1282,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             f"Email sent to {contact.email} contains non reverse-alias addresses",
             render(
                 "transactional/non-reverse-alias-reply-phase.txt.jinja2",
+                user=alias.user,
                 destination=contact.email,
                 alias=alias.email,
                 subject=msg[headers.SUBJECT],
@@ -1497,6 +1504,7 @@ def handle_unknown_mailbox(
         f"Attempt to use your alias {alias.email} from {envelope.mail_from}",
         render(
             "transactional/reply-must-use-personal-email.txt",
+            user=user,
             alias=alias,
             sender=envelope.mail_from,
             authorize_address_link=authorize_address_link,
@@ -1504,6 +1512,7 @@ def handle_unknown_mailbox(
         ),
         render(
             "transactional/reply-must-use-personal-email.html",
+            user=user,
             alias=alias,
             sender=envelope.mail_from,
             authorize_address_link=authorize_address_link,
@@ -1604,12 +1613,14 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             f"Alias {alias.email} has been disabled due to multiple bounces",
             render(
                 "transactional/bounce/automatic-disable-alias.txt",
+                user=alias.user,
                 alias=alias,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox.email,
             ),
             render(
                 "transactional/bounce/automatic-disable-alias.html",
+                user=alias.user,
                 alias=alias,
                 refused_email_url=refused_email_url,
                 mailbox_email=mailbox.email,
@@ -1648,6 +1659,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             f"An email sent to {alias.email} cannot be delivered to your mailbox",
             render(
                 "transactional/bounce/bounced-email.txt.jinja2",
+                user=alias.user,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1657,6 +1669,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             ),
             render(
                 "transactional/bounce/bounced-email.html",
+                user=alias.user,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1749,12 +1762,14 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
         f"Email cannot be sent to { contact.email } from your alias { alias.email }",
         render(
             "transactional/bounce/bounce-email-reply-phase.txt",
+            user=user,
             alias=alias,
             contact=contact,
             refused_email_url=refused_email_url,
         ),
         render(
             "transactional/bounce/bounce-email-reply-phase.html",
+            user=user,
             alias=alias,
             contact=contact,
             refused_email_url=refused_email_url,
@@ -1817,6 +1832,7 @@ def handle_spam(
             f"Email from {alias.email} to {contact.website_email} is detected as spam",
             render(
                 "transactional/spam-email-reply-phase.txt",
+                user=user,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1824,6 +1840,7 @@ def handle_spam(
             ),
             render(
                 "transactional/spam-email-reply-phase.html",
+                user=user,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1846,6 +1863,7 @@ def handle_spam(
             f"Email from {contact.website_email} to {alias.email} is detected as spam",
             render(
                 "transactional/spam-email.txt",
+                user=user,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -1853,6 +1871,7 @@ def handle_spam(
             ),
             render(
                 "transactional/spam-email.html",
+                user=user,
                 alias=alias,
                 website_email=contact.website_email,
                 disable_alias_link=disable_alias_link,
@@ -2009,7 +2028,7 @@ def send_no_reply_response(mail_from: str, msg: Message):
         ALERT_TO_NOREPLY,
         mailbox.user.email,
         "Auto: {}".format(msg[headers.SUBJECT] or "No subject"),
-        render("transactional/noreply.text.jinja2"),
+        render("transactional/noreply.text.jinja2", user=mailbox.user),
     )
 
 
@@ -2091,6 +2110,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
             "SimpleLogin shouldn't be used with another email forwarding system",
             render(
                 "transactional/email-sent-from-reverse-alias.txt.jinja2",
+                user=user,
             ),
         )
 

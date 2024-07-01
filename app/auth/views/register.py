@@ -125,4 +125,4 @@ def send_activation_email(user, next_url):
         LOG.d("redirect user to %s after activation", next_url)
         activation_link = activation_link + "&next=" + encode_url(next_url)
 
-    email_utils.send_activation_email(user.email, activation_link)
+    email_utils.send_activation_email(user, activation_link)

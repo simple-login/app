@@ -542,6 +542,7 @@ def setup_paddle_callback(app: Flask):
                     "SimpleLogin - your subscription is canceled",
                     render(
                         "transactional/subscription-cancel.txt",
+                        user=user,
                         end_date=request.form.get("cancellation_effective_date"),
                     ),
                 )
@@ -722,10 +723,12 @@ def handle_coinbase_event(event) -> bool:
             "Your SimpleLogin account has been upgraded",
             render(
                 "transactional/coinbase/new-subscription.txt",
+                user=user,
                 coinbase_subscription=coinbase_subscription,
             ),
             render(
                 "transactional/coinbase/new-subscription.html",
+                user=user,
                 coinbase_subscription=coinbase_subscription,
             ),
         )
@@ -746,10 +749,12 @@ def handle_coinbase_event(event) -> bool:
             "Your SimpleLogin account has been extended",
             render(
                 "transactional/coinbase/extend-subscription.txt",
+                user=user,
                 coinbase_subscription=coinbase_subscription,
             ),
             render(
                 "transactional/coinbase/extend-subscription.html",
+                user=user,
                 coinbase_subscription=coinbase_subscription,
             ),
         )

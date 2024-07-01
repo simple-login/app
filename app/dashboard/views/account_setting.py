@@ -169,7 +169,7 @@ def send_reset_password_email(user):
 
     reset_password_link = f"{URL}/auth/reset_password?code={reset_password_code.code}"
 
-    email_utils.send_reset_password_email(user.email, reset_password_link)
+    email_utils.send_reset_password_email(user, reset_password_link)
 
 
 def send_change_email_confirmation(user: User, email_change: EmailChange):
@@ -179,7 +179,7 @@ def send_change_email_confirmation(user: User, email_change: EmailChange):
 
     link = f"{URL}/auth/change_email?code={email_change.code}"
 
-    email_utils.send_change_email(email_change.new_email, user.email, link)
+    email_utils.send_change_email(user, email_change.new_email, link)
 
 
 @dashboard_bp.route("/resend_email_change", methods=["GET", "POST"])

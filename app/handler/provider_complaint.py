@@ -319,11 +319,13 @@ def report_complaint_to_user_in_forward_phase(
         f"Abuse report from {capitalized_name}",
         render(
             "transactional/provider-complaint-forward-phase.txt.jinja2",
+            user=user,
             email=mailbox_email,
             provider=capitalized_name,
         ),
         render(
             "transactional/provider-complaint-forward-phase.html",
+            user=user,
             email=mailbox_email,
             provider=capitalized_name,
         ),
