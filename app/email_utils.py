@@ -69,15 +69,19 @@ VERP_TIME_START = 1640995200
 VERP_HMAC_ALGO = "sha3-224"
 
 
-def render(template_name, **kwargs) -> str:
+def render(template_name: str, user: Optional[User], **kwargs) -> str:
     templates_dir = os.path.join(config.ROOT_DIR, "templates", "emails")
     env = Environment(loader=FileSystemLoader(templates_dir))
 
     template = env.get_template(template_name)
 
+    if user is None:
+        if current_user and current_user.is_authenticated:
+            user = current_user
+
     use_partner_template = False
-    if current_user and current_user.is_authenticated:
-        use_partner_template = current_user.has_used_alias_from_partner()
+    if user:
+        use_partner_template = user.has_used_alias_from_partner()
 
     return template.render(
         MAX_NB_EMAIL_FREE_PLAN=config.MAX_NB_EMAIL_FREE_PLAN,
@@ -117,53 +121,59 @@ def send_trial_end_soon_email(user):
     )
 
 
-def send_activation_email(email, activation_link):
+def send_activation_email(user: User, activation_link):
     send_email(
-        email,
+        user.email,
         "Just one more step to join SimpleLogin",
         render(
             "transactional/activation.txt",
+            user=user,
             activation_link=activation_link,
-            email=email,
+            email=user.email,
         ),
         render(
             "transactional/activation.html",
+            user=user,
             activation_link=activation_link,
-            email=email,
+            email=user.email,
         ),
     )
 
 
-def send_reset_password_email(email, reset_password_link):
+def send_reset_password_email(user: User, reset_password_link):
     send_email(
-        email,
+        user.email,
         "Reset your password on SimpleLogin",
         render(
             "transactional/reset-password.txt",
+            user=user,
             reset_password_link=reset_password_link,
         ),
         render(
             "transactional/reset-password.html",
+            user=user,
             reset_password_link=reset_password_link,
         ),
     )
 
 
-def send_change_email(new_email, current_email, link):
+def send_change_email(user: User, new_email, link):
     send_email(
         new_email,
         "Confirm email update on SimpleLogin",
         render(
             "transactional/change-email.txt",
+            user=user,
             link=link,
             new_email=new_email,
-            current_email=current_email,
+            current_email=user.email,
         ),
         render(
             "transactional/change-email.html",
+            user=user,
             link=link,
             new_email=new_email,
-            current_email=current_email,
+            current_email=user.email,
         ),
     )
 
@@ -176,28 +186,32 @@ def send_invalid_totp_login_email(user, totp_type):
         "Unsuccessful attempt to login to your SimpleLogin account",
         render(
             "transactional/invalid-totp-login.txt",
+            user=user,
             type=totp_type,
         ),
         render(
             "transactional/invalid-totp-login.html",
+            user=user,
             type=totp_type,
         ),
         1,
     )
 
 
-def send_test_email_alias(email, name):
+def send_test_email_alias(user: User, email: str):
     send_email(
         email,
         f"This email is sent to {email}",
         render(
             "transactional/test-email.txt",
-            name=name,
+            user=user,
+            name=user.name,
             alias=email,
         ),
         render(
             "transactional/test-email.html",
-            name=name,
+            user=user,
+            name=user.name,
             alias=email,
         ),
     )
@@ -212,11 +226,13 @@ def send_cannot_create_directory_alias(user, alias_address, directory_name):
         f"Alias {alias_address} cannot be created",
         render(
             "transactional/cannot-create-alias-directory.txt",
+            user=user,
             alias=alias_address,
             directory=directory_name,
         ),
         render(
             "transactional/cannot-create-alias-directory.html",
+            user=user,
             alias=alias_address,
             directory=directory_name,
         ),
@@ -234,11 +250,13 @@ def send_cannot_create_directory_alias_disabled(user, alias_address, directory_n
         f"Alias {alias_address} cannot be created",
         render(
             "transactional/cannot-create-alias-directory-disabled.txt",
+            user=user,
             alias=alias_address,
             directory=directory_name,
         ),
         render(
             "transactional/cannot-create-alias-directory-disabled.html",
+            user=user,
             alias=alias_address,
             directory=directory_name,
         ),
@@ -254,11 +272,13 @@ def send_cannot_create_domain_alias(user, alias, domain):
         f"Alias {alias} cannot be created",
         render(
             "transactional/cannot-create-alias-domain.txt",
+            user=user,
             alias=alias,
             domain=domain,
         ),
         render(
             "transactional/cannot-create-alias-domain.html",
+            user=user,
             alias=alias,
             domain=domain,
         ),
@@ -1259,6 +1279,7 @@ def spf_pass(
                     f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
                     render(
                         "transactional/spf-fail.txt",
+                        user=user,
                         alias=alias.email,
                         ip=ip,
                         mailbox_url=config.URL + f"/dashboard/mailbox/{mailbox.id}#spf",
@@ -1268,6 +1289,7 @@ def spf_pass(
                     ),
                     render(
                         "transactional/spf-fail.html",
+                        user=user,
                         ip=ip,
                         mailbox_url=config.URL + f"/dashboard/mailbox/{mailbox.id}#spf",
                         to_email=contact_email,

@@ -225,16 +225,15 @@ def process_job(job: Job):
 
         user_email = user.email
         LOG.w("Delete user %s", user)
-        User.delete(user.id)
-        Session.commit()
-
         send_email(
             user_email,
             "Your SimpleLogin account has been deleted",
-            render("transactional/account-delete.txt"),
-            render("transactional/account-delete.html"),
+            render("transactional/account-delete.txt", user=user),
+            render("transactional/account-delete.html", user=user),
             retries=3,
         )
+        User.delete(user.id)
+        Session.commit()
     elif job.name == config.JOB_DELETE_MAILBOX:
         delete_mailbox_job(job)
 
