@@ -925,9 +925,19 @@ def decode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
         return text
 
 
-def add_header(msg: Message, text_header, html_header=None) -> Message:
+def add_header(
+    msg: Message, text_header, html_header=None, subject_prefix=None
+) -> Message:
     if not html_header:
         html_header = text_header.replace("\n", "<br>")
+
+    if subject_prefix is not None:
+        subject = msg[headers.SUBJECT]
+        if not subject:
+            msg.add_header(headers.SUBJECT, subject_prefix)
+        else:
+            subject = f"{subject_prefix} {subject}"
+            msg.replace_header(headers.SUBJECT, subject)
 
     content_type = msg.get_content_type().lower()
     if content_type == "text/plain":

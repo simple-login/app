@@ -64,6 +64,7 @@ More info on https://simplelogin.io/docs/getting-started/anti-phishing/
             msg,
             warning_plain_text,
             warning_html,
+            subject_prefix="[Possible phishing attempt]",
         )
         return changed_msg, None
 
@@ -76,6 +77,7 @@ More info on https://simplelogin.io/docs/getting-started/anti-phishing/
             msg,
             warning_plain_text,
             warning_html,
+            subject_prefix="[Possible phishing attempt]",
         )
         return changed_msg, None
 
