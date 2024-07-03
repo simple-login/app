@@ -453,10 +453,12 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
         f"Alias {alias.email} has been received",
         render(
             "transactional/alias-transferred.txt",
+            user=old_user,
             alias=alias,
         ),
         render(
             "transactional/alias-transferred.html",
+            user=old_user,
             alias=alias,
         ),
     )

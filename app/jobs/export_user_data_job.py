@@ -137,7 +137,9 @@ class ExportUserDataJob:
         msg[headers.SUBJECT] = "Your SimpleLogin data"
         msg[headers.FROM] = f'"SimpleLogin (noreply)" <{config.NOREPLY}>'
         msg[headers.TO] = to_email
-        msg.attach(MIMEText(render("transactional/user-report.html"), "html"))
+        msg.attach(
+            MIMEText(render("transactional/user-report.html", user=self._user), "html")
+        )
         attachment = MIMEApplication(zipped_contents.read())
         attachment.add_header(
             "Content-Disposition", "attachment", filename="user_report.zip"
