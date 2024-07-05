@@ -26,7 +26,7 @@ from app.errors import (
 )
 from app.extensions import limiter
 from app.log import LOG
-from app.models import Alias, Contact, Mailbox, AliasMailbox
+from app.models import Alias, Contact, Mailbox, AliasMailbox, AliasDeleteReason
 
 
 @deprecated
@@ -161,7 +161,7 @@ def delete_alias(alias_id):
     if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    alias_utils.delete_alias(alias, user)
+    alias_utils.delete_alias(alias, user, AliasDeleteReason.ManualAction)
 
     return jsonify(deleted=True), 200
 
