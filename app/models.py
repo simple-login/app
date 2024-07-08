@@ -263,6 +263,15 @@ class UnsubscribeBehaviourEnum(EnumE):
     PreserveOriginal = 2
 
 
+class AliasDeleteReason(EnumE):
+    Unspecified = 0
+    UserHasBeenDeleted = 1
+    ManualAction = 2
+    DirectoryDeleted = 3
+    MailboxDeleted = 4
+    CustomDomainDeleted = 5
+
+
 class IntEnumType(sa.types.TypeDecorator):
     impl = sa.Integer
 
@@ -666,6 +675,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         user: User = cls.get(obj_id)
         EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
+
+        # Manually delete all aliases for the user that is about to be deleted
+        from app.alias_utils import delete_alias
+
+        for alias in Alias.filter_by(user_id=user.id):
+            delete_alias(alias, user, AliasDeleteReason.UserHasBeenDeleted)
 
         res = super(User, cls).delete(obj_id)
         if commit:
@@ -2261,6 +2276,12 @@ class DeletedAlias(Base, ModelMixin):
     __tablename__ = "deleted_alias"
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
+    reason = sa.Column(
+        IntEnumType(AliasDeleteReason),
+        nullable=False,
+        default=AliasDeleteReason.Unspecified,
+        server_default=str(AliasDeleteReason.Unspecified.value),
+    )
 
     @classmethod
     def create(cls, **kw):
@@ -2448,6 +2469,13 @@ class CustomDomain(Base, ModelMixin):
         if obj.is_sl_subdomain:
             DeletedSubdomain.create(domain=obj.domain)
 
+        from app import alias_utils
+
+        for alias in Alias.filter_by(custom_domain_id=obj_id):
+            alias_utils.delete_alias(
+                alias, obj.user, AliasDeleteReason.CustomDomainDeleted
+            )
+
         return super(CustomDomain, cls).delete(obj_id)
 
     @property
@@ -2520,6 +2548,12 @@ class DomainDeletedAlias(Base, ModelMixin):
 
     domain = orm.relationship(CustomDomain)
     user = orm.relationship(User, foreign_keys=[user_id])
+    reason = sa.Column(
+        IntEnumType(AliasDeleteReason),
+        nullable=False,
+        default=AliasDeleteReason.Unspecified,
+        server_default=str(AliasDeleteReason.Unspecified.value),
+    )
 
     @classmethod
     def create(cls, **kw):
@@ -2611,7 +2645,7 @@ class Directory(Base, ModelMixin):
         for alias in Alias.filter_by(directory_id=obj_id):
             from app import alias_utils
 
-            alias_utils.delete_alias(alias, user)
+            alias_utils.delete_alias(alias, user, AliasDeleteReason.DirectoryDeleted)
 
         DeletedDirectory.create(name=obj.name)
         cls.filter(cls.id == obj_id).delete()
@@ -2739,7 +2773,7 @@ class Mailbox(Base, ModelMixin):
                 from app import alias_utils
 
                 # only put aliases that have mailbox as a single mailbox into trash
-                alias_utils.delete_alias(alias, user)
+                alias_utils.delete_alias(alias, user, AliasDeleteReason.MailboxDeleted)
             Session.commit()
 
         cls.filter(cls.id == obj_id).delete()

@@ -34,6 +34,7 @@ from app.events.generated.event_pb2 import (
 from app.log import LOG
 from app.models import (
     Alias,
+    AliasDeleteReason,
     CustomDomain,
     Directory,
     User,
@@ -309,7 +310,9 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         return None
 
 
-def delete_alias(alias: Alias, user: User):
+def delete_alias(
+    alias: Alias, user: User, reason: AliasDeleteReason = AliasDeleteReason.Unspecified
+):
     """
     Delete an alias and add it to either global or domain trash
     Should be used instead of Alias.delete, DomainDeletedAlias.create, DeletedAlias.create
@@ -324,6 +327,7 @@ def delete_alias(alias: Alias, user: User):
                 user_id=user.id,
                 email=alias.email,
                 domain_id=alias.custom_domain_id,
+                reason=reason,
             )
             Session.add(domain_deleted_alias)
             Session.commit()
@@ -332,7 +336,7 @@ def delete_alias(alias: Alias, user: User):
             )
     else:
         if not DeletedAlias.get_by(email=alias.email):
-            deleted_alias = DeletedAlias(email=alias.email)
+            deleted_alias = DeletedAlias(email=alias.email, reason=reason)
             Session.add(deleted_alias)
             Session.commit()
             LOG.i(f"Moving {alias} to global trash {deleted_alias}")

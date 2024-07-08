@@ -12,6 +12,7 @@ from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     Alias,
+    AliasDeleteReason,
     AliasGeneratorEnum,
     User,
     EmailLog,
@@ -143,7 +144,9 @@ def index():
             if request.form.get("form-name") == "delete-alias":
                 LOG.i(f"User {current_user} requested deletion of alias {alias}")
                 email = alias.email
-                alias_utils.delete_alias(alias, current_user)
+                alias_utils.delete_alias(
+                    alias, current_user, AliasDeleteReason.ManualAction
+                )
                 flash(f"Alias {email} has been deleted", "success")
             elif request.form.get("form-name") == "disable-alias":
                 alias_utils.change_alias_status(alias, enabled=False)
