@@ -1,0 +1,1 @@
+HEADER_ALLOW_API_COOKIES = "X-Sl-Allowcookies"

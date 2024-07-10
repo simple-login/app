@@ -80,7 +80,10 @@
       },
       methods: {
         generateRandomAlias: async function (event) {
-          let result = await fetch('/api/alias/random/new', {method: 'POST'});
+          let result = await fetch('/api/alias/random/new', {method: 'POST',
+              headers: {
+              '{{HEADER_ALLOW_API_COOKIES}}': 'allow'
+          }});
           if (result.ok) {
             let data = await result.json();
             this.ticket_email = data.alias;
