@@ -702,7 +702,12 @@ def setup_coinbase_commerce(app):
 
 
 def handle_coinbase_event(event) -> bool:
-    user_id = int(event["data"]["metadata"]["user_id"])
+    server_user_id = event["data"]["metadata"]["user_id"]
+    try:
+        user_id = int(server_user_id)
+    except ValueError:
+        user_id = int(float(server_user_id))
+
     code = event["data"]["code"]
     user = User.get(user_id)
     if not user:
