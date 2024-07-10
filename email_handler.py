@@ -235,13 +235,14 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             contact.mail_from = mail_from
             Session.commit()
     else:
+        alias_id = alias.id
         try:
             contact_email_for_reply = (
                 contact_email if is_valid_email(contact_email) else ""
             )
             contact = Contact.create(
                 user_id=alias.user_id,
-                alias_id=alias.id,
+                alias_id=alias_id,
                 website_email=contact_email,
                 name=contact_name,
                 mail_from=mail_from,
@@ -261,9 +262,11 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
 
             Session.commit()
         except IntegrityError:
-            LOG.w(f"Contact with email {contact_email} for alias {alias} already exist")
-            Session.rollback()
-            contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+            # No need to manually rollback, as IntegrityError already rolls back
+            LOG.info(
+                f"Contact with email {contact_email} for alias_id {alias_id} already existed, fetching from DB"
+            )
+            contact = Contact.get_by(alias_id=alias_id, website_email=contact_email)
 
     return contact
 
@@ -662,6 +665,9 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
     contact = get_or_create_contact(from_header, envelope.mail_from, alias)
+    alias = (
+        contact.alias
+    )  # In case the Session was closed in the get_or_create we re-fetch the alias
 
     reply_to_contact = None
     if msg[headers.REPLY_TO]:
