@@ -76,7 +76,6 @@ class SendRequest:
         file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
         self.save_request_to_file(file_path)
 
-    @staticmethod
     def save_request_to_failed_dir(self, prefix: str = "DeliveryRetryFail"):
         file_name = (
             f"{prefix}-{int(time.time())}-{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
