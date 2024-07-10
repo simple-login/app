@@ -1,5 +1,6 @@
 import os
 
+
 # use the tests/test.env config fle
 # flake8: noqa: E402
 
@@ -42,7 +43,7 @@ def flask_app():
     yield app
 
 
-from app import config
+from app import config, constants
 
 
 @pytest.fixture
@@ -54,6 +55,7 @@ def flask_client():
         config.DISABLE_RATE_LIMIT = True
         try:
             client = app.test_client()
+            client.environ_base[constants.HEADER_ALLOW_API_COOKIES] = "allow"
             yield client
         finally:
             # disable rate limit again as some tests might enable rate limit
