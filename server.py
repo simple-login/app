@@ -29,7 +29,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app import paddle_utils, config, paddle_callback
+from app import paddle_utils, config, paddle_callback, constants
 from app.admin_model import (
     SLAdminIndexView,
     UserAdmin,
@@ -430,6 +430,7 @@ def jinja2_filter(app):
             PAGE_LIMIT=PAGE_LIMIT,
             ZENDESK_ENABLED=ZENDESK_ENABLED,
             MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN,
+            HEADER_ALLOW_API_COOKIES=constants.HEADER_ALLOW_API_COOKIES,
         )
 
 

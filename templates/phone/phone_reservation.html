@@ -87,6 +87,7 @@
             method: "GET",
             headers: {
               "Content-Type": "application/json",
+                '{{HEADER_ALLOW_API_COOKIES}}': 'allow'
             }
           });
           if (res.ok) {
