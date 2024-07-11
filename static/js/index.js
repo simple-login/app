@@ -1,4 +1,5 @@
 $('.mailbox-select').multipleSelect();
+const HEADER_ALLOW_API_COOKIES = "X-Sl-Allowcookies"
 
 function confirmDeleteAlias() {
   let that = $(this);
@@ -58,6 +59,7 @@ async function disableAlias(aliasId, alias) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        HEADER_ALLOW_API_COOKIES: 'allow',
       }
     });
 
@@ -96,6 +98,7 @@ $(".enable-disable-pgp").change(async function (e) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        HEADER_ALLOW_API_COOKIES: 'allow',
       },
       body: JSON.stringify({
         disable_pgp: oldValue,
@@ -131,6 +134,7 @@ $(".pin-alias").change(async function () {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        HEADER_ALLOW_API_COOKIES: 'allow',
       },
       body: JSON.stringify({
         pinned: newValue,
@@ -163,6 +167,7 @@ async function handleNoteChange(aliasId, aliasEmail) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        HEADER_ALLOW_API_COOKIES: 'allow',
       },
       body: JSON.stringify({
         note: note,
@@ -202,6 +207,7 @@ async function handleMailboxChange(aliasId, aliasEmail) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        HEADER_ALLOW_API_COOKIES: 'allow',
       },
       body: JSON.stringify({
         mailbox_ids: mailbox_ids,
@@ -227,6 +233,7 @@ async function handleDisplayNameChange(aliasId, aliasEmail) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        HEADER_ALLOW_API_COOKIES: 'allow',
       },
       body: JSON.stringify({
         name: name,
