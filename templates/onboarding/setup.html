@@ -19,7 +19,10 @@
     <div class="mt-8 text-center">
       {% if current_user != None and current_user.is_authenticated %}
 
-        <h2 class="text-black-50" style="font-size:2rem">Performing the extension setup...</h2>
+        <h2 class="text-black-50" style="font-size:2rem">
+          Automatically performing extension setup.
+          If the setup doesn't start in a couple seconds click <a onclick="sendSetupMessage()" class="text-primary">here</a>
+        </h2>
       {% else %}
         <a class="mx-6 p-4 text-decoration-none"
            style="background:black;
@@ -41,6 +44,10 @@
   {% if current_user != None and current_user.is_authenticated %}
 
     <script type="text/javascript">
+    function sendSetupMessage(){
+        const data = { tag: "PERFORM_EXTENSION_SETUP" };
+        window.postMessage(data, "/");
+    }
         let counterIterations = 5;
         let extensionSetupIntervalId = setInterval(function() {
             counterIterations--;
@@ -48,9 +55,7 @@
                 clearInterval(extensionSetupIntervalId);
                 return;
             }
-
-            const data = { tag: "PERFORM_EXTENSION_SETUP" };
-            window.postMessage(data, "/");
+            sendSetupMessage()
         }, 300); // Send it many times, in case the extension had not registered the listener yet
     </script>
   {% endif %}
