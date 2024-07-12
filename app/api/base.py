@@ -5,7 +5,6 @@ import arrow
 from flask import Blueprint, request, jsonify, g
 from flask_login import current_user
 
-from app import constants
 from app.db import Session
 from app.models import ApiKey
 
@@ -19,9 +18,10 @@ def authorize_request() -> Optional[Tuple[str, int]]:
     api_key = ApiKey.get_by(code=api_code)
 
     if not api_key:
-        if current_user.is_authenticated and request.headers.get(
-            constants.HEADER_ALLOW_API_COOKIES
-        ):
+        if current_user.is_authenticated:
+            # if current_user.is_authenticated and request.headers.get(
+            #    constants.HEADER_ALLOW_API_COOKIES
+            # ):
             g.user = current_user
         else:
             return jsonify(error="Wrong api key"), 401
