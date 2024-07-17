@@ -11,6 +11,7 @@ from app.config import ADMIN_EMAIL
 from app.db import Session
 from app.developer.base import developer_bp
 from app.email_utils import send_email
+from app.image_validation import detect_image_format, ImageFormat
 from app.log import LOG
 from app.models import Client, RedirectUri, File, Referral
 from app.utils import random_string
@@ -50,12 +51,17 @@ def client_detail(client_id):
         client.home_url = form.url.data
 
         if form.icon.data:
-            # todo: remove current icon if any
-            # todo: handle remove icon
+            icon_data = form.icon.data.read(10240)
+            if detect_image_format(icon_data) == ImageFormat.Unknown:
+                flash("Unknown file format", "warning")
+                return redirect(url_for("developer.index"))
+            if client.icon:
+                s3.delete(client.icon_id)
+                File.delete(client.icon)
             file_path = random_string(30)
             file = File.create(path=file_path, user_id=client.user_id)
 
-            s3.upload_from_bytesio(file_path, BytesIO(form.icon.data.read()))
+            s3.upload_from_bytesio(file_path, BytesIO(icon_data))
 
             Session.flush()
             LOG.d("upload file %s to s3", file)
