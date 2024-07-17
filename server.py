@@ -283,6 +283,7 @@ def set_index_page(app):
             and not request.path.startswith("/git")
             and not request.path.startswith("/favicon.ico")
         ):
+            start_time = g.start_time or time.time()
             LOG.d(
                 "%s %s %s %s %s, takes %s",
                 request.remote_addr,
@@ -290,7 +291,7 @@ def set_index_page(app):
                 request.path,
                 request.args,
                 res.status_code,
-                time.time() - g.start_time,
+                time.time() - start_time,
             )
 
         return res
