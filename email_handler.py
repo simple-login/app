@@ -262,7 +262,8 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
 
             Session.commit()
         except IntegrityError:
-            # No need to manually rollback, as IntegrityError already rolls back
+            # If the tx has been rolled back, the connection is borked. Force close to try to get a new one and start fresh
+            Session.close()
             LOG.info(
                 f"Contact with email {contact_email} for alias_id {alias_id} already existed, fetching from DB"
             )
