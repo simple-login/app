@@ -1,4 +1,5 @@
 from io import BytesIO
+from urllib.parse import urlparse
 
 from flask import request, render_template, redirect, url_for, flash
 from flask_login import current_user, login_required
@@ -47,6 +48,10 @@ def client_detail(client_id):
         approval_form.description.data = client.description
 
     if action == "edit" and form.validate_on_submit():
+        parsed_url = urlparse(form.url.data)
+        if parsed_url.scheme != "https":
+            flash("Only https urls are allowed", "error")
+            return redirect(url_for("developer.index"))
         client.name = form.name.data
         client.home_url = form.url.data
 
