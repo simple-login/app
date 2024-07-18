@@ -978,19 +978,18 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     def available_domains_for_random_alias(
         self, alias_options: Optional[AliasOptions] = None
-    ) -> List[Tuple[bool, str, int]]:
+    ) -> List[Tuple[bool, str]]:
         """Return available domains for user to create random aliases
         Each result record contains:
         - whether the domain belongs to SimpleLogin
         - the domain
-        - the domain id
         """
         res = []
         for domain in self.get_sl_domains(alias_options=alias_options):
-            res.append((True, domain.domain, domain.id))
+            res.append((True, domain.domain))
 
         for custom_domain in self.verified_custom_domains():
-            res.append((False, custom_domain.domain, custom_domain.id))
+            res.append((False, custom_domain.domain))
 
         return res
 
