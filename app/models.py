@@ -1128,7 +1128,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         - Verified custom domains
 
         """
-        domains = self.available_sl_domains(alias_options=alias_options)
+        domains = [
+            sl_domain.domain
+            for sl_domain in self.get_sl_domains(alias_options=alias_options)
+        ]
 
         for custom_domain in self.verified_custom_domains():
             domains.append(custom_domain.domain)
