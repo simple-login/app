@@ -17,17 +17,20 @@ def set_default_alias_id(user: User, domain_id: Optional[int]):
         user.default_alias_custom_domain_id = None
         Session.flush()
         return
-    sl_domain: SLDomain = SLDomain.get_by(domain=domain_id)
+    sl_domain: SLDomain = SLDomain.get(domain_id)
     if sl_domain:
+        if sl_domain.hidden:
+            LOG.i(f"User {user} has tried to set up a hidden domain as default domain")
+            raise CannotSetAlias("Domain does not exist")
         if sl_domain.premium_only and not user.is_premium():
-            LOG.i("User {user} has tried to set up a premium domain as default domain")
+            LOG.i(f"User {user} has tried to set up a premium domain as default domain")
             raise CannotSetAlias("You cannot use this domain")
         LOG.i(f"User {user} has set public {sl_domain} as default domain")
         user.default_alias_public_domain_id = sl_domain.id
         user.default_alias_custom_domain_id = None
         Session.flush()
         return
-    custom_domain = CustomDomain.get_by(domain=domain_id)
+    custom_domain = CustomDomain.get(domain_id)
     if not custom_domain:
         LOG.i(
             f"User {user} has tried to set up an non existing domain as default domain"
