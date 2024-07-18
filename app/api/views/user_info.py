@@ -10,6 +10,7 @@ from app.api.base import api_bp, require_api_auth
 from app.config import SESSION_COOKIE_NAME
 from app.dashboard.views.index import get_stats
 from app.db import Session
+from app.image_validation import detect_image_format, ImageFormat
 from app.models import ApiKey, File, PartnerUser, User
 from app.proton.utils import get_proton_partner
 from app.session import logout_session
@@ -78,17 +79,18 @@ def update_user_info():
     data = request.get_json() or {}
 
     if "profile_picture" in data:
-        if data["profile_picture"] is None:
-            if user.profile_picture_id:
-                file = user.profile_picture
-                user.profile_picture_id = None
+        if user.profile_picture_id:
+            file = user.profile_picture
+            user.profile_picture_id = None
+            Session.flush()
+            if file:
+                File.delete(file.id)
+                s3.delete(file.path)
                 Session.flush()
-                if file:
-                    File.delete(file.id)
-                    s3.delete(file.path)
-                    Session.flush()
         else:
             raw_data = base64.decodebytes(data["profile_picture"].encode())
+            if detect_image_format(raw_data) == ImageFormat.Unknown:
+                return jsonify(error="Unsupported image format"), 400
             file_path = random_string(30)
             file = File.create(user_id=user.id, path=file_path)
             Session.flush()

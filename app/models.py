@@ -3484,6 +3484,7 @@ class AdminAuditLog(Base):
             action=AuditLogActionEnum.stop_trial.value,
             model="User",
             model_id=user_id,
+            data={},
         )
 
     @classmethod

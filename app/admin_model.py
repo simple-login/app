@@ -2,6 +2,7 @@ from typing import Optional
 
 import arrow
 import sqlalchemy
+from flask_admin.form import SecureForm
 from flask_admin.model.template import EndpointLinkRowAction
 from markupsafe import Markup
 
@@ -100,6 +101,7 @@ def _user_upgrade_channel_formatter(view, context, model, name):
 
 
 class UserAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["email", "id"]
     column_exclude_list = [
         "salt",
@@ -344,6 +346,7 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
 
 
 class EmailLogAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id"]
     column_filters = ["id", "user.email", "mailbox.email", "contact.website_email"]
 
@@ -352,6 +355,7 @@ class EmailLogAdmin(SLModelView):
 
 
 class AliasAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id", "user.email", "email", "mailbox.email"]
     column_filters = ["id", "user.email", "email", "mailbox.email"]
 
@@ -377,6 +381,7 @@ class AliasAdmin(SLModelView):
 
 
 class MailboxAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id", "user.email", "email"]
     column_filters = ["id", "user.email", "email"]
 
@@ -387,11 +392,13 @@ class MailboxAdmin(SLModelView):
 
 
 class CouponAdmin(SLModelView):
+    form_base_class = SecureForm
     can_edit = False
     can_create = True
 
 
 class ManualSubscriptionAdmin(SLModelView):
+    form_base_class = SecureForm
     can_edit = True
     column_searchable_list = ["id", "user.email"]
 
@@ -433,12 +440,14 @@ class ManualSubscriptionAdmin(SLModelView):
 
 
 class CustomDomainAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["domain", "user.email", "user.id"]
     column_exclude_list = ["ownership_txt_token"]
     can_edit = False
 
 
 class ReferralAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id", "user.email", "code", "name"]
     column_filters = ["id", "user.email", "code", "name"]
 
@@ -467,6 +476,7 @@ def _admin_created_at_formatter(view, context, model, name):
 
 
 class AdminAuditLogAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["admin.id", "admin.email", "model_id", "created_at"]
     column_filters = ["admin.id", "admin.email", "model_id", "created_at"]
     column_exclude_list = ["id"]
@@ -497,6 +507,7 @@ def _transactionalcomplaint_refused_email_id_formatter(view, context, model, nam
 
 
 class ProviderComplaintAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id", "user.id", "created_at"]
     column_filters = ["user.id", "state"]
     column_hide_backrefs = False
@@ -567,6 +578,7 @@ def _newsletter_html_formatter(view, context, model: Newsletter, name):
 
 
 class NewsletterAdmin(SLModelView):
+    form_base_class = SecureForm
     list_template = "admin/model/newsletter-list.html"
     edit_template = "admin/model/newsletter-edit.html"
     edit_modal = False
@@ -648,6 +660,7 @@ class NewsletterAdmin(SLModelView):
 
 
 class NewsletterUserAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id"]
     column_filters = ["id", "user.email", "newsletter.subject"]
     column_exclude_list = ["created_at", "updated_at", "id"]
@@ -657,17 +670,20 @@ class NewsletterUserAdmin(SLModelView):
 
 
 class DailyMetricAdmin(SLModelView):
+    form_base_class = SecureForm
     column_exclude_list = ["created_at", "updated_at", "id"]
 
     can_export = True
 
 
 class MetricAdmin(SLModelView):
+    form_base_class = SecureForm
     column_exclude_list = ["created_at", "updated_at", "id"]
 
     can_export = True
 
 
 class InvalidMailboxDomainAdmin(SLModelView):
+    form_base_class = SecureForm
     can_create = True
     can_delete = True
