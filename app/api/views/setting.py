@@ -1,14 +1,12 @@
 import arrow
 from flask import jsonify, g, request
 
+from app import user_settings
 from app.api.base import api_bp, require_api_auth
 from app.db import Session
-from app.log import LOG
 from app.models import (
     User,
     AliasGeneratorEnum,
-    SLDomain,
-    CustomDomain,
     SenderFormatEnum,
     AliasSuffixEnum,
 )
@@ -85,25 +83,10 @@ def update_setting():
 
     if "random_alias_default_domain" in data:
         default_domain = data["random_alias_default_domain"]
-        sl_domain: SLDomain = SLDomain.get_by(domain=default_domain)
-        if sl_domain:
-            if sl_domain.premium_only and not user.is_premium():
-                return jsonify(error="You cannot use this domain"), 400
-
-            user.default_alias_public_domain_id = sl_domain.id
-            user.default_alias_custom_domain_id = None
-        else:
-            custom_domain = CustomDomain.get_by(domain=default_domain)
-            if not custom_domain:
-                return jsonify(error="invalid domain"), 400
-
-            # sanity check
-            if custom_domain.user_id != user.id or not custom_domain.verified:
-                LOG.w("%s cannot use domain %s", user, default_domain)
-                return jsonify(error="invalid domain"), 400
-            else:
-                user.default_alias_custom_domain_id = custom_domain.id
-                user.default_alias_public_domain_id = None
+        try:
+            user_settings.set_default_alias_id(user, default_domain)
+        except user_settings.CannotSetAlias as e:
+            return jsonify(error=e.msg), 400
 
     Session.commit()
     return jsonify(setting_to_dict(user))
