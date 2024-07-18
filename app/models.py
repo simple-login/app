@@ -978,18 +978,19 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     def available_domains_for_random_alias(
         self, alias_options: Optional[AliasOptions] = None
-    ) -> List[Tuple[bool, str]]:
+    ) -> List[Tuple[bool, str, int]]:
         """Return available domains for user to create random aliases
         Each result record contains:
         - whether the domain belongs to SimpleLogin
         - the domain
+        - the domain id
         """
         res = []
-        for domain in self.available_sl_domains(alias_options=alias_options):
-            res.append((True, domain))
+        for domain in self.get_sl_domains(alias_options=alias_options):
+            res.append((True, domain.domain, domain.id))
 
         for custom_domain in self.verified_custom_domains():
-            res.append((False, custom_domain.domain))
+            res.append((False, custom_domain.domain, custom_domain.id))
 
         return res
 
@@ -2483,7 +2484,7 @@ class CustomDomain(Base, ModelMixin):
         return sorted(self._auto_create_rules, key=lambda rule: rule.order)
 
     def __repr__(self):
-        return f"<Custom Domain {self.domain}>"
+        return f"<Custom Domain {self.id} {self.domain}>"
 
 
 class AutoCreateRule(Base, ModelMixin):
@@ -3114,7 +3115,7 @@ class SLDomain(Base, ModelMixin):
     )
 
     def __repr__(self):
-        return f"<SLDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
+        return f"<SLDomain {self.id} {self.domain} {'Premium' if self.premium_only else 'Free'}>"
 
 
 class Monitoring(Base, ModelMixin):

@@ -101,7 +101,8 @@ def get_available_domains_for_random_alias():
     user = g.user
 
     ret = [
-        (is_sl, domain) for is_sl, domain in user.available_domains_for_random_alias()
+        (is_sl, domain)
+        for is_sl, domain, domain_id in user.available_domains_for_random_alias()
     ]
 
     return jsonify(ret)
@@ -116,8 +117,8 @@ def get_available_domains_for_random_alias_v2():
     user = g.user
 
     ret = [
-        {"domain": domain, "is_custom": not is_sl}
-        for is_sl, domain in user.available_domains_for_random_alias()
+        {"domain": domain, "is_custom": not is_sl, "domain_id": domain_id}
+        for is_sl, domain, domain_id in user.available_domains_for_random_alias()
     ]
 
     return jsonify(ret)

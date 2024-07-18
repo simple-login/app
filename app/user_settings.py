@@ -10,14 +10,14 @@ class CannotSetAlias(Exception):
         self.msg = msg
 
 
-def set_default_alias_id(user: User, domain_id: Optional[int]):
-    if domain_id is None:
+def set_default_alias_id(user: User, domain_name: Optional[str]):
+    if domain_name is None:
         LOG.i(f"User {user} has set no domain as default domain")
         user.default_alias_public_domain_id = None
         user.default_alias_custom_domain_id = None
         Session.flush()
         return
-    sl_domain: SLDomain = SLDomain.get(domain_id)
+    sl_domain: SLDomain = SLDomain.get_by(domain=domain_name)
     if sl_domain:
         if sl_domain.hidden:
             LOG.i(f"User {user} has tried to set up a hidden domain as default domain")
@@ -30,7 +30,7 @@ def set_default_alias_id(user: User, domain_id: Optional[int]):
         user.default_alias_custom_domain_id = None
         Session.flush()
         return
-    custom_domain = CustomDomain.get(domain_id)
+    custom_domain = CustomDomain.get_by(domain=domain_name)
     if not custom_domain:
         LOG.i(
             f"User {user} has tried to set up an non existing domain as default domain"
