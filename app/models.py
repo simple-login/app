@@ -3730,6 +3730,7 @@ class SyncEvent(Base, ModelMixin):
     taken_time = sa.Column(
         ArrowType, default=None, nullable=True, server_default=None, index=True
     )
+    retry_count = sa.Column(sa.Integer, default=0, nullable=False, server_default="0")
 
     __table_args__ = (
         sa.Index("ix_sync_event_created_at", "created_at"),
@@ -3751,7 +3752,7 @@ class SyncEvent(Base, ModelMixin):
         return res.rowcount > 0
 
     @classmethod
-    def get_dead_letter(cls, older_than: Arrow) -> [SyncEvent]:
+    def get_dead_letter(cls, older_than: Arrow, max_retries: int) -> [SyncEvent]:
         return (
             SyncEvent.filter(
                 (
@@ -3764,6 +3765,7 @@ class SyncEvent(Base, ModelMixin):
                         & (SyncEvent.created_at < older_than)
                     )
                 )
+                & (SyncEvent.retry_count < max_retries)
             )
             .order_by(SyncEvent.id)
             .limit(100)

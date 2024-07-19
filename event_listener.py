@@ -8,6 +8,8 @@ from events.runner import Runner
 from events.event_source import DeadLetterEventSource, PostgresEventSource
 from events.event_sink import ConsoleEventSink, HttpEventSink
 
+_DEFAULT_MAX_RETRIES = 100
+
 
 class Mode(Enum):
     DEAD_LETTER = "dead_letter"
@@ -23,7 +25,7 @@ class Mode(Enum):
             raise ValueError(f"Invalid mode: {value}")
 
 
-def main(mode: Mode, dry_run: bool):
+def main(mode: Mode, dry_run: bool, max_retries: int):
     if mode == Mode.DEAD_LETTER:
         LOG.i("Using DeadLetterEventSource")
         source = DeadLetterEventSource()
@@ -51,6 +53,13 @@ def args():
         help="Mode to run",
         choices=[Mode.DEAD_LETTER.value, Mode.LISTENER.value],
     )
+    parser.add_argument(
+        "max_retries",
+        help="Max retries to consider an event as error and not try to process it again",
+        type=int,
+        required=False,
+        default=_DEFAULT_MAX_RETRIES,
+    )
     parser.add_argument("--dry-run", help="Dry run mode", action="store_true")
     return parser.parse_args()
 
@@ -61,4 +70,8 @@ if __name__ == "__main__":
         exit(1)
 
     args = args()
-    main(Mode.from_str(args.mode), args.dry_run)
+    main(
+        mode=Mode.from_str(args.mode),
+        dry_run=args.dry_run,
+        max_retries=args.max_retries,
+    )
