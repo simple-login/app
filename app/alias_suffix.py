@@ -64,8 +64,12 @@ def verify_prefix_suffix(
     # SimpleLogin domain case:
     # 1) alias_suffix must start with "." and
     # 2) alias_domain_prefix must come from the word list
+    available_sl_domains = [
+        sl_domain.domain
+        for sl_domain in user.get_sl_domains(alias_options=alias_options)
+    ]
     if (
-        alias_domain in user.available_sl_domains(alias_options=alias_options)
+        alias_domain in available_sl_domains
         and alias_domain not in user_custom_domains
         # when DISABLE_ALIAS_SUFFIX is true, alias_domain_prefix is empty
         and not config.DISABLE_ALIAS_SUFFIX
@@ -80,9 +84,7 @@ def verify_prefix_suffix(
                 LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
 
-            if alias_domain not in user.available_sl_domains(
-                alias_options=alias_options
-            ):
+            if alias_domain not in available_sl_domains:
                 LOG.e("wrong alias suffix %s, user %s", alias_suffix, user)
                 return False
 

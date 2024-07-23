@@ -44,6 +44,9 @@ def test_update_settings_alias_generator(flask_client):
 
 def test_update_settings_random_alias_default_domain(flask_client):
     user = login(flask_client)
+    custom_domain = CustomDomain.create(
+        domain=random_domain(), verified=True, user_id=user.id, flush=True
+    )
     assert user.default_random_alias_domain() == "sl.local"
 
     r = flask_client.patch(
@@ -56,6 +59,12 @@ def test_update_settings_random_alias_default_domain(flask_client):
     )
     assert r.status_code == 200
     assert user.default_random_alias_domain() == "d1.test"
+
+    r = flask_client.patch(
+        "/api/setting", json={"random_alias_default_domain": custom_domain.domain}
+    )
+    assert r.status_code == 200
+    assert user.default_random_alias_domain() == custom_domain.domain
 
 
 def test_update_settings_sender_format(flask_client):

@@ -985,8 +985,8 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         - the domain
         """
         res = []
-        for domain in self.available_sl_domains(alias_options=alias_options):
-            res.append((True, domain))
+        for domain in self.get_sl_domains(alias_options=alias_options):
+            res.append((True, domain.domain))
 
         for custom_domain in self.verified_custom_domains():
             res.append((False, custom_domain.domain))
@@ -1128,7 +1128,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         - Verified custom domains
 
         """
-        domains = self.available_sl_domains(alias_options=alias_options)
+        domains = [
+            sl_domain.domain
+            for sl_domain in self.get_sl_domains(alias_options=alias_options)
+        ]
 
         for custom_domain in self.verified_custom_domains():
             domains.append(custom_domain.domain)
@@ -2483,7 +2486,7 @@ class CustomDomain(Base, ModelMixin):
         return sorted(self._auto_create_rules, key=lambda rule: rule.order)
 
     def __repr__(self):
-        return f"<Custom Domain {self.domain}>"
+        return f"<Custom Domain {self.id} {self.domain}>"
 
 
 class AutoCreateRule(Base, ModelMixin):
@@ -3114,7 +3117,7 @@ class SLDomain(Base, ModelMixin):
     )
 
     def __repr__(self):
-        return f"<SLDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
+        return f"<SLDomain {self.id} {self.domain} {'Premium' if self.premium_only else 'Free'}>"
 
 
 class Monitoring(Base, ModelMixin):
