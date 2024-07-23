@@ -165,7 +165,7 @@ def setting():
         elif request.form.get("form-name") == "change-random-alias-default-domain":
             default_domain = request.form.get("random-alias-default-domain")
             try:
-                user_settings.set_default_alias_id(current_user, default_domain)
+                user_settings.set_default_alias_domain(current_user, default_domain)
             except user_settings.CannotSetAlias as e:
                 flash(e.msg, "error")
                 return redirect(url_for("dashboard.setting"))
