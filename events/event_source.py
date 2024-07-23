@@ -76,6 +76,9 @@ class PostgresEventSource(EventSource):
 
 
 class DeadLetterEventSource(EventSource):
+    def __init__(self, max_retries: int):
+        self.__max_retries = max_retries
+
     @newrelic.agent.background_task()
     def run(self, on_event: Callable[[SyncEvent], NoReturn]):
         while True:
@@ -83,7 +86,9 @@ class DeadLetterEventSource(EventSource):
                 threshold = arrow.utcnow().shift(
                     minutes=-_DEAD_LETTER_THRESHOLD_MINUTES
                 )
-                events = SyncEvent.get_dead_letter(older_than=threshold)
+                events = SyncEvent.get_dead_letter(
+                    older_than=threshold, max_retries=self.__max_retries
+                )
                 if events:
                     LOG.info(f"Got {len(events)} dead letter events")
                     if events:
