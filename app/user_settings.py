@@ -10,7 +10,7 @@ class CannotSetAlias(Exception):
         self.msg = msg
 
 
-def set_default_alias_id(user: User, domain_name: Optional[str]):
+def set_default_alias_domain(user: User, domain_name: Optional[str]):
     if domain_name is None:
         LOG.i(f"User {user} has set no domain as default domain")
         user.default_alias_public_domain_id = None

@@ -38,7 +38,7 @@ def test_set_default_no_domain():
         domain=custom_domain_name
     ).id
     Session.flush()
-    user_settings.set_default_alias_id(user, None)
+    user_settings.set_default_alias_domain(user, None)
     assert user.default_alias_public_domain_id is None
     assert user.default_alias_custom_domain_id is None
 
@@ -50,7 +50,7 @@ def test_set_premium_sl_domain_with_non_premium_user():
     domain.premium_only = True
     Session.flush()
     with pytest.raises(user_settings.CannotSetAlias):
-        user_settings.set_default_alias_id(user, sl_domain_name)
+        user_settings.set_default_alias_domain(user, sl_domain_name)
 
 
 def test_set_hidden_sl_domain():
@@ -60,7 +60,7 @@ def test_set_hidden_sl_domain():
     domain.premium_only = False
     Session.flush()
     with pytest.raises(user_settings.CannotSetAlias):
-        user_settings.set_default_alias_id(user, sl_domain_name)
+        user_settings.set_default_alias_domain(user, sl_domain_name)
 
 
 def test_set_sl_domain():
@@ -70,7 +70,7 @@ def test_set_sl_domain():
     domain.hidden = False
     domain.premium_only = False
     Session.flush()
-    user_settings.set_default_alias_id(user, sl_domain_name)
+    user_settings.set_default_alias_domain(user, sl_domain_name)
     assert user.default_alias_public_domain_id == domain.id
     assert user.default_alias_custom_domain_id is None
 
@@ -82,7 +82,7 @@ def test_set_sl_premium_domain():
     domain.hidden = False
     domain.premium_only = True
     Session.flush()
-    user_settings.set_default_alias_id(user, sl_domain_name)
+    user_settings.set_default_alias_domain(user, sl_domain_name)
     assert user.default_alias_public_domain_id == domain.id
     assert user.default_alias_custom_domain_id is None
 
@@ -98,7 +98,7 @@ def test_set_other_user_custom_domain():
     ).domain
     Session.flush()
     with pytest.raises(user_settings.CannotSetAlias):
-        user_settings.set_default_alias_id(user, other_user_domain_name)
+        user_settings.set_default_alias_domain(user, other_user_domain_name)
 
 
 def test_set_unverified_custom_domain():
@@ -108,7 +108,7 @@ def test_set_unverified_custom_domain():
     domain.verified = False
     Session.flush()
     with pytest.raises(user_settings.CannotSetAlias):
-        user_settings.set_default_alias_id(user, custom_domain_name)
+        user_settings.set_default_alias_domain(user, custom_domain_name)
 
 
 def test_set_custom_domain():
@@ -117,7 +117,7 @@ def test_set_custom_domain():
     domain = CustomDomain.get_by(domain=custom_domain_name)
     domain.verified = True
     Session.flush()
-    user_settings.set_default_alias_id(user, custom_domain_name)
+    user_settings.set_default_alias_domain(user, custom_domain_name)
     assert user.default_alias_public_domain_id is None
     assert user.default_alias_custom_domain_id == domain.id
 
@@ -125,4 +125,4 @@ def test_set_custom_domain():
 def test_set_invalid_custom_domain():
     user = User.get(user_id)
     with pytest.raises(user_settings.CannotSetAlias):
-        user_settings.set_default_alias_id(user, "invalid_nop" + random_token())
+        user_settings.set_default_alias_domain(user, "invalid_nop" + random_token())
