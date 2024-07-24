@@ -86,8 +86,6 @@ class DeadLetterEventSource(EventSource):
     def run(self, on_event: Callable[[SyncEvent], NoReturn]):
         while True:
             try:
-                # Ensure that we have a new connection and we don't have a dangling tx with a lock
-                Session.close()
                 threshold = arrow.utcnow().shift(
                     minutes=-_DEAD_LETTER_THRESHOLD_MINUTES
                 )
@@ -102,7 +100,8 @@ class DeadLetterEventSource(EventSource):
                         )
                     for event in events:
                         on_event(event)
-                else:
+                Session.close()  # Ensure that we have a new connection and we don't have a dangling tx with a lock
+                if len(events) == 0:
                     LOG.debug("No dead letter events")
                     sleep(_DEAD_LETTER_INTERVAL_SECONDS)
             except Exception as e:
