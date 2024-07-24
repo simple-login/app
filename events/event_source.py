@@ -56,7 +56,6 @@ class PostgresEventSource(EventSource):
                     )
                     try:
                         webhook_id = int(notify.payload)
-                        Session.close()  # Ensure we get a new connection and we don't leave a dangling tx
                         event = SyncEvent.get_by(id=webhook_id)
                         if event is not None:
                             if event.mark_as_taken():
@@ -69,6 +68,7 @@ class PostgresEventSource(EventSource):
                             LOG.info(f"Could not find event with id={notify.payload}")
                     except Exception as e:
                         LOG.warn(f"Error getting event: {e}")
+                    Session.close()  # Ensure we get a new connection and we don't leave a dangling tx
 
     def __connect(self):
         self.__connection = psycopg2.connect(self.__connection_string)
