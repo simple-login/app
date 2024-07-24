@@ -4,6 +4,8 @@ import psycopg2
 import select
 
 from abc import ABC, abstractmethod
+
+from app.db import Session
 from app.log import LOG
 from app.models import SyncEvent
 from app.events.event_dispatcher import NOTIFICATION_CHANNEL
@@ -54,6 +56,7 @@ class PostgresEventSource(EventSource):
                     )
                     try:
                         webhook_id = int(notify.payload)
+                        Session.close()  # Ensure we get a new connection and we don't leave a dangling tx
                         event = SyncEvent.get_by(id=webhook_id)
                         if event is not None:
                             if event.mark_as_taken():
@@ -83,6 +86,8 @@ class DeadLetterEventSource(EventSource):
     def run(self, on_event: Callable[[SyncEvent], NoReturn]):
         while True:
             try:
+                # Ensure that we have a new connection and we don't have a dangling tx with a lock
+                Session.close()
                 threshold = arrow.utcnow().shift(
                     minutes=-_DEAD_LETTER_THRESHOLD_MINUTES
                 )
