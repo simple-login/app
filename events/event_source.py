@@ -101,7 +101,7 @@ class DeadLetterEventSource(EventSource):
                     for event in events:
                         on_event(event)
                 Session.close()  # Ensure that we have a new connection and we don't have a dangling tx with a lock
-                if len(events) == 0:
+                if not events:
                     LOG.debug("No dead letter events")
                     sleep(_DEAD_LETTER_INTERVAL_SECONDS)
             except Exception as e:
