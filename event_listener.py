@@ -57,7 +57,6 @@ def args():
         "max_retries",
         help="Max retries to consider an event as error and not try to process it again",
         type=int,
-        required=False,
         default=_DEFAULT_MAX_RETRIES,
     )
     parser.add_argument("--dry-run", help="Dry run mode", action="store_true")
