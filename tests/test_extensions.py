@@ -23,7 +23,7 @@ _MAX_PER_MINUTE = 3
     _ENDPOINT,
     methods=["GET"],
 )
-@limiter.limit(f"{_MAX_PER_MINUTE}/minute")
+@limiter.limit(f"{_MAX_PER_MINUTE}/hour")
 def rate_limited_endpoint_1():
     return "Working", HTTPStatus.OK
 

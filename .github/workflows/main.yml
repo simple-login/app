@@ -5,39 +5,39 @@ on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
 
-      - name: Install poetry
-        run: pipx install poetry
-
-      - uses: actions/setup-python@v4
+      - name: "Install rye"
+        id: setup-rye
+        uses: eifinger/setup-rye@v4
         with:
-          python-version: '3.10'
-          cache: 'poetry'
+          version: '0.37.0'
+          checksum: 'fc7c150acc844fd86d709de1428ca96b585f8340edebc5b537ee9fa231f40884'
+          enable-cache: true
 
       - name: Install OS dependencies
-        if: ${{ matrix.python-version }} == '3.10'
         run: |
           sudo apt update
           sudo apt install -y libre2-dev libpq-dev
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction
+        if: steps.setup-rye.outputs.cache-hit != 'true'
+        run: rye sync --no-lock
 
       - name: Check formatting & linting
         run: |
-          poetry run pre-commit run --all-files
+          rye run pre-commit run --all-files
 
 
   test:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
-      matrix:
-        python-version: ["3.10"]
+      fail-fast: true
 
     # service containers to run with `postgres-job`
     services:
@@ -69,13 +69,14 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v3
 
-      - name: Install poetry
-        run: pipx install poetry
-
-      - uses: actions/setup-python@v4
+      - name: Install rye
+        id: setup-rye
+        uses: eifinger/setup-rye@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
+          version: '0.37.0'
+          checksum: 'fc7c150acc844fd86d709de1428ca96b585f8340edebc5b537ee9fa231f40884'
+          enable-cache: true
+          cache-prefix: 'rye-cache'
 
       - name: Install OS dependencies
         if: ${{ matrix.python-version }} == '3.10'
@@ -84,9 +85,8 @@ jobs:
           sudo apt install -y libre2-dev libpq-dev
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction
-
+        if: steps.setup-rye.outputs.cache-hit != 'true'
+        run: rye sync --no-lock
 
       - name: Start Redis v6
         uses: superchargejs/redis-github-action@1.1.0
@@ -95,7 +95,8 @@ jobs:
 
       - name: Run db migration
         run: |
-          CONFIG=tests/test.env poetry run alembic upgrade head
+          rye install alembic
+          CONFIG=tests/test.env rye run alembic upgrade head
 
       - name: Prepare version file
         run: |
@@ -104,7 +105,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          poetry run pytest
+          rye run pytest
         env:
           GITHUB_ACTIONS_TEST: true
 
