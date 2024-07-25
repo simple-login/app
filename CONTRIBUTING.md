@@ -20,15 +20,15 @@ SimpleLogin backend consists of 2 main components:
 ## Install dependencies
 
 The project requires:
-- Python 3.7+ and [poetry](https://python-poetry.org/) to manage dependencies
+- Python 3.10 and [rye](https://github.com/astral-sh/rye) to manage dependencies
 - Node v10 for front-end.
-- Postgres 12+
+- Postgres 13+
 
 First, install all dependencies by running the following command.
 Feel free to use `virtualenv` or similar tools to isolate development environment.
 
 ```bash
-poetry install
+rye sync
 ```
 
 On Mac, sometimes you might need to install some other packages via `brew`:
@@ -55,7 +55,7 @@ brew install -s re2 pybind11
 We use pre-commit to run all our linting and static analysis checks. Please run
 
 ```bash
-poetry run pre-commit install
+rye run pre-commit install
 ```
 
 To install it in your development environment.
@@ -160,25 +160,25 @@ Here are the small sum-ups of the directory structures and their roles:
 The code is formatted using [ruff](https://github.com/astral-sh/ruff), to format the code, simply run
 
 ```
-poetry run ruff format .
+rye run ruff format .
 ```
 
 The code is also checked with `flake8`, make sure to run `flake8` before creating the pull request by
 
 ```bash
-poetry run flake8
+rye run flake8
 ```
 
 For HTML templates, we use `djlint`. Before creating a pull request, please run
 
 ```bash
-poetry run djlint --check templates
+rye run djlint --check templates
 ```
 
 If some files aren't properly formatted, you can format all files with
 
 ```bash
-poetry run djlint --reformat .
+rye run djlint --reformat .
 ```
 
 ## Test sending email
