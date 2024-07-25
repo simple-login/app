@@ -353,6 +353,8 @@ requests-oauthlib==1.3.1
     # via simplelogin
 rsa==4.9
     # via google-auth
+ruamel-yaml==0.17.4
+    # via yacron
 ruff==0.1.15
 s3transfer==0.3.7
     # via boto3
@@ -450,7 +452,7 @@ wtforms==2.3.3
     # via flask-admin
     # via flask-wtf
     # via simplelogin
-yacron==0.11.2
+yacron==0.19.0
     # via simplelogin
 yarl==1.9.4
     # via aiohttp
