@@ -28,7 +28,7 @@ class Mode(Enum):
 def main(mode: Mode, dry_run: bool, max_retries: int):
     if mode == Mode.DEAD_LETTER:
         LOG.i("Using DeadLetterEventSource")
-        source = DeadLetterEventSource()
+        source = DeadLetterEventSource(max_retries)
     elif mode == Mode.LISTENER:
         LOG.i("Using PostgresEventSource")
         source = PostgresEventSource(DB_URI)
@@ -57,6 +57,7 @@ def args():
         "max_retries",
         help="Max retries to consider an event as error and not try to process it again",
         type=int,
+        nargs="?",
         default=_DEFAULT_MAX_RETRIES,
     )
     parser.add_argument("--dry-run", help="Dry run mode", action="store_true")
