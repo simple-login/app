@@ -4,8 +4,13 @@
 
   {{ render_text("Hi") }}
   {{ render_text("You have added <b>"+ mailbox_email +"</b> as an additional mailbox.") }}
-  {{ render_text("To confirm, please click on the button below.") }}
-  {{ render_button("Confirm mailbox", link) }}
+  {% if link %}
+
+    {{ render_text("To confirm, please click on the button below.") }}
+    {{ render_button("Confirm mailbox", link) }}
+  {% else %}
+    {{ render_text("Please enter <b>"+code+"</b> as your verification code") }}
+  {% endif %}
   {{ render_text("This email will only be valid for the next 15 minutes.") }}
   {{ render_text('Thanks,
   <br />

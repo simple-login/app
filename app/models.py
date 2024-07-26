@@ -2804,6 +2804,16 @@ class Mailbox(Base, ModelMixin):
         return f"<Mailbox {self.id} {self.email}>"
 
 
+class MailboxActivation(Base, ModelMixin):
+    __tablename__ = "mailbox_activation"
+
+    mailbox_id = sa.Column(
+        sa.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False, index=True
+    )
+    code = sa.Column(sa.String(32), nullable=False, index=True)
+    tries = sa.Column(sa.Integer, default=0, nullable=False)
+
+
 class AccountActivation(Base, ModelMixin):
     """contains code to activate the user account when they sign up on mobile"""
 
