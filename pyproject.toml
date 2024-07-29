@@ -6,11 +6,6 @@ authors = [ {name="SimpleLogin", email="dev@simplelogin.io"}]
 license = "MIT"
 repository = "https://github.com/simple-login/app"
 keywords = ["email", "alias", "privacy", "oauth2", "openid"]
-packages = [
-{ include = "app/" },
-{ include = "migrations/" },
-]
-include = ["templates/*", "templates/**/*", "local_data/*.txt"]
 
 requires-python = "~=3.10"
 
@@ -138,5 +133,7 @@ build-backend = "hatchling.build"
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.hatch.build.targets.sdist]
+include = ["templates", "local_data", "app", "migrations"]
 [tool.hatch.build.targets.wheel]
-packages = ["src/tmp"]
+packages = ["app", "migrations", "templates", "local_data" ]

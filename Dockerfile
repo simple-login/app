@@ -29,9 +29,6 @@ RUN apt-get update \
     && chmod +x rye \
     && mv rye /usr/bin/rye \
     && rye toolchain fetch `cat .python-version` \
-    && printf '[behavior]\nuse-uv=false\n' > /root/.rye/config.toml \
-    && echo 'setuptools<72' > /code/constraints.txt \
-    && export PIP_CONSTRAINT=/code/constraints.txt \
     && rye sync --no-lock --no-dev \
     && apt-get autoremove -y \
     && apt-get purge -y curl netcat-traditional build-essential pkg-config cmake ninja-build python3-dev clang\
