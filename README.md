@@ -541,7 +541,7 @@ exit
 
 Once you've created all your desired login accounts, add these lines to `/simplelogin.env` to disable further registrations:
 
-```
+```.env
 DISABLE_REGISTRATION=1
 DISABLE_ONBOARDING=true
 ```
