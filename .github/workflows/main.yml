@@ -2,6 +2,10 @@ name: Test and lint
 
 on: [push, pull_request]
 
+env:
+  PIP_CONSTRAINT: ${{ github.workspace }}/pip-constraint.txt
+
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -9,7 +13,7 @@ jobs:
       fail-fast: true
     steps:
       - name: Check out repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Install rye"
         id: setup-rye
@@ -18,6 +22,9 @@ jobs:
           version: '0.37.0'
           checksum: 'fc7c150acc844fd86d709de1428ca96b585f8340edebc5b537ee9fa231f40884'
           enable-cache: true
+
+      - name: use pip until uv can use an old setuptools
+        run: rye config --set-bool behavior.use-uv=false
 
       - name: Install OS dependencies
         run: |
@@ -67,7 +74,7 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install rye
         id: setup-rye
@@ -78,8 +85,10 @@ jobs:
           enable-cache: true
           cache-prefix: 'rye-cache'
 
+      - name: use pip until uv can use an old setuptools
+        run: rye config --set-bool behavior.use-uv=false
+
       - name: Install OS dependencies
-        if: ${{ matrix.python-version }} == '3.10'
         run: |
           sudo apt update
           sudo apt install -y libre2-dev libpq-dev
