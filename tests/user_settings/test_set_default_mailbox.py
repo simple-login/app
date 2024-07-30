@@ -4,7 +4,7 @@ import pytest
 from app import mailbox_utils, user_settings, config
 from app.db import Session
 from app.models import User
-from utils import create_new_user, random_email
+from tests.utils import random_email, create_new_user
 
 
 user: Optional[User] = None
