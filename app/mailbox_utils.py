@@ -22,6 +22,9 @@ class MailboxError(Exception):
         self.msg = msg
 
 
+MAX_ACTIVATION_TRIES = 3
+
+
 def create_mailbox(
     user: User,
     email: str,
@@ -29,15 +32,20 @@ def create_mailbox(
     send_verification_link: bool = True,
 ) -> Mailbox:
     if not user.is_premium():
+        LOG.i(f"User {user} has created mailbox with {email} but is not premium")
         raise MailboxError("Only premium plan can add additional mailbox")
     if not is_valid_email(email):
+        LOG.i(f"User {user} has created mailbox with {email} but is not valid email")
         raise MailboxError("Invalid email")
     elif mailbox_already_used(email, user):
+        LOG.i(f"User {user} has created mailbox with {email} but email is already used")
         raise MailboxError("Email already used")
     elif not email_can_be_used_as_mailbox(email):
+        LOG.i(f"User {user} has created mailbox with {email} but email is invalid")
         raise MailboxError("Invalid email")
     new_mailbox = Mailbox.create(email=email, user_id=user.id, commit=True)
 
+    LOG.i(f"User {user} has created mailbox with {email}")
     send_verification_email(
         user,
         new_mailbox,
@@ -53,28 +61,39 @@ def delete_mailbox(
     mailbox = Mailbox.get(mailbox_id)
 
     if not mailbox or mailbox.user_id != user.id:
+        LOG.i(
+            f"User {user} has tried to delete another user's mailbox with {mailbox_id}"
+        )
         raise MailboxError("Invalid mailbox")
 
     if mailbox.id == user.default_mailbox_id:
+        LOG.i(f"User {user} has tried to delete the default mailbox")
         raise MailboxError("Cannot delete your default mailbox")
 
     if transfer_mailbox_id and transfer_mailbox_id > 0:
         transfer_mailbox = Mailbox.get(transfer_mailbox_id)
 
         if not transfer_mailbox or transfer_mailbox.user_id != user.id:
+            LOG.i(
+                f"User {user} has tried to transfer to a mailbox owned by another user"
+            )
             raise MailboxError("You must transfer the aliases to a mailbox you own")
 
         if transfer_mailbox.id == mailbox.id:
+            LOG.i(
+                f"User {user} has tried to transfer to the same mailbox he is deleting"
+            )
             raise MailboxError(
                 "You can not transfer the aliases to the mailbox you want to delete"
             )
 
         if not transfer_mailbox.verified:
+            LOG.i(f"User {user} has tried to transfer to a non verified mailbox")
             MailboxError("Your new mailbox is not verified")
 
     # Schedule delete account job
-    LOG.w(
-        f"schedule delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
+    LOG.i(
+        f"User {user} has scheduled delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
     )
     Job.create(
         name=JOB_DELETE_MAILBOX,
@@ -101,6 +120,7 @@ def set_default_mailbox(user: User, mailbox_id: int) -> Mailbox:
 
     if mailbox.id == user.default_mailbox_id:
         return mailbox
+    LOG.i(f"User {user} has set mailbox {mailbox} as his default one")
 
     user.default_mailbox_id = mailbox.id
     Session.commit()
@@ -114,26 +134,53 @@ def clear_activation_codes_for_mailbox(mailbox: Mailbox):
     Session.commit()
 
 
-def verify_mailbox_code(mailbox_id: int, code: str) -> Mailbox:
+def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
     mailbox = Mailbox.get(mailbox_id)
     if not mailbox:
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because it does not exist"
+        )
         raise MailboxError("Invalid mailbox")
     if mailbox.verified:
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because it's already verified"
+        )
         clear_activation_codes_for_mailbox(mailbox)
         return mailbox
-    activation = MailboxActivation.get_by(mailbox_id=mailbox_id).first()
+    if mailbox.user_id != user.id:
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
+        )
+        raise MailboxError("Invalid mailbox")
+
+    activation = (
+        MailboxActivation.filter(MailboxActivation.mailbox_id == mailbox_id)
+        .order_by(MailboxActivation.created_at.desc())
+        .first()
+    )
     if not activation:
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because there is no activation"
+        )
         raise MailboxError("Invalid code")
-    if activation.tries > 3:
+    if activation.tries >= MAX_ACTIVATION_TRIES:
+        LOG.i(f"User {user} failed to verify mailbox {mailbox_id} more than 3 times")
         clear_activation_codes_for_mailbox(mailbox)
         raise MailboxError("Invalid activation code. Please request another code.")
     if activation.created_at < arrow.now().shift(minutes=-15):
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because code is too old"
+        )
         clear_activation_codes_for_mailbox(mailbox)
         raise MailboxError("Invalid activation code. Please request another code.")
     if code != activation.code:
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because code does not match"
+        )
         activation.tries = activation.tries + 1
         Session.commit()
         raise MailboxError("Invalid activation code")
+    LOG.i(f"User {user} has verified mailbox {mailbox_id}")
     mailbox.verified = True
     clear_activation_codes_for_mailbox(mailbox)
     return mailbox
@@ -153,6 +200,9 @@ def send_verification_email(
         tries=0,
     )
     Session.commit()
+    LOG.i(
+        f"Sending mailbox verification email to {mailbox.email} with digit={use_digit_code} link={send_link}"
+    )
 
     if send_link:
         verification_url = (

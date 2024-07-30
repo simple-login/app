@@ -1,5 +1,6 @@
 from typing import Optional
 
+import arrow
 import pytest
 
 from app import mailbox_utils, config
@@ -211,3 +212,68 @@ def test_cannot_default_other_user_mailbox():
     )
     with pytest.raises(mailbox_utils.MailboxError):
         mailbox_utils.set_default_mailbox(user, mailbox.id)
+
+
+def test_verify_non_existing_mailbox():
+    with pytest.raises(mailbox_utils.MailboxError):
+        mailbox_utils.verify_mailbox_code(user, 999999999, "9999999")
+
+
+def test_verify_already_verified_mailbox():
+    mailbox = Mailbox.create(
+        user_id=user.id, email=random_email(), verified=True, commit=True
+    )
+    mbox = mailbox_utils.verify_mailbox_code(user, mailbox.id, "9999999")
+    assert mbox.id == mailbox.id
+
+
+def test_verify_other_users_mailbox():
+    other = create_new_user()
+    mailbox = Mailbox.create(
+        user_id=other.id, email=random_email(), verified=False, commit=True
+    )
+    with pytest.raises(mailbox_utils.MailboxError):
+        mailbox_utils.verify_mailbox_code(user, mailbox.id, "9999999")
+
+
+@mail_sender.store_emails_test_decorator
+def test_verify_fail():
+    mailbox = mailbox_utils.create_mailbox(user, random_email())
+    for i in range(mailbox_utils.MAX_ACTIVATION_TRIES - 1):
+        try:
+            mailbox_utils.verify_mailbox_code(user, mailbox.id, "9999999")
+            assert False, f"test {i}"
+        except mailbox_utils.MailboxError:
+            activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
+            assert activation.tries == i + 1
+
+
+@mail_sender.store_emails_test_decorator
+def test_verify_too_may():
+    mailbox = mailbox_utils.create_mailbox(user, random_email())
+    activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
+    activation.tries = mailbox_utils.MAX_ACTIVATION_TRIES
+    Session.commit()
+    with pytest.raises(mailbox_utils.MailboxError):
+        mailbox_utils.verify_mailbox_code(user, mailbox.id, activation.code)
+
+
+@mail_sender.store_emails_test_decorator
+def test_verify_too_old_code():
+    mailbox = mailbox_utils.create_mailbox(user, random_email())
+    activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
+    activation.created_at = arrow.now().shift(minutes=-30)
+    Session.commit()
+    with pytest.raises(mailbox_utils.MailboxError):
+        mailbox_utils.verify_mailbox_code(user, mailbox.id, activation.code)
+
+
+@mail_sender.store_emails_test_decorator
+def test_verify_ok():
+    mailbox = mailbox_utils.create_mailbox(user, random_email())
+    activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
+    mailbox_utils.verify_mailbox_code(user, mailbox.id, activation.code)
+    activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
+    assert activation is None
+    mailbox = Mailbox.get(id=mailbox.id)
+    assert mailbox.verified
