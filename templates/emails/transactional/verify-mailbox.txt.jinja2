@@ -5,9 +5,13 @@ Hi
 
 You have added {{mailbox_email}} as an additional mailbox.
 
+{% if link %}
 To confirm, please click on this link:
 
 {{link}}
+{% else %}
+Please enter {{ code }} as your verification code for this mailbox
+{% endif %}
 
 This link will only be valid during the next 15 minutes.
 {% endblock %}
