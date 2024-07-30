@@ -114,13 +114,14 @@ def mailbox_route():
 
 
 @dashboard_bp.route("/mailbox_verify")
+@login_required
 def mailbox_verify():
     mailbox_id = request.args.get("mailbox_id")
     code = request.args.get("code")
     if not code:
         # Old way
         return verify_with_signed_secret(mailbox_id)
-    mailbox = mailbox_utils.verify_mailbox_code(mailbox_id, code)
+    mailbox = mailbox_utils.verify_mailbox_code(current_user, mailbox_id, code)
     LOG.d("Mailbox %s is verified", mailbox)
     return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)
 
