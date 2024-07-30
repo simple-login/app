@@ -9,7 +9,7 @@ from itsdangerous import TimestampSigner
 from wtforms import validators, IntegerField
 from wtforms.fields.html5 import EmailField
 
-from app import parallel_limiter, mailbox_utils
+from app import parallel_limiter, mailbox_utils, user_settings
 from app.config import MAILBOX_SECRET
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -72,8 +72,8 @@ def mailbox_route():
                 return redirect(request.url)
             try:
                 mailbox_id = request.form.get("mailbox_id")
-                mailbox = mailbox_utils.set_default_mailbox(current_user, mailbox_id)
-            except mailbox_utils.MailboxError as e:
+                mailbox = user_settings.set_default_mailbox(current_user, mailbox_id)
+            except user_settings.CannotSetMailbox as e:
                 flash(e.msg, "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
 
