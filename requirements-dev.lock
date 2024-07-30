@@ -333,7 +333,7 @@ pytz==2024.1
 pyyaml==6.0.1
     # via djlint
     # via pre-commit
-redis==4.5.5
+redis==5.0.7
     # via simplelogin
 regex==2022.10.31
     # via djlint
