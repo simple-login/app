@@ -32,16 +32,24 @@ def create_mailbox(
     send_verification_link: bool = True,
 ) -> Mailbox:
     if not user.is_premium():
-        LOG.i(f"User {user} has created mailbox with {email} but is not premium")
+        LOG.i(
+            f"User {user} has tried to create mailbox with {email} but is not premium"
+        )
         raise MailboxError("Only premium plan can add additional mailbox")
     if not is_valid_email(email):
-        LOG.i(f"User {user} has created mailbox with {email} but is not valid email")
+        LOG.i(
+            f"User {user} has tried to create mailbox with {email} but is not valid email"
+        )
         raise MailboxError("Invalid email")
     elif mailbox_already_used(email, user):
-        LOG.i(f"User {user} has created mailbox with {email} but email is already used")
+        LOG.i(
+            f"User {user} has tried to create mailbox with {email} but email is already used"
+        )
         raise MailboxError("Email already used")
     elif not email_can_be_used_as_mailbox(email):
-        LOG.i(f"User {user} has created mailbox with {email} but email is invalid")
+        LOG.i(
+            f"User {user} has tried to create mailbox with {email} but email is invalid"
+        )
         raise MailboxError("Invalid email")
     new_mailbox = Mailbox.create(email=email, user_id=user.id, commit=True)
 
@@ -106,24 +114,6 @@ def delete_mailbox(
         run_at=arrow.now(),
         commit=True,
     )
-    return mailbox
-
-
-def set_default_mailbox(user: User, mailbox_id: int) -> Mailbox:
-    mailbox = Mailbox.get(mailbox_id)
-
-    if not mailbox or mailbox.user_id != user.id:
-        raise MailboxError("Invalid mailbox")
-
-    if not mailbox.verified:
-        raise MailboxError("This is mailbox is not verified")
-
-    if mailbox.id == user.default_mailbox_id:
-        return mailbox
-    LOG.i(f"User {user} has set mailbox {mailbox} as his default one")
-
-    user.default_mailbox_id = mailbox.id
-    Session.commit()
     return mailbox
 
 

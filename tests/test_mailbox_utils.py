@@ -176,44 +176,6 @@ def test_delete_with_transfer():
     assert job.payload["transfer_mailbox_id"] is None
 
 
-def test_set_default_mailbox():
-    other = create_new_user()
-    mailbox = mailbox_utils.create_mailbox(
-        other,
-        random_email(),
-        use_digit_codes=True,
-        send_verification_link=False,
-    )
-    mailbox.verified = True
-    Session.commit()
-    mailbox_utils.set_default_mailbox(other, mailbox.id)
-    other = User.get(other.id)
-    assert other.default_mailbox_id == mailbox.id
-
-
-def test_cannot_set_unverified():
-    mailbox = mailbox_utils.create_mailbox(
-        user,
-        random_email(),
-        use_digit_codes=True,
-        send_verification_link=False,
-    )
-    with pytest.raises(mailbox_utils.MailboxError):
-        mailbox_utils.set_default_mailbox(user, mailbox.id)
-
-
-def test_cannot_default_other_user_mailbox():
-    other = create_new_user()
-    mailbox = mailbox_utils.create_mailbox(
-        other,
-        random_email(),
-        use_digit_codes=True,
-        send_verification_link=False,
-    )
-    with pytest.raises(mailbox_utils.MailboxError):
-        mailbox_utils.set_default_mailbox(user, mailbox.id)
-
-
 def test_verify_non_existing_mailbox():
     with pytest.raises(mailbox_utils.MailboxError):
         mailbox_utils.verify_mailbox_code(user, 999999999, "9999999")

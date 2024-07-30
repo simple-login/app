@@ -2,10 +2,15 @@ from typing import Optional
 
 from app.db import Session
 from app.log import LOG
-from app.models import User, SLDomain, CustomDomain
+from app.models import User, SLDomain, CustomDomain, Mailbox
 
 
 class CannotSetAlias(Exception):
+    def __init__(self, msg: str):
+        self.msg = msg
+
+
+class CannotSetMailbox(Exception):
     def __init__(self, msg: str):
         self.msg = msg
 
@@ -45,3 +50,21 @@ def set_default_alias_domain(user: User, domain_name: Optional[str]):
     user.default_alias_public_domain_id = None
     user.default_alias_custom_domain_id = custom_domain.id
     Session.flush()
+
+
+def set_default_mailbox(user: User, mailbox_id: int) -> Mailbox:
+    mailbox = Mailbox.get(mailbox_id)
+
+    if not mailbox or mailbox.user_id != user.id:
+        raise CannotSetMailbox("Invalid mailbox")
+
+    if not mailbox.verified:
+        raise CannotSetMailbox("This is mailbox is not verified")
+
+    if mailbox.id == user.default_mailbox_id:
+        return mailbox
+    LOG.i(f"User {user} has set mailbox {mailbox} as his default one")
+
+    user.default_mailbox_id = mailbox.id
+    Session.commit()
+    return mailbox
