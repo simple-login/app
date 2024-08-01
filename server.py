@@ -218,6 +218,10 @@ def create_app() -> Flask:
     def cleanup(resp_or_exc):
         Session.remove()
 
+    @app.route("/health", methods=["GET"])
+    def healthcheck():
+        return "success", 200
+
     return app
 
 
