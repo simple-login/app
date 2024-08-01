@@ -69,11 +69,22 @@ def test_create_mailbox():
 
 
 @mail_sender.store_emails_test_decorator
+def test_create_mailbox_verified():
+    email = random_email()
+    mailbox_utils.create_mailbox(user, email, verified=True)
+    mailbox = Mailbox.get_by(email=email)
+    assert mailbox is not None
+    assert mailbox.verified
+    activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
+    assert activation is None
+
+    assert 0 == len(mail_sender.get_stored_emails())
+
+
+@mail_sender.store_emails_test_decorator
 def test_create_mailbox_with_digits():
     email = random_email()
-    mailbox_utils.create_mailbox(
-        user, email, use_digit_codes=True, send_verification_link=False
-    )
+    mailbox_utils.create_mailbox(user, email, use_digit_codes=True, send_link=False)
     mailbox = Mailbox.get_by(email=email)
     assert mailbox is not None
     assert not mailbox.verified
@@ -93,9 +104,7 @@ def test_create_mailbox_with_digits():
 @mail_sender.store_emails_test_decorator
 def test_send_verification_email():
     email = random_email()
-    mailbox_utils.create_mailbox(
-        user, email, use_digit_codes=True, send_verification_link=False
-    )
+    mailbox_utils.create_mailbox(user, email, use_digit_codes=True, send_link=False)
     mailbox = Mailbox.get_by(email=email)
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
     old_code = activation.code
@@ -121,7 +130,7 @@ def test_delete_default_mailbox():
 def test_transfer_to_same_mailbox():
     email = random_email()
     mailbox = mailbox_utils.create_mailbox(
-        user, email, use_digit_codes=True, send_verification_link=False
+        user, email, use_digit_codes=True, send_link=False
     )
     with pytest.raises(mailbox_utils.MailboxError):
         mailbox_utils.delete_mailbox(user, mailbox.id, transfer_mailbox_id=mailbox.id)
@@ -130,7 +139,7 @@ def test_transfer_to_same_mailbox():
 def test_transfer_to_other_users_mailbox():
     email = random_email()
     mailbox = mailbox_utils.create_mailbox(
-        user, email, use_digit_codes=True, send_verification_link=False
+        user, email, use_digit_codes=True, send_link=False
     )
     other = create_new_user()
     other_mailbox = Mailbox.create(user_id=other.id, email=random_email(), commit=True)
@@ -143,7 +152,7 @@ def test_transfer_to_other_users_mailbox():
 def test_delete_with_no_transfer():
     email = random_email()
     mailbox = mailbox_utils.create_mailbox(
-        user, email, use_digit_codes=True, send_verification_link=False
+        user, email, use_digit_codes=True, send_link=False
     )
     mailbox_utils.delete_mailbox(user, mailbox.id, transfer_mailbox_id=None)
     job = Session.query(Job).order_by(Job.id.desc()).first()
@@ -155,10 +164,10 @@ def test_delete_with_no_transfer():
 
 def test_delete_with_transfer():
     mailbox = mailbox_utils.create_mailbox(
-        user, random_email(), use_digit_codes=True, send_verification_link=False
+        user, random_email(), use_digit_codes=True, send_link=False
     )
     transfer_mailbox = mailbox_utils.create_mailbox(
-        user, random_email(), use_digit_codes=True, send_verification_link=False
+        user, random_email(), use_digit_codes=True, send_link=False
     )
     mailbox_utils.delete_mailbox(
         user, mailbox.id, transfer_mailbox_id=transfer_mailbox.id

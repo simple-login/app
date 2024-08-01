@@ -29,7 +29,7 @@ def test_set_default_mailbox():
         other,
         random_email(),
         use_digit_codes=True,
-        send_verification_link=False,
+        send_link=False,
     )
     mailbox.verified = True
     Session.commit()
@@ -43,7 +43,7 @@ def test_cannot_set_unverified():
         user,
         random_email(),
         use_digit_codes=True,
-        send_verification_link=False,
+        send_link=False,
     )
     with pytest.raises(user_settings.CannotSetMailbox):
         user_settings.set_default_mailbox(user, mailbox.id)
@@ -55,7 +55,7 @@ def test_cannot_default_other_user_mailbox():
         other,
         random_email(),
         use_digit_codes=True,
-        send_verification_link=False,
+        send_link=False,
     )
     with pytest.raises(user_settings.CannotSetMailbox):
         user_settings.set_default_mailbox(user, mailbox.id)

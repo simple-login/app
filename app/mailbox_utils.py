@@ -28,8 +28,9 @@ MAX_ACTIVATION_TRIES = 3
 def create_mailbox(
     user: User,
     email: str,
+    verified: bool = False,
     use_digit_codes: bool = False,
-    send_verification_link: bool = True,
+    send_link: bool = True,
 ) -> Mailbox:
     if not user.is_premium():
         LOG.i(
@@ -51,15 +52,20 @@ def create_mailbox(
             f"User {user} has tried to create mailbox with {email} but email is invalid"
         )
         raise MailboxError("Invalid email")
-    new_mailbox = Mailbox.create(email=email, user_id=user.id, commit=True)
-
-    LOG.i(f"User {user} has created mailbox with {email}")
-    send_verification_email(
-        user,
-        new_mailbox,
-        use_digit_code=use_digit_codes,
-        send_link=send_verification_link,
+    new_mailbox = Mailbox.create(
+        email=email, user_id=user.id, verified=verified, commit=True
     )
+
+    if verified:
+        LOG.i(f"User {user} as created a pre-verified mailbox with {email}")
+    else:
+        LOG.i(f"User {user} has created mailbox with {email}")
+        send_verification_email(
+            user,
+            new_mailbox,
+            use_digit_code=use_digit_codes,
+            send_link=send_link,
+        )
     return new_mailbox
 
 
