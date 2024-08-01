@@ -200,7 +200,7 @@ def create_app() -> Flask:
                 "username": "admin",
                 "password": FLASK_PROFILER_PASSWORD,
             },
-            "ignore": ["^/static/.*", "/git", "/exception"],
+            "ignore": ["^/static/.*", "/git", "/exception", "/health"],
         }
         flask_profiler.init_app(app)
 
@@ -286,6 +286,7 @@ def set_index_page(app):
             and not request.path.startswith("/_debug_toolbar")
             and not request.path.startswith("/git")
             and not request.path.startswith("/favicon.ico")
+            and not request.path.startswith("/health")
         ):
             start_time = g.start_time or time.time()
             LOG.d(
