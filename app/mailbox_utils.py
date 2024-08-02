@@ -23,8 +23,8 @@ class MailboxError(Exception):
 
 
 class OnlyPaidError(MailboxError):
-    def __init__(self, msg: str):
-        self.msg = msg
+    def __init__(self):
+        self.msg = "Only available for paid plans"
 
 
 class CannotVerifyError(MailboxError):
@@ -46,7 +46,7 @@ def create_mailbox(
         LOG.i(
             f"User {user} has tried to create mailbox with {email} but is not premium"
         )
-        raise OnlyPaidError("Adding additional mailboxes is a paid feature")
+        raise OnlyPaidError()
     if not is_valid_email(email):
         LOG.i(
             f"User {user} has tried to create mailbox with {email} but is not valid email"
