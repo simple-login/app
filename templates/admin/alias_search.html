@@ -1,0 +1,300 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+
+  <div class="border border-dark border-2 mt-1 mb-2 p-3">
+    <form method="post">
+      <div class="form-group">
+        <label for="email">Email to search:</label>
+        <input type="text"
+               class="form-control"
+               name="email"
+               value="{{ email or '' }}"/>
+      </div>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  </div>
+  {% if no_match %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
+         role="alert">
+      No user, alias or mailbox found for {{ email }}
+    </div>
+  {% endif %}
+  {% if alias %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3">
+      <h3>Alias {{ alias.email }} found</h3>
+      <dl>
+        <dt>
+          Alias id
+        </dt>
+        <dd>
+          {{ alias.id }}
+        </dd>
+        <dt>
+          Email
+        </dt>
+        <dd>
+          {{ alias.email }}
+        </dd>
+        <dt>
+          Created at
+        </dt>
+        <dd>
+          {{ alias.created_at }}
+        </dd>
+        <dt class="mb-2">
+          User
+        </dt>
+        <dd class="ml-4 border-secondary border p-2">
+          <dl>
+            <dt>
+              User id
+            </dt>
+            <dd>
+              {{ alias.user.id }}
+            </dd>
+            <dt>
+              Email
+            </dt>
+            <dd>
+              {{ alias.user.email }}
+            </dd>
+            <dt>
+              Premium
+            </dt>
+            <dd>
+              {{ alias.user.is_premium() }}
+            </dd>
+            <dt>
+              Disabled
+            </dt>
+            <dd>
+              {{ alias.user.disabled }}
+            </dd>
+            <dt>
+              Crated At
+            </dt>
+            <dd>
+              {{ alias.user.created_at }}
+            </dd>
+            <dt class="border-dark border-top-2 mb-2">
+              Mailboxes
+            </dt>
+            <dd>
+              {% for mailbox in  alias.mailboxes %}
+
+                <dl class="border border-grey border-2 ml-4 p-2">
+                  <dt>
+                    Mailbox id
+                  </dt>
+                  <dd>
+                    {{ mailbox.id }}
+                  </dd>
+                  <dt>
+                    Email
+                  </dt>
+                  <dd>
+                    {{ mailbox.email }}
+                  </dd>
+                  <dt>
+                    Verified
+                  </dt>
+                  <dd>
+                    {{ mailbox.verified }}
+                  </dd>
+                  <dt>
+                    Created At
+                  </dt>
+                  <dd>
+                    {{ mailbox.created_at }}
+                  </dd>
+                </dl>
+              {% endfor %}
+            </dd>
+          </dl>
+        </dd>
+      </dl>
+    </div>
+  {% endif %}
+  {% if user %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3">
+      <h3>User {{ user.email }} found</h3>
+      <dl>
+        <dt>
+          User id
+        </dt>
+        <dd>
+          {{ user.id }}
+        </dd>
+        <dt>
+          Email
+        </dt>
+        <dd>
+          {{ user.email }}
+        </dd>
+        {% if  user.is_paid() %}
+
+          <dt>
+            Paid
+          </dt>
+          <dd>
+            Yes
+          </dd>
+          <dt>
+            Subscription
+          </dt>
+          <dd>
+            {{ user.get_active_subscription() }}
+          </dd>
+        {% else %}
+          <dt>
+            Paid
+          </dt>
+          <dd>
+            No
+          </dd>
+        {% endif %}
+        <dt>
+          Created at
+        </dt>
+        <dd>
+          {{ user.created_at }}
+        </dd>
+        <dt class="mb-2">
+          Mailboxes
+        </dt>
+        <dd>
+          {% for mailbox in  user.mailboxes() %}
+
+            <dl class="border border-dark p-2 ml-4">
+              <dt>
+                Mailbox id
+              </dt>
+              <dd>
+                {{ mailbox.id }}
+              </dd>
+              <dt>
+                Email
+              </dt>
+              <dd>
+                {{ mailbox.email }}
+              </dd>
+              <dt>
+                Verified
+              </dt>
+              <dd>
+                {{ mailbox.verified }}
+              </dd>
+              <dt>
+                Created At
+              </dt>
+              <dd>
+                {{ mailbox.created_at }}
+              </dd>
+            </dl>
+          {% endfor %}
+        </dd>
+        <dt class="mb-2">
+          Aliases
+        </dt>
+        <dd>
+          {% for mailbox in user_aliases(user.id) %}
+
+            <dl class="border border-dark p-2 ml-4">
+              <dt>
+                Mailbox id
+              </dt>
+              <dd>
+                {{ mailbox.id }}
+              </dd>
+              <dt>
+                Email
+              </dt>
+              <dd>
+                {{ mailbox.email }}
+              </dd>
+              <dt>
+                Verified
+              </dt>
+              <dd>
+                {{ mailbox.verified }}
+              </dd>
+              <dt>
+                Created At
+              </dt>
+              <dd>
+                {{ mailbox.created_at }}
+              </dd>
+            </dl>
+          {% endfor %}
+        </dd>
+      </dl>
+    </div>
+  {% endif %}
+  {% if mailbox %}
+
+    <div class="border border-dark mt-1 mb-2 p-3">
+      <h3>Mailbox {{ mailbox.email }} found</h3>
+      <dl>
+        <dt>
+          Mailbox id
+        </dt>
+        <dd>
+          {{ mailbox.id }}
+        </dd>
+        <dt>
+          Email
+        </dt>
+        <dd>
+          {{ mailbox.email }}
+        </dd>
+        <dt>
+          Created at
+        </dt>
+        <dd>
+          {{ mailbox.created_at }}
+        </dd>
+        <dt class="mb-2">
+          User
+        </dt>
+        <dd class="ml-4">
+          <dl class="border-dark border p-2">
+            <dt>
+              User id
+            </dt>
+            <dd>
+              {{ mailbox.user.id }}
+            </dd>
+            <dt>
+              Email
+            </dt>
+            <dd>
+              {{ mailbox.user.email }}
+            </dd>
+            <dt>
+              Premium
+            </dt>
+            <dd>
+              {{ mailbox.user.is_premium() }}
+            </dd>
+            <dt>
+              Disabled
+            </dt>
+            <dd>
+              {{ mailbox.user.disabled }}
+            </dd>
+            <dt>
+              Crated At
+            </dt>
+            <dd>
+              {{ mailbox.user.created_at }}
+            </dd>
+          </dl>
+        </dd>
+      </dl>
+    </div>
+  {% endif %}
+{% endblock %}
