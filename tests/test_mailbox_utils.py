@@ -102,6 +102,21 @@ def test_create_mailbox_with_digits():
 
 
 @mail_sender.store_emails_test_decorator
+def test_create_mailbox_without_verification_email():
+    email = random_email()
+    mailbox_utils.create_mailbox(user, email, use_digit_codes=True, send_email=False)
+    mailbox = Mailbox.get_by(email=email)
+    assert mailbox is not None
+    assert not mailbox.verified
+    activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
+    assert activation is not None
+    assert activation.tries == 0
+    assert len(activation.code) == 6
+
+    assert 0 == len(mail_sender.get_stored_emails())
+
+
+@mail_sender.store_emails_test_decorator
 def test_send_verification_email():
     email = random_email()
     mailbox_utils.create_mailbox(user, email, use_digit_codes=True, send_link=False)

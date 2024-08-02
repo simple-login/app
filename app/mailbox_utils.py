@@ -70,8 +70,14 @@ def create_mailbox(
     if verified:
         LOG.i(f"User {user} as created a pre-verified mailbox with {email}")
         return new_mailbox
+
     LOG.i(f"User {user} has created mailbox with {email}")
     activation = generate_activation_code(new_mailbox, use_digit_code=use_digit_codes)
+
+    if not send_email:
+        LOG.i(f"Skipping sending validation email for mailbox {new_mailbox}")
+        return new_mailbox
+
     send_verification_email(
         user,
         new_mailbox,
