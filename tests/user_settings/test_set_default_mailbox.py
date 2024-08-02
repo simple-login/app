@@ -56,6 +56,6 @@ def test_cannot_default_other_user_mailbox():
         random_email(),
         use_digit_codes=True,
         send_link=False,
-    )
+    ).mailbox
     with pytest.raises(user_settings.CannotSetMailbox):
         user_settings.set_default_mailbox(user, mailbox.id)
