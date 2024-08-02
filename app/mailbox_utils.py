@@ -1,3 +1,4 @@
+import dataclasses
 import secrets
 import random
 from typing import Optional
@@ -15,6 +16,12 @@ from app.email_utils import (
 from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import User, Mailbox, Job, MailboxActivation
+
+
+@dataclasses.dataclass
+class CreateMailboxOutput:
+    mailbox: Mailbox
+    activation: Optional[MailboxActivation]
 
 
 class MailboxError(Exception):
@@ -42,7 +49,7 @@ def create_mailbox(
     send_email: bool = True,
     use_digit_codes: bool = False,
     send_link: bool = True,
-) -> Mailbox:
+) -> CreateMailboxOutput:
     if not user.is_premium():
         LOG.i(
             f"User {user} has tried to create mailbox with {email} but is not premium"
@@ -69,14 +76,15 @@ def create_mailbox(
 
     if verified:
         LOG.i(f"User {user} as created a pre-verified mailbox with {email}")
-        return new_mailbox
+        return CreateMailboxOutput(mailbox=new_mailbox, activation=None)
 
     LOG.i(f"User {user} has created mailbox with {email}")
     activation = generate_activation_code(new_mailbox, use_digit_code=use_digit_codes)
+    output = CreateMailboxOutput(mailbox=new_mailbox, activation=activation)
 
     if not send_email:
         LOG.i(f"Skipping sending validation email for mailbox {new_mailbox}")
-        return new_mailbox
+        return output
 
     send_verification_email(
         user,
@@ -84,7 +92,7 @@ def create_mailbox(
         activation=activation,
         send_link=send_link,
     )
-    return new_mailbox
+    return output
 
 
 def delete_mailbox(

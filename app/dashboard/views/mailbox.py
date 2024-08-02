@@ -87,7 +87,9 @@ def mailbox_route():
                 return redirect(request.url)
             mailbox_email = new_mailbox_form.email.data.lower().strip().replace(" ", "")
             try:
-                mailbox = mailbox_utils.create_mailbox(current_user, mailbox_email)
+                mailbox = mailbox_utils.create_mailbox(
+                    current_user, mailbox_email
+                ).mailbox
             except mailbox_utils.MailboxError as e:
                 flash(e.msg, "warning")
                 return redirect(url_for("dashboard.mailbox_route"))

@@ -41,7 +41,7 @@ def create_mailbox():
     mailbox_email = sanitize_email(request.get_json().get("email"))
 
     try:
-        new_mailbox = mailbox_utils.create_mailbox(user, mailbox_email)
+        new_mailbox = mailbox_utils.create_mailbox(user, mailbox_email).mailbox
     except mailbox_utils.MailboxError as e:
         return jsonify(error=e.msg), 400
 
