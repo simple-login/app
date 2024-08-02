@@ -22,6 +22,16 @@ class MailboxError(Exception):
         self.msg = msg
 
 
+class OnlyPaidError(MailboxError):
+    def __init__(self):
+        self.msg = "Only available for paid plans"
+
+
+class CannotVerifyError(MailboxError):
+    def __init__(self, msg: str):
+        self.msg = msg
+
+
 MAX_ACTIVATION_TRIES = 3
 
 
@@ -36,7 +46,7 @@ def create_mailbox(
         LOG.i(
             f"User {user} has tried to create mailbox with {email} but is not premium"
         )
-        raise MailboxError("Only premium plan can add additional mailbox")
+        raise OnlyPaidError()
     if not is_valid_email(email):
         LOG.i(
             f"User {user} has tried to create mailbox with {email} but is not valid email"
@@ -162,20 +172,20 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
     if activation.tries >= MAX_ACTIVATION_TRIES:
         LOG.i(f"User {user} failed to verify mailbox {mailbox_id} more than 3 times")
         clear_activation_codes_for_mailbox(mailbox)
-        raise MailboxError("Invalid activation code. Please request another code.")
+        raise CannotVerifyError("Invalid activation code. Please request another code.")
     if activation.created_at < arrow.now().shift(minutes=-15):
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because code is too old"
         )
         clear_activation_codes_for_mailbox(mailbox)
-        raise MailboxError("Invalid activation code. Please request another code.")
+        raise CannotVerifyError("Invalid activation code. Please request another code.")
     if code != activation.code:
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because code does not match"
         )
         activation.tries = activation.tries + 1
         Session.commit()
-        raise MailboxError("Invalid activation code")
+        raise CannotVerifyError("Invalid activation code")
     LOG.i(f"User {user} has verified mailbox {mailbox_id}")
     mailbox.verified = True
     clear_activation_codes_for_mailbox(mailbox)

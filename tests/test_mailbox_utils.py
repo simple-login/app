@@ -30,7 +30,7 @@ def test_free_user_cannot_add_mailbox():
     user.lifetime = False
     email = random_email()
     try:
-        with pytest.raises(mailbox_utils.MailboxError):
+        with pytest.raises(mailbox_utils.OnlyPaidError):
             mailbox_utils.create_mailbox(user, email)
     finally:
         user.lifetime = True
@@ -214,7 +214,7 @@ def test_verify_fail():
         try:
             mailbox_utils.verify_mailbox_code(user, mailbox.id, "9999999")
             assert False, f"test {i}"
-        except mailbox_utils.MailboxError:
+        except mailbox_utils.CannotVerifyError:
             activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
             assert activation.tries == i + 1
 
@@ -225,7 +225,7 @@ def test_verify_too_may():
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
     activation.tries = mailbox_utils.MAX_ACTIVATION_TRIES
     Session.commit()
-    with pytest.raises(mailbox_utils.MailboxError):
+    with pytest.raises(mailbox_utils.CannotVerifyError):
         mailbox_utils.verify_mailbox_code(user, mailbox.id, activation.code)
 
 
@@ -235,7 +235,7 @@ def test_verify_too_old_code():
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
     activation.created_at = arrow.now().shift(minutes=-30)
     Session.commit()
-    with pytest.raises(mailbox_utils.MailboxError):
+    with pytest.raises(mailbox_utils.CannotVerifyError):
         mailbox_utils.verify_mailbox_code(user, mailbox.id, activation.code)
 
 
