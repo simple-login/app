@@ -107,10 +107,32 @@ def test_send_verification_email():
     mailbox_utils.create_mailbox(user, email, use_digit_codes=True, send_link=False)
     mailbox = Mailbox.get_by(email=email)
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
-    old_code = activation.code
-    mailbox_utils.send_verification_email(user, mailbox)
+    mail_sender.purge_stored_emails()
+    mailbox_utils.send_verification_email(user, mailbox, activation, send_link=False)
+
+    assert 1 == len(mail_sender.get_stored_emails())
+    mail_sent = mail_sender.get_stored_emails()[0]
+    mail_contents = str(mail_sent.msg)
+    assert mail_contents.find(activation.code) > 0
+    assert mail_contents.find(config.URL) == -1
+    assert mail_sent.envelope_to == email
+
+
+@mail_sender.store_emails_test_decorator
+def test_send_verification_email_with_link():
+    email = random_email()
+    mailbox_utils.create_mailbox(user, email, use_digit_codes=True, send_link=False)
+    mailbox = Mailbox.get_by(email=email)
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
-    assert activation.code != old_code
+    mail_sender.purge_stored_emails()
+    mailbox_utils.send_verification_email(user, mailbox, activation, send_link=True)
+
+    assert 1 == len(mail_sender.get_stored_emails())
+    mail_sent = mail_sender.get_stored_emails()[0]
+    mail_contents = str(mail_sent.msg)
+    assert mail_contents.find(activation.code) > 0
+    assert mail_contents.find(config.URL) > -1
+    assert mail_sent.envelope_to == email
 
 
 def test_delete_other_user_mailbox():

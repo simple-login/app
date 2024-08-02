@@ -39,6 +39,7 @@ def create_mailbox(
     user: User,
     email: str,
     verified: bool = False,
+    send_email: bool = True,
     use_digit_codes: bool = False,
     send_link: bool = True,
 ) -> Mailbox:
@@ -68,14 +69,15 @@ def create_mailbox(
 
     if verified:
         LOG.i(f"User {user} as created a pre-verified mailbox with {email}")
-    else:
-        LOG.i(f"User {user} has created mailbox with {email}")
-        send_verification_email(
-            user,
-            new_mailbox,
-            use_digit_code=use_digit_codes,
-            send_link=send_link,
-        )
+        return new_mailbox
+    LOG.i(f"User {user} has created mailbox with {email}")
+    activation = generate_activation_code(new_mailbox, use_digit_code=use_digit_codes)
+    send_verification_email(
+        user,
+        new_mailbox,
+        activation=activation,
+        send_link=send_link,
+    )
     return new_mailbox
 
 
@@ -192,29 +194,34 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
     return mailbox
 
 
-def send_verification_email(
-    user: User, mailbox: Mailbox, use_digit_code: bool = False, send_link: bool = True
-):
+def generate_activation_code(
+    mailbox: Mailbox, use_digit_code: bool = False
+) -> MailboxActivation:
     clear_activation_codes_for_mailbox(mailbox)
     if use_digit_code:
         code = "{:06d}".format(random.randint(1, 999999))
     else:
         code = secrets.token_urlsafe(16)
-    activation = MailboxActivation.create(
+    return MailboxActivation.create(
         mailbox_id=mailbox.id,
         code=code,
         tries=0,
+        commit=True,
     )
-    Session.commit()
+
+
+def send_verification_email(
+    user: User, mailbox: Mailbox, activation: MailboxActivation, send_link: bool = True
+):
     LOG.i(
-        f"Sending mailbox verification email to {mailbox.email} with digit={use_digit_code} link={send_link}"
+        f"Sending mailbox verification email to {mailbox.email} with send link={send_link}"
     )
 
     if send_link:
         verification_url = (
             config.URL
             + "/dashboard/mailbox_verify"
-            + f"?mailbox_id={mailbox.id}&code={code}"
+            + f"?mailbox_id={mailbox.id}&code={activation.code}"
         )
     else:
         verification_url = None
