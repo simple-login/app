@@ -45,6 +45,7 @@ from app.admin_model import (
     DailyMetricAdmin,
     MetricAdmin,
     InvalidMailboxDomainAdmin,
+    EmailSearchAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -786,6 +787,7 @@ def init_admin(app):
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
     admin.add_view(MailboxAdmin(Mailbox, Session))
+    admin.add_view(EmailSearchAdmin(name="Email Search", endpoint="email_search"))
     admin.add_view(CouponAdmin(Coupon, Session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))
