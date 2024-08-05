@@ -25,28 +25,28 @@ def teardown_module():
 
 def test_set_default_mailbox():
     other = create_new_user()
-    mailbox = mailbox_utils.create_mailbox(
+    output = mailbox_utils.create_mailbox(
         other,
         random_email(),
         use_digit_codes=True,
         send_link=False,
     )
-    mailbox.verified = True
+    output.mailbox.verified = True
     Session.commit()
-    user_settings.set_default_mailbox(other, mailbox.id)
+    user_settings.set_default_mailbox(other, output.mailbox.id)
     other = User.get(other.id)
-    assert other.default_mailbox_id == mailbox.id
+    assert other.default_mailbox_id == output.mailbox.id
 
 
 def test_cannot_set_unverified():
-    mailbox = mailbox_utils.create_mailbox(
+    output = mailbox_utils.create_mailbox(
         user,
         random_email(),
         use_digit_codes=True,
         send_link=False,
     )
     with pytest.raises(user_settings.CannotSetMailbox):
-        user_settings.set_default_mailbox(user, mailbox.id)
+        user_settings.set_default_mailbox(user, output.mailbox.id)
 
 
 def test_cannot_default_other_user_mailbox():
