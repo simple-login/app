@@ -206,7 +206,7 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
         # either reuse a contact with empty email or create a new contact with empty email
         contact_email = ""
 
-    contact_email = sanitize_email(contact_email, not_lower=True)
+    contact_email = sanitize_email(contact_email)
 
     if contact_name and "\x00" in contact_name:
         LOG.w("issue with contact name %s", contact_name)
@@ -337,7 +337,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
         full_addresses += address.parse_list(h)
 
     for full_address in full_addresses:
-        contact_email = sanitize_email(full_address.address, not_lower=True)
+        contact_email = sanitize_email(full_address.address)
 
         # no transformation when alias is already in the header
         if contact_email.lower() == alias.email:
