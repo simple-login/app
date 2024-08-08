@@ -753,12 +753,37 @@ class EmailSearchAdmin(BaseView):
             if not alias and not user and not mailbox:
                 no_match = True
 
+        def user_mailboxes(user_id: int) -> list[Mailbox]:
+            return (
+                Mailbox.filter_by(user_id=user_id)
+                .order_by(Mailbox.id.asc())
+                .limit(10)
+                .all()
+            )
+
+        def user_mailboxes_count(user_id: int) -> int:
+            return Mailbox.filter_by(user_id=user_id).order_by(Mailbox.id.asc()).count()
+
+        def user_aliases(user_id: int) -> list[Alias]:
+            return (
+                Alias.filter_by(user_id=user_id)
+                .order_by(Alias.id.asc())
+                .limit(10)
+                .all()
+            )
+
+        def user_aliases_count(user_id: int) -> int:
+            return Alias.filter_by(user_id=user_id).count()
+
         return self.render(
-            "admin/alias_search.html",
+            "admin/email_search.html",
             email=email,
             no_match=no_match,
             alias=alias,
             mailbox=mailbox,
             user=user,
-            user_aliases=lambda user_id: Alias.filter_by(user_id=user_id).all(),
+            user_aliases=user_aliases,
+            user_aliases_count=user_aliases_count,
+            user_mailboxes=user_mailboxes,
+            user_mailboxes_count=user_mailboxes_count,
         )

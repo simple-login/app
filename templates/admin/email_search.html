@@ -1,0 +1,139 @@
+{% extends 'admin/master.html' %}
+
+{% macro show_user(user) -%}
+  <h4>User {{ user.email }} with ID {{ user.id }}.</h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">User ID</th>
+        <th scope="col">Email</th>
+        <th scope="col">Paid</th>
+        <th>Subscription</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ user.id }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ "yes" if user.is_paid() else No }}</td>
+        <td>{{ user.get_active_subscription() }}</td>
+        <td>{{ user.created_at }}</td>
+      </tr>
+    </tbody>
+  </table>
+{%- endmacro %}
+{%  macro list_mailboxes(mbox_count, mboxes) %}
+  <h4>
+    {{ mbox_count }} Mailboxes found.
+    {% if mbox_count>10 %}Showing only the first 10.{% endif %}
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Mailbox ID</th>
+        <th>Email</th>
+        <th>Verified</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mailbox in mboxes %}
+
+        <tr>
+          <td>{{ mailbox.id }}</td>
+          <td>{{ mailbox.email }}</td>
+          <td>{{ "Yes" if mailbox.verified else "No" }}</td>
+          <td>{{ mailbox.created_at }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+{%  macro list_alias(alias_count, aliases) %}
+  <h4>
+    {{ alias_count }} Aliases found.
+    {% if alias_count>10 %}Showing only the first 10.{% endif %}
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Alias ID</th>
+        <th>Email</th>
+        <th>Verified</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alias in aliases %}
+
+        <tr>
+          <td>{{ alias.id }}</td>
+          <td>{{ alias.email }}</td>
+          <td>{{ "Yes" if alias.verified else "No" }}</td>
+          <td>
+            {{ alias.created_at }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+{% block body %}
+
+  <div class="border border-dark border-2 mt-1 mb-2 p-3">
+    <form method="post">
+      <div class="form-group">
+        <label for="email">
+          Email to search:
+        </label>
+        <input type="text"
+               class="form-control"
+               name="email"
+               value="{{ email or '' }}"/>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        Submit
+      </button>
+    </form>
+  </div>
+  {% if no_match %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
+         role="alert">
+      No user, alias or mailbox found for {{ email }}
+    </div>
+  {% endif %}
+  {% if alias %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3">
+      <h3 class="mb-3">
+        Found Alias {{ alias.email }}
+      </h3>
+      {{ list_alias(1,[alias]) }}
+      {{ show_user(alias.user) }}
+      {{ list_mailboxes(user_mailboxes_count(alias.user.id), user_mailboxes(alias.user.id) ) }}
+    </div>
+  {% endif %}
+  {% if user %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3">
+      <h3 class="mb-3">
+        Found User {{ user.email }}
+      </h3>
+      {{ show_user(user) }}
+      {{ list_mailboxes(user_mailboxes_count(user.id), user_mailboxes(user.id) ) }}
+      {{ list_alias(user_aliases_count(user.id),user_aliases(user.id)) }}
+    </div>
+  {% endif %}
+  {% if mailbox %}
+
+    <div class="border border-dark mt-1 mb-2 p-3">
+      <h3 class="mb-3">
+        Found Mailbox {{ mailbox.email }}
+      </h3>
+      {{ list_mailboxes(1, [mailbox] ) }}
+      {{ show_user(mailbox.user) }}
+    </div>
+  {% endif %}
+{% endblock %}
