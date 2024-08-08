@@ -548,7 +548,9 @@ def can_create_directory_for_address(email_address: str) -> bool:
     for domain in config.ALIAS_DOMAINS:
         if email_address.endswith("@" + domain):
             return True
-
+    LOG.i(
+        f"Cannot create address in directory for {email_address} since it does not belong to a valid directory domain"
+    )
     return False
 
 

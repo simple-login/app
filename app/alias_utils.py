@@ -63,12 +63,16 @@ def get_user_if_alias_would_auto_create(
         # Prevent addresses with unicode characters (🤯) in them for now.
         validate_email(address, check_deliverability=False, allow_smtputf8=False)
     except EmailNotValidError:
+        LOG.i(f"Not creating alias for {address} because email is invalid")
         return None
 
     domain_and_rule = check_if_alias_can_be_auto_created_for_custom_domain(
         address, notify_user=notify_user
     )
     if DomainDeletedAlias.get_by(email=address):
+        LOG.i(
+            f"Not creating alias for {address} because it was previously deleted for this domain"
+        )
         return None
     if domain_and_rule:
         return domain_and_rule[0].user
@@ -93,6 +97,9 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
     custom_domain: CustomDomain = CustomDomain.get_by(domain=alias_domain)
 
     if not custom_domain:
+        LOG.i(
+            f"Cannot auto-create custom domain alias for {address} because there's no custom domain for {alias_domain}"
+        )
         return None
 
     user: User = custom_domain.user
@@ -108,6 +115,9 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
 
     if not custom_domain.catch_all:
         if len(custom_domain.auto_create_rules) == 0:
+            LOG.i(
+                f"Cannot create alias {address} for domain {custom_domain} because it has no catch-all and no rules"
+            )
             return None
         local = get_email_local_part(address)
 
@@ -121,7 +131,7 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
                 )
                 return custom_domain, rule
         else:  # no rule passes
-            LOG.d("no rule passed to create %s", local)
+            LOG.d(f"No rule matches auto-create {address} for domain {custom_domain}")
             return None
     LOG.d("Create alias via catchall")
 
@@ -148,6 +158,7 @@ def check_if_alias_can_be_auto_created_for_a_directory(
         sep = "#"
     else:
         # if there's no directory separator in the alias, no way to auto-create it
+        LOG.info(f"Cannot auto-create {address} since it has no directory separator")
         return None
 
     directory_name = address[: address.find(sep)]
@@ -155,6 +166,9 @@ def check_if_alias_can_be_auto_created_for_a_directory(
 
     directory = Directory.get_by(name=directory_name)
     if not directory:
+        LOG.info(
+            f"Cannot auto-create {address} because there is no directory for {directory_name}"
+        )
         return None
 
     user: User = directory.user
@@ -163,12 +177,17 @@ def check_if_alias_can_be_auto_created_for_a_directory(
         return None
 
     if not user.can_create_new_alias():
-        LOG.d(f"{user} can't create new directory alias {address}")
+        LOG.d(
+            f"{user} can't create new directory alias {address} because user cannot create aliases"
+        )
         if notify_user:
             send_cannot_create_directory_alias(user, address, directory_name)
         return None
 
     if directory.disabled:
+        LOG.d(
+            f"{user} can't create new directory alias {address} bcause directory is disabled"
+        )
         if notify_user:
             send_cannot_create_directory_alias_disabled(user, address, directory_name)
         return None

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Optional
 
 import arrow
@@ -30,6 +31,8 @@ from app.models import (
     Newsletter,
     PADDLE_SUBSCRIPTION_GRACE_DAYS,
     Mailbox,
+    DeletedAlias,
+    DomainDeletedAlias,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 
@@ -729,6 +732,67 @@ class InvalidMailboxDomainAdmin(SLModelView):
     can_delete = True
 
 
+class EmailSearchResult:
+    no_match: bool = True
+    alias: Optional[Alias] = None
+    mailbox: Optional[Mailbox] = None
+    deleted_alias: Optional[DeletedAlias] = None
+    deleted_custom_alias: Optional[DomainDeletedAlias] = None
+    user: Optional[User] = None
+
+    @staticmethod
+    def from_email(email: str) -> EmailSearchResult:
+        output = EmailSearchResult()
+        alias = Alias.get_by(email=email)
+        if alias:
+            output.alias = alias
+            output.no_match = False
+            return output
+        user = User.get_by(email=email)
+        if user:
+            output.user = user
+            output.no_match = False
+            return output
+        mailbox = Mailbox.get_by(email=email)
+        if mailbox:
+            output.mailbox = mailbox
+            output.no_match = False
+            return output
+        deleted_alias = DeletedAlias.get_by(email=email)
+        if deleted_alias:
+            output.deleted_alias = deleted_alias
+            output.no_match = False
+            return output
+        domain_deleted_alias = DomainDeletedAlias.get_by(email=email)
+        if domain_deleted_alias:
+            output.domain_deleted_alias = domain_deleted_alias
+            output.no_match = False
+        return output
+
+
+class EmailSearchHelpers:
+    @staticmethod
+    def mailbox_list(user: User) -> list[Mailbox]:
+        return (
+            Mailbox.filter_by(user_id=user.id)
+            .order_by(Mailbox.id.asc())
+            .limit(10)
+            .all()
+        )
+
+    @staticmethod
+    def mailbox_count(user: User) -> int:
+        return Mailbox.filter_by(user_id=user.id).order_by(Mailbox.id.asc()).count()
+
+    @staticmethod
+    def alias_list(user: User) -> list[Alias]:
+        return Alias.filter_by(user_id=user.id).order_by(Alias.id.asc()).limit(10).all()
+
+    @staticmethod
+    def alias_count(user: User) -> int:
+        return Alias.filter_by(user_id=user.id).count()
+
+
 class EmailSearchAdmin(BaseView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin
@@ -740,50 +804,16 @@ class EmailSearchAdmin(BaseView):
 
     @expose("/", methods=["GET", "POST"])
     def index(self):
-        alias = None
-        user = None
-        mailbox = None
-        no_match = False
-        email = None
+        search = EmailSearchResult()
+        email = ""
         if request.form and request.form["email"]:
             email = request.form["email"]
-            alias = Alias.get_by(email=email)
-            user = User.get_by(email=email)
-            mailbox = Mailbox.get_by(email=email)
-            if not alias and not user and not mailbox:
-                no_match = True
-
-        def user_mailboxes(user_id: int) -> list[Mailbox]:
-            return (
-                Mailbox.filter_by(user_id=user_id)
-                .order_by(Mailbox.id.asc())
-                .limit(10)
-                .all()
-            )
-
-        def user_mailboxes_count(user_id: int) -> int:
-            return Mailbox.filter_by(user_id=user_id).order_by(Mailbox.id.asc()).count()
-
-        def user_aliases(user_id: int) -> list[Alias]:
-            return (
-                Alias.filter_by(user_id=user_id)
-                .order_by(Alias.id.asc())
-                .limit(10)
-                .all()
-            )
-
-        def user_aliases_count(user_id: int) -> int:
-            return Alias.filter_by(user_id=user_id).count()
+            email = email.strip()
+            search = EmailSearchResult.from_email(email)
 
         return self.render(
             "admin/email_search.html",
             email=email,
-            no_match=no_match,
-            alias=alias,
-            mailbox=mailbox,
-            user=user,
-            user_aliases=user_aliases,
-            user_aliases_count=user_aliases_count,
-            user_mailboxes=user_mailboxes,
-            user_mailboxes_count=user_mailboxes_count,
+            data=search,
+            helper=EmailSearchHelpers,
         )
