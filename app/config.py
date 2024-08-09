@@ -3,7 +3,7 @@ import random
 import socket
 import string
 from ast import literal_eval
-from typing import Callable, List
+from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -588,3 +588,17 @@ EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
 # We want it disabled by default, so only skip if defined
 EVENT_WEBHOOK_SKIP_VERIFY_SSL = "EVENT_WEBHOOK_SKIP_VERIFY_SSL" in os.environ
 EVENT_WEBHOOK_DISABLE = "EVENT_WEBHOOK_DISABLE" in os.environ
+
+
+def read_webhook_enabled_user_ids() -> Optional[List[int]]:
+    user_ids = os.environ.get("EVENT_WEBHOOK_ENABLED_USER_IDS", None)
+    if user_ids is None:
+        return None
+
+    ids = []
+    for id in user_ids.split(","):
+        ids.append(int(id.strip()))
+    return ids
+
+
+EVENT_WEBHOOK_ENABLED_USER_IDS: Optional[List[int]] = read_webhook_enabled_user_ids()
