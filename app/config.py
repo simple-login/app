@@ -597,7 +597,10 @@ def read_webhook_enabled_user_ids() -> Optional[List[int]]:
 
     ids = []
     for id in user_ids.split(","):
-        ids.append(int(id.strip()))
+        try:
+            ids.append(int(id.strip()))
+        except ValueError:
+            pass
     return ids
 
 
