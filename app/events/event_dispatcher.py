@@ -40,6 +40,10 @@ class EventDispatcher:
         if not config.EVENT_WEBHOOK and skip_if_webhook_missing:
             return
 
+        if config.EVENT_WEBHOOK_ENABLED_USER_IDS is not None:
+            if user.id not in config.EVENT_WEBHOOK_ENABLED_USER_IDS:
+                return
+
         partner_user = EventDispatcher.__partner_user(user.id)
         if not partner_user:
             return
