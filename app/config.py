@@ -596,12 +596,16 @@ def read_webhook_enabled_user_ids() -> Optional[List[int]]:
         return None
 
     ids = []
-    for id in user_ids.split(","):
+    for user_id in user_ids.split(","):
         try:
-            ids.append(int(id.strip()))
+            ids.append(int(user_id.strip()))
         except ValueError:
             pass
     return ids
 
 
 EVENT_WEBHOOK_ENABLED_USER_IDS: Optional[List[int]] = read_webhook_enabled_user_ids()
+
+# Allow to define a different DB_URI for the event listener, in case we want to skip the connection pool
+# It defaults to the regular DB_URI in case it's needed
+EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)

@@ -2,7 +2,7 @@ import argparse
 from enum import Enum
 from sys import argv, exit
 
-from app.config import DB_URI
+from app.config import EVENT_LISTENER_DB_URI
 from app.log import LOG
 from events.runner import Runner
 from events.event_source import DeadLetterEventSource, PostgresEventSource
@@ -31,7 +31,7 @@ def main(mode: Mode, dry_run: bool, max_retries: int):
         source = DeadLetterEventSource(max_retries)
     elif mode == Mode.LISTENER:
         LOG.i("Using PostgresEventSource")
-        source = PostgresEventSource(DB_URI)
+        source = PostgresEventSource(EVENT_LISTENER_DB_URI)
     else:
         raise ValueError(f"Invalid mode: {mode}")
 

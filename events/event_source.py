@@ -46,6 +46,7 @@ class PostgresEventSource(EventSource):
         cursor = self.__connection.cursor()
         cursor.execute(f"LISTEN {NOTIFICATION_CHANNEL};")
 
+        LOG.info("Starting to listen to events")
         while True:
             if select.select([self.__connection], [], [], 5) != ([], [], []):
                 self.__connection.poll()
