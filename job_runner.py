@@ -14,6 +14,7 @@ from app.email_utils import (
     send_email,
     render,
 )
+from app.events.event_dispatcher import PostgresDispatcher
 from app.import_utils import handle_batch_import
 from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
@@ -276,7 +277,9 @@ SimpleLogin team.
         user = User.get(user_id)
         if user and user.activated:
             LOG.d(f"Sending alias creation events for {user}")
-            send_alias_creation_events_for_user(user)
+            send_alias_creation_events_for_user(
+                user, dispatcher=PostgresDispatcher.get()
+            )
     else:
         LOG.e("Unknown job name %s", job.name)
 
