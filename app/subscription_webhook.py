@@ -2,6 +2,7 @@ import requests
 from requests import RequestException
 
 from app import config
+from app.db import Session
 from app.events.event_dispatcher import EventDispatcher
 from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.log import LOG
@@ -29,10 +30,11 @@ def execute_subscription_webhook(user: User):
             LOG.i("Sent request to subscription update webhook successfully")
         else:
             LOG.i(
-                f"Request to webhook failed with statue {response.status_code}: {response.text}"
+                f"Request to webhook failed with status {response.status_code}: {response.text}"
             )
     except RequestException as e:
         LOG.error(f"Subscription request exception: {e}")
 
     event = UserPlanChanged(plan_end_time=sl_subscription_end)
     EventDispatcher.send_event(user, EventContent(user_plan_change=event))
+    Session.commit()
