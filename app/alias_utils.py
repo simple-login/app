@@ -330,7 +330,10 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
 
 
 def delete_alias(
-    alias: Alias, user: User, reason: AliasDeleteReason = AliasDeleteReason.Unspecified
+    alias: Alias,
+    user: User,
+    reason: AliasDeleteReason = AliasDeleteReason.Unspecified,
+    commit: bool = False,
 ):
     """
     Delete an alias and add it to either global or domain trash
@@ -366,6 +369,8 @@ def delete_alias(
     EventDispatcher.send_event(
         user, EventContent(alias_deleted=AliasDeleted(alias_id=alias.id))
     )
+    if commit:
+        Session.commit()
 
 
 def aliases_for_mailbox(mailbox: Mailbox) -> [Alias]:
