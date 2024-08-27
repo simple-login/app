@@ -232,16 +232,16 @@ python job_runner.py
 There are several ways to setup Python and manage the project dependencies on Mac. For info we have successfully used this setup on a Mac silicon:
 
 ```bash
-# we haven't managed to make python 3.12 work 
+# we haven't managed to make python 3.12 work
 brew install python3.10
 
 # make sure to update the PATH so python, pip point to Python3
 # for us it can be done by adding "export PATH=/opt/homebrew/opt/python@3.10/libexec/bin:$PATH" to .zprofile
 
-# Although pipx is the recommended way to install poetry, 
-# install pipx via brew will automatically install python 3.12 
+# Although pipx is the recommended way to install poetry,
+# install pipx via brew will automatically install python 3.12
 # and poetry will then use python 3.12
-# so we recommend using poetry this way instead 
+# so we recommend using poetry this way instead
 curl -sSL https://install.python-poetry.org | python3 -
 
 poetry install
