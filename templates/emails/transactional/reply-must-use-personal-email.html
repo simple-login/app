@@ -3,30 +3,30 @@
 {% block content %}
 
   {% call text() %}
-  <h1>
-    An attempt to send an email from your alias <b>{{ alias.email }}</b> using <b>{{ sender }}</b> is blocked.
-  </h1>
-{% endcall %}
+    <h1>
+      An attempt to send an email from your alias <b>{{ alias.email }}</b> using <b>{{ sender }}</b> is blocked.
+    </h1>
+  {% endcall %}
 
-{% call text() %}
-As a measure to protect against <b>email spoofing</b>, we have blocked an attempt to send an email from your alias <b>{{ alias.email }}</b> using <b>{{ sender }}</b>.
-{% endcall %}
+  {% call text() %}
+    As a measure to protect against <b>email spoofing</b>, we have blocked an attempt to send an email from your alias <b>{{ alias.email }}</b> using <b>{{ sender }}</b>.
+  {% endcall %}
 
-{% call text() %}
-Please note that sending from this alias only works from alias's owning mailboxes, that are
-{{ mailbox_emails|join(", ") }}
-{% endcall %}
+  {% call text() %}
+    Please note that sending from this alias only works from alias's owning mailboxes, that are
+    {{ mailbox_emails|join(", ") }}
+  {% endcall %}
 
-{% call text() %}
-If {{ sender }} can indeed send emails from your alias, you can add it to the allow list:
-{% endcall %}
+  {% call text() %}
+    If {{ sender }} can indeed send emails from your alias, you can add it to the allow list:
+  {% endcall %}
 
-{{ render_button("Allow " + sender, authorize_address_link) }}
-{% call text() %}
-Best,
-<br />
-SimpleLogin Team.
-{% endcall %}
+  {{ render_button("Allow " + sender, authorize_address_link) }}
+  {% call text() %}
+    Best,
+    <br />
+    SimpleLogin Team.
+  {% endcall %}
 
-{{ raw_url(authorize_address_link) }}
+  {{ raw_url(authorize_address_link) }}
 {% endblock %}

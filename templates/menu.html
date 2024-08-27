@@ -1,6 +1,6 @@
 <ul class="nav nav-tabs border-0 flex-column flex-lg-row">
   <li class="nav-item">
-    <a href="{{ url_for('dashboard.index') }}"
+    <a href="{{ url_for("dashboard.index") }}"
        class="nav-link {{ 'active' if active_page == 'dashboard' }}">
       <i class="fe fe-home"></i>
       Aliases
@@ -9,26 +9,26 @@
   {% if current_user.subdomain_is_available() %}
 
     <li class="nav-item">
-      <a href="{{ url_for('dashboard.subdomain_route') }}"
+      <a href="{{ url_for("dashboard.subdomain_route") }}"
          class="nav-link {{ 'active' if active_page == 'subdomain' }}">
         <i class="fe fe-server"></i> Subdomains
       </a>
     </li>
   {% endif %}
   <li class="nav-item">
-    <a href="{{ url_for('dashboard.mailbox_route') }}"
+    <a href="{{ url_for("dashboard.mailbox_route") }}"
        class="nav-link {{ 'active' if active_page == 'mailbox' }}">
       <i class="fe fe-inbox"></i> Mailboxes
     </a>
   </li>
   <li class="nav-item">
-    <a href="{{ url_for('dashboard.custom_domain') }}"
+    <a href="{{ url_for("dashboard.custom_domain") }}"
        class="nav-link {{ 'active' if active_page == 'custom_domain' }}">
       <i class="fe fe-server"></i> Domains
     </a>
   </li>
   <li class="nav-item">
-    <a href="{{ url_for('dashboard.directory') }}"
+    <a href="{{ url_for("dashboard.directory") }}"
        class="nav-link {{ 'active' if active_page == 'directory' }}">
       <i class="fe fe-folder"></i> Directories
     </a>
@@ -51,7 +51,7 @@
   {% if current_user.should_show_app_page() %}
 
     <li class="nav-item">
-      <a href="{{ url_for('dashboard.app_route') }}"
+      <a href="{{ url_for("dashboard.app_route") }}"
          class="nav-link {{ 'active' if active_page == 'app' }}">
         <i class="fe fe-grid"></i>
         Apps
@@ -59,7 +59,7 @@
     </li>
   {% endif %}
   <li class="nav-item">
-    <a href="{{ url_for('dashboard.setting') }}"
+    <a href="{{ url_for("dashboard.setting") }}"
        class="nav-link {{ 'active' if active_page == 'setting' }}">
       <i class="fe fe-settings"></i>
       Settings
@@ -75,12 +75,13 @@
   {% if current_user.can_use_phone %}
 
     <li class="nav-item">
-      <a href="{{ url_for('phone.index') }}"
+      <a href="{{ url_for("phone.index") }}"
          class="nav-link {{ 'active' if active_page == 'phone' }}">
         <i class="fe fe-phone"></i>
         Phone
         <span class="badge badge-warning"
-              style="line-height: .7em; margin-top: 2px">Beta</span>
+              style="line-height: .7em;
+                     margin-top: 2px">Beta</span>
       </a>
     </li>
   {% endif %}

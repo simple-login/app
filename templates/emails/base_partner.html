@@ -1,5 +1,5 @@
 {% from "_emailhelpers.html" import render_text, text, render_button, raw_url, grey_section, section %}
-<!doctype html>
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:v="urn:schemas-microsoft-com:vml"
       xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -8,7 +8,7 @@
     <!--[if gte mso 15]>
     <xml>
         <o:OfficeDocumentSettings>
-        <o:AllowPNG/>
+        <o:AllowPNG />
         <o:PixelsPerInch>96</o:PixelsPerInch>
         </o:OfficeDocumentSettings>
     </xml>
@@ -504,7 +504,7 @@
                padding: 0;
                width: 100%;
                -ms-text-size-adjust: 100%;
-               -webkit-text-size-adjust: 100%;">
+               -webkit-text-size-adjust: 100%">
     <!--[if !gte mso 9]><!----><span class="mcnPreviewText"
       style="display:none;
              font-size:0px;
@@ -514,7 +514,7 @@
              opacity:0;
              overflow:hidden;
              visibility:hidden;
-             mso-hide:all;"></span><!--<![endif]-->
+             mso-hide:all"></span><!--<![endif]-->
     <center>
       <table align="center"
              border="0"
@@ -531,7 +531,7 @@
                     height: 100%;
                     margin: 0;
                     padding: 0;
-                    width: 100%;">
+                    width: 100%">
         <tr>
           <td align="center"
               valign="top"
@@ -542,7 +542,7 @@
                      height: 100%;
                      margin: 0;
                      padding: 8px;
-                     width: 100%;">
+                     width: 100%">
             <!-- BEGIN TEMPLATE // -->
             <!--[if (gte mso 9)|(IE)]>
                     <table align="center" border="0" cellspacing="0" cellpadding="0" width="600" style="width:600px;"><tr><td align="center" valign="top" width="600" style="width:600px;">
@@ -557,13 +557,13 @@
                           mso-table-rspace: 0pt;
                           -ms-text-size-adjust: 100%;
                           -webkit-text-size-adjust: 100%;
-                          max-width: 600px !important;">
+                          max-width: 600px !important">
               <tr>
                 <td valign="top"
                     id="templateHeader"
                     style="mso-line-height-rule: exactly;
                            -ms-text-size-adjust: 100%;
-                           -webkit-text-size-adjust: 100%;">
+                           -webkit-text-size-adjust: 100%">
                   <table border="0"
                          cellpadding="0"
                          cellspacing="0"
@@ -574,14 +574,14 @@
                                 mso-table-lspace: 0pt;
                                 mso-table-rspace: 0pt;
                                 -ms-text-size-adjust: 100%;
-                                -webkit-text-size-adjust: 100%;">
+                                -webkit-text-size-adjust: 100%">
                     <tbody class="mcnImageBlockOuter">
                       <tr>
                         <td valign="top"
                             style="padding: 16px;
                                    mso-line-height-rule: exactly;
                                    -ms-text-size-adjust: 100%;
-                                   -webkit-text-size-adjust: 100%;"
+                                   -webkit-text-size-adjust: 100%"
                             class="mcnImageBlockInner">
                           <table align="left"
                                  width="100%"
@@ -594,7 +594,7 @@
                                         mso-table-lspace: 0pt;
                                         mso-table-rspace: 0pt;
                                         -ms-text-size-adjust: 100%;
-                                        -webkit-text-size-adjust: 100%;">
+                                        -webkit-text-size-adjust: 100%">
                             <tbody>
                               <tr>
                                 <td class="mcnImageContent"
@@ -603,13 +603,22 @@
                                            text-align: center;
                                            mso-line-height-rule: exactly;
                                            -ms-text-size-adjust: 100%;
-                                           -webkit-text-size-adjust: 100%;">
+                                           -webkit-text-size-adjust: 100%">
                                   <a href="https://proton.me/" target="_blank" style="">
                                     <img align="center"
                                          alt="Proton"
                                          src="{{ URL }}/static/logo-proton.png"
                                          width="190"
-                                         style="width:35.4477%; max-width: 380px; padding-bottom: 0; display: inline !important; vertical-align: bottom; border: 0; height: auto; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; ">
+                                         style="width:35.4477%;
+                                                max-width: 380px;
+                                                padding-bottom: 0;
+                                                display: inline !important;
+                                                vertical-align: bottom;
+                                                border: 0;
+                                                height: auto;
+                                                outline: none;
+                                                text-decoration: none;
+                                                -ms-interpolation-mode: bicubic">
                                   </a>
                                 </td>
                               </tr>
@@ -624,7 +633,9 @@
               <tr>
                 <td valign="top"
                     id="templateBody"
-                    style="mso-line-height-rule: exactly; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; ">
+                    style="mso-line-height-rule: exactly;
+                           -ms-text-size-adjust: 100%;
+                           -webkit-text-size-adjust: 100%">
                   {% block greeting %}{% endblock %}
                   {% block content %}{% endblock %}
                   <!-- Sub copy -->

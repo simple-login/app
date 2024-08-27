@@ -60,9 +60,7 @@
                 <div class="mt-2">
                   <span class="text-danger">Pending change: {{ pending_email }}</span>
                   <a href="{{ url_for('dashboard.cancel_mailbox_change_route', mailbox_id=mailbox.id) }}"
-                     class="btn btn-secondary btn-sm">
-                    Cancel mailbox change
-                  </a>
+                     class="btn btn-secondary btn-sm">Cancel mailbox change</a>
                 </div>
               {% endif %}
             </div>
@@ -123,13 +121,15 @@
               {{ csrf_form.csrf_token }}
               <div class="form-group">
                 <label class="form-label">PGP Public Key</label>
-                <textarea name="pgp" {% if not current_user.is_premium() %} disabled {% endif %} class="form-control" rows=10 id="pgp-public-key" placeholder="(Drag and drop or paste your pgp public key here)&#10;-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
+                <textarea name="pgp"
+                          {% if not current_user.is_premium() %}disabled{% endif %}
+                          class="form-control"
+                          rows="10"
+                          id="pgp-public-key"
+                          placeholder="(Drag and drop or paste your pgp public key here)&#10;-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ mailbox.pgp_public_key or "" }}</textarea>
               </div>
               <input type="hidden" name="form-name" value="pgp">
-              <button class="btn btn-primary" name="action" {% if not current_user.is_premium() %}
-                 disabled {% endif %} value="save">
-                Save
-              </button>
+              <button class="btn btn-primary" name="action" {% if not current_user.is_premium() %}disabled{% endif %} value="save">Save</button>
               {% if mailbox.pgp_finger_print %}
 
                 <button class="btn btn-danger float-right" name="action" value="remove">Remove</button>

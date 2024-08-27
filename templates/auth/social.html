@@ -29,7 +29,9 @@
       {% endif %}
     </div>
     <div class="text-center p-3"
-         style="font-size: 12px; font-weight: 300; margin: auto">
+         style="font-size: 12px;
+                font-weight: 300;
+                margin: auto">
       <span class="badge badge-warning">Warning</span>
       Please note that social login is now <b>deprecated</b>.
       <br />
@@ -39,8 +41,8 @@
     </div>
   </div>
   <div class="text-center text-muted mt-2">
-    <a href="{{ url_for('auth.register') }}">Sign up</a>
+    <a href="{{ url_for("auth.register") }}">Sign up</a>
     /
-    <a href="{{ url_for('auth.login') }}">Login</a>
+    <a href="{{ url_for("auth.login") }}">Login</a>
   </div>
 {% endblock %}

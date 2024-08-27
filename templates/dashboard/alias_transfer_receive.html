@@ -15,10 +15,7 @@
         <select data-width="100%" class="mailbox-select" multiple name="mailbox_ids">
           {% for mailbox in mailboxes %}
 
-            <option value="{{ mailbox.id }}"
-                    {% if mailbox.id == current_user.default_mailbox_id %} selected{% endif %}>
-              {{ mailbox.email }}
-            </option>
+            <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}selected{% endif %}>{{ mailbox.email }}</option>
           {% endfor %}
         </select>
         <button class="btn btn-success mt-2">Confirm</button>

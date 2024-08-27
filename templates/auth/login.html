@@ -7,7 +7,7 @@
 
     <div class="text-center text-muted small mb-4">
       You haven't received the activation email?
-      <a href="{{ url_for('auth.resend_activation') }}">Resend</a>
+      <a href="{{ url_for("auth.resend_activation") }}">Resend</a>
     </div>
   {% endif %}
   <div class="card" style="border-radius: 2%">
@@ -25,7 +25,7 @@
           {{ form.password(class="form-control", type="password") }}
           {{ render_field_errors(form.password) }}
           <div class="text-muted">
-            <a href="{{ url_for('auth.forgot_password') }}" class="small">I forgot my password</a>
+            <a href="{{ url_for("auth.forgot_password") }}" class="small">I forgot my password</a>
           </div>
         </div>
         <div class="form-footer">
@@ -57,6 +57,6 @@
   </div>
   <div class="text-center text-muted mt-2">
     Don't have an account yet?
-    <a href="{{ url_for('auth.register') }}">Sign up</a>
+    <a href="{{ url_for("auth.register") }}">Sign up</a>
   </div>
 {% endblock %}

@@ -27,7 +27,7 @@
           <br />
           <img src="/static/images/reverse-alias.svg"
                style="border: 1px solid"
-               class="my-2 img-fluid"/>
+               class="my-2 img-fluid" />
         </p>
         <p>This might seem like "magic" but trust us, only the first time is a bit awkward.</p>
         <p>
@@ -75,9 +75,7 @@
           {% else %}
             <button disabled
                     title="Upgrade to premium to create reverse-aliases"
-                    class="btn btn-primary mt-2">
-              Create reverse-alias
-            </button>
+                    class="btn btn-primary mt-2">Create reverse-alias</button>
           {% endif %}
         </form>
       </div>
@@ -98,9 +96,7 @@
           {% if highlight_contact_id %}
 
             <a href="{{ url_for("dashboard.alias_contact_manager", alias_id=alias.id, highlight_contact_id=highlight_contact_id) }}"
-               class="btn btn-light">
-              Reset
-            </a>
+               class="btn btn-light">Reset</a>
           {% else %}
             <a href="{{ url_for("dashboard.alias_contact_manager", alias_id=alias.id) }}"
                class="btn btn-light">Reset</a>
@@ -114,7 +110,7 @@
 
       {% set contact = contact_info.contact %}
       <div class="col-md-6">
-        <div class="my-2 p-2 card {% if contact.id == highlight_contact_id %} highlight-row{% endif %}">
+        <div class="my-2 p-2 card {% if contact.id == highlight_contact_id %}highlight-row{% endif %}">
           <div class="mb-2 row">
             <div class="col">
               <span class="font-weight-bold">{{ contact.website_email }}</span>
@@ -139,15 +135,11 @@
                  target="_blank"
                  data-toggle="tooltip"
                  title="You can click on this to open your email client. Or use the copy button 👉"
-                 class="font-weight-bold">
-                *************************
-              </a>
+                 class="font-weight-bold">*************************</a>
               <span class="clipboard btn btn-sm btn-success copy-btn"
                     data-toggle="tooltip"
                     title="Copy the reverse-alias to clipboard"
-                    data-clipboard-text="{{ contact.website_send_to() }}">
-                Copy reverse-alias
-              </span>
+                    data-clipboard-text="{{ contact.website_send_to() }}">Copy reverse-alias</span>
             </span>
           </div>
           <div class="mb-2 text-muted small-text">
@@ -207,14 +199,12 @@
         <nav aria-label="Contact navigation">
           <ul class="pagination">
             <li class="page-item">
-              <a class="btn btn-outline-secondary {% if page == 0 %}disabled{% endif %}"
-                 href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page-1) }}">
+              <a class="btn btn-outline-secondary {% if page == 0 %}disabled{% endif %}" href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page-1) }}">
                 Previous
               </a>
             </li>
             <li class="page-item">
-              <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}"
-                 href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page+1) }}">
+              <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}" href="{{ url_for('dashboard.alias_contact_manager', alias_id=alias.id, page=page+1) }}">
                 Next
               </a>
             </li>

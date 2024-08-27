@@ -61,8 +61,7 @@
                       class="btn btn-success dropdown-toggle btn-group-border-left"
                       data-toggle="dropdown"
                       aria-haspopup="true"
-                      aria-expanded="false">
-              </button>
+                      aria-expanded="false"></button>
               <div class="dropdown-menu dropdown-menu-right border-left"
                    aria-labelledby="btnGroupDrop1">
                 <div>
@@ -125,7 +124,9 @@
             <div class="d-flex align-items-center">
               <div class="subheader">Aliases</div>
               <div class="text-muted"
-                   style="order: 2; margin-left: auto; font-size: .8rem">All time</div>
+                   style="order: 2;
+                          margin-left: auto;
+                          font-size: .8rem">All time</div>
             </div>
             <div class="h1 m-0">{{ stats.nb_alias }}</div>
           </div>
@@ -137,7 +138,9 @@
             <div class="d-flex align-items-center">
               <div class="subheader">Forwarded</div>
               <div class="text-muted"
-                   style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+                   style="order: 2;
+                          margin-left: auto;
+                          font-size: .8rem">Last 14 days</div>
             </div>
             <div class="h1 m-0">{{ stats.nb_forward }}</div>
           </div>
@@ -149,7 +152,9 @@
             <div class="d-flex align-items-center">
               <div class="subheader">Replies/Sent</div>
               <div class="text-muted"
-                   style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+                   style="order: 2;
+                          margin-left: auto;
+                          font-size: .8rem">Last 14 days</div>
             </div>
             <div class="h1 m-0">{{ stats.nb_reply }}</div>
           </div>
@@ -161,7 +166,9 @@
             <div class="d-flex align-items-center">
               <div class="subheader">Blocked</div>
               <div class="text-muted"
-                   style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+                   style="order: 2;
+                          margin-left: auto;
+                          font-size: .8rem">Last 14 days</div>
             </div>
             <div class="h1 m-0">{{ stats.nb_block }}</div>
           </div>
@@ -177,52 +184,28 @@
           <select name="sort"
                   onchange="this.form.submit()"
                   class="form-control mr-3 shadow">
-            <option value="" {% if sort == "" %} selected{% endif %}>
-              Sort by most recent activity
-            </option>
-            <option value="old2new" {% if sort == "old2new" %} selected{% endif %}>
-              Alias Old-Recent
-            </option>
-            <option value="new2old" {% if sort == "new2old" %} selected{% endif %}>
-              Alias Recent-Old
-            </option>
-            <option value="a2z" {% if sort == "a2z" %} selected{% endif %}>
-              Alias A-Z
-            </option>
-            <option value="z2a" {% if sort == "z2a" %} selected{% endif %}>
-              Alias Z-A
-            </option>
+            <option value="" {% if sort == "" %}selected{% endif %}>Sort by most recent activity</option>
+            <option value="old2new" {% if sort == "old2new" %}selected{% endif %}>Alias Old-Recent</option>
+            <option value="new2old" {% if sort == "new2old" %}selected{% endif %}>Alias Recent-Old</option>
+            <option value="a2z" {% if sort == "a2z" %}selected{% endif %}>Alias A-Z</option>
+            <option value="z2a" {% if sort == "z2a" %}selected{% endif %}>Alias Z-A</option>
           </select>
           <select name="filter"
                   onchange="this.form.submit()"
                   class="form-control mr-3 shadow"
                   style="max-width: 200px">
-            <option value="" {% if filter == "" %} selected{% endif %}>
-              All Aliases
-            </option>
-            <option value="pinned" {% if filter == "pinned" %} selected{% endif %}>
-              Pinned Aliases
-            </option>
-            <option value="enabled" {% if filter == "enabled" %} selected{% endif %}>
-              Only Enabled Aliases
-            </option>
-            <option value="disabled" {% if filter == "disabled" %} selected{% endif %}>
-              Only Disabled Aliases
-            </option>
-            <option value="hibp" {% if filter == "hibp" %} selected{% endif %}>
-              Only Aliases Found In Data Breaches
-            </option>
+            <option value="" {% if filter == "" %}selected{% endif %}>All Aliases</option>
+            <option value="pinned" {% if filter == "pinned" %}selected{% endif %}>Pinned Aliases</option>
+            <option value="enabled" {% if filter == "enabled" %}selected{% endif %}>Only Enabled Aliases</option>
+            <option value="disabled" {% if filter == "disabled" %}selected{% endif %}>Only Disabled Aliases</option>
+            <option value="hibp" {% if filter == "hibp" %}selected{% endif %}>Only Aliases Found In Data Breaches</option>
             {% for mailbox in current_user.mailboxes() %}
 
-              <option value="mailbox:{{ mailbox.id }}" {% if filter == "mailbox:" ~ mailbox.id %}
-                 selected {% endif %}>
-                {{ mailbox.email }}'s aliases
-              </option>
+              <option value="mailbox:{{ mailbox.id }}" {% if filter == "mailbox:" ~ mailbox.id %}selected{% endif %}>{{ mailbox.email }}'s aliases</option>
             {% endfor %}
             {% for directory in current_user.directories %}
 
-              <option value="directory:{{ directory.id }}" {% if filter == "directory:" ~ directory.id %}
-                 selected {% endif %}>
+              <option value="directory:{{ directory.id }}" {% if filter == "directory:" ~ directory.id %}selected{% endif %}>
                 Directory <b>{{ directory.name }}</b> aliases
               </option>
             {% endfor %}
@@ -237,7 +220,7 @@
         <div style="margin-left: auto">
           {% if query or sort or filter %}
 
-            <a href="{{ url_for('dashboard.index') }}"
+            <a href="{{ url_for("dashboard.index") }}"
                class="btn btn-outline-secondary">Reset</a>
           {% endif %}
         </div>
@@ -251,10 +234,11 @@
 
       {% set alias = alias_info.alias %}
       <div class="col-12 col-lg-6" id="alias-container-{{ alias.id }}">
-        <div class="card p-4 shadow-sm {% if alias.id == highlight_alias_id %} highlight-row{% endif %} ">
+        <div class="card p-4 shadow-sm {% if alias.id == highlight_alias_id %}highlight-row{% endif %} ">
           <div class="row">
             <div class="col-8">
-              <span class="{% if alias.id == highlight_alias_id %} highlighted{% endif %} clipboard cursor mb-0" {% if loop.index ==1 %}
+              <span class="{% if alias.id == highlight_alias_id %}
+                 highlighted{% endif %} clipboard cursor mb-0" {% if loop.index ==1 %}
                  data-intro="This is your first <em>alias</em>.
                 <br />
                 <br />
@@ -358,7 +342,15 @@
       </div>
       <div class="d-flex mb-2">
         <div class="flex-grow-1 mr-2">
-          <textarea id="note-{{ alias.id }}" name="note" class="form-control" style="font-size: 12px" rows="2" placeholder="e.g. where the alias is used or why is it created" onchange="handleNoteChange({{ alias.id }}, '{{ alias.email }}')" onfocus="handleNoteFocus({{ alias.id }})" onblur="handleNoteBlur({{ alias.id }})">{{ alias.note or "" }}</textarea>
+          <textarea id="note-{{ alias.id }}"
+                    name="note"
+                    class="form-control"
+                    style="font-size: 12px"
+                    rows="2"
+                    placeholder="e.g. where the alias is used or why is it created"
+                    onchange="handleNoteChange({{ alias.id }}, '{{ alias.email }}')"
+                    onfocus="handleNoteFocus({{ alias.id }})"
+                    onblur="handleNoteBlur({{ alias.id }})">{{ alias.note or "" }}</textarea>
         </div>
       </div>
       <!-- Send Email && More button -->
@@ -399,27 +391,21 @@
     </div>
     <!-- END Send Email && More button -->
     <!-- Collapse section -->
-    <div class="{% if not current_user.expand_alias_info %} collapse{% endif %} mt-2"
-         id="alias-{{ alias.id }}">
+    <div class="{% if not current_user.expand_alias_info %}
+       collapse{% endif %} mt-2" id="alias-{{ alias.id }}">
       {% if alias_info.latest_email_log != None %}
 
-        <div style="font-size: 12px">
-          Alias created {{ alias.created_at | dt }}
-        </div>
+        <div style="font-size: 12px">Alias created {{ alias.created_at | dt }}</div>
       {% endif %}
       <span class="alias-activity">{{ alias_info.nb_forward }}</span> forwarded,
       <span class="alias-activity">{{ alias_info.nb_blocked }}</span> blocked,
       <span class="alias-activity">{{ alias_info.nb_reply }}</span> sent
       in the last 14 days
       <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
-         class="btn btn-sm btn-link">
-        See All &nbsp;→
-      </a>
+         class="btn btn-sm btn-link">See All &nbsp;→</a>
       {% if mailboxes|length > 1 %}
 
-        <div class="small-text">
-          Current mailbox
-        </div>
+        <div class="small-text">Current mailbox</div>
         <div class="d-flex">
           <div class="flex-grow-1 mr-2">
             <select required
@@ -431,10 +417,7 @@
                     onchange="handleMailboxChange({{ alias.id }}, '{{ alias.email }}')">
               {% for mailbox in mailboxes %}
 
-                <option value="{{ mailbox.id }}" {% if alias_info.contain_mailbox(mailbox.id) %}
-                   selected {% endif %}>
-                  {{ mailbox.email }}
-                </option>
+                <option value="{{ mailbox.id }}" {% if alias_info.contain_mailbox(mailbox.id) %}selected{% endif %}>{{ mailbox.email }}</option>
               {% endfor %}
             </select>
           </div>
@@ -502,11 +485,7 @@
             <input type="hidden" name="form-name" value="delete-alias">
             <input type="hidden" name="alias-id" value="{{ alias.id }}">
             <input type="hidden" name="alias" class="alias" value="{{ alias.email }}">
-            <span class="btn btn-link btn-sm float-right text-danger"
-                  onclick="confirmDeleteAlias.call(this)"
-                  {% if alias.custom_domain %} data-custom-domain-trash-url="{{ alias.custom_domain.get_trash_url() }}"{% endif %}
-                  data-alias="{{ alias.id }}"
-                  data-alias-email="{{ alias.email }}">
+            <span class="btn btn-link btn-sm float-right text-danger" onclick="confirmDeleteAlias.call(this)" {% if alias.custom_domain %}data-custom-domain-trash-url="{{ alias.custom_domain.get_trash_url() }}"{% endif %} data-alias="{{ alias.id }}" data-alias-email="{{ alias.email }}">
               Delete&nbsp; &nbsp;<i class="dropdown-icon fe fe-trash-2 text-danger"></i>
             </span>
           </form>
@@ -527,14 +506,12 @@
       <nav aria-label="Alias navigation">
         <ul class="pagination">
           <li class="page-item mr-1">
-            <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}"
-               href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort, filter=filter) }}">
+            <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}" href="{{ url_for('dashboard.index', page=page-1, query=query, sort=sort, filter=filter) }}">
               Previous
             </a>
           </li>
           <li class="page-item">
-            <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}"
-               href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort, filter=filter) }}">
+            <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}" href="{{ url_for('dashboard.index', page=page+1, query=query, sort=sort, filter=filter) }}">
               Next
             </a>
           </li>

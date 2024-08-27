@@ -22,9 +22,7 @@
 
         <div class="alert alert-danger" role="alert">This feature is only available in premium plan.</div>
       {% endif %}
-      <div class="alert alert-primary collapse {% if not dirs %} show{% endif %}"
-           id="howtouse"
-           role="alert">
+      <div class="alert alert-primary collapse {% if not dirs %}show{% endif %}" id="howtouse" role="alert">
         <div>
           Directory allows you to create aliases <b>on the fly</b>.
         </div>
@@ -68,10 +66,10 @@
                   <form method="post">
                     {{ toggle_dir_form.csrf_token }}
                     <input type="hidden" name="form-name" value="toggle-directory">
-                    {{ toggle_dir_form.directory_id( type="hidden", value=dir.id) }}
+                    {{ toggle_dir_form.directory_id(type="hidden", value=dir.id) }}
                     <label class="custom-switch cursor" style="padding-left: 1rem" data-toggle="tooltip" {% if dir.disabled %}
                        title="Enable directory on-the-fly alias creation" {% else %} title="Disable directory on-the-fly alias creation" {% endif %}>
-                      {{ toggle_dir_form.directory_enabled( class="custom-switch-input", checked=(not dir.disabled) ) }}
+                      {{ toggle_dir_form.directory_enabled(class="custom-switch-input", checked=(not dir.disabled) ) }}
                       <span class="custom-switch-indicator"></span>
                     </label>
                   </form>
@@ -91,11 +89,11 @@
     data-toggle="tooltip"
     title="Aliases created with this directory are automatically owned by these mailboxes"></i>
                 <br />
-                {% set dir_mailboxes=dir.mailboxes %}
+                {% set dir_mailboxes = dir.mailboxes %}
                 <form method="post" class="mt-2">
                   {{ update_dir_form.csrf_token }}
                   <input type="hidden" name="form-name" value="update">
-                  {{ update_dir_form.directory_id( type="hidden", value=dir.id) }}
+                  {{ update_dir_form.directory_id(type="hidden", value=dir.id) }}
                   <select data-width="100%"
                           required
                           class="mailbox-select"
@@ -103,10 +101,7 @@
                           name="mailbox_ids">
                     {% for mailbox in mailboxes %}
 
-                      <option value="{{ mailbox.id }}"
-                              {% if mailbox in dir_mailboxes %} selected{% endif %}>
-                        {{ mailbox.email }}
-                      </option>
+                      <option value="{{ mailbox.id }}" {% if mailbox in dir_mailboxes %}selected{% endif %}>{{ mailbox.email }}</option>
                     {% endfor %}
                   </select>
                   <button class="mt-2 btn btn-outline-primary btn-sm">Update</button>
@@ -119,7 +114,7 @@
                   <form method="post">
                     {{ delete_dir_form.csrf_token }}
                     <input type="hidden" name="form-name" value="delete">
-                    {{ delete_dir_form.directory_id( type="hidden", value=dir.id) }}
+                    {{ delete_dir_form.directory_id(type="hidden", value=dir.id) }}
                     <span class="card-link btn btn-link float-right text-danger delete-dir">Delete</span>
                   </form>
                 </div>
@@ -129,7 +124,7 @@
         </div>
       {% endfor %}
     </div>
-    <div class="row {% if current_user.directory_quota <= 0 %} disabled-content{% endif %}">
+    <div class="row {% if current_user.directory_quota <= 0 %}disabled-content{% endif %}">
       <div class="col">
         <div class="card">
           <div class="card-body">
@@ -139,8 +134,8 @@
               <h2 class="h4 mb-1">New Directory</h2>
               <div class="small-text mb-4">You can create up to {{ current_user.directory_quota }} directories.</div>
               {{ new_dir_form.name(class="form-control", placeholder="my-directory",
-              pattern="[0-9a-z-_]{3,}",
-              title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.") }}
+                            pattern="[0-9a-z-_]{3,}",
+                            title="Only letter, number, dash (-), underscore (_) can be used. Directory name must be at least 3 characters.") }}
               {{ render_field_errors(new_dir_form.name) }}
               <div class="small-text">
                 Directory name must be at least 3 characters.
@@ -156,10 +151,7 @@
               <select data-width="100%" class="mailbox-select" multiple name="mailbox_ids">
                 {% for mailbox in mailboxes %}
 
-                  <option value="{{ mailbox.id }}"
-                          {% if mailbox.id == current_user.default_mailbox_id %} selected{% endif %}>
-                    {{ mailbox.email }}
-                  </option>
+                  <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}selected{% endif %}>{{ mailbox.email }}</option>
                 {% endfor %}
               </select>
               <button id="btn-create-directory" class="btn btn-primary mt-2">Create</button>

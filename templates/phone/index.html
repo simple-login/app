@@ -12,9 +12,7 @@
         {% for reservation in reservations %}
 
           <div>
-            <a href="{{ url_for('phone.reservation_route', reservation_id=reservation.id ) }}">
-              {{ reservation.number.number }} ➡
-            </a>
+            <a href="{{ url_for('phone.reservation_route', reservation_id=reservation.id) }}">{{ reservation.number.number }} ➡</a>
           </div>
         {% endfor %}
       </div>
@@ -65,10 +63,8 @@
         {% for reservation in past_reservations %}
 
           <div>
-            <a href="{{ url_for('phone.reservation_route', reservation_id=reservation.id ) }}"
-               class="mr-3">
-              {{ reservation.number.number }} ➡
-            </a>
+            <a href="{{ url_for('phone.reservation_route', reservation_id=reservation.id) }}"
+               class="mr-3">{{ reservation.number.number }} ➡</a>
             ended {{ reservation.end.humanize() }}
           </div>
         {% endfor %}

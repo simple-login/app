@@ -1,18 +1,18 @@
 {% from "_formhelpers.html" import render_field, render_field_errors %}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en"
       dir="ltr"
       data-theme="{%- if request.cookies.get('dark-mode') == 'true' -%} dark{%- endif -%}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"/>
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <meta http-equiv="Content-Language" content="en" />
     <meta name="msapplication-TileColor" content="#2d89ef" />
     <meta name="theme-color" content="#4188c9" />
     <meta name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"/>
+          content="black-translucent" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="HandheldFriendly" content="True" />
@@ -23,7 +23,7 @@
     <!-- Yandex -->
     <meta name="yandex-verification" content="c9e5d4d68bc983a1" />
     <meta name="description"
-          content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, or spam."/>
+          content="Protect your email address with email ALIAS. Create a different email alias for each website. No more phishing, or spam." />
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
     <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="canonical" href="{{ CANONICAL_URL }}" />
@@ -32,7 +32,7 @@
       | SimpleLogin
     </title>
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='node_modules/font-awesome/css/font-awesome.css') }}"/>
+          href="{{ url_for('static', filename='node_modules/font-awesome/css/font-awesome.css') }}" />
     <!-- Dashboard Core -->
     <link href="/static/assets/css/dashboard.css" rel="stylesheet" />
     <!-- Tabler JS -->
@@ -51,19 +51,19 @@
     <!-- IntroJS -->
     <link rel="stylesheet"
           type="text/css"
-          href="{{ url_for('static', filename='node_modules/intro.js/minified/introjs.min.css') }}"/>
+          href="{{ url_for('static', filename='node_modules/intro.js/minified/introjs.min.css') }}" />
     <script src="{{ url_for('static', filename='node_modules/intro.js/minified/intro.min.js') }}"></script>
     <!-- Sentry -->
     <script src="{{ url_for('static', filename='node_modules/@sentry/browser/build/bundle.min.js') }}"></script>
     <link rel="stylesheet" href="/static/vendor/bootstrap-social.min.css" />
     <!-- Toastr library -->
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.css') }}"/>
+          href="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.css') }}" />
     <script src="{{ url_for('static', filename='node_modules/toastr/build/toastr.min.js') }}"></script>
     <script src="{{ url_for('static', filename='node_modules/bootbox/dist/bootbox.min.js') }}"></script>
     <!-- Multiple-select library -->
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.css') }}"/>
+          href="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.css') }}" />
     <script src="{{ url_for('static', filename='node_modules/multiple-select/dist/multiple-select.min.js') }}"></script>
     <!-- Parseley library -->
     <script src="{{ url_for('static', filename='node_modules/parsleyjs/dist/parsley.min.js') }}"></script>
@@ -75,10 +75,10 @@
       <script async defer data-domain=”{{ PLAUSIBLE_DOMAIN }}” src=”{{ PLAUSIBLE_HOST }}/js/plausible.outbound-links.js”></script>
     {% endif %}
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='darkmode.css') }}?v={{ VERSION }}"/>
+          href="{{ url_for('static', filename='darkmode.css') }}?v={{ VERSION }}" />
     <link rel="stylesheet"
           type="text/css"
-          href="/static/style.css?v={{ VERSION }}"/>
+          href="/static/style.css?v={{ VERSION }}" />
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <script>toastr.options.closeButton = true;</script>
     <!-- For additional head -->

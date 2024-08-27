@@ -63,8 +63,8 @@
       {% endif %}
       <hr />
     {% endif %}
-    <div class="{% if not custom_domain.ownership_verified %} disabled-content{% endif %}"
-         id="dns-setup">
+    <div class="{% if not custom_domain.ownership_verified %}
+       disabled-content{% endif %}" id="dns-setup">
       {% if not custom_domain.ownership_verified %}
 
         <div class="alert alert-warning">A domain ownership must be verified first.</div>
@@ -177,9 +177,7 @@
           <em data-toggle="tooltip"
               title="Click to copy"
               class="clipboard"
-              data-clipboard-text="{{ spf_record }}">
-            {{ spf_record }}
-          </em>
+              data-clipboard-text="{{ spf_record }}">{{ spf_record }}</em>
         </div>
         <form method="post" action="#spf-form">
           {{ csrf_form.csrf_token }}
@@ -238,9 +236,7 @@
           Setting up DKIM is highly recommended to reduce the chance your emails ending up in the recipient's Spam
           folder.
         </div>
-        <div class="mb-2">
-          Add the following CNAME DNS records to your domain.
-        </div>
+        <div class="mb-2">Add the following CNAME DNS records to your domain.</div>
         {% for dkim_prefix, dkim_cname_value in dkim_records %}
 
           <div class="mb-2 p-3 dns-record">
@@ -256,9 +252,7 @@
                 title="Click to copy"
                 class="clipboard"
                 data-clipboard-text="{{ dkim_cname_value }}."
-                style="overflow-wrap: break-word">
-              {{ dkim_cname_value }}.
-            </em>
+                style="overflow-wrap: break-word">{{ dkim_cname_value }}.</em>
           </div>
         {% endfor %}
         <div class="alert alert-info">
@@ -282,21 +276,15 @@
           <input type="hidden" name="form-name" value="check-dkim">
           {% if custom_domain.dkim_verified %}
 
-            <button type="submit" class="btn btn-outline-primary">
-              Re-verify
-            </button>
+            <button type="submit" class="btn btn-outline-primary">Re-verify</button>
           {% else %}
-            <button type="submit" class="btn btn-primary">
-              Verify
-            </button>
+            <button type="submit" class="btn btn-primary">Verify</button>
           {% endif %}
         </form>
         {% if not dkim_ok %}
 
           <div class="text-danger mt-4">
-            <p>
-              Your DNS is not correctly set.
-            </p>
+            <p>Your DNS is not correctly set.</p>
             <ul>
               {% for custom_record, retrieved_cname in dkim_errors.items() %}
 
@@ -312,10 +300,8 @@
           </div>
           {% if custom_domain.dkim_verified %}
 
-            <div class="text-danger mt-4">
-              DKIM is still enabled. Please update your DKIM settings with all CNAME records
-            </div>
-          {%  endif %}
+            <div class="text-danger mt-4">DKIM is still enabled. Please update your DKIM settings with all CNAME records</div>
+          {% endif %}
         {% endif %}
       </div>
       <hr />
@@ -330,24 +316,20 @@
           {% else %}
             <span class="cursor"
                   data-toggle="tooltip"
-                  data-original-title="DMARC Not Verified">🚫 </span>
+                  data-original-title="DMARC Not Verified">🚫</span>
           {% endif %}
         </div>
         <div>
           DMARC
           <a href="https://en.wikipedia.org/wiki/DMARC"
              target="_blank"
-             rel="noopener noreferrer">
-            (Wikipedia↗)
-          </a>
+             rel="noopener noreferrer">(Wikipedia↗)</a>
           is designed to protect the domain from unauthorized use, commonly known as email spoofing.
           <br />
           Built around SPF and DKIM, a DMARC policy tells the receiving mail server what to do if
           neither of those authentication methods passes.
         </div>
-        <div class="mb-2">
-          Add the following TXT DNS record to your domain.
-        </div>
+        <div class="mb-2">Add the following TXT DNS record to your domain.</div>
         <div class="mb-2 p-3 dns-record">
           Record: TXT
           <br />
@@ -360,9 +342,7 @@
           <em data-toggle="tooltip"
               title="Click to copy"
               class="clipboard"
-              data-clipboard-text="{{ dmarc_record }}">
-            {{ dmarc_record }}
-          </em>
+              data-clipboard-text="{{ dmarc_record }}">{{ dmarc_record }}</em>
         </div>
         <div class="alert alert-info">
           Some DNS registrar might require a full record path, in this case please use
@@ -377,13 +357,9 @@
           <input type="hidden" name="form-name" value="check-dmarc">
           {% if custom_domain.dmarc_verified %}
 
-            <button type="submit" class="btn btn-outline-primary">
-              Re-verify
-            </button>
+            <button type="submit" class="btn btn-outline-primary">Re-verify</button>
           {% else %}
-            <button type="submit" class="btn btn-primary">
-              Verify
-            </button>
+            <button type="submit" class="btn btn-primary">Verify</button>
           {% endif %}
         </form>
         {% if not dmarc_ok %}
