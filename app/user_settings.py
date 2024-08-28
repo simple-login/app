@@ -16,12 +16,13 @@ class CannotSetMailbox(Exception):
 
 
 def set_default_alias_domain(user: User, domain_name: Optional[str]):
-    if domain_name is None:
+    if not domain_name:
         LOG.i(f"User {user} has set no domain as default domain")
         user.default_alias_public_domain_id = None
         user.default_alias_custom_domain_id = None
         Session.flush()
         return
+
     sl_domain: SLDomain = SLDomain.get_by(domain=domain_name)
     if sl_domain:
         if sl_domain.hidden:
