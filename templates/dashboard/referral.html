@@ -34,7 +34,7 @@
     {% endif %}
     {% for referral in referrals %}
 
-      <div class="card p-4 shadow-sm {% if referral.id == highlight_id %} highlight-row{% endif %}">
+      <div class="card p-4 shadow-sm {% if referral.id == highlight_id %}highlight-row{% endif %}">
         <form method="post">
           <input type="hidden" name="form-name" value="update">
           <input type="hidden" name="referral-id" value="{{ referral.id }}">
@@ -102,9 +102,7 @@
               title="Click to copy"
               class="clipboard"
               data-clipboard-text="{{ '?slref=' + referral.code }}"
-              style="overflow-wrap: break-word">
-            ?slref={{ referral.code }}
-          </em>
+              style="overflow-wrap: break-word">?slref={{ referral.code }}</em>
           to any link on SimpleLogin website.
         </div>
         <div>

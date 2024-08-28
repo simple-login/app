@@ -13,7 +13,9 @@
           <div class="d-flex align-items-center">
             <div class="subheader">Total</div>
             <div class="text-muted"
-                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+                 style="order: 2;
+                        margin-left: auto;
+                        font-size: .8rem">Last 14 days</div>
           </div>
           <div class="h1 m-0">{{ total }}</div>
         </div>
@@ -25,7 +27,9 @@
           <div class="d-flex align-items-center">
             <div class="subheader">Forwarded</div>
             <div class="text-muted"
-                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+                 style="order: 2;
+                        margin-left: auto;
+                        font-size: .8rem">Last 14 days</div>
           </div>
           <div class="h1 m-0">{{ email_forwarded }}</div>
         </div>
@@ -37,7 +41,9 @@
           <div class="d-flex align-items-center">
             <div class="subheader">Replies/Sent</div>
             <div class="text-muted"
-                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+                 style="order: 2;
+                        margin-left: auto;
+                        font-size: .8rem">Last 14 days</div>
           </div>
           <div class="h1 m-0">{{ email_replied }}</div>
         </div>
@@ -49,7 +55,9 @@
           <div class="d-flex align-items-center">
             <div class="subheader">Blocked</div>
             <div class="text-muted"
-                 style="order: 2; margin-left: auto; font-size: .8rem">Last 14 days</div>
+                 style="order: 2;
+                        margin-left: auto;
+                        font-size: .8rem">Last 14 days</div>
           </div>
           <div class="h1 m-0">{{ email_blocked }}</div>
         </div>
@@ -111,14 +119,12 @@
   <nav aria-label="Alias log navigation">
     <ul class="pagination">
       <li class="page-item">
-        <a class="btn btn-outline-secondary {% if page_id == 0 %}disabled{% endif %}"
-           href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id-1) }}">
+        <a class="btn btn-outline-secondary {% if page_id == 0 %}disabled{% endif %}" href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id-1) }}">
           Previous
         </a>
       </li>
       <li class="page-item">
-        <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}"
-           href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id+1) }}">
+        <a class="btn btn-outline-secondary {% if last_page %}disabled{% endif %}" href="{{ url_for('dashboard.alias_log', alias_id=alias_id, page_id=page_id+1) }}">
           Next
         </a>
       </li>

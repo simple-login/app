@@ -33,7 +33,9 @@
   <form class="card"
         method="post"
         data-parsley-validate
-        style="max-width: 40rem; margin: auto; border-radius: 2%">
+        style="max-width: 40rem;
+               margin: auto;
+               border-radius: 2%">
     {% if not client.approved %}
 
       <div class="alert alert-warning" style="border-bottom: 3px solid;">
@@ -85,18 +87,9 @@
           </div>
           <div class="col-md-9">
             <select class="form-control" name="suggested-email">
-              <option selected value="{{ suggested_email }}">
-                {{ suggested_email }}
-              </option>
-              <option value="{{ current_user.email }}">
-                {{ current_user.email }} (Personal Email)
-              </option>
-              {% for email in other_emails %}
-
-                <option value="{{ email }}">
-                  {{ email }}
-                </option>
-              {% endfor %}
+              <option selected value="{{ suggested_email }}">{{ suggested_email }}</option>
+              <option value="{{ current_user.email }}">{{ current_user.email }} (Personal Email)</option>
+              {% for email in other_emails %}<option value="{{ email }}">{{ email }}</option>{% endfor %}
             </select>
             {% if current_user.can_create_new_alias() %}
 
@@ -138,15 +131,8 @@
           </div>
           <div class="col-md-9">
             <select class="form-control" name="suggested-name">
-              <option selected value="{{ suggested_name }}">
-                {{ suggested_name }}
-              </option>
-              {% for name in other_names %}
-
-                <option value="{{ name }}">
-                  {{ name }}
-                </option>
-              {% endfor %}
+              <option selected value="{{ suggested_name }}">{{ suggested_name }}</option>
+              {% for name in other_names %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
             </select>
             <div class="mt-2">OR</div>
             <div class="mt-2">

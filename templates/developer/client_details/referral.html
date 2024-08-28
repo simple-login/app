@@ -6,7 +6,7 @@
   <h1 class="h2">Referral</h1>
   <div>
     If you are in the
-    <a href="{{ url_for('dashboard.referral_route') }}">referral</a>
+    <a href="{{ url_for("dashboard.referral_route") }}">referral</a>
     program, you can attach a
     referral to this website.
     Any SimpleLogin sign up thanks to the SIWSL on your website will be counted towards this referral.
@@ -17,17 +17,9 @@
       <select class="form-control" name="referral-id" id="client-select">
         {% for referral in current_user.referrals %}
 
-          <option value="{{ referral.id }}"
-                  {% if client.referral_id == referral.id %} selected{% endif %}>
-            {{ referral.name }}
-          </option>
+          <option value="{{ referral.id }}" {% if client.referral_id == referral.id %}selected{% endif %}>{{ referral.name }}</option>
         {% endfor %}
-        {% if client.referral_id is none %}
-
-          <option value="" selected>
-            No referral selected
-          </option>
-        {% endif %}
+        {% if client.referral_id is none %}<option value="" selected>No referral selected</option>{% endif %}
       </select>
     </div>
     <input type="submit" class="btn btn-primary" value="Update">

@@ -5,7 +5,7 @@
   <div class="flex-fill align-items-center mt-8">
     <!-- Image container -->
     <div class="mt-4 mb-4 text-center" style="display:block;">
-      <a href="{{ url_for('dashboard.index') }}">
+      <a href="{{ url_for("dashboard.index") }}">
         <picture>
           <source media="(max-width: 650px)" srcset="/static/logo.svg">
           <img src="/static/logo.svg" style="width: 12rem" alt="logo">
@@ -22,17 +22,17 @@
                 place-items:center;
                 width:1024px;
                 margin:auto;
-                position:relative;">
+                position:relative">
       <img src="/static/images/onboarding-click-icon.svg"
            style="width:400px;
                   position:absolute;
                   right:-70px;
-                  top:-90px;"/>
+                  top:-90px" />
       <img src="/static/images/onboarding-right-click.svg"
            style="position:absolute;
                   width:440px;
                   right:-20px;
-                  top:25px;"/>
+                  top:25px" />
       <div style="width: 25rem; display: block">
         <form method="post">
           {{ form.csrf_token }}
@@ -40,9 +40,10 @@
           {{ render_field_errors(form.email) }}
           <button type="submit"
                   class="p-4 mt-2 text-decoration-none"
-                  style="background:black;color:white; width:10rem; border-radius: 4px">
-            Send me an email
-          </button>
+                  style="background:black;
+                         color:white;
+                         width:10rem;
+                         border-radius: 4px">Send me an email</button>
         </form>
       </div>
     </div>
@@ -53,7 +54,7 @@
       </p>
       <p id="extension-version-text"
          class="font-weight-light"
-         style="display:none;"></p>
+         style="display:none"></p>
     </div>
   </div>
   <script type="text/javascript">

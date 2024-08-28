@@ -30,9 +30,7 @@
           </a>
         </div>
       {% endif %}
-      <div class="alert alert-primary collapse {% if not custom_domains %} show{% endif %}"
-           id="howtouse"
-           role="alert">
+      <div class="alert alert-primary collapse {% if not custom_domains %}show{% endif %}" id="howtouse" role="alert">
         By adding your domain, you can create aliases like <b>hi@my-domain.com</b>
         <br />
         You can also enable <b>catch-all</b> to create aliases on-the-fly:
@@ -50,18 +48,14 @@
                   {% if custom_domain.ownership_verified and not custom_domain.verified %}
 
                     <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id, _anchor='dns-setup') }}"
-                       class="btn btn-info btn-sm">
-                      Ownership verified. Setup the DNS
-                    </a>
+                       class="btn btn-info btn-sm">Ownership verified. Setup the DNS</a>
                   {% elif custom_domain.ownership_verified and custom_domain.verified %}
                     <span class="badge badge-success">Domain ready</span>
                     <!-- custom_domain.ownership_verified is False -->
                   {% else %}
                     <a href="{{ url_for('dashboard.domain_detail_dns', custom_domain_id=custom_domain.id, _anchor='ownership-form') }}"
                        class="btn btn-warning btn-sm"
-                       role="button">
-                      Verify domain ownership
-                    </a>
+                       role="button">Verify domain ownership</a>
                   {% endif %}
                 </h5>
                 <h6 class="card-subtitle mb-4 text-muted">

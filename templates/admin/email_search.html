@@ -23,7 +23,7 @@
     </tbody>
   </table>
 {%- endmacro %}
-{%  macro list_mailboxes(mbox_count, mboxes) %}
+{% macro list_mailboxes(mbox_count, mboxes) %}
   <h4>
     {{ mbox_count }} Mailboxes found.
     {% if mbox_count>10 %}Showing only the first 10.{% endif %}
@@ -71,49 +71,29 @@
           <td>{{ alias.id }}</td>
           <td>{{ alias.email }}</td>
           <td>{{ "Yes" if alias.verified else "No" }}</td>
-          <td>
-            {{ alias.created_at }}
-          </td>
+          <td>{{ alias.created_at }}</td>
         </tr>
       {% endfor %}
     </tbody>
   </table>
 {% endmacro %}
 {% macro show_deleted_alias(deleted_alias) -%}
-  <h4>
-    Deleted Alias {{ deleted_alias.email }} with ID {{ deleted_alias.id }}.
-  </h4>
+  <h4>Deleted Alias {{ deleted_alias.email }} with ID {{ deleted_alias.id }}.</h4>
   <table class="table">
     <thead>
       <tr>
-        <th scope="col">
-          Deleted Alias ID
-        </th>
-        <th scope="col">
-          Email
-        </th>
-        <th scope="col">
-          Deleted At
-        </th>
-        <th scope="col">
-          Reason
-        </th>
+        <th scope="col">Deleted Alias ID</th>
+        <th scope="col">Email</th>
+        <th scope="col">Deleted At</th>
+        <th scope="col">Reason</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>
-          {{ deleted_alias.id }}
-        </td>
-        <td>
-          {{ deleted_alias.email }}
-        </td>
-        <td>
-          {{ deleted_alias.created_at }}
-        </td>
-        <td>
-          {{ deleted_alias.reason }}
-        </td>
+        <td>{{ deleted_alias.id }}</td>
+        <td>{{ deleted_alias.email }}</td>
+        <td>{{ deleted_alias.created_at }}</td>
+        <td>{{ deleted_alias.reason }}</td>
       </tr>
     </tbody>
   </table>
@@ -125,49 +105,23 @@
   <table class="table">
     <thead>
       <tr>
-        <th scope="col">
-          Deleted Alias ID
-        </th>
-        <th scope="col">
-          Email
-        </th>
-        <th scope="col">
-          Domain
-        </th>
-        <th scope="col">
-          Domain ID
-        </th>
-        <th scope="col">
-          Domain owner user ID
-        </th>
-        <th scope="col">
-          Domain owner user email
-        </th>
-        <th scope="col">
-          Deleted At
-        </th>
+        <th scope="col">Deleted Alias ID</th>
+        <th scope="col">Email</th>
+        <th scope="col">Domain</th>
+        <th scope="col">Domain ID</th>
+        <th scope="col">Domain owner user ID</th>
+        <th scope="col">Domain owner user email</th>
+        <th scope="col">Deleted At</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>
-          {{ dom_deleted_alias.id }}
-        </td>
-        <td>
-          {{ dom_deleted_alias.email }}
-        </td>
-        <td>
-          {{ dom_deleted_alias.domain.domain }}
-        </td>
-        <td>
-          {{ dom_deleted_alias.domain.id }}
-        </td>
-        <td>
-          {{ dom_deleted_alias.domain.user_id }}
-        </td>
-        <td>
-          {{ dom_deleted_alias.created_at }}
-        </td>
+        <td>{{ dom_deleted_alias.id }}</td>
+        <td>{{ dom_deleted_alias.email }}</td>
+        <td>{{ dom_deleted_alias.domain.domain }}</td>
+        <td>{{ dom_deleted_alias.domain.id }}</td>
+        <td>{{ dom_deleted_alias.domain.user_id }}</td>
+        <td>{{ dom_deleted_alias.created_at }}</td>
       </tr>
     </tbody>
   </table>
@@ -178,73 +132,57 @@
   <div class="border border-dark border-2 mt-1 mb-2 p-3">
     <form method="post">
       <div class="form-group">
-        <label for="email">
-          Email to search:
-        </label>
+        <label for="email">Email to search:</label>
         <input type="text"
                class="form-control"
                name="email"
-               value="{{ email or '' }}"/>
+               value="{{ email or '' }}" />
       </div>
-      <button type="submit" class="btn btn-primary">
-        Submit
-      </button>
+      <button type="submit" class="btn btn-primary">Submit</button>
     </form>
   </div>
   {% if no_match %}
 
     <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
-         role="alert">
-      No user, alias or mailbox found for {{ email }}
-    </div>
+         role="alert">No user, alias or mailbox found for {{ email }}</div>
   {% endif %}
   {% if data.alias %}
 
     <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">
-        Found Alias {{ data.alias.email }}
-      </h3>
+      <h3 class="mb-3">Found Alias {{ data.alias.email }}</h3>
       {{ list_alias(1,[data.alias]) }}
       {{ show_user(data.alias.user) }}
-      {{ list_mailboxes(helper.mailbox_count(data.alias.user), helper.mailbox_list(data.alias.user) ) }}
+      {{ list_mailboxes(helper.mailbox_count(data.alias.user) , helper.mailbox_list(data.alias.user) ) }}
     </div>
   {% endif %}
   {% if data.user %}
 
     <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">
-        Found User {{ data.user.email }}
-      </h3>
+      <h3 class="mb-3">Found User {{ data.user.email }}</h3>
       {{ show_user(data.user) }}
-      {{ list_mailboxes(helper.mailbox_count(data.user), helper.mailbox_list(data.user) ) }}
-      {{ list_alias(helper.alias_count(data.user),helper.alias_list(data.user)) }}
+      {{ list_mailboxes(helper.mailbox_count(data.user) , helper.mailbox_list(data.user) ) }}
+      {{ list_alias(helper.alias_count(data.user) ,helper.alias_list(data.user)) }}
     </div>
   {% endif %}
   {% if data.mailbox %}
 
     <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">
-        Found Mailbox {{ data.mailbox.email }}
-      </h3>
-      {{ list_mailboxes(1, [data.mailbox] ) }}
+      <h3 class="mb-3">Found Mailbox {{ data.mailbox.email }}</h3>
+      {{ list_mailboxes(1, [data.mailbox]) }}
       {{ show_user(data.mailbox.user) }}
     </div>
   {% endif %}
   {% if data.deleted_alias %}
 
     <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">
-        Found DeletedAlias {{ data.deleted_alias.email }}
-      </h3>
+      <h3 class="mb-3">Found DeletedAlias {{ data.deleted_alias.email }}</h3>
       {{ show_deleted_alias(data.deleted_alias) }}
     </div>
   {% endif %}
   {% if data.domain_deleted_alias %}
 
     <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">
-        Found DomainDeletedAlias {{ data.domain_deleted_alias.email }}
-      </h3>
+      <h3 class="mb-3">Found DomainDeletedAlias {{ data.domain_deleted_alias.email }}</h3>
       {{ show_domain_deleted_alias(data.domain_deleted_alias) }}
     </div>
   {% endif %}

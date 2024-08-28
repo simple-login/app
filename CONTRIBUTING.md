@@ -223,6 +223,7 @@ Now open http://localhost:1080/ (or http://localhost:1080/ for MailHog), you sho
 ## Job runner
 
 Some features require a job handler (such as GDPR data export). To test such feature you need to run the job_runner
+
 ```bash
 python job_runner.py
 ```
@@ -248,4 +249,5 @@ poetry install
 
 # activate the virtualenv and you should be good to go!
 source .venv/bin/activate
+
 ```

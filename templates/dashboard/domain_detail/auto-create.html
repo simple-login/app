@@ -13,7 +13,8 @@
 
     <div class="alert alert-warning mt-3">Rules are ineffective when catch-all is enabled.</div>
   {% endif %}
-  <div class="{% if custom_domain.catch_all %} disabled-content{% endif %}">
+  <div class="{% if custom_domain.catch_all %}
+     disabled-content{% endif %}">
     <div class="mt-3 mb-2">
       For a greater control than a simple catch-all, you can define a set of <b>rules</b> to auto create aliases.
       <br />
@@ -60,8 +61,7 @@
         <div class="form-group">
           <label>Regex</label>
           {{ new_auto_create_rule_form.regex(class="form-control",
-          placeholder="prefix.*"
-          ) }}
+                    placeholder="prefix.*") }}
           {{ render_field_errors(new_auto_create_rule_form.regex) }}
           <div class="small-text">
             For example, if you want aliases that starts with <b>prefix</b> to be automatically created, you can set
@@ -95,10 +95,7 @@
                     name="mailbox_ids">
               {% for mailbox in mailboxes %}
 
-                <option value="{{ mailbox.id }}"
-                        {% if mailbox.id == current_user.default_mailbox_id %} selected{% endif %}>
-                  {{ mailbox.email }}
-                </option>
+                <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}selected{% endif %}>{{ mailbox.email }}</option>
               {% endfor %}
             </select>
           </div>
@@ -128,9 +125,7 @@
       {% if auto_create_test_result %}
 
         <div class="alert {% if auto_create_test_passed %}
-           alert-success {% else %} alert-warning {% endif %}">
-          {{ auto_create_test_result }}
-        </div>
+           alert-success {% else %} alert-warning {% endif %}">{{ auto_create_test_result }}</div>
       {% endif %}
     </div>
   </div>

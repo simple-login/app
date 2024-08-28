@@ -3,32 +3,34 @@
 {% block content %}
 
   {% call text() %}
-  <h1>Add other mailboxes to SimpleLogin.</h1>
-{% endcall %}
+    <h1>Add other mailboxes to SimpleLogin.</h1>
+  {% endcall %}
 
-{% call text() %}
-If you have several email inboxes, say Gmail and Proton Mail,
-you can add them into SimpleLogin as <b>mailboxes</b>.
-{% endcall %}
+  {% call text() %}
+    If you have several email inboxes, say Gmail and Proton Mail,
+    you can add them into SimpleLogin as <b>mailboxes</b>.
+  {% endcall %}
 
-<img src="https://simplelogin.io/images/multiple-mailboxes.png"
-     alt="Multiple Mailboxes"
-     style="max-width: 100%; margin: auto; border: 1px solid">
-{% call text() %}
-When creating an alias, you can choose the mailbox(es) that
-<b>owns</b> this alias, meaning:
-<br />
-1. Emails sent to this alias are forwarded to the owning mailbox(es).
-<br />
-2. The owning mailbox(es) can send emails from this alias.
-{% endcall %}
+  <img src="https://simplelogin.io/images/multiple-mailboxes.png"
+       alt="Multiple Mailboxes"
+       style="max-width: 100%;
+              margin: auto;
+              border: 1px solid">
+  {% call text() %}
+    When creating an alias, you can choose the mailbox(es) that
+    <b>owns</b> this alias, meaning:
+    <br />
+    1. Emails sent to this alias are forwarded to the owning mailbox(es).
+    <br />
+    2. The owning mailbox(es) can send emails from this alias.
+  {% endcall %}
 
-{% call text() %}
-Please note that adding additional mailboxes is only available in the Premium plan.
-{% endcall %}
+  {% call text() %}
+    Please note that adding additional mailboxes is only available in the Premium plan.
+  {% endcall %}
 
-{{ render_button("Create mailbox", URL ~ "/dashboard/mailbox") }}
-{{ raw_url(URL ~ "/dashboard/mailbox") }}
+  {{ render_button("Create mailbox", URL ~ "/dashboard/mailbox") }}
+  {{ raw_url(URL ~ "/dashboard/mailbox") }}
 {% endblock %}
 {% block footer %}
 

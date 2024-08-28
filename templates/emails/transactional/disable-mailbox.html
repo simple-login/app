@@ -3,27 +3,27 @@
 {% block content %}
 
   {% call text() %}
-  <h1>{{ mailbox.email }} is disabled.</h1>
-{% endcall %}
+    <h1>{{ mailbox.email }} is disabled.</h1>
+  {% endcall %}
 
-{% call text() %}
-We have detected that your mailbox can't reliably receive emails from SimpleLogin for a consecutive period of time.
-<br />
-The mailbox has been therefore disabled.
-{% endcall %}
+  {% call text() %}
+    We have detected that your mailbox can't reliably receive emails from SimpleLogin for a consecutive period of time.
+    <br />
+    The mailbox has been therefore disabled.
+  {% endcall %}
 
-{% call text() %}
-Please note that a mailbox can't be a disposable or forwarding email address.
-{% endcall %}
+  {% call text() %}
+    Please note that a mailbox can't be a disposable or forwarding email address.
+  {% endcall %}
 
-{% call text() %}
-If you have any question, you can reach out to us by replying to this email.
-{% endcall %}
+  {% call text() %}
+    If you have any question, you can reach out to us by replying to this email.
+  {% endcall %}
 
-{% call text() %}
-Best,
-<br />
-SimpleLogin Team.
-{% endcall %}
+  {% call text() %}
+    Best,
+    <br />
+    SimpleLogin Team.
+  {% endcall %}
 
 {% endblock %}

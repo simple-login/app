@@ -48,7 +48,7 @@
       {% set refused_email = email_log.refused_email %}
       {% set contact = email_log.contact %}
       {% set alias = contact.alias %}
-      <div class="card p-4 shadow-sm {% if email_log.id == highlight_id %} highlight-row{% endif %}">
+      <div class="card p-4 shadow-sm {% if email_log.id == highlight_id %}highlight-row{% endif %}">
         <div class="small-text">
           Sent {{ refused_email.created_at | dt }}
           {% if email_log.bounced %}
@@ -70,9 +70,7 @@
             To: {{ alias.email }}
             <a href='{{ url_for("dashboard.index", highlight_alias_id=alias.id) }}'
                class="text-danger small-text"
-               style="text-decoration: underline">
-              Disable Alias
-            </a>
+               style="text-decoration: underline">Disable Alias</a>
           </span>
         {% endif %}
         {% if refused_email.deleted %}
