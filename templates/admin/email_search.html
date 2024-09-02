@@ -2,23 +2,40 @@
 
 {% macro show_user(user) -%}
   <h4>User {{ user.email }} with ID {{ user.id }}.</h4>
+  {% set pu = helper.partner_user(user) %}
   <table class="table">
     <thead>
       <tr>
         <th scope="col">User ID</th>
         <th scope="col">Email</th>
+        <th scope="col">Status</th>
         <th scope="col">Paid</th>
         <th>Subscription</th>
         <th>Created At</th>
+        <th>Updated At</th>
+        <th>Connected with Proton account</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>{{ user.id }}</td>
         <td>{{ user.email }}</td>
-        <td>{{ "yes" if user.is_paid() else No }}</td>
+        {% if user.disabled %}
+
+          <td class="text-danger">Disabled</td>
+        {% else %}
+          <td class="text-success">Enabled</td>
+        {% endif %}
+        <td>{{ "yes" if user.is_paid() else "No" }}</td>
         <td>{{ user.get_active_subscription() }}</td>
         <td>{{ user.created_at }}</td>
+        <td>{{ user.updated_at }}</td>
+        {% if pu %}
+
+          <td>{{ pu.partner_email }}</td>
+        {% else %}
+          <td>No</td>
+        {% endif %}
       </tr>
     </tbody>
   </table>
@@ -44,7 +61,9 @@
           <td>{{ mailbox.id }}</td>
           <td>{{ mailbox.email }}</td>
           <td>{{ "Yes" if mailbox.verified else "No" }}</td>
-          <td>{{ mailbox.created_at }}</td>
+          <td>
+            {{ mailbox.created_at }}
+          </td>
         </tr>
       {% endfor %}
     </tbody>
@@ -58,15 +77,22 @@
   <table class="table">
     <thead>
       <tr>
-        <th>Alias ID</th>
-        <th>Email</th>
-        <th>Verified</th>
-        <th>Created At</th>
+        <th>
+          Alias ID
+        </th>
+        <th>
+          Email
+        </th>
+        <th>
+          Verified
+        </th>
+        <th>
+          Created At
+        </th>
       </tr>
     </thead>
     <tbody>
       {% for alias in aliases %}
-
         <tr>
           <td>{{ alias.id }}</td>
           <td>{{ alias.email }}</td>
