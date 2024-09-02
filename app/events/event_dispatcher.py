@@ -68,7 +68,7 @@ class EventDispatcher:
 
         serialized = event.SerializeToString()
         dispatcher.send(serialized)
-        newrelic.agent.record_custom_event("event_stored")
+        newrelic.agent.record_custom_metric("Custom/events_stored", 1)
         LOG.i("Sent event to the dispatcher")
 
     @staticmethod
