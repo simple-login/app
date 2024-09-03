@@ -19,7 +19,7 @@
     <tbody>
       <tr>
         <td>{{ user.id }}</td>
-        <td>{{ user.email }}</td>
+        <td><a href="?email={{ user.email }}">{{ user.email }}</a></td>
         {% if user.disabled %}
 
           <td class="text-danger">Disabled</td>
@@ -32,7 +32,7 @@
         <td>{{ user.updated_at }}</td>
         {% if pu %}
 
-          <td>{{ pu.partner_email }}</td>
+          <td><a href="?email={{ pu.partner_email }}">{{ pu.partner_email }}</a></td>
         {% else %}
           <td>No</td>
         {% endif %}
@@ -59,7 +59,7 @@
 
         <tr>
           <td>{{ mailbox.id }}</td>
-          <td>{{ mailbox.email }}</td>
+            <td><a href="?email={{mailbox.email}}">{{mailbox.email}}</a></td>
           <td>{{ "Yes" if mailbox.verified else "No" }}</td>
           <td>
             {{ mailbox.created_at }}
@@ -95,7 +95,7 @@
       {% for alias in aliases %}
         <tr>
           <td>{{ alias.id }}</td>
-          <td>{{ alias.email }}</td>
+            <td><a href="?email={{alias.email}}">{{alias.email}}</a></td>
           <td>{{ "Yes" if alias.verified else "No" }}</td>
           <td>{{ alias.created_at }}</td>
         </tr>
@@ -156,7 +156,7 @@
 {% block body %}
 
   <div class="border border-dark border-2 mt-1 mb-2 p-3">
-    <form method="post">
+    <form method="get">
       <div class="form-group">
         <label for="email">Email to search:</label>
         <input type="text"

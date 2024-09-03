@@ -753,12 +753,12 @@ class EmailSearchResult:
         if user:
             output.user = user
             output.no_match = False
-        mailboxes = Mailbox.filter_by(email=email).limit(10).all()
+        mailboxes = (
+            Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).limit(10).all()
+        )
         if mailboxes:
             output.mailbox = mailboxes
-            output.mailbox_count = (
-                Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).count()
-            )
+            output.mailbox_count = Mailbox.filter_by(email=email).count()
             output.no_match = False
         deleted_alias = DeletedAlias.get_by(email=email)
         if deleted_alias:
@@ -812,9 +812,8 @@ class EmailSearchAdmin(BaseView):
     @expose("/", methods=["GET", "POST"])
     def index(self):
         search = EmailSearchResult()
-        email = ""
-        if request.form and request.form["email"]:
-            email = request.form["email"]
+        email = request.args.get("email")
+        if email is not None and len(email) > 0:
             email = email.strip()
             search = EmailSearchResult.from_email(email)
 
