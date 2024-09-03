@@ -33,6 +33,7 @@ from app.models import (
     Mailbox,
     DeletedAlias,
     DomainDeletedAlias,
+    PartnerUser,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 
@@ -747,22 +748,18 @@ class EmailSearchResult:
         if alias:
             output.alias = alias
             output.no_match = False
-            return output
         user = User.get_by(email=email)
         if user:
             output.user = user
             output.no_match = False
-            return output
         mailbox = Mailbox.get_by(email=email)
         if mailbox:
             output.mailbox = mailbox
             output.no_match = False
-            return output
         deleted_alias = DeletedAlias.get_by(email=email)
         if deleted_alias:
             output.deleted_alias = deleted_alias
             output.no_match = False
-            return output
         domain_deleted_alias = DomainDeletedAlias.get_by(email=email)
         if domain_deleted_alias:
             output.domain_deleted_alias = domain_deleted_alias
@@ -791,6 +788,10 @@ class EmailSearchHelpers:
     @staticmethod
     def alias_count(user: User) -> int:
         return Alias.filter_by(user_id=user.id).count()
+
+    @staticmethod
+    def partner_user(user: User) -> Optional[PartnerUser]:
+        return PartnerUser.get_by(user_id=user.id)
 
 
 class EmailSearchAdmin(BaseView):
