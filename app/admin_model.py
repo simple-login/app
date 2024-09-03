@@ -736,7 +736,8 @@ class InvalidMailboxDomainAdmin(SLModelView):
 class EmailSearchResult:
     no_match: bool = True
     alias: Optional[Alias] = None
-    mailbox: Optional[Mailbox] = None
+    mailbox: list[Mailbox] = []
+    mailbox_count: int = 0
     deleted_alias: Optional[DeletedAlias] = None
     deleted_custom_alias: Optional[DomainDeletedAlias] = None
     user: Optional[User] = None
@@ -752,9 +753,12 @@ class EmailSearchResult:
         if user:
             output.user = user
             output.no_match = False
-        mailbox = Mailbox.get_by(email=email)
-        if mailbox:
-            output.mailbox = mailbox
+        mailboxes = Mailbox.filter_by(email=email).limit(10).all()
+        if mailboxes:
+            output.mailbox = mailboxes
+            output.mailbox_count = (
+                Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).count()
+            )
             output.no_match = False
         deleted_alias = DeletedAlias.get_by(email=email)
         if deleted_alias:
@@ -779,11 +783,13 @@ class EmailSearchHelpers:
 
     @staticmethod
     def mailbox_count(user: User) -> int:
-        return Mailbox.filter_by(user_id=user.id).order_by(Mailbox.id.asc()).count()
+        return Mailbox.filter_by(user_id=user.id).order_by(Mailbox.id.desc()).count()
 
     @staticmethod
     def alias_list(user: User) -> list[Alias]:
-        return Alias.filter_by(user_id=user.id).order_by(Alias.id.asc()).limit(10).all()
+        return (
+            Alias.filter_by(user_id=user.id).order_by(Alias.id.desc()).limit(10).all()
+        )
 
     @staticmethod
     def alias_count(user: User) -> int:

@@ -43,7 +43,7 @@
 {% macro list_mailboxes(mbox_count, mboxes) %}
   <h4>
     {{ mbox_count }} Mailboxes found.
-    {% if mbox_count>10 %}Showing only the first 10.{% endif %}
+    {% if mbox_count>10 %}Showing only the last 10.{% endif %}
   </h4>
   <table class="table">
     <thead>
@@ -72,7 +72,7 @@
 {% macro list_alias(alias_count, aliases) %}
   <h4>
     {{ alias_count }} Aliases found.
-    {% if alias_count>10 %}Showing only the first 10.{% endif %}
+    {% if alias_count>10 %}Showing only the last 10.{% endif %}
   </h4>
   <table class="table">
     <thead>
@@ -167,7 +167,7 @@
       <button type="submit" class="btn btn-primary">Submit</button>
     </form>
   </div>
-  {% if no_match %}
+  {% if data.no_match and email %}
 
     <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
          role="alert">No user, alias or mailbox found for {{ email }}</div>
@@ -190,14 +190,19 @@
       {{ list_alias(helper.alias_count(data.user) ,helper.alias_list(data.user)) }}
     </div>
   {% endif %}
-  {% if data.mailbox %}
+    {% if data.mailbox_count > 10 %}
+    <h3>Found more than 10 mailboxes for {{ email }}. Showing the last 10</h3>
+    {% elif data.mailbox_count > 0 %}
+    <h3>Found {{ data.mailbox_count }} mailbox(es) for {{ email }}</h3>
+    {% endif %}
+  {% for mailbox in data.mailbox %}
 
     <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found Mailbox {{ data.mailbox.email }}</h3>
-      {{ list_mailboxes(1, [data.mailbox]) }}
-      {{ show_user(data.mailbox.user) }}
+      <h3 class="mb-3">Found Mailbox {{ mailbox.email }}</h3>
+      {{ list_mailboxes(1, [mailbox]) }}
+      {{ show_user(mailbox.user) }}
     </div>
-  {% endif %}
+  {% endfor %}
   {% if data.deleted_alias %}
 
     <div class="border border-dark mt-1 mb-2 p-3">
