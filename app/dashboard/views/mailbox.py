@@ -123,7 +123,12 @@ def mailbox_verify():
     if not code:
         # Old way
         return verify_with_signed_secret(mailbox_id)
-    mailbox = mailbox_utils.verify_mailbox_code(current_user, mailbox_id, code)
+    try:
+        mailbox = mailbox_utils.verify_mailbox_code(current_user, mailbox_id, code)
+    except mailbox_utils.MailboxError as e:
+        flash(e.msg, "warning")
+        return redirect(url_for("dashboard.mailbox_route"))
+
     LOG.d("Mailbox %s is verified", mailbox)
     return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)
 
