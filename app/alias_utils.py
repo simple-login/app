@@ -363,11 +363,16 @@ def delete_alias(
             Session.commit()
             LOG.i(f"Moving {alias} to global trash {deleted_alias}")
 
+    alias_id = alias.id
+    alias_email = alias.email
     Alias.filter(Alias.id == alias.id).delete()
     Session.commit()
 
     EventDispatcher.send_event(
-        user, EventContent(alias_deleted=AliasDeleted(alias_id=alias.id))
+        user,
+        EventContent(
+            alias_deleted=AliasDeleted(alias_id=alias_id, alias_email=alias_email)
+        ),
     )
     if commit:
         Session.commit()
