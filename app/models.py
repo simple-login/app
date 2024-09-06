@@ -1660,18 +1660,6 @@ class Alias(Base, ModelMixin):
         Session.add(new_alias)
         DailyMetric.get_or_create_today_metric().nb_alias += 1
 
-        # Internal import to avoid global import cycles
-        from app.events.event_dispatcher import EventDispatcher
-        from app.events.generated.event_pb2 import AliasCreated, EventContent
-
-        event = AliasCreated(
-            alias_id=new_alias.id,
-            alias_email=new_alias.email,
-            alias_note=new_alias.note,
-            enabled=True,
-        )
-        EventDispatcher.send_event(user, EventContent(alias_created=event))
-
         if (
             new_alias.flags & cls.FLAG_PARTNER_CREATED > 0
             and new_alias.user.flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER == 0
@@ -1683,6 +1671,18 @@ class Alias(Base, ModelMixin):
 
         if flush:
             Session.flush()
+
+        # Internal import to avoid global import cycles
+        from app.events.event_dispatcher import EventDispatcher
+        from app.events.generated.event_pb2 import AliasCreated, EventContent
+
+        event = AliasCreated(
+            alias_id=new_alias.id,
+            alias_email=new_alias.email,
+            alias_note=new_alias.note,
+            enabled=True,
+        )
+        EventDispatcher.send_event(user, EventContent(alias_created=event))
 
         return new_alias
 
