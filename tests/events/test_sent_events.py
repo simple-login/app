@@ -3,7 +3,7 @@ from app.db import Session
 from app.events.event_dispatcher import GlobalDispatcher
 from app.events.generated import event_pb2
 from app.models import Alias, User, PartnerUser
-from utils import random_token
+from tests.utils import random_token
 from .event_test_utils import (
     OnMemoryDispatcher,
     _create_linked_user,
