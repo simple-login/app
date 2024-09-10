@@ -30,14 +30,30 @@ class PostgresDispatcher(Dispatcher):
         return PostgresDispatcher()
 
 
+class GlobalDispatcher:
+    __dispatcher: Optional[Dispatcher] = None
+
+    @staticmethod
+    def get_dispatcher() -> Dispatcher:
+        if not GlobalDispatcher.__dispatcher:
+            GlobalDispatcher.__dispatcher = PostgresDispatcher.get()
+        return GlobalDispatcher.__dispatcher
+
+    @staticmethod
+    def set_dispatcher(dispatcher: Optional[Dispatcher]):
+        GlobalDispatcher.__dispatcher = dispatcher
+
+
 class EventDispatcher:
     @staticmethod
     def send_event(
         user: User,
         content: event_pb2.EventContent,
-        dispatcher: Dispatcher = PostgresDispatcher.get(),
+        dispatcher: Optional[Dispatcher] = None,
         skip_if_webhook_missing: bool = True,
     ):
+        if dispatcher is None:
+            dispatcher = GlobalDispatcher.get_dispatcher()
         if config.EVENT_WEBHOOK_DISABLE:
             LOG.i("Not sending events because webhook is disabled")
             return
