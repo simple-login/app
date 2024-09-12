@@ -22,21 +22,21 @@ if max_alias_id == 0:
 
 print(f"Checking alias {alias_id_start} to {max_alias_id}")
 step = 1000
-noteSql = (
-    "(note = 'Created through Proton' or note = 'Created through partner Proton' )"
-)
-el_query = f"SELECT id, note, flags from alias where id>=:start AND id < :end AND {noteSql} ORDER BY id ASC"
-alias_query = f"UPDATE alias set note = NULL, flags = flags | :flag where id = :alias_id and {noteSql}"
+noteSql = "(note = 'Created through Proton' or note = 'Created through partner Proton')"
+alias_query = f"UPDATE alias set note = NULL, flags = flags | :flag where id>=:start AND id<:end and {noteSql}"
 updated = 0
 start_time = time.time()
 for batch_start in range(alias_id_start, max_alias_id, step):
-    rows = Session.execute(el_query, {"start": batch_start, "end": batch_start + step})
-    for row in rows:
-        Session.execute(
-            alias_query, {"alias_id": row[0], "flag": Alias.FLAG_PARTNER_CREATED}
-        )
-        Session.commit()
-        updated += 1
+    rows_done = Session.execute(
+        alias_query,
+        {
+            "start": batch_start,
+            "end": batch_start + step,
+            "flag": Alias.FLAG_PARTNER_CREATED,
+        },
+    )
+    updated += rows_done.rowcount
+    Session.commit()
     elapsed = time.time() - start_time
     time_per_alias = elapsed / (updated + 1)
     last_batch_id = batch_start + step
