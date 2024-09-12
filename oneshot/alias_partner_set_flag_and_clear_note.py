@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import sys
 import time
 
 from sqlalchemy import func
@@ -33,8 +32,6 @@ start_time = time.time()
 for batch_start in range(alias_id_start, max_alias_id, step):
     rows = Session.execute(el_query, {"start": batch_start, "end": batch_start + step})
     for row in rows:
-        print(row)
-        sys.exit(1)
         Session.execute(
             alias_query, {"alias_id": row[0], "flag": Alias.FLAG_PARTNER_CREATED}
         )
