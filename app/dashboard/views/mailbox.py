@@ -128,7 +128,7 @@ def mailbox_verify():
     except mailbox_utils.MailboxError as e:
         LOG.i(f"Cannot verify mailbox {mailbox_id} because of {e}")
         flash(f"Cannot verify mailbox: {e.msg}", "error")
-        return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)
+        return redirect(url_for("dashboard.mailbox_route"))
     LOG.d("Mailbox %s is verified", mailbox)
     return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)
 
