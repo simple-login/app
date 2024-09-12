@@ -2,9 +2,11 @@ from dataclasses import dataclass
 from enum import Enum
 from flask import url_for
 from typing import Optional
+import arrow
 
+from app import config
 from app.errors import LinkException
-from app.models import User, Partner
+from app.models import User, Partner, Job
 from app.proton.proton_client import ProtonClient, ProtonUser
 from app.account_linking import (
     process_login_case,
@@ -41,12 +43,21 @@ class ProtonCallbackHandler:
     def __init__(self, proton_client: ProtonClient):
         self.proton_client = proton_client
 
+    def _initial_alias_sync(self, user: User):
+        Job.create(
+            name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
+            payload={"user_id": user.id},
+            run_at=arrow.now(),
+            commit=True,
+        )
+
     def handle_login(self, partner: Partner) -> ProtonCallbackResult:
         try:
             user = self.__get_partner_user()
             if user is None:
                 return generate_account_not_allowed_to_log_in()
             res = process_login_case(user, partner)
+            self._initial_alias_sync(res.user)
             return ProtonCallbackResult(
                 redirect_to_login=False,
                 flash_message=None,
@@ -75,6 +86,7 @@ class ProtonCallbackHandler:
             if user is None:
                 return generate_account_not_allowed_to_log_in()
             res = process_link_case(user, current_user, partner)
+            self._initial_alias_sync(res.user)
             return ProtonCallbackResult(
                 redirect_to_login=False,
                 flash_message="Account successfully linked",

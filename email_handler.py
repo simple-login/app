@@ -262,8 +262,6 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
 
             Session.commit()
         except IntegrityError:
-            # If the tx has been rolled back, the connection is borked. Force close to try to get a new one and start fresh
-            Session.close()
             LOG.info(
                 f"Contact with email {contact_email} for alias_id {alias_id} already existed, fetching from DB"
             )
@@ -818,7 +816,7 @@ def forward_email_to_mailbox(
 
     email_log = EmailLog.create(
         contact_id=contact.id,
-        user_id=user.id,
+        user_id=contact.user_id,
         mailbox_id=mailbox.id,
         alias_id=contact.alias_id,
         message_id=str(msg[headers.MESSAGE_ID]),
