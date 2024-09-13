@@ -35,6 +35,33 @@ def sl_getenv(env_var: str, default_factory: Callable = None):
     return literal_eval(value)
 
 
+def get_env_dict(env_var: str) -> dict[str, str]:
+    """
+    Get an env variable and convert it into a python dictionary with keys and values as strings.
+    Args:
+        env_var (str): env var, example: SL_DB
+
+    Syntax is: key1=value1;key2=value2
+    Components separated by ;
+    key and value separated by =
+    """
+    value = os.getenv(env_var)
+    if not value:
+        return {}
+
+    components = value.split(";")
+    result = {}
+    for component in components:
+        if component == "":
+            continue
+        parts = component.split("=")
+        if len(parts) != 2:
+            raise Exception(f"Invalid config for env var {env_var}")
+        result[parts[0].strip()] = parts[1].strip()
+
+    return result
+
+
 config_file = os.environ.get("CONFIG")
 if config_file:
     config_file = get_abs_path(config_file)
@@ -609,3 +636,21 @@ EVENT_WEBHOOK_ENABLED_USER_IDS: Optional[List[int]] = read_webhook_enabled_user_
 # Allow to define a different DB_URI for the event listener, in case we want to skip the connection pool
 # It defaults to the regular DB_URI in case it's needed
 EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
+
+
+def read_partner_domains() -> dict[int, str]:
+    partner_domains_dict = get_env_dict("PARTNER_DOMAINS")
+    if len(partner_domains_dict) == 0:
+        return {}
+
+    res: dict[int, str] = {}
+    for partner_id in partner_domains_dict.keys():
+        try:
+            partner_id_int = int(partner_id.strip())
+            res[partner_id_int] = partner_domains_dict[partner_id]
+        except ValueError:
+            pass
+    return res
+
+
+PARTNER_DOMAINS: dict[int, str] = read_partner_domains()

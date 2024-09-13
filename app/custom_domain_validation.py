@@ -1,6 +1,21 @@
+from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
+from app.constants import DMARC_RECORD
 from app.db import Session
-from app.dns_utils import get_cname_record
+from app.dns_utils import (
+    get_cname_record,
+    get_mx_domains,
+    get_txt_record,
+    is_mx_equivalent,
+    get_spf_domain,
+)
 from app.models import CustomDomain
+from dataclasses import dataclass
+
+
+@dataclass
+class DomainValidationResult:
+    success: bool
+    errors: [str]
 
 
 class CustomDomainValidation:
@@ -35,3 +50,61 @@ class CustomDomainValidation:
         custom_domain.dkim_verified = len(invalid_records) == 0
         Session.commit()
         return invalid_records
+
+    def validate_domain_ownership(
+        self, custom_domain: CustomDomain
+    ) -> DomainValidationResult:
+        """
+        Check if the custom_domain has added the ownership verification records
+        """
+        txt_records = get_txt_record(custom_domain.domain)
+
+        if custom_domain.get_ownership_dns_txt_value() in txt_records:
+            custom_domain.ownership_verified = True
+            Session.commit()
+            return DomainValidationResult(success=True, errors=[])
+        else:
+            return DomainValidationResult(success=False, errors=txt_records)
+
+    def validate_mx_records(
+        self, custom_domain: CustomDomain
+    ) -> DomainValidationResult:
+        mx_domains = get_mx_domains(custom_domain.domain)
+
+        if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
+            return DomainValidationResult(
+                success=False,
+                errors=[f"{priority} {domain}" for (priority, domain) in mx_domains],
+            )
+        else:
+            custom_domain.verified = True
+            Session.commit()
+            return DomainValidationResult(success=True, errors=[])
+
+    def validate_spf_records(
+        self, custom_domain: CustomDomain
+    ) -> DomainValidationResult:
+        spf_domains = get_spf_domain(custom_domain.domain)
+        if EMAIL_DOMAIN in spf_domains:
+            custom_domain.spf_verified = True
+            Session.commit()
+            return DomainValidationResult(success=True, errors=[])
+        else:
+            custom_domain.spf_verified = False
+            Session.commit()
+            return DomainValidationResult(
+                success=False, errors=get_txt_record(custom_domain.domain)
+            )
+
+    def validate_dmarc_records(
+        self, custom_domain: CustomDomain
+    ) -> DomainValidationResult:
+        txt_records = get_txt_record("_dmarc." + custom_domain.domain)
+        if DMARC_RECORD in txt_records:
+            custom_domain.dmarc_verified = True
+            Session.commit()
+            return DomainValidationResult(success=True, errors=[])
+        else:
+            custom_domain.dmarc_verified = False
+            Session.commit()
+            return DomainValidationResult(success=False, errors=txt_records)
