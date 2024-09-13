@@ -2419,6 +2419,14 @@ class CustomDomain(Base, ModelMixin):
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    partner_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey("partner.id"),
+        nullable=True,
+        default=None,
+        server_default=None,
+    )
+
     __table_args__ = (
         Index(
             "ix_unique_domain",  # Index name
