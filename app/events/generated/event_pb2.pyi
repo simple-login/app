@@ -16,16 +16,18 @@ class UserDeleted(_message.Message):
     def __init__(self) -> None: ...
 
 class AliasCreated(_message.Message):
-    __slots__ = ("alias_id", "alias_email", "alias_note", "enabled")
+    __slots__ = ("alias_id", "alias_email", "alias_note", "enabled", "created_at")
     ALIAS_ID_FIELD_NUMBER: _ClassVar[int]
     ALIAS_EMAIL_FIELD_NUMBER: _ClassVar[int]
     ALIAS_NOTE_FIELD_NUMBER: _ClassVar[int]
     ENABLED_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     alias_id: int
     alias_email: str
     alias_note: str
     enabled: bool
-    def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ..., alias_note: _Optional[str] = ..., enabled: bool = ...) -> None: ...
+    created_at: int
+    def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ..., alias_note: _Optional[str] = ..., enabled: bool = ..., created_at: _Optional[int] = ...) -> None: ...
 
 class AliasStatusChanged(_message.Message):
     __slots__ = ("alias_id", "alias_email", "enabled")

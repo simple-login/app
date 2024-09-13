@@ -1681,6 +1681,7 @@ class Alias(Base, ModelMixin):
             alias_email=new_alias.email,
             alias_note=new_alias.note,
             enabled=True,
+            created_at=int(new_alias.created_at.timestamp),
         )
         EventDispatcher.send_event(user, EventContent(alias_created=event))
 
