@@ -22,10 +22,11 @@ def send_alias_creation_events_for_user(
     ):
         event_list.append(
             AliasCreated(
-                alias_id=alias.id,
-                alias_email=alias.email,
-                alias_note=alias.note,
+                id=alias.id,
+                email=alias.email,
+                note=alias.note,
                 enabled=alias.enabled,
+                created_at=int(alias.created_at.timestamp),
             )
         )
         if len(event_list) >= chunk_size:
