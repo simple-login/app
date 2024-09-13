@@ -1677,9 +1677,9 @@ class Alias(Base, ModelMixin):
         from app.events.generated.event_pb2 import AliasCreated, EventContent
 
         event = AliasCreated(
-            alias_id=new_alias.id,
-            alias_email=new_alias.email,
-            alias_note=new_alias.note,
+            id=new_alias.id,
+            email=new_alias.email,
+            note=new_alias.note,
             enabled=True,
             created_at=int(new_alias.created_at.timestamp),
         )

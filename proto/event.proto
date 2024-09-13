@@ -10,22 +10,23 @@ message UserDeleted {
 }
 
 message AliasCreated {
-  uint32 alias_id = 1;
-  string alias_email = 2;
-  string alias_note = 3;
+  uint32 id = 1;
+  string email = 2;
+  string note = 3;
   bool enabled = 4;
   uint32 created_at = 5;
 }
 
 message AliasStatusChanged {
-  uint32 alias_id = 1;
-  string alias_email = 2;
+  uint32 id = 1;
+  string email = 2;
   bool enabled = 3;
+  uint32 created_at = 4;
 }
 
 message AliasDeleted {
-  uint32 alias_id = 1;
-  string alias_email = 2;
+  uint32 id = 1;
+  string email = 2;
 }
 
 message AliasCreatedList {

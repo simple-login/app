@@ -37,10 +37,14 @@ def test_send_alias_creation_events():
     event_list = decoded_event.content.alias_create_list.events
     assert len(event_list) == 2
     # 0 is newsletter alias
-    assert event_list[1].alias_id == aliases[0].id
+    assert event_list[1].id == aliases[0].id
+    assert event_list[1].email == aliases[0].email
+    assert event_list[1].note == ""
+    assert event_list[1].enabled == aliases[0].enabled
+    assert event_list[1].created_at == int(aliases[0].created_at.timestamp)
     decoded_event = event_pb2.Event.FromString(dispatcher.events[1])
     assert decoded_event.user_id == user.id
     assert decoded_event.external_user_id == partner_user.external_user_id
     event_list = decoded_event.content.alias_create_list.events
     assert len(event_list) == 1
-    assert event_list[0].alias_id == aliases[1].id
+    assert event_list[0].id == aliases[1].id

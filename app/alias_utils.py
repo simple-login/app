@@ -370,9 +370,7 @@ def delete_alias(
 
     EventDispatcher.send_event(
         user,
-        EventContent(
-            alias_deleted=AliasDeleted(alias_id=alias_id, alias_email=alias_email)
-        ),
+        EventContent(alias_deleted=AliasDeleted(id=alias_id, email=alias_email)),
     )
     if commit:
         Session.commit()
@@ -511,7 +509,10 @@ def change_alias_status(alias: Alias, enabled: bool, commit: bool = False):
     alias.enabled = enabled
 
     event = AliasStatusChanged(
-        alias_id=alias.id, alias_email=alias.email, enabled=enabled
+        id=alias.id,
+        email=alias.email,
+        enabled=enabled,
+        created_at=int(alias.created_at.timestamp),
     )
     EventDispatcher.send_event(alias.user, EventContent(alias_status_change=event))
 

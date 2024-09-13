@@ -16,36 +16,38 @@ class UserDeleted(_message.Message):
     def __init__(self) -> None: ...
 
 class AliasCreated(_message.Message):
-    __slots__ = ("alias_id", "alias_email", "alias_note", "enabled", "created_at")
-    ALIAS_ID_FIELD_NUMBER: _ClassVar[int]
-    ALIAS_EMAIL_FIELD_NUMBER: _ClassVar[int]
-    ALIAS_NOTE_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("id", "email", "note", "enabled", "created_at")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    EMAIL_FIELD_NUMBER: _ClassVar[int]
+    NOTE_FIELD_NUMBER: _ClassVar[int]
     ENABLED_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
-    alias_id: int
-    alias_email: str
-    alias_note: str
+    id: int
+    email: str
+    note: str
     enabled: bool
     created_at: int
-    def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ..., alias_note: _Optional[str] = ..., enabled: bool = ..., created_at: _Optional[int] = ...) -> None: ...
+    def __init__(self, id: _Optional[int] = ..., email: _Optional[str] = ..., note: _Optional[str] = ..., enabled: bool = ..., created_at: _Optional[int] = ...) -> None: ...
 
 class AliasStatusChanged(_message.Message):
-    __slots__ = ("alias_id", "alias_email", "enabled")
-    ALIAS_ID_FIELD_NUMBER: _ClassVar[int]
-    ALIAS_EMAIL_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("id", "email", "enabled", "created_at")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    EMAIL_FIELD_NUMBER: _ClassVar[int]
     ENABLED_FIELD_NUMBER: _ClassVar[int]
-    alias_id: int
-    alias_email: str
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    id: int
+    email: str
     enabled: bool
-    def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ..., enabled: bool = ...) -> None: ...
+    created_at: int
+    def __init__(self, id: _Optional[int] = ..., email: _Optional[str] = ..., enabled: bool = ..., created_at: _Optional[int] = ...) -> None: ...
 
 class AliasDeleted(_message.Message):
-    __slots__ = ("alias_id", "alias_email")
-    ALIAS_ID_FIELD_NUMBER: _ClassVar[int]
-    ALIAS_EMAIL_FIELD_NUMBER: _ClassVar[int]
-    alias_id: int
-    alias_email: str
-    def __init__(self, alias_id: _Optional[int] = ..., alias_email: _Optional[str] = ...) -> None: ...
+    __slots__ = ("id", "email")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    EMAIL_FIELD_NUMBER: _ClassVar[int]
+    id: int
+    email: str
+    def __init__(self, id: _Optional[int] = ..., email: _Optional[str] = ...) -> None: ...
 
 class AliasCreatedList(_message.Message):
     __slots__ = ("events",)

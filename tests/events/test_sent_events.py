@@ -46,9 +46,9 @@ def test_fire_event_on_alias_creation():
     event_content = _get_event_from_string(event_data, user, pu)
     assert event_content.alias_created is not None
     alias_created = event_content.alias_created
-    assert alias.id == alias_created.alias_id
-    assert alias.email == alias_created.alias_email
-    assert "" == alias_created.alias_note
+    assert alias.id == alias_created.id
+    assert alias.email == alias_created.email
+    assert "" == alias_created.note
     assert alias.enabled == alias_created.enabled
     assert int(alias.created_at.timestamp) == alias_created.created_at
 
@@ -63,9 +63,9 @@ def test_fire_event_on_alias_creation_with_note():
     event_content = _get_event_from_string(event_data, user, pu)
     assert event_content.alias_created is not None
     alias_created = event_content.alias_created
-    assert alias.id == alias_created.alias_id
-    assert alias.email == alias_created.alias_email
-    assert note == alias_created.alias_note
+    assert alias.id == alias_created.id
+    assert alias.email == alias_created.email
+    assert note == alias_created.note
     assert alias.enabled == alias_created.enabled
 
 
@@ -81,8 +81,8 @@ def test_fire_event_on_alias_deletion():
     event_content = _get_event_from_string(event_data, user, pu)
     assert event_content.alias_deleted is not None
     alias_deleted = event_content.alias_deleted
-    assert alias_id == alias_deleted.alias_id
-    assert alias.email == alias_deleted.alias_email
+    assert alias_id == alias_deleted.id
+    assert alias.email == alias_deleted.email
 
 
 def test_fire_event_on_alias_status_change():
@@ -96,6 +96,7 @@ def test_fire_event_on_alias_status_change():
     event_content = _get_event_from_string(event_data, user, pu)
     assert event_content.alias_status_change is not None
     event = event_content.alias_status_change
-    assert alias.id == event.alias_id
-    assert alias.email == event.alias_email
+    assert alias.id == event.id
+    assert alias.email == event.email
+    assert int(alias.created_at.timestamp) == event.created_at
     assert event.enabled
