@@ -14,6 +14,7 @@ message AliasCreated {
   string alias_email = 2;
   string alias_note = 3;
   bool enabled = 4;
+  uint32 created_at = 5;
 }
 
 message AliasStatusChanged {

@@ -50,6 +50,7 @@ def test_fire_event_on_alias_creation():
     assert alias.email == alias_created.alias_email
     assert "" == alias_created.alias_note
     assert alias.enabled == alias_created.enabled
+    assert int(alias.created_at.timestamp) == alias_created.created_at
 
 
 def test_fire_event_on_alias_creation_with_note():
