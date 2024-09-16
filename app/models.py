@@ -973,7 +973,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def has_custom_domain(self):
         return CustomDomain.filter_by(user_id=self.id, verified=True).count() > 0
 
-    def custom_domains(self):
+    def custom_domains(self) -> List["CustomDomain"]:
         return CustomDomain.filter_by(user_id=self.id, verified=True).all()
 
     def available_domains_for_random_alias(
