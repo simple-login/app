@@ -77,6 +77,34 @@ def test_custom_domain_validation_validate_dkim_records_wrong_records_failure():
     assert db_domain.dkim_verified is False
 
 
+def test_custom_domain_validation_validate_dkim_records_success_with_old_system():
+    dkim_domain = random_domain()
+    dns_client = InMemoryDNSClient()
+    validator = CustomDomainValidation(dkim_domain, dns_client)
+
+    user_domain = random_domain()
+
+    # One domain right, other domains missing
+    dns_client.set_cname_record(
+        f"dkim._domainkey.{user_domain}", f"dkim._domainkey.{dkim_domain}"
+    )
+
+    domain = create_custom_domain(user_domain)
+
+    # DKIM is verified
+    domain.dkim_verified = True
+    Session.commit()
+
+    res = validator.validate_dkim_records(domain)
+    assert len(res) == 2
+    assert f"dkim02._domainkey.{user_domain}" in res
+    assert f"dkim03._domainkey.{user_domain}" in res
+
+    # Flag is not cleared
+    db_domain = CustomDomain.get_by(id=domain.id)
+    assert db_domain.dkim_verified is True
+
+
 def test_custom_domain_validation_validate_dkim_records_success():
     dkim_domain = random_domain()
     dns_client = InMemoryDNSClient()

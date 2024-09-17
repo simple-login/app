@@ -39,15 +39,31 @@ class CustomDomainValidation:
         Check if dkim records are properly set for this custom domain.
         Returns empty list if all records are ok. Other-wise return the records that aren't properly configured
         """
+        correct_records = {}
         invalid_records = {}
-        for prefix, expected_record in self.get_dkim_records().items():
+        expected_records = self.get_dkim_records()
+        for prefix, expected_record in expected_records.items():
             custom_record = f"{prefix}.{custom_domain.domain}"
             dkim_record = self._dns_client.get_cname_record(custom_record)
-            if dkim_record != expected_record:
+            if dkim_record == expected_record:
+                correct_records[prefix] = custom_record
+            else:
                 invalid_records[custom_record] = dkim_record or "empty"
-        # HACK: If dkim is enabled, don't disable it to give users time to update their CNAMES
+
+        # HACK
+        # As initially we only had one dkim record, we want to allow users that had only the original dkim record and
+        # the domain validated to continue seeing it as validated (although showing them the missing records).
+        # However, if not even the original dkim record is right, even if the domain was dkim_verified in the past,
+        # we will remove the dkim_verified flag.
+        # This is done in order to give users with the old dkim config (only one) to update their CNAMEs
         if custom_domain.dkim_verified:
-            return invalid_records
+            # Check if at least the original dkim is there
+            if correct_records.get("dkim._domainkey") is not None:
+                # Original dkim record is there. Return the missing records (if any) and don't clear the flag
+                return invalid_records
+
+            # Original DKIM record is not there, which means the DKIM config is not finished. Proceed with the
+            # rest of the code path, returning the invalid records and clearing the flag
         custom_domain.dkim_verified = len(invalid_records) == 0
         Session.commit()
         return invalid_records
