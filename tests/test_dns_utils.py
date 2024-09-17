@@ -1,7 +1,6 @@
 from app.dns_utils import (
     get_mx_domains,
-    get_spf_domain,
-    get_txt_record,
+    get_network_dns_client,
     is_mx_equivalent,
 )
 
@@ -20,12 +19,12 @@ def test_get_mx_domains():
 
 
 def test_get_spf_domain():
-    r = get_spf_domain(_DOMAIN)
+    r = get_network_dns_client().get_spf_domain(_DOMAIN)
     assert r == ["simplelogin.co"]
 
 
 def test_get_txt_record():
-    r = get_txt_record(_DOMAIN)
+    r = get_network_dns_client().get_txt_record(_DOMAIN)
     assert len(r) > 0
 
 
