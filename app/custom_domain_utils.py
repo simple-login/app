@@ -43,12 +43,6 @@ class CannotUseDomainReason(Enum):
             raise Exception("Invalid CannotUseDomainReason")
 
 
-@dataclass
-class CanDomainBeUsedResult:
-    can_be_used: bool
-    reason: Optional[CannotUseDomainReason] = None
-
-
 def is_valid_domain(domain: str) -> bool:
     """
     Checks that a domain is valid according to RFC 1035
@@ -77,21 +71,21 @@ def sanitize_domain(domain: str) -> str:
     return new_domain
 
 
-def can_domain_be_used(user: User, domain: str) -> CanDomainBeUsedResult:
+def can_domain_be_used(user: User, domain: str) -> Optional[CannotUseDomainReason]:
     if not is_valid_domain(domain):
-        return CanDomainBeUsedResult(False, CannotUseDomainReason.InvalidDomain)
+        return CannotUseDomainReason.InvalidDomain
     elif SLDomain.get_by(domain=domain):
-        return CanDomainBeUsedResult(False, CannotUseDomainReason.BuiltinDomain)
+        return CannotUseDomainReason.BuiltinDomain
     elif CustomDomain.get_by(domain=domain):
-        return CanDomainBeUsedResult(False, CannotUseDomainReason.DomainAlreadyUsed)
+        return CannotUseDomainReason.DomainAlreadyUsed
     elif get_email_domain_part(user.email) == domain:
-        return CanDomainBeUsedResult(False, CannotUseDomainReason.DomainPartOfUserEmail)
+        return CannotUseDomainReason.DomainPartOfUserEmail
     elif Mailbox.filter(
         Mailbox.verified.is_(True), Mailbox.email.endswith(f"@{domain}")
     ).first():
-        return CanDomainBeUsedResult(False, CannotUseDomainReason.DomainUserInMailbox)
+        return CannotUseDomainReason.DomainUserInMailbox
     else:
-        return CanDomainBeUsedResult(True)
+        return None
 
 
 def create_custom_domain(
@@ -104,10 +98,10 @@ def create_custom_domain(
         )
 
     new_domain = sanitize_domain(domain)
-    can_use_domain = can_domain_be_used(user, new_domain)
-    if not can_use_domain.can_be_used:
+    domain_forbidden_cause = can_domain_be_used(user, new_domain)
+    if domain_forbidden_cause:
         return CreateCustomDomainResult(
-            message=can_use_domain.reason.message(new_domain), message_category="error"
+            message=domain_forbidden_cause.message(new_domain), message_category="error"
         )
 
     new_custom_domain = CustomDomain.create(domain=new_domain, user_id=user.id)
