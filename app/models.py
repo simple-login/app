@@ -973,7 +973,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def has_custom_domain(self):
         return CustomDomain.filter_by(user_id=self.id, verified=True).count() > 0
 
-    def custom_domains(self):
+    def custom_domains(self) -> List["CustomDomain"]:
         return CustomDomain.filter_by(user_id=self.id, verified=True).all()
 
     def available_domains_for_random_alias(
@@ -2417,6 +2417,14 @@ class CustomDomain(Base, ModelMixin):
     # if the domain is SimpleLogin subdomain, no need for the ownership, SPF, DKIM, DMARC check
     is_sl_subdomain = sa.Column(
         sa.Boolean, nullable=False, default=False, server_default="0"
+    )
+
+    partner_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey("partner.id"),
+        nullable=True,
+        default=None,
+        server_default=None,
     )
 
     __table_args__ = (
