@@ -1,6 +1,7 @@
 import re
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 from app.db import Session
@@ -18,6 +19,34 @@ class CreateCustomDomainResult:
     success: bool = False
     instance: Optional[CustomDomain] = None
     redirect: Optional[str] = None
+
+
+class CannotUseDomainReason(Enum):
+    InvalidDomain = 1
+    BuiltinDomain = 2
+    DomainAlreadyUsed = 3
+    DomainPartOfUserEmail = 4
+    DomainUserInMailbox = 5
+
+    def message(self, domain: str) -> str:
+        if self == CannotUseDomainReason.InvalidDomain:
+            return "This is not a valid domain"
+        elif self == CannotUseDomainReason.BuiltinDomain:
+            return "A custom domain cannot be a built-in domain."
+        elif self == CannotUseDomainReason.DomainAlreadyUsed:
+            return f"{domain} already used"
+        elif self == CannotUseDomainReason.DomainPartOfUserEmail:
+            return "You cannot add a domain that you are currently using for your personal email. Please change your personal email to your real email"
+        elif self == CannotUseDomainReason.DomainUserInMailbox:
+            return f"{domain} already used in a SimpleLogin mailbox"
+        else:
+            raise Exception("Invalid CannotUseDomainReason")
+
+
+@dataclass
+class CanDomainBeUsedResult:
+    can_be_used: bool
+    reason: Optional[CannotUseDomainReason] = None
 
 
 def is_valid_domain(domain: str) -> bool:
@@ -48,21 +77,21 @@ def sanitize_domain(domain: str) -> str:
     return new_domain
 
 
-def can_domain_be_used(user: User, domain: str) -> Optional[str]:
+def can_domain_be_used(user: User, domain: str) -> CanDomainBeUsedResult:
     if not is_valid_domain(domain):
-        return "This is not a valid domain"
+        return CanDomainBeUsedResult(False, CannotUseDomainReason.InvalidDomain)
     elif SLDomain.get_by(domain=domain):
-        return "A custom domain cannot be a built-in domain."
+        return CanDomainBeUsedResult(False, CannotUseDomainReason.BuiltinDomain)
     elif CustomDomain.get_by(domain=domain):
-        return f"{domain} already used"
+        return CanDomainBeUsedResult(False, CannotUseDomainReason.DomainAlreadyUsed)
     elif get_email_domain_part(user.email) == domain:
-        return "You cannot add a domain that you are currently using for your personal email. Please change your personal email to your real email"
+        return CanDomainBeUsedResult(False, CannotUseDomainReason.DomainPartOfUserEmail)
     elif Mailbox.filter(
         Mailbox.verified.is_(True), Mailbox.email.endswith(f"@{domain}")
     ).first():
-        return f"{domain} already used in a SimpleLogin mailbox"
+        return CanDomainBeUsedResult(False, CannotUseDomainReason.DomainUserInMailbox)
     else:
-        return None
+        return CanDomainBeUsedResult(True)
 
 
 def create_custom_domain(
@@ -75,10 +104,10 @@ def create_custom_domain(
         )
 
     new_domain = sanitize_domain(domain)
-    can_use_domain_error = can_domain_be_used(user, new_domain)
-    if can_use_domain_error:
+    can_use_domain = can_domain_be_used(user, new_domain)
+    if not can_use_domain.can_be_used:
         return CreateCustomDomainResult(
-            message=can_use_domain_error, message_category="error"
+            message=can_use_domain.reason.message(new_domain), message_category="error"
         )
 
     new_custom_domain = CustomDomain.create(domain=new_domain, user_id=user.id)

@@ -7,6 +7,7 @@ from app.custom_domain_utils import (
     create_custom_domain,
     is_valid_domain,
     sanitize_domain,
+    CannotUseDomainReason,
 )
 from app.db import Session
 from app.models import User, CustomDomain, Mailbox
@@ -47,34 +48,46 @@ def test_is_valid_domain():
 # can_domain_be_used
 def test_can_domain_be_used():
     domain = f"{random_string(10)}.com"
-    assert can_domain_be_used(user, domain) is None
+    res = can_domain_be_used(user, domain)
+    assert res.can_be_used is True
+    assert res.reason is None
 
 
 def test_can_domain_be_used_existing_domain():
     domain = random_domain()
     CustomDomain.create(user_id=user.id, domain=domain, commit=True)
-    assert can_domain_be_used(user, domain) is not None
+    res = can_domain_be_used(user, domain)
+    assert res.can_be_used is False
+    assert res.reason is CannotUseDomainReason.DomainAlreadyUsed
 
 
 def test_can_domain_be_used_sl_domain():
     domain = ALIAS_DOMAINS[0]
-    assert can_domain_be_used(user, domain) is not None
+    res = can_domain_be_used(user, domain)
+    assert res.can_be_used is False
+    assert res.reason is CannotUseDomainReason.BuiltinDomain
 
 
 def test_can_domain_be_used_domain_of_user_email():
     domain = user.email.split("@")[1]
-    assert can_domain_be_used(user, domain) is not None
+    res = can_domain_be_used(user, domain)
+    assert res.can_be_used is False
+    assert res.reason is CannotUseDomainReason.DomainPartOfUserEmail
 
 
 def test_can_domain_be_used_domain_of_existing_mailbox():
     domain = random_domain()
     Mailbox.create(user_id=user.id, email=f"email@{domain}", verified=True, commit=True)
-    assert can_domain_be_used(user, domain) is not None
+    res = can_domain_be_used(user, domain)
+    assert res.can_be_used is False
+    assert res.reason is CannotUseDomainReason.DomainUserInMailbox
 
 
 def test_can_domain_be_used_invalid_domain():
     domain = f"{random_string(10)}@lol.com"
-    assert can_domain_be_used(user, domain) is not None
+    res = can_domain_be_used(user, domain)
+    assert res.can_be_used is False
+    assert res.reason is CannotUseDomainReason.InvalidDomain
 
 
 # sanitize_domain
