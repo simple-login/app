@@ -23,7 +23,7 @@ class CustomDomainValidation:
         self.dkim_domain = dkim_domain
         self._dns_client = dns_client
         self._dkim_records = {
-            (f"{key}._domainkey", f"{key}._domainkey.{self.dkim_domain}")
+            f"{key}._domainkey": f"{key}._domainkey.{self.dkim_domain}"
             for key in ("dkim", "dkim02", "dkim03")
         }
 
@@ -40,7 +40,7 @@ class CustomDomainValidation:
         Returns empty list if all records are ok. Other-wise return the records that aren't properly configured
         """
         invalid_records = {}
-        for prefix, expected_record in self.get_dkim_records():
+        for prefix, expected_record in self.get_dkim_records().items():
             custom_record = f"{prefix}.{custom_domain.domain}"
             dkim_record = self._dns_client.get_cname_record(custom_record)
             if dkim_record != expected_record:

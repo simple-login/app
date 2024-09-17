@@ -40,9 +40,24 @@ class DNSClient(ABC):
     def get_mx_domains(self, hostname: str) -> List[Tuple[int, str]]:
         pass
 
-    @abstractmethod
     def get_spf_domain(self, hostname: str) -> List[str]:
-        pass
+        """
+        return all domains listed in *include:*
+        """
+        try:
+            records = self.get_txt_record(hostname)
+            ret = []
+            for record in records:
+                if record.startswith("v=spf1"):
+                    parts = record.split(" ")
+                    for part in parts:
+                        if part.startswith(_include_spf):
+                            ret.append(
+                                part[part.find(_include_spf) + len(_include_spf) :]
+                            )
+            return ret
+        except Exception:
+            return []
 
     @abstractmethod
     def get_txt_record(self, hostname: str) -> List[str]:
@@ -82,27 +97,6 @@ class NetworkDNSClient(DNSClient):
         except Exception:
             return []
 
-    def get_spf_domain(self, hostname: str) -> List[str]:
-        """
-        return all domains listed in *include:*
-        """
-        try:
-            answers = self._resolver.resolve(hostname, "TXT", search=True)
-            ret = []
-            for a in answers:  # type: dns.rdtypes.ANY.TXT.TXT
-                for record in a.strings:
-                    record_str = record.decode()  # record is bytes
-                    if record_str.startswith("v=spf1"):
-                        parts = record_str.split(" ")
-                        for part in parts:
-                            if part.startswith(_include_spf):
-                                ret.append(
-                                    part[part.find(_include_spf) + len(_include_spf) :]
-                                )
-            return ret
-        except Exception:
-            return []
-
     def get_txt_record(self, hostname: str) -> List[str]:
         try:
             answers = self._resolver.resolve(hostname, "TXT", search=True)
@@ -128,9 +122,6 @@ class InMemoryDNSClient(DNSClient):
     def set_mx_records(self, hostname: str, mx_list: List[Tuple[int, str]]):
         self.mx_records[hostname] = mx_list
 
-    def set_spf_domain(self, hostname: str, spf_list: List[str]):
-        self.spf_records[hostname] = spf_list
-
     def set_txt_record(self, hostname: str, txt_list: List[str]):
         self.txt_records[hostname] = txt_list
 
@@ -140,9 +131,6 @@ class InMemoryDNSClient(DNSClient):
     def get_mx_domains(self, hostname: str) -> List[Tuple[int, str]]:
         mx_list = self.mx_records.get(hostname, [])
         return sorted(mx_list, key=lambda x: x[0])
-
-    def get_spf_domain(self, hostname: str) -> List[str]:
-        return self.spf_records.get(hostname, [])
 
     def get_txt_record(self, hostname: str) -> List[str]:
         return self.txt_records.get(hostname, [])

@@ -237,7 +237,7 @@
           folder.
         </div>
         <div class="mb-2">Add the following CNAME DNS records to your domain.</div>
-        {% for dkim_prefix, dkim_cname_value in dkim_records %}
+        {% for dkim_prefix, dkim_cname_value in dkim_records.items() %}
 
           <div class="mb-2 p-3 dns-record">
             Record: CNAME
