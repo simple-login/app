@@ -141,7 +141,10 @@ def domain_detail_dns(custom_domain_id):
     return render_template(
         "dashboard/domain_detail/dns.html",
         EMAIL_SERVERS_WITH_PRIORITY=EMAIL_SERVERS_WITH_PRIORITY,
-        dkim_records=domain_validator.get_dkim_records(),
+        ownership_record=domain_validator.get_ownership_verification_record(
+            custom_domain
+        ),
+        dkim_records=domain_validator.get_dkim_records(custom_domain),
         dmarc_record=DMARC_RECORD,
         **locals(),
     )

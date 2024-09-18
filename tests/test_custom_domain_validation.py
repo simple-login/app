@@ -6,6 +6,7 @@ from app.custom_domain_validation import CustomDomainValidation
 from app.db import Session
 from app.models import CustomDomain, User
 from app.dns_utils import InMemoryDNSClient
+from app.proton.utils import get_proton_partner
 from app.utils import random_string
 from tests.utils import create_new_user, random_domain
 
@@ -27,13 +28,34 @@ def create_custom_domain(domain: str) -> CustomDomain:
 
 def test_custom_domain_validation_get_dkim_records():
     domain = random_domain()
+    custom_domain = create_custom_domain(domain)
     validator = CustomDomainValidation(domain)
-    records = validator.get_dkim_records()
+    records = validator.get_dkim_records(custom_domain)
 
     assert len(records) == 3
     assert records["dkim02._domainkey"] == f"dkim02._domainkey.{domain}"
     assert records["dkim03._domainkey"] == f"dkim03._domainkey.{domain}"
     assert records["dkim._domainkey"] == f"dkim._domainkey.{domain}"
+
+
+def test_custom_domain_validation_get_dkim_records_for_partner():
+    domain = random_domain()
+    custom_domain = create_custom_domain(domain)
+
+    partner_id = get_proton_partner().id
+    custom_domain.partner_id = partner_id
+    Session.commit()
+
+    dkim_domain = random_domain()
+    validator = CustomDomainValidation(
+        domain, partner_domains={partner_id: dkim_domain}
+    )
+    records = validator.get_dkim_records(custom_domain)
+
+    assert len(records) == 3
+    assert records["dkim02._domainkey"] == f"dkim02._domainkey.{dkim_domain}"
+    assert records["dkim03._domainkey"] == f"dkim03._domainkey.{dkim_domain}"
+    assert records["dkim._domainkey"] == f"dkim._domainkey.{dkim_domain}"
 
 
 # validate_dkim_records
@@ -169,7 +191,36 @@ def test_custom_domain_validation_validate_ownership_success():
 
     domain = create_custom_domain(random_domain())
 
-    dns_client.set_txt_record(domain.domain, [domain.get_ownership_dns_txt_value()])
+    dns_client.set_txt_record(
+        domain.domain, [validator.get_ownership_verification_record(domain)]
+    )
+    res = validator.validate_domain_ownership(domain)
+
+    assert res.success is True
+    assert len(res.errors) == 0
+
+    db_domain = CustomDomain.get_by(id=domain.id)
+    assert db_domain.ownership_verified is True
+
+
+def test_custom_domain_validation_validate_ownership_from_partner_success():
+    dns_client = InMemoryDNSClient()
+    partner_id = get_proton_partner().id
+
+    prefix = random_string()
+    validator = CustomDomainValidation(
+        random_domain(),
+        dns_client,
+        partner_domains_validation_prefixes={partner_id: prefix},
+    )
+
+    domain = create_custom_domain(random_domain())
+    domain.partner_id = partner_id
+    Session.commit()
+
+    dns_client.set_txt_record(
+        domain.domain, [validator.get_ownership_verification_record(domain)]
+    )
     res = validator.validate_domain_ownership(domain)
 
     assert res.success is True

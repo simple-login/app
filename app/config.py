@@ -638,19 +638,22 @@ EVENT_WEBHOOK_ENABLED_USER_IDS: Optional[List[int]] = read_webhook_enabled_user_
 EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
 
 
-def read_partner_domains() -> dict[int, str]:
-    partner_domains_dict = get_env_dict("PARTNER_DOMAINS")
-    if len(partner_domains_dict) == 0:
+def read_partner_dict(var: str) -> dict[int, str]:
+    partner_value = get_env_dict(var)
+    if len(partner_value) == 0:
         return {}
 
     res: dict[int, str] = {}
-    for partner_id in partner_domains_dict.keys():
+    for partner_id in partner_value.keys():
         try:
             partner_id_int = int(partner_id.strip())
-            res[partner_id_int] = partner_domains_dict[partner_id]
+            res[partner_id_int] = partner_value[partner_id]
         except ValueError:
             pass
     return res
 
 
-PARTNER_DOMAINS: dict[int, str] = read_partner_domains()
+PARTNER_DOMAINS: dict[int, str] = read_partner_dict("PARTNER_DOMAINS")
+PARTNER_DOMAIN_VALIDATION_PREFIXES: dict[int, str] = read_partner_dict(
+    "PARTNER_DOMAIN_VALIDATION_PREFIXES"
+)

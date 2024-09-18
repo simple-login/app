@@ -2451,9 +2451,6 @@ class CustomDomain(Base, ModelMixin):
     def get_trash_url(self):
         return config.URL + f"/dashboard/domains/{self.id}/trash"
 
-    def get_ownership_dns_txt_value(self):
-        return f"sl-verification={self.ownership_txt_token}"
-
     @classmethod
     def create(cls, **kwargs):
         domain = kwargs.get("domain")
