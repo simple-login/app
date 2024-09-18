@@ -1,12 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from app.config import (
-    EMAIL_SERVERS_WITH_PRIORITY,
-    EMAIL_DOMAIN,
-    PARTNER_DOMAINS,
-    PARTNER_DOMAIN_VALIDATION_PREFIXES,
-)
+from app import config
 from app.constants import DMARC_RECORD
 from app.db import Session
 from app.dns_utils import (
@@ -33,19 +28,20 @@ class CustomDomainValidation:
     ):
         self.dkim_domain = dkim_domain
         self._dns_client = dns_client
-        self._partner_domains = partner_domains or PARTNER_DOMAINS
+        self._partner_domains = partner_domains or config.PARTNER_DOMAINS
         self._partner_domain_validation_prefixes = (
-            partner_domains_validation_prefixes or PARTNER_DOMAIN_VALIDATION_PREFIXES
+            partner_domains_validation_prefixes
+            or config.PARTNER_DOMAIN_VALIDATION_PREFIXES
         )
 
     def get_ownership_verification_record(self, domain: CustomDomain) -> str:
-        prefix = "sl-verification"
+        prefix = "sl"
         if (
             domain.partner_id is not None
             and domain.partner_id in self._partner_domain_validation_prefixes
         ):
             prefix = self._partner_domain_validation_prefixes[domain.partner_id]
-        return f"{prefix}={domain.ownership_txt_token}"
+        return f"{prefix}-verification={domain.ownership_txt_token}"
 
     def get_dkim_records(self, domain: CustomDomain) -> {str: str}:
         """
@@ -57,9 +53,7 @@ class CustomDomainValidation:
         dkim_domain = self.dkim_domain
         if domain.partner_id is not None:
             # Domain is from a partner. Retrieve the partner config and use that domain if exists
-            partner_domain = self._partner_domains.get(domain.partner_id)
-            if partner_domain is not None:
-                dkim_domain = partner_domain
+            dkim_domain = self._partner_domains.get(domain.partner_id, dkim_domain)
 
         return {
             f"{key}._domainkey": f"{key}._domainkey.{dkim_domain}"
@@ -123,7 +117,7 @@ class CustomDomainValidation:
     ) -> DomainValidationResult:
         mx_domains = self._dns_client.get_mx_domains(custom_domain.domain)
 
-        if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
+        if not is_mx_equivalent(mx_domains, config.EMAIL_SERVERS_WITH_PRIORITY):
             return DomainValidationResult(
                 success=False,
                 errors=[f"{priority} {domain}" for (priority, domain) in mx_domains],
@@ -137,7 +131,7 @@ class CustomDomainValidation:
         self, custom_domain: CustomDomain
     ) -> DomainValidationResult:
         spf_domains = self._dns_client.get_spf_domain(custom_domain.domain)
-        if EMAIL_DOMAIN in spf_domains:
+        if config.EMAIL_DOMAIN in spf_domains:
             custom_domain.spf_verified = True
             Session.commit()
             return DomainValidationResult(success=True, errors=[])
