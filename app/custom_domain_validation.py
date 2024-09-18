@@ -1,12 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from app.config import (
-    EMAIL_SERVERS_WITH_PRIORITY,
-    EMAIL_DOMAIN,
-    PARTNER_DOMAINS,
-    PARTNER_DOMAIN_VALIDATION_PREFIXES,
-)
+from app import config
 from app.constants import DMARC_RECORD
 from app.db import Session
 from app.dns_utils import (
@@ -33,9 +28,10 @@ class CustomDomainValidation:
     ):
         self.dkim_domain = dkim_domain
         self._dns_client = dns_client
-        self._partner_domains = partner_domains or PARTNER_DOMAINS
+        self._partner_domains = partner_domains or config.PARTNER_DOMAINS
         self._partner_domain_validation_prefixes = (
-            partner_domains_validation_prefixes or PARTNER_DOMAIN_VALIDATION_PREFIXES
+            partner_domains_validation_prefixes
+            or config.PARTNER_DOMAIN_VALIDATION_PREFIXES
         )
 
     def get_ownership_verification_record(self, domain: CustomDomain) -> str:
@@ -123,7 +119,7 @@ class CustomDomainValidation:
     ) -> DomainValidationResult:
         mx_domains = self._dns_client.get_mx_domains(custom_domain.domain)
 
-        if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
+        if not is_mx_equivalent(mx_domains, config.EMAIL_SERVERS_WITH_PRIORITY):
             return DomainValidationResult(
                 success=False,
                 errors=[f"{priority} {domain}" for (priority, domain) in mx_domains],
@@ -137,7 +133,7 @@ class CustomDomainValidation:
         self, custom_domain: CustomDomain
     ) -> DomainValidationResult:
         spf_domains = self._dns_client.get_spf_domain(custom_domain.domain)
-        if EMAIL_DOMAIN in spf_domains:
+        if config.EMAIL_DOMAIN in spf_domains:
             custom_domain.spf_verified = True
             Session.commit()
             return DomainValidationResult(success=True, errors=[])
