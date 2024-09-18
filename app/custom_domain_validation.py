@@ -35,13 +35,13 @@ class CustomDomainValidation:
         )
 
     def get_ownership_verification_record(self, domain: CustomDomain) -> str:
-        prefix = "sl-verification"
+        prefix = "sl"
         if (
             domain.partner_id is not None
             and domain.partner_id in self._partner_domain_validation_prefixes
         ):
             prefix = self._partner_domain_validation_prefixes[domain.partner_id]
-        return f"{prefix}={domain.ownership_txt_token}"
+        return f"{prefix}-verification={domain.ownership_txt_token}"
 
     def get_dkim_records(self, domain: CustomDomain) -> {str: str}:
         """
@@ -53,9 +53,7 @@ class CustomDomainValidation:
         dkim_domain = self.dkim_domain
         if domain.partner_id is not None:
             # Domain is from a partner. Retrieve the partner config and use that domain if exists
-            partner_domain = self._partner_domains.get(domain.partner_id)
-            if partner_domain is not None:
-                dkim_domain = partner_domain
+            dkim_domain = self._partner_domains.get(domain.partner_id, dkim_domain)
 
         return {
             f"{key}._domainkey": f"{key}._domainkey.{dkim_domain}"
