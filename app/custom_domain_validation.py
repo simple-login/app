@@ -1,4 +1,12 @@
-from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
+from dataclasses import dataclass
+from typing import Optional
+
+from app.config import (
+    EMAIL_SERVERS_WITH_PRIORITY,
+    EMAIL_DOMAIN,
+    PARTNER_DOMAINS,
+    PARTNER_DOMAIN_VALIDATION_PREFIXES,
+)
 from app.constants import DMARC_RECORD
 from app.db import Session
 from app.dns_utils import (
@@ -7,7 +15,6 @@ from app.dns_utils import (
     get_network_dns_client,
 )
 from app.models import CustomDomain
-from dataclasses import dataclass
 
 
 @dataclass
@@ -18,21 +25,46 @@ class DomainValidationResult:
 
 class CustomDomainValidation:
     def __init__(
-        self, dkim_domain: str, dns_client: DNSClient = get_network_dns_client()
+        self,
+        dkim_domain: str,
+        dns_client: DNSClient = get_network_dns_client(),
+        partner_domains: Optional[dict[int, str]] = None,
+        partner_domains_validation_prefixes: Optional[dict[int, str]] = None,
     ):
         self.dkim_domain = dkim_domain
         self._dns_client = dns_client
-        self._dkim_records = {
-            f"{key}._domainkey": f"{key}._domainkey.{self.dkim_domain}"
+        self._partner_domains = partner_domains or PARTNER_DOMAINS
+        self._partner_domain_validation_prefixes = (
+            partner_domains_validation_prefixes or PARTNER_DOMAIN_VALIDATION_PREFIXES
+        )
+
+    def get_ownership_verification_record(self, domain: CustomDomain) -> str:
+        prefix = "sl-verification"
+        if (
+            domain.partner_id is not None
+            and domain.partner_id in self._partner_domain_validation_prefixes
+        ):
+            prefix = self._partner_domain_validation_prefixes[domain.partner_id]
+        return f"{prefix}={domain.ownership_txt_token}"
+
+    def get_dkim_records(self, domain: CustomDomain) -> {str: str}:
+        """
+        Get a list of dkim records to set up. Depending on the custom_domain, whether if it's from a partner or not,
+        it will return the default ones or the partner ones.
+        """
+
+        # By default use the default domain
+        dkim_domain = self.dkim_domain
+        if domain.partner_id is not None:
+            # Domain is from a partner. Retrieve the partner config and use that domain if exists
+            partner_domain = self._partner_domains.get(domain.partner_id)
+            if partner_domain is not None:
+                dkim_domain = partner_domain
+
+        return {
+            f"{key}._domainkey": f"{key}._domainkey.{dkim_domain}"
             for key in ("dkim", "dkim02", "dkim03")
         }
-
-    def get_dkim_records(self) -> {str: str}:
-        """
-        Get a list of dkim records to set up. It will be
-
-        """
-        return self._dkim_records
 
     def validate_dkim_records(self, custom_domain: CustomDomain) -> dict[str, str]:
         """
@@ -41,7 +73,7 @@ class CustomDomainValidation:
         """
         correct_records = {}
         invalid_records = {}
-        expected_records = self.get_dkim_records()
+        expected_records = self.get_dkim_records(custom_domain)
         for prefix, expected_record in expected_records.items():
             custom_record = f"{prefix}.{custom_domain.domain}"
             dkim_record = self._dns_client.get_cname_record(custom_record)
@@ -75,8 +107,11 @@ class CustomDomainValidation:
         Check if the custom_domain has added the ownership verification records
         """
         txt_records = self._dns_client.get_txt_record(custom_domain.domain)
+        expected_verification_record = self.get_ownership_verification_record(
+            custom_domain
+        )
 
-        if custom_domain.get_ownership_dns_txt_value() in txt_records:
+        if expected_verification_record in txt_records:
             custom_domain.ownership_verified = True
             Session.commit()
             return DomainValidationResult(success=True, errors=[])

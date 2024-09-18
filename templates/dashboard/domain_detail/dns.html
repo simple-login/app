@@ -38,7 +38,7 @@
             Value: <em data-toggle="tooltip"
      title="Click to copy"
      class="clipboard"
-     data-clipboard-text="{{ custom_domain.get_ownership_dns_txt_value() }}">{{ custom_domain.get_ownership_dns_txt_value() }}</em>
+     data-clipboard-text="{{ ownership_record }}">{{ ownership_record }}</em>
           </div>
           <form method="post" action="#ownership-form">
             {{ csrf_form.csrf_token }}
