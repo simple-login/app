@@ -82,7 +82,9 @@ class EventDispatcher:
 
         serialized = event.SerializeToString()
         dispatcher.send(serialized)
-        newrelic.agent.record_custom_event("EventStoredToDb")
+
+        event_type = content.WhichOneof("content")
+        newrelic.agent.record_custom_event("EventStoredToDb", {"type": event_type})
         LOG.i("Sent event to the dispatcher")
 
     @staticmethod
