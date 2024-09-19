@@ -52,7 +52,7 @@ from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
 
-from app import pgp_utils, s3, config
+from app import pgp_utils, s3, config, contact_utils
 from app.alias_utils import try_auto_create, change_alias_status
 from app.config import (
     EMAIL_DOMAIN,
@@ -195,79 +195,16 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
                 mail_from,
             )
             contact_email = mail_from
-
-    if not is_valid_email(contact_email):
-        LOG.w(
-            "invalid contact email %s. Parse from %s %s",
-            contact_email,
-            from_header,
-            mail_from,
-        )
-        # either reuse a contact with empty email or create a new contact with empty email
-        contact_email = ""
-
-    contact_email = sanitize_email(contact_email, not_lower=True)
-
-    if contact_name and "\x00" in contact_name:
-        LOG.w("issue with contact name %s", contact_name)
-        contact_name = ""
-
-    contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-    if contact:
-        if contact.name != contact_name:
-            LOG.d(
-                "Update contact %s name %s to %s",
-                contact,
-                contact.name,
-                contact_name,
-            )
-            contact.name = contact_name
-            Session.commit()
-
-        # contact created in the past does not have mail_from and from_header field
-        if not contact.mail_from and mail_from:
-            LOG.d(
-                "Set contact mail_from %s: %s to %s",
-                contact,
-                contact.mail_from,
-                mail_from,
-            )
-            contact.mail_from = mail_from
-            Session.commit()
-    else:
-        alias_id = alias.id
-        try:
-            contact_email_for_reply = (
-                contact_email if is_valid_email(contact_email) else ""
-            )
-            contact = Contact.create(
-                user_id=alias.user_id,
-                alias_id=alias_id,
-                website_email=contact_email,
-                name=contact_name,
-                mail_from=mail_from,
-                reply_email=generate_reply_email(contact_email_for_reply, alias),
-                automatic_created=True,
-            )
-            if not contact_email:
-                LOG.d("Create a contact with invalid email for %s", alias)
-                contact.invalid_email = True
-
-            LOG.d(
-                "create contact %s for %s, reverse alias:%s",
-                contact_email,
-                alias,
-                contact.reply_email,
-            )
-
-            Session.commit()
-        except IntegrityError:
-            LOG.info(
-                f"Contact with email {contact_email} for alias_id {alias_id} already existed, fetching from DB"
-            )
-            contact = Contact.get_by(alias_id=alias_id, website_email=contact_email)
-
-    return contact
+    contact_result = contact_utils.create_contact(
+        email=contact_email,
+        name=contact_name,
+        alias=alias,
+        mail_from=mail_from,
+        allow_empty_email=True,
+        automatic_created=True,
+        from_partner=False,
+    )
+    return contact_result.contact
 
 
 def get_or_create_reply_to_contact(
@@ -292,33 +229,7 @@ def get_or_create_reply_to_contact(
         )
         return None
 
-    contact = Contact.get_by(alias_id=alias.id, website_email=contact_address)
-    if contact:
-        return contact
-    else:
-        LOG.d(
-            "create contact %s for alias %s via reply-to header %s",
-            contact_address,
-            alias,
-            reply_to_header,
-        )
-
-        try:
-            contact = Contact.create(
-                user_id=alias.user_id,
-                alias_id=alias.id,
-                website_email=contact_address,
-                name=contact_name,
-                reply_email=generate_reply_email(contact_address, alias),
-                automatic_created=True,
-            )
-            Session.commit()
-        except IntegrityError:
-            LOG.w("Contact %s %s already exist", alias, contact_address)
-            Session.rollback()
-            contact = Contact.get_by(alias_id=alias.id, website_email=contact_address)
-
-    return contact
+    return contact_utils.create_contact(contact_address, contact_name, alias).contact
 
 
 def replace_header_when_forward(msg: Message, alias: Alias, header: str):
