@@ -3,7 +3,7 @@ Run scheduled jobs.
 Not meant for running job at precise time (+- 1h)
 """
 import time
-from typing import List
+from typing import List, Optional
 
 import arrow
 from sqlalchemy.sql.expression import or_, and_
@@ -240,7 +240,7 @@ def process_job(job: Job):
 
     elif job.name == config.JOB_DELETE_DOMAIN:
         custom_domain_id = job.payload.get("custom_domain_id")
-        custom_domain = CustomDomain.get(custom_domain_id)
+        custom_domain: Optional[CustomDomain] = CustomDomain.get(custom_domain_id)
         if not custom_domain:
             return
 
@@ -252,16 +252,17 @@ def process_job(job: Job):
 
         LOG.d("Domain %s deleted", domain_name)
 
-        send_email(
-            user.email,
-            f"Your domain {domain_name} has been deleted",
-            f"""Domain {domain_name} along with its aliases are deleted successfully.
+        if custom_domain.partner_id is None:
+            send_email(
+                user.email,
+                f"Your domain {domain_name} has been deleted",
+                f"""Domain {domain_name} along with its aliases are deleted successfully.
 
-Regards,
-SimpleLogin team.
-""",
-            retries=3,
-        )
+    Regards,
+    SimpleLogin team.
+    """,
+                retries=3,
+            )
     elif job.name == config.JOB_SEND_USER_REPORT:
         export_job = ExportUserDataJob.create_from_job(job)
         if export_job:
