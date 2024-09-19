@@ -9,7 +9,7 @@ from events.runner import Runner
 from events.event_source import DeadLetterEventSource, PostgresEventSource
 from events.event_sink import ConsoleEventSink, HttpEventSink
 
-_DEFAULT_MAX_RETRIES = 100
+_DEFAULT_MAX_RETRIES = 10
 
 
 class Mode(Enum):
