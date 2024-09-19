@@ -70,9 +70,7 @@ class EventDispatcher:
 
         partner_user = EventDispatcher.__partner_user(user.id)
         if not partner_user:
-            LOG.i(
-                f"Not sending events because there's no partner user for  user {user}"
-            )
+            LOG.i(f"Not sending events because there's no partner user for user {user}")
             return
 
         event = event_pb2.Event(
@@ -84,7 +82,7 @@ class EventDispatcher:
 
         serialized = event.SerializeToString()
         dispatcher.send(serialized)
-        newrelic.agent.record_custom_metric("Custom/events_stored", 1)
+        newrelic.agent.record_custom_event("EventStoredToDb")
         LOG.i("Sent event to the dispatcher")
 
     @staticmethod
