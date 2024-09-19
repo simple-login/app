@@ -27,7 +27,9 @@ class HttpEventSink(EventSink):
             headers={"Content-Type": "application/x-protobuf"},
             verify=not EVENT_WEBHOOK_SKIP_VERIFY_SSL,
         )
-        newrelic.agent.record_custom_event("event_sent", {"http_code": res.status_code})
+        newrelic.agent.record_custom_event(
+            "EventSentToPartner", {"http_code": res.status_code}
+        )
         if res.status_code != 200:
             LOG.warning(
                 f"Failed to send event to webhook: {res.status_code} {res.text}"

@@ -125,6 +125,21 @@ def log_events_pending_dead_letter():
     )
 
 
+@newrelic.agent.background_task()
+def log_failed_events():
+    r = Session.execute(
+        """
+        SELECT COUNT(*)
+        FROM sync_event
+        WHERE retries >= 10;
+        """,
+    )
+    failed_events = list(r)[0][0]
+
+    LOG.d("number of failed events %s", failed_events)
+    newrelic.agent.record_custom_metric("Custom/sync_events_failed", failed_events)
+
+
 if __name__ == "__main__":
     exporter = MetricExporter(get_newrelic_license())
     while True:
@@ -132,6 +147,7 @@ if __name__ == "__main__":
         log_nb_db_connection()
         log_pending_to_process_events()
         log_events_pending_dead_letter()
+        log_failed_events()
         Session.close()
 
         exporter.run()

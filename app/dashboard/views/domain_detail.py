@@ -267,6 +267,7 @@ def domain_detail(custom_domain_id):
 
             # Schedule delete domain job
             LOG.w("schedule delete domain job for %s", custom_domain)
+            custom_domain.pending_deletion = True
             Job.create(
                 name=JOB_DELETE_DOMAIN,
                 payload={"custom_domain_id": custom_domain.id},

@@ -1863,6 +1863,8 @@ class Contact(Base, ModelMixin):
 
     MAX_NAME_LENGTH = 512
 
+    FLAG_PARTNER_CREATED = 1 << 0
+
     __tablename__ = "contact"
 
     __table_args__ = (
@@ -1920,6 +1922,9 @@ class Contact(Base, ModelMixin):
 
     # whether contact is created automatically during the forward phase
     automatic_created = sa.Column(sa.Boolean, nullable=True, default=False)
+
+    # contact flags
+    flags = sa.Column(sa.Integer, nullable=False, default=0, server_default="0")
 
     @property
     def email(self):
@@ -2425,6 +2430,10 @@ class CustomDomain(Base, ModelMixin):
         nullable=True,
         default=None,
         server_default=None,
+    )
+
+    pending_deletion = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
     __table_args__ = (
