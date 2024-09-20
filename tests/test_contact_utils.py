@@ -1,7 +1,7 @@
 from typing import Optional
 
 import pytest
-from app.contact_utils import create_contact
+from app.contact_utils import create_contact, ContactCreateError
 from app.db import Session
 from app.models import (
     Alias,
@@ -59,7 +59,7 @@ def test_create_contact_email_email_not_allowed():
     Session.commit()
     contact_result = create_contact("", "", alias)
     assert contact_result.contact is None
-    assert contact_result.error == "Invalid email"
+    assert contact_result.error == ContactCreateError.InvalidEmail
 
 
 def test_create_contact_email_email_allowed():
@@ -79,10 +79,10 @@ def test_do_not_allow_invalid_email():
     Session.commit()
     contact_result = create_contact("potato", "", alias)
     assert contact_result.contact is None
-    assert contact_result.error == "Invalid email"
+    assert contact_result.error == ContactCreateError.InvalidEmail
     contact_result = create_contact("asdf\x00@gmail.com", "", alias)
     assert contact_result.contact is None
-    assert contact_result.error == "Invalid email"
+    assert contact_result.error == ContactCreateError.InvalidEmail
 
 
 def test_update_name_for_existing():

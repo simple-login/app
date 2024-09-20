@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
@@ -11,10 +12,14 @@ from app.models import Contact, Alias
 from app.utils import sanitize_email
 
 
+class ContactCreateError(Enum):
+    InvalidEmail = "Invalid email"
+
+
 @dataclass
 class ContactCreateResult:
     contact: Optional[Contact]
-    error: Optional[str]
+    error: Optional[ContactCreateError]
 
 
 def __update_contact_if_needed(
@@ -48,7 +53,7 @@ def create_contact(
     if not is_valid_email(email):
         LOG.w(f"invalid contact email {email}")
         if not allow_empty_email:
-            return ContactCreateResult(None, "Invalid email")
+            return ContactCreateResult(None, ContactCreateError.InvalidEmail)
         LOG.d("Create a contact with invalid email for %s", alias)
         # either reuse a contact with empty email or create a new contact with empty email
         email = ""
