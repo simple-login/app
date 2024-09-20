@@ -1,13 +1,15 @@
+import arrow
 import re
 
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+from app.config import JOB_DELETE_DOMAIN
 from app.db import Session
 from app.email_utils import get_email_domain_part
 from app.log import LOG
-from app.models import User, CustomDomain, SLDomain, Mailbox
+from app.models import User, CustomDomain, SLDomain, Mailbox, Job
 
 _ALLOWED_DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
 
@@ -125,4 +127,16 @@ def create_custom_domain(
     return CreateCustomDomainResult(
         success=True,
         instance=new_custom_domain,
+    )
+
+
+def delete_custom_domain(domain: CustomDomain):
+    # Schedule delete domain job
+    LOG.w("schedule delete domain job for %s", domain)
+    domain.pending_deletion = True
+    Job.create(
+        name=JOB_DELETE_DOMAIN,
+        payload={"custom_domain_id": domain.id},
+        run_at=arrow.now(),
+        commit=True,
     )
