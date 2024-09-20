@@ -1,17 +1,16 @@
 import re
 
-import arrow
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators, IntegerField
 
 from app.constants import DMARC_RECORD
-from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN, JOB_DELETE_DOMAIN
+from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
+from app.custom_domain_utils import delete_custom_domain
 from app.custom_domain_validation import CustomDomainValidation
 from app.dashboard.base import dashboard_bp
 from app.db import Session
-from app.log import LOG
 from app.models import (
     CustomDomain,
     Alias,
@@ -20,7 +19,6 @@ from app.models import (
     DomainMailbox,
     AutoCreateRule,
     AutoCreateRuleMailbox,
-    Job,
 )
 from app.regex_utils import regex_match
 from app.utils import random_string, CSRFValidationForm
@@ -263,17 +261,8 @@ def domain_detail(custom_domain_id):
 
         elif request.form.get("form-name") == "delete":
             name = custom_domain.domain
-            LOG.d("Schedule deleting %s", custom_domain)
 
-            # Schedule delete domain job
-            LOG.w("schedule delete domain job for %s", custom_domain)
-            custom_domain.pending_deletion = True
-            Job.create(
-                name=JOB_DELETE_DOMAIN,
-                payload={"custom_domain_id": custom_domain.id},
-                run_at=arrow.now(),
-                commit=True,
-            )
+            delete_custom_domain(custom_domain)
 
             flash(
                 f"{name} scheduled for deletion."
