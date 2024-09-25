@@ -131,7 +131,7 @@ def log_failed_events():
         """
         SELECT COUNT(*)
         FROM sync_event
-        WHERE retries >= 10;
+        WHERE retry_count >= 10;
         """,
     )
     failed_events = list(r)[0][0]
