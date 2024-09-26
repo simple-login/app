@@ -40,8 +40,8 @@ def __update_contact_if_needed(
 
 def create_contact(
     email: str,
-    name: Optional[str],
     alias: Alias,
+    name: Optional[str] = None,
     mail_from: Optional[str] = None,
     allow_empty_email: bool = False,
     automatic_created: bool = False,

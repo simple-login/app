@@ -197,8 +197,8 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
             contact_email = mail_from
     contact_result = contact_utils.create_contact(
         email=contact_email,
-        name=contact_name,
         alias=alias,
+        name=contact_name,
         mail_from=mail_from,
         allow_empty_email=True,
         automatic_created=True,
@@ -229,7 +229,7 @@ def get_or_create_reply_to_contact(
         )
         return None
 
-    return contact_utils.create_contact(contact_address, contact_name, alias).contact
+    return contact_utils.create_contact(contact_address, alias, contact_name).contact
 
 
 def replace_header_when_forward(msg: Message, alias: Alias, header: str):
