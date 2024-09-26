@@ -72,7 +72,9 @@ class PostgresEventSource(EventSource):
                     Session.close()  # Ensure we get a new connection and we don't leave a dangling tx
 
     def __connect(self):
-        self.__connection = psycopg2.connect(self.__connection_string)
+        self.__connection = psycopg2.connect(
+            self.__connection_string, application_name="sl-event-listen"
+        )
 
         from app.db import Session
 
