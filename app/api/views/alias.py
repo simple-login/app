@@ -424,7 +424,7 @@ def create_contact_route(alias_id):
     contact_address = data.get("contact")
 
     try:
-        contact = create_contact(g.user, alias, contact_address)
+        contact = create_contact(alias, contact_address)
     except ErrContactErrorUpgradeNeeded as err:
         return jsonify(error=err.error_for_user()), 403
     except (ErrAddressInvalid, CannotCreateContactForReverseAlias) as err:
