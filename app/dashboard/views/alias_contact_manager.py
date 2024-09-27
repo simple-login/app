@@ -66,7 +66,7 @@ def create_contact(alias: Alias, contact_address: str) -> Contact:
     elif output.error is not None:
         raise ErrAddressInvalid("Invalid address")
     elif not output.created:
-        raise ErrContactAlreadyExists(contact_address)
+        raise ErrContactAlreadyExists(output.contact)
 
     contact = output.contact
     LOG.d(
@@ -75,7 +75,6 @@ def create_contact(alias: Alias, contact_address: str) -> Contact:
         alias,
         contact.reply_email,
     )
-    Session.commit()
 
     return contact
 
@@ -245,7 +244,7 @@ def alias_contact_manager(alias_id):
             if new_contact_form.validate():
                 contact_address = new_contact_form.email.data.strip()
                 try:
-                    contact = create_contact(current_user, alias, contact_address)
+                    contact = create_contact(alias, contact_address)
                 except (
                     ErrContactErrorUpgradeNeeded,
                     ErrAddressInvalid,
