@@ -4,7 +4,7 @@ from app.models import (
     Alias,
     Contact,
 )
-from tests.utils import login
+from tests.utils import login, random_email
 
 
 def test_add_contact_success(flask_client):
@@ -13,26 +13,28 @@ def test_add_contact_success(flask_client):
 
     assert Contact.filter_by(user_id=user.id).count() == 0
 
+    email = random_email()
     # <<< Create a new contact >>>
     flask_client.post(
         url_for("dashboard.alias_contact_manager", alias_id=alias.id),
         data={
             "form-name": "create",
-            "email": "abcd@gmail.com",
+            "email": email,
         },
         follow_redirects=True,
     )
     # a new contact is added
     assert Contact.filter_by(user_id=user.id).count() == 1
     contact = Contact.filter_by(user_id=user.id).first()
-    assert contact.website_email == "abcd@gmail.com"
+    assert contact.website_email == email
 
     # <<< Create a new contact using a full email format >>>
+    email = random_email()
     flask_client.post(
         url_for("dashboard.alias_contact_manager", alias_id=alias.id),
         data={
             "form-name": "create",
-            "email": "First Last <another@gmail.com>",
+            "email": f"First Last <{email}>",
         },
         follow_redirects=True,
     )
@@ -41,7 +43,7 @@ def test_add_contact_success(flask_client):
     contact = (
         Contact.filter_by(user_id=user.id).filter(Contact.id != contact.id).first()
     )
-    assert contact.website_email == "another@gmail.com"
+    assert contact.website_email == email
     assert contact.name == "First Last"
 
     # <<< Create a new contact with invalid email address >>>
