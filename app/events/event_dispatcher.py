@@ -64,10 +64,6 @@ class EventDispatcher:
             )
             return
 
-        if config.EVENT_WEBHOOK_ENABLED_USER_IDS is not None:
-            if user.id not in config.EVENT_WEBHOOK_ENABLED_USER_IDS:
-                return
-
         partner_user = EventDispatcher.__partner_user(user.id)
         if not partner_user:
             LOG.i(f"Not sending events because there's no partner user for user {user}")
