@@ -212,10 +212,11 @@ def generate_activation_code(
     mailbox: Mailbox, use_digit_code: bool = False
 ) -> MailboxActivation:
     clear_activation_codes_for_mailbox(mailbox)
-    if config.MAILBOX_VERIFICATION_OVERRIDE_CODE:
-        code = config.MAILBOX_VERIFICATION_OVERRIDE_CODE
-    elif use_digit_code:
-        code = "{:06d}".format(random.randint(1, 999999))
+    if use_digit_code:
+        if config.MAILBOX_VERIFICATION_OVERRIDE_CODE:
+            code = config.MAILBOX_VERIFICATION_OVERRIDE_CODE
+        else:
+            code = "{:06d}".format(random.randint(1, 999999))
     else:
         code = secrets.token_urlsafe(16)
     return MailboxActivation.create(
