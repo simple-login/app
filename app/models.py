@@ -2443,6 +2443,8 @@ class CustomDomain(Base, ModelMixin):
             unique=True,
             postgresql_where=Column("ownership_verified"),
         ),  # The condition
+        Index("ix_custom_domain_user_id", "user_id"),
+        Index("ix_custom_domain_pending_deletion", "pending_deletion"),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id], backref="custom_domains")
