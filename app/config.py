@@ -657,3 +657,7 @@ PARTNER_DOMAINS: dict[int, str] = read_partner_dict("PARTNER_DOMAINS")
 PARTNER_DOMAIN_VALIDATION_PREFIXES: dict[int, str] = read_partner_dict(
     "PARTNER_DOMAIN_VALIDATION_PREFIXES"
 )
+
+MAILBOX_VERIFICATION_OVERRIDE_CODE: Optional[str] = os.environ.get(
+    "MAILBOX_VERIFICATION_OVERRIDE_CODE", None
+)
