@@ -3,13 +3,13 @@ import re
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 from app.config import JOB_DELETE_DOMAIN
 from app.db import Session
 from app.email_utils import get_email_domain_part
 from app.log import LOG
-from app.models import User, CustomDomain, SLDomain, Mailbox, Job
+from app.models import User, CustomDomain, SLDomain, Mailbox, Job, DomainMailbox
 
 _ALLOWED_DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
 
@@ -43,6 +43,17 @@ class CannotUseDomainReason(Enum):
             return f"{domain} already used in a SimpleLogin mailbox"
         else:
             raise Exception("Invalid CannotUseDomainReason")
+
+
+class CannotSetCustomDomainMailboxesCause(Enum):
+    InvalidMailbox = "Something went wrong, please retry"
+    NoMailboxes = "You must select at least 1 mailbox"
+
+
+@dataclass
+class SetCustomDomainMailboxesResult:
+    success: bool
+    reason: Optional[CannotSetCustomDomainMailboxesCause] = None
 
 
 def is_valid_domain(domain: str) -> bool:
@@ -140,3 +151,32 @@ def delete_custom_domain(domain: CustomDomain):
         run_at=arrow.now(),
         commit=True,
     )
+
+
+def set_custom_domain_mailboxes(
+    user_id: int, custom_domain: CustomDomain, mailbox_ids: List[int]
+) -> SetCustomDomainMailboxesResult:
+    mailboxes = []
+    # check if mailbox is not tampered with
+    for mailbox_id in mailbox_ids:
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox or mailbox.user_id != user_id or not mailbox.verified:
+            return SetCustomDomainMailboxesResult(
+                success=False, reason=CannotSetCustomDomainMailboxesCause.InvalidMailbox
+            )
+        mailboxes.append(mailbox)
+
+    if not mailboxes:
+        return SetCustomDomainMailboxesResult(
+            success=False, reason=CannotSetCustomDomainMailboxesCause.NoMailboxes
+        )
+
+    # first remove all existing domain-mailboxes links
+    DomainMailbox.filter_by(domain_id=custom_domain.id).delete()
+    Session.flush()
+
+    for mailbox in mailboxes:
+        DomainMailbox.create(domain_id=custom_domain.id, mailbox_id=mailbox.id)
+
+    Session.commit()
+    return SetCustomDomainMailboxesResult(success=True)

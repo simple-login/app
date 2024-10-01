@@ -7,7 +7,7 @@ from wtforms import StringField, validators, IntegerField
 
 from app.constants import DMARC_RECORD
 from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
-from app.custom_domain_utils import delete_custom_domain
+from app.custom_domain_utils import delete_custom_domain, set_custom_domain_mailboxes
 from app.custom_domain_validation import CustomDomainValidation
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -16,7 +16,6 @@ from app.models import (
     Alias,
     DomainDeletedAlias,
     Mailbox,
-    DomainMailbox,
     AutoCreateRule,
     AutoCreateRuleMailbox,
 )
@@ -220,40 +219,16 @@ def domain_detail(custom_domain_id):
             )
         elif request.form.get("form-name") == "update":
             mailbox_ids = request.form.getlist("mailbox_ids")
-            # check if mailbox is not tempered with
-            mailboxes = []
-            for mailbox_id in mailbox_ids:
-                mailbox = Mailbox.get(mailbox_id)
-                if (
-                    not mailbox
-                    or mailbox.user_id != current_user.id
-                    or not mailbox.verified
-                ):
-                    flash("Something went wrong, please retry", "warning")
-                    return redirect(
-                        url_for(
-                            "dashboard.domain_detail", custom_domain_id=custom_domain.id
-                        )
-                    )
-                mailboxes.append(mailbox)
+            result = set_custom_domain_mailboxes(
+                user_id=current_user.id,
+                custom_domain=custom_domain,
+                mailbox_ids=mailbox_ids,
+            )
 
-            if not mailboxes:
-                flash("You must select at least 1 mailbox", "warning")
-                return redirect(
-                    url_for(
-                        "dashboard.domain_detail", custom_domain_id=custom_domain.id
-                    )
-                )
-
-            # first remove all existing domain-mailboxes links
-            DomainMailbox.filter_by(domain_id=custom_domain.id).delete()
-            Session.flush()
-
-            for mailbox in mailboxes:
-                DomainMailbox.create(domain_id=custom_domain.id, mailbox_id=mailbox.id)
-
-            Session.commit()
-            flash(f"{custom_domain.domain} mailboxes has been updated", "success")
+            if result.success:
+                flash(f"{custom_domain.domain} mailboxes has been updated", "success")
+            else:
+                flash(result.reason.value, "warning")
 
             return redirect(
                 url_for("dashboard.domain_detail", custom_domain_id=custom_domain.id)
