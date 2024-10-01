@@ -12,6 +12,7 @@ from app.log import LOG
 from app.models import User, CustomDomain, SLDomain, Mailbox, Job, DomainMailbox
 
 _ALLOWED_DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
+_MAX_MAILBOXES_PER_DOMAIN = 20
 
 
 @dataclass
@@ -48,6 +49,9 @@ class CannotUseDomainReason(Enum):
 class CannotSetCustomDomainMailboxesCause(Enum):
     InvalidMailbox = "Something went wrong, please retry"
     NoMailboxes = "You must select at least 1 mailbox"
+    TooManyMailboxes = (
+        f"You can only set up to {_MAX_MAILBOXES_PER_DOMAIN} mailboxes per domain"
+    )
 
 
 @dataclass
@@ -156,19 +160,27 @@ def delete_custom_domain(domain: CustomDomain):
 def set_custom_domain_mailboxes(
     user_id: int, custom_domain: CustomDomain, mailbox_ids: List[int]
 ) -> SetCustomDomainMailboxesResult:
-    mailboxes = []
-    # check if mailbox is not tampered with
-    for mailbox_id in mailbox_ids:
-        mailbox = Mailbox.get(mailbox_id)
-        if not mailbox or mailbox.user_id != user_id or not mailbox.verified:
-            return SetCustomDomainMailboxesResult(
-                success=False, reason=CannotSetCustomDomainMailboxesCause.InvalidMailbox
-            )
-        mailboxes.append(mailbox)
-
-    if not mailboxes:
+    if len(mailbox_ids) == 0:
         return SetCustomDomainMailboxesResult(
             success=False, reason=CannotSetCustomDomainMailboxesCause.NoMailboxes
+        )
+    elif len(mailbox_ids) > _MAX_MAILBOXES_PER_DOMAIN:
+        return SetCustomDomainMailboxesResult(
+            success=False, reason=CannotSetCustomDomainMailboxesCause.TooManyMailboxes
+        )
+
+    mailboxes = (
+        Session.query(Mailbox)
+        .filter(
+            Mailbox.id.in_(mailbox_ids),
+            Mailbox.user_id == user_id,
+            Mailbox.verified == True,  # noqa: E712
+        )
+        .all()
+    )
+    if len(mailboxes) != len(mailbox_ids):
+        return SetCustomDomainMailboxesResult(
+            success=False, reason=CannotSetCustomDomainMailboxesCause.InvalidMailbox
         )
 
     # first remove all existing domain-mailboxes links

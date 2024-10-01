@@ -245,3 +245,23 @@ def test_set_custom_domain_mailboxes_removes_old_association():
     assert len(domain_mailboxes) == 1
     assert domain_mailboxes[0].domain_id == domain.id
     assert domain_mailboxes[0].mailbox_id == other_mailbox.id
+
+
+def test_set_custom_domain_mailboxes_with_unverified_mailbox():
+    domain = CustomDomain.create(user_id=user.id, domain=random_domain())
+    verified_mailbox = Mailbox.create(
+        user_id=user.id,
+        email=random_email(),
+        verified=True,
+    )
+    unverified_mailbox = Mailbox.create(
+        user_id=user.id,
+        email=random_email(),
+        verified=False,
+    )
+
+    res = set_custom_domain_mailboxes(
+        user.id, domain, [verified_mailbox.id, unverified_mailbox.id]
+    )
+    assert res.success is False
+    assert res.reason is CannotSetCustomDomainMailboxesCause.InvalidMailbox
