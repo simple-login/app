@@ -7,11 +7,13 @@ from app.custom_domain_utils import (
     create_custom_domain,
     is_valid_domain,
     sanitize_domain,
+    set_custom_domain_mailboxes,
     CannotUseDomainReason,
+    CannotSetCustomDomainMailboxesCause,
 )
 from app.db import Session
-from app.models import User, CustomDomain, Mailbox
-from tests.utils import get_proton_partner
+from app.models import User, CustomDomain, Mailbox, DomainMailbox
+from tests.utils import get_proton_partner, random_email
 from tests.utils import create_new_user, random_string, random_domain
 
 user: Optional[User] = None
@@ -147,3 +149,99 @@ def test_creates_custom_domain_with_partner_id():
     assert res.instance.domain == domain
     assert res.instance.user_id == user.id
     assert res.instance.partner_id == proton_partner.id
+
+
+# set_custom_domain_mailboxes
+def test_set_custom_domain_mailboxes_empty_list():
+    domain = CustomDomain.create(user_id=user.id, domain=random_domain(), commit=True)
+    res = set_custom_domain_mailboxes(user.id, domain, [])
+    assert res.success is False
+    assert res.reason == CannotSetCustomDomainMailboxesCause.NoMailboxes
+
+
+def test_set_custom_domain_mailboxes_mailbox_from_another_user():
+    other_user = create_new_user()
+    other_mailbox = Mailbox.create(
+        user_id=other_user.id, email=random_email(), verified=True
+    )
+    domain = CustomDomain.create(user_id=user.id, domain=random_domain(), commit=True)
+
+    res = set_custom_domain_mailboxes(user.id, domain, [other_mailbox.id])
+    assert res.success is False
+    assert res.reason == CannotSetCustomDomainMailboxesCause.InvalidMailbox
+
+
+def test_set_custom_domain_mailboxes_mailbox_from_current_user_and_another_user():
+    other_user = create_new_user()
+    other_mailbox = Mailbox.create(
+        user_id=other_user.id, email=random_email(), verified=True
+    )
+    domain = CustomDomain.create(user_id=user.id, domain=random_domain(), commit=True)
+
+    res = set_custom_domain_mailboxes(
+        user.id, domain, [user.default_mailbox_id, other_mailbox.id]
+    )
+    assert res.success is False
+    assert res.reason == CannotSetCustomDomainMailboxesCause.InvalidMailbox
+
+
+def test_set_custom_domain_mailboxes_success():
+    other_mailbox = Mailbox.create(user_id=user.id, email=random_email(), verified=True)
+    domain = CustomDomain.create(user_id=user.id, domain=random_domain(), commit=True)
+
+    res = set_custom_domain_mailboxes(
+        user.id, domain, [user.default_mailbox_id, other_mailbox.id]
+    )
+    assert res.success is True
+    assert res.reason is None
+
+    domain_mailboxes = DomainMailbox.filter_by(domain_id=domain.id).all()
+    assert len(domain_mailboxes) == 2
+    assert domain_mailboxes[0].domain_id == domain.id
+    assert domain_mailboxes[0].mailbox_id == user.default_mailbox_id
+    assert domain_mailboxes[1].domain_id == domain.id
+    assert domain_mailboxes[1].mailbox_id == other_mailbox.id
+
+
+def test_set_custom_domain_mailboxes_set_twice():
+    other_mailbox = Mailbox.create(user_id=user.id, email=random_email(), verified=True)
+    domain = CustomDomain.create(user_id=user.id, domain=random_domain(), commit=True)
+
+    res = set_custom_domain_mailboxes(
+        user.id, domain, [user.default_mailbox_id, other_mailbox.id]
+    )
+    assert res.success is True
+    assert res.reason is None
+
+    res = set_custom_domain_mailboxes(
+        user.id, domain, [user.default_mailbox_id, other_mailbox.id]
+    )
+    assert res.success is True
+    assert res.reason is None
+
+    domain_mailboxes = DomainMailbox.filter_by(domain_id=domain.id).all()
+    assert len(domain_mailboxes) == 2
+    assert domain_mailboxes[0].domain_id == domain.id
+    assert domain_mailboxes[0].mailbox_id == user.default_mailbox_id
+    assert domain_mailboxes[1].domain_id == domain.id
+    assert domain_mailboxes[1].mailbox_id == other_mailbox.id
+
+
+def test_set_custom_domain_mailboxes_removes_old_association():
+    domain = CustomDomain.create(user_id=user.id, domain=random_domain(), commit=True)
+
+    res = set_custom_domain_mailboxes(user.id, domain, [user.default_mailbox_id])
+    assert res.success is True
+    assert res.reason is None
+
+    other_mailbox = Mailbox.create(
+        user_id=user.id, email=random_email(), verified=True, commit=True
+    )
+    res = set_custom_domain_mailboxes(user.id, domain, [other_mailbox.id])
+    assert res.success is True
+    assert res.reason is None
+
+    domain_mailboxes = DomainMailbox.filter_by(domain_id=domain.id).all()
+    assert len(domain_mailboxes) == 1
+    assert domain_mailboxes[0].domain_id == domain.id
+    assert domain_mailboxes[0].mailbox_id == other_mailbox.id
