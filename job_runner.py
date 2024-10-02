@@ -247,12 +247,13 @@ def process_job(job: Job):
         domain_name = custom_domain.domain
         user = custom_domain.user
 
+        custom_domain_partner_id = custom_domain.partner_id
         CustomDomain.delete(custom_domain.id)
         Session.commit()
 
         LOG.d("Domain %s deleted", domain_name)
 
-        if custom_domain.partner_id is None:
+        if custom_domain_partner_id is None:
             send_email(
                 user.email,
                 f"Your domain {domain_name} has been deleted",
