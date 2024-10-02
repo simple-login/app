@@ -36,8 +36,6 @@ def domain_detail_dns(custom_domain_id):
         custom_domain.ownership_txt_token = random_string(30)
         Session.commit()
 
-    spf_record = f"v=spf1 include:{EMAIL_DOMAIN} ~all"
-
     domain_validator = CustomDomainValidation(EMAIL_DOMAIN)
     csrf_form = CSRFValidationForm()
 
@@ -141,7 +139,9 @@ def domain_detail_dns(custom_domain_id):
         ownership_record=domain_validator.get_ownership_verification_record(
             custom_domain
         ),
+        expected_mx_records=domain_validator.get_expected_mx_records(custom_domain),
         dkim_records=domain_validator.get_dkim_records(custom_domain),
+        spf_record=domain_validator.get_expected_spf_record(custom_domain),
         dmarc_record=DMARC_RECORD,
         **locals(),
     )
