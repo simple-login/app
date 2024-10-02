@@ -29,10 +29,10 @@ class CustomDomainValidation:
     ):
         self.dkim_domain = dkim_domain
         self._dns_client = dns_client
-        self._partner_domains = partner_domains or config.PARTNER_DOMAINS
+        self._partner_domains = partner_domains or config.PARTNER_DNS_CUSTOM_DOMAINS
         self._partner_domain_validation_prefixes = (
             partner_domains_validation_prefixes
-            or config.PARTNER_DOMAIN_VALIDATION_PREFIXES
+            or config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES
         )
 
     def get_ownership_verification_record(self, domain: CustomDomain) -> str:
