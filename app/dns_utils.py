@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Optional
+from dataclasses import dataclass
+from typing import List, Optional
 
 import dns.resolver
 
@@ -8,8 +9,14 @@ from app.config import NAMESERVERS
 _include_spf = "include:"
 
 
+@dataclass
+class MxRecord:
+    priority: int
+    domain: str
+
+
 def is_mx_equivalent(
-    mx_domains: List[Tuple[int, str]], ref_mx_domains: List[Tuple[int, str]]
+    mx_domains: List[MxRecord], ref_mx_domains: List[MxRecord]
 ) -> bool:
     """
     Compare mx_domains with ref_mx_domains to see if they are equivalent.
@@ -18,14 +25,14 @@ def is_mx_equivalent(
     The priority order is taken into account but not the priority number.
     For example, [(1, domain1), (2, domain2)] is equivalent to [(10, domain1), (20, domain2)]
     """
-    mx_domains = sorted(mx_domains, key=lambda x: x[0])
-    ref_mx_domains = sorted(ref_mx_domains, key=lambda x: x[0])
+    mx_domains = sorted(mx_domains, key=lambda x: x.priority)
+    ref_mx_domains = sorted(ref_mx_domains, key=lambda x: x.priority)
 
     if len(mx_domains) < len(ref_mx_domains):
         return False
 
-    for i in range(len(ref_mx_domains)):
-        if mx_domains[i][1] != ref_mx_domains[i][1]:
+    for actual, expected in zip(mx_domains, ref_mx_domains):
+        if actual.domain != expected.domain:
             return False
 
     return True
@@ -37,7 +44,7 @@ class DNSClient(ABC):
         pass
 
     @abstractmethod
-    def get_mx_domains(self, hostname: str) -> List[Tuple[int, str]]:
+    def get_mx_domains(self, hostname: str) -> List[MxRecord]:
         pass
 
     def get_spf_domain(self, hostname: str) -> List[str]:
@@ -81,7 +88,7 @@ class NetworkDNSClient(DNSClient):
         except Exception:
             return None
 
-    def get_mx_domains(self, hostname: str) -> List[Tuple[int, str]]:
+    def get_mx_domains(self, hostname: str) -> List[MxRecord]:
         """
         return list of (priority, domain name) sorted by priority (lowest priority first)
         domain name ends with a "." at the end.
@@ -92,8 +99,8 @@ class NetworkDNSClient(DNSClient):
             for a in answers:
                 record = a.to_text()  # for ex '20 alt2.aspmx.l.google.com.'
                 parts = record.split(" ")
-                ret.append((int(parts[0]), parts[1]))
-            return sorted(ret, key=lambda x: x[0])
+                ret.append(MxRecord(priority=int(parts[0]), domain=parts[1]))
+            return sorted(ret, key=lambda x: x.priority)
         except Exception:
             return []
 
@@ -112,14 +119,14 @@ class NetworkDNSClient(DNSClient):
 class InMemoryDNSClient(DNSClient):
     def __init__(self):
         self.cname_records: dict[str, Optional[str]] = {}
-        self.mx_records: dict[str, List[Tuple[int, str]]] = {}
+        self.mx_records: dict[str, List[MxRecord]] = {}
         self.spf_records: dict[str, List[str]] = {}
         self.txt_records: dict[str, List[str]] = {}
 
     def set_cname_record(self, hostname: str, cname: str):
         self.cname_records[hostname] = cname
 
-    def set_mx_records(self, hostname: str, mx_list: List[Tuple[int, str]]):
+    def set_mx_records(self, hostname: str, mx_list: List[MxRecord]):
         self.mx_records[hostname] = mx_list
 
     def set_txt_record(self, hostname: str, txt_list: List[str]):
@@ -128,9 +135,9 @@ class InMemoryDNSClient(DNSClient):
     def get_cname_record(self, hostname: str) -> Optional[str]:
         return self.cname_records.get(hostname)
 
-    def get_mx_domains(self, hostname: str) -> List[Tuple[int, str]]:
+    def get_mx_domains(self, hostname: str) -> List[MxRecord]:
         mx_list = self.mx_records.get(hostname, [])
-        return sorted(mx_list, key=lambda x: x[0])
+        return sorted(mx_list, key=lambda x: x.priority)
 
     def get_txt_record(self, hostname: str) -> List[str]:
         return self.txt_records.get(hostname, [])
@@ -140,5 +147,5 @@ def get_network_dns_client() -> NetworkDNSClient:
     return NetworkDNSClient(NAMESERVERS)
 
 
-def get_mx_domains(hostname: str) -> [(int, str)]:
+def get_mx_domains(hostname: str) -> List[MxRecord]:
     return get_network_dns_client().get_mx_domains(hostname)

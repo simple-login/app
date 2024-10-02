@@ -657,7 +657,7 @@ def get_mx_domain_list(domain) -> [str]:
     """
     priority_domains = get_mx_domains(domain)
 
-    return [d[:-1] for _, d in priority_domains]
+    return [d.domain[:-1] for d in priority_domains]
 
 
 def personal_email_already_used(email_address: str) -> bool:

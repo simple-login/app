@@ -5,6 +5,7 @@ from app import config
 from app.constants import DMARC_RECORD
 from app.db import Session
 from app.dns_utils import (
+    MxRecord,
     DNSClient,
     is_mx_equivalent,
     get_network_dns_client,
@@ -28,10 +29,10 @@ class CustomDomainValidation:
     ):
         self.dkim_domain = dkim_domain
         self._dns_client = dns_client
-        self._partner_domains = partner_domains or config.PARTNER_DOMAINS
+        self._partner_domains = partner_domains or config.PARTNER_DNS_CUSTOM_DOMAINS
         self._partner_domain_validation_prefixes = (
             partner_domains_validation_prefixes
-            or config.PARTNER_DOMAIN_VALIDATION_PREFIXES
+            or config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES
         )
 
     def get_ownership_verification_record(self, domain: CustomDomain) -> str:
@@ -42,6 +43,29 @@ class CustomDomainValidation:
         ):
             prefix = self._partner_domain_validation_prefixes[domain.partner_id]
         return f"{prefix}-verification={domain.ownership_txt_token}"
+
+    def get_expected_mx_records(self, domain: CustomDomain) -> list[MxRecord]:
+        records = []
+        if domain.partner_id is not None and domain.partner_id in self._partner_domains:
+            domain = self._partner_domains[domain.partner_id]
+            records.append(MxRecord(10, f"mx1.{domain}."))
+            records.append(MxRecord(20, f"mx2.{domain}."))
+        else:
+            # Default ones
+            for priority, domain in config.EMAIL_SERVERS_WITH_PRIORITY:
+                records.append(MxRecord(priority, domain))
+
+        return records
+
+    def get_expected_spf_domain(self, domain: CustomDomain) -> str:
+        if domain.partner_id is not None and domain.partner_id in self._partner_domains:
+            return self._partner_domains[domain.partner_id]
+        else:
+            return config.EMAIL_DOMAIN
+
+    def get_expected_spf_record(self, domain: CustomDomain) -> str:
+        spf_domain = self.get_expected_spf_domain(domain)
+        return f"v=spf1 include:{spf_domain} ~all"
 
     def get_dkim_records(self, domain: CustomDomain) -> {str: str}:
         """
@@ -116,11 +140,12 @@ class CustomDomainValidation:
         self, custom_domain: CustomDomain
     ) -> DomainValidationResult:
         mx_domains = self._dns_client.get_mx_domains(custom_domain.domain)
+        expected_mx_records = self.get_expected_mx_records(custom_domain)
 
-        if not is_mx_equivalent(mx_domains, config.EMAIL_SERVERS_WITH_PRIORITY):
+        if not is_mx_equivalent(mx_domains, expected_mx_records):
             return DomainValidationResult(
                 success=False,
-                errors=[f"{priority} {domain}" for (priority, domain) in mx_domains],
+                errors=[f"{record.priority} {record.domain}" for record in mx_domains],
             )
         else:
             custom_domain.verified = True
@@ -131,7 +156,8 @@ class CustomDomainValidation:
         self, custom_domain: CustomDomain
     ) -> DomainValidationResult:
         spf_domains = self._dns_client.get_spf_domain(custom_domain.domain)
-        if config.EMAIL_DOMAIN in spf_domains:
+        expected_spf_domain = self.get_expected_spf_domain(custom_domain)
+        if expected_spf_domain in spf_domains:
             custom_domain.spf_verified = True
             Session.commit()
             return DomainValidationResult(success=True, errors=[])

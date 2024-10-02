@@ -5,7 +5,7 @@ from app.constants import DMARC_RECORD
 from app.custom_domain_validation import CustomDomainValidation
 from app.db import Session
 from app.models import CustomDomain, User
-from app.dns_utils import InMemoryDNSClient
+from app.dns_utils import InMemoryDNSClient, MxRecord
 from app.proton.utils import get_proton_partner
 from app.utils import random_string
 from tests.utils import create_new_user, random_domain
@@ -56,6 +56,123 @@ def test_custom_domain_validation_get_dkim_records_for_partner():
     assert records["dkim02._domainkey"] == f"dkim02._domainkey.{dkim_domain}"
     assert records["dkim03._domainkey"] == f"dkim03._domainkey.{dkim_domain}"
     assert records["dkim._domainkey"] == f"dkim._domainkey.{dkim_domain}"
+
+
+# get_expected_mx_records
+def test_custom_domain_validation_get_expected_mx_records_regular_domain():
+    domain = random_domain()
+    custom_domain = create_custom_domain(domain)
+
+    partner_id = get_proton_partner().id
+
+    dkim_domain = random_domain()
+    validator = CustomDomainValidation(
+        domain, partner_domains={partner_id: dkim_domain}
+    )
+    records = validator.get_expected_mx_records(custom_domain)
+    # As the domain is not a partner_domain,default records should be used even if
+    # there is a config for the partner
+    assert len(records) == len(config.EMAIL_SERVERS_WITH_PRIORITY)
+    for i in range(len(config.EMAIL_SERVERS_WITH_PRIORITY)):
+        config_record = config.EMAIL_SERVERS_WITH_PRIORITY[i]
+        assert records[i].priority == config_record[0]
+        assert records[i].domain == config_record[1]
+
+
+def test_custom_domain_validation_get_expected_mx_records_domain_from_partner():
+    domain = random_domain()
+    custom_domain = create_custom_domain(domain)
+
+    partner_id = get_proton_partner().id
+    custom_domain.partner_id = partner_id
+    Session.commit()
+
+    dkim_domain = random_domain()
+    validator = CustomDomainValidation(dkim_domain)
+    records = validator.get_expected_mx_records(custom_domain)
+    # As the domain is a partner_domain but there is no custom config for partner, default records
+    # should be used
+    assert len(records) == len(config.EMAIL_SERVERS_WITH_PRIORITY)
+    for i in range(len(config.EMAIL_SERVERS_WITH_PRIORITY)):
+        config_record = config.EMAIL_SERVERS_WITH_PRIORITY[i]
+        assert records[i].priority == config_record[0]
+        assert records[i].domain == config_record[1]
+
+
+def test_custom_domain_validation_get_expected_mx_records_domain_from_partner_with_custom_config():
+    domain = random_domain()
+    custom_domain = create_custom_domain(domain)
+
+    partner_id = get_proton_partner().id
+    custom_domain.partner_id = partner_id
+    Session.commit()
+
+    dkim_domain = random_domain()
+    expected_mx_domain = random_domain()
+    validator = CustomDomainValidation(
+        dkim_domain, partner_domains={partner_id: expected_mx_domain}
+    )
+    records = validator.get_expected_mx_records(custom_domain)
+    # As the domain is a partner_domain and there is a custom config for partner, partner records
+    # should be used
+    assert len(records) == 2
+
+    assert records[0].priority == 10
+    assert records[0].domain == f"mx1.{expected_mx_domain}."
+    assert records[1].priority == 20
+    assert records[1].domain == f"mx2.{expected_mx_domain}."
+
+
+# get_expected_spf_records
+def test_custom_domain_validation_get_expected_spf_record_regular_domain():
+    domain = random_domain()
+    custom_domain = create_custom_domain(domain)
+
+    partner_id = get_proton_partner().id
+
+    dkim_domain = random_domain()
+    validator = CustomDomainValidation(
+        domain, partner_domains={partner_id: dkim_domain}
+    )
+    record = validator.get_expected_spf_record(custom_domain)
+    # As the domain is not a partner_domain, default records should be used even if
+    # there is a config for the partner
+    assert record == f"v=spf1 include:{config.EMAIL_DOMAIN} ~all"
+
+
+def test_custom_domain_validation_get_expected_spf_record_domain_from_partner():
+    domain = random_domain()
+    custom_domain = create_custom_domain(domain)
+
+    partner_id = get_proton_partner().id
+    custom_domain.partner_id = partner_id
+    Session.commit()
+
+    dkim_domain = random_domain()
+    validator = CustomDomainValidation(dkim_domain)
+    record = validator.get_expected_spf_record(custom_domain)
+    # As the domain is a partner_domain but there is no custom config for partner, default records
+    # should be used
+    assert record == f"v=spf1 include:{config.EMAIL_DOMAIN} ~all"
+
+
+def test_custom_domain_validation_get_expected_spf_record_domain_from_partner_with_custom_config():
+    domain = random_domain()
+    custom_domain = create_custom_domain(domain)
+
+    partner_id = get_proton_partner().id
+    custom_domain.partner_id = partner_id
+    Session.commit()
+
+    dkim_domain = random_domain()
+    expected_mx_domain = random_domain()
+    validator = CustomDomainValidation(
+        dkim_domain, partner_domains={partner_id: expected_mx_domain}
+    )
+    record = validator.get_expected_spf_record(custom_domain)
+    # As the domain is a partner_domain and there is a custom config for partner, partner records
+    # should be used
+    assert record == f"v=spf1 include:{expected_mx_domain} ~all"
 
 
 # validate_dkim_records
@@ -253,7 +370,7 @@ def test_custom_domain_validation_validate_mx_records_wrong_records_failure():
 
     wrong_record_1 = random_string()
     wrong_record_2 = random_string()
-    wrong_records = [(10, wrong_record_1), (20, wrong_record_2)]
+    wrong_records = [MxRecord(10, wrong_record_1), MxRecord(20, wrong_record_2)]
     dns_client.set_mx_records(domain.domain, wrong_records)
     res = validator.validate_mx_records(domain)
 
@@ -270,7 +387,7 @@ def test_custom_domain_validation_validate_mx_records_success():
 
     domain = create_custom_domain(random_domain())
 
-    dns_client.set_mx_records(domain.domain, config.EMAIL_SERVERS_WITH_PRIORITY)
+    dns_client.set_mx_records(domain.domain, validator.get_expected_mx_records(domain))
     res = validator.validate_mx_records(domain)
 
     assert res.success is True
@@ -319,6 +436,31 @@ def test_custom_domain_validation_validate_spf_records_success():
     domain = create_custom_domain(random_domain())
 
     dns_client.set_txt_record(domain.domain, [f"v=spf1 include:{config.EMAIL_DOMAIN}"])
+    res = validator.validate_spf_records(domain)
+
+    assert res.success is True
+    assert len(res.errors) == 0
+
+    db_domain = CustomDomain.get_by(id=domain.id)
+    assert db_domain.spf_verified is True
+
+
+def test_custom_domain_validation_validate_spf_records_partner_domain_success():
+    dns_client = InMemoryDNSClient()
+    proton_partner_id = get_proton_partner().id
+
+    expected_domain = random_domain()
+    validator = CustomDomainValidation(
+        dkim_domain=random_domain(),
+        dns_client=dns_client,
+        partner_domains={proton_partner_id: expected_domain},
+    )
+
+    domain = create_custom_domain(random_domain())
+    domain.partner_id = proton_partner_id
+    Session.commit()
+
+    dns_client.set_txt_record(domain.domain, [f"v=spf1 include:{expected_domain}"])
     res = validator.validate_spf_records(domain)
 
     assert res.success is True

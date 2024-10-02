@@ -653,9 +653,11 @@ def read_partner_dict(var: str) -> dict[int, str]:
     return res
 
 
-PARTNER_DOMAINS: dict[int, str] = read_partner_dict("PARTNER_DOMAINS")
-PARTNER_DOMAIN_VALIDATION_PREFIXES: dict[int, str] = read_partner_dict(
-    "PARTNER_DOMAIN_VALIDATION_PREFIXES"
+PARTNER_DNS_CUSTOM_DOMAINS: dict[int, str] = read_partner_dict(
+    "PARTNER_DNS_CUSTOM_DOMAINS"
+)
+PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES: dict[int, str] = read_partner_dict(
+    "PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES"
 )
 
 MAILBOX_VERIFICATION_OVERRIDE_CODE: Optional[str] = os.environ.get(
