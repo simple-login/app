@@ -181,7 +181,3 @@ class CustomDomainValidation:
             custom_domain.dmarc_verified = False
             Session.commit()
             return DomainValidationResult(success=False, errors=txt_records)
-
-    @staticmethod
-    def get_instance() -> "CustomDomainValidation":
-        return CustomDomainValidation(dkim_domain=config.EMAIL_DOMAIN)

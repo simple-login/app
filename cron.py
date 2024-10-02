@@ -908,7 +908,7 @@ def check_custom_domain():
 
 def check_single_custom_domain(custom_domain: CustomDomain):
     mx_domains = get_mx_domains(custom_domain.domain)
-    validator = CustomDomainValidation.get_instance()
+    validator = CustomDomainValidation(dkim_domain=config.EMAIL_DOMAIN)
     expected_custom_domains = validator.get_expected_mx_records(custom_domain)
     if not is_mx_equivalent(mx_domains, expected_custom_domains):
         user = custom_domain.user
