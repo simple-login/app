@@ -11,6 +11,7 @@ from app.dns_utils import (
     get_network_dns_client,
 )
 from app.models import CustomDomain
+from app.utils import random_string
 
 
 @dataclass
@@ -42,6 +43,11 @@ class CustomDomainValidation:
             and domain.partner_id in self._partner_domain_validation_prefixes
         ):
             prefix = self._partner_domain_validation_prefixes[domain.partner_id]
+
+        if not domain.ownership_txt_token:
+            domain.ownership_txt_token = random_string(30)
+            Session.commit()
+
         return f"{prefix}-verification={domain.ownership_txt_token}"
 
     def get_expected_mx_records(self, domain: CustomDomain) -> list[MxRecord]:
