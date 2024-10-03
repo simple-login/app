@@ -186,22 +186,9 @@ class CustomDomainValidation:
             Session.commit()
             return DomainValidationResult(success=True, errors=[])
         else:
-            cleaned_records = self.__clean_dmarc_records(txt_records, custom_domain)
             custom_domain.dmarc_verified = False
             Session.commit()
-            return DomainValidationResult(success=False, errors=cleaned_records)
-
-    def __clean_dmarc_records(
-        self, txt_records: List[str], custom_domain: CustomDomain
-    ) -> List[str]:
-        final_records = []
-        verification_record = self.get_ownership_verification_record(custom_domain)
-        spf_record = self.get_expected_spf_record(custom_domain)
-        for record in txt_records:
-            if record != verification_record and record != spf_record:
-                final_records.append(record)
-
-        return final_records
+            return DomainValidationResult(success=False, errors=txt_records)
 
     def __clean_spf_records(
         self, txt_records: List[str], custom_domain: CustomDomain
