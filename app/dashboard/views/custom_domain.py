@@ -21,7 +21,9 @@ class NewCustomDomainForm(FlaskForm):
 @parallel_limiter.lock(only_when=lambda: request.method == "POST")
 def custom_domain():
     custom_domains = CustomDomain.filter_by(
-        user_id=current_user.id, is_sl_subdomain=False
+        user_id=current_user.id,
+        is_sl_subdomain=False,
+        pending_deletion=False,
     ).all()
     new_custom_domain_form = NewCustomDomainForm()
 
