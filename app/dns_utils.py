@@ -106,7 +106,7 @@ class NetworkDNSClient(DNSClient):
 
     def get_txt_record(self, hostname: str) -> List[str]:
         try:
-            answers = self._resolver.resolve(hostname, "TXT", search=True)
+            answers = self._resolver.resolve(hostname, "TXT", search=False)
             ret = []
             for a in answers:  # type: dns.rdtypes.ANY.TXT.TXT
                 for record in a.strings:

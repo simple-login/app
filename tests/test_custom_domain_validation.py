@@ -470,6 +470,33 @@ def test_custom_domain_validation_validate_spf_records_partner_domain_success():
     assert db_domain.spf_verified is True
 
 
+def test_custom_domain_validation_validate_spf_cleans_verification_record():
+    dns_client = InMemoryDNSClient()
+    proton_partner_id = get_proton_partner().id
+
+    expected_domain = random_domain()
+    validator = CustomDomainValidation(
+        dkim_domain=random_domain(),
+        dns_client=dns_client,
+        partner_domains={proton_partner_id: expected_domain},
+    )
+
+    domain = create_custom_domain(random_domain())
+    domain.partner_id = proton_partner_id
+    Session.commit()
+
+    wrong_record = random_string()
+    dns_client.set_txt_record(
+        hostname=domain.domain,
+        txt_list=[wrong_record, validator.get_ownership_verification_record(domain)],
+    )
+    res = validator.validate_spf_records(domain)
+
+    assert res.success is False
+    assert len(res.errors) == 1
+    assert res.errors[0] == wrong_record
+
+
 # validate_dmarc_records
 def test_custom_domain_validation_validate_dmarc_records_empty_failure():
     dns_client = InMemoryDNSClient()

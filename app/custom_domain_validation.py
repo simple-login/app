@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 from app import config
 from app.constants import DMARC_RECORD
@@ -11,6 +11,7 @@ from app.dns_utils import (
     get_network_dns_client,
 )
 from app.models import CustomDomain
+from app.utils import random_string
 
 
 @dataclass
@@ -42,6 +43,11 @@ class CustomDomainValidation:
             and domain.partner_id in self._partner_domain_validation_prefixes
         ):
             prefix = self._partner_domain_validation_prefixes[domain.partner_id]
+
+        if not domain.ownership_txt_token:
+            domain.ownership_txt_token = random_string(30)
+            Session.commit()
+
         return f"{prefix}-verification={domain.ownership_txt_token}"
 
     def get_expected_mx_records(self, domain: CustomDomain) -> list[MxRecord]:
@@ -164,9 +170,11 @@ class CustomDomainValidation:
         else:
             custom_domain.spf_verified = False
             Session.commit()
+            txt_records = self._dns_client.get_txt_record(custom_domain.domain)
+            cleaned_records = self.__clean_spf_records(txt_records, custom_domain)
             return DomainValidationResult(
                 success=False,
-                errors=self._dns_client.get_txt_record(custom_domain.domain),
+                errors=cleaned_records,
             )
 
     def validate_dmarc_records(
@@ -181,3 +189,13 @@ class CustomDomainValidation:
             custom_domain.dmarc_verified = False
             Session.commit()
             return DomainValidationResult(success=False, errors=txt_records)
+
+    def __clean_spf_records(
+        self, txt_records: List[str], custom_domain: CustomDomain
+    ) -> List[str]:
+        final_records = []
+        verification_record = self.get_ownership_verification_record(custom_domain)
+        for record in txt_records:
+            if record != verification_record:
+                final_records.append(record)
+        return final_records
