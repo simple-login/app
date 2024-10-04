@@ -30,6 +30,7 @@ from app.events.generated.event_pb2 import (
     AliasDeleted,
     AliasStatusChanged,
     EventContent,
+    AliasCreated,
 )
 from app.log import LOG
 from app.models import (
@@ -500,6 +501,28 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
     # set some fields back to default
     alias.disable_pgp = False
     alias.pinned = False
+
+    EventDispatcher.send_event(
+        old_user,
+        EventContent(
+            alias_deleted=AliasDeleted(
+                id=alias.id,
+                email=alias.email,
+            )
+        ),
+    )
+    EventDispatcher.send_event(
+        new_user,
+        EventContent(
+            alias_created=AliasCreated(
+                id=alias.id,
+                email=alias.email,
+                note=alias.note,
+                enabled=alias.enabled,
+                created_at=int(alias.created_at.timestamp),
+            )
+        ),
+    )
 
     Session.commit()
 

@@ -1,12 +1,12 @@
 from app import config, alias_utils
 from app.db import Session
 from app.events.event_dispatcher import GlobalDispatcher
-from app.events.generated import event_pb2
-from app.models import Alias, User, PartnerUser
+from app.models import Alias
 from tests.utils import random_token
 from .event_test_utils import (
     OnMemoryDispatcher,
     _create_linked_user,
+    _get_event_from_string,
 )
 
 on_memory_dispatcher = OnMemoryDispatcher()
@@ -24,17 +24,6 @@ def teardown_module():
 
 def setup_function(func):
     on_memory_dispatcher.clear()
-
-
-def _get_event_from_string(
-    data: str, user: User, pu: PartnerUser
-) -> event_pb2.EventContent:
-    event = event_pb2.Event()
-    event.ParseFromString(data)
-    assert user.id == event.user_id
-    assert pu.external_user_id == event.external_user_id
-    assert pu.partner_id == event.partner_id
-    return event.content
 
 
 def test_fire_event_on_alias_creation():
