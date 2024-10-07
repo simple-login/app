@@ -14,6 +14,7 @@ from sqlalchemy.sql import Insert, text
 from app import s3, config
 from app.alias_utils import nb_email_log_for_mailbox
 from app.api.views.apple import verify_receipt
+from app.custom_domain_validation import CustomDomainValidation
 from app.db import Session
 from app.dns_utils import get_mx_domains, is_mx_equivalent
 from app.email_utils import (
@@ -266,11 +267,13 @@ def notify_manual_sub_end():
                 "Your SimpleLogin subscription will end soon",
                 render(
                     "transactional/coinbase/reminder-subscription.txt",
+                    user=user,
                     coinbase_subscription=coinbase_subscription,
                     extend_subscription_url=extend_subscription_url,
                 ),
                 render(
                     "transactional/coinbase/reminder-subscription.html",
+                    user=user,
                     coinbase_subscription=coinbase_subscription,
                     extend_subscription_url=extend_subscription_url,
                 ),
@@ -826,10 +829,12 @@ def check_mailbox_valid_domain():
                         f"Mailbox {mailbox.email} is disabled",
                         render(
                             "transactional/disable-mailbox-warning.txt.jinja2",
+                            user=mailbox.user,
                             mailbox=mailbox,
                         ),
                         render(
                             "transactional/disable-mailbox-warning.html",
+                            user=mailbox.user,
                             mailbox=mailbox,
                         ),
                         retries=3,
@@ -884,6 +889,7 @@ def check_mailbox_valid_pgp_keys():
                 f"Mailbox {mailbox.email}'s PGP Key is invalid",
                 render(
                     "transactional/invalid-mailbox-pgp-key.txt.jinja2",
+                    user=mailbox.user,
                     mailbox=mailbox,
                 ),
                 retries=3,
@@ -900,9 +906,11 @@ def check_custom_domain():
             LOG.i("custom domain has been deleted")
 
 
-def check_single_custom_domain(custom_domain):
+def check_single_custom_domain(custom_domain: CustomDomain):
     mx_domains = get_mx_domains(custom_domain.domain)
-    if not is_mx_equivalent(mx_domains, config.EMAIL_SERVERS_WITH_PRIORITY):
+    validator = CustomDomainValidation(dkim_domain=config.EMAIL_DOMAIN)
+    expected_custom_domains = validator.get_expected_mx_records(custom_domain)
+    if not is_mx_equivalent(mx_domains, expected_custom_domains):
         user = custom_domain.user
         LOG.w(
             "The MX record is not correctly set for %s %s %s",
@@ -924,6 +932,7 @@ def check_single_custom_domain(custom_domain):
                 f"Please update {custom_domain.domain} DNS on SimpleLogin",
                 render(
                     "transactional/custom-domain-dns-issue.txt.jinja2",
+                    user=user,
                     custom_domain=custom_domain,
                     domain_dns_url=domain_dns_url,
                 ),

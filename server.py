@@ -29,7 +29,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app import paddle_utils, config, paddle_callback
+from app import paddle_utils, config, paddle_callback, constants
 from app.admin_model import (
     SLAdminIndexView,
     UserAdmin,
@@ -45,6 +45,7 @@ from app.admin_model import (
     DailyMetricAdmin,
     MetricAdmin,
     InvalidMailboxDomainAdmin,
+    EmailSearchAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -200,7 +201,7 @@ def create_app() -> Flask:
                 "username": "admin",
                 "password": FLASK_PROFILER_PASSWORD,
             },
-            "ignore": ["^/static/.*", "/git", "/exception"],
+            "ignore": ["^/static/.*", "/git", "/exception", "/health"],
         }
         flask_profiler.init_app(app)
 
@@ -217,6 +218,10 @@ def create_app() -> Flask:
     @app.teardown_appcontext
     def cleanup(resp_or_exc):
         Session.remove()
+
+    @app.route("/health", methods=["GET"])
+    def healthcheck():
+        return "success", 200
 
     return app
 
@@ -282,7 +287,9 @@ def set_index_page(app):
             and not request.path.startswith("/_debug_toolbar")
             and not request.path.startswith("/git")
             and not request.path.startswith("/favicon.ico")
+            and not request.path.startswith("/health")
         ):
+            start_time = g.start_time or time.time()
             LOG.d(
                 "%s %s %s %s %s, takes %s",
                 request.remote_addr,
@@ -290,7 +297,7 @@ def set_index_page(app):
                 request.path,
                 request.args,
                 res.status_code,
-                time.time() - g.start_time,
+                time.time() - start_time,
             )
 
         return res
@@ -430,6 +437,7 @@ def jinja2_filter(app):
             PAGE_LIMIT=PAGE_LIMIT,
             ZENDESK_ENABLED=ZENDESK_ENABLED,
             MAX_NB_EMAIL_FREE_PLAN=MAX_NB_EMAIL_FREE_PLAN,
+            HEADER_ALLOW_API_COOKIES=constants.HEADER_ALLOW_API_COOKIES,
         )
 
 
@@ -542,6 +550,7 @@ def setup_paddle_callback(app: Flask):
                     "SimpleLogin - your subscription is canceled",
                     render(
                         "transactional/subscription-cancel.txt",
+                        user=user,
                         end_date=request.form.get("cancellation_effective_date"),
                     ),
                 )
@@ -701,7 +710,12 @@ def setup_coinbase_commerce(app):
 
 
 def handle_coinbase_event(event) -> bool:
-    user_id = int(event["data"]["metadata"]["user_id"])
+    server_user_id = event["data"]["metadata"]["user_id"]
+    try:
+        user_id = int(server_user_id)
+    except ValueError:
+        user_id = int(float(server_user_id))
+
     code = event["data"]["code"]
     user = User.get(user_id)
     if not user:
@@ -722,10 +736,12 @@ def handle_coinbase_event(event) -> bool:
             "Your SimpleLogin account has been upgraded",
             render(
                 "transactional/coinbase/new-subscription.txt",
+                user=user,
                 coinbase_subscription=coinbase_subscription,
             ),
             render(
                 "transactional/coinbase/new-subscription.html",
+                user=user,
                 coinbase_subscription=coinbase_subscription,
             ),
         )
@@ -746,10 +762,12 @@ def handle_coinbase_event(event) -> bool:
             "Your SimpleLogin account has been extended",
             render(
                 "transactional/coinbase/extend-subscription.txt",
+                user=user,
                 coinbase_subscription=coinbase_subscription,
             ),
             render(
                 "transactional/coinbase/extend-subscription.html",
+                user=user,
                 coinbase_subscription=coinbase_subscription,
             ),
         )
@@ -769,6 +787,7 @@ def init_admin(app):
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
     admin.add_view(MailboxAdmin(Mailbox, Session))
+    admin.add_view(EmailSearchAdmin(name="Email Search", endpoint="email_search"))
     admin.add_view(CouponAdmin(Coupon, Session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))

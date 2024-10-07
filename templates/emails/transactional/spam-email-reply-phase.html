@@ -3,28 +3,28 @@
 {% block content %}
 
   {% call text() %}
-  <h1>An email sent from your alias {{ alias.email }} to  {{ website_email }} is detected as spam.</h1>
-{% endcall %}
+    <h1>An email sent from your alias {{ alias.email }} to  {{ website_email }} is detected as spam.</h1>
+  {% endcall %}
 
-{% call text() %}
-An email sent from your alias {{ alias.email }} to  {{ website_email }} is detected as spam by our Spam Detection Engine (SpamAssassin).
-{% endcall %}
+  {% call text() %}
+    An email sent from your alias {{ alias.email }} to  {{ website_email }} is detected as spam by our Spam Detection Engine (SpamAssassin).
+  {% endcall %}
 
-{% call text() %}
-In most of the cases, the email will be refused by your contact.
-{% endcall %}
+  {% call text() %}
+    In most of the cases, the email will be refused by your contact.
+  {% endcall %}
 
-{{ render_button("View the email", refused_email_url) }}
-{% call text() %}
-The email is automatically deleted in 7 days.
-{% endcall %}
+  {{ render_button("View the email", refused_email_url) }}
+  {% call text() %}
+    The email is automatically deleted in 7 days.
+  {% endcall %}
 
-{% call text() %}
-Please let us know if you have any question by replying to this email.
-{% endcall %}
+  {% call text() %}
+    Please let us know if you have any question by replying to this email.
+  {% endcall %}
 
-{{ render_text('Thanks,
-<br />
-SimpleLogin Team.') }}
-{{ raw_url(disable_alias_link) }}
+  {{ render_text('Thanks,
+    <br />
+    SimpleLogin Team.') }}
+  {{ raw_url(disable_alias_link) }}
 {% endblock %}

@@ -3,7 +3,7 @@ import random
 import socket
 import string
 from ast import literal_eval
-from typing import Callable, List
+from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -33,6 +33,33 @@ def sl_getenv(env_var: str, default_factory: Callable = None):
         return default_factory()
 
     return literal_eval(value)
+
+
+def get_env_dict(env_var: str) -> dict[str, str]:
+    """
+    Get an env variable and convert it into a python dictionary with keys and values as strings.
+    Args:
+        env_var (str): env var, example: SL_DB
+
+    Syntax is: key1=value1;key2=value2
+    Components separated by ;
+    key and value separated by =
+    """
+    value = os.getenv(env_var)
+    if not value:
+        return {}
+
+    components = value.split(";")
+    result = {}
+    for component in components:
+        if component == "":
+            continue
+        parts = component.split("=")
+        if len(parts) != 2:
+            raise Exception(f"Invalid config for env var {env_var}")
+        result[parts[0].strip()] = parts[1].strip()
+
+    return result
 
 
 config_file = os.environ.get("CONFIG")
@@ -120,7 +147,7 @@ if POSTFIX_SUBMISSION_TLS:
 else:
     default_postfix_port = 25
 POSTFIX_PORT = int(os.environ.get("POSTFIX_PORT", default_postfix_port))
-POSTFIX_TIMEOUT = os.environ.get("POSTFIX_TIMEOUT", 3)
+POSTFIX_TIMEOUT = int(os.environ.get("POSTFIX_TIMEOUT", 3))
 
 # ["domain1.com", "domain2.com"]
 OTHER_ALIAS_DOMAINS = sl_getenv("OTHER_ALIAS_DOMAINS", list)
@@ -281,6 +308,7 @@ JOB_DELETE_MAILBOX = "delete-mailbox"
 JOB_DELETE_DOMAIN = "delete-domain"
 JOB_SEND_USER_REPORT = "send-user-report"
 JOB_SEND_PROTON_WELCOME_1 = "proton-welcome-1"
+JOB_SEND_ALIAS_CREATION_EVENTS = "send-alias-creation-events"
 
 # for pagination
 PAGE_LIMIT = 20
@@ -587,3 +615,51 @@ EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
 # We want it disabled by default, so only skip if defined
 EVENT_WEBHOOK_SKIP_VERIFY_SSL = "EVENT_WEBHOOK_SKIP_VERIFY_SSL" in os.environ
 EVENT_WEBHOOK_DISABLE = "EVENT_WEBHOOK_DISABLE" in os.environ
+
+
+def read_webhook_enabled_user_ids() -> Optional[List[int]]:
+    user_ids = os.environ.get("EVENT_WEBHOOK_ENABLED_USER_IDS", None)
+    if user_ids is None:
+        return None
+
+    ids = []
+    for user_id in user_ids.split(","):
+        try:
+            ids.append(int(user_id.strip()))
+        except ValueError:
+            pass
+    return ids
+
+
+EVENT_WEBHOOK_ENABLED_USER_IDS: Optional[List[int]] = read_webhook_enabled_user_ids()
+
+# Allow to define a different DB_URI for the event listener, in case we want to skip the connection pool
+# It defaults to the regular DB_URI in case it's needed
+EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
+
+
+def read_partner_dict(var: str) -> dict[int, str]:
+    partner_value = get_env_dict(var)
+    if len(partner_value) == 0:
+        return {}
+
+    res: dict[int, str] = {}
+    for partner_id in partner_value.keys():
+        try:
+            partner_id_int = int(partner_id.strip())
+            res[partner_id_int] = partner_value[partner_id]
+        except ValueError:
+            pass
+    return res
+
+
+PARTNER_DNS_CUSTOM_DOMAINS: dict[int, str] = read_partner_dict(
+    "PARTNER_DNS_CUSTOM_DOMAINS"
+)
+PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES: dict[int, str] = read_partner_dict(
+    "PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES"
+)
+
+MAILBOX_VERIFICATION_OVERRIDE_CODE: Optional[str] = os.environ.get(
+    "MAILBOX_VERIFICATION_OVERRIDE_CODE", None
+)

@@ -64,6 +64,7 @@ More info on https://simplelogin.io/docs/getting-started/anti-phishing/
             msg,
             warning_plain_text,
             warning_html,
+            subject_prefix="[Possible phishing attempt]",
         )
         return changed_msg, None
 
@@ -76,6 +77,7 @@ More info on https://simplelogin.io/docs/getting-started/anti-phishing/
             msg,
             warning_plain_text,
             warning_html,
+            subject_prefix="[Possible phishing attempt]",
         )
         return changed_msg, None
 
@@ -104,12 +106,14 @@ More info on https://simplelogin.io/docs/getting-started/anti-phishing/
             f"An email sent to {alias.email} has been quarantined",
             render(
                 "transactional/message-quarantine-dmarc.txt.jinja2",
+                user=user,
                 from_header=from_header,
                 alias=alias,
                 refused_email_url=email_log.get_dashboard_url(),
             ),
             render(
                 "transactional/message-quarantine-dmarc.html",
+                user=user,
                 from_header=from_header,
                 alias=alias,
                 refused_email_url=email_log.get_dashboard_url(),
@@ -174,12 +178,14 @@ def apply_dmarc_policy_for_reply_phase(
         f"Attempt to send an email to your contact {contact_recipient.email} from {envelope.mail_from}",
         render(
             "transactional/spoof-reply.txt.jinja2",
+            user=alias_from.user,
             contact=contact_recipient,
             alias=alias_from,
             sender=envelope.mail_from,
         ),
         render(
             "transactional/spoof-reply.html",
+            user=alias_from.user,
             contact=contact_recipient,
             alias=alias_from,
             sender=envelope.mail_from,

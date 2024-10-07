@@ -33,6 +33,7 @@ from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import func
+from flask_login import current_user
 
 from app import config
 from app.db import Session
@@ -68,17 +69,27 @@ VERP_TIME_START = 1640995200
 VERP_HMAC_ALGO = "sha3-224"
 
 
-def render(template_name, **kwargs) -> str:
+def render(template_name: str, user: Optional[User], **kwargs) -> str:
     templates_dir = os.path.join(config.ROOT_DIR, "templates", "emails")
     env = Environment(loader=FileSystemLoader(templates_dir))
 
     template = env.get_template(template_name)
+
+    if user is None:
+        if current_user and current_user.is_authenticated:
+            user = current_user
+
+    use_partner_template = False
+    if user:
+        use_partner_template = user.has_used_alias_from_partner()
+        kwargs["user"] = user
 
     return template.render(
         MAX_NB_EMAIL_FREE_PLAN=config.MAX_NB_EMAIL_FREE_PLAN,
         URL=config.URL,
         LANDING_PAGE_URL=config.LANDING_PAGE_URL,
         YEAR=arrow.now().year,
+        USE_PARTNER_TEMPLATE=use_partner_template,
         **kwargs,
     )
 
@@ -111,53 +122,59 @@ def send_trial_end_soon_email(user):
     )
 
 
-def send_activation_email(email, activation_link):
+def send_activation_email(user: User, activation_link):
     send_email(
-        email,
+        user.email,
         "Just one more step to join SimpleLogin",
         render(
             "transactional/activation.txt",
+            user=user,
             activation_link=activation_link,
-            email=email,
+            email=user.email,
         ),
         render(
             "transactional/activation.html",
+            user=user,
             activation_link=activation_link,
-            email=email,
+            email=user.email,
         ),
     )
 
 
-def send_reset_password_email(email, reset_password_link):
+def send_reset_password_email(user: User, reset_password_link):
     send_email(
-        email,
+        user.email,
         "Reset your password on SimpleLogin",
         render(
             "transactional/reset-password.txt",
+            user=user,
             reset_password_link=reset_password_link,
         ),
         render(
             "transactional/reset-password.html",
+            user=user,
             reset_password_link=reset_password_link,
         ),
     )
 
 
-def send_change_email(new_email, current_email, link):
+def send_change_email(user: User, new_email, link):
     send_email(
         new_email,
         "Confirm email update on SimpleLogin",
         render(
             "transactional/change-email.txt",
+            user=user,
             link=link,
             new_email=new_email,
-            current_email=current_email,
+            current_email=user.email,
         ),
         render(
             "transactional/change-email.html",
+            user=user,
             link=link,
             new_email=new_email,
-            current_email=current_email,
+            current_email=user.email,
         ),
     )
 
@@ -170,28 +187,32 @@ def send_invalid_totp_login_email(user, totp_type):
         "Unsuccessful attempt to login to your SimpleLogin account",
         render(
             "transactional/invalid-totp-login.txt",
+            user=user,
             type=totp_type,
         ),
         render(
             "transactional/invalid-totp-login.html",
+            user=user,
             type=totp_type,
         ),
         1,
     )
 
 
-def send_test_email_alias(email, name):
+def send_test_email_alias(user: User, email: str):
     send_email(
         email,
         f"This email is sent to {email}",
         render(
             "transactional/test-email.txt",
-            name=name,
+            user=user,
+            name=user.name,
             alias=email,
         ),
         render(
             "transactional/test-email.html",
-            name=name,
+            user=user,
+            name=user.name,
             alias=email,
         ),
     )
@@ -206,11 +227,13 @@ def send_cannot_create_directory_alias(user, alias_address, directory_name):
         f"Alias {alias_address} cannot be created",
         render(
             "transactional/cannot-create-alias-directory.txt",
+            user=user,
             alias=alias_address,
             directory=directory_name,
         ),
         render(
             "transactional/cannot-create-alias-directory.html",
+            user=user,
             alias=alias_address,
             directory=directory_name,
         ),
@@ -228,11 +251,13 @@ def send_cannot_create_directory_alias_disabled(user, alias_address, directory_n
         f"Alias {alias_address} cannot be created",
         render(
             "transactional/cannot-create-alias-directory-disabled.txt",
+            user=user,
             alias=alias_address,
             directory=directory_name,
         ),
         render(
             "transactional/cannot-create-alias-directory-disabled.html",
+            user=user,
             alias=alias_address,
             directory=directory_name,
         ),
@@ -248,11 +273,13 @@ def send_cannot_create_domain_alias(user, alias, domain):
         f"Alias {alias} cannot be created",
         render(
             "transactional/cannot-create-alias-domain.txt",
+            user=user,
             alias=alias,
             domain=domain,
         ),
         render(
             "transactional/cannot-create-alias-domain.html",
+            user=user,
             alias=alias,
             domain=domain,
         ),
@@ -521,7 +548,9 @@ def can_create_directory_for_address(email_address: str) -> bool:
     for domain in config.ALIAS_DOMAINS:
         if email_address.endswith("@" + domain):
             return True
-
+    LOG.i(
+        f"Cannot create address in directory for {email_address} since it does not belong to a valid directory domain"
+    )
     return False
 
 
@@ -563,7 +592,7 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
 
     from app.models import CustomDomain
 
-    if CustomDomain.get_by(domain=domain, verified=True):
+    if CustomDomain.get_by(domain=domain, is_sl_subdomain=True, verified=True):
         LOG.d("domain %s is a SimpleLogin custom domain", domain)
         return False
 
@@ -628,7 +657,7 @@ def get_mx_domain_list(domain) -> [str]:
     """
     priority_domains = get_mx_domains(domain)
 
-    return [d[:-1] for _, d in priority_domains]
+    return [d.domain[:-1] for d in priority_domains]
 
 
 def personal_email_already_used(email_address: str) -> bool:
@@ -919,9 +948,19 @@ def decode_text(text: str, encoding: EmailEncoding = EmailEncoding.NO) -> str:
         return text
 
 
-def add_header(msg: Message, text_header, html_header=None) -> Message:
+def add_header(
+    msg: Message, text_header, html_header=None, subject_prefix=None
+) -> Message:
     if not html_header:
         html_header = text_header.replace("\n", "<br>")
+
+    if subject_prefix is not None:
+        subject = msg[headers.SUBJECT]
+        if not subject:
+            msg.add_header(headers.SUBJECT, subject_prefix)
+        else:
+            subject = f"{subject_prefix} {subject}"
+            msg.replace_header(headers.SUBJECT, subject)
 
     content_type = msg.get_content_type().lower()
     if content_type == "text/plain":
@@ -1253,6 +1292,7 @@ def spf_pass(
                     f"SimpleLogin Alert: attempt to send emails from your alias {alias.email} from unknown IP Address",
                     render(
                         "transactional/spf-fail.txt",
+                        user=user,
                         alias=alias.email,
                         ip=ip,
                         mailbox_url=config.URL + f"/dashboard/mailbox/{mailbox.id}#spf",
@@ -1262,6 +1302,7 @@ def spf_pass(
                     ),
                     render(
                         "transactional/spf-fail.html",
+                        user=user,
                         ip=ip,
                         mailbox_url=config.URL + f"/dashboard/mailbox/{mailbox.id}#spf",
                         to_email=contact_email,

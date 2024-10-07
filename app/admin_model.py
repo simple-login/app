@@ -1,7 +1,10 @@
+from __future__ import annotations
 from typing import Optional
 
 import arrow
 import sqlalchemy
+from flask_admin import BaseView
+from flask_admin.form import SecureForm
 from flask_admin.model.template import EndpointLinkRowAction
 from markupsafe import Markup
 
@@ -27,8 +30,25 @@ from app.models import (
     Alias,
     Newsletter,
     PADDLE_SUBSCRIPTION_GRACE_DAYS,
+    Mailbox,
+    DeletedAlias,
+    DomainDeletedAlias,
+    PartnerUser,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
+
+
+def _admin_action_formatter(view, context, model, name):
+    action_name = AuditLogActionEnum.get_name(model.action)
+    return "{} ({})".format(action_name, model.action)
+
+
+def _admin_date_formatter(view, context, model, name):
+    return model.created_at.format()
+
+
+def _user_upgrade_channel_formatter(view, context, model, name):
+    return Markup(model.upgrade_channel)
 
 
 class SLModelView(sqla.ModelView):
@@ -95,11 +115,8 @@ class SLAdminIndexView(AdminIndexView):
         return redirect("/admin/user")
 
 
-def _user_upgrade_channel_formatter(view, context, model, name):
-    return Markup(model.upgrade_channel)
-
-
 class UserAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["email", "id"]
     column_exclude_list = [
         "salt",
@@ -118,6 +135,8 @@ class UserAdmin(SLModelView):
 
     column_formatters = {
         "upgrade_channel": _user_upgrade_channel_formatter,
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
     }
 
     @action(
@@ -344,16 +363,28 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
 
 
 class EmailLogAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id"]
     column_filters = ["id", "user.email", "mailbox.email", "contact.website_email"]
 
     can_edit = False
     can_create = False
 
+    column_formatters = {
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
+    }
+
 
 class AliasAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id", "user.email", "email", "mailbox.email"]
     column_filters = ["id", "user.email", "email", "mailbox.email"]
+
+    column_formatters = {
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
+    }
 
     @action(
         "disable_email_spoofing_check",
@@ -377,8 +408,14 @@ class AliasAdmin(SLModelView):
 
 
 class MailboxAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id", "user.email", "email"]
     column_filters = ["id", "user.email", "email"]
+
+    column_formatters = {
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
+    }
 
 
 # class LifetimeCouponAdmin(SLModelView):
@@ -387,13 +424,25 @@ class MailboxAdmin(SLModelView):
 
 
 class CouponAdmin(SLModelView):
+    form_base_class = SecureForm
     can_edit = False
     can_create = True
 
+    column_formatters = {
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
+    }
+
 
 class ManualSubscriptionAdmin(SLModelView):
+    form_base_class = SecureForm
     can_edit = True
     column_searchable_list = ["id", "user.email"]
+
+    column_formatters = {
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
+    }
 
     @action(
         "extend_1y",
@@ -433,14 +482,26 @@ class ManualSubscriptionAdmin(SLModelView):
 
 
 class CustomDomainAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["domain", "user.email", "user.id"]
     column_exclude_list = ["ownership_txt_token"]
     can_edit = False
 
+    column_formatters = {
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
+    }
+
 
 class ReferralAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id", "user.email", "code", "name"]
     column_filters = ["id", "user.email", "code", "name"]
+
+    column_formatters = {
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
+    }
 
     def scaffold_list_columns(self):
         ret = super().scaffold_list_columns()
@@ -457,16 +518,8 @@ class ReferralAdmin(SLModelView):
 #     can_delete = True
 
 
-def _admin_action_formatter(view, context, model, name):
-    action_name = AuditLogActionEnum.get_name(model.action)
-    return "{} ({})".format(action_name, model.action)
-
-
-def _admin_created_at_formatter(view, context, model, name):
-    return model.created_at.format()
-
-
 class AdminAuditLogAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["admin.id", "admin.email", "model_id", "created_at"]
     column_filters = ["admin.id", "admin.email", "model_id", "created_at"]
     column_exclude_list = ["id"]
@@ -477,7 +530,8 @@ class AdminAuditLogAdmin(SLModelView):
 
     column_formatters = {
         "action": _admin_action_formatter,
-        "created_at": _admin_created_at_formatter,
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
     }
 
 
@@ -497,6 +551,7 @@ def _transactionalcomplaint_refused_email_id_formatter(view, context, model, nam
 
 
 class ProviderComplaintAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id", "user.id", "created_at"]
     column_filters = ["user.id", "state"]
     column_hide_backrefs = False
@@ -505,8 +560,8 @@ class ProviderComplaintAdmin(SLModelView):
     can_delete = False
 
     column_formatters = {
-        "created_at": _admin_created_at_formatter,
-        "updated_at": _admin_created_at_formatter,
+        "created_at": _admin_date_formatter,
+        "updated_at": _admin_date_formatter,
         "state": _transactionalcomplaint_state_formatter,
         "phase": _transactionalcomplaint_phase_formatter,
         "refused_email": _transactionalcomplaint_refused_email_id_formatter,
@@ -567,6 +622,7 @@ def _newsletter_html_formatter(view, context, model: Newsletter, name):
 
 
 class NewsletterAdmin(SLModelView):
+    form_base_class = SecureForm
     list_template = "admin/model/newsletter-list.html"
     edit_template = "admin/model/newsletter-edit.html"
     edit_modal = False
@@ -648,6 +704,7 @@ class NewsletterAdmin(SLModelView):
 
 
 class NewsletterUserAdmin(SLModelView):
+    form_base_class = SecureForm
     column_searchable_list = ["id"]
     column_filters = ["id", "user.email", "newsletter.subject"]
     column_exclude_list = ["created_at", "updated_at", "id"]
@@ -657,17 +714,112 @@ class NewsletterUserAdmin(SLModelView):
 
 
 class DailyMetricAdmin(SLModelView):
+    form_base_class = SecureForm
     column_exclude_list = ["created_at", "updated_at", "id"]
 
     can_export = True
 
 
 class MetricAdmin(SLModelView):
+    form_base_class = SecureForm
     column_exclude_list = ["created_at", "updated_at", "id"]
 
     can_export = True
 
 
 class InvalidMailboxDomainAdmin(SLModelView):
+    form_base_class = SecureForm
     can_create = True
     can_delete = True
+
+
+class EmailSearchResult:
+    no_match: bool = True
+    alias: Optional[Alias] = None
+    mailbox: list[Mailbox] = []
+    mailbox_count: int = 0
+    deleted_alias: Optional[DeletedAlias] = None
+    deleted_custom_alias: Optional[DomainDeletedAlias] = None
+    user: Optional[User] = None
+
+    @staticmethod
+    def from_email(email: str) -> EmailSearchResult:
+        output = EmailSearchResult()
+        alias = Alias.get_by(email=email)
+        if alias:
+            output.alias = alias
+            output.no_match = False
+        user = User.get_by(email=email)
+        if user:
+            output.user = user
+            output.no_match = False
+        mailboxes = (
+            Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).limit(10).all()
+        )
+        if mailboxes:
+            output.mailbox = mailboxes
+            output.mailbox_count = Mailbox.filter_by(email=email).count()
+            output.no_match = False
+        deleted_alias = DeletedAlias.get_by(email=email)
+        if deleted_alias:
+            output.deleted_alias = deleted_alias
+            output.no_match = False
+        domain_deleted_alias = DomainDeletedAlias.get_by(email=email)
+        if domain_deleted_alias:
+            output.domain_deleted_alias = domain_deleted_alias
+            output.no_match = False
+        return output
+
+
+class EmailSearchHelpers:
+    @staticmethod
+    def mailbox_list(user: User) -> list[Mailbox]:
+        return (
+            Mailbox.filter_by(user_id=user.id)
+            .order_by(Mailbox.id.asc())
+            .limit(10)
+            .all()
+        )
+
+    @staticmethod
+    def mailbox_count(user: User) -> int:
+        return Mailbox.filter_by(user_id=user.id).order_by(Mailbox.id.desc()).count()
+
+    @staticmethod
+    def alias_list(user: User) -> list[Alias]:
+        return (
+            Alias.filter_by(user_id=user.id).order_by(Alias.id.desc()).limit(10).all()
+        )
+
+    @staticmethod
+    def alias_count(user: User) -> int:
+        return Alias.filter_by(user_id=user.id).count()
+
+    @staticmethod
+    def partner_user(user: User) -> Optional[PartnerUser]:
+        return PartnerUser.get_by(user_id=user.id)
+
+
+class EmailSearchAdmin(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+
+    def inaccessible_callback(self, name, **kwargs):
+        # redirect to login page if user doesn't have access
+        flash("You don't have access to the admin page", "error")
+        return redirect(url_for("dashboard.index", next=request.url))
+
+    @expose("/", methods=["GET", "POST"])
+    def index(self):
+        search = EmailSearchResult()
+        email = request.args.get("email")
+        if email is not None and len(email) > 0:
+            email = email.strip()
+            search = EmailSearchResult.from_email(email)
+
+        return self.render(
+            "admin/email_search.html",
+            email=email,
+            data=search,
+            helper=EmailSearchHelpers,
+        )

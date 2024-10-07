@@ -17,13 +17,9 @@
                         white-space: normal;
                         overflow: hidden;
                         max-height: 100px;
-                        text-overflow: ellipsis;">
-              {{ notification.message | safe }}
-            </div>
+                        text-overflow: ellipsis">{{ notification.message | safe }}</div>
             <a href="{{ url_for('dashboard.notification_route', notification_id=notification.id) }}"
-               class="mt-2 btn btn-outline-primary">
-              More ➡
-            </a>
+               class="mt-2 btn btn-outline-primary">More ➡</a>
             <div class="small text-muted mt-2">{{ notification.created_at | dt }}</div>
           </div>
         </div>
@@ -36,16 +32,12 @@
             <nav aria-label="Notification navigation">
               <ul class="pagination">
                 <li class="page-item mr-1">
-                  <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}"
-                     href="{{ url_for('dashboard.notifications_route', page=page-1) }}">
+                  <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}" href="{{ url_for('dashboard.notifications_route', page=page-1) }}">
                     Previous
                   </a>
                 </li>
                 <li class="page-item">
-                  <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}"
-                     href="{{ url_for('dashboard.notifications_route', page=page+1) }}">
-                    Next
-                  </a>
+                  <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}" href="{{ url_for('dashboard.notifications_route', page=page+1) }}">Next</a>
                 </li>
               </ul>
             </nav>

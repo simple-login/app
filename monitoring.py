@@ -95,6 +95,20 @@ def log_nb_db_connection():
 
 
 @newrelic.agent.background_task()
+def log_nb_db_connection_by_app_name():
+    # get the number of connections to the DB
+    rows = Session.execute(
+        "SELECT application_name, count(datid) FROM pg_stat_activity group by application_name"
+    )
+    for row in rows:
+        if row[0].find("sl-") == 0:
+            LOG.d("number of db connections for app %s = %s", row[0], row[1])
+            newrelic.agent.record_custom_metric(
+                f"Custom/nb_db_app_connection/{row[0]}", row[1]
+            )
+
+
+@newrelic.agent.background_task()
 def log_pending_to_process_events():
     r = Session.execute("select count(*) from sync_event WHERE taken_time IS NULL;")
     events_pending = list(r)[0][0]
@@ -125,6 +139,21 @@ def log_events_pending_dead_letter():
     )
 
 
+@newrelic.agent.background_task()
+def log_failed_events():
+    r = Session.execute(
+        """
+        SELECT COUNT(*)
+        FROM sync_event
+        WHERE retry_count >= 10;
+        """,
+    )
+    failed_events = list(r)[0][0]
+
+    LOG.d("number of failed events %s", failed_events)
+    newrelic.agent.record_custom_metric("Custom/sync_events_failed", failed_events)
+
+
 if __name__ == "__main__":
     exporter = MetricExporter(get_newrelic_license())
     while True:
@@ -132,6 +161,8 @@ if __name__ == "__main__":
         log_nb_db_connection()
         log_pending_to_process_events()
         log_events_pending_dead_letter()
+        log_failed_events()
+        log_nb_db_connection_by_app_name()
         Session.close()
 
         exporter.run()

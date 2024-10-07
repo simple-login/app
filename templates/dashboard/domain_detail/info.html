@@ -34,13 +34,14 @@
       .
     </div>
   </div>
-  <div class="{% if not custom_domain.catch_all %} disabled-content{% endif %}">
+  <div class="{% if not custom_domain.catch_all %}
+     disabled-content{% endif %}">
     <div>
       Auto-created aliases are automatically owned by the following mailboxes
       <i class="fe fe-corner-right-down"></i>
       .
     </div>
-    {% set domain_mailboxes=custom_domain.mailboxes %}
+    {% set domain_mailboxes = custom_domain.mailboxes %}
     <form method="post" class="mt-2">
       {{ csrf_form.csrf_token }}
       <input type="hidden" name="form-name" value="update">
@@ -54,10 +55,7 @@
                   name="mailbox_ids">
             {% for mailbox in mailboxes %}
 
-              <option value="{{ mailbox.id }}"
-                      {% if mailbox in domain_mailboxes %} selected{% endif %}>
-                {{ mailbox.email }}
-              </option>
+              <option value="{{ mailbox.id }}" {% if mailbox in domain_mailboxes %}selected{% endif %}>{{ mailbox.email }}</option>
             {% endfor %}
           </select>
         </div>

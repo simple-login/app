@@ -3,7 +3,7 @@ Run scheduled jobs.
 Not meant for running job at precise time (+- 1h)
 """
 import time
-from typing import List
+from typing import List, Optional
 
 import arrow
 from sqlalchemy.sql.expression import or_, and_
@@ -14,7 +14,9 @@ from app.email_utils import (
     send_email,
     render,
 )
+from app.events.event_dispatcher import PostgresDispatcher
 from app.import_utils import handle_batch_import
+from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
@@ -197,13 +199,18 @@ def process_job(job: Job):
             onboarding_mailbox(user)
     elif job.name == config.JOB_ONBOARDING_4:
         user_id = job.payload.get("user_id")
-        user = User.get(user_id)
+        user: User = User.get(user_id)
 
         # user might delete their account in the meantime
         # or disable the notification
         if user and user.notification and user.activated:
-            LOG.d("send onboarding pgp email to user %s", user)
-            onboarding_pgp(user)
+            # if user only has 1 mailbox which is Proton then do not send PGP onboarding email
+            mailboxes = user.mailboxes()
+            if len(mailboxes) == 1 and mailboxes[0].is_proton():
+                LOG.d("Do not send onboarding PGP email to Proton mailbox")
+            else:
+                LOG.d("send onboarding pgp email to user %s", user)
+                onboarding_pgp(user)
 
     elif job.name == config.JOB_BATCH_IMPORT:
         batch_import_id = job.payload.get("batch_import_id")
@@ -219,43 +226,44 @@ def process_job(job: Job):
 
         user_email = user.email
         LOG.w("Delete user %s", user)
-        User.delete(user.id)
-        Session.commit()
-
         send_email(
             user_email,
             "Your SimpleLogin account has been deleted",
-            render("transactional/account-delete.txt"),
-            render("transactional/account-delete.html"),
+            render("transactional/account-delete.txt", user=user),
+            render("transactional/account-delete.html", user=user),
             retries=3,
         )
+        User.delete(user.id)
+        Session.commit()
     elif job.name == config.JOB_DELETE_MAILBOX:
         delete_mailbox_job(job)
 
     elif job.name == config.JOB_DELETE_DOMAIN:
         custom_domain_id = job.payload.get("custom_domain_id")
-        custom_domain = CustomDomain.get(custom_domain_id)
+        custom_domain: Optional[CustomDomain] = CustomDomain.get(custom_domain_id)
         if not custom_domain:
             return
 
         domain_name = custom_domain.domain
         user = custom_domain.user
 
+        custom_domain_partner_id = custom_domain.partner_id
         CustomDomain.delete(custom_domain.id)
         Session.commit()
 
         LOG.d("Domain %s deleted", domain_name)
 
-        send_email(
-            user.email,
-            f"Your domain {domain_name} has been deleted",
-            f"""Domain {domain_name} along with its aliases are deleted successfully.
+        if custom_domain_partner_id is None:
+            send_email(
+                user.email,
+                f"Your domain {domain_name} has been deleted",
+                f"""Domain {domain_name} along with its aliases are deleted successfully.
 
-Regards,
-SimpleLogin team.
-""",
-            retries=3,
-        )
+    Regards,
+    SimpleLogin team.
+    """,
+                retries=3,
+            )
     elif job.name == config.JOB_SEND_USER_REPORT:
         export_job = ExportUserDataJob.create_from_job(job)
         if export_job:
@@ -264,8 +272,16 @@ SimpleLogin team.
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
         if user and user.activated:
-            LOG.d("send proton welcome email to user %s", user)
+            LOG.d("Send proton welcome email to user %s", user)
             welcome_proton(user)
+    elif job.name == config.JOB_SEND_ALIAS_CREATION_EVENTS:
+        user_id = job.payload.get("user_id")
+        user = User.get(user_id)
+        if user and user.activated:
+            LOG.d(f"Sending alias creation events for {user}")
+            send_alias_creation_events_for_user(
+                user, dispatcher=PostgresDispatcher.get()
+            )
     else:
         LOG.e("Unknown job name %s", job.name)
 

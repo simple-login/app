@@ -745,8 +745,6 @@ bullish
 bullpen
 bullring
 bullseye
-bullwhip
-bully
 bunch
 bundle
 bungee
@@ -1149,7 +1147,6 @@ coherence
 coherent
 cohesive
 coil
-coke
 cola
 cold
 coleslaw
@@ -1674,8 +1671,6 @@ delta
 deluge
 delusion
 deluxe
-demanding
-demeaning
 demeanor
 demise
 democracy
@@ -1897,9 +1892,6 @@ divisible
 divisibly
 division
 divisive
-divorcee
-dizziness
-dizzy
 doable
 docile
 dock
@@ -1913,7 +1905,6 @@ dole
 dollar
 dollhouse
 dollop
-dolly
 dolphin
 domain
 domelike
@@ -2027,7 +2018,6 @@ duh
 duke
 dumping
 dumpling
-dumpster
 duo
 dupe
 duplex
@@ -2036,14 +2026,12 @@ duplicity
 durable
 durably
 duration
-duress
 during
 dusk
 dust
 dutiful
 duty
 duvet
-dwarf
 dweeb
 dwelled
 dweller
@@ -3782,10 +3770,6 @@ makeshift
 making
 malformed
 malt
-mama
-mammal
-mammary
-mammogram
 manager
 managing
 manatee
@@ -3798,7 +3782,6 @@ mangle
 mango
 mangy
 manhandle
-manhole
 manhood
 manhunt
 manicotti
@@ -3813,7 +3796,6 @@ manmade
 manned
 mannish
 manor
-manpower
 mantis
 mantra
 manual
@@ -3850,7 +3832,6 @@ mashed
 mashing
 massager
 masses
-massive
 mastiff
 matador
 matchbook
@@ -3863,15 +3844,11 @@ maternal
 maternity
 math
 mating
-matriarch
 matrimony
 matrix
 matron
 matted
 matter
-maturely
-maturing
-maturity
 mauve
 maverick
 maximize
@@ -3891,9 +3868,6 @@ modify
 modular
 modulator
 module
-moisten
-moistness
-moisture
 molar
 molasses
 mold
@@ -3946,11 +3920,7 @@ morality
 morally
 morbidity
 morbidly
-morphine
-morphing
 morse
-mortality
-mortally
 mortician
 mortified
 mortify
@@ -3976,7 +3946,6 @@ mournful
 mouse
 mousiness
 moustache
-mousy
 mouth
 movable
 move
@@ -3985,7 +3954,6 @@ moving
 mower
 mowing
 much
-muck
 mud
 mug
 mulberry
@@ -4002,7 +3970,6 @@ mumbling
 mumbo
 mummified
 mummify
-mummy
 mumps
 munchkin
 mundane
@@ -4798,7 +4765,6 @@ princess
 print
 prior
 prism
-prison
 prissy
 pristine
 privacy
@@ -4822,8 +4788,6 @@ prodigal
 prodigy
 produce
 product
-profane
-profanity
 professed
 professor
 profile
@@ -5992,10 +5956,6 @@ slit
 sliver
 slobbery
 slogan
-sloped
-sloping
-sloppily
-sloppy
 slot
 slouching
 slouchy
@@ -6011,7 +5971,6 @@ smartness
 smasher
 smashing
 smashup
-smell
 smelting
 smile
 smilingly
@@ -6021,11 +5980,6 @@ smith
 smitten
 smock
 smog
-smoked
-smokeless
-smokiness
-smoking
-smoky
 smolder
 smooth
 smother
@@ -6047,7 +6001,6 @@ sneer
 sneeze
 sneezing
 snide
-sniff
 snippet
 snipping
 snitch
@@ -6203,7 +6156,6 @@ squiggle
 squiggly
 squint
 squire
-squirt
 squishier
 squishy
 stability
@@ -6323,7 +6275,6 @@ stoning
 stony
 stood
 stooge
-stool
 stoop
 stoplight
 stoppable
@@ -6458,12 +6409,9 @@ subwoofer
 subzero
 succulent
 such
-suction
 sudden
 sudoku
 suds
-sufferer
-suffering
 suffice
 suffix
 suffocate
@@ -6515,7 +6463,6 @@ surplus
 surprise
 surreal
 surrender
-surrogate
 surround
 survey
 survival
@@ -6528,7 +6475,6 @@ suspend
 suspense
 sustained
 sustainer
-swab
 swaddling
 swagger
 swampland
@@ -6536,7 +6482,6 @@ swan
 swapping
 swarm
 sway
-swear
 sweat
 sweep
 swell
@@ -6605,9 +6550,6 @@ talcum
 talisman
 tall
 talon
-tamale
-tameness
-tamer
 tamper
 tank
 tanned
@@ -6647,7 +6589,6 @@ thaw
 theater
 theatrics
 thee
-theft
 theme
 theology
 theorize
@@ -6752,7 +6693,6 @@ trade
 trading
 tradition
 traffic
-tragedy
 trailing
 trailside
 train
@@ -6772,7 +6712,6 @@ trapped
 trapper
 trapping
 traps
-trash
 travel
 traverse
 travesty

@@ -115,7 +115,8 @@ def register():
 
 
 def send_activation_email(user, next_url):
-    # the activation code is valid for 1h
+    # the activation code is valid for 1h and delete all previous codes
+    Session.query(ActivationCode).filter(ActivationCode.user_id == user.id).delete()
     activation = ActivationCode.create(user_id=user.id, code=random_string(30))
     Session.commit()
 
@@ -125,4 +126,4 @@ def send_activation_email(user, next_url):
         LOG.d("redirect user to %s after activation", next_url)
         activation_link = activation_link + "&next=" + encode_url(next_url)
 
-    email_utils.send_activation_email(user.email, activation_link)
+    email_utils.send_activation_email(user, activation_link)

@@ -4,6 +4,8 @@ import psycopg2
 import select
 
 from abc import ABC, abstractmethod
+
+from app.db import Session
 from app.log import LOG
 from app.models import SyncEvent
 from app.events.event_dispatcher import NOTIFICATION_CHANNEL
@@ -44,6 +46,7 @@ class PostgresEventSource(EventSource):
         cursor = self.__connection.cursor()
         cursor.execute(f"LISTEN {NOTIFICATION_CHANNEL};")
 
+        LOG.info("Starting to listen to events")
         while True:
             if select.select([self.__connection], [], [], 5) != ([], [], []):
                 self.__connection.poll()
@@ -66,9 +69,12 @@ class PostgresEventSource(EventSource):
                             LOG.info(f"Could not find event with id={notify.payload}")
                     except Exception as e:
                         LOG.warn(f"Error getting event: {e}")
+                    Session.close()  # Ensure we get a new connection and we don't leave a dangling tx
 
     def __connect(self):
-        self.__connection = psycopg2.connect(self.__connection_string)
+        self.__connection = psycopg2.connect(
+            self.__connection_string, application_name="sl-event-listen"
+        )
 
         from app.db import Session
 
@@ -76,6 +82,9 @@ class PostgresEventSource(EventSource):
 
 
 class DeadLetterEventSource(EventSource):
+    def __init__(self, max_retries: int):
+        self.__max_retries = max_retries
+
     @newrelic.agent.background_task()
     def run(self, on_event: Callable[[SyncEvent], NoReturn]):
         while True:
@@ -83,7 +92,9 @@ class DeadLetterEventSource(EventSource):
                 threshold = arrow.utcnow().shift(
                     minutes=-_DEAD_LETTER_THRESHOLD_MINUTES
                 )
-                events = SyncEvent.get_dead_letter(older_than=threshold)
+                events = SyncEvent.get_dead_letter(
+                    older_than=threshold, max_retries=self.__max_retries
+                )
                 if events:
                     LOG.info(f"Got {len(events)} dead letter events")
                     if events:
@@ -92,7 +103,8 @@ class DeadLetterEventSource(EventSource):
                         )
                     for event in events:
                         on_event(event)
-                else:
+                Session.close()  # Ensure that we have a new connection and we don't have a dangling tx with a lock
+                if not events:
                     LOG.debug("No dead letter events")
                     sleep(_DEAD_LETTER_INTERVAL_SECONDS)
             except Exception as e:

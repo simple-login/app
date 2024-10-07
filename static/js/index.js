@@ -51,14 +51,19 @@ $(".enable-disable-alias").change(async function () {
   await disableAlias(aliasId, alias);
 });
 
+function getHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "X-Sl-Allowcookies": 'allow',
+  }
+}
+
 async function disableAlias(aliasId, alias) {
   let oldValue;
   try {
     let res = await fetch(`/api/aliases/${aliasId}/toggle`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      }
+      headers: getHeaders()
     });
 
     if (res.ok) {
@@ -94,9 +99,7 @@ $(".enable-disable-pgp").change(async function (e) {
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         disable_pgp: oldValue,
       }),
@@ -129,9 +132,7 @@ $(".pin-alias").change(async function () {
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+        headers: getHeaders(),
       body: JSON.stringify({
         pinned: newValue,
       }),
@@ -161,9 +162,7 @@ async function handleNoteChange(aliasId, aliasEmail) {
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         note: note,
       }),
@@ -200,9 +199,7 @@ async function handleMailboxChange(aliasId, aliasEmail) {
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         mailbox_ids: mailbox_ids,
       }),
@@ -225,9 +222,7 @@ async function handleDisplayNameChange(aliasId, aliasEmail) {
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         name: name,
       }),

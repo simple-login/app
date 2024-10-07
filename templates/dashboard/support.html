@@ -1,6 +1,6 @@
 {% extends "default.html" %}
 
-{% set active_page = 'dashboard' %}
+{% set active_page = "dashboard" %}
 {% block title %}Support{% endblock %}
 {% block default_content %}
 
@@ -10,7 +10,7 @@
         <div class="card-title mb-3">Report a problem</div>
         <div class="alert alert-info">
           If an email cannot be delivered to your mailbox, please check
-          <a href="{{ url_for('dashboard.notifications_route') }}">
+          <a href="{{ url_for("dashboard.notifications_route") }}">
             your
             notifications
           </a>
@@ -18,7 +18,7 @@
           <br />
           For generic questions, i.e. not related to your account, we recommend to post the question on
           our
-          <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a> or <a href="https://forum.simplelogin.io/">our official forum</a>
+          <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a> or <a href="https://github.com/simple-login/app/discussions">forum</a>
           where our community can help answer the question
           and other people with the same question can find the answer there.
         </div>
@@ -28,7 +28,12 @@
         <form id="supportZendeskForm" method="post" enctype="multipart/form-data">
           <div class="mt-4 mb-5">
             <label for="issueDescription" class="form-label font-weight-bold">What happened?</label>
-            <textarea class="form-control" required name="ticket_content" id="issueDescription" rows="3" placeholder="Please provide as much information as possible. For example which alias(es), mailbox(es) are affected, if this is a persistent issue...">{{- ticket_content or '' -}}</textarea>
+            <textarea class="form-control"
+                      required
+                      name="ticket_content"
+                      id="issueDescription"
+                      rows="3"
+                      placeholder="Please provide as much information as possible. For example which alias(es), mailbox(es) are affected, if this is a persistent issue...">{{- ticket_content or '' -}}</textarea>
           </div>
           <div class="mt-5 font-weight-bold">Attach files to support request</div>
           <div class="text-muted">Only images, text and emails are accepted</div>
@@ -57,9 +62,7 @@
               <button class="btn btn-outline-primary"
                       type="button"
                       @click="generateRandomAlias"
-                      id="button-addon2">
-                Generate a random alias
-              </button>
+                      id="button-addon2">Generate a random alias</button>
             </div>
           </div>
           <div class="mt-5">
@@ -80,7 +83,10 @@
       },
       methods: {
         generateRandomAlias: async function (event) {
-          let result = await fetch('/api/alias/random/new', {method: 'POST'});
+          let result = await fetch('/api/alias/random/new', {method: 'POST',
+              headers: {
+              '{{HEADER_ALLOW_API_COOKIES}}': 'allow'
+          }});
           if (result.ok) {
             let data = await result.json();
             this.ticket_email = data.alias;

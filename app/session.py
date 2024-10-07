@@ -87,6 +87,7 @@ class RedisSessionStore(SessionInterface):
         httponly = self.get_cookie_httponly(app)
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
+        samesite = self.get_cookie_samesite(app)
         val = pickle.dumps(dict(session))
         ttl = int(app.permanent_session_lifetime.total_seconds())
         # Only 5 minutes for non-authenticated sessions.
@@ -109,6 +110,7 @@ class RedisSessionStore(SessionInterface):
             domain=domain,
             path=path,
             secure=secure,
+            samesite=samesite,
         )
 
 

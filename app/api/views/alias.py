@@ -25,7 +25,8 @@ from app.errors import (
     ErrAddressInvalid,
 )
 from app.extensions import limiter
-from app.models import Alias, Contact, Mailbox, AliasMailbox
+from app.log import LOG
+from app.models import Alias, Contact, Mailbox, AliasMailbox, AliasDeleteReason
 
 
 @deprecated
@@ -160,7 +161,7 @@ def delete_alias(alias_id):
     if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    alias_utils.delete_alias(alias, user)
+    alias_utils.delete_alias(alias, user, AliasDeleteReason.ManualAction)
 
     return jsonify(deleted=True), 200
 
@@ -185,6 +186,7 @@ def toggle_alias(alias_id):
         return jsonify(error="Forbidden"), 403
 
     alias_utils.change_alias_status(alias, enabled=not alias.enabled)
+    LOG.i(f"User {user} changed alias {alias} enabled status to {alias.enabled}")
     Session.commit()
 
     return jsonify(enabled=alias.enabled), 200
@@ -422,7 +424,7 @@ def create_contact_route(alias_id):
     contact_address = data.get("contact")
 
     try:
-        contact = create_contact(g.user, alias, contact_address)
+        contact = create_contact(alias, contact_address)
     except ErrContactErrorUpgradeNeeded as err:
         return jsonify(error=err.error_for_user()), 403
     except (ErrAddressInvalid, CannotCreateContactForReverseAlias) as err:

@@ -18,9 +18,7 @@
           How to use <i class="fe fe-chevrons-down"></i>
         </a>
       </h1>
-      <div class="alert alert-primary collapse {% if not clients %} show{% endif %}"
-           id="howtouse"
-           role="alert">
+      <div class="alert alert-primary collapse {% if not clients %}show{% endif %}" id="howtouse" role="alert">
         If you want to integrate SIWSL into your website,
         this page is for you.
         <br />
@@ -28,14 +26,9 @@
         If you are using a CMS or any system that supports a OpenID Connect plugin, you can just point
         it to SimpleLogin OpenID Configuration endpoint 👇
         <div class="input-group mt-2">
-          <input type="text"
-                 disabled
-                 value="{{ URL + "/.well-known/openid-configuration" }}"
-                 class="form-control">
+          <input type="text" disabled value="{{ URL + "/.well-known/openid-configuration" }}" class="form-control">
           <span class="input-group-append">
-            <button data-clipboard-text="{{ URL + "/.well-known/openid-configuration" }}"
-                    class="clipboard btn btn-primary"
-                    type="button">
+            <button data-clipboard-text="{{ URL + "/.well-known/openid-configuration" }}" class="clipboard btn btn-primary" type="button">
               <i class="fe fe-clipboard"></i>
             </button>
           </span>
@@ -46,7 +39,7 @@
   <div class="row">
     <div class="col">
       <div class="btn-group" role="group" aria-label="Basic example">
-        <a href="{{ url_for('developer.new_client') }}" class="btn btn-primary">New website</a>
+        <a href="{{ url_for("developer.new_client") }}" class="btn btn-primary">New website</a>
         <a href="https://simplelogin.io/docs/siwsl/app/"
            target="_blank"
            rel="noopener noreferrer"

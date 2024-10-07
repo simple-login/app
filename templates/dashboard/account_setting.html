@@ -33,7 +33,7 @@
             This email address is used to log in to SimpleLogin.
             <br />
             If you want to change the mailbox that emails are forwarded to, use the
-            <a href="{{ url_for('dashboard.mailbox_route') }}">
+            <a href="{{ url_for("dashboard.mailbox_route") }}">
               <i class="fe fe-inbox"></i> Mailboxes page
             </a>
             instead.
@@ -50,14 +50,14 @@
           <div class="mt-2">
             <span class="text-danger float-left">Pending email change: {{ pending_email }}</span>
             <form method="POST"
-                  action="{{ url_for('dashboard.resend_email_change') }}"
+                  action="{{ url_for("dashboard.resend_email_change") }}"
                   class="float-left ml-2">
               {{ change_email_form.csrf_token }}
               <a onclick="this.closest('form').submit()"
                  class="btn btn-secondary btn-sm">Resend confirmation email</a>
             </form>
             <form method="POST"
-                  action="{{ url_for('dashboard.cancel_email_change') }}"
+                  action="{{ url_for("dashboard.cancel_email_change") }}"
                   class="float-left ml-2">
               {{ change_email_form.csrf_token }}
               <a onclick="this.closest('form').submit()"
@@ -91,10 +91,10 @@
         </div>
         {% if not current_user.enable_otp %}
 
-          <a href="{{ url_for('dashboard.mfa_setup') }}"
+          <a href="{{ url_for("dashboard.mfa_setup") }}"
              class="btn btn-outline-primary">Setup TOTP</a>
         {% else %}
-          <a href="{{ url_for('dashboard.mfa_cancel') }}"
+          <a href="{{ url_for("dashboard.mfa_cancel") }}"
              class="btn btn-outline-danger">Disable TOTP</a>
         {% endif %}
       </div>
@@ -111,10 +111,10 @@
         </div>
         {% if current_user.fido_uuid is none %}
 
-          <a href="{{ url_for('dashboard.fido_setup') }}"
+          <a href="{{ url_for("dashboard.fido_setup") }}"
              class="btn btn-outline-primary">Setup WebAuthn</a>
         {% else %}
-          <a href="{{ url_for('dashboard.fido_manage') }}"
+          <a href="{{ url_for("dashboard.fido_manage") }}"
              class="btn btn-outline-info">Manage WebAuthn</a>
         {% endif %}
       </div>
@@ -146,7 +146,7 @@
       <div class="card-body">
         <div class="card-title">Account Deletion</div>
         <div class="mb-3">If SimpleLogin isn't the right fit for you, you can simply delete your account.</div>
-        <a href="{{ url_for('dashboard.delete_account') }}"
+        <a href="{{ url_for("dashboard.delete_account") }}"
            class="btn btn-outline-danger">Delete account</a>
       </div>
     </div>

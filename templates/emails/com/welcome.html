@@ -6,80 +6,78 @@
              color: #333333;
              font-size: 22px;
              font-weight: bold;
-             text-align: left;"
-      align="left">
-    Welcome!
-  </h1>
+             text-align: left"
+      align="left">Welcome!</h1>
 {% endblock %}
 {% block content %}
 
   {% if alias %}
 
     {% call text() %}
-    This is the first email you receive via your <b>first alias</b> <em>{{ alias }}</em>.
+      This is the first email you receive via your <b>first alias</b> <em>{{ alias }}</em>.
+    {% endcall %}
+
+    {% call text() %}
+      This alias is automatically created for receiving SimpleLogin news and tips.
+      <br />
+      In the next coming days, we'll send you 3 emails to help you get the best out of SimpleLogin.
+      <br />
+      Please
+      <a href="{{ URL + '/dashboard/setting#notification' }}">disable</a>
+      it if you don't need this.
+    {% endcall %}
+
+  {% endif %}
+  {% call text() %}
+    If you are using Firefox or a Chromium-browser like Chrome, Edge, Brave, you can
+    install our
+    <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">Firefox add-on</a>
+    or
+    <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">Chrome extension</a>
+    to create aliases in one click (like in the below gif 👇).
   {% endcall %}
 
   {% call text() %}
-  This alias is automatically created for receiving SimpleLogin news and tips.
-  <br />
-  In the next coming days, we'll send you 3 emails to help you get the best out of SimpleLogin.
-  <br />
-  Please
-  <a href="{{ URL + '/dashboard/setting#notification' }}">disable</a>
-  it if you don't need this.
-{% endcall %}
-
-{% endif %}
-{% call text() %}
-If you are using Firefox or a Chromium-browser like Chrome, Edge, Brave, you can
-install our
-<a href="https://addons.mozilla.org/firefox/addon/simplelogin/">Firefox add-on</a>
-or
-<a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">Chrome extension</a>
-to create aliases in one click (like in the below gif 👇).
-{% endcall %}
-
-{% call text() %}
-<img src="https://simplelogin.io/images/one-click-alias.gif"
-     style="max-width: 80%; margin: auto; border: 1px solid">
-{% endcall %}
-
-{% call text() %}
-SimpleLogin is also available on
-<a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android</a>
-and
-<a href="https://apps.apple.com/app/id1494359858">iOS</a>
-so you can manage your aliases on the go.
-{% endcall %}
-
-{% if user.in_trial() and user.trial_end %}
+    <img src="https://simplelogin.io/images/one-click-alias.gif"
+         style="max-width: 80%;
+                margin: auto;
+                border: 1px solid">
+  {% endcall %}
 
   {% call text() %}
-  When you signed up, you can use all premium features like
-  <em>custom domain</em>, <em>alias directory</em>,
-  <em>mailbox</em>,
-  <em>PGP</em> without any limit during 7 days (the "trial period").
-  Everything you create during this period will
-  continue to work normally even if you don't upgrade.
-  <br />
-{% endcall %}
+    SimpleLogin is also available on
+    <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android</a>
+    and
+    <a href="https://apps.apple.com/app/id1494359858">iOS</a>
+    so you can manage your aliases on the go.
+  {% endcall %}
 
-{% call text() %}
-Please note that you can't create more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases during the trial period.
-<br />
-{% endcall %}
+  {% if user.in_trial() and user.trial_end %}
 
-{% endif %}
-{% call text() %}
-For any question or feedback,
-please join our <a href="https://forum.simplelogin.io/">official forum</a>.
-If you want to request a feature,
-please submit it on our <a href="https://github.com/simple-login/app/discussions">GitHub repo</a>.
-You can also join our
-<a href="https://www.reddit.com/r/Simplelogin/">Reddit</a>
-or follow our
-<a href="https://twitter.com/simplelogin">Twitter</a>
-.
-{% endcall %}
+    {% call text() %}
+      When you signed up, you can use all premium features like
+      <em>custom domain</em>, <em>alias directory</em>,
+      <em>mailbox</em>,
+      <em>PGP</em> without any limit during 7 days (the "trial period").
+      Everything you create during this period will
+      continue to work normally even if you don't upgrade.
+      <br />
+    {% endcall %}
+
+    {% call text() %}
+      Please note that you can't create more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases during the trial period.
+      <br />
+    {% endcall %}
+
+  {% endif %}
+  {% call text() %}
+    For any question or if you want to request a feature,
+    please submit it on our <a href="https://github.com/simple-login/app/discussions">forum</a>.
+    You can also join our
+    <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a>
+    or follow our
+    <a href="https://twitter.com/simplelogin">Twitter</a>
+    .
+  {% endcall %}
 
 {% endblock %}

@@ -21,8 +21,8 @@
         <div class="my-3">
           <p>Alternatively you can use your Proton credentials to ensure it's you.</p>
         </div>
-        <a class="btn btn-primary btn-block mt-2 proton-button w-25"
-           href="{{ url_for('auth.proton_login', next=next) }}">
+        <a class="btn btn-primary btn-block mt-2 proton-button"
+           href="{{ url_for('auth.proton_login', next=next) }}" style="max-width: 400px">
           <img class="mr-2" src="/static/images/proton.svg" />
           Authenticate with Proton
         </a>

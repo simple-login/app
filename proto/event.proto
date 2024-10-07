@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package simplelogin_events;
 
-message UserPlanChange {
+message UserPlanChanged {
   uint32 plan_end_time = 1;
 }
 
@@ -10,30 +10,37 @@ message UserDeleted {
 }
 
 message AliasCreated {
-  uint32 alias_id = 1;
-  string alias_email = 2;
-  string alias_note = 3;
+  uint32 id = 1;
+  string email = 2;
+  string note = 3;
   bool enabled = 4;
+  uint32 created_at = 5;
 }
 
-message AliasStatusChange {
-  uint32 alias_id = 1;
-  string alias_email = 2;
+message AliasStatusChanged {
+  uint32 id = 1;
+  string email = 2;
   bool enabled = 3;
+  uint32 created_at = 4;
 }
 
 message AliasDeleted {
-  uint32 alias_id = 1;
-  string alias_email = 2;
+  uint32 id = 1;
+  string email = 2;
+}
+
+message AliasCreatedList {
+  repeated AliasCreated events = 1;
 }
 
 message EventContent {
   oneof content {
-    UserPlanChange user_plan_change = 1;
+    UserPlanChanged user_plan_change = 1;
     UserDeleted user_deleted = 2;
     AliasCreated alias_created = 3;
-    AliasStatusChange alias_status_change = 4;
+    AliasStatusChanged alias_status_change = 4;
     AliasDeleted alias_deleted = 5;
+    AliasCreatedList alias_create_list = 6;
   }
 }
 

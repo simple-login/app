@@ -3,17 +3,17 @@
 {% block content %}
 
   {% call text() %}
-  <h1>
-    Your subscription will end on <b>{{ manual_sub.end_at.format("YYYY-MM-DD") }}</b>
-  </h1>
-{% endcall %}
+    <h1>
+      Your subscription will end on <b>{{ manual_sub.end_at.format("YYYY-MM-DD") }}</b>
+    </h1>
+  {% endcall %}
 
-{% call text() %}
-Please <a href="https://app.simplelogin.io/dashboard/support">contact us</a>
-to renew your subscription.
-{% endcall %}
+  {% call text() %}
+    Please <a href="https://app.simplelogin.io/dashboard/support">contact us</a>
+    to renew your subscription.
+  {% endcall %}
 
-{{ render_text('Thanks,
-<br />
-SimpleLogin Team.') }}
+  {{ render_text('Thanks,
+    <br />
+    SimpleLogin Team.') }}
 {% endblock %}

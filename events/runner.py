@@ -2,6 +2,7 @@ import arrow
 import newrelic.agent
 
 from app.log import LOG
+from app.db import Session
 from app.models import SyncEvent
 from events.event_sink import EventSink
 from events.event_source import EventSource
@@ -37,6 +38,9 @@ class Runner:
                     "Custom/sync_event_elapsed_time",
                     time_between_taken_and_created.total_seconds(),
                 )
+            else:
+                event.retry_count = event.retry_count + 1
+                Session.commit()
         except Exception as e:
             LOG.warn(f"Exception processing event [id={event.id}]: {e}")
             newrelic.agent.record_custom_metric("Custom/sync_event_failed", 1)

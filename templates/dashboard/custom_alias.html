@@ -74,10 +74,7 @@
                     required>
               {% for mailbox in mailboxes %}
 
-                <option value="{{ mailbox.id }}"
-                        {% if mailbox.id == current_user.default_mailbox_id %} selected{% endif %}>
-                  {{ mailbox.email }}
-                </option>
+                <option value="{{ mailbox.id }}" {% if mailbox.id == current_user.default_mailbox_id %}selected{% endif %}>{{ mailbox.email }}</option>
               {% endfor %}
             </select>
             <div class="small-text">The mailbox(es) that owns this alias.</div>
@@ -102,7 +99,6 @@
   </div>
 {% endblock %}
 {% block script %}
-
   <script>
     $('.mailbox-select').multipleSelect();
 

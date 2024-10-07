@@ -1,7 +1,7 @@
 <div class="header">
   <div class="container">
     <div class="d-flex">
-      <a class="header-brand" href="{{ url_for('dashboard.index') }}">
+      <a class="header-brand" href="{{ url_for("dashboard.index") }}">
         <picture>
           <source media="(max-width: 650px)" srcset="/static/logo-without-text.svg">
           <img src="/static/logo.svg"
@@ -41,7 +41,7 @@
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow collapse"
                id="notifications">
             <div v-if="loading">Loading ...</div>
-            <a href="{{ url_for('dashboard.notifications_route') }}"
+            <a href="{{ url_for("dashboard.notifications_route") }}"
                class="mr-5 mb-2 float-right">See all notifications ➡</a>
             <div class="dropdown-item d-flex" v-for="notification in notifications">
               <div class="flex-grow-1">
@@ -50,8 +50,7 @@
                      style="width: 40em;
                             word-wrap:break-word;
                             white-space: normal;
-                            overflow: hidden;">
-                </div>
+                            overflow: hidden"></div>
                 <div v-if="notification.title">
                   <a :href="'/dashboard/notification/' + notification.id">More</a>
                 </div>
@@ -91,7 +90,7 @@
                 </a>
               </div>
               <div class="dropdown-item">
-                <a href="https://forum.simplelogin.io"
+                <a href="https://github.com/simple-login/app/discussions"
                    target="_blank"
                    rel="noopener noreferrer">
                   Forum
@@ -116,7 +115,7 @@
         {% if current_user.should_show_upgrade_button() %}
 
           <div class="nav-item">
-            <a href="{{ url_for('dashboard.pricing') }}"
+            <a href="{{ url_for("dashboard.pricing") }}"
                class="btn btn-sm btn-outline-primary">Upgrade</a>
           </div>
         {% endif %}
@@ -145,14 +144,14 @@
             </span>
           </a>
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-            <a class="dropdown-item mb-3" href="{{ url_for('dashboard.api_key') }}">
+            <a class="dropdown-item mb-3" href="{{ url_for("dashboard.api_key") }}">
               <i class="dropdown-icon fa fa-key"></i> API Keys
             </a>
             <a class="dropdown-item mb-3"
-               href="{{ url_for('dashboard.account_setting') }}">
+               href="{{ url_for("dashboard.account_setting") }}">
               <i class="dropdown-icon fa fa-user"></i> Account settings
             </a>
-            <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+            <a class="dropdown-item" href="{{ url_for("auth.logout") }}">
               <i class="dropdown-icon fe fe-log-out"></i> Sign out
             </a>
           </div>

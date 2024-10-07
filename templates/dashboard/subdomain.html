@@ -23,16 +23,14 @@
 
         <div class="alert alert-danger" role="alert">
           This feature is only available on Premium plan.
-          <a href="{{ url_for('dashboard.pricing') }}"
+          <a href="{{ url_for("dashboard.pricing") }}"
              target="_blank"
              rel="noopener noreferrer">
             Upgrade<i class="fe fe-external-link"></i>
           </a>
         </div>
       {% endif %}
-      <div class="alert alert-primary collapse {% if not subdomains %} show{% endif %}"
-           id="howtouse"
-           role="alert">
+      <div class="alert alert-primary collapse {% if not subdomains %}show{% endif %}" id="howtouse" role="alert">
         You can use subdomain to quickly create email aliases without opening SimpleLogin app.
         <br />
         Handy when you need to quickly give out an email address, for example on a phone call, in a meeting or just
@@ -65,8 +63,7 @@
           </div>
         {% endfor %}
       </div>
-      <div class="row {% if current_user.subdomain_quota <= 0 %} disabled-content{% endif %}"
-           id="new-subdomain">
+      <div class="row {% if current_user.subdomain_quota <= 0 %}disabled-content{% endif %}" id="new-subdomain">
         <div class="col">
           <div class="card">
             <div class="card-body">
@@ -88,12 +85,7 @@
                 <div class="form-group">
                   <label>Root domain</label>
                   <select name="domain" v-model="domain" class="form-control">
-                    {% for sl_domain in sl_domains %}
-
-                      <option value="{{ sl_domain.domain }}">
-                        {{ sl_domain.domain }}
-                      </option>
-                    {% endfor %}
+                    {% for sl_domain in sl_domains %}<option value="{{ sl_domain.domain }}">{{ sl_domain.domain }}</option>{% endfor %}
                   </select>
                 </div>
                 <button class="btn btn-primary">Create</button>

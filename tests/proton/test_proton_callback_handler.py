@@ -1,4 +1,6 @@
 from arrow import Arrow
+
+from app import config
 from app.account_linking import (
     SLPlan,
     SLPlanType,
@@ -8,7 +10,7 @@ from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
     generate_account_not_allowed_to_log_in,
 )
-from app.models import User, PartnerUser
+from app.models import User, PartnerUser, Job, JobState
 from app.proton.utils import get_proton_partner
 from app.utils import random_string
 from typing import Optional
@@ -21,6 +23,17 @@ class MockProtonClient(ProtonClient):
 
     def get_user(self) -> Optional[UserInformation]:
         return self.user
+
+
+def check_initial_sync_job(user: User):
+    for job in Job.yield_per_query(10).filter_by(
+        name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
+        state=JobState.ready.value,
+    ):
+        if job.payload.get("user_id") == user.id:
+            Job.delete(job.id)
+            return
+    assert False
 
 
 def test_proton_callback_handler_unexistant_sl_user():
@@ -56,6 +69,7 @@ def test_proton_callback_handler_unexistant_sl_user():
     )
     assert partner_user is not None
     assert partner_user.external_user_id == external_id
+    check_initial_sync_job(res.user)
 
 
 def test_proton_callback_handler_existant_sl_user():
@@ -84,6 +98,7 @@ def test_proton_callback_handler_existant_sl_user():
     sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner().id)
     assert sa is not None
     assert sa.partner_email == user.email
+    check_initial_sync_job(res.user)
 
 
 def test_proton_callback_handler_none_user_login():

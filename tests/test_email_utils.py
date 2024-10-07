@@ -9,6 +9,7 @@ import pytest
 from app import config
 from app.config import MAX_ALERT_24H, ROOT_DIR
 from app.db import Session
+from app.email import headers
 from app.email_utils import (
     get_email_domain_part,
     can_create_directory_for_address,
@@ -89,11 +90,18 @@ def test_can_be_used_as_personal_email(flask_client):
     assert not email_can_be_used_as_mailbox("ab@sl.local")
     assert not email_can_be_used_as_mailbox("hey@d1.test")
 
-    # custom domain
+    # custom domain as SL domain
     domain = random_domain()
     user = create_new_user()
-    CustomDomain.create(user_id=user.id, domain=domain, verified=True, commit=True)
+    domain_obj = CustomDomain.create(
+        user_id=user.id, domain=domain, verified=True, is_sl_subdomain=True, flush=True
+    )
     assert not email_can_be_used_as_mailbox(f"hey@{domain}")
+
+    # custom domain is NOT SL domain
+    domain_obj.is_sl_subdomain = False
+    Session.flush()
+    assert email_can_be_used_as_mailbox(f"hey@{domain}")
 
     # disposable domain
     disposable_domain = random_domain()
@@ -352,6 +360,33 @@ def test_is_valid_email():
     assert not is_valid_email("with space@gmail.com")
     assert not is_valid_email("strange char !ç@gmail.com")
     assert not is_valid_email("emoji👌@gmail.com")
+
+
+def test_add_subject_prefix():
+    msg = email.message_from_string(
+        """Subject: Potato
+Content-Transfer-Encoding: 7bit
+
+hello
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header", subject_prefix="[TEST]")
+    assert "text header" in new_msg.as_string()
+    assert "html header" not in new_msg.as_string()
+    assert new_msg[headers.SUBJECT] == "[TEST] Potato"
+
+
+def test_add_subject_prefix_with_no_header():
+    msg = email.message_from_string(
+        """Content-Transfer-Encoding: 7bit
+
+hello
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header", subject_prefix="[TEST]")
+    assert "text header" in new_msg.as_string()
+    assert "html header" not in new_msg.as_string()
+    assert new_msg[headers.SUBJECT] == "[TEST]"
 
 
 def test_add_header_plain_text():

@@ -1,4 +1,5 @@
 import requests
+import newrelic.agent
 
 from abc import ABC, abstractmethod
 from app.config import EVENT_WEBHOOK, EVENT_WEBHOOK_SKIP_VERIFY_SSL
@@ -25,6 +26,9 @@ class HttpEventSink(EventSink):
             data=event.content,
             headers={"Content-Type": "application/x-protobuf"},
             verify=not EVENT_WEBHOOK_SKIP_VERIFY_SSL,
+        )
+        newrelic.agent.record_custom_event(
+            "EventSentToPartner", {"http_code": res.status_code}
         )
         if res.status_code != 200:
             LOG.warning(

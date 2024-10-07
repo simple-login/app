@@ -9,7 +9,7 @@
     if (window.Paddle === undefined) {
       console.log("cannot load Paddle from CDN");
       // split string to avoid djlint incorrectly formatting the file
-      document.write('<' + 'script src="/static/vendor/paddle.js"><\/script' + '>');
+      document.write('<' + 'script src="/static/vendor/paddle.js"><\/script ' + '>');
     }
   </script>
   <style type="text/css">
@@ -144,9 +144,7 @@
                     {% set sub = current_user.get_paddle_subscription() %}
                     <button class="{{ 'invisible' if sub or manual_sub or coinbase_sub }} btn btn-lg btn-outline-secondary w-100 btn-no-pointer"
                             aria-disabled="true"
-                            disabled>
-                      Current plan
-                    </button>
+                            disabled>Current plan</button>
                   </div>
                 </div>
                 <ul class="list-unstyled">
@@ -172,9 +170,7 @@
                   <div class="h3 my-3">$4 / month</div>
                   <div class="text-center mt-4 mb-6">
                     <button class="btn btn-primary btn-lg w-100"
-                            onclick="upgradePaddle({{ PADDLE_MONTHLY_PRODUCT_ID }})">
-                      Upgrade to Premium
-                    </button>
+                            onclick="upgradePaddle({{ PADDLE_MONTHLY_PRODUCT_ID }})">Upgrade to Premium</button>
                   </div>
                 </div>
                 <ul class="list-unstyled">
@@ -287,9 +283,7 @@
                     {% set sub = current_user.get_paddle_subscription() %}
                     <button class="{{ 'invisible' if sub or manual_sub or coinbase_sub }} btn btn-lg btn-outline-secondary w-100 btn-no-pointer"
                             aria-disabled="true"
-                            disabled>
-                      Current plan
-                    </button>
+                            disabled>Current plan</button>
                   </div>
                 </div>
                 <ul class="list-unstyled">
@@ -315,9 +309,7 @@
                   <div class="h3 my-3">$30 / year</div>
                   <div class="text-center mt-4 mb-6">
                     <button class="btn btn-primary btn-lg w-100"
-                            onclick="upgradePaddle({{ PADDLE_YEARLY_PRODUCT_ID }})">
-                      Upgrade to Premium
-                    </button>
+                            onclick="upgradePaddle({{ PADDLE_YEARLY_PRODUCT_ID }})">Upgrade to Premium</button>
                   </div>
                 </div>
                 <ul class="list-unstyled">
@@ -447,18 +439,10 @@
                 We use <a href="https://paddle.com" target="_blank" rel="noopener noreferrer">Paddle <i class="fe fe-external-link"></i></a> by default for handling payments via credit cards and PayPal. Paddle currently supports the following payment methods:
               </p>
               <ul>
-                <li>
-                  Cards (including Mastercard, Visa, Maestro, American Express, Discover, Diners Club, JCB, UnionPay, and Mada)
-                </li>
-                <li>
-                  PayPal
-                </li>
-                <li>
-                  Apple Pay
-                </li>
-                <li>
-                  Wire Transfers (ACH/SEPA/BACS)
-                </li>
+                <li>Cards (including Mastercard, Visa, Maestro, American Express, Discover, Diners Club, JCB, UnionPay, and Mada)</li>
+                <li>PayPal</li>
+                <li>Apple Pay</li>
+                <li>Wire Transfers (ACH/SEPA/BACS)</li>
               </ul>
               <p>
                 More information can be found on
@@ -482,7 +466,7 @@
               </p>
               <div class="d-flex justify-content-center">
                 <a class="btn btn-outline-primary text-center"
-                   href="{{ url_for('dashboard.coinbase_checkout_route') }}"
+                   href="{{ url_for("dashboard.coinbase_checkout_route") }}"
                    target="_blank"
                    rel="noopener noreferrer">
                   Upgrade to Premium - cryptocurrency
@@ -520,7 +504,7 @@
             <div class="card-body">
               <p>
                 To redeem or buy a coupon, please go to the
-                <a href="{{ url_for('dashboard.coupon_route') }}">coupon page</a>. The coupon code can be used by you or given to someone as a gift.
+                <a href="{{ url_for("dashboard.coupon_route") }}">coupon page</a>. The coupon code can be used by you or given to someone as a gift.
               </p>
             </div>
           </div>
@@ -554,18 +538,12 @@
                 sending emails. Concretely:
               </p>
               <ul>
-                <li>
-                  All aliases/domains/directories/mailboxes you have created are kept and continue working normally.
-                </li>
-                <li>
-                  You cannot create new aliases if you exceed the free plan limit, i.e. have more than 10 aliases.
-                </li>
+                <li>All aliases/domains/directories/mailboxes you have created are kept and continue working normally.</li>
+                <li>You cannot create new aliases if you exceed the free plan limit, i.e. have more than 10 aliases.</li>
                 <li>
                   As features like catch-all or directory allow you to create aliases on-the-fly, those aliases cannot be automatically created if you have more than 10 aliases.
                 </li>
-                <li>
-                  You cannot add new domain, directory or mailbox.
-                </li>
+                <li>You cannot add new domain, directory or mailbox.</li>
               </ul>
               <p>
                 For example, if you have 100 aliases by the time your subscription ends, these 100 aliases will continue receiving and sending emails normally. You cannot however create new aliases.
@@ -630,19 +608,11 @@
                aria-labelledby="pricing-faq-question-discounts"
                data-parent="#pricing-faq">
             <div class="card-body">
-              <p>
-                We offer important discounts or free premium for:
-              </p>
+              <p>We offer important discounts or free premium for:</p>
               <ul>
-                <li>
-                  students, professors or technical staffs working at an educational institute
-                </li>
-                <li>
-                  activists, dissidents or journalists
-                </li>
-                <li>
-                  charity organizations
-                </li>
+                <li>students, professors or technical staffs working at an educational institute</li>
+                <li>activists, dissidents or journalists</li>
+                <li>charity organizations</li>
               </ul>
               <p>
                 Please send us an email at <a href="mailto:support@simplelogin.zendesk.com" target="_blank">support@simplelogin.zendesk.com</a> for more info.
@@ -677,9 +647,7 @@
                aria-labelledby="pricing-faq-question-refund"
                data-parent="#pricing-faq">
             <div class="card-body">
-              <p>
-                No we don't have a refund policy because SimpleLogin has a trial period where you can try all premium features.
-              </p>
+              <p>No we don't have a refund policy because SimpleLogin has a trial period where you can try all premium features.</p>
             </div>
           </div>
         </div>

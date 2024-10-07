@@ -3,24 +3,24 @@
 {% block content %}
 
   {% call text() %}
-  <h1>An email from {{ from_header }} to {{ alias.email }} is put into Quarantine</h1>
-{% endcall %}
+    <h1>An email from {{ from_header }} to {{ alias.email }} is put into Quarantine</h1>
+  {% endcall %}
 
-{% call text() %}
-An email from {{ from_header }} to {{ alias.email }} is put into Quarantine as it fails
-<a href="https://simplelogin.io/docs/getting-started/anti-phishing/">anti-phishing measure</a>
-check.
-{% endcall %}
+  {% call text() %}
+    An email from {{ from_header }} to {{ alias.email }} is put into Quarantine as it fails
+    <a href="https://simplelogin.io/docs/getting-started/anti-phishing/">anti-phishing measure</a>
+    check.
+  {% endcall %}
 
-{{ render_button("View the original email", refused_email_url) }}
-{% call text() %}
-This email is automatically deleted in 7 days.
-{% endcall %}
+  {{ render_button("View the original email", refused_email_url) }}
+  {% call text() %}
+    This email is automatically deleted in 7 days.
+  {% endcall %}
 
-{% call text() %}
-Best,
-<br />
-SimpleLogin Team.
-{% endcall %}
+  {% call text() %}
+    Best,
+    <br />
+    SimpleLogin Team.
+  {% endcall %}
 
 {% endblock %}

@@ -3,35 +3,36 @@
 {% block content %}
 
   {% call text() %}
-  <h1>Your trial will end {{ user.trial_end.humanize() }}</h1>
-{% endcall %}
+    <h1>Your trial will end {{ user.trial_end.humanize() }}</h1>
+  {% endcall %}
 
-{{ render_text("When the trial ends:") }}
-{{ render_text("- All aliases/domains/directories you have created are <b>kept</b> and continue working normally.") }}
-{% call text() %}
-- You cannot create new aliases if you exceed the free plan limit, i.e. have more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.
-{% endcall %}
+  {{ render_text("When the trial ends:") }}
+  {{ render_text("- All aliases/domains/directories you have created are <b>kept</b> and continue working normally.") }}
+  {% call text() %}
+    - You cannot create new aliases if you exceed the free plan limit, i.e. have more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.
+  {% endcall %}
 
-{{ render_text("- You cannot add new domain or directory.") }}
-{{ render_text("- You cannot add new mailbox.") }}
-{{ render_text("- If you enable PGP Encryption, forwarded emails are not encrypted anymore.") }}
-{{ render_text('You can upgrade today to continue using all these Premium features (and much more coming).') }}
-{{ render_button("Upgrade your account", URL ~ "/dashboard/pricing") }}
-{{ render_text("If you're not ready to upgrade to a paying account, you have a few other options available to you:") }}
-{{ grey_section([
-"<b>Continue with the Free Plan</b> - In the free plan you are limited to " ~ MAX_NB_EMAIL_FREE_PLAN ~ " aliases but there's no cap on bandwidth or
-number of emails forwarded/sent.",
-"<b>Share feedback</b> - If SimpleLogin isn't right for you, let us know what you were looking for and we might be able to suggest some alternatives that might be a better fit.",
-"<b>Export your data</b> - If SimpleLogin wasn't a good fit, you can export your data for use elsewhere. ",
-"<b>Close your account</b> - You can close your account and delete your data if SimpleLogin is not useful to you."
-]) }}
-{{ render_text('Regardless of your choice, we want to say thank you for trying SimpleLogin. We know the product
-requires an investment of your time, and we appreciate you giving us a chance.') }}
-{{ render_text('Thanks,
-<br />
-SimpleLogin Team.') }}
-{{ render_text('P.S. If you have any questions or need any help, please don\'t hesitate to
-<a href="https://app.simplelogin.io/dashboard/support">reach out</a>
-') }}
-{{ raw_url(URL ~ "/dashboard/pricing") }}
+  {{ render_text("- You cannot add new domain or directory.") }}
+  {{ render_text("- You cannot add new mailbox.") }}
+  {{ render_text("- You cannot create new reverse aliases.") }}
+  {{ render_text("- If you enable PGP Encryption, forwarded emails are not encrypted anymore.") }}
+  {{ render_text("You can upgrade today to continue using all these Premium features (and much more coming).") }}
+  {{ render_button("Upgrade your account", URL ~ "/dashboard/pricing") }}
+  {{ render_text("If you're not ready to upgrade to a paying account, you have a few other options available to you:") }}
+  {{ grey_section([
+    "<b>Continue with the Free Plan</b> - In the free plan you are limited to " ~ MAX_NB_EMAIL_FREE_PLAN ~ " aliases but there's no cap on bandwidth or
+    number of emails forwarded/sent.",
+    "<b>Share feedback</b> - If SimpleLogin isn't right for you, let us know what you were looking for and we might be able to suggest some alternatives that might be a better fit.",
+    "<b>Export your data</b> - If SimpleLogin wasn't a good fit, you can export your data for use elsewhere. ",
+    "<b>Close your account</b> - You can close your account and delete your data if SimpleLogin is not useful to you."
+    ]) }}
+  {{ render_text('Regardless of your choice, we want to say thank you for trying SimpleLogin. We know the product
+    requires an investment of your time, and we appreciate you giving us a chance.') }}
+  {{ render_text('Thanks,
+    <br />
+    SimpleLogin Team.') }}
+  {{ render_text('P.S. If you have any questions or need any help, please don\'t hesitate to
+    <a href="https://app.simplelogin.io/dashboard/support">reach out</a>
+    ') }}
+  {{ raw_url(URL ~ "/dashboard/pricing") }}
 {% endblock %}

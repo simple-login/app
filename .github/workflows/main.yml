@@ -109,7 +109,7 @@ jobs:
           GITHUB_ACTIONS_TEST: true
 
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: code-coverage-report
           path: htmlcov
