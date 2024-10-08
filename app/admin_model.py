@@ -34,6 +34,7 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     PartnerUser,
+    AliasMailbox,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 
@@ -784,6 +785,21 @@ class EmailSearchHelpers:
     @staticmethod
     def mailbox_count(user: User) -> int:
         return Mailbox.filter_by(user_id=user.id).order_by(Mailbox.id.desc()).count()
+
+    @staticmethod
+    def alias_mailboxes(alias: Alias) -> list[Mailbox]:
+        return (
+            Session.query(Mailbox)
+            .filter(Mailbox.id == Alias.mailbox_id, Alias.id == alias.id)
+            .union(
+                Session.query(Mailbox)
+                .join(AliasMailbox, Mailbox.id == AliasMailbox.mailbox_id)
+                .filter(AliasMailbox.alias_id == alias.id)
+            )
+            .order_by(Mailbox.id)
+            .limit(10)
+            .all()
+        )
 
     @staticmethod
     def alias_mailbox_count(alias: Alias) -> int:

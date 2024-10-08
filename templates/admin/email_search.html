@@ -177,7 +177,7 @@
         <div class="border border-dark border-2 mt-1 mb-2 p-3">
             <h3 class="mb-3">Found Alias {{ data.alias.email }}</h3>
             {{ list_alias(1,[data.alias]) }}
-            {{ list_mailboxes("Mailboxes for alias", helper.alias_mailbox_count(data.alias), data.alias.mailboxes) }}
+            {{ list_mailboxes("Mailboxes for alias", helper.alias_mailbox_count(data.alias), helper.alias_mailboxes(data.alias)) }}
             {{ show_user(data.alias.user) }}
         </div>
     {% endif %}
