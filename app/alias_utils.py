@@ -1,6 +1,7 @@
 import csv
 from io import StringIO
 import re
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from email_validator import validate_email, EmailNotValidError
@@ -23,6 +24,7 @@ from app.email_utils import (
     send_cannot_create_domain_alias,
     send_email,
     render,
+    sl_formataddr,
 )
 from app.errors import AliasInTrashError
 from app.events.event_dispatcher import EventDispatcher
@@ -541,3 +543,31 @@ def change_alias_status(alias: Alias, enabled: bool, commit: bool = False):
 
     if commit:
         Session.commit()
+
+
+@dataclass
+class AliasRecipientName:
+    name: str
+    message: Optional[str] = None
+
+
+def get_alias_recipient_name(alias: Alias) -> AliasRecipientName:
+    """
+    Logic:
+    1. If alias has name, use it
+    2. If alias has custom domain, and custom domain has name, use it
+    3. Otherwise, use the alias email as the recipient
+    """
+    if alias.name:
+        return AliasRecipientName(
+            name=sl_formataddr((alias.name, alias.email)),
+            message=f"Put alias name {alias.name} in from header",
+        )
+    elif alias.custom_domain:
+        if alias.custom_domain.name:
+            return AliasRecipientName(
+                name=sl_formataddr((alias.custom_domain.name, alias.email)),
+                message=f"Put domain default alias name {alias.custom_domain.name} in from header",
+            )
+    else:
+        return AliasRecipientName(name=alias.email)
