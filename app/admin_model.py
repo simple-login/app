@@ -786,6 +786,10 @@ class EmailSearchHelpers:
         return Mailbox.filter_by(user_id=user.id).order_by(Mailbox.id.desc()).count()
 
     @staticmethod
+    def alias_mailbox_count(alias: Alias) -> int:
+        return len(alias.mailboxes)
+
+    @staticmethod
     def alias_list(user: User) -> list[Alias]:
         return (
             Alias.filter_by(user_id=user.id).order_by(Alias.id.desc()).limit(10).all()
