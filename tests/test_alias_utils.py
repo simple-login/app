@@ -4,6 +4,7 @@ from app.alias_utils import (
     delete_alias,
     check_alias_prefix,
     get_user_if_alias_would_auto_create,
+    get_alias_recipient_name,
     try_auto_create,
 )
 from app.config import ALIAS_DOMAINS
@@ -18,7 +19,8 @@ from app.models import (
     User,
     DomainDeletedAlias,
 )
-from tests.utils import create_new_user, random_domain, random_token
+from app.utils import random_string
+from tests.utils import create_new_user, random_domain, random_token, random_email
 
 
 def test_delete_alias(flask_client):
@@ -131,3 +133,72 @@ def test_auto_create_alias(flask_client):
             assert result, f"Case {test_id} - Failed address {address}"
         else:
             assert result is None, f"Case {test_id} - Failed address {address}"
+
+
+# get_alias_recipient_name
+def test_get_alias_recipient_name_no_overrides():
+    user = create_new_user()
+    alias = Alias.create(
+        user_id=user.id,
+        email=random_email(),
+        mailbox_id=user.default_mailbox_id,
+        commit=True,
+    )
+    res = get_alias_recipient_name(alias)
+    assert res.message is None
+    assert res.name == alias.email
+
+
+def test_get_alias_recipient_name_alias_name():
+    user = create_new_user()
+    alias = Alias.create(
+        user_id=user.id,
+        email=random_email(),
+        mailbox_id=user.default_mailbox_id,
+        name=random_string(),
+        commit=True,
+    )
+    res = get_alias_recipient_name(alias)
+    assert res.message is not None
+    assert res.name == f"{alias.name} <{alias.email}>"
+
+
+def test_get_alias_recipient_alias_with_name_and_custom_domain_name():
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_domain(),
+        name=random_string(),
+        verified=True,
+    )
+    alias = Alias.create(
+        user_id=user.id,
+        email=random_email(),
+        mailbox_id=user.default_mailbox_id,
+        name=random_string(),
+        custom_domain_id=custom_domain.id,
+        commit=True,
+    )
+    res = get_alias_recipient_name(alias)
+    assert res.message is not None
+    assert res.name == f"{alias.name} <{alias.email}>"
+
+
+def test_get_alias_recipient_alias_without_name_and_custom_domain_name():
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_domain(),
+        name=random_string(),
+        verified=True,
+    )
+    alias = Alias.create(
+        user_id=user.id,
+        email=random_email(),
+        mailbox_id=user.default_mailbox_id,
+        custom_domain_id=custom_domain.id,
+        commit=True,
+    )
+    res = get_alias_recipient_name(alias)
+    assert res.message is not None
+    assert res.name == f"{custom_domain.name} <{alias.email}>"
