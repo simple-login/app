@@ -42,7 +42,7 @@ def login():
         if not email:
             flash("Email or password incorrect", "error")
             LoginEvent(LoginEvent.ActionType.failed).send()
-        email = sanitize_email(form.email.data)
+        email = sanitize_email(email)
         canonical_email = canonicalize_email(email)
         user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
