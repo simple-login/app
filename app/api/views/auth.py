@@ -52,8 +52,12 @@ def auth_login():
     password = data.get("password")
     device = data.get("device")
 
-    email = sanitize_email(data.get("email"))
-    canonical_email = canonicalize_email(data.get("email"))
+    email = data.get("email")
+    if not email:
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return jsonify(error="Email or password incorrect"), 400
+    email = sanitize_email(email)
+    canonical_email = canonicalize_email(email)
 
     user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
