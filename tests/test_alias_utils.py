@@ -184,6 +184,25 @@ def test_get_alias_recipient_alias_with_name_and_custom_domain_name():
     assert res.name == f"{alias.name} <{alias.email}>"
 
 
+def test_get_alias_recipient_alias_without_name_and_custom_domain_without_name():
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_domain(),
+        verified=True,
+    )
+    alias = Alias.create(
+        user_id=user.id,
+        email=random_email(),
+        mailbox_id=user.default_mailbox_id,
+        custom_domain_id=custom_domain.id,
+        commit=True,
+    )
+    res = get_alias_recipient_name(alias)
+    assert res.message is None
+    assert res.name == alias.email
+
+
 def test_get_alias_recipient_alias_without_name_and_custom_domain_name():
     user = create_new_user()
     custom_domain = CustomDomain.create(

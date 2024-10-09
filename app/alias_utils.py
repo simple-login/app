@@ -569,5 +569,4 @@ def get_alias_recipient_name(alias: Alias) -> AliasRecipientName:
                 name=sl_formataddr((alias.custom_domain.name, alias.email)),
                 message=f"Put domain default alias name {alias.custom_domain.name} in from header",
             )
-    else:
-        return AliasRecipientName(name=alias.email)
+    return AliasRecipientName(name=alias.email)
