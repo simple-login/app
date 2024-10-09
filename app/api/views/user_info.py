@@ -87,7 +87,7 @@ def update_user_info():
                 File.delete(file.id)
                 s3.delete(file.path)
                 Session.flush()
-        else:
+        if data["profile_picture"] is not None:
             raw_data = base64.decodebytes(data["profile_picture"].encode())
             if detect_image_format(raw_data) == ImageFormat.Unknown:
                 return jsonify(error="Unsupported image format"), 400
