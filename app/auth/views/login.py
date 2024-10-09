@@ -38,6 +38,10 @@ def login():
     show_resend_activation = False
 
     if form.validate_on_submit():
+        email = form.email.data
+        if not email:
+            flash("Email or password incorrect", "error")
+            LoginEvent(LoginEvent.ActionType.failed).send()
         email = sanitize_email(form.email.data)
         canonical_email = canonicalize_email(email)
         user = User.get_by(email=email) or User.get_by(email=canonical_email)
