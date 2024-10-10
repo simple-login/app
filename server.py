@@ -7,6 +7,7 @@ import arrow
 import click
 import flask_limiter
 import flask_profiler
+import newrelic.agent
 import sentry_sdk
 from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
 from coinbase_commerce.webhook import Webhook
@@ -301,7 +302,9 @@ def set_index_page(app):
                 res.status_code,
                 time.time() - start_time,
             )
-
+            newrelic.agent.record_custom_event(
+                "HttpResponseStatus", {"code": res.status_code}
+            )
         return res
 
 
