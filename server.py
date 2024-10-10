@@ -116,6 +116,7 @@ from app.oauth.base import oauth_bp
 from app.onboarding.base import onboarding_bp
 from app.phone.base import phone_bp
 from app.redis_services import initialize_redis_services
+from app.sentry_utils import sentry_before_send
 from app.utils import random_string
 
 if SENTRY_DSN:
@@ -127,6 +128,7 @@ if SENTRY_DSN:
             FlaskIntegration(),
             SqlalchemyIntegration(),
         ],
+        before_send=sentry_before_send,
     )
 
 # the app is served behind nginx which uses http and not https
