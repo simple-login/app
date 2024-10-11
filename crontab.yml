@@ -80,3 +80,10 @@ jobs:
     schedule: "*/5 * * * *"
     captureStderr: true
     concurrencyPolicy: Forbid
+
+  - name: SimpleLogin clear alias_audit_log old entries
+    command: python /code/cron.py -j clear_alias_audit_log
+    shell: /bin/bash
+    schedule: "0 * * * *" # Once every hour
+    captureStderr: true
+    concurrencyPolicy: Forbid

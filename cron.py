@@ -62,6 +62,7 @@ from app.pgp_utils import load_public_key_and_check, PGPException
 from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
 from server import create_light_app
+from tasks.clean_alias_audit_log import cleanup_alias_audit_log
 from tasks.cleanup_old_imports import cleanup_old_imports
 from tasks.cleanup_old_jobs import cleanup_old_jobs
 from tasks.cleanup_old_notifications import cleanup_old_notifications
@@ -1241,6 +1242,11 @@ def delete_old_data():
     cleanup_old_notifications(oldest_valid)
 
 
+def clear_alias_audit_log():
+    oldest_valid = arrow.now().shift(days=-config.AUDIT_LOG_MAX_DAYS)
+    cleanup_alias_audit_log(oldest_valid)
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -1314,3 +1320,6 @@ if __name__ == "__main__":
         elif args.job == "delete_scheduled_users":
             LOG.d("Deleting users scheduled to be deleted")
             clear_users_scheduled_to_be_deleted(dry_run=True)
+        elif args.job == "clear_alias_audit_log":
+            LOG.d("Clearing alias audit log")
+            clear_alias_audit_log()
