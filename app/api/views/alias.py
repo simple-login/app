@@ -187,7 +187,9 @@ def toggle_alias(alias_id):
         return jsonify(error="Forbidden"), 403
 
     alias_utils.change_alias_status(
-        alias, enabled=not alias.enabled, message="Using the API"
+        alias,
+        enabled=not alias.enabled,
+        message=f"Set enabled={not alias.enabled} via API",
     )
     LOG.i(f"User {user} changed alias {alias} enabled status to {alias.enabled}")
     Session.commit()

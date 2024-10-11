@@ -511,7 +511,7 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
 
     emit_alias_audit_log(
         alias=alias,
-        action=AliasAuditLogAction.TransferedAlias,
+        action=AliasAuditLogAction.TransferredAlias,
         message=f"Lost ownership of alias due to alias transfer confirmed. New owner is {new_user.id}",
         user_id=old_user.id,
     )

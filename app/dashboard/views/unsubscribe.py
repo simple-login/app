@@ -33,7 +33,7 @@ def unsubscribe(alias_id):
     # automatic unsubscribe, according to https://tools.ietf.org/html/rfc8058
     if request.method == "POST":
         alias_utils.change_alias_status(
-            alias, enabled=False, message="Action made via unsubscribe"
+            alias, enabled=False, message="Set enabled=False from unsubscribe request"
         )
         flash(f"Alias {alias.email} has been blocked", "success")
         Session.commit()

@@ -89,7 +89,7 @@ def test_alias_audit_log_for_transfer():
     logs_for_alias = AliasAuditLog.filter_by(alias_id=alias.id).all()
     assert len(logs_for_alias) == 3
     assert logs_for_alias[0].action == AliasAuditLogAction.CreateAlias.value
-    assert logs_for_alias[1].action == AliasAuditLogAction.TransferedAlias.value
+    assert logs_for_alias[1].action == AliasAuditLogAction.TransferredAlias.value
     assert logs_for_alias[1].user_id == original_user.id
     assert logs_for_alias[2].action == AliasAuditLogAction.AcceptTransferAlias.value
     assert logs_for_alias[2].user_id == new_user.id
