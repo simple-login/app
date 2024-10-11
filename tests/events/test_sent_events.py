@@ -79,7 +79,7 @@ def test_fire_event_on_alias_status_change():
     alias = Alias.create_new_random(user)
     Session.flush()
     on_memory_dispatcher.clear()
-    alias_utils.change_alias_status(alias, True)
+    alias_utils.change_alias_status(alias, enabled=True)
     assert len(on_memory_dispatcher.memory) == 1
     event_data = on_memory_dispatcher.memory[0]
     event_content = _get_event_from_string(event_data, user, pu)

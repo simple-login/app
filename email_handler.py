@@ -1502,7 +1502,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         LOG.w(
             f"Disable alias {alias} because {reason}. {alias.mailboxes} {alias.user}. Last contact {contact}"
         )
-        change_alias_status(alias, enabled=False)
+        change_alias_status(alias, enabled=False, message=reason)
 
         Notification.create(
             user_id=user.id,
