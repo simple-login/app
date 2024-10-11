@@ -84,7 +84,7 @@
                 Email
             </th>
             <th>
-                Verified
+                Enabled
             </th>
             <th>
                 Created At
@@ -96,7 +96,7 @@
             <tr>
                 <td>{{ alias.id }}</td>
                 <td><a href="?email={{ alias.email }}">{{ alias.email }}</a></td>
-                <td>{{ "Yes" if alias.verified else "No" }}</td>
+                <td>{{ "Yes" if alias.enabled else "No" }}</td>
                 <td>{{ alias.created_at }}</td>
             </tr>
         {% endfor %}
