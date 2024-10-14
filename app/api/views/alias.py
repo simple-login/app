@@ -5,6 +5,7 @@ from flask import request
 
 from app import alias_utils
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
+from app.alias_mailbox_utils import set_mailboxes_for_alias
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
     AliasInfo,
@@ -27,7 +28,7 @@ from app.errors import (
 )
 from app.extensions import limiter
 from app.log import LOG
-from app.models import Alias, Contact, Mailbox, AliasMailbox, AliasDeleteReason
+from app.models import Alias, Contact, Mailbox, AliasDeleteReason
 
 
 @deprecated
@@ -297,30 +298,11 @@ def update_alias(alias_id):
 
     if "mailbox_ids" in data:
         mailbox_ids = [int(m_id) for m_id in data.get("mailbox_ids")]
-        mailboxes: [Mailbox] = []
-
-        # check if all mailboxes belong to user
-        for mailbox_id in mailbox_ids:
-            mailbox = Mailbox.get(mailbox_id)
-            if not mailbox or mailbox.user_id != user.id or not mailbox.verified:
-                return jsonify(error="Forbidden"), 400
-            mailboxes.append(mailbox)
-
-        if not mailboxes:
-            return jsonify(error="Must choose at least one mailbox"), 400
-
-        # <<< update alias mailboxes >>>
-        # first remove all existing alias-mailboxes links
-        AliasMailbox.filter_by(alias_id=alias.id).delete()
-        Session.flush()
-
-        # then add all new mailboxes
-        for i, mailbox in enumerate(mailboxes):
-            if i == 0:
-                alias.mailbox_id = mailboxes[0].id
-            else:
-                AliasMailbox.create(alias_id=alias.id, mailbox_id=mailbox.id)
-        # <<< END update alias mailboxes >>>
+        err = set_mailboxes_for_alias(
+            user_id=user.id, alias=alias, mailbox_ids=mailbox_ids
+        )
+        if err:
+            return jsonify(error=err.value), 400
 
         mailbox_ids_string = ",".join(map(str, mailbox_ids))
         changed_fields.append(f"mailbox_ids ({mailbox_ids_string})")
