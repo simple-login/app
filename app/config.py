@@ -663,3 +663,5 @@ PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES: dict[int, str] = read_partner_dict(
 MAILBOX_VERIFICATION_OVERRIDE_CODE: Optional[str] = os.environ.get(
     "MAILBOX_VERIFICATION_OVERRIDE_CODE", None
 )
+
+AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))

@@ -7,6 +7,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 
 from app import config
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.alias_utils import transfer_alias
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
@@ -57,6 +58,12 @@ def alias_transfer_send_route(alias_id):
             transfer_token = f"{alias.id}.{secrets.token_urlsafe(32)}"
             alias.transfer_token = hmac_alias_transfer_token(transfer_token)
             alias.transfer_token_expiration = arrow.utcnow().shift(hours=24)
+
+            emit_alias_audit_log(
+                alias,
+                AliasAuditLogAction.InitiateTransferAlias,
+                "Initiated alias transfer",
+            )
             Session.commit()
             alias_transfer_url = (
                 config.URL

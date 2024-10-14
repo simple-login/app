@@ -4,6 +4,7 @@ from flask import jsonify
 from flask import request
 
 from app import alias_utils
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
     AliasInfo,
@@ -185,7 +186,11 @@ def toggle_alias(alias_id):
     if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    alias_utils.change_alias_status(alias, enabled=not alias.enabled)
+    alias_utils.change_alias_status(
+        alias,
+        enabled=not alias.enabled,
+        message=f"Set enabled={not alias.enabled} via API",
+    )
     LOG.i(f"User {user} changed alias {alias} enabled status to {alias.enabled}")
     Session.commit()
 
@@ -272,10 +277,12 @@ def update_alias(alias_id):
     if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
+    changed_fields = []
     changed = False
     if "note" in data:
         new_note = data.get("note")
         alias.note = new_note
+        changed_fields.append("note")
         changed = True
 
     if "mailbox_id" in data:
@@ -285,6 +292,7 @@ def update_alias(alias_id):
             return jsonify(error="Forbidden"), 400
 
         alias.mailbox_id = mailbox_id
+        changed_fields.append(f"mailbox_id ({mailbox_id})")
         changed = True
 
     if "mailbox_ids" in data:
@@ -314,6 +322,11 @@ def update_alias(alias_id):
                 AliasMailbox.create(alias_id=alias.id, mailbox_id=mailbox.id)
         # <<< END update alias mailboxes >>>
 
+        mailbox_ids_string = ",".join(map(str, mailbox_ids))
+        changed_fields.append(f"mailbox_ids ({mailbox_ids_string})")
+        emit_alias_audit_log(
+            alias, AliasAuditLogAction.ChangedMailboxes, message=mailbox_ids_string
+        )
         changed = True
 
     if "name" in data:
@@ -325,17 +338,26 @@ def update_alias(alias_id):
         if new_name:
             new_name = new_name.replace("\n", "")
         alias.name = new_name
+        changed_fields.append("name")
         changed = True
 
     if "disable_pgp" in data:
         alias.disable_pgp = data.get("disable_pgp")
+        changed_fields.append("disable_pgp")
         changed = True
 
     if "pinned" in data:
         alias.pinned = data.get("pinned")
+        changed_fields.append("pinned")
         changed = True
 
     if changed:
+        changed_fields_string = ",".join(changed_fields)
+        emit_alias_audit_log(
+            alias,
+            AliasAuditLogAction.UpdateAlias,
+            f"Alias fields updated ({changed_fields_string})",
+        )
         Session.commit()
 
     return jsonify(ok=True), 200

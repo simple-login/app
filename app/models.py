@@ -1673,6 +1673,7 @@ class Alias(Base, ModelMixin):
             Session.flush()
 
         # Internal import to avoid global import cycles
+        from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
         from app.events.event_dispatcher import EventDispatcher
         from app.events.generated.event_pb2 import AliasCreated, EventContent
 
@@ -1684,6 +1685,9 @@ class Alias(Base, ModelMixin):
             created_at=int(new_alias.created_at.timestamp),
         )
         EventDispatcher.send_event(user, EventContent(alias_created=event))
+        emit_alias_audit_log(
+            new_alias, AliasAuditLogAction.CreateAlias, "New alias created"
+        )
 
         return new_alias
 
@@ -3801,3 +3805,21 @@ class SyncEvent(Base, ModelMixin):
             .limit(100)
             .all()
         )
+
+
+class AliasAuditLog(Base, ModelMixin):
+    """This model holds an audit log for all the actions performed to an alias"""
+
+    __tablename__ = "alias_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False)
+    alias_id = sa.Column(sa.Integer, nullable=False)
+    alias_email = sa.Column(sa.String(255), nullable=False)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
+    __table_args__ = (
+        sa.Index("ix_alias_audit_log_user_id", "user_id"),
+        sa.Index("ix_alias_audit_log_alias_id", "alias_id"),
+        sa.Index("ix_alias_audit_log_alias_email", "alias_email"),
+    )
