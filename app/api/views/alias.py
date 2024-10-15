@@ -306,9 +306,6 @@ def update_alias(alias_id):
 
         mailbox_ids_string = ",".join(map(str, mailbox_ids))
         changed_fields.append(f"mailbox_ids ({mailbox_ids_string})")
-        emit_alias_audit_log(
-            alias, AliasAuditLogAction.ChangedMailboxes, message=mailbox_ids_string
-        )
         changed = True
 
     if "name" in data:
