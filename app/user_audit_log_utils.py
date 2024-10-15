@@ -5,6 +5,8 @@ from app.models import UserAuditLog
 
 class UserAuditLogAction(Enum):
     Upgrade = "upgrade"
+    SubscriptionExtended = "subscription_extended"
+    SubscriptionCancelled = "subscription_cancelled"
     LinkAccount = "link_account"
     UnlinkAccount = "unlink_account"
 
