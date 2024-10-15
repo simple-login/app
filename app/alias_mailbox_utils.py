@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
 
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.db import Session
 from app.models import Alias, AliasMailbox, Mailbox
 
@@ -50,5 +51,11 @@ def set_mailboxes_for_alias(
             alias.mailbox_id = mailboxes[0].id
         else:
             AliasMailbox.create(alias_id=alias.id, mailbox_id=mailbox.id)
+
+    emit_alias_audit_log(
+        alias,
+        AliasAuditLogAction.ChangedMailboxes,
+        message=",".join(map(str, mailbox_ids)),
+    )
 
     return None
