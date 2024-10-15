@@ -63,6 +63,7 @@ from app.proton.utils import get_proton_partner
 from app.utils import sanitize_email
 from server import create_light_app
 from tasks.clean_alias_audit_log import cleanup_alias_audit_log
+from tasks.clean_user_audit_log import cleanup_user_audit_log
 from tasks.cleanup_old_imports import cleanup_old_imports
 from tasks.cleanup_old_jobs import cleanup_old_jobs
 from tasks.cleanup_old_notifications import cleanup_old_notifications
@@ -1247,6 +1248,11 @@ def clear_alias_audit_log():
     cleanup_alias_audit_log(oldest_valid)
 
 
+def clear_user_audit_log():
+    oldest_valid = arrow.now().shift(days=-config.AUDIT_LOG_MAX_DAYS)
+    cleanup_user_audit_log(oldest_valid)
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -1323,3 +1329,6 @@ if __name__ == "__main__":
         elif args.job == "clear_alias_audit_log":
             LOG.d("Clearing alias audit log")
             clear_alias_audit_log()
+        elif args.job == "clear_user_audit_log":
+            LOG.d("Clearing user audit log")
+            clear_user_audit_log()
