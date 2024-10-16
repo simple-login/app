@@ -35,7 +35,7 @@ def delete_account():
         # Schedule delete account job
         LOG.w("schedule delete account job for %s", current_user)
         emit_user_audit_log(
-            user_id=current_user.id,
+            user=current_user,
             action=UserAuditLogAction.UserMarkedForDeletion,
             message=f"User {current_user.id} ({current_user.email}) marked for deletion via webapp",
         )

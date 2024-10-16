@@ -166,7 +166,7 @@ def domain_detail(custom_domain_id):
         if request.form.get("form-name") == "switch-catch-all":
             custom_domain.catch_all = not custom_domain.catch_all
             emit_user_audit_log(
-                user_id=current_user.id,
+                user=current_user,
                 action=UserAuditLogAction.UpdateCustomDomain,
                 message=f"Switched custom domain {custom_domain.id} ({custom_domain.domain}) catch all to {custom_domain.catch_all}",
             )
@@ -189,7 +189,7 @@ def domain_detail(custom_domain_id):
             if request.form.get("action") == "save":
                 custom_domain.name = request.form.get("alias-name").replace("\n", "")
                 emit_user_audit_log(
-                    user_id=current_user.id,
+                    user=current_user,
                     action=UserAuditLogAction.UpdateCustomDomain,
                     message=f"Switched custom domain {custom_domain.id} ({custom_domain.domain}) name",
                 )
@@ -201,7 +201,7 @@ def domain_detail(custom_domain_id):
             else:
                 custom_domain.name = None
                 emit_user_audit_log(
-                    user_id=current_user.id,
+                    user=current_user,
                     action=UserAuditLogAction.UpdateCustomDomain,
                     message=f"Cleared custom domain {custom_domain.id} ({custom_domain.domain}) name",
                 )
@@ -219,7 +219,7 @@ def domain_detail(custom_domain_id):
                 not custom_domain.random_prefix_generation
             )
             emit_user_audit_log(
-                user_id=current_user.id,
+                user=current_user,
                 action=UserAuditLogAction.UpdateCustomDomain,
                 message=f"Switched custom domain {custom_domain.id} ({custom_domain.domain}) random prefix generation to {custom_domain.random_prefix_generation}",
             )

@@ -2,21 +2,21 @@ from typing import Optional
 
 from arrow import Arrow
 
-from app.models import PartnerUser, PartnerSubscription
+from app.models import PartnerUser, PartnerSubscription, User
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 def create_partner_user(
-    user_id: int, partner_id: int, partner_email: str, external_user_id: str
+    user: User, partner_id: int, partner_email: str, external_user_id: str
 ) -> PartnerUser:
     instance = PartnerUser.create(
-        user_id=user_id,
+        user_id=user.id,
         partner_id=partner_id,
         partner_email=partner_email,
         external_user_id=external_user_id,
     )
     emit_user_audit_log(
-        user_id=user_id,
+        user=user,
         action=UserAuditLogAction.LinkAccount,
         message=f"Linked account to partner_id={partner_id} | partner_email={partner_email} | external_user_id={external_user_id}",
     )
@@ -38,7 +38,7 @@ def create_partner_subscription(
     if msg:
         message += f" | {msg}"
     emit_user_audit_log(
-        user_id=partner_user.user_id,
+        user=partner_user.user,
         action=UserAuditLogAction.Upgrade,
         message=message,
     )

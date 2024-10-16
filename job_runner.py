@@ -155,7 +155,7 @@ def delete_mailbox_job(job: Job):
     user = mailbox.user
 
     emit_user_audit_log(
-        user_id=user.id,
+        user=user,
         action=UserAuditLogAction.DeleteMailbox,
         message=f"Delete mailbox {mailbox.id} ({mailbox.email})",
     )
@@ -264,7 +264,7 @@ def process_job(job: Job):
         else:
             message = f"Delete custom domain {custom_domain_id} ({domain_name})"
         emit_user_audit_log(
-            user_id=user.id,
+            user=user,
             action=UserAuditLogAction.DeleteCustomDomain,
             message=message,
         )

@@ -1234,7 +1234,7 @@ def clear_users_scheduled_to_be_deleted(dry_run=False):
         if dry_run:
             continue
         emit_user_audit_log(
-            user_id=user.id,
+            user=user,
             action=UserAuditLogAction.DeleteUser,
             message=f"Delete user {user.id} ({user.email})",
         )

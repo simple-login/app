@@ -54,7 +54,7 @@ def contact_detail_route(contact_id):
                         flash("Cannot add the public key, please verify it", "error")
                     else:
                         emit_user_audit_log(
-                            user_id=current_user.id,
+                            user=current_user,
                             action=UserAuditLogAction.UpdateContact,
                             message=f"Added PGP key {contact.pgp_public_key} for contact {contact_id} ({contact.email})",
                         )
@@ -71,7 +71,7 @@ def contact_detail_route(contact_id):
             elif pgp_form.action.data == "remove":
                 # Free user can decide to remove contact PGP key
                 emit_user_audit_log(
-                    user_id=current_user.id,
+                    user=current_user,
                     action=UserAuditLogAction.UpdateContact,
                     message=f"Removed PGP key {contact.pgp_public_key} for contact {contact_id} ({contact.email})",
                 )

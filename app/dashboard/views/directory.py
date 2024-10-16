@@ -85,7 +85,7 @@ def directory():
 
             name = dir_obj.name
             emit_user_audit_log(
-                user_id=current_user.id,
+                user=current_user,
                 action=UserAuditLogAction.DeleteDirectory,
                 message=f"Delete directory {dir_obj.id} ({dir_obj.name})",
             )
@@ -114,7 +114,7 @@ def directory():
                 flash(f"On-the-fly is disabled for {dir_obj.name}", "warning")
 
             emit_user_audit_log(
-                user_id=current_user.id,
+                user=current_user,
                 action=UserAuditLogAction.UpdateDirectory,
                 message=f"Updated directory {dir_obj.id} ({dir_obj.name}) set disabled = {dir_obj.disabled}",
             )
@@ -160,7 +160,7 @@ def directory():
 
             mailboxes_as_str = ",".join(map(str, mailbox_ids))
             emit_user_audit_log(
-                user_id=current_user.id,
+                user=current_user,
                 action=UserAuditLogAction.UpdateDirectory,
                 message=f"Updated directory {dir_obj.id} ({dir_obj.name}) mailboxes ({mailboxes_as_str})",
             )
@@ -203,7 +203,7 @@ def directory():
                             name=new_dir_name, user_id=current_user.id
                         )
                         emit_user_audit_log(
-                            user_id=current_user.id,
+                            user=current_user,
                             action=UserAuditLogAction.CreateDirectory,
                             message=f"New directory {new_dir.name} ({new_dir.name})",
                         )

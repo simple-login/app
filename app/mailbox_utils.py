@@ -75,7 +75,7 @@ def create_mailbox(
         email=email, user_id=user.id, verified=verified, commit=True
     )
     emit_user_audit_log(
-        user_id=user.id,
+        user=user,
         action=UserAuditLogAction.CreateMailbox,
         message=f"Create mailbox {new_mailbox.id} ({new_mailbox.email}). Verified={verified}",
     )
@@ -211,7 +211,7 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
     LOG.i(f"User {user} has verified mailbox {mailbox_id}")
     mailbox.verified = True
     emit_user_audit_log(
-        user_id=user.id,
+        user=user,
         action=UserAuditLogAction.VerifyMailbox,
         message=f"Verify mailbox {mailbox_id} ({mailbox.email})",
     )

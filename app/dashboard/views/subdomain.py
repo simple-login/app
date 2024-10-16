@@ -104,7 +104,7 @@ def subdomain_route():
                         commit=True,
                     )
                     emit_user_audit_log(
-                        user_id=current_user.id,
+                        user=current_user,
                         action=UserAuditLogAction.CreateCustomDomain,
                         message=f"Create subdomain {new_custom_domain.id} ({full_domain})",
                         commit=True,

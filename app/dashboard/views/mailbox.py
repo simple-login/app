@@ -164,7 +164,7 @@ def verify_with_signed_secret(request: str):
 
     mailbox.verified = True
     emit_user_audit_log(
-        user_id=current_user.id,
+        user=current_user,
         action=UserAuditLogAction.VerifyMailbox,
         message=f"Verified mailbox {mailbox.id} ({mailbox.email})",
     )

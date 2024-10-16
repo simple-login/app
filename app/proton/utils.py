@@ -34,7 +34,7 @@ def perform_proton_account_unlink(current_user: User):
     if partner_user is not None:
         LOG.info(f"User {current_user} has unlinked the account from {partner_user}")
         emit_user_audit_log(
-            user_id=current_user.id,
+            user=current_user,
             action=UserAuditLogAction.UnlinkAccount,
             message=f"User has unlinked the account (email={partner_user.partner_email} | external_user_id={partner_user.external_user_id})",
         )

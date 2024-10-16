@@ -3831,7 +3831,11 @@ class UserAuditLog(Base, ModelMixin):
     __tablename__ = "user_audit_log"
 
     user_id = sa.Column(sa.Integer, nullable=False)
+    user_email = sa.Column(sa.String(255), nullable=False)
     action = sa.Column(sa.String(255), nullable=False)
     message = sa.Column(sa.Text, default=None, nullable=True)
 
-    __table_args__ = (sa.Index("ix_user_audit_log_user_id", "user_id"),)
+    __table_args__ = (
+        sa.Index("ix_user_audit_log_user_id", "user_id"),
+        sa.Index("ix_user_audit_log_user_email", "user_email"),
+    )

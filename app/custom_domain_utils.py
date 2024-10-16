@@ -139,7 +139,7 @@ def create_custom_domain(
         new_custom_domain.partner_id = partner_id
 
     emit_user_audit_log(
-        user_id=user.id,
+        user=user,
         action=UserAuditLogAction.CreateCustomDomain,
         message=f"Created custom domain {new_custom_domain.id} ({new_domain})",
     )
@@ -198,7 +198,7 @@ def set_custom_domain_mailboxes(
 
     mailboxes_as_str = ",".join(map(str, mailbox_ids))
     emit_user_audit_log(
-        user_id=user_id,
+        user=custom_domain.user,
         action=UserAuditLogAction.UpdateCustomDomain,
         message=f"Updated custom domain {custom_domain.id} mailboxes (domain={custom_domain.domain}) (mailboxes={mailboxes_as_str})",
     )

@@ -102,7 +102,7 @@ def create_contact(
             commit=True,
         )
         emit_user_audit_log(
-            user_id=alias.user_id,
+            user=alias.user,
             action=UserAuditLogAction.CreateContact,
             message=f"Created contact {contact.id} ({contact.email})",
             commit=True,

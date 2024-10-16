@@ -1,6 +1,6 @@
 from enum import Enum
 
-from app.models import UserAuditLog
+from app.models import User, UserAuditLog
 
 
 class UserAuditLogAction(Enum):
@@ -33,10 +33,11 @@ class UserAuditLogAction(Enum):
 
 
 def emit_user_audit_log(
-    user_id: int, action: UserAuditLogAction, message: str, commit: bool = False
+    user: User, action: UserAuditLogAction, message: str, commit: bool = False
 ):
     UserAuditLog.create(
-        user_id=user_id,
+        user_id=user.id,
+        user_email=user.email,
         action=action.value,
         message=message,
         commit=commit,

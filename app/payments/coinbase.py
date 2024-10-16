@@ -1,3 +1,5 @@
+from typing import Optional
+
 import arrow
 
 from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
@@ -49,7 +51,7 @@ def handle_coinbase_event(event) -> bool:
         user_id = int(float(server_user_id))
 
     code = event["data"]["code"]
-    user = User.get(user_id)
+    user: Optional[User] = User.get(user_id)
     if not user:
         LOG.e("User not found %s", user_id)
         return False
@@ -64,7 +66,7 @@ def handle_coinbase_event(event) -> bool:
             user_id=user_id, end_at=arrow.now().shift(years=1), code=code, commit=True
         )
         emit_user_audit_log(
-            user_id=user_id,
+            user=user,
             action=UserAuditLogAction.Upgrade,
             message="Upgraded though Coinbase",
             commit=True,
@@ -94,7 +96,7 @@ def handle_coinbase_event(event) -> bool:
             coinbase_subscription.end_at = arrow.now().shift(years=1)
 
         emit_user_audit_log(
-            user_id=user_id,
+            user=user,
             action=UserAuditLogAction.SubscriptionExtended,
             message="Extended coinbase subscription",
         )

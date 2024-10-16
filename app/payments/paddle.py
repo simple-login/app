@@ -70,7 +70,7 @@ def setup_paddle_callback(app: Flask):
                     plan=plan,
                 )
                 emit_user_audit_log(
-                    user_id=user.id,
+                    user=user,
                     action=UserAuditLogAction.Upgrade,
                     message="Upgraded through Paddle",
                 )
@@ -89,7 +89,7 @@ def setup_paddle_callback(app: Flask):
                 # in case user cancels a plan and subscribes a new plan
                 sub.cancelled = False
                 emit_user_audit_log(
-                    user_id=user.id,
+                    user=user,
                     action=UserAuditLogAction.SubscriptionExtended,
                     message="Extended Paddle subscription",
                 )
@@ -132,7 +132,7 @@ def setup_paddle_callback(app: Flask):
 
                 sub.cancelled = True
                 emit_user_audit_log(
-                    user_id=sub.user_id,
+                    user=sub.user,
                     action=UserAuditLogAction.SubscriptionCancelled,
                     message="Cancelled Paddle subscription",
                 )
@@ -191,7 +191,7 @@ def setup_paddle_callback(app: Flask):
                 # make sure to set the new plan as not-cancelled
                 sub.cancelled = False
                 emit_user_audit_log(
-                    user_id=sub.user_id,
+                    user=sub.user,
                     action=UserAuditLogAction.SubscriptionExtended,
                     message="Extended Paddle subscription",
                 )
@@ -213,7 +213,7 @@ def setup_paddle_callback(app: Flask):
                 user = sub.user
                 Subscription.delete(sub.id)
                 emit_user_audit_log(
-                    user_id=user.id,
+                    user=user,
                     action=UserAuditLogAction.SubscriptionCancelled,
                     message="Paddle subscription cancelled as user requested a refund",
                 )

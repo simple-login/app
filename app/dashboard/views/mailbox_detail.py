@@ -93,7 +93,7 @@ def mailbox_detail_route(mailbox_id):
             force_spf_value = request.form.get("spf-status") == "on"
             mailbox.force_spf = force_spf_value
             emit_user_audit_log(
-                user_id=current_user.id,
+                user=current_user,
                 action=UserAuditLogAction.UpdateMailbox,
                 message=f"Set force_spf to {force_spf_value} on mailbox {mailbox_id} ({mailbox.email})",
             )
@@ -120,7 +120,7 @@ def mailbox_detail_route(mailbox_id):
                     flash(f"{address} already added", "error")
                 else:
                     emit_user_audit_log(
-                        user_id=current_user.id,
+                        user=current_user,
                         action=UserAuditLogAction.UpdateMailbox,
                         message=f"Add authorized address {address} to mailbox {mailbox_id} ({mailbox.email})",
                     )
@@ -145,7 +145,7 @@ def mailbox_detail_route(mailbox_id):
             else:
                 address = authorized_address.email
                 emit_user_audit_log(
-                    user_id=current_user.id,
+                    user=current_user,
                     action=UserAuditLogAction.UpdateMailbox,
                     message=f"Remove authorized address {address} from mailbox {mailbox_id} ({mailbox.email})",
                 )
@@ -182,7 +182,7 @@ def mailbox_detail_route(mailbox_id):
                     flash("Cannot add the public key, please verify it", "error")
                 else:
                     emit_user_audit_log(
-                        user_id=current_user.id,
+                        user=current_user,
                         action=UserAuditLogAction.UpdateMailbox,
                         message=f"Add PGP Key {mailbox.pgp_finger_print} to mailbox {mailbox_id} ({mailbox.email})",
                     )
@@ -194,7 +194,7 @@ def mailbox_detail_route(mailbox_id):
             elif request.form.get("action") == "remove":
                 # Free user can decide to remove their added PGP key
                 emit_user_audit_log(
-                    user_id=current_user.id,
+                    user=current_user,
                     action=UserAuditLogAction.UpdateMailbox,
                     message=f"Remove PGP Key {mailbox.pgp_finger_print} from mailbox {mailbox_id} ({mailbox.email})",
                 )
@@ -218,7 +218,7 @@ def mailbox_detail_route(mailbox_id):
                 else:
                     mailbox.disable_pgp = False
                     emit_user_audit_log(
-                        user_id=current_user.id,
+                        user=current_user,
                         action=UserAuditLogAction.UpdateMailbox,
                         message=f"Enabled PGP for mailbox {mailbox_id} ({mailbox.email})",
                     )
@@ -226,7 +226,7 @@ def mailbox_detail_route(mailbox_id):
             else:
                 mailbox.disable_pgp = True
                 emit_user_audit_log(
-                    user_id=current_user.id,
+                    user=current_user,
                     action=UserAuditLogAction.UpdateMailbox,
                     message=f"Disabled PGP for mailbox {mailbox_id} ({mailbox.email})",
                 )
@@ -240,7 +240,7 @@ def mailbox_detail_route(mailbox_id):
             if request.form.get("action") == "save":
                 mailbox.generic_subject = request.form.get("generic-subject")
                 emit_user_audit_log(
-                    user_id=current_user.id,
+                    user=current_user,
                     action=UserAuditLogAction.UpdateMailbox,
                     message=f"Set generic subject for mailbox {mailbox_id} ({mailbox.email})",
                 )
@@ -252,7 +252,7 @@ def mailbox_detail_route(mailbox_id):
             elif request.form.get("action") == "remove":
                 mailbox.generic_subject = None
                 emit_user_audit_log(
-                    user_id=current_user.id,
+                    user=current_user,
                     action=UserAuditLogAction.UpdateMailbox,
                     message=f"Remove generic subject for mailbox {mailbox_id} ({mailbox.email})",
                 )
@@ -340,7 +340,7 @@ def mailbox_confirm_change_route():
                 )
 
             emit_user_audit_log(
-                user_id=current_user.id,
+                user=current_user,
                 action=UserAuditLogAction.UpdateMailbox,
                 message=f"Change mailbox email for mailbox {mailbox_id} (old={mailbox.email} | new={mailbox.new_email})",
             )

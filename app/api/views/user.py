@@ -18,7 +18,7 @@ def delete_user():
     """
     # Schedule delete account job
     emit_user_audit_log(
-        user_id=g.user.id,
+        user=g.user,
         action=UserAuditLogAction.UserMarkedForDeletion,
         message=f"Marked user {g.user.id} ({g.user.email}) for deletion from API",
     )

@@ -69,7 +69,7 @@ def set_default_mailbox(user: User, mailbox_id: int) -> Mailbox:
 
     user.default_mailbox_id = mailbox.id
     emit_user_audit_log(
-        user_id=user.id,
+        user=user,
         action=UserAuditLogAction.UpdateMailbox,
         message=f"Set mailbox {mailbox.id} ({mailbox.email}) as default",
     )

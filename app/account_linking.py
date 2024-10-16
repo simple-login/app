@@ -84,7 +84,7 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                 )
                 sub.end_at = plan.expiration
                 emit_user_audit_log(
-                    user_id=partner_user.user_id,
+                    user=partner_user.user,
                     action=UserAuditLogAction.SubscriptionExtended,
                     message="Extended partner subscription",
                 )
@@ -107,7 +107,7 @@ def ensure_partner_user_exists_for_user(
         raise AccountAlreadyLinkedToAnotherPartnerException()
     if not res:
         res = create_partner_user(
-            user_id=sl_user.id,
+            user=sl_user,
             partner_id=partner.id,
             partner_email=link_request.email,
             external_user_id=link_request.external_user_id,
@@ -149,7 +149,7 @@ class NewUserStrategy(ClientMergeStrategy):
             from_partner=self.link_request.from_partner,
         )
         partner_user = create_partner_user(
-            user_id=new_user.id,
+            user=new_user,
             partner_id=self.partner.id,
             external_user_id=self.link_request.external_user_id,
             partner_email=self.link_request.email,
@@ -287,7 +287,7 @@ def switch_already_linked_user(
         old_info = f"Old: (external_user_id={other_partner_user.external_user_id} | partner_email={other_partner_user.partner_email})"
         new_info = f"New: (external_user_id={partner_user.external_user_id} | partner_email={partner_user.partner_email})"
         emit_user_audit_log(
-            user_id=other_partner_user.user_id,
+            user=other_partner_user.user,
             action=UserAuditLogAction.UnlinkAccount,
             message=f"Unlinking from partner, as user will now be tied to another external account. {old_info} | {new_info}",
         )

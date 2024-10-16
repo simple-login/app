@@ -201,7 +201,7 @@ def delete_contact(alias: Alias, contact_id: int):
     else:
         delete_contact_email = contact.website_email
         emit_user_audit_log(
-            user_id=alias.user_id,
+            user=alias.user,
             action=UserAuditLogAction.DeleteContact,
             message=f"Delete contact {contact_id} ({contact.email})",
         )

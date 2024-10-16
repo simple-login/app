@@ -124,7 +124,7 @@ class CustomDomainValidation:
         custom_domain.dkim_verified = len(invalid_records) == 0
         if custom_domain.dkim_verified:
             emit_user_audit_log(
-                user_id=custom_domain.user_id,
+                user=custom_domain.user,
                 action=UserAuditLogAction.VerifyCustomDomain,
                 message=f"Verified DKIM records for custom domain {custom_domain.id} ({custom_domain.domain})",
             )
@@ -145,7 +145,7 @@ class CustomDomainValidation:
         if expected_verification_record in txt_records:
             custom_domain.ownership_verified = True
             emit_user_audit_log(
-                user_id=custom_domain.user_id,
+                user=custom_domain.user,
                 action=UserAuditLogAction.VerifyCustomDomain,
                 message=f"Verified ownership for custom domain {custom_domain.id} ({custom_domain.domain})",
             )
@@ -168,7 +168,7 @@ class CustomDomainValidation:
         else:
             custom_domain.verified = True
             emit_user_audit_log(
-                user_id=custom_domain.user_id,
+                user=custom_domain.user,
                 action=UserAuditLogAction.VerifyCustomDomain,
                 message=f"Verified MX records for custom domain {custom_domain.id} ({custom_domain.domain})",
             )
@@ -187,7 +187,7 @@ class CustomDomainValidation:
         else:
             custom_domain.spf_verified = False
             emit_user_audit_log(
-                user_id=custom_domain.user_id,
+                user=custom_domain.user,
                 action=UserAuditLogAction.VerifyCustomDomain,
                 message=f"Verified SPF records for custom domain {custom_domain.id} ({custom_domain.domain})",
             )
@@ -206,7 +206,7 @@ class CustomDomainValidation:
         if DMARC_RECORD in txt_records:
             custom_domain.dmarc_verified = True
             emit_user_audit_log(
-                user_id=custom_domain.user_id,
+                user=custom_domain.user,
                 action=UserAuditLogAction.VerifyCustomDomain,
                 message=f"Verified DMARC records for custom domain {custom_domain.id} ({custom_domain.domain})",
             )
