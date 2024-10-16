@@ -78,6 +78,7 @@ def create_mailbox(
         user=user,
         action=UserAuditLogAction.CreateMailbox,
         message=f"Create mailbox {new_mailbox.id} ({new_mailbox.email}). Verified={verified}",
+        commit=True,
     )
 
     if verified:

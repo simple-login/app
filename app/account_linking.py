@@ -284,17 +284,25 @@ def switch_already_linked_user(
             f"Deleting previous partner_user:{other_partner_user.id} from user:{current_user.id}"
         )
 
-        old_info = f"Old: (external_user_id={other_partner_user.external_user_id} | partner_email={other_partner_user.partner_email})"
-        new_info = f"New: (external_user_id={partner_user.external_user_id} | partner_email={partner_user.partner_email})"
         emit_user_audit_log(
             user=other_partner_user.user,
             action=UserAuditLogAction.UnlinkAccount,
-            message=f"Unlinking from partner, as user will now be tied to another external account. {old_info} | {new_info}",
+            message=f"Deleting partner_user {other_partner_user.id} (external_user_id={other_partner_user.external_user_id} | partner_email={other_partner_user.partner_email}) from user {current_user.id}, as we received a new link request for the same partner",
         )
         PartnerUser.delete(other_partner_user.id)
     LOG.i(f"Linking partner_user:{partner_user.id} to user:{current_user.id}")
     # Link this partner_user to the current user
+    emit_user_audit_log(
+        user=partner_user.user,
+        action=UserAuditLogAction.UnlinkAccount,
+        message=f"Unlinking from partner, as user will now be tied to another external account. old=(id={partner_user.user.id} | email={partner_user.user.email}) | new=(id={current_user.id} | email={current_user.email})",
+    )
     partner_user.user_id = current_user.id
+    emit_user_audit_log(
+        user=current_user,
+        action=UserAuditLogAction.LinkAccount,
+        message=f"Linking user {current_user.id} ({current_user.email}) to partner_user:{partner_user.id} (external_user_id={partner_user.external_user_id} | partner_email={partner_user.partner_email})",
+    )
     # Set plan
     set_plan_for_partner_user(partner_user, link_request.plan)
     Session.commit()
