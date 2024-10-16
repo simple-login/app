@@ -15,10 +15,6 @@ class UserAuditLogAction(Enum):
     UpdateMailbox = "update_mailbox"
     DeleteMailbox = "delete_mailbox"
 
-    CreateSubdomain = "create_subdomain"
-    UpdateSubdomain = "update_subdomain"
-    DeleteSubdomain = "delete_subdomain"
-
     CreateCustomDomain = "create_custom_domain"
     VerifyCustomDomain = "verify_custom_domain"
     UpdateCustomDomain = "update_custom_domain"

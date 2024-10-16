@@ -251,12 +251,23 @@ def process_job(job: Job):
         if not custom_domain:
             return
 
+        is_subdomain = custom_domain.is_sl_subdomain
         domain_name = custom_domain.domain
         user = custom_domain.user
 
         custom_domain_partner_id = custom_domain.partner_id
         CustomDomain.delete(custom_domain.id)
         Session.commit()
+
+        if is_subdomain:
+            message = f"Delete subdomain {custom_domain_id} ({domain_name})"
+        else:
+            message = f"Delete custom domain {custom_domain_id} ({domain_name})"
+        emit_user_audit_log(
+            user_id=user.id,
+            action=UserAuditLogAction.DeleteCustomDomain,
+            message=message,
+        )
 
         LOG.d("Domain %s deleted", domain_name)
 

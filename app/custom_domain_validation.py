@@ -11,6 +11,7 @@ from app.dns_utils import (
     get_network_dns_client,
 )
 from app.models import CustomDomain
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string
 
 
@@ -121,6 +122,12 @@ class CustomDomainValidation:
             # Original DKIM record is not there, which means the DKIM config is not finished. Proceed with the
             # rest of the code path, returning the invalid records and clearing the flag
         custom_domain.dkim_verified = len(invalid_records) == 0
+        if custom_domain.dkim_verified:
+            emit_user_audit_log(
+                user_id=custom_domain.user_id,
+                action=UserAuditLogAction.VerifyCustomDomain,
+                message=f"Verified DKIM records for custom domain {custom_domain.id} ({custom_domain.domain})",
+            )
         Session.commit()
         return invalid_records
 
@@ -137,6 +144,11 @@ class CustomDomainValidation:
 
         if expected_verification_record in txt_records:
             custom_domain.ownership_verified = True
+            emit_user_audit_log(
+                user_id=custom_domain.user_id,
+                action=UserAuditLogAction.VerifyCustomDomain,
+                message=f"Verified ownership for custom domain {custom_domain.id} ({custom_domain.domain})",
+            )
             Session.commit()
             return DomainValidationResult(success=True, errors=[])
         else:
@@ -155,6 +167,11 @@ class CustomDomainValidation:
             )
         else:
             custom_domain.verified = True
+            emit_user_audit_log(
+                user_id=custom_domain.user_id,
+                action=UserAuditLogAction.VerifyCustomDomain,
+                message=f"Verified MX records for custom domain {custom_domain.id} ({custom_domain.domain})",
+            )
             Session.commit()
             return DomainValidationResult(success=True, errors=[])
 
@@ -169,6 +186,11 @@ class CustomDomainValidation:
             return DomainValidationResult(success=True, errors=[])
         else:
             custom_domain.spf_verified = False
+            emit_user_audit_log(
+                user_id=custom_domain.user_id,
+                action=UserAuditLogAction.VerifyCustomDomain,
+                message=f"Verified SPF records for custom domain {custom_domain.id} ({custom_domain.domain})",
+            )
             Session.commit()
             txt_records = self._dns_client.get_txt_record(custom_domain.domain)
             cleaned_records = self.__clean_spf_records(txt_records, custom_domain)
@@ -183,6 +205,11 @@ class CustomDomainValidation:
         txt_records = self._dns_client.get_txt_record("_dmarc." + custom_domain.domain)
         if DMARC_RECORD in txt_records:
             custom_domain.dmarc_verified = True
+            emit_user_audit_log(
+                user_id=custom_domain.user_id,
+                action=UserAuditLogAction.VerifyCustomDomain,
+                message=f"Verified DMARC records for custom domain {custom_domain.id} ({custom_domain.domain})",
+            )
             Session.commit()
             return DomainValidationResult(success=True, errors=[])
         else:

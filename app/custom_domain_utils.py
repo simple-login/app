@@ -10,6 +10,7 @@ from app.db import Session
 from app.email_utils import get_email_domain_part
 from app.log import LOG
 from app.models import User, CustomDomain, SLDomain, Mailbox, Job, DomainMailbox
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 _ALLOWED_DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
 _MAX_MAILBOXES_PER_DOMAIN = 20
@@ -137,6 +138,11 @@ def create_custom_domain(
     if partner_id is not None:
         new_custom_domain.partner_id = partner_id
 
+    emit_user_audit_log(
+        user_id=user.id,
+        action=UserAuditLogAction.CreateCustomDomain,
+        message=f"Created custom domain {new_custom_domain.id} ({new_domain})",
+    )
     Session.commit()
 
     return CreateCustomDomainResult(
@@ -190,5 +196,11 @@ def set_custom_domain_mailboxes(
     for mailbox in mailboxes:
         DomainMailbox.create(domain_id=custom_domain.id, mailbox_id=mailbox.id)
 
+    mailboxes_as_str = ",".join(map(str, mailbox_ids))
+    emit_user_audit_log(
+        user_id=user_id,
+        action=UserAuditLogAction.UpdateCustomDomain,
+        message=f"Updated custom domain {custom_domain.id} mailboxes (domain={custom_domain.domain}) (mailboxes={mailboxes_as_str})",
+    )
     Session.commit()
     return SetCustomDomainMailboxesResult(success=True)
