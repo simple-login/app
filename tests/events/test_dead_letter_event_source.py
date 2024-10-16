@@ -39,6 +39,7 @@ def test_dead_letter_takes_untaken_events_created_older_than_threshold():
     SyncEvent.create(content="test".encode("utf-8"), created_at=old_create, flush=True)
     events_processed = source.execute_loop(on_event=counter.on_event)
     assert len(events_processed) == 1
+    assert events_processed[0].taken_time > old_create
     assert counter.processed_events == 1
 
 
@@ -49,4 +50,5 @@ def test_dead_letter_takes_taken_events_created_older_than_threshold():
     SyncEvent.create(content="test".encode("utf-8"), taken_time=old_taken, flush=True)
     events_processed = source.execute_loop(on_event=counter.on_event)
     assert len(events_processed) == 1
+    assert events_processed[0].taken_time > old_taken
     assert counter.processed_events == 1
