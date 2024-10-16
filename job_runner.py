@@ -20,6 +20,7 @@ from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from server import create_light_app
 
 
@@ -128,7 +129,7 @@ def welcome_proton(user):
 
 def delete_mailbox_job(job: Job):
     mailbox_id = job.payload.get("mailbox_id")
-    mailbox = Mailbox.get(mailbox_id)
+    mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
     if not mailbox:
         return
 
@@ -152,6 +153,12 @@ def delete_mailbox_job(job: Job):
 
     mailbox_email = mailbox.email
     user = mailbox.user
+
+    emit_user_audit_log(
+        user_id=user.id,
+        action=UserAuditLogAction.DeleteMailbox,
+        message=f"Delete mailbox {mailbox.id} ({mailbox.email})",
+    )
     Mailbox.delete(mailbox_id)
     Session.commit()
     LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)

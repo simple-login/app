@@ -16,6 +16,7 @@ from app.email_utils import (
 from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import User, Mailbox, Job, MailboxActivation
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 @dataclasses.dataclass
@@ -70,8 +71,13 @@ def create_mailbox(
             f"User {user} has tried to create mailbox with {email} but email is invalid"
         )
         raise MailboxError("Invalid email")
-    new_mailbox = Mailbox.create(
+    new_mailbox: Mailbox = Mailbox.create(
         email=email, user_id=user.id, verified=verified, commit=True
+    )
+    emit_user_audit_log(
+        user_id=user.id,
+        action=UserAuditLogAction.CreateMailbox,
+        message=f"Create mailbox {new_mailbox.id} ({new_mailbox.email}). Verified={verified}",
     )
 
     if verified:
@@ -129,7 +135,7 @@ def delete_mailbox(
 
         if not transfer_mailbox.verified:
             LOG.i(f"User {user} has tried to transfer to a non verified mailbox")
-            MailboxError("Your new mailbox is not verified")
+            raise MailboxError("Your new mailbox is not verified")
 
     # Schedule delete account job
     LOG.i(
@@ -204,6 +210,11 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
         raise CannotVerifyError("Invalid activation code")
     LOG.i(f"User {user} has verified mailbox {mailbox_id}")
     mailbox.verified = True
+    emit_user_audit_log(
+        user_id=user.id,
+        action=UserAuditLogAction.VerifyMailbox,
+        message=f"Verify mailbox {mailbox_id} ({mailbox.email})",
+    )
     clear_activation_codes_for_mailbox(mailbox)
     return mailbox
 

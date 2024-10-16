@@ -3,6 +3,7 @@ from typing import Optional
 from app.db import Session
 from app.log import LOG
 from app.models import User, SLDomain, CustomDomain, Mailbox
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 class CannotSetAlias(Exception):
@@ -54,7 +55,7 @@ def set_default_alias_domain(user: User, domain_name: Optional[str]):
 
 
 def set_default_mailbox(user: User, mailbox_id: int) -> Mailbox:
-    mailbox = Mailbox.get(mailbox_id)
+    mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
 
     if not mailbox or mailbox.user_id != user.id:
         raise CannotSetMailbox("Invalid mailbox")
@@ -67,5 +68,11 @@ def set_default_mailbox(user: User, mailbox_id: int) -> Mailbox:
     LOG.i(f"User {user} has set mailbox {mailbox} as his default one")
 
     user.default_mailbox_id = mailbox.id
+    emit_user_audit_log(
+        user_id=user.id,
+        action=UserAuditLogAction.UpdateMailbox,
+        message=f"Set mailbox {mailbox.id} ({mailbox.email}) as default",
+    )
+
     Session.commit()
     return mailbox

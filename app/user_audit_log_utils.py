@@ -32,6 +32,8 @@ class UserAuditLogAction(Enum):
     UpdateDirectory = "update_directory"
     DeleteDirectory = "delete_directory"
 
+    DeleteUser = "delete_user"
+
 
 def emit_user_audit_log(
     user_id: int, action: UserAuditLogAction, message: str, commit: bool = False
