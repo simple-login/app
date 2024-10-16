@@ -182,15 +182,15 @@ class CustomDomainValidation:
         expected_spf_domain = self.get_expected_spf_domain(custom_domain)
         if expected_spf_domain in spf_domains:
             custom_domain.spf_verified = True
-            Session.commit()
-            return DomainValidationResult(success=True, errors=[])
-        else:
-            custom_domain.spf_verified = False
             emit_user_audit_log(
                 user=custom_domain.user,
                 action=UserAuditLogAction.VerifyCustomDomain,
                 message=f"Verified SPF records for custom domain {custom_domain.id} ({custom_domain.domain})",
             )
+            Session.commit()
+            return DomainValidationResult(success=True, errors=[])
+        else:
+            custom_domain.spf_verified = False
             Session.commit()
             txt_records = self._dns_client.get_txt_record(custom_domain.domain)
             cleaned_records = self.__clean_spf_records(txt_records, custom_domain)
