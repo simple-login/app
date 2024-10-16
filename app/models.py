@@ -3838,4 +3838,5 @@ class UserAuditLog(Base, ModelMixin):
     __table_args__ = (
         sa.Index("ix_user_audit_log_user_id", "user_id"),
         sa.Index("ix_user_audit_log_user_email", "user_email"),
+        sa.Index("ix_user_audit_log_created_at", "created_at"),
     )
