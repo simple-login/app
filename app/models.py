@@ -3771,13 +3771,13 @@ class SyncEvent(Base, ModelMixin):
         sa.Index("ix_sync_event_taken_time", "taken_time"),
     )
 
-    def mark_as_taken(self, taken_older_than: Optional[Arrow]) -> bool:
+    def mark_as_taken(self, taken_older_than: Optional[Arrow] = None) -> bool:
         taken_condition = ["taken_time IS NULL"]
         args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
         if taken_older_than:
             taken_condition.append("taken_time < :taken_older_than")
             args["taken_older_than"] = taken_older_than.datetime
-        sql_taken_condition = "{}".format(" OR ".join(taken_condition))
+        sql_taken_condition = "({})".format(" OR ".join(taken_condition))
         sql = f"UPDATE sync_event SET taken_time = :taken_time WHERE id = :sync_event_id AND {sql_taken_condition}"
         res = Session.execute(sql, args)
         Session.commit()
