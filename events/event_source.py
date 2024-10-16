@@ -98,7 +98,7 @@ class DeadLetterEventSource(EventSource):
                 "Custom/dead_letter_events_to_process", len(events)
             )
             for event in events:
-                if event.mark_as_taken(taken_older_than=threshold):
+                if event.mark_as_taken(allow_taken_older_than=threshold):
                     on_event(event)
         return events
 

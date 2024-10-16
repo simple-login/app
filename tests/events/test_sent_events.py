@@ -45,14 +45,14 @@ def test_event_mark_as_taken_does_nothing_for_not_before_events():
     now = arrow.utcnow()
     event = SyncEvent.create(content="test".encode("utf-8"), taken_time=now, flush=True)
     older_than = now.shift(minutes=-1)
-    assert not event.mark_as_taken(taken_older_than=older_than)
+    assert not event.mark_as_taken(allow_taken_older_than=older_than)
 
 
 def test_event_mark_as_taken_works_for_before_events():
     now = arrow.utcnow()
     event = SyncEvent.create(content="test".encode("utf-8"), taken_time=now, flush=True)
     older_than = now.shift(minutes=+1)
-    assert event.mark_as_taken(taken_older_than=older_than)
+    assert event.mark_as_taken(allow_taken_older_than=older_than)
 
 
 def test_fire_event_on_alias_creation():
