@@ -9,6 +9,7 @@ from app.email_utils import generate_reply_email, parse_full_address
 from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import Contact, Alias
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
 
 
@@ -98,6 +99,12 @@ def create_contact(
             automatic_created=automatic_created,
             flags=flags,
             invalid_email=email == "",
+            commit=True,
+        )
+        emit_user_audit_log(
+            user_id=alias.user_id,
+            action=UserAuditLogAction.CreateContact,
+            message=f"Created contact {contact.id} ({contact.email})",
             commit=True,
         )
         LOG.d(

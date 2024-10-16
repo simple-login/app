@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from operator import or_
+from typing import Optional
 
 from flask import render_template, request, redirect, flash
 from flask import url_for
@@ -22,6 +23,7 @@ from app.errors import (
 )
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import CSRFValidationForm
 
 
@@ -190,7 +192,7 @@ def get_contact_infos(
 
 
 def delete_contact(alias: Alias, contact_id: int):
-    contact = Contact.get(contact_id)
+    contact: Optional[Contact] = Contact.get(contact_id)
 
     if not contact:
         flash("Unknown error. Refresh the page", "warning")
@@ -198,6 +200,11 @@ def delete_contact(alias: Alias, contact_id: int):
         flash("You cannot delete reverse-alias", "warning")
     else:
         delete_contact_email = contact.website_email
+        emit_user_audit_log(
+            user_id=alias.user_id,
+            action=UserAuditLogAction.DeleteContact,
+            message=f"Delete contact {contact_id} ({contact.email})",
+        )
         Contact.delete(contact_id)
         Session.commit()
 
