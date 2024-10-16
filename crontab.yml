@@ -87,3 +87,10 @@ jobs:
     schedule: "0 * * * *" # Once every hour
     captureStderr: true
     concurrencyPolicy: Forbid
+
+  - name: SimpleLogin clear user_audit_log old entries
+    command: python /code/cron.py -j clear_user_audit_log
+    shell: /bin/bash
+    schedule: "0 * * * *" # Once every hour
+    captureStderr: true
+    concurrencyPolicy: Forbid

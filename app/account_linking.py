@@ -9,6 +9,7 @@ from sqlalchemy import or_
 
 from app.db import Session
 from app.email_utils import send_welcome_email
+from app.partner_user_utils import create_partner_user, create_partner_subscription
 from app.utils import sanitize_email, canonicalize_email
 from app.errors import (
     AccountAlreadyLinkedToAnotherPartnerException,
@@ -23,6 +24,7 @@ from app.models import (
     User,
     Alias,
 )
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string
 
 
@@ -66,9 +68,10 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
             LOG.i(
                 f"Creating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
             )
-            PartnerSubscription.create(
-                partner_user_id=partner_user.id,
-                end_at=plan.expiration,
+            create_partner_subscription(
+                partner_user=partner_user,
+                expiration=plan.expiration,
+                msg="Upgraded via partner. User did not have a previous partner subscription",
             )
             agent.record_custom_event("PlanChange", {"plan": "premium", "type": "new"})
         else:
@@ -80,6 +83,11 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                     "PlanChange", {"plan": "premium", "type": "extension"}
                 )
                 sub.end_at = plan.expiration
+                emit_user_audit_log(
+                    user=partner_user.user,
+                    action=UserAuditLogAction.SubscriptionExtended,
+                    message="Extended partner subscription",
+                )
     Session.commit()
 
 
@@ -98,8 +106,8 @@ def ensure_partner_user_exists_for_user(
     if res and res.partner_id != partner.id:
         raise AccountAlreadyLinkedToAnotherPartnerException()
     if not res:
-        res = PartnerUser.create(
-            user_id=sl_user.id,
+        res = create_partner_user(
+            user=sl_user,
             partner_id=partner.id,
             partner_email=link_request.email,
             external_user_id=link_request.external_user_id,
@@ -140,8 +148,8 @@ class NewUserStrategy(ClientMergeStrategy):
             activated=True,
             from_partner=self.link_request.from_partner,
         )
-        partner_user = PartnerUser.create(
-            user_id=new_user.id,
+        partner_user = create_partner_user(
+            user=new_user,
             partner_id=self.partner.id,
             external_user_id=self.link_request.external_user_id,
             partner_email=self.link_request.email,
@@ -200,7 +208,7 @@ def get_login_strategy(
     return ExistingUnlinkedUserStrategy(link_request, user, partner)
 
 
-def check_alias(email: str) -> bool:
+def check_alias(email: str):
     alias = Alias.get_by(email=email)
     if alias is not None:
         raise AccountIsUsingAliasAsEmail()
@@ -275,10 +283,26 @@ def switch_already_linked_user(
         LOG.i(
             f"Deleting previous partner_user:{other_partner_user.id} from user:{current_user.id}"
         )
+
+        emit_user_audit_log(
+            user=other_partner_user.user,
+            action=UserAuditLogAction.UnlinkAccount,
+            message=f"Deleting partner_user {other_partner_user.id} (external_user_id={other_partner_user.external_user_id} | partner_email={other_partner_user.partner_email}) from user {current_user.id}, as we received a new link request for the same partner",
+        )
         PartnerUser.delete(other_partner_user.id)
     LOG.i(f"Linking partner_user:{partner_user.id} to user:{current_user.id}")
     # Link this partner_user to the current user
+    emit_user_audit_log(
+        user=partner_user.user,
+        action=UserAuditLogAction.UnlinkAccount,
+        message=f"Unlinking from partner, as user will now be tied to another external account. old=(id={partner_user.user.id} | email={partner_user.user.email}) | new=(id={current_user.id} | email={current_user.email})",
+    )
     partner_user.user_id = current_user.id
+    emit_user_audit_log(
+        user=current_user,
+        action=UserAuditLogAction.LinkAccount,
+        message=f"Linking user {current_user.id} ({current_user.email}) to partner_user:{partner_user.id} (external_user_id={partner_user.external_user_id} | partner_email={partner_user.partner_email})",
+    )
     # Set plan
     set_plan_for_partner_user(partner_user, link_request.plan)
     Session.commit()

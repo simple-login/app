@@ -2,7 +2,7 @@ import arrow
 
 from app.db import Session
 from app.models import CoinbaseSubscription
-from server import handle_coinbase_event
+from app.payments.coinbase import handle_coinbase_event
 from tests.utils import create_new_user
 
 

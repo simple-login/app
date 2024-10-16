@@ -5,6 +5,7 @@ from app.db import Session
 from app.log import LOG
 from app.errors import ProtonPartnerNotSetUp
 from app.models import Partner, PartnerUser, User
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 PROTON_PARTNER_NAME = "Proton"
 _PROTON_PARTNER: Optional[Partner] = None
@@ -32,6 +33,11 @@ def perform_proton_account_unlink(current_user: User):
     )
     if partner_user is not None:
         LOG.info(f"User {current_user} has unlinked the account from {partner_user}")
+        emit_user_audit_log(
+            user=current_user,
+            action=UserAuditLogAction.UnlinkAccount,
+            message=f"User has unlinked the account (email={partner_user.partner_email} | external_user_id={partner_user.external_user_id})",
+        )
         PartnerUser.delete(partner_user.id)
     Session.commit()
     agent.record_custom_event("AccountUnlinked", {"partner": proton_partner.name})

@@ -218,7 +218,11 @@ def test_delete_with_transfer():
         user, random_email(), use_digit_codes=True, send_link=False
     ).mailbox
     transfer_mailbox = mailbox_utils.create_mailbox(
-        user, random_email(), use_digit_codes=True, send_link=False
+        user,
+        random_email(),
+        use_digit_codes=True,
+        send_link=False,
+        verified=True,
     ).mailbox
     mailbox_utils.delete_mailbox(
         user, mailbox.id, transfer_mailbox_id=transfer_mailbox.id
@@ -234,6 +238,28 @@ def test_delete_with_transfer():
     assert job.name == config.JOB_DELETE_MAILBOX
     assert job.payload["mailbox_id"] == mailbox.id
     assert job.payload["transfer_mailbox_id"] is None
+
+
+def test_cannot_delete_with_transfer_to_unverified_mailbox():
+    mailbox = mailbox_utils.create_mailbox(
+        user, random_email(), use_digit_codes=True, send_link=False
+    ).mailbox
+    transfer_mailbox = mailbox_utils.create_mailbox(
+        user,
+        random_email(),
+        use_digit_codes=True,
+        send_link=False,
+        verified=False,
+    ).mailbox
+
+    with pytest.raises(mailbox_utils.MailboxError):
+        mailbox_utils.delete_mailbox(
+            user, mailbox.id, transfer_mailbox_id=transfer_mailbox.id
+        )
+
+    # Verify mailbox still exists
+    db_mailbox = Mailbox.get_by(id=mailbox.id)
+    assert db_mailbox is not None
 
 
 def test_verify_non_existing_mailbox():

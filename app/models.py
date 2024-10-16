@@ -3822,4 +3822,22 @@ class AliasAuditLog(Base, ModelMixin):
         sa.Index("ix_alias_audit_log_user_id", "user_id"),
         sa.Index("ix_alias_audit_log_alias_id", "alias_id"),
         sa.Index("ix_alias_audit_log_alias_email", "alias_email"),
+        sa.Index("ix_alias_audit_log_created_at", "created_at"),
+    )
+
+
+class UserAuditLog(Base, ModelMixin):
+    """This model holds an audit log for all the actions performed by a user"""
+
+    __tablename__ = "user_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False)
+    user_email = sa.Column(sa.String(255), nullable=False)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
+    __table_args__ = (
+        sa.Index("ix_user_audit_log_user_id", "user_id"),
+        sa.Index("ix_user_audit_log_user_email", "user_email"),
+        sa.Index("ix_user_audit_log_created_at", "created_at"),
     )

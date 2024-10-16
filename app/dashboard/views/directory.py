@@ -1,3 +1,5 @@
+from typing import Optional
+
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
@@ -20,6 +22,7 @@ from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.errors import DirectoryInTrashError
 from app.models import Directory, Mailbox, DirectoryMailbox
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 class NewDirForm(FlaskForm):
@@ -69,7 +72,9 @@ def directory():
             if not delete_dir_form.validate():
                 flash("Invalid request", "warning")
                 return redirect(url_for("dashboard.directory"))
-            dir_obj = Directory.get(delete_dir_form.directory_id.data)
+            dir_obj: Optional[Directory] = Directory.get(
+                delete_dir_form.directory_id.data
+            )
 
             if not dir_obj:
                 flash("Unknown error. Refresh the page", "warning")
@@ -79,6 +84,11 @@ def directory():
                 return redirect(url_for("dashboard.directory"))
 
             name = dir_obj.name
+            emit_user_audit_log(
+                user=current_user,
+                action=UserAuditLogAction.DeleteDirectory,
+                message=f"Delete directory {dir_obj.id} ({dir_obj.name})",
+            )
             Directory.delete(dir_obj.id)
             Session.commit()
             flash(f"Directory {name} has been deleted", "success")
@@ -90,7 +100,7 @@ def directory():
                 flash("Invalid request", "warning")
                 return redirect(url_for("dashboard.directory"))
             dir_id = toggle_dir_form.directory_id.data
-            dir_obj = Directory.get(dir_id)
+            dir_obj: Optional[Directory] = Directory.get(dir_id)
 
             if not dir_obj or dir_obj.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
@@ -103,6 +113,11 @@ def directory():
                 dir_obj.disabled = True
                 flash(f"On-the-fly is disabled for {dir_obj.name}", "warning")
 
+            emit_user_audit_log(
+                user=current_user,
+                action=UserAuditLogAction.UpdateDirectory,
+                message=f"Updated directory {dir_obj.id} ({dir_obj.name}) set disabled = {dir_obj.disabled}",
+            )
             Session.commit()
 
             return redirect(url_for("dashboard.directory"))
@@ -112,7 +127,7 @@ def directory():
                 flash("Invalid request", "warning")
                 return redirect(url_for("dashboard.directory"))
             dir_id = update_dir_form.directory_id.data
-            dir_obj = Directory.get(dir_id)
+            dir_obj: Optional[Directory] = Directory.get(dir_id)
 
             if not dir_obj or dir_obj.user_id != current_user.id:
                 flash("Unknown error. Refresh the page", "warning")
@@ -143,6 +158,12 @@ def directory():
             for mailbox in mailboxes:
                 DirectoryMailbox.create(directory_id=dir_obj.id, mailbox_id=mailbox.id)
 
+            mailboxes_as_str = ",".join(map(str, mailbox_ids))
+            emit_user_audit_log(
+                user=current_user,
+                action=UserAuditLogAction.UpdateDirectory,
+                message=f"Updated directory {dir_obj.id} ({dir_obj.name}) mailboxes ({mailboxes_as_str})",
+            )
             Session.commit()
             flash(f"Directory {dir_obj.name} has been updated", "success")
 
@@ -180,6 +201,11 @@ def directory():
                     try:
                         new_dir = Directory.create(
                             name=new_dir_name, user_id=current_user.id
+                        )
+                        emit_user_audit_log(
+                            user=current_user,
+                            action=UserAuditLogAction.CreateDirectory,
+                            message=f"New directory {new_dir.name} ({new_dir.name})",
                         )
                     except DirectoryInTrashError:
                         flash(
