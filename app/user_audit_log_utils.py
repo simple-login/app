@@ -28,6 +28,7 @@ class UserAuditLogAction(Enum):
     UpdateDirectory = "update_directory"
     DeleteDirectory = "delete_directory"
 
+    UserMarkedForDeletion = "user_marked_for_deletion"
     DeleteUser = "delete_user"
 
 

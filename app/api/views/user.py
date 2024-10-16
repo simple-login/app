@@ -6,6 +6,7 @@ from app import config
 from app.extensions import limiter
 from app.log import LOG
 from app.models import Job, ApiToCookieToken
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 @api_bp.route("/user", methods=["DELETE"])
@@ -16,6 +17,11 @@ def delete_user():
 
     """
     # Schedule delete account job
+    emit_user_audit_log(
+        user_id=g.user.id,
+        action=UserAuditLogAction.UserMarkedForDeletion,
+        message=f"Marked user {g.user.id} ({g.user.email}) for deletion from API",
+    )
     LOG.w("schedule delete account job for %s", g.user)
     Job.create(
         name=config.JOB_DELETE_ACCOUNT,
