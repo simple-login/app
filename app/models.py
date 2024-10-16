@@ -3822,6 +3822,7 @@ class AliasAuditLog(Base, ModelMixin):
         sa.Index("ix_alias_audit_log_user_id", "user_id"),
         sa.Index("ix_alias_audit_log_alias_id", "alias_id"),
         sa.Index("ix_alias_audit_log_alias_email", "alias_email"),
+        sa.Index("ix_alias_audit_log_created_at", "created_at"),
     )
 
 
