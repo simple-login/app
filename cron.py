@@ -60,6 +60,7 @@ from app.models import (
 )
 from app.pgp_utils import load_public_key_and_check, PGPException
 from app.proton.utils import get_proton_partner
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
 from server import create_light_app
 from tasks.clean_alias_audit_log import cleanup_alias_audit_log
@@ -1220,7 +1221,7 @@ def notify_hibp():
 
 
 def clear_users_scheduled_to_be_deleted(dry_run=False):
-    users = User.filter(
+    users: List[User] = User.filter(
         and_(
             User.delete_on.isnot(None),
             User.delete_on <= arrow.now().shift(days=-DELETE_GRACE_DAYS),
@@ -1232,6 +1233,11 @@ def clear_users_scheduled_to_be_deleted(dry_run=False):
         )
         if dry_run:
             continue
+        emit_user_audit_log(
+            user_id=user.id,
+            action=UserAuditLogAction.DeleteUser,
+            message=f"Delete user {user.id} ({user.email})",
+        )
         User.delete(user.id)
         Session.commit()
 
@@ -1261,22 +1267,6 @@ if __name__ == "__main__":
         "--job",
         help="Choose a cron job to run",
         type=str,
-        choices=[
-            "stats",
-            "notify_trial_end",
-            "notify_manual_subscription_end",
-            "notify_premium_end",
-            "delete_logs",
-            "delete_old_data",
-            "poll_apple_subscription",
-            "sanity_check",
-            "delete_old_monitoring",
-            "check_custom_domain",
-            "check_hibp",
-            "notify_hibp",
-            "cleanup_tokens",
-            "send_undelivered_mails",
-        ],
     )
     args = parser.parse_args()
     # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
@@ -1325,7 +1315,7 @@ if __name__ == "__main__":
             load_unsent_mails_from_fs_and_resend()
         elif args.job == "delete_scheduled_users":
             LOG.d("Deleting users scheduled to be deleted")
-            clear_users_scheduled_to_be_deleted(dry_run=True)
+            clear_users_scheduled_to_be_deleted()
         elif args.job == "clear_alias_audit_log":
             LOG.d("Clearing alias audit log")
             clear_alias_audit_log()
