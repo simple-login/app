@@ -53,9 +53,9 @@ def set_mailboxes_for_alias(
             AliasMailbox.create(alias_id=alias.id, mailbox_id=mailbox.id)
 
     emit_alias_audit_log(
-        alias,
-        AliasAuditLogAction.ChangedMailboxes,
-        message=",".join(map(str, mailbox_ids)),
+        alias=alias,
+        action=AliasAuditLogAction.ChangedMailboxes,
+        message=",".join([f"{mailbox.id} ({mailbox.email})" for mailbox in mailboxes]),
     )
 
     return None

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from deprecated import deprecated
 from flask import g
 from flask import jsonify
@@ -29,6 +31,7 @@ from app.errors import (
 from app.extensions import limiter
 from app.log import LOG
 from app.models import Alias, Contact, Mailbox, AliasDeleteReason
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 @deprecated
@@ -447,11 +450,16 @@ def delete_contact(contact_id):
         200
     """
     user = g.user
-    contact = Contact.get(contact_id)
+    contact: Optional[Contact] = Contact.get(contact_id)
 
     if not contact or contact.alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.DeleteContact,
+        message=f"Deleted contact {contact_id} ({contact.email})",
+    )
     Contact.delete(contact_id)
     Session.commit()
 
@@ -475,6 +483,11 @@ def toggle_contact(contact_id):
         return jsonify(error="Forbidden"), 403
 
     contact.block_forward = not contact.block_forward
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.UpdateContact,
+        message=f"Set contact state {contact.id} {contact.email} -> {contact.website_email} to blocked {contact.block_forward}",
+    )
     Session.commit()
 
     return jsonify(block_forward=contact.block_forward), 200
