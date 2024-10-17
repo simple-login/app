@@ -1,7 +1,9 @@
+import arrow
+
 from app import config, alias_utils
 from app.db import Session
 from app.events.event_dispatcher import GlobalDispatcher
-from app.models import Alias
+from app.models import Alias, SyncEvent
 from tests.utils import random_token
 from .event_test_utils import (
     OnMemoryDispatcher,
@@ -24,6 +26,33 @@ def teardown_module():
 
 def setup_function(func):
     on_memory_dispatcher.clear()
+
+
+def test_event_taken_updates():
+    event = SyncEvent.create(content="test".encode("utf-8"), flush=True)
+    assert event.taken_time is None
+    assert event.mark_as_taken()
+    assert event.taken_time is not None
+
+
+def test_event_mark_as_taken_does_nothing_for_taken_events():
+    now = arrow.utcnow()
+    event = SyncEvent.create(content="test".encode("utf-8"), taken_time=now, flush=True)
+    assert not event.mark_as_taken()
+
+
+def test_event_mark_as_taken_does_nothing_for_not_before_events():
+    now = arrow.utcnow()
+    event = SyncEvent.create(content="test".encode("utf-8"), taken_time=now, flush=True)
+    older_than = now.shift(minutes=-1)
+    assert not event.mark_as_taken(allow_taken_older_than=older_than)
+
+
+def test_event_mark_as_taken_works_for_before_events():
+    now = arrow.utcnow()
+    event = SyncEvent.create(content="test".encode("utf-8"), taken_time=now, flush=True)
+    older_than = now.shift(minutes=+1)
+    assert event.mark_as_taken(allow_taken_older_than=older_than)
 
 
 def test_fire_event_on_alias_creation():
