@@ -5,11 +5,11 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.models import Contact
 from app.pgp_utils import PGPException, load_public_key_and_check
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 class PGPContactForm(FlaskForm):
@@ -53,9 +53,9 @@ def contact_detail_route(contact_id):
                     except PGPException:
                         flash("Cannot add the public key, please verify it", "error")
                     else:
-                        emit_user_audit_log(
-                            user=current_user,
-                            action=UserAuditLogAction.UpdateContact,
+                        emit_alias_audit_log(
+                            alias=alias,
+                            action=AliasAuditLogAction.UpdateContact,
                             message=f"Added PGP key {contact.pgp_public_key} for contact {contact_id} ({contact.email})",
                         )
                         Session.commit()
@@ -70,9 +70,9 @@ def contact_detail_route(contact_id):
                         )
             elif pgp_form.action.data == "remove":
                 # Free user can decide to remove contact PGP key
-                emit_user_audit_log(
-                    user=current_user,
-                    action=UserAuditLogAction.UpdateContact,
+                emit_alias_audit_log(
+                    alias=alias,
+                    action=AliasAuditLogAction.UpdateContact,
                     message=f"Removed PGP key {contact.pgp_public_key} for contact {contact_id} ({contact.email})",
                 )
                 contact.pgp_public_key = None
