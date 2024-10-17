@@ -67,4 +67,4 @@ def test_set_mailboxes_for_alias_mailbox_success():
     assert len(audit_logs) == 2
     assert audit_logs[0].action == AliasAuditLogAction.CreateAlias.value
     assert audit_logs[1].action == AliasAuditLogAction.ChangedMailboxes.value
-    assert audit_logs[1].message == f"{mb1.id},{mb2.id}"
+    assert audit_logs[1].message == f"{mb1.id} ({mb1.email}),{mb2.id} ({mb2.email})"
