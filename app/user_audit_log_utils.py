@@ -20,10 +20,6 @@ class UserAuditLogAction(Enum):
     UpdateCustomDomain = "update_custom_domain"
     DeleteCustomDomain = "delete_custom_domain"
 
-    CreateContact = "create_contact"
-    UpdateContact = "update_contact"
-    DeleteContact = "delete_contact"
-
     CreateDirectory = "create_directory"
     UpdateDirectory = "update_directory"
     DeleteDirectory = "delete_directory"
