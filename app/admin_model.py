@@ -115,7 +115,7 @@ class SLAdminIndexView(AdminIndexView):
         if not current_user.is_authenticated or not current_user.is_admin:
             return redirect(url_for("auth.login", next=request.url))
 
-        return redirect("/admin/user")
+        return redirect("/admin/email_search")
 
 
 class UserAdmin(SLModelView):
@@ -743,13 +743,17 @@ class EmailSearchResult:
     mailbox: List[Mailbox] = []
     mailbox_count: int = 0
     deleted_alias: Optional[DeletedAlias] = None
-    deleted_custom_alias: Optional[DomainDeletedAlias] = None
+    deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
+    domain_deleted_alias: Optional[DomainDeletedAlias] = None
+    domain_deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
     user: Optional[User] = None
     user_audit_log: Optional[List[UserAuditLog]] = None
+    query: str
 
     @staticmethod
     def from_email(email: str) -> EmailSearchResult:
         output = EmailSearchResult()
+        output.query = email
         alias = Alias.get_by(email=email)
         if alias:
             output.alias = alias
@@ -768,6 +772,15 @@ class EmailSearchResult:
                 .all()
             )
             output.no_match = False
+
+        user_audit_log = (
+            UserAuditLog.filter_by(user_email=email)
+            .order_by(UserAuditLog.created_at.desc())
+            .all()
+        )
+        if user_audit_log:
+            output.user_audit_log = user_audit_log
+            output.no_match = False
         mailboxes = (
             Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).limit(10).all()
         )
@@ -778,10 +791,20 @@ class EmailSearchResult:
         deleted_alias = DeletedAlias.get_by(email=email)
         if deleted_alias:
             output.deleted_alias = deleted_alias
+            output.deleted_alias_audit_log = (
+                AliasAuditLog.filter_by(alias_email=deleted_alias.email)
+                .order_by(AliasAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         domain_deleted_alias = DomainDeletedAlias.get_by(email=email)
         if domain_deleted_alias:
             output.domain_deleted_alias = domain_deleted_alias
+            output.domain_deleted_alias_audit_log = (
+                AliasAuditLog.filter_by(alias_email=domain_deleted_alias.email)
+                .order_by(AliasAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         return output
 

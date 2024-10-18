@@ -94,10 +94,12 @@ def test_login_case_from_partner():
     )
     assert res.user.activated is True
 
-    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(user_id=res.user.id).all()
+    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=res.user.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
     assert len(audit_logs) == 1
     assert audit_logs[0].user_id == res.user.id
-    assert audit_logs[0].action == UserAuditLogAction.LinkAccount.value
 
 
 def test_login_case_from_partner_with_uppercase_email():
@@ -133,7 +135,10 @@ def test_login_case_from_web():
     assert 0 == (res.user.flags & User.FLAG_CREATED_FROM_PARTNER)
     assert res.user.activated is True
 
-    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(user_id=res.user.id).all()
+    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=res.user.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
     assert len(audit_logs) == 1
     assert audit_logs[0].user_id == res.user.id
     assert audit_logs[0].action == UserAuditLogAction.LinkAccount.value
@@ -218,7 +223,10 @@ def test_link_account_with_proton_account_same_address(flask_client):
     )
     assert partner_user.partner_id == get_proton_partner().id
     assert partner_user.external_user_id == partner_user_id
-    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(user_id=res.user.id).all()
+    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=res.user.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
     assert len(audit_logs) == 1
     assert audit_logs[0].user_id == res.user.id
     assert audit_logs[0].action == UserAuditLogAction.LinkAccount.value
@@ -246,7 +254,10 @@ def test_link_account_with_proton_account_different_address(flask_client):
     assert partner_user.partner_id == get_proton_partner().id
     assert partner_user.external_user_id == partner_user_id
 
-    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(user_id=res.user.id).all()
+    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=res.user.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
     assert len(audit_logs) == 1
     assert audit_logs[0].user_id == res.user.id
     assert audit_logs[0].action == UserAuditLogAction.LinkAccount.value
@@ -304,19 +315,19 @@ def test_link_account_with_proton_account_same_address_but_linked_to_other_user(
 
     # Ensure audit logs for sl_user_1 show the link action
     sl_user_1_audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
-        user_id=sl_user_1.id
+        user_id=sl_user_1.id,
+        action=UserAuditLogAction.LinkAccount.value,
     ).all()
     assert len(sl_user_1_audit_logs) == 1
     assert sl_user_1_audit_logs[0].user_id == sl_user_1.id
-    assert sl_user_1_audit_logs[0].action == UserAuditLogAction.LinkAccount.value
 
     # Ensure audit logs for sl_user_2 show the unlink action
     sl_user_2_audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
-        user_id=sl_user_2.id
+        user_id=sl_user_2.id,
+        action=UserAuditLogAction.UnlinkAccount.value,
     ).all()
     assert len(sl_user_2_audit_logs) == 1
     assert sl_user_2_audit_logs[0].user_id == sl_user_2.id
-    assert sl_user_2_audit_logs[0].action == UserAuditLogAction.UnlinkAccount.value
 
 
 def test_link_account_with_proton_account_different_address_and_linked_to_other_user(
@@ -356,19 +367,19 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
 
     # Ensure audit logs for sl_user_1 show the link action
     sl_user_1_audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
-        user_id=sl_user_1.id
+        user_id=sl_user_1.id,
+        action=UserAuditLogAction.LinkAccount.value,
     ).all()
     assert len(sl_user_1_audit_logs) == 1
     assert sl_user_1_audit_logs[0].user_id == sl_user_1.id
-    assert sl_user_1_audit_logs[0].action == UserAuditLogAction.LinkAccount.value
 
     # Ensure audit logs for sl_user_2 show the unlink action
     sl_user_2_audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
-        user_id=sl_user_2.id
+        user_id=sl_user_2.id,
+        action=UserAuditLogAction.UnlinkAccount.value,
     ).all()
     assert len(sl_user_2_audit_logs) == 1
     assert sl_user_2_audit_logs[0].user_id == sl_user_2.id
-    assert sl_user_2_audit_logs[0].action == UserAuditLogAction.UnlinkAccount.value
 
 
 def test_cannot_create_instance_of_base_strategy():

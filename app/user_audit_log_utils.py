@@ -4,6 +4,10 @@ from app.models import User, UserAuditLog
 
 
 class UserAuditLogAction(Enum):
+    CreateUser = "create_user"
+    ActivateUser = "activate_user"
+    ResetPassword = "reset_password"
+
     Upgrade = "upgrade"
     SubscriptionExtended = "subscription_extended"
     SubscriptionCancelled = "subscription_cancelled"

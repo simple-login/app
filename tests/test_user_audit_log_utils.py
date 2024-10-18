@@ -27,7 +27,9 @@ def test_emit_alias_audit_log_for_random_data():
         commit=True,
     )
 
-    logs_for_user: List[UserAuditLog] = UserAuditLog.filter_by(user_id=user.id).all()
+    logs_for_user: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=user.id, action=action.value
+    ).all()
     assert len(logs_for_user) == 1
     assert logs_for_user[0].user_id == user.id
     assert logs_for_user[0].user_email == user.email
@@ -41,7 +43,10 @@ def test_emit_audit_log_on_mailbox_creation():
         user=user, email=random_email(), verified=True
     )
 
-    logs_for_user: List[UserAuditLog] = UserAuditLog.filter_by(user_id=user.id).all()
+    logs_for_user: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=user.id,
+        action=UserAuditLogAction.CreateMailbox.value,
+    ).all()
     assert len(logs_for_user) == 1
     assert logs_for_user[0].user_id == user.id
     assert logs_for_user[0].user_email == user.email

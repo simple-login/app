@@ -351,7 +351,9 @@ def test_perform_mailbox_email_change_valid_id_not_new_email():
     res = mailbox_utils.perform_mailbox_email_change(mb.id)
     assert res.error == MailboxEmailChangeError.InvalidId
     assert res.message_category == "error"
-    audit_log_entries = UserAuditLog.filter_by(user_id=user.id).count()
+    audit_log_entries = UserAuditLog.filter_by(
+        user_id=user.id, action=UserAuditLogAction.UpdateMailbox.value
+    ).count()
     assert audit_log_entries == 0
 
 
@@ -374,7 +376,9 @@ def test_perform_mailbox_email_change_valid_id_email_already_used():
     res = mailbox_utils.perform_mailbox_email_change(mb_to_change.id)
     assert res.error == MailboxEmailChangeError.EmailAlreadyUsed
     assert res.message_category == "error"
-    audit_log_entries = UserAuditLog.filter_by(user_id=user.id).count()
+    audit_log_entries = UserAuditLog.filter_by(
+        user_id=user.id, action=UserAuditLogAction.UpdateMailbox.value
+    ).count()
     assert audit_log_entries == 0
 
 
@@ -398,6 +402,7 @@ def test_perform_mailbox_email_change_success():
     assert db_mailbox.email == new_email
     assert db_mailbox.new_email is None
 
-    audit_log_entries = UserAuditLog.filter_by(user_id=user.id).all()
-    assert len(audit_log_entries) == 1
-    assert audit_log_entries[0].action == UserAuditLogAction.UpdateMailbox.value
+    audit_log_entries = UserAuditLog.filter_by(
+        user_id=user.id, action=UserAuditLogAction.UpdateMailbox.value
+    ).count()
+    assert audit_log_entries == 1
