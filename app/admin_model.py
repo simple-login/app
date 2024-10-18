@@ -743,7 +743,9 @@ class EmailSearchResult:
     mailbox: List[Mailbox] = []
     mailbox_count: int = 0
     deleted_alias: Optional[DeletedAlias] = None
-    deleted_custom_alias: Optional[DomainDeletedAlias] = None
+    deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
+    domain_deleted_alias: Optional[DomainDeletedAlias] = None
+    domain_deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
     user: Optional[User] = None
     user_audit_log: Optional[List[UserAuditLog]] = None
 
@@ -778,10 +780,20 @@ class EmailSearchResult:
         deleted_alias = DeletedAlias.get_by(email=email)
         if deleted_alias:
             output.deleted_alias = deleted_alias
+            output.deleted_alias_audit_log = (
+                AliasAuditLog.filter_by(alias_email=deleted_alias.email)
+                .order_by(AliasAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         domain_deleted_alias = DomainDeletedAlias.get_by(email=email)
         if domain_deleted_alias:
             output.domain_deleted_alias = domain_deleted_alias
+            output.domain_deleted_alias_audit_log = (
+                AliasAuditLog.filter_by(alias_email=domain_deleted_alias.email)
+                .order_by(AliasAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         return output
 

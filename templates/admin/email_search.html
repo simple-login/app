@@ -260,6 +260,7 @@
         <div class="border border-dark mt-1 mb-2 p-3">
             <h3 class="mb-3">Found DeletedAlias {{ data.deleted_alias.email }}</h3>
             {{ show_deleted_alias(data.deleted_alias) }}
+            {{ list_alias_audit_log(data.deleted_alias_audit_log) }}
         </div>
     {% endif %}
     {% if data.domain_deleted_alias %}
@@ -267,6 +268,7 @@
         <div class="border border-dark mt-1 mb-2 p-3">
             <h3 class="mb-3">Found DomainDeletedAlias {{ data.domain_deleted_alias.email }}</h3>
             {{ show_domain_deleted_alias(data.domain_deleted_alias) }}
+            {{ list_alias_audit_log(data.domain_deleted_alias_audit_log) }}
         </div>
     {% endif %}
 {% endblock %}
