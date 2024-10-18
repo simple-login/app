@@ -616,6 +616,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if "alternative_id" not in kwargs:
             user.alternative_id = str(uuid.uuid4())
 
+        from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+
+        trail = ". Created from partner" if from_partner else ""
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.CreateUser,
+            message=f"Created user {email}{trail}",
+        )
+
         # If the user is created from partner, do not notify
         # nor give a trial
         if from_partner:
