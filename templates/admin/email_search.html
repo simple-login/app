@@ -8,6 +8,7 @@
         <tr>
             <th scope="col">User ID</th>
             <th scope="col">Email</th>
+            <th scope="col">Verified</th>
             <th scope="col">Status</th>
             <th scope="col">Paid</th>
             <th>Subscription</th>
@@ -20,8 +21,12 @@
         <tr>
             <td>{{ user.id }}</td>
             <td><a href="?email={{ user.email }}">{{ user.email }}</a></td>
+            {% if user.activated %}
+                <td class="text-success">Activated</td>
+            {% else %}
+                <td class="text-warning">Pending</td>
+            {% endif %}
             {% if user.disabled %}
-
                 <td class="text-danger">Disabled</td>
             {% else %}
                 <td class="text-success">Enabled</td>
