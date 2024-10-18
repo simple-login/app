@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, List
 
 import arrow
 import sqlalchemy
@@ -35,6 +35,8 @@ from app.models import (
     DomainDeletedAlias,
     PartnerUser,
     AliasMailbox,
+    AliasAuditLog,
+    UserAuditLog,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 
@@ -737,11 +739,13 @@ class InvalidMailboxDomainAdmin(SLModelView):
 class EmailSearchResult:
     no_match: bool = True
     alias: Optional[Alias] = None
-    mailbox: list[Mailbox] = []
+    alias_audit_log: Optional[List[AliasAuditLog]] = None
+    mailbox: List[Mailbox] = []
     mailbox_count: int = 0
     deleted_alias: Optional[DeletedAlias] = None
     deleted_custom_alias: Optional[DomainDeletedAlias] = None
     user: Optional[User] = None
+    user_audit_log: Optional[List[UserAuditLog]] = None
 
     @staticmethod
     def from_email(email: str) -> EmailSearchResult:
@@ -749,10 +753,20 @@ class EmailSearchResult:
         alias = Alias.get_by(email=email)
         if alias:
             output.alias = alias
+            output.alias_audit_log = (
+                AliasAuditLog.filter_by(alias_id=alias.id)
+                .order_by(AliasAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         user = User.get_by(email=email)
         if user:
             output.user = user
+            output.user_audit_log = (
+                UserAuditLog.filter_by(user_id=user.id)
+                .order_by(UserAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         mailboxes = (
             Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).limit(10).all()
