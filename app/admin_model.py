@@ -115,7 +115,7 @@ class SLAdminIndexView(AdminIndexView):
         if not current_user.is_authenticated or not current_user.is_admin:
             return redirect(url_for("auth.login", next=request.url))
 
-        return redirect("/admin/user")
+        return redirect("/admin/email_search")
 
 
 class UserAdmin(SLModelView):
@@ -748,10 +748,12 @@ class EmailSearchResult:
     domain_deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
     user: Optional[User] = None
     user_audit_log: Optional[List[UserAuditLog]] = None
+    query: str
 
     @staticmethod
     def from_email(email: str) -> EmailSearchResult:
         output = EmailSearchResult()
+        output.query = email
         alias = Alias.get_by(email=email)
         if alias:
             output.alias = alias
@@ -769,6 +771,15 @@ class EmailSearchResult:
                 .order_by(UserAuditLog.created_at.desc())
                 .all()
             )
+            output.no_match = False
+
+        user_audit_log = (
+            UserAuditLog.filter_by(user_email=email)
+            .order_by(UserAuditLog.created_at.desc())
+            .all()
+        )
+        if user_audit_log:
+            output.user_audit_log = user_audit_log
             output.no_match = False
         mailboxes = (
             Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).limit(10).all()

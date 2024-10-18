@@ -239,6 +239,11 @@
             {{ show_user(data.user) }}
             {{ list_mailboxes("Mailboxes for user", helper.mailbox_count(data.user) , helper.mailbox_list(data.user) ) }}
             {{ list_alias(helper.alias_count(data.user) ,helper.alias_list(data.user)) }}
+        </div>
+    {% endif %}
+    {% if data.user_audit_log %}
+        <div class="border border-dark border-2 mt-1 mb-2 p-3">
+            <h3 class="mb-3">Audit log entries for user {{ data.query }}</h3>
             {{ list_user_audit_log(data.user_audit_log) }}
         </div>
     {% endif %}
