@@ -755,7 +755,7 @@ class EmailSearchResult:
             output.alias = alias
             output.alias_audit_log = (
                 AliasAuditLog.filter_by(alias_id=alias.id)
-                .order_by(AliasAuditLog.created_at.asc())
+                .order_by(AliasAuditLog.created_at.desc())
                 .all()
             )
             output.no_match = False
@@ -764,7 +764,7 @@ class EmailSearchResult:
             output.user = user
             output.user_audit_log = (
                 UserAuditLog.filter_by(user_id=user.id)
-                .order_by(UserAuditLog.created_at.asc())
+                .order_by(UserAuditLog.created_at.desc())
                 .all()
             )
             output.no_match = False
