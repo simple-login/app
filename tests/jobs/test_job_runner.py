@@ -66,7 +66,8 @@ def test_get_jobs_to_run(flask_client):
         ),
     )
     Session.commit()
-    jobs = get_jobs_to_run()
+    taken_before_time = arrow.now().shift(minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS)
+    jobs = get_jobs_to_run(taken_before_time)
     assert len(jobs) == len(expected_jobs_to_run)
     job_ids = [job.id for job in jobs]
     for job in expected_jobs_to_run:
