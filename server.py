@@ -442,10 +442,10 @@ def init_admin(app):
     admin = Admin(name="SimpleLogin", template_mode="bootstrap4")
 
     admin.init_app(app, index_view=SLAdminIndexView())
+    admin.add_view(EmailSearchAdmin(name="Email Search", endpoint="email_search"))
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
     admin.add_view(MailboxAdmin(Mailbox, Session))
-    admin.add_view(EmailSearchAdmin(name="Email Search", endpoint="email_search"))
     admin.add_view(CouponAdmin(Coupon, Session))
     admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
     admin.add_view(CustomDomainAdmin(CustomDomain, Session))

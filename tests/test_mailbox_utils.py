@@ -6,7 +6,9 @@ import pytest
 from app import mailbox_utils, config
 from app.db import Session
 from app.mail_sender import mail_sender
-from app.models import Mailbox, MailboxActivation, User, Job
+from app.mailbox_utils import MailboxEmailChangeError
+from app.models import Mailbox, MailboxActivation, User, Job, UserAuditLog
+from app.user_audit_log_utils import UserAuditLogAction
 from tests.utils import create_new_user, random_email
 
 
@@ -328,3 +330,79 @@ def test_verify_ok():
     assert activation is None
     mailbox = Mailbox.get(id=output.mailbox.id)
     assert mailbox.verified
+
+
+# perform_mailbox_email_change
+def test_perform_mailbox_email_change_invalid_id():
+    res = mailbox_utils.perform_mailbox_email_change(99999)
+    assert res.error == MailboxEmailChangeError.InvalidId
+    assert res.message_category == "error"
+
+
+def test_perform_mailbox_email_change_valid_id_not_new_email():
+    user = create_new_user()
+    mb = Mailbox.create(
+        user_id=user.id,
+        email=random_email(),
+        new_email=None,
+        verified=True,
+        commit=True,
+    )
+    res = mailbox_utils.perform_mailbox_email_change(mb.id)
+    assert res.error == MailboxEmailChangeError.InvalidId
+    assert res.message_category == "error"
+    audit_log_entries = UserAuditLog.filter_by(
+        user_id=user.id, action=UserAuditLogAction.UpdateMailbox.value
+    ).count()
+    assert audit_log_entries == 0
+
+
+def test_perform_mailbox_email_change_valid_id_email_already_used():
+    user = create_new_user()
+    new_email = random_email()
+    # Create mailbox with that email
+    Mailbox.create(
+        user_id=user.id,
+        email=new_email,
+        verified=True,
+    )
+    mb_to_change = Mailbox.create(
+        user_id=user.id,
+        email=random_email(),
+        new_email=new_email,
+        verified=True,
+        commit=True,
+    )
+    res = mailbox_utils.perform_mailbox_email_change(mb_to_change.id)
+    assert res.error == MailboxEmailChangeError.EmailAlreadyUsed
+    assert res.message_category == "error"
+    audit_log_entries = UserAuditLog.filter_by(
+        user_id=user.id, action=UserAuditLogAction.UpdateMailbox.value
+    ).count()
+    assert audit_log_entries == 0
+
+
+def test_perform_mailbox_email_change_success():
+    user = create_new_user()
+    new_email = random_email()
+    mb = Mailbox.create(
+        user_id=user.id,
+        email=random_email(),
+        new_email=new_email,
+        verified=True,
+        commit=True,
+    )
+    res = mailbox_utils.perform_mailbox_email_change(mb.id)
+    assert res.error is None
+    assert res.message_category == "success"
+
+    db_mailbox = Mailbox.get_by(id=mb.id)
+    assert db_mailbox is not None
+    assert db_mailbox.verified is True
+    assert db_mailbox.email == new_email
+    assert db_mailbox.new_email is None
+
+    audit_log_entries = UserAuditLog.filter_by(
+        user_id=user.id, action=UserAuditLogAction.UpdateMailbox.value
+    ).count()
+    assert audit_log_entries == 1
