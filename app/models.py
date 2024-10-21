@@ -24,6 +24,7 @@ from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import deferred
+from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
@@ -3781,15 +3782,18 @@ class SyncEvent(Base, ModelMixin):
     )
 
     def mark_as_taken(self, allow_taken_older_than: Optional[Arrow] = None) -> bool:
-        taken_condition = ["taken_time IS NULL"]
-        args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
-        if allow_taken_older_than:
-            taken_condition.append("taken_time < :taken_older_than")
-            args["taken_older_than"] = allow_taken_older_than.datetime
-        sql_taken_condition = "({})".format(" OR ".join(taken_condition))
-        sql = f"UPDATE sync_event SET taken_time = :taken_time WHERE id = :sync_event_id AND {sql_taken_condition}"
-        res = Session.execute(sql, args)
-        Session.commit()
+        try:
+            taken_condition = ["taken_time IS NULL"]
+            args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
+            if allow_taken_older_than:
+                taken_condition.append("taken_time < :taken_older_than")
+                args["taken_older_than"] = allow_taken_older_than.datetime
+            sql_taken_condition = "({})".format(" OR ".join(taken_condition))
+            sql = f"UPDATE sync_event SET taken_time = :taken_time WHERE id = :sync_event_id AND {sql_taken_condition}"
+            res = Session.execute(sql, args)
+            Session.commit()
+        except ObjectDeletedError:
+            return False
 
         return res.rowcount > 0
 
