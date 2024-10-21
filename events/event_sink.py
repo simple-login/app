@@ -12,6 +12,10 @@ class EventSink(ABC):
     def process(self, event: SyncEvent) -> bool:
         pass
 
+    @abstractmethod
+    def send_data_to_webhook(self, data: bytes) -> bool:
+        pass
+
 
 class HttpEventSink(EventSink):
     def process(self, event: SyncEvent) -> bool:
@@ -21,9 +25,16 @@ class HttpEventSink(EventSink):
 
         LOG.info(f"Sending event {event.id} to {EVENT_WEBHOOK}")
 
+        if self.send_data_to_webhook(event.content):
+            LOG.info(f"Event {event.id} sent successfully to webhook")
+            return True
+
+        return False
+
+    def send_data_to_webhook(self, data: bytes) -> bool:
         res = requests.post(
             url=EVENT_WEBHOOK,
-            data=event.content,
+            data=data,
             headers={"Content-Type": "application/x-protobuf"},
             verify=not EVENT_WEBHOOK_SKIP_VERIFY_SSL,
         )
@@ -36,11 +47,14 @@ class HttpEventSink(EventSink):
             )
             return False
         else:
-            LOG.info(f"Event {event.id} sent successfully to webhook")
             return True
 
 
 class ConsoleEventSink(EventSink):
     def process(self, event: SyncEvent) -> bool:
         LOG.info(f"Handling event {event.id}")
+        return True
+
+    def send_data_to_webhook(self, data: bytes) -> bool:
+        LOG.info(f"Sending {len(data)} bytes to webhook")
         return True
