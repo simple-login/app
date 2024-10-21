@@ -16,6 +16,8 @@ from flask_admin.contrib import sqla
 from flask_login import current_user
 
 from app.db import Session
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.models import (
     User,
     ManualSubscription,
@@ -357,22 +359,37 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
                 action=UserAuditLogAction.Upgrade,
                 message=f"Admin {current_user.email} extended manual subscription to user {user.email}",
             )
+            EventDispatcher.send_event(
+                user=user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(
+                        plan_end_time=manual_sub.end_at.timestamp
+                    )
+                ),
+            )
             flash(f"Subscription extended to {manual_sub.end_at.humanize()}", "success")
-            continue
+        else:
+            emit_user_audit_log(
+                user=user,
+                action=UserAuditLogAction.Upgrade,
+                message=f"Admin {current_user.email} created manual subscription to user {user.email}",
+            )
+            manual_sub = ManualSubscription.create(
+                user_id=user.id,
+                end_at=arrow.now().shift(years=1, days=1),
+                comment=way,
+                is_giveaway=is_giveaway,
+            )
+            EventDispatcher.send_event(
+                user=user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(
+                        plan_end_time=manual_sub.end_at.timestamp
+                    )
+                ),
+            )
 
-        emit_user_audit_log(
-            user=user,
-            action=UserAuditLogAction.Upgrade,
-            message=f"Admin {current_user.email} created manual subscription to user {user.email}",
-        )
-        ManualSubscription.create(
-            user_id=user.id,
-            end_at=arrow.now().shift(years=1, days=1),
-            comment=way,
-            is_giveaway=is_giveaway,
-        )
-
-        flash(f"New {way} manual subscription for {user} is created", "success")
+            flash(f"New {way} manual subscription for {user} is created", "success")
     Session.commit()
 
 
@@ -486,6 +503,12 @@ class ManualSubscriptionAdmin(SLModelView):
             )
             AdminAuditLog.extend_subscription(
                 current_user.id, sub.user.id, sub.end_at, msg
+            )
+            EventDispatcher.send_event(
+                user=sub.user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(plan_end_time=sub.end_at.timestamp)
+                ),
             )
 
         Session.commit()
