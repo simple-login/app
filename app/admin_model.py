@@ -16,6 +16,8 @@ from flask_admin.contrib import sqla
 from flask_login import current_user
 
 from app.db import Session
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.models import (
     User,
     ManualSubscription,
@@ -39,6 +41,7 @@ from app.models import (
     UserAuditLog,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -351,17 +354,42 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
                 manual_sub.end_at = manual_sub.end_at.shift(years=1)
             else:
                 manual_sub.end_at = arrow.now().shift(years=1, days=1)
+            emit_user_audit_log(
+                user=user,
+                action=UserAuditLogAction.Upgrade,
+                message=f"Admin {current_user.email} extended manual subscription to user {user.email}",
+            )
+            EventDispatcher.send_event(
+                user=user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(
+                        plan_end_time=manual_sub.end_at.timestamp
+                    )
+                ),
+            )
             flash(f"Subscription extended to {manual_sub.end_at.humanize()}", "success")
-            continue
+        else:
+            emit_user_audit_log(
+                user=user,
+                action=UserAuditLogAction.Upgrade,
+                message=f"Admin {current_user.email} created manual subscription to user {user.email}",
+            )
+            manual_sub = ManualSubscription.create(
+                user_id=user.id,
+                end_at=arrow.now().shift(years=1, days=1),
+                comment=way,
+                is_giveaway=is_giveaway,
+            )
+            EventDispatcher.send_event(
+                user=user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(
+                        plan_end_time=manual_sub.end_at.timestamp
+                    )
+                ),
+            )
 
-        ManualSubscription.create(
-            user_id=user.id,
-            end_at=arrow.now().shift(years=1, days=1),
-            comment=way,
-            is_giveaway=is_giveaway,
-        )
-
-        flash(f"New {way} manual subscription for {user} is created", "success")
+            flash(f"New {way} manual subscription for {user} is created", "success")
     Session.commit()
 
 
@@ -453,14 +481,7 @@ class ManualSubscriptionAdmin(SLModelView):
         "Extend 1 year more?",
     )
     def extend_1y(self, ids):
-        for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
-            ms.end_at = ms.end_at.shift(years=1)
-            flash(f"Extend subscription for 1 year for {ms.user}", "success")
-            AdminAuditLog.extend_subscription(
-                current_user.id, ms.user.id, ms.end_at, "1 year"
-            )
-
-        Session.commit()
+        self.__extend_manual_subscription(ids, msg="1 year", years=1)
 
     @action(
         "extend_1m",
@@ -468,11 +489,26 @@ class ManualSubscriptionAdmin(SLModelView):
         "Extend 1 month more?",
     )
     def extend_1m(self, ids):
+        self.__extend_manual_subscription(ids, msg="1 month", months=1)
+
+    def __extend_manual_subscription(self, ids: List[int], msg: str, **kwargs):
         for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
-            ms.end_at = ms.end_at.shift(months=1)
-            flash(f"Extend subscription for 1 month for {ms.user}", "success")
+            sub: ManualSubscription = ms
+            sub.end_at = sub.end_at.shift(**kwargs)
+            flash(f"Extend subscription for {msg} for {sub.user}", "success")
+            emit_user_audit_log(
+                user=sub.user,
+                action=UserAuditLogAction.Upgrade,
+                message=f"Admin {current_user.email} extended manual subscription for {msg} for {sub.user}",
+            )
             AdminAuditLog.extend_subscription(
-                current_user.id, ms.user.id, ms.end_at, "1 month"
+                current_user.id, sub.user.id, sub.end_at, msg
+            )
+            EventDispatcher.send_event(
+                user=sub.user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(plan_end_time=sub.end_at.timestamp)
+                ),
             )
 
         Session.commit()
