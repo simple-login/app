@@ -5,7 +5,7 @@ from app.models import Mailbox
 from tests.utils import login
 
 
-def test_create_mailbox(flask_client):
+def test_create_mailbox_valid(flask_client):
     login(flask_client)
 
     r = flask_client.post(
@@ -21,10 +21,34 @@ def test_create_mailbox(flask_client):
     assert r.json["default"] is False
     assert r.json["nb_alias"] == 0
 
-    # invalid email address
+
+def test_create_mailbox_invalid_email(flask_client):
+    login(flask_client)
     r = flask_client.post(
         "/api/mailboxes",
-        json={"email": "gmail.com"},
+        json={"email": "gmail.com"},  # not an email address
+    )
+
+    assert r.status_code == 400
+    assert r.json == {"error": "Invalid email"}
+
+
+def test_create_mailbox_empty_payload(flask_client):
+    login(flask_client)
+    r = flask_client.post(
+        "/api/mailboxes",
+        json={},
+    )
+
+    assert r.status_code == 400
+    assert r.json == {"error": "Invalid email"}
+
+
+def test_create_mailbox_empty_email(flask_client):
+    login(flask_client)
+    r = flask_client.post(
+        "/api/mailboxes",
+        json={"email": ""},
     )
 
     assert r.status_code == 400
