@@ -3,11 +3,13 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+import arrow
 from arrow import Arrow
 from newrelic import agent
 from sqlalchemy import or_
 
 from app.db import Session
+from app import config
 from app.email_utils import send_welcome_email
 from app.partner_user_utils import create_partner_user, create_partner_subscription
 from app.utils import sanitize_email, canonicalize_email
@@ -23,6 +25,7 @@ from app.models import (
     PartnerUser,
     User,
     Alias,
+    Job,
 )
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string
@@ -162,6 +165,7 @@ class NewUserStrategy(ClientMergeStrategy):
             self.link_request.plan,
         )
         Session.commit()
+        self._initial_alias_sync(new_user)
 
         if not new_user.created_by_partner:
             send_welcome_email(new_user)
@@ -171,6 +175,14 @@ class NewUserStrategy(ClientMergeStrategy):
         return LinkResult(
             user=new_user,
             strategy=self.__class__.__name__,
+        )
+
+    def _initial_alias_sync(self, user: User):
+        Job.create(
+            name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
+            payload={"user_id": user.id},
+            run_at=arrow.now(),
+            commit=True,
         )
 
 
