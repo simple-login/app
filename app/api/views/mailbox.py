@@ -38,7 +38,11 @@ def create_mailbox():
         the new mailbox dict
     """
     user = g.user
-    mailbox_email = sanitize_email(request.get_json().get("email"))
+    email = request.get_json().get("email")
+    if not email:
+        return jsonify(error="Invalid email"), 400
+
+    mailbox_email = sanitize_email(email)
 
     try:
         new_mailbox = mailbox_utils.create_mailbox(user, mailbox_email).mailbox
