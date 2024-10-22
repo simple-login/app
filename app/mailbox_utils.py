@@ -171,17 +171,17 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
             f"User {user} failed to verify mailbox {mailbox_id} because it does not exist"
         )
         raise MailboxError("Invalid mailbox")
+    if mailbox.user_id != user.id:
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
+        )
+        raise MailboxError("Invalid mailbox")
     if mailbox.verified:
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because it's already verified"
         )
         clear_activation_codes_for_mailbox(mailbox)
         return mailbox
-    if mailbox.user_id != user.id:
-        LOG.i(
-            f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
-        )
-        raise MailboxError("Invalid mailbox")
 
     activation = (
         MailboxActivation.filter(MailboxActivation.mailbox_id == mailbox_id)
