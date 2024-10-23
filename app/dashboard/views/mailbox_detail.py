@@ -1,5 +1,4 @@
 from smtplib import SMTPRecipientsRefused
-from typing import Optional
 
 from email_validator import validate_email, EmailNotValidError
 from flask import render_template, request, redirect, url_for, flash
@@ -17,7 +16,7 @@ from app.db import Session
 from app.email_utils import email_can_be_used_as_mailbox
 from app.email_utils import mailbox_already_used, render, send_email
 from app.extensions import limiter
-from app.log import LOG
+from app.mailbox_utils import perform_mailbox_email_change, MailboxEmailChangeError
 from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key_and_check
@@ -318,7 +317,7 @@ def cancel_mailbox_change_route(mailbox_id):
 
 
 @dashboard_bp.route("/mailbox/confirm_change")
-def mailbox_confirm_change_route():
+def mailbox_confirm_email_change_route():
     s = TimestampSigner(MAILBOX_SECRET)
     signed_mailbox_id = request.args.get("mailbox_id")
 
@@ -327,35 +326,20 @@ def mailbox_confirm_change_route():
     except Exception:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.index"))
-    else:
-        mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
 
-        # new_email can be None if user cancels change in the meantime
-        if mailbox and mailbox.new_email:
-            user = mailbox.user
-            if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
-                flash(f"{mailbox.new_email} is already used", "error")
-                return redirect(
-                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
-                )
+    res = perform_mailbox_email_change(mailbox_id)
 
-            emit_user_audit_log(
-                user=current_user,
-                action=UserAuditLogAction.UpdateMailbox,
-                message=f"Change mailbox email for mailbox {mailbox_id} (old={mailbox.email} | new={mailbox.new_email})",
-            )
-            mailbox.email = mailbox.new_email
-            mailbox.new_email = None
-
-            # mark mailbox as verified if the change request is sent from an unverified mailbox
-            mailbox.verified = True
-            Session.commit()
-
-            LOG.d("Mailbox change %s is verified", mailbox)
-            flash(f"The {mailbox.email} is updated", "success")
+    flash(res.message, res.message_category)
+    if res.error:
+        if res.error == MailboxEmailChangeError.EmailAlreadyUsed:
             return redirect(
-                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
             )
-        else:
-            flash("Invalid link", "error")
+        elif res.error == MailboxEmailChangeError.InvalidId:
             return redirect(url_for("dashboard.index"))
+        else:
+            raise Exception("Unhandled MailboxEmailChangeError")
+    else:
+        return redirect(
+            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+        )

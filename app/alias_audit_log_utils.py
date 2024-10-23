@@ -9,10 +9,16 @@ class AliasAuditLogAction(Enum):
     ChangeAliasStatus = "change_status"
     DeleteAlias = "delete"
     UpdateAlias = "update"
+
     InitiateTransferAlias = "initiate_transfer_alias"
     AcceptTransferAlias = "accept_transfer_alias"
     TransferredAlias = "transferred_alias"
+
     ChangedMailboxes = "changed_mailboxes"
+
+    CreateContact = "create_contact"
+    UpdateContact = "update_contact"
+    DeleteContact = "delete_contact"
 
 
 def emit_alias_audit_log(

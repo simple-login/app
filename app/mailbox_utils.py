@@ -1,6 +1,7 @@
 import dataclasses
 import secrets
 import random
+from enum import Enum
 from typing import Optional
 import arrow
 
@@ -170,17 +171,17 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
             f"User {user} failed to verify mailbox {mailbox_id} because it does not exist"
         )
         raise MailboxError("Invalid mailbox")
+    if mailbox.user_id != user.id:
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
+        )
+        raise MailboxError("Invalid mailbox")
     if mailbox.verified:
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because it's already verified"
         )
         clear_activation_codes_for_mailbox(mailbox)
         return mailbox
-    if mailbox.user_id != user.id:
-        LOG.i(
-            f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
-        )
-        raise MailboxError("Invalid mailbox")
 
     activation = (
         MailboxActivation.filter(MailboxActivation.mailbox_id == mailbox_id)
@@ -273,3 +274,54 @@ def send_verification_email(
             mailbox_email=mailbox.email,
         ),
     )
+
+
+class MailboxEmailChangeError(Enum):
+    InvalidId = 1
+    EmailAlreadyUsed = 2
+
+
+@dataclasses.dataclass
+class MailboxEmailChangeResult:
+    error: Optional[MailboxEmailChangeError]
+    message: str
+    message_category: str
+
+
+def perform_mailbox_email_change(mailbox_id: int) -> MailboxEmailChangeResult:
+    mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
+
+    # new_email can be None if user cancels change in the meantime
+    if mailbox and mailbox.new_email:
+        user = mailbox.user
+        if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
+            return MailboxEmailChangeResult(
+                error=MailboxEmailChangeError.EmailAlreadyUsed,
+                message=f"{mailbox.new_email} is already used",
+                message_category="error",
+            )
+
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.UpdateMailbox,
+            message=f"Change mailbox email for mailbox {mailbox_id} (old={mailbox.email} | new={mailbox.new_email})",
+        )
+        mailbox.email = mailbox.new_email
+        mailbox.new_email = None
+
+        # mark mailbox as verified if the change request is sent from an unverified mailbox
+        mailbox.verified = True
+        Session.commit()
+
+        LOG.d("Mailbox change %s is verified", mailbox)
+        return MailboxEmailChangeResult(
+            error=None,
+            message=f"The {mailbox.email} is updated",
+            message_category="success",
+        )
+    else:
+        return MailboxEmailChangeResult(
+            error=MailboxEmailChangeError.InvalidId,
+            message="Invalid link",
+            message_category="error",
+        )

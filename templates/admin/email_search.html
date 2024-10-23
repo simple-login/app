@@ -8,6 +8,7 @@
         <tr>
             <th scope="col">User ID</th>
             <th scope="col">Email</th>
+            <th scope="col">Verified</th>
             <th scope="col">Status</th>
             <th scope="col">Paid</th>
             <th>Subscription</th>
@@ -20,8 +21,12 @@
         <tr>
             <td>{{ user.id }}</td>
             <td><a href="?email={{ user.email }}">{{ user.email }}</a></td>
+            {% if user.activated %}
+                <td class="text-success">Activated</td>
+            {% else %}
+                <td class="text-warning">Pending</td>
+            {% endif %}
             {% if user.disabled %}
-
                 <td class="text-danger">Disabled</td>
             {% else %}
                 <td class="text-success">Enabled</td>
@@ -154,6 +159,56 @@
     </table>
     {{ show_user(data.domain_deleted_alias.domain.user) }}
 {%- endmacro %}
+{% macro list_alias_audit_log(alias_audit_log) %}
+    <h4>Alias Audit Log</h4>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>User ID</th>
+            <th>Alias ID</th>
+            <th>Alias Email</th>
+            <th>Action</th>
+            <th>Message</th>
+            <th>Time</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for entry in alias_audit_log %}
+            <tr>
+                <td>{{ entry.user_id }}</td>
+                <td>{{ entry.alias_id }}</td>
+                <td><a href="?email={{ entry.alias_email }}">{{ entry.alias_email }}</a></td>
+                <td>{{ entry.action }}</td>
+                <td>{{ entry.message }}</td>
+                <td>{{ entry.created_at }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+{% macro list_user_audit_log(user_audit_log) %}
+    <h4>User Audit Log</h4>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>User email</th>
+            <th>Action</th>
+            <th>Message</th>
+            <th>Time</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for entry in user_audit_log %}
+            <tr>
+                <td><a href="?email={{ entry.user_email }}">{{ entry.user_email }}</a></td>
+                <td>{{ entry.action }}</td>
+                <td>{{ entry.message }}</td>
+                <td>{{ entry.created_at }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
 {% block body %}
 
     <div class="border border-dark border-2 mt-1 mb-2 p-3">
@@ -177,6 +232,7 @@
         <div class="border border-dark border-2 mt-1 mb-2 p-3">
             <h3 class="mb-3">Found Alias {{ data.alias.email }}</h3>
             {{ list_alias(1,[data.alias]) }}
+            {{ list_alias_audit_log(data.alias_audit_log) }}
             {{ list_mailboxes("Mailboxes for alias", helper.alias_mailbox_count(data.alias), helper.alias_mailboxes(data.alias)) }}
             {{ show_user(data.alias.user) }}
         </div>
@@ -188,6 +244,12 @@
             {{ show_user(data.user) }}
             {{ list_mailboxes("Mailboxes for user", helper.mailbox_count(data.user) , helper.mailbox_list(data.user) ) }}
             {{ list_alias(helper.alias_count(data.user) ,helper.alias_list(data.user)) }}
+        </div>
+    {% endif %}
+    {% if data.user_audit_log %}
+        <div class="border border-dark border-2 mt-1 mb-2 p-3">
+            <h3 class="mb-3">Audit log entries for user {{ data.query }}</h3>
+            {{ list_user_audit_log(data.user_audit_log) }}
         </div>
     {% endif %}
     {% if data.mailbox_count > 10 %}
@@ -208,6 +270,7 @@
         <div class="border border-dark mt-1 mb-2 p-3">
             <h3 class="mb-3">Found DeletedAlias {{ data.deleted_alias.email }}</h3>
             {{ show_deleted_alias(data.deleted_alias) }}
+            {{ list_alias_audit_log(data.deleted_alias_audit_log) }}
         </div>
     {% endif %}
     {% if data.domain_deleted_alias %}
@@ -215,6 +278,7 @@
         <div class="border border-dark mt-1 mb-2 p-3">
             <h3 class="mb-3">Found DomainDeletedAlias {{ data.domain_deleted_alias.email }}</h3>
             {{ show_domain_deleted_alias(data.domain_deleted_alias) }}
+            {{ list_alias_audit_log(data.domain_deleted_alias_audit_log) }}
         </div>
     {% endif %}
 {% endblock %}
