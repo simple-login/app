@@ -28,12 +28,14 @@ class SendEventToWebhookJob:
         try:
             proton_partner_id = get_proton_partner().id
         except ProtonPartnerNotSetUp:
-            return None
+            return False
 
         # It has. Retrieve the information for the PartnerUser
         partner_user = PartnerUser.get_by(
             user_id=self._user.id, partner_id=proton_partner_id
         )
+        if partner_user is None:
+            return True
         event = event_pb2.Event(
             user_id=self._user.id,
             external_user_id=partner_user.external_user_id,
@@ -55,7 +57,7 @@ class SendEventToWebhookJob:
 
         return SendEventToWebhookJob(user=user, event=event)
 
-    def store_job_in_db(self, run_at: Optional[arrow.Arrow]) -> Optional[Job]:
+    def store_job_in_db(self, run_at: Optional[arrow.Arrow]) -> Job:
         stub = self._event.SerializeToString()
         return Job.create(
             name=config.JOB_SEND_EVENT_TO_WEBHOOK,
