@@ -1,8 +1,10 @@
 from typing import Optional
 
+import arrow
 from arrow import Arrow
 
-from app.models import PartnerUser, PartnerSubscription, User
+from app import config
+from app.models import PartnerUser, PartnerSubscription, User, Job
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
@@ -14,6 +16,11 @@ def create_partner_user(
         partner_id=partner_id,
         partner_email=partner_email,
         external_user_id=external_user_id,
+    )
+    Job.create(
+        name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
+        payload={"user_id": user.id},
+        run_at=arrow.now(),
     )
     emit_user_audit_log(
         user=user,

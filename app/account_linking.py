@@ -3,13 +3,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-import arrow
 from arrow import Arrow
 from newrelic import agent
 from sqlalchemy import or_
 
 from app.db import Session
-from app import config
 from app.email_utils import send_welcome_email
 from app.partner_user_utils import create_partner_user, create_partner_subscription
 from app.utils import sanitize_email, canonicalize_email
@@ -25,7 +23,6 @@ from app.models import (
     PartnerUser,
     User,
     Alias,
-    Job,
 )
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string
@@ -115,11 +112,7 @@ def ensure_partner_user_exists_for_user(
             partner_email=link_request.email,
             external_user_id=link_request.external_user_id,
         )
-        Job.create(
-            name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
-            payload={"user_id": sl_user.id},
-            run_at=arrow.now(),
-        )
+
         Session.commit()
         LOG.i(
             f"Created new partner_user for partner:{partner.id} user:{sl_user.id} external_user_id:{link_request.external_user_id}. PartnerUser.id is {res.id}"
