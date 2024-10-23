@@ -25,15 +25,17 @@ class MockProtonClient(ProtonClient):
         return self.user
 
 
-def check_initial_sync_job(user: User):
+def check_initial_sync_job(user: User, expected: bool):
+    found = False
     for job in Job.yield_per_query(10).filter_by(
         name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
         state=JobState.ready.value,
     ):
         if job.payload.get("user_id") == user.id:
+            found = True
             Job.delete(job.id)
-            return
-    assert False
+            break
+    assert expected == found
 
 
 def test_proton_callback_handler_unexistant_sl_user():
@@ -69,10 +71,9 @@ def test_proton_callback_handler_unexistant_sl_user():
     )
     assert partner_user is not None
     assert partner_user.external_user_id == external_id
-    check_initial_sync_job(res.user)
 
 
-def test_proton_callback_handler_existant_sl_user():
+def test_proton_callback_handler_existing_sl_user():
     email = random_email()
     sl_user = User.create(email, commit=True)
 
@@ -98,7 +99,43 @@ def test_proton_callback_handler_existant_sl_user():
     sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner().id)
     assert sa is not None
     assert sa.partner_email == user.email
-    check_initial_sync_job(res.user)
+    check_initial_sync_job(res.user, True)
+
+
+def test_proton_callback_handler_linked_sl_user():
+    email = random_email()
+    external_id = random_string()
+    sl_user = User.create(email, commit=True)
+    PartnerUser.create(
+        user_id=sl_user.id,
+        partner_id=get_proton_partner().id,
+        external_user_id=external_id,
+        partner_email=email,
+        commit=True,
+    )
+
+    user = UserInformation(
+        email=email,
+        name=random_string(),
+        id=external_id,
+        plan=SLPlan(type=SLPlanType.Premium, expiration=Arrow.utcnow().shift(hours=2)),
+    )
+    handler = ProtonCallbackHandler(MockProtonClient(user=user))
+    res = handler.handle_login(get_proton_partner())
+
+    assert res.user is not None
+    assert res.user.id == sl_user.id
+    # Ensure the user is not marked as created from partner
+    assert User.FLAG_CREATED_FROM_PARTNER != (
+        res.user.flags & User.FLAG_CREATED_FROM_PARTNER
+    )
+    assert res.user.notification is True
+    assert res.user.trial_end is not None
+
+    sa = PartnerUser.get_by(user_id=sl_user.id, partner_id=get_proton_partner().id)
+    assert sa is not None
+    assert sa.partner_email == user.email
+    check_initial_sync_job(res.user, False)
 
 
 def test_proton_callback_handler_none_user_login():
