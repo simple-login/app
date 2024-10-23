@@ -112,6 +112,7 @@ def ensure_partner_user_exists_for_user(
             partner_email=link_request.email,
             external_user_id=link_request.external_user_id,
         )
+
         Session.commit()
         LOG.i(
             f"Created new partner_user for partner:{partner.id} user:{sl_user.id} external_user_id:{link_request.external_user_id}. PartnerUser.id is {res.id}"
