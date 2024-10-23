@@ -309,6 +309,7 @@ JOB_DELETE_DOMAIN = "delete-domain"
 JOB_SEND_USER_REPORT = "send-user-report"
 JOB_SEND_PROTON_WELCOME_1 = "proton-welcome-1"
 JOB_SEND_ALIAS_CREATION_EVENTS = "send-alias-creation-events"
+JOB_SEND_EVENT_TO_WEBHOOK = "send-event-to-webhook"
 
 # for pagination
 PAGE_LIMIT = 20
