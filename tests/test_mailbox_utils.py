@@ -286,6 +286,15 @@ def test_verify_other_users_mailbox():
         mailbox_utils.verify_mailbox_code(user, mailbox.id, "9999999")
 
 
+def test_verify_other_users_already_verified_mailbox():
+    other = create_new_user()
+    mailbox = Mailbox.create(
+        user_id=other.id, email=random_email(), verified=True, commit=True
+    )
+    with pytest.raises(mailbox_utils.MailboxError):
+        mailbox_utils.verify_mailbox_code(user, mailbox.id, "9999999")
+
+
 @mail_sender.store_emails_test_decorator
 def test_verify_fail():
     output = mailbox_utils.create_mailbox(user, random_email())

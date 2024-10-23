@@ -121,10 +121,16 @@ def mailbox_route():
 @login_required
 def mailbox_verify():
     mailbox_id = request.args.get("mailbox_id")
+    if not mailbox_id:
+        LOG.i("Missing mailbox_id")
+        flash("You followed an invalid link", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+
     code = request.args.get("code")
     if not code:
         # Old way
         return verify_with_signed_secret(mailbox_id)
+
     try:
         mailbox = mailbox_utils.verify_mailbox_code(current_user, mailbox_id, code)
     except mailbox_utils.MailboxError as e:
