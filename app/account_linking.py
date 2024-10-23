@@ -115,6 +115,11 @@ def ensure_partner_user_exists_for_user(
             partner_email=link_request.email,
             external_user_id=link_request.external_user_id,
         )
+        Job.create(
+            name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
+            payload={"user_id": sl_user.id},
+            run_at=arrow.now(),
+        )
         Session.commit()
         LOG.i(
             f"Created new partner_user for partner:{partner.id} user:{sl_user.id} external_user_id:{link_request.external_user_id}. PartnerUser.id is {res.id}"
@@ -165,7 +170,6 @@ class NewUserStrategy(ClientMergeStrategy):
             self.link_request.plan,
         )
         Session.commit()
-        self._initial_alias_sync(new_user)
 
         if not new_user.created_by_partner:
             send_welcome_email(new_user)
@@ -175,14 +179,6 @@ class NewUserStrategy(ClientMergeStrategy):
         return LinkResult(
             user=new_user,
             strategy=self.__class__.__name__,
-        )
-
-    def _initial_alias_sync(self, user: User):
-        Job.create(
-            name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
-            payload={"user_id": user.id},
-            run_at=arrow.now(),
-            commit=True,
         )
 
 
