@@ -4,6 +4,10 @@ from app.models import User, UserAuditLog
 
 
 class UserAuditLogAction(Enum):
+    CreateUser = "create_user"
+    ActivateUser = "activate_user"
+    ResetPassword = "reset_password"
+
     Upgrade = "upgrade"
     SubscriptionExtended = "subscription_extended"
     SubscriptionCancelled = "subscription_cancelled"
@@ -19,10 +23,6 @@ class UserAuditLogAction(Enum):
     VerifyCustomDomain = "verify_custom_domain"
     UpdateCustomDomain = "update_custom_domain"
     DeleteCustomDomain = "delete_custom_domain"
-
-    CreateContact = "create_contact"
-    UpdateContact = "update_contact"
-    DeleteContact = "delete_contact"
 
     CreateDirectory = "create_directory"
     UpdateDirectory = "update_directory"

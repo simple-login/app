@@ -11,6 +11,7 @@ from wtforms import StringField, validators, ValidationError
 
 # Need to import directly from config to allow modification from the tests
 from app import config, parallel_limiter, contact_utils
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.contact_utils import ContactCreateError
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -23,7 +24,6 @@ from app.errors import (
 )
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import CSRFValidationForm
 
 
@@ -200,9 +200,9 @@ def delete_contact(alias: Alias, contact_id: int):
         flash("You cannot delete reverse-alias", "warning")
     else:
         delete_contact_email = contact.website_email
-        emit_user_audit_log(
-            user=alias.user,
-            action=UserAuditLogAction.DeleteContact,
+        emit_alias_audit_log(
+            alias=alias,
+            action=AliasAuditLogAction.DeleteContact,
             message=f"Delete contact {contact_id} ({contact.email})",
         )
         Contact.delete(contact_id)

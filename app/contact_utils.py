@@ -4,12 +4,12 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.db import Session
 from app.email_utils import generate_reply_email, parse_full_address
 from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import Contact, Alias
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
 
 
@@ -101,10 +101,14 @@ def create_contact(
             invalid_email=email == "",
             commit=True,
         )
-        emit_user_audit_log(
-            user=alias.user,
-            action=UserAuditLogAction.CreateContact,
-            message=f"Created contact {contact.id} ({contact.email})",
+        if automatic_created:
+            trail = ". Automatically created"
+        else:
+            trail = ". Created by user action"
+        emit_alias_audit_log(
+            alias=alias,
+            action=AliasAuditLogAction.CreateContact,
+            message=f"Created contact {contact.id} ({contact.email}){trail}",
             commit=True,
         )
         LOG.d(
