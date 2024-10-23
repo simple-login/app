@@ -2,7 +2,7 @@
   <li class="nav-item">
     <a href="{{ url_for("dashboard.index") }}"
        class="nav-link {{ 'active' if active_page == 'dashboard' }}">
-      <i class="fe fe-home"></i>
+      <i class="fe fe-users"></i>
       Aliases
     </a>
   </li>
@@ -16,15 +16,15 @@
     </li>
   {% endif %}
   <li class="nav-item">
-    <a href="{{ url_for("dashboard.mailbox_route") }}"
-       class="nav-link {{ 'active' if active_page == 'mailbox' }}">
-      <i class="fe fe-inbox"></i> Mailboxes
+    <a href="{{ url_for("dashboard.custom_domain") }}"
+       class="nav-link {{ 'active' if active_page == 'custom_domain' }}">
+      <i class="fe fe-hard-drive"></i> Domains
     </a>
   </li>
   <li class="nav-item">
-    <a href="{{ url_for("dashboard.custom_domain") }}"
-       class="nav-link {{ 'active' if active_page == 'custom_domain' }}">
-      <i class="fe fe-server"></i> Domains
+    <a href="{{ url_for("dashboard.mailbox_route") }}"
+       class="nav-link {{ 'active' if active_page == 'mailbox' }}">
+      <i class="fe fe-inbox"></i> Mailboxes
     </a>
   </li>
   <li class="nav-item">
@@ -33,14 +33,13 @@
       <i class="fe fe-folder"></i> Directories
     </a>
   </li>
-  <!--
   <li class="nav-item">
-    <a href="{{ url_for('discover.index') }}" class="nav-link {{ 'active' if active_page == 'discover' }}">
-      <i class="fe fe-globe"></i>
-      Discover
+    <a href="{{ url_for("dashboard.refused_email_route") }}"
+       class="nav-link {{ 'active' if active_page == 'refused_email' }}">
+      <i class="fe fe-alert-octagon"></i> Quarantine
     </a>
   </li>
--->
+
   {#  <li class="nav-item">#}
   {#    <a href="{{ url_for('developer.index') }}"#}
   {#       class="nav-link {{ 'active' if active_page == 'developer' }}">#}
