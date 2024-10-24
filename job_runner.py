@@ -18,6 +18,7 @@ from app.events.event_dispatcher import PostgresDispatcher
 from app.import_utils import handle_batch_import
 from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
+from app.jobs.send_event_job import SendEventToWebhookJob
 from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
@@ -300,6 +301,10 @@ def process_job(job: Job):
             send_alias_creation_events_for_user(
                 user, dispatcher=PostgresDispatcher.get()
             )
+    elif job.name == config.JOB_SEND_EVENT_TO_WEBHOOK:
+        send_job = SendEventToWebhookJob.create_from_job(job)
+        if send_job:
+            send_job.run()
     else:
         LOG.e("Unknown job name %s", job.name)
 
