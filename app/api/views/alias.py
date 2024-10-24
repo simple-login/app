@@ -419,9 +419,8 @@ def create_contact_route(alias_id):
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    alias: Alias = Alias.get(alias_id)
-
-    if alias.user_id != g.user.id:
+    alias: Optional[Alias] = Alias.get_by(id=alias_id, user_id=g.user.id)
+    if not alias:
         return jsonify(error="Forbidden"), 403
 
     contact_address = data.get("contact")

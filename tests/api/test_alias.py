@@ -511,6 +511,19 @@ def test_create_contact_route_invalid_alias(flask_client):
     assert r.status_code == 403
 
 
+def test_create_contact_route_non_existing_alias(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    Session.commit()
+
+    r = flask_client.post(
+        url_for("api.create_contact_route", alias_id=99999999),
+        headers={"Authentication": api_key.code},
+        json={"contact": "First Last <first@example.com>"},
+    )
+
+    assert r.status_code == 403
+
+
 def test_create_contact_route_free_users(flask_client):
     user, api_key = get_new_user_and_api_key()
 
