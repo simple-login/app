@@ -314,10 +314,13 @@ def test_verify_too_may():
     output = mailbox_utils.create_mailbox(user, random_email())
     output.activation.tries = mailbox_utils.MAX_ACTIVATION_TRIES
     Session.commit()
-    with pytest.raises(mailbox_utils.CannotVerifyError):
+    try:
         mailbox_utils.verify_mailbox_code(
             user, output.mailbox.id, output.activation.code
         )
+        assert False
+    except mailbox_utils.CannotVerifyError as e:
+        assert e.deleted_activation_code
 
 
 @mail_sender.store_emails_test_decorator

@@ -37,8 +37,9 @@ class OnlyPaidError(MailboxError):
 
 
 class CannotVerifyError(MailboxError):
-    def __init__(self, msg: str):
+    def __init__(self, msg: str, deleted_activation_code: bool = False):
         self.msg = msg
+        self.deleted_activation_code = deleted_activation_code
 
 
 MAX_ACTIVATION_TRIES = 3
@@ -196,7 +197,10 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
     if activation.tries >= MAX_ACTIVATION_TRIES:
         LOG.i(f"User {user} failed to verify mailbox {mailbox_id} more than 3 times")
         clear_activation_codes_for_mailbox(mailbox)
-        raise CannotVerifyError("Invalid activation code. Please request another code.")
+        raise CannotVerifyError(
+            "Invalid activation code. Please request another code.",
+            deleted_activation_code=True,
+        )
     if activation.created_at < arrow.now().shift(minutes=-15):
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because code is too old"
