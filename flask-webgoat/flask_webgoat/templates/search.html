@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Register{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="results">
+      Found {{ num_results }} results for query {{ query }}.
+  {% for result in results %}
+    <div class="result">{{ result }}</div>
+  {% endfor %}
+  </div>
+{% endblock %}
