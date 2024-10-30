@@ -971,7 +971,7 @@ def delete_expired_tokens():
     LOG.d("Delete api to cookie tokens older than %s, nb row %s", max_time, nb_row)
 
 
-async def _hibp_check(api_key, queue):
+async def _hibp_check(api_key: str, queue: asyncio.Queue):
     """
     Uses a single API key to check the queue as fast as possible.
 
@@ -990,7 +990,7 @@ async def _hibp_check(api_key, queue):
         if not alias:
             continue
         user = alias.user
-        if user.disabled or not user.is_paid():
+        if user.disabled or not user.is_premium():
             # Mark it as hibp done to skip it as if it had been checked
             alias.hibp_last_check = arrow.utcnow()
             Session.commit()
