@@ -177,7 +177,9 @@ from init_app import load_pgp_public_keys
 from server import create_light_app
 
 
-def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Contact:
+def get_or_create_contact(
+    from_header: str, mail_from: str, alias: Alias
+) -> Optional[Contact]:
     """
     contact_from_header is the RFC 2047 format FROM header
     """
@@ -208,6 +210,8 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
         automatic_created=True,
         from_partner=False,
     )
+    if contact_result.error:
+        LOG.w(f"Error creating contact: {contact_result.error.value}")
     return contact_result.contact
 
 
@@ -558,7 +562,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     if not user.is_active():
         LOG.w(f"User {user} has been soft deleted")
-        return False, status.E502
+        return [(False, status.E502)]
 
     if not user.can_send_or_receive():
         LOG.i(f"User {user} cannot receive emails")
@@ -579,6 +583,8 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
     contact = get_or_create_contact(from_header, envelope.mail_from, alias)
+    if not contact:
+        return [(False, status.E504)]
     alias = (
         contact.alias
     )  # In case the Session was closed in the get_or_create we re-fetch the alias

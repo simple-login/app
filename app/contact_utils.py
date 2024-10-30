@@ -91,6 +91,7 @@ def create_contact(
     alias_id = alias.id
     try:
         flags = Contact.FLAG_PARTNER_CREATED if from_partner else 0
+        is_invalid_email = email == ""
         contact = Contact.create(
             user_id=alias.user_id,
             alias_id=alias.id,
@@ -100,9 +101,10 @@ def create_contact(
             mail_from=mail_from,
             automatic_created=automatic_created,
             flags=flags,
-            invalid_email=email == "",
+            invalid_email=is_invalid_email,
             commit=True,
         )
+        contact_id = contact.id
         if automatic_created:
             trail = ". Automatically created"
         else:
@@ -110,11 +112,11 @@ def create_contact(
         emit_alias_audit_log(
             alias=alias,
             action=AliasAuditLogAction.CreateContact,
-            message=f"Created contact {contact.id} ({contact.email}){trail}",
+            message=f"Created contact {contact_id} ({email}){trail}",
             commit=True,
         )
         LOG.d(
-            f"Created contact {contact} for alias {alias} with email {email} invalid_email={contact.invalid_email}"
+            f"Created contact {contact} for alias {alias} with email {email} invalid_email={is_invalid_email}"
         )
         return ContactCreateResult(contact, created=True, error=None)
     except IntegrityError:
