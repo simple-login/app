@@ -1,0 +1,12 @@
+{  
+    "scans": {
+      "timeouts": {
+      "perLanguage": 480,
+      "perFile": 60
+    },
+    "engines": [101,102,108,18],
+    "javaEngineGeneration": 2,
+    "jsEngineGeneration": 2,
+    "csEngineGeneration": 2
+    }
+}
