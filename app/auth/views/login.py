@@ -10,6 +10,7 @@ from app.events.auth_event import LoginEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
+from app.pw_models import PasswordOracle
 from app.utils import sanitize_email, sanitize_next_url, canonicalize_email
 
 
@@ -43,6 +44,13 @@ def login():
         user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
         if not user or not user.check_password(form.password.data):
+            if not user:
+                # Do the hash to avoid timing attacks nevertheless
+                dummy_pw = PasswordOracle()
+                dummy_pw.password = (
+                    "$2b$12$ZWqpL73h4rGNfLkJohAFAu0isqSw/bX9p/tzpbWRz/To5FAftaW8u"
+                )
+                dummy_pw.check_password(form.password.data)
             # Trigger rate limiter
             g.deduct_limit = True
             form.password.data = None

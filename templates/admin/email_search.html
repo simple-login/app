@@ -11,6 +11,7 @@
             <th scope="col">Verified</th>
             <th scope="col">Status</th>
             <th scope="col">Paid</th>
+            <th scope="col">Premium</th>
             <th>Subscription</th>
             <th>Created At</th>
             <th>Updated At</th>
@@ -32,6 +33,7 @@
                 <td class="text-success">Enabled</td>
             {% endif %}
             <td>{{ "yes" if user.is_paid() else "No" }}</td>
+            <td>{{ "yes" if user.is_premium() else "No" }}</td>
             <td>{{ user.get_active_subscription() }}</td>
             <td>{{ user.created_at }}</td>
             <td>{{ user.updated_at }}</td>
