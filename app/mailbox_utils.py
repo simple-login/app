@@ -1,6 +1,5 @@
 import dataclasses
 import secrets
-import random
 from enum import Enum
 from typing import Optional
 import arrow
@@ -233,7 +232,7 @@ def generate_activation_code(
         if config.MAILBOX_VERIFICATION_OVERRIDE_CODE:
             code = config.MAILBOX_VERIFICATION_OVERRIDE_CODE
         else:
-            code = "{:06d}".format(random.randint(1, 999999))
+            code = "{:06d}".format(secrets.randbelow(1000000))[:6]
     else:
         code = secrets.token_urlsafe(16)
     return MailboxActivation.create(
