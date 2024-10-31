@@ -286,8 +286,16 @@ def notify_manual_sub_end():
 
 def poll_apple_subscription():
     """Poll Apple API to update AppleSubscription"""
-    # todo: only near the end of the subscription
-    for apple_sub in AppleSubscription.all():
+    for apple_sub in (
+        AppleSubscription.filter(
+            AppleSubscription.expires_date < arrow.now().shift(days=15)
+        )
+        .enable_eagerloads(False)
+        .yield_per(100)
+    ):
+        if not apple_sub.is_valid():
+            # Subscription is not valid anymore and hasn't been renewed
+            continue
         if not apple_sub.product_id:
             LOG.d("Ignore %s", apple_sub)
             continue
@@ -900,6 +908,24 @@ def check_mailbox_valid_pgp_keys():
 
 
 def check_custom_domain():
+    # Delete custom domains that haven't been verified in a month
+    for custom_domain in (
+        CustomDomain.filter(
+            CustomDomain.verified == False,  # noqa: E712
+            CustomDomain.created_at < arrow.now().shift(months=-1),
+        )
+        .enable_eagerloads(False)
+        .yield_per(100)
+    ):
+        alias_count = Alias.filter(Alias.custom_domain_id == custom_domain.id).count()
+        if alias_count > 0:
+            LOG.warn(
+                f"Custom Domain {custom_domain} has {alias_count} aliases. Won't delete"
+            )
+        else:
+            LOG.i(f"Deleting unverified old custom domain {custom_domain}")
+            CustomDomain.delete(custom_domain.id)
+
     LOG.d("Check verified domain for DNS issues")
 
     for custom_domain in CustomDomain.filter_by(verified=True):  # type: CustomDomain
@@ -992,6 +1018,11 @@ async def _hibp_check(api_key: str, queue: asyncio.Queue):
         user = alias.user
         if user.disabled or not user.is_premium():
             # Mark it as hibp done to skip it as if it had been checked
+            alias.hibp_last_check = arrow.utcnow()
+            Session.commit()
+            continue
+        if alias.flags & Alias.FLAG_PARTNER_CREATED > 0:
+            # Mark as hibp done
             alias.hibp_last_check = arrow.utcnow()
             Session.commit()
             continue
