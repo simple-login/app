@@ -286,9 +286,13 @@ def notify_manual_sub_end():
 
 def poll_apple_subscription():
     """Poll Apple API to update AppleSubscription"""
-    for apple_sub in AppleSubscription.filter(
-        AppleSubscription.expires_date < arrow.now().shift(days=15)
-    ).yield_per(100):
+    for apple_sub in (
+        AppleSubscription.filter(
+            AppleSubscription.expires_date < arrow.now().shift(days=15)
+        )
+        .enable_eagerloads(False)
+        .yield_per(100)
+    ):
         if not apple_sub.is_valid():
             # Subscription is not valid anymore and hasn't been renewed
             continue
