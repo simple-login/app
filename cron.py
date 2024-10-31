@@ -905,10 +905,14 @@ def check_mailbox_valid_pgp_keys():
 
 def check_custom_domain():
     # Delete custom domains that haven't been verified in a month
-    for custom_domain in CustomDomain.filter(
-        CustomDomain.verified == False,  # noqa: E712
-        CustomDomain.created_at < arrow.now().shift(months=-1),
-    ).yield_per(100):
+    for custom_domain in (
+        CustomDomain.filter(
+            CustomDomain.verified == False,  # noqa: E712
+            CustomDomain.created_at < arrow.now().shift(months=-1),
+        )
+        .enable_eagerloads(False)
+        .yield_per(100)
+    ):
         alias_count = Alias.filter(Alias.custom_domain_id == custom_domain.id).count()
         if alias_count > 0:
             LOG.warn(
