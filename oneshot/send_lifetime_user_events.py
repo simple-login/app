@@ -42,7 +42,7 @@ for batch_start in range(pu_id_start, max_pu_id, step):
         if not partner_user.user.lifetime:
             continue
         with_lifetime += 1
-        event = UserPlanChanged(plan_end_time=arrow.get("2100-01-01"))
+        event = UserPlanChanged(plan_end_time=arrow.get("2100-01-01").timestamp)
         EventDispatcher.send_event(
             partner_user.user, EventContent(user_plan_change=event)
         )
