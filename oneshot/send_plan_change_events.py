@@ -5,8 +5,7 @@ import time
 import arrow
 from sqlalchemy import func
 
-from app.events.event_dispatcher import EventDispatcher
-from app.events.generated.event_pb2 import UserPlanChanged, EventContent
+from app.account_linking import send_user_plan_changed_event
 from app.models import PartnerUser
 from app.db import Session
 
@@ -39,21 +38,12 @@ for batch_start in range(pu_id_start, max_pu_id, step):
         )
     ).all()
     for partner_user in partner_users:
-        subscription_end = partner_user.user.get_active_subscription_end(
-            include_partner_subscription=False
-        )
-        end_timestamp = None
-        if partner_user.user.lifetime:
-            with_lifetime += 1
-            end_timestamp = arrow.get("2038-01-01").timestamp
-        elif subscription_end:
-            with_premium += 1
-            end_timestamp = subscription_end.timestamp
-        event = UserPlanChanged(plan_end_time=end_timestamp)
-        EventDispatcher.send_event(
-            partner_user.user, EventContent(user_plan_change=event)
-        )
-        Session.flush()
+        subscription_end = send_user_plan_changed_event(partner_user)
+        if subscription_end is not None:
+            if subscription_end > arrow.get("2038-01-01").timestamp:
+                with_lifetime += 1
+            else:
+                with_premium += 1
         updated += 1
     Session.commit()
     elapsed = time.time() - start_time
