@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from app.events.event_dispatcher import EventDispatcher
 from app.events.generated.event_pb2 import UserPlanChanged, EventContent
-from app.models import PartnerUser
+from app.models import PartnerUser, User
 from app.db import Session
 
 parser = argparse.ArgumentParser(
@@ -32,20 +32,22 @@ done = 0
 start_time = time.time()
 with_lifetime = 0
 for batch_start in range(pu_id_start, max_pu_id, step):
-    partner_users = (
-        Session.query(PartnerUser).filter(
-            PartnerUser.id >= batch_start, PartnerUser.id < batch_start + step
+    users = (
+        Session.query(User)
+        .join(PartnerUser, PartnerUser.user_id == User.id)
+        .filter(
+            PartnerUser.id >= batch_start,
+            PartnerUser.id < batch_start + step,
+            User.lifetime == True,  # noqa :E712
         )
     ).all()
-    for partner_user in partner_users:
-        done += 1
-        if not partner_user.user.lifetime:
+    for user in users:
+        # Just in case the == True cond is wonky
+        if not user.lifetime:
             continue
         with_lifetime += 1
         event = UserPlanChanged(plan_end_time=arrow.get("2100-01-01").timestamp)
-        EventDispatcher.send_event(
-            partner_user.user, EventContent(user_plan_change=event)
-        )
+        EventDispatcher.send_event(user, EventContent(user_plan_change=event))
         Session.flush()
     Session.commit()
     elapsed = time.time() - start_time
@@ -55,6 +57,6 @@ for batch_start in range(pu_id_start, max_pu_id, step):
     time_remaining = remaining / time_per_alias
     hours_remaining = time_remaining / 60.0
     print(
-        f"\PartnerUser {batch_start}/{max_pu_id} {done} {hours_remaining:.2f} mins remaining"
+        f"\PartnerUser {batch_start}/{max_pu_id} {with_lifetime} {hours_remaining:.2f} mins remaining"
     )
 print(f"With SL lifetime {with_lifetime}")
