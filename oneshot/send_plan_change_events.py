@@ -2,6 +2,7 @@
 import argparse
 import time
 
+import arrow
 from sqlalchemy import func
 
 from app.events.event_dispatcher import EventDispatcher
@@ -30,6 +31,7 @@ step = 100
 updated = 0
 start_time = time.time()
 with_premium = 0
+with_lifetime = 0
 for batch_start in range(pu_id_start, max_pu_id, step):
     partner_users = (
         Session.query(PartnerUser).filter(
@@ -41,7 +43,10 @@ for batch_start in range(pu_id_start, max_pu_id, step):
             include_partner_subscription=False
         )
         end_timestamp = None
-        if subscription_end:
+        if partner_user.user.lifetime:
+            with_lifetime += 1
+            end_timestamp = arrow.get("2100-01-01")
+        elif subscription_end:
             with_premium += 1
             end_timestamp = subscription_end.timestamp
         event = UserPlanChanged(plan_end_time=end_timestamp)
@@ -60,4 +65,4 @@ for batch_start in range(pu_id_start, max_pu_id, step):
     print(
         f"\PartnerUser {batch_start}/{max_pu_id} {updated} {hours_remaining:.2f} mins remaining"
     )
-print(f"With SL premium {with_premium}")
+print(f"With SL premium {with_premium} lifetime {with_lifetime}")
