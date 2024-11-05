@@ -27,7 +27,7 @@ if max_pu_id == 0:
     max_pu_id = Session.query(func.max(PartnerUser.id)).scalar()
 
 print(f"Checking partner user {pu_id_start} to {max_pu_id}")
-step = 100
+step = 1000
 done = 0
 start_time = time.time()
 with_lifetime = 0
@@ -46,7 +46,7 @@ for batch_start in range(pu_id_start, max_pu_id, step):
         if not user.lifetime:
             continue
         with_lifetime += 1
-        event = UserPlanChanged(plan_end_time=arrow.get("2100-01-01").timestamp)
+        event = UserPlanChanged(plan_end_time=arrow.get("2038-01-01").timestamp)
         EventDispatcher.send_event(user, EventContent(user_plan_change=event))
         Session.flush()
     Session.commit()
