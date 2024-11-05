@@ -45,7 +45,7 @@ for batch_start in range(pu_id_start, max_pu_id, step):
         end_timestamp = None
         if partner_user.user.lifetime:
             with_lifetime += 1
-            end_timestamp = arrow.get("2100-01-01")
+            end_timestamp = arrow.get("2100-01-01").timestamp
         elif subscription_end:
             with_premium += 1
             end_timestamp = subscription_end.timestamp
