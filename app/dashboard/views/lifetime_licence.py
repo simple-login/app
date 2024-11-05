@@ -47,7 +47,7 @@ def lifetime_licence():
                 user=current_user,
                 content=EventContent(
                     user_plan_change=UserPlanChanged(
-                        plan_end_time=arrow.get("2100-01-01").timestamp
+                        plan_end_time=arrow.get("2038-01-01").timestamp
                     )
                 ),
             )
