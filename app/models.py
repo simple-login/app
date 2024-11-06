@@ -2306,12 +2306,6 @@ class DeletedAlias(Base, ModelMixin):
         server_default=str(AliasDeleteReason.Unspecified.value),
     )
 
-    user_id = sa.Column(sa.Integer, nullable=True, default=None, server_default=None)
-
-    __table_args__ = (
-        sa.Index("ix_deleted_alias_user_id_created_at", "user_id", "created_at"),
-    )
-
     @classmethod
     def create(cls, **kw):
         raise Exception("should use delete_alias(alias,user) instead")
