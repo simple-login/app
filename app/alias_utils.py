@@ -362,9 +362,7 @@ def delete_alias(
             )
     else:
         if not DeletedAlias.get_by(email=alias.email):
-            deleted_alias = DeletedAlias(
-                email=alias.email, reason=reason, user_id=user.id
-            )
+            deleted_alias = DeletedAlias(email=alias.email, reason=reason)
             Session.add(deleted_alias)
             Session.commit()
             LOG.i(f"Moving {alias} to global trash {deleted_alias}")

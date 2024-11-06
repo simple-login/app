@@ -31,9 +31,7 @@ def test_delete_alias(flask_client):
 
     delete_alias(alias, user)
     assert Alias.get_by(email=alias.email) is None
-    deleted_alias = DeletedAlias.get_by(email=alias.email)
-    assert deleted_alias is not None
-    assert deleted_alias.user_id == user.id
+    assert DeletedAlias.get_by(email=alias.email)
 
 
 def test_delete_alias_already_in_trash(flask_client):
