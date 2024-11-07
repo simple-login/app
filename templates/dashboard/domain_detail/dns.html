@@ -91,7 +91,6 @@
           <br />
           Some domain registrars (Namecheap, CloudFlare, etc) might also use <em>@</em> for the root domain.
         </div>
-
         {% for record in expected_mx_records %}
 
           <div class="mb-3 p-3 dns-record">
@@ -108,7 +107,6 @@
      data-clipboard-text="{{ record.domain }}">{{ record.domain }}</em>
           </div>
         {% endfor %}
-
         <form method="post" action="#mx-form">
           {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="check-mx">
