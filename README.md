@@ -84,7 +84,7 @@ For email gurus, we have chosen 1024 key length instead of 2048 for DNS simplici
 
 ### DNS
 
-Please note that DNS changes could take up to 24 hours to propagate. In practice, it's a lot faster though (~1 minute or so in our test). In DNS setup, we usually use domain with a trailing dot (`.`) at the end to to force using absolute domain.
+Please note that DNS changes could take up to 24 hours to propagate. In practice, it's a lot faster though (~1 minute or so in our test). In DNS setup, we usually use domain with a trailing dot (`.`) at the end to force using absolute domain.
 
 
 #### MX record
