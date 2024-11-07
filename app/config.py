@@ -309,6 +309,7 @@ JOB_DELETE_DOMAIN = "delete-domain"
 JOB_SEND_USER_REPORT = "send-user-report"
 JOB_SEND_PROTON_WELCOME_1 = "proton-welcome-1"
 JOB_SEND_ALIAS_CREATION_EVENTS = "send-alias-creation-events"
+JOB_SEND_EVENT_TO_WEBHOOK = "send-event-to-webhook"
 
 # for pagination
 PAGE_LIMIT = 20
@@ -601,7 +602,6 @@ SKIP_MX_LOOKUP_ON_CHECK = False
 
 DISABLE_RATE_LIMIT = "DISABLE_RATE_LIMIT" in os.environ
 
-SUBSCRIPTION_CHANGE_WEBHOOK = os.environ.get("SUBSCRIPTION_CHANGE_WEBHOOK", None)
 MAX_API_KEYS = int(os.environ.get("MAX_API_KEYS", 30))
 
 UPCLOUD_USERNAME = os.environ.get("UPCLOUD_USERNAME", None)
@@ -663,3 +663,5 @@ PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES: dict[int, str] = read_partner_dict(
 MAILBOX_VERIFICATION_OVERRIDE_CODE: Optional[str] = os.environ.get(
     "MAILBOX_VERIFICATION_OVERRIDE_CODE", None
 )
+
+AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))

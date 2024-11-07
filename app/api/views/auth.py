@@ -23,6 +23,7 @@ from app.events.auth_event import LoginEvent, RegisterEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email, canonicalize_email
 
 
@@ -52,8 +53,12 @@ def auth_login():
     password = data.get("password")
     device = data.get("device")
 
-    email = sanitize_email(data.get("email"))
-    canonical_email = canonicalize_email(data.get("email"))
+    email = data.get("email")
+    if not email:
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return jsonify(error="Email or password incorrect"), 400
+    email = sanitize_email(email)
+    canonical_email = canonicalize_email(email)
 
     user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
@@ -183,6 +188,11 @@ def auth_activate():
 
     LOG.d("activate user %s", user)
     user.activated = True
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.ActivateUser,
+        message=f"User has been activated: {user.email}",
+    )
     AccountActivation.delete(account_activation.id)
     Session.commit()
 

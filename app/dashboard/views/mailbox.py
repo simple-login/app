@@ -1,6 +1,7 @@
 import base64
 import binascii
 import json
+from typing import Optional
 
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -15,6 +16,7 @@ from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.log import LOG
 from app.models import Mailbox
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import CSRFValidationForm
 
 
@@ -119,10 +121,16 @@ def mailbox_route():
 @login_required
 def mailbox_verify():
     mailbox_id = request.args.get("mailbox_id")
+    if not mailbox_id:
+        LOG.i("Missing mailbox_id")
+        flash("You followed an invalid link", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+
     code = request.args.get("code")
     if not code:
         # Old way
         return verify_with_signed_secret(mailbox_id)
+
     try:
         mailbox = mailbox_utils.verify_mailbox_code(current_user, mailbox_id, code)
     except mailbox_utils.MailboxError as e:
@@ -151,7 +159,7 @@ def verify_with_signed_secret(request: str):
         flash("Invalid link. Please delete and re-add your mailbox", "error")
         return redirect(url_for("dashboard.mailbox_route"))
     mailbox_id = mailbox_data[0]
-    mailbox = Mailbox.get(mailbox_id)
+    mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
     if not mailbox:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.mailbox_route"))
@@ -161,6 +169,11 @@ def verify_with_signed_secret(request: str):
         return redirect(url_for("dashboard.mailbox_route"))
 
     mailbox.verified = True
+    emit_user_audit_log(
+        user=current_user,
+        action=UserAuditLogAction.VerifyMailbox,
+        message=f"Verified mailbox {mailbox.id} ({mailbox.email})",
+    )
     Session.commit()
 
     LOG.d("Mailbox %s is verified", mailbox)

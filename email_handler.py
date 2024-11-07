@@ -53,7 +53,11 @@ from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
 
 from app import pgp_utils, s3, config, contact_utils
-from app.alias_utils import try_auto_create, change_alias_status
+from app.alias_utils import (
+    try_auto_create,
+    change_alias_status,
+    get_alias_recipient_name,
+)
 from app.config import (
     EMAIL_DOMAIN,
     URL,
@@ -173,7 +177,9 @@ from init_app import load_pgp_public_keys
 from server import create_light_app
 
 
-def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Contact:
+def get_or_create_contact(
+    from_header: str, mail_from: str, alias: Alias
+) -> Optional[Contact]:
     """
     contact_from_header is the RFC 2047 format FROM header
     """
@@ -204,6 +210,8 @@ def get_or_create_contact(from_header: str, mail_from: str, alias: Alias) -> Con
         automatic_created=True,
         from_partner=False,
     )
+    if contact_result.error:
+        LOG.w(f"Error creating contact: {contact_result.error.value}")
     return contact_result.contact
 
 
@@ -554,7 +562,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     if not user.is_active():
         LOG.w(f"User {user} has been soft deleted")
-        return False, status.E502
+        return [(False, status.E502)]
 
     if not user.can_send_or_receive():
         LOG.i(f"User {user} cannot receive emails")
@@ -575,6 +583,8 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
     contact = get_or_create_contact(from_header, envelope.mail_from, alias)
+    if not contact:
+        return [(False, status.E504)]
     alias = (
         contact.alias
     )  # In case the Session was closed in the get_or_create we re-fetch the alias
@@ -1161,23 +1171,11 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     Session.commit()
 
-    # make the email comes from alias
-    from_header = alias.email
-    # add alias name from alias
-    if alias.name:
-        LOG.d("Put alias name %s in from header", alias.name)
-        from_header = sl_formataddr((alias.name, alias.email))
-    elif alias.custom_domain:
-        # add alias name from domain
-        if alias.custom_domain.name:
-            LOG.d(
-                "Put domain default alias name %s in from header",
-                alias.custom_domain.name,
-            )
-            from_header = sl_formataddr((alias.custom_domain.name, alias.email))
-
-    LOG.d("From header is %s", from_header)
-    add_or_replace_header(msg, headers.FROM, from_header)
+    recipient_name = get_alias_recipient_name(alias)
+    if recipient_name.message:
+        LOG.d(recipient_name.message)
+    LOG.d("From header is %s", recipient_name.name)
+    add_or_replace_header(msg, headers.FROM, recipient_name.name)
 
     try:
         if str(msg[headers.TO]).lower() == "undisclosed-recipients:;":
@@ -1510,7 +1508,9 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         LOG.w(
             f"Disable alias {alias} because {reason}. {alias.mailboxes} {alias.user}. Last contact {contact}"
         )
-        change_alias_status(alias, enabled=False)
+        change_alias_status(
+            alias, enabled=False, message=f"Set enabled=False due to {reason}"
+        )
 
         Notification.create(
             user_id=user.id,

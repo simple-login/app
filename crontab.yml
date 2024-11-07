@@ -16,13 +16,25 @@ jobs:
     shell: /bin/bash
     schedule: "15 2 * * *"
     captureStderr: true
+    onFailure:
+      retry:
+        maximumRetries: 10
+        initialDelay: 1
+        maximumDelay: 30
+        backoffMultiplier: 2
 
   - name: SimpleLogin HIBP check
     command: python /code/cron.py -j check_hibp
     shell: /bin/bash
-    schedule: "15 3 * * *"
+    schedule: "16 */4 * * *"
     captureStderr: true
     concurrencyPolicy: Forbid
+    onFailure:
+      retry:
+        maximumRetries: 10
+        initialDelay: 1
+        maximumDelay: 30
+        backoffMultiplier: 2
 
   - name: SimpleLogin Notify HIBP breaches
     command: python /code/cron.py -j notify_hibp
@@ -30,6 +42,7 @@ jobs:
     schedule: "15 4 * * *"
     captureStderr: true
     concurrencyPolicy: Forbid
+
 
   - name: SimpleLogin Delete Logs
     command: python /code/cron.py -j delete_logs
@@ -78,5 +91,19 @@ jobs:
     command: python /code/cron.py -j send_undelivered_mails
     shell: /bin/bash
     schedule: "*/5 * * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid
+
+  - name: SimpleLogin clear alias_audit_log old entries
+    command: python /code/cron.py -j clear_alias_audit_log
+    shell: /bin/bash
+    schedule: "0 * * * *" # Once every hour
+    captureStderr: true
+    concurrencyPolicy: Forbid
+
+  - name: SimpleLogin clear user_audit_log old entries
+    command: python /code/cron.py -j clear_user_audit_log
+    shell: /bin/bash
+    schedule: "0 * * * *" # Once every hour
     captureStderr: true
     concurrencyPolicy: Forbid

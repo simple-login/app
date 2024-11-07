@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from operator import or_
+from typing import Optional
 
 from flask import render_template, request, redirect, flash
 from flask import url_for
@@ -10,6 +11,7 @@ from wtforms import StringField, validators, ValidationError
 
 # Need to import directly from config to allow modification from the tests
 from app import config, parallel_limiter, contact_utils
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.contact_utils import ContactCreateError
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -190,7 +192,7 @@ def get_contact_infos(
 
 
 def delete_contact(alias: Alias, contact_id: int):
-    contact = Contact.get(contact_id)
+    contact: Optional[Contact] = Contact.get(contact_id)
 
     if not contact:
         flash("Unknown error. Refresh the page", "warning")
@@ -198,6 +200,11 @@ def delete_contact(alias: Alias, contact_id: int):
         flash("You cannot delete reverse-alias", "warning")
     else:
         delete_contact_email = contact.website_email
+        emit_alias_audit_log(
+            alias=alias,
+            action=AliasAuditLogAction.DeleteContact,
+            message=f"Delete contact {contact_id} ({contact.email})",
+        )
         Contact.delete(contact_id)
         Session.commit()
 

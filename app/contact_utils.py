@@ -4,6 +4,7 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
 
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.db import Session
 from app.email_utils import generate_reply_email, parse_full_address
 from app.email_validation import is_valid_email
@@ -15,6 +16,7 @@ from app.utils import sanitize_email
 class ContactCreateError(Enum):
     InvalidEmail = "Invalid email"
     NotAllowed = "Your plan does not allow to create contacts"
+    Unknown = "Unknown error when trying to create contact"
 
 
 @dataclass
@@ -86,8 +88,10 @@ def create_contact(
         return __update_contact_if_needed(contact, name, mail_from)
     # Create the contact
     reply_email = generate_reply_email(email, alias)
+    alias_id = alias.id
     try:
         flags = Contact.FLAG_PARTNER_CREATED if from_partner else 0
+        is_invalid_email = email == ""
         contact = Contact.create(
             user_id=alias.user_id,
             alias_id=alias.id,
@@ -97,17 +101,38 @@ def create_contact(
             mail_from=mail_from,
             automatic_created=automatic_created,
             flags=flags,
-            invalid_email=email == "",
+            invalid_email=is_invalid_email,
+            commit=True,
+        )
+        contact_id = contact.id
+        if automatic_created:
+            trail = ". Automatically created"
+        else:
+            trail = ". Created by user action"
+        emit_alias_audit_log(
+            alias=alias,
+            action=AliasAuditLogAction.CreateContact,
+            message=f"Created contact {contact_id} ({email}){trail}",
             commit=True,
         )
         LOG.d(
-            f"Created contact {contact} for alias {alias} with email {email} invalid_email={contact.invalid_email}"
+            f"Created contact {contact} for alias {alias} with email {email} invalid_email={is_invalid_email}"
         )
+        return ContactCreateResult(contact, created=True, error=None)
     except IntegrityError:
         Session.rollback()
         LOG.info(
-            f"Contact with email {email} for alias_id {alias.id} already existed, fetching from DB"
+            f"Contact with email {email} for alias_id {alias_id} already existed, fetching from DB"
         )
-        contact = Contact.get_by(alias_id=alias.id, website_email=email)
-        return __update_contact_if_needed(contact, name, mail_from)
-    return ContactCreateResult(contact, created=True, error=None)
+        contact: Optional[Contact] = Contact.get_by(
+            alias_id=alias_id, website_email=email
+        )
+        if contact:
+            return __update_contact_if_needed(contact, name, mail_from)
+        else:
+            LOG.warning(
+                f"Could not find contact with email {email} for alias_id {alias_id} and it should exist"
+            )
+            return ContactCreateResult(
+                None, created=False, error=ContactCreateError.Unknown
+            )

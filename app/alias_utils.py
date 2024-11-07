@@ -1,12 +1,14 @@
 import csv
 from io import StringIO
 import re
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import IntegrityError, DataError
 from flask import make_response
 
+from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
 from app.config import (
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
     BOUNCE_PREFIX,
@@ -23,6 +25,7 @@ from app.email_utils import (
     send_cannot_create_domain_alias,
     send_email,
     render,
+    sl_formataddr,
 )
 from app.errors import AliasInTrashError
 from app.events.event_dispatcher import EventDispatcher
@@ -366,6 +369,10 @@ def delete_alias(
 
     alias_id = alias.id
     alias_email = alias.email
+
+    emit_alias_audit_log(
+        alias, AliasAuditLogAction.DeleteAlias, "Alias deleted by user action"
+    )
     Alias.filter(Alias.id == alias.id).delete()
     Session.commit()
 
@@ -448,7 +455,7 @@ def alias_export_csv(user, csv_direct_export=False):
     return output
 
 
-def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
+def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
     # cannot transfer alias which is used for receiving newsletter
     if User.get_by(newsletter_alias_id=alias.id):
         raise Exception("Cannot transfer alias that's used to receive newsletter")
@@ -502,6 +509,12 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
     alias.disable_pgp = False
     alias.pinned = False
 
+    emit_alias_audit_log(
+        alias=alias,
+        action=AliasAuditLogAction.TransferredAlias,
+        message=f"Lost ownership of alias due to alias transfer confirmed. New owner is {new_user.id}",
+        user_id=old_user.id,
+    )
     EventDispatcher.send_event(
         old_user,
         EventContent(
@@ -510,6 +523,13 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
                 email=alias.email,
             )
         ),
+    )
+
+    emit_alias_audit_log(
+        alias=alias,
+        action=AliasAuditLogAction.AcceptTransferAlias,
+        message=f"Accepted alias transfer from user {old_user.id}",
+        user_id=new_user.id,
     )
     EventDispatcher.send_event(
         new_user,
@@ -527,7 +547,9 @@ def transfer_alias(alias, new_user, new_mailboxes: [Mailbox]):
     Session.commit()
 
 
-def change_alias_status(alias: Alias, enabled: bool, commit: bool = False):
+def change_alias_status(
+    alias: Alias, enabled: bool, message: Optional[str] = None, commit: bool = False
+):
     LOG.i(f"Changing alias {alias} enabled to {enabled}")
     alias.enabled = enabled
 
@@ -538,6 +560,39 @@ def change_alias_status(alias: Alias, enabled: bool, commit: bool = False):
         created_at=int(alias.created_at.timestamp),
     )
     EventDispatcher.send_event(alias.user, EventContent(alias_status_change=event))
+    audit_log_message = f"Set alias status to {enabled}"
+    if message is not None:
+        audit_log_message += f". {message}"
+    emit_alias_audit_log(
+        alias, AliasAuditLogAction.ChangeAliasStatus, audit_log_message
+    )
 
     if commit:
         Session.commit()
+
+
+@dataclass
+class AliasRecipientName:
+    name: str
+    message: Optional[str] = None
+
+
+def get_alias_recipient_name(alias: Alias) -> AliasRecipientName:
+    """
+    Logic:
+    1. If alias has name, use it
+    2. If alias has custom domain, and custom domain has name, use it
+    3. Otherwise, use the alias email as the recipient
+    """
+    if alias.name:
+        return AliasRecipientName(
+            name=sl_formataddr((alias.name, alias.email)),
+            message=f"Put alias name {alias.name} in from header",
+        )
+    elif alias.custom_domain:
+        if alias.custom_domain.name:
+            return AliasRecipientName(
+                name=sl_formataddr((alias.custom_domain.name, alias.email)),
+                message=f"Put domain default alias name {alias.custom_domain.name} in from header",
+            )
+    return AliasRecipientName(name=alias.email)

@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 from arrow import Arrow
 
@@ -16,8 +18,9 @@ from app.account_linking import (
 )
 from app.db import Session
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
-from app.models import Partner, PartnerUser, User
+from app.models import Partner, PartnerUser, User, UserAuditLog
 from app.proton.utils import get_proton_partner
+from app.user_audit_log_utils import UserAuditLogAction
 from app.utils import random_string, canonicalize_email
 from tests.utils import random_email
 
@@ -91,6 +94,13 @@ def test_login_case_from_partner():
     )
     assert res.user.activated is True
 
+    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=res.user.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
+    assert len(audit_logs) == 1
+    assert audit_logs[0].user_id == res.user.id
+
 
 def test_login_case_from_partner_with_uppercase_email():
     partner = get_proton_partner()
@@ -124,6 +134,14 @@ def test_login_case_from_web():
     assert res.user is not None
     assert 0 == (res.user.flags & User.FLAG_CREATED_FROM_PARTNER)
     assert res.user.activated is True
+
+    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=res.user.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
+    assert len(audit_logs) == 1
+    assert audit_logs[0].user_id == res.user.id
+    assert audit_logs[0].action == UserAuditLogAction.LinkAccount.value
 
 
 def test_get_strategy_existing_sl_user():
@@ -205,6 +223,13 @@ def test_link_account_with_proton_account_same_address(flask_client):
     )
     assert partner_user.partner_id == get_proton_partner().id
     assert partner_user.external_user_id == partner_user_id
+    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=res.user.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
+    assert len(audit_logs) == 1
+    assert audit_logs[0].user_id == res.user.id
+    assert audit_logs[0].action == UserAuditLogAction.LinkAccount.value
 
 
 def test_link_account_with_proton_account_different_address(flask_client):
@@ -229,6 +254,14 @@ def test_link_account_with_proton_account_different_address(flask_client):
     assert partner_user.partner_id == get_proton_partner().id
     assert partner_user.external_user_id == partner_user_id
 
+    audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=res.user.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
+    assert len(audit_logs) == 1
+    assert audit_logs[0].user_id == res.user.id
+    assert audit_logs[0].action == UserAuditLogAction.LinkAccount.value
+
 
 def test_link_account_with_proton_account_same_address_but_linked_to_other_user(
     flask_client,
@@ -248,21 +281,53 @@ def test_link_account_with_proton_account_same_address_but_linked_to_other_user(
         partner_user_id, email=random_email()
     )  # User already linked with the proton account
 
+    # START Ensure sl_user_2 has a partner_user with the right data
+    partner_user = PartnerUser.get_by(
+        partner_id=get_proton_partner().id, user_id=sl_user_2.id
+    )
+    assert partner_user is not None
+    assert partner_user.partner_id == get_proton_partner().id
+    assert partner_user.external_user_id == partner_user_id
+    assert partner_user.partner_email == sl_user_2.email
+    assert partner_user.user_id == sl_user_2.id
+    # END Ensure sl_user_2 has a partner_user with the right data
+
+    # Proceed to link sl_user_1
     res = process_link_case(link_request, sl_user_1, get_proton_partner())
+
+    # Check that the result is linking sl_user_1
     assert res.user.id == sl_user_1.id
     assert res.user.email == partner_email
     assert res.strategy == "Link"
 
+    # Ensure partner_user for sl_user_1 exists
     partner_user = PartnerUser.get_by(
         partner_id=get_proton_partner().id, user_id=sl_user_1.id
     )
     assert partner_user.partner_id == get_proton_partner().id
     assert partner_user.external_user_id == partner_user_id
 
+    # Ensure partner_user for sl_user_2 does not exist anymore
     partner_user = PartnerUser.get_by(
         partner_id=get_proton_partner().id, user_id=sl_user_2.id
     )
     assert partner_user is None
+
+    # Ensure audit logs for sl_user_1 show the link action
+    sl_user_1_audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=sl_user_1.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
+    assert len(sl_user_1_audit_logs) == 1
+    assert sl_user_1_audit_logs[0].user_id == sl_user_1.id
+
+    # Ensure audit logs for sl_user_2 show the unlink action
+    sl_user_2_audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=sl_user_2.id,
+        action=UserAuditLogAction.UnlinkAccount.value,
+    ).all()
+    assert len(sl_user_2_audit_logs) == 1
+    assert sl_user_2_audit_logs[0].user_id == sl_user_2.id
 
 
 def test_link_account_with_proton_account_different_address_and_linked_to_other_user(
@@ -299,6 +364,22 @@ def test_link_account_with_proton_account_different_address_and_linked_to_other_
         user_id=sl_user_2.id, partner_id=get_proton_partner().id
     )
     assert partner_user_2 is None
+
+    # Ensure audit logs for sl_user_1 show the link action
+    sl_user_1_audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=sl_user_1.id,
+        action=UserAuditLogAction.LinkAccount.value,
+    ).all()
+    assert len(sl_user_1_audit_logs) == 1
+    assert sl_user_1_audit_logs[0].user_id == sl_user_1.id
+
+    # Ensure audit logs for sl_user_2 show the unlink action
+    sl_user_2_audit_logs: List[UserAuditLog] = UserAuditLog.filter_by(
+        user_id=sl_user_2.id,
+        action=UserAuditLogAction.UnlinkAccount.value,
+    ).all()
+    assert len(sl_user_2_audit_logs) == 1
+    assert sl_user_2_audit_logs[0].user_id == sl_user_2.id
 
 
 def test_cannot_create_instance_of_base_strategy():

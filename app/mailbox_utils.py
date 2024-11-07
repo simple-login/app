@@ -1,6 +1,6 @@
 import dataclasses
 import secrets
-import random
+from enum import Enum
 from typing import Optional
 import arrow
 
@@ -16,6 +16,7 @@ from app.email_utils import (
 from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import User, Mailbox, Job, MailboxActivation
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 @dataclasses.dataclass
@@ -35,8 +36,9 @@ class OnlyPaidError(MailboxError):
 
 
 class CannotVerifyError(MailboxError):
-    def __init__(self, msg: str):
+    def __init__(self, msg: str, deleted_activation_code: bool = False):
         self.msg = msg
+        self.deleted_activation_code = deleted_activation_code
 
 
 MAX_ACTIVATION_TRIES = 3
@@ -70,8 +72,14 @@ def create_mailbox(
             f"User {user} has tried to create mailbox with {email} but email is invalid"
         )
         raise MailboxError("Invalid email")
-    new_mailbox = Mailbox.create(
+    new_mailbox: Mailbox = Mailbox.create(
         email=email, user_id=user.id, verified=verified, commit=True
+    )
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.CreateMailbox,
+        message=f"Create mailbox {new_mailbox.id} ({new_mailbox.email}). Verified={verified}",
+        commit=True,
     )
 
     if verified:
@@ -129,7 +137,7 @@ def delete_mailbox(
 
         if not transfer_mailbox.verified:
             LOG.i(f"User {user} has tried to transfer to a non verified mailbox")
-            MailboxError("Your new mailbox is not verified")
+            raise MailboxError("Your new mailbox is not verified")
 
     # Schedule delete account job
     LOG.i(
@@ -163,17 +171,17 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
             f"User {user} failed to verify mailbox {mailbox_id} because it does not exist"
         )
         raise MailboxError("Invalid mailbox")
+    if mailbox.user_id != user.id:
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
+        )
+        raise MailboxError("Invalid mailbox")
     if mailbox.verified:
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because it's already verified"
         )
         clear_activation_codes_for_mailbox(mailbox)
         return mailbox
-    if mailbox.user_id != user.id:
-        LOG.i(
-            f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
-        )
-        raise MailboxError("Invalid mailbox")
 
     activation = (
         MailboxActivation.filter(MailboxActivation.mailbox_id == mailbox_id)
@@ -188,7 +196,10 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
     if activation.tries >= MAX_ACTIVATION_TRIES:
         LOG.i(f"User {user} failed to verify mailbox {mailbox_id} more than 3 times")
         clear_activation_codes_for_mailbox(mailbox)
-        raise CannotVerifyError("Invalid activation code. Please request another code.")
+        raise CannotVerifyError(
+            "Invalid activation code. Please request another code.",
+            deleted_activation_code=True,
+        )
     if activation.created_at < arrow.now().shift(minutes=-15):
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because code is too old"
@@ -204,6 +215,11 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
         raise CannotVerifyError("Invalid activation code")
     LOG.i(f"User {user} has verified mailbox {mailbox_id}")
     mailbox.verified = True
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.VerifyMailbox,
+        message=f"Verify mailbox {mailbox_id} ({mailbox.email})",
+    )
     clear_activation_codes_for_mailbox(mailbox)
     return mailbox
 
@@ -216,7 +232,7 @@ def generate_activation_code(
         if config.MAILBOX_VERIFICATION_OVERRIDE_CODE:
             code = config.MAILBOX_VERIFICATION_OVERRIDE_CODE
         else:
-            code = "{:06d}".format(random.randint(1, 999999))
+            code = "{:06d}".format(secrets.randbelow(1000000))[:6]
     else:
         code = secrets.token_urlsafe(16)
     return MailboxActivation.create(
@@ -261,3 +277,54 @@ def send_verification_email(
             mailbox_email=mailbox.email,
         ),
     )
+
+
+class MailboxEmailChangeError(Enum):
+    InvalidId = 1
+    EmailAlreadyUsed = 2
+
+
+@dataclasses.dataclass
+class MailboxEmailChangeResult:
+    error: Optional[MailboxEmailChangeError]
+    message: str
+    message_category: str
+
+
+def perform_mailbox_email_change(mailbox_id: int) -> MailboxEmailChangeResult:
+    mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
+
+    # new_email can be None if user cancels change in the meantime
+    if mailbox and mailbox.new_email:
+        user = mailbox.user
+        if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
+            return MailboxEmailChangeResult(
+                error=MailboxEmailChangeError.EmailAlreadyUsed,
+                message=f"{mailbox.new_email} is already used",
+                message_category="error",
+            )
+
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.UpdateMailbox,
+            message=f"Change mailbox email for mailbox {mailbox_id} (old={mailbox.email} | new={mailbox.new_email})",
+        )
+        mailbox.email = mailbox.new_email
+        mailbox.new_email = None
+
+        # mark mailbox as verified if the change request is sent from an unverified mailbox
+        mailbox.verified = True
+        Session.commit()
+
+        LOG.d("Mailbox change %s is verified", mailbox)
+        return MailboxEmailChangeResult(
+            error=None,
+            message=f"The {mailbox.email} is updated",
+            message_category="success",
+        )
+    else:
+        return MailboxEmailChangeResult(
+            error=MailboxEmailChangeError.InvalidId,
+            message="Invalid link",
+            message_category="error",
+        )

@@ -7,6 +7,7 @@ from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
 from app.models import ActivationCode
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_next_url
 
 
@@ -47,6 +48,11 @@ def activate():
 
     user = activation_code.user
     user.activated = True
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.ActivateUser,
+        message=f"User has been activated: {user.email}",
+    )
     login_user(user)
 
     # activation code is to be used only once

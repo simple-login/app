@@ -20,6 +20,7 @@ from app.models import (
     AutoCreateRuleMailbox,
 )
 from app.regex_utils import regex_match
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string, CSRFValidationForm
 
 
@@ -164,6 +165,11 @@ def domain_detail(custom_domain_id):
             return redirect(request.url)
         if request.form.get("form-name") == "switch-catch-all":
             custom_domain.catch_all = not custom_domain.catch_all
+            emit_user_audit_log(
+                user=current_user,
+                action=UserAuditLogAction.UpdateCustomDomain,
+                message=f"Switched custom domain {custom_domain.id} ({custom_domain.domain}) catch all to {custom_domain.catch_all}",
+            )
             Session.commit()
 
             if custom_domain.catch_all:
@@ -182,6 +188,11 @@ def domain_detail(custom_domain_id):
         elif request.form.get("form-name") == "set-name":
             if request.form.get("action") == "save":
                 custom_domain.name = request.form.get("alias-name").replace("\n", "")
+                emit_user_audit_log(
+                    user=current_user,
+                    action=UserAuditLogAction.UpdateCustomDomain,
+                    message=f"Switched custom domain {custom_domain.id} ({custom_domain.domain}) name",
+                )
                 Session.commit()
                 flash(
                     f"Default alias name for Domain {custom_domain.domain} has been set",
@@ -189,6 +200,11 @@ def domain_detail(custom_domain_id):
                 )
             else:
                 custom_domain.name = None
+                emit_user_audit_log(
+                    user=current_user,
+                    action=UserAuditLogAction.UpdateCustomDomain,
+                    message=f"Cleared custom domain {custom_domain.id} ({custom_domain.domain}) name",
+                )
                 Session.commit()
                 flash(
                     f"Default alias name for Domain {custom_domain.domain} has been removed",
@@ -201,6 +217,11 @@ def domain_detail(custom_domain_id):
         elif request.form.get("form-name") == "switch-random-prefix-generation":
             custom_domain.random_prefix_generation = (
                 not custom_domain.random_prefix_generation
+            )
+            emit_user_audit_log(
+                user=current_user,
+                action=UserAuditLogAction.UpdateCustomDomain,
+                message=f"Switched custom domain {custom_domain.id} ({custom_domain.domain}) random prefix generation to {custom_domain.random_prefix_generation}",
             )
             Session.commit()
 

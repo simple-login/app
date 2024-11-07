@@ -24,6 +24,7 @@ from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import deferred
+from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
@@ -615,6 +616,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         # generate an alternative_id if needed
         if "alternative_id" not in kwargs:
             user.alternative_id = str(uuid.uuid4())
+
+        from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+
+        trail = ". Created from partner" if from_partner else ""
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.CreateUser,
+            message=f"Created user {email}{trail}",
+        )
 
         # If the user is created from partner, do not notify
         # nor give a trial
@@ -1673,6 +1683,7 @@ class Alias(Base, ModelMixin):
             Session.flush()
 
         # Internal import to avoid global import cycles
+        from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
         from app.events.event_dispatcher import EventDispatcher
         from app.events.generated.event_pb2 import AliasCreated, EventContent
 
@@ -1684,6 +1695,9 @@ class Alias(Base, ModelMixin):
             created_at=int(new_alias.created_at.timestamp),
         )
         EventDispatcher.send_event(user, EventContent(alias_created=event))
+        emit_alias_audit_log(
+            new_alias, AliasAuditLogAction.CreateAlias, "New alias created"
+        )
 
         return new_alias
 
@@ -3767,17 +3781,19 @@ class SyncEvent(Base, ModelMixin):
         sa.Index("ix_sync_event_taken_time", "taken_time"),
     )
 
-    def mark_as_taken(self) -> bool:
-        sql = """
-        UPDATE sync_event
-        SET taken_time = :taken_time
-        WHERE id = :sync_event_id
-          AND taken_time IS NULL
-        """
-        args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
-
-        res = Session.execute(sql, args)
-        Session.commit()
+    def mark_as_taken(self, allow_taken_older_than: Optional[Arrow] = None) -> bool:
+        try:
+            taken_condition = ["taken_time IS NULL"]
+            args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
+            if allow_taken_older_than:
+                taken_condition.append("taken_time < :taken_older_than")
+                args["taken_older_than"] = allow_taken_older_than.datetime
+            sql_taken_condition = "({})".format(" OR ".join(taken_condition))
+            sql = f"UPDATE sync_event SET taken_time = :taken_time WHERE id = :sync_event_id AND {sql_taken_condition}"
+            res = Session.execute(sql, args)
+            Session.commit()
+        except ObjectDeletedError:
+            return False
 
         return res.rowcount > 0
 
@@ -3801,3 +3817,39 @@ class SyncEvent(Base, ModelMixin):
             .limit(100)
             .all()
         )
+
+
+class AliasAuditLog(Base, ModelMixin):
+    """This model holds an audit log for all the actions performed to an alias"""
+
+    __tablename__ = "alias_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False)
+    alias_id = sa.Column(sa.Integer, nullable=False)
+    alias_email = sa.Column(sa.String(255), nullable=False)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
+    __table_args__ = (
+        sa.Index("ix_alias_audit_log_user_id", "user_id"),
+        sa.Index("ix_alias_audit_log_alias_id", "alias_id"),
+        sa.Index("ix_alias_audit_log_alias_email", "alias_email"),
+        sa.Index("ix_alias_audit_log_created_at", "created_at"),
+    )
+
+
+class UserAuditLog(Base, ModelMixin):
+    """This model holds an audit log for all the actions performed by a user"""
+
+    __tablename__ = "user_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False)
+    user_email = sa.Column(sa.String(255), nullable=False)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
+    __table_args__ = (
+        sa.Index("ix_user_audit_log_user_id", "user_id"),
+        sa.Index("ix_user_audit_log_user_email", "user_email"),
+        sa.Index("ix_user_audit_log_created_at", "created_at"),
+    )

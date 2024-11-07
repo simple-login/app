@@ -16,10 +16,11 @@ from app.db import Session
 from app.email_utils import email_can_be_used_as_mailbox
 from app.email_utils import mailbox_already_used, render, send_email
 from app.extensions import limiter
-from app.log import LOG
+from app.mailbox_utils import perform_mailbox_email_change, MailboxEmailChangeError
 from app.models import Alias, AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key_and_check
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email, CSRFValidationForm
 
 
@@ -88,8 +89,12 @@ def mailbox_detail_route(mailbox_id):
                 flash("SPF enforcement globally not enabled", "error")
                 return redirect(url_for("dashboard.index"))
 
-            mailbox.force_spf = (
-                True if request.form.get("spf-status") == "on" else False
+            force_spf_value = request.form.get("spf-status") == "on"
+            mailbox.force_spf = force_spf_value
+            emit_user_audit_log(
+                user=current_user,
+                action=UserAuditLogAction.UpdateMailbox,
+                message=f"Set force_spf to {force_spf_value} on mailbox {mailbox_id} ({mailbox.email})",
             )
             Session.commit()
             flash(
@@ -113,6 +118,11 @@ def mailbox_detail_route(mailbox_id):
                 if AuthorizedAddress.get_by(mailbox_id=mailbox.id, email=address):
                     flash(f"{address} already added", "error")
                 else:
+                    emit_user_audit_log(
+                        user=current_user,
+                        action=UserAuditLogAction.UpdateMailbox,
+                        message=f"Add authorized address {address} to mailbox {mailbox_id} ({mailbox.email})",
+                    )
                     AuthorizedAddress.create(
                         user_id=current_user.id,
                         mailbox_id=mailbox.id,
@@ -133,6 +143,11 @@ def mailbox_detail_route(mailbox_id):
                 flash("Unknown error. Refresh the page", "warning")
             else:
                 address = authorized_address.email
+                emit_user_audit_log(
+                    user=current_user,
+                    action=UserAuditLogAction.UpdateMailbox,
+                    message=f"Remove authorized address {address} from mailbox {mailbox_id} ({mailbox.email})",
+                )
                 AuthorizedAddress.delete(authorized_address_id)
                 Session.commit()
                 flash(f"{address} has been deleted", "success")
@@ -165,6 +180,11 @@ def mailbox_detail_route(mailbox_id):
                 except PGPException:
                     flash("Cannot add the public key, please verify it", "error")
                 else:
+                    emit_user_audit_log(
+                        user=current_user,
+                        action=UserAuditLogAction.UpdateMailbox,
+                        message=f"Add PGP Key {mailbox.pgp_finger_print} to mailbox {mailbox_id} ({mailbox.email})",
+                    )
                     Session.commit()
                     flash("Your PGP public key is saved successfully", "success")
                     return redirect(
@@ -172,6 +192,11 @@ def mailbox_detail_route(mailbox_id):
                     )
             elif request.form.get("action") == "remove":
                 # Free user can decide to remove their added PGP key
+                emit_user_audit_log(
+                    user=current_user,
+                    action=UserAuditLogAction.UpdateMailbox,
+                    message=f"Remove PGP Key {mailbox.pgp_finger_print} from mailbox {mailbox_id} ({mailbox.email})",
+                )
                 mailbox.pgp_public_key = None
                 mailbox.pgp_finger_print = None
                 mailbox.disable_pgp = False
@@ -191,9 +216,19 @@ def mailbox_detail_route(mailbox_id):
                     )
                 else:
                     mailbox.disable_pgp = False
+                    emit_user_audit_log(
+                        user=current_user,
+                        action=UserAuditLogAction.UpdateMailbox,
+                        message=f"Enabled PGP for mailbox {mailbox_id} ({mailbox.email})",
+                    )
                     flash(f"PGP is enabled on {mailbox.email}", "info")
             else:
                 mailbox.disable_pgp = True
+                emit_user_audit_log(
+                    user=current_user,
+                    action=UserAuditLogAction.UpdateMailbox,
+                    message=f"Disabled PGP for mailbox {mailbox_id} ({mailbox.email})",
+                )
                 flash(f"PGP is disabled on {mailbox.email}", "info")
 
             Session.commit()
@@ -203,6 +238,11 @@ def mailbox_detail_route(mailbox_id):
         elif request.form.get("form-name") == "generic-subject":
             if request.form.get("action") == "save":
                 mailbox.generic_subject = request.form.get("generic-subject")
+                emit_user_audit_log(
+                    user=current_user,
+                    action=UserAuditLogAction.UpdateMailbox,
+                    message=f"Set generic subject for mailbox {mailbox_id} ({mailbox.email})",
+                )
                 Session.commit()
                 flash("Generic subject is enabled", "success")
                 return redirect(
@@ -210,6 +250,11 @@ def mailbox_detail_route(mailbox_id):
                 )
             elif request.form.get("action") == "remove":
                 mailbox.generic_subject = None
+                emit_user_audit_log(
+                    user=current_user,
+                    action=UserAuditLogAction.UpdateMailbox,
+                    message=f"Remove generic subject for mailbox {mailbox_id} ({mailbox.email})",
+                )
                 Session.commit()
                 flash("Generic subject is disabled", "success")
                 return redirect(
@@ -272,7 +317,7 @@ def cancel_mailbox_change_route(mailbox_id):
 
 
 @dashboard_bp.route("/mailbox/confirm_change")
-def mailbox_confirm_change_route():
+def mailbox_confirm_email_change_route():
     s = TimestampSigner(MAILBOX_SECRET)
     signed_mailbox_id = request.args.get("mailbox_id")
 
@@ -281,30 +326,20 @@ def mailbox_confirm_change_route():
     except Exception:
         flash("Invalid link", "error")
         return redirect(url_for("dashboard.index"))
-    else:
-        mailbox = Mailbox.get(mailbox_id)
 
-        # new_email can be None if user cancels change in the meantime
-        if mailbox and mailbox.new_email:
-            user = mailbox.user
-            if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
-                flash(f"{mailbox.new_email} is already used", "error")
-                return redirect(
-                    url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
-                )
+    res = perform_mailbox_email_change(mailbox_id)
 
-            mailbox.email = mailbox.new_email
-            mailbox.new_email = None
-
-            # mark mailbox as verified if the change request is sent from an unverified mailbox
-            mailbox.verified = True
-            Session.commit()
-
-            LOG.d("Mailbox change %s is verified", mailbox)
-            flash(f"The {mailbox.email} is updated", "success")
+    flash(res.message, res.message_category)
+    if res.error:
+        if res.error == MailboxEmailChangeError.EmailAlreadyUsed:
             return redirect(
-                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
             )
-        else:
-            flash("Invalid link", "error")
+        elif res.error == MailboxEmailChangeError.InvalidId:
             return redirect(url_for("dashboard.index"))
+        else:
+            raise Exception("Unhandled MailboxEmailChangeError")
+    else:
+        return redirect(
+            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+        )

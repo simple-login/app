@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, List
 
 import arrow
 import sqlalchemy
@@ -16,6 +16,8 @@ from flask_admin.contrib import sqla
 from flask_login import current_user
 
 from app.db import Session
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.models import (
     User,
     ManualSubscription,
@@ -34,8 +36,12 @@ from app.models import (
     DeletedAlias,
     DomainDeletedAlias,
     PartnerUser,
+    AliasMailbox,
+    AliasAuditLog,
+    UserAuditLog,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -112,7 +118,7 @@ class SLAdminIndexView(AdminIndexView):
         if not current_user.is_authenticated or not current_user.is_admin:
             return redirect(url_for("auth.login", next=request.url))
 
-        return redirect("/admin/user")
+        return redirect("/admin/email_search")
 
 
 class UserAdmin(SLModelView):
@@ -348,17 +354,42 @@ def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
                 manual_sub.end_at = manual_sub.end_at.shift(years=1)
             else:
                 manual_sub.end_at = arrow.now().shift(years=1, days=1)
+            emit_user_audit_log(
+                user=user,
+                action=UserAuditLogAction.Upgrade,
+                message=f"Admin {current_user.email} extended manual subscription to user {user.email}",
+            )
+            EventDispatcher.send_event(
+                user=user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(
+                        plan_end_time=manual_sub.end_at.timestamp
+                    )
+                ),
+            )
             flash(f"Subscription extended to {manual_sub.end_at.humanize()}", "success")
-            continue
+        else:
+            emit_user_audit_log(
+                user=user,
+                action=UserAuditLogAction.Upgrade,
+                message=f"Admin {current_user.email} created manual subscription to user {user.email}",
+            )
+            manual_sub = ManualSubscription.create(
+                user_id=user.id,
+                end_at=arrow.now().shift(years=1, days=1),
+                comment=way,
+                is_giveaway=is_giveaway,
+            )
+            EventDispatcher.send_event(
+                user=user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(
+                        plan_end_time=manual_sub.end_at.timestamp
+                    )
+                ),
+            )
 
-        ManualSubscription.create(
-            user_id=user.id,
-            end_at=arrow.now().shift(years=1, days=1),
-            comment=way,
-            is_giveaway=is_giveaway,
-        )
-
-        flash(f"New {way} manual subscription for {user} is created", "success")
+            flash(f"New {way} manual subscription for {user} is created", "success")
     Session.commit()
 
 
@@ -450,14 +481,7 @@ class ManualSubscriptionAdmin(SLModelView):
         "Extend 1 year more?",
     )
     def extend_1y(self, ids):
-        for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
-            ms.end_at = ms.end_at.shift(years=1)
-            flash(f"Extend subscription for 1 year for {ms.user}", "success")
-            AdminAuditLog.extend_subscription(
-                current_user.id, ms.user.id, ms.end_at, "1 year"
-            )
-
-        Session.commit()
+        self.__extend_manual_subscription(ids, msg="1 year", years=1)
 
     @action(
         "extend_1m",
@@ -465,11 +489,26 @@ class ManualSubscriptionAdmin(SLModelView):
         "Extend 1 month more?",
     )
     def extend_1m(self, ids):
+        self.__extend_manual_subscription(ids, msg="1 month", months=1)
+
+    def __extend_manual_subscription(self, ids: List[int], msg: str, **kwargs):
         for ms in ManualSubscription.filter(ManualSubscription.id.in_(ids)):
-            ms.end_at = ms.end_at.shift(months=1)
-            flash(f"Extend subscription for 1 month for {ms.user}", "success")
+            sub: ManualSubscription = ms
+            sub.end_at = sub.end_at.shift(**kwargs)
+            flash(f"Extend subscription for {msg} for {sub.user}", "success")
+            emit_user_audit_log(
+                user=sub.user,
+                action=UserAuditLogAction.Upgrade,
+                message=f"Admin {current_user.email} extended manual subscription for {msg} for {sub.user}",
+            )
             AdminAuditLog.extend_subscription(
-                current_user.id, ms.user.id, ms.end_at, "1 month"
+                current_user.id, sub.user.id, sub.end_at, msg
+            )
+            EventDispatcher.send_event(
+                user=sub.user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(plan_end_time=sub.end_at.timestamp)
+                ),
             )
 
         Session.commit()
@@ -736,22 +775,47 @@ class InvalidMailboxDomainAdmin(SLModelView):
 class EmailSearchResult:
     no_match: bool = True
     alias: Optional[Alias] = None
-    mailbox: list[Mailbox] = []
+    alias_audit_log: Optional[List[AliasAuditLog]] = None
+    mailbox: List[Mailbox] = []
     mailbox_count: int = 0
     deleted_alias: Optional[DeletedAlias] = None
-    deleted_custom_alias: Optional[DomainDeletedAlias] = None
+    deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
+    domain_deleted_alias: Optional[DomainDeletedAlias] = None
+    domain_deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
     user: Optional[User] = None
+    user_audit_log: Optional[List[UserAuditLog]] = None
+    query: str
 
     @staticmethod
     def from_email(email: str) -> EmailSearchResult:
         output = EmailSearchResult()
+        output.query = email
         alias = Alias.get_by(email=email)
         if alias:
             output.alias = alias
+            output.alias_audit_log = (
+                AliasAuditLog.filter_by(alias_id=alias.id)
+                .order_by(AliasAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         user = User.get_by(email=email)
         if user:
             output.user = user
+            output.user_audit_log = (
+                UserAuditLog.filter_by(user_id=user.id)
+                .order_by(UserAuditLog.created_at.desc())
+                .all()
+            )
+            output.no_match = False
+
+        user_audit_log = (
+            UserAuditLog.filter_by(user_email=email)
+            .order_by(UserAuditLog.created_at.desc())
+            .all()
+        )
+        if user_audit_log:
+            output.user_audit_log = user_audit_log
             output.no_match = False
         mailboxes = (
             Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).limit(10).all()
@@ -763,10 +827,20 @@ class EmailSearchResult:
         deleted_alias = DeletedAlias.get_by(email=email)
         if deleted_alias:
             output.deleted_alias = deleted_alias
+            output.deleted_alias_audit_log = (
+                AliasAuditLog.filter_by(alias_email=deleted_alias.email)
+                .order_by(AliasAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         domain_deleted_alias = DomainDeletedAlias.get_by(email=email)
         if domain_deleted_alias:
             output.domain_deleted_alias = domain_deleted_alias
+            output.domain_deleted_alias_audit_log = (
+                AliasAuditLog.filter_by(alias_email=domain_deleted_alias.email)
+                .order_by(AliasAuditLog.created_at.desc())
+                .all()
+            )
             output.no_match = False
         return output
 
@@ -784,6 +858,25 @@ class EmailSearchHelpers:
     @staticmethod
     def mailbox_count(user: User) -> int:
         return Mailbox.filter_by(user_id=user.id).order_by(Mailbox.id.desc()).count()
+
+    @staticmethod
+    def alias_mailboxes(alias: Alias) -> list[Mailbox]:
+        return (
+            Session.query(Mailbox)
+            .filter(Mailbox.id == Alias.mailbox_id, Alias.id == alias.id)
+            .union(
+                Session.query(Mailbox)
+                .join(AliasMailbox, Mailbox.id == AliasMailbox.mailbox_id)
+                .filter(AliasMailbox.alias_id == alias.id)
+            )
+            .order_by(Mailbox.id)
+            .limit(10)
+            .all()
+        )
+
+    @staticmethod
+    def alias_mailbox_count(alias: Alias) -> int:
+        return len(alias.mailboxes)
 
     @staticmethod
     def alias_list(user: User) -> list[Alias]:

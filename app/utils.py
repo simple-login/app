@@ -1,4 +1,3 @@
-import random
 import re
 import secrets
 import string
@@ -32,8 +31,9 @@ def random_words(words: int = 2, numbers: int = 0):
     fields = [secrets.choice(_words) for i in range(words)]
 
     if numbers > 0:
-        digits = "".join([str(random.randint(0, 9)) for i in range(numbers)])
-        return "_".join(fields) + digits
+        digits = [n for n in range(10)]
+        suffix = "".join([str(secrets.choice(digits)) for i in range(numbers)])
+        return "_".join(fields) + suffix
     else:
         return "_".join(fields)
 
