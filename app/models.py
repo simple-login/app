@@ -1666,6 +1666,11 @@ class Alias(Base, ModelMixin):
             custom_domain = Alias.get_custom_domain(email)
             if custom_domain:
                 new_alias.custom_domain_id = custom_domain.id
+        else:
+            custom_domain = CustomDomain.get(kw["custom_domain_id"])
+        # If it comes from a custom domain created from partner. Mark it as created from partner
+        if custom_domain is not None and custom_domain.partner_id is not None:
+            new_alias.flags = (new_alias.flags or 0) | Alias.FLAG_PARTNER_CREATED
 
         Session.add(new_alias)
         DailyMetric.get_or_create_today_metric().nb_alias += 1
