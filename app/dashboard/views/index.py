@@ -71,7 +71,10 @@ def index():
 
     page = 0
     if request.args.get("page"):
-        page = int(request.args.get("page"))
+        try:
+            page = int(request.args.get("page"))
+        except ValueError:
+            pass
 
     highlight_alias_id = None
     if request.args.get("highlight_alias_id"):
