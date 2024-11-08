@@ -227,7 +227,10 @@ def alias_contact_manager(alias_id):
 
     page = 0
     if request.args.get("page"):
-        page = int(request.args.get("page"))
+        try:
+            page = int(request.args.get("page"))
+        except ValueError:
+            pass
 
     query = request.args.get("query") or ""
 
