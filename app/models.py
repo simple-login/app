@@ -565,6 +565,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             "ix_users_activated_trial_end_lifetime", activated, trial_end, lifetime
         ),
         sa.Index("ix_users_delete_on", delete_on),
+        sa.Index("ix_users_default_mailbox_id", default_mailbox_id),
     )
 
     @property
@@ -2752,7 +2753,10 @@ class Mailbox(Base, ModelMixin):
 
     generic_subject = sa.Column(sa.String(78), nullable=True)
 
-    __table_args__ = (sa.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),
+        sa.Index("ix_mailbox_pgp_finger_print", "pgp_finger_print"),
+    )
 
     user = orm.relationship(User, foreign_keys=[user_id])
 
