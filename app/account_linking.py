@@ -3,12 +3,15 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+import arrow
 from arrow import Arrow
 from newrelic import agent
 from sqlalchemy import or_
 
 from app.db import Session
 from app.email_utils import send_welcome_email
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import UserPlanChanged, EventContent
 from app.partner_user_utils import create_partner_user, create_partner_subscription
 from app.utils import sanitize_email, canonicalize_email
 from app.errors import (
@@ -54,6 +57,21 @@ class LinkResult:
     strategy: str
 
 
+def send_user_plan_changed_event(partner_user: PartnerUser) -> Optional[int]:
+    subscription_end = partner_user.user.get_active_subscription_end(
+        include_partner_subscription=False
+    )
+    end_timestamp = None
+    if partner_user.user.lifetime:
+        end_timestamp = arrow.get("2038-01-01").timestamp
+    elif subscription_end:
+        end_timestamp = subscription_end.timestamp
+    event = UserPlanChanged(plan_end_time=end_timestamp)
+    EventDispatcher.send_event(partner_user.user, EventContent(user_plan_change=event))
+    Session.flush()
+    return end_timestamp
+
+
 def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
     sub = PartnerSubscription.get_by(partner_user_id=partner_user.id)
     if plan.type == SLPlanType.Free:
@@ -88,6 +106,8 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                     action=UserAuditLogAction.SubscriptionExtended,
                     message="Extended partner subscription",
                 )
+    Session.flush()
+    send_user_plan_changed_event(partner_user)
     Session.commit()
 
 
