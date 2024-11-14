@@ -2075,7 +2075,11 @@ class Contact(Base, ModelMixin):
 
 class EmailLog(Base, ModelMixin):
     __tablename__ = "email_log"
-    __table_args__ = (Index("ix_email_log_created_at", "created_at"),)
+    __table_args__ = (
+        Index("ix_email_log_created_at", "created_at"),
+        Index("ix_email_log_mailbox_id", "mailbox_id"),
+        Index("ix_email_log_bounced_mailbox_id", "bounced_mailbox_id"),
+    )
 
     user_id = sa.Column(
         sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
