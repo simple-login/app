@@ -6,6 +6,7 @@ from typing import Optional
 import arrow
 from arrow import Arrow
 from newrelic import agent
+from psycopg2.errors import UniqueViolation
 from sqlalchemy import or_
 
 from app.db import Session
@@ -160,15 +161,55 @@ class ClientMergeStrategy(ABC):
 
 class NewUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
-        # Will create a new SL User with a random password
         canonical_email = canonicalize_email(self.link_request.email)
-        new_user = User.create(
-            email=canonical_email,
-            name=self.link_request.name,
-            password=random_string(20),
-            activated=True,
-            from_partner=self.link_request.from_partner,
+        try:
+            # Will create a new SL User with a random password
+            new_user = User.create(
+                email=canonical_email,
+                name=self.link_request.name,
+                password=random_string(20),
+                activated=True,
+                from_partner=self.link_request.from_partner,
+            )
+            self.create_partner_user(new_user)
+            Session.commit()
+
+            if not new_user.created_by_partner:
+                send_welcome_email(new_user)
+
+            agent.record_custom_event(
+                "PartnerUserCreation", {"partner": self.partner.name}
+            )
+
+            return LinkResult(
+                user=new_user,
+                strategy=self.__class__.__name__,
+            )
+        except UniqueViolation:
+            return self.create_missing_link(canonical_email)
+
+    def create_missing_link(self, canonical_email: str):
+        # If there's a unique key violation due to race conditions try to create only the partner if needed
+        partner_user = PartnerUser.get_by(
+            external_user_id=self.link_request.external_user_id,
+            partner_id=self.partner.id,
         )
+        if partner_user is None:
+            # Get the user by canonical email and if not by normal email
+            user = User.get_by(email=canonical_email) or User.get_by(
+                email=self.link_request.email
+            )
+            if not user:
+                raise RuntimeError(
+                    "Tried to create only partner on UniqueViolation but cannot find the user"
+                )
+            partner_user = self.create_partner_user(user)
+            Session.commit()
+        return LinkResult(
+            user=partner_user.user, strategy=ExistingUnlinkedUserStrategy.__name__
+        )
+
+    def create_partner_user(self, new_user: User):
         partner_user = create_partner_user(
             user=new_user,
             partner_id=self.partner.id,
@@ -182,17 +223,7 @@ class NewUserStrategy(ClientMergeStrategy):
             partner_user,
             self.link_request.plan,
         )
-        Session.commit()
-
-        if not new_user.created_by_partner:
-            send_welcome_email(new_user)
-
-        agent.record_custom_event("PartnerUserCreation", {"partner": self.partner.name})
-
-        return LinkResult(
-            user=new_user,
-            strategy=self.__class__.__name__,
-        )
+        return partner_user
 
 
 class ExistingUnlinkedUserStrategy(ClientMergeStrategy):

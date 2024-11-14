@@ -144,6 +144,21 @@ def test_login_case_from_web():
     assert audit_logs[0].action == UserAuditLogAction.LinkAccount.value
 
 
+def test_new_user_strategy_create_missing_link():
+    email = random_email()
+    user = User.create(email, commit=True)
+    nus = NewUserStrategy(
+        link_request=random_link_request(
+            email=user.email, external_user_id=random_string(), from_partner=False
+        ),
+        user=None,
+        partner=get_proton_partner(),
+    )
+    result = nus.create_missing_link(user.email)
+    assert result.user.id == user.id
+    assert result.strategy == ExistingUnlinkedUserStrategy.__name__
+
+
 def test_get_strategy_existing_sl_user():
     email = random_email()
     user = User.create(email, commit=True)
