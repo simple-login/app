@@ -158,6 +158,8 @@ class File(Base, ModelMixin):
     path = sa.Column(sa.String(128), unique=True, nullable=False)
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=True)
 
+    __table_args__ = (sa.Index("ix_file_user_id", "user_id"),)
+
     def get_url(self, expires_in=3600):
         return s3.get_url(self.path, expires_in)
 
@@ -319,6 +321,8 @@ class HibpNotifiedAlias(Base, ModelMixin):
 
     notified_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
 
+    __table_args__ = (sa.Index("ix_hibp_notified_alias_user_id", "user_id"),)
+
 
 class Fido(Base, ModelMixin):
     __tablename__ = "fido"
@@ -332,6 +336,8 @@ class Fido(Base, ModelMixin):
     sign_count = sa.Column(sa.BigInteger(), nullable=False)
     name = sa.Column(sa.String(128), nullable=False, unique=False)
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=True)
+
+    __table_args__ = (sa.Index("ix_fido_user_id", "user_id"),)
 
 
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
@@ -566,6 +572,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         ),
         sa.Index("ix_users_delete_on", delete_on),
         sa.Index("ix_users_default_mailbox_id", default_mailbox_id),
+        sa.Index(
+            "ix_users_default_alias_custom_domain_id", default_alias_custom_domain_id
+        ),
+        sa.Index("ix_users_profile_picture_id", profile_picture_id),
     )
 
     @property
@@ -1222,6 +1232,8 @@ class ActivationCode(Base, ModelMixin):
 
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_1h)
 
+    __table_args__ = (sa.Index("ix_activation_code_user_id", "user_id"),)
+
     def is_expired(self):
         return self.expired < arrow.now()
 
@@ -1237,6 +1249,8 @@ class ResetPasswordCode(Base, ModelMixin):
     user = orm.relationship(User)
 
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_1h)
+
+    __table_args__ = (sa.Index("ix_reset_password_code_user_id", "user_id"),)
 
     def is_expired(self):
         return self.expired < arrow.now()
@@ -1279,6 +1293,8 @@ class MfaBrowser(Base, ModelMixin):
     expires = sa.Column(ArrowType, default=False, nullable=False)
 
     user = orm.relationship(User)
+
+    __table_args__ = (sa.Index("ix_mfa_browser_user_id", "user_id"),)
 
     @classmethod
     def create_new(cls, user, token_length=64) -> "MfaBrowser":
@@ -1338,6 +1354,12 @@ class Client(Base, ModelMixin):
     user = orm.relationship(User)
     referral = orm.relationship("Referral")
 
+    __table_args__ = (
+        sa.Index("ix_client_user_id", "user_id"),
+        sa.Index("ix_client_icon_id", "icon_id"),
+        sa.Index("ix_client_referral_id", "referral_id"),
+    )
+
     def nb_user(self):
         return ClientUser.filter_by(client_id=self.id).count()
 
@@ -1386,6 +1408,8 @@ class RedirectUri(Base, ModelMixin):
 
     client = orm.relationship(Client, backref="redirect_uris")
 
+    __table_args__ = (sa.Index("ix_redirect_uri_client_id", "client_id"),)
+
 
 class AuthorizationCode(Base, ModelMixin):
     __tablename__ = "authorization_code"
@@ -1406,6 +1430,11 @@ class AuthorizationCode(Base, ModelMixin):
     client = orm.relationship(Client, lazy=False)
 
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_5m)
+
+    __table_args__ = (
+        sa.Index("ix_authorization_code_client_id", "client_id"),
+        sa.Index("ix_authorization_code_user_id", "user_id"),
+    )
 
     def is_expired(self):
         return self.expired < arrow.now()
@@ -1428,6 +1457,11 @@ class OauthToken(Base, ModelMixin):
     client = orm.relationship(Client)
 
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_1h)
+
+    __table_args__ = (
+        sa.Index("ix_oauth_token_user_id", "user_id"),
+        sa.Index("ix_oauth_token_client_id", "client_id"),
+    )
 
     def is_expired(self):
         return self.expired < arrow.now()
@@ -1582,6 +1616,7 @@ class Alias(Base, ModelMixin):
             postgresql_ops={"note": "gin_trgm_ops"},
             postgresql_using="gin",
         ),
+        Index("ix_alias_original_owner_id", "original_owner_id"),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id])
@@ -2079,6 +2114,7 @@ class EmailLog(Base, ModelMixin):
         Index("ix_email_log_created_at", "created_at"),
         Index("ix_email_log_mailbox_id", "mailbox_id"),
         Index("ix_email_log_bounced_mailbox_id", "bounced_mailbox_id"),
+        Index("ix_email_log_refused_email_id", "refused_email_id"),
     )
 
     user_id = sa.Column(
@@ -2355,6 +2391,7 @@ class AliasUsedOn(Base, ModelMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("alias_id", "hostname", name="uq_alias_used"),
+        sa.Index("ix_alias_used_on_user_id", "user_id"),
     )
 
     alias_id = sa.Column(
@@ -2380,6 +2417,11 @@ class ApiKey(Base, ModelMixin):
     sudo_mode_at = sa.Column(ArrowType, default=None)
 
     user = orm.relationship(User)
+
+    __table_args__ = (
+        sa.Index("ix_api_key_code", "code"),
+        sa.Index("ix_api_key_user_id", "user_id"),
+    )
 
     @classmethod
     def create(cls, user_id, name=None, **kwargs):
@@ -2539,6 +2581,7 @@ class AutoCreateRule(Base, ModelMixin):
         sa.UniqueConstraint(
             "custom_domain_id", "order", name="uq_auto_create_rule_order"
         ),
+        sa.Index("ix_auto_create_rule_custom_domain_id", "custom_domain_id"),
     )
 
     custom_domain_id = sa.Column(
@@ -2582,6 +2625,7 @@ class DomainDeletedAlias(Base, ModelMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("domain_id", "email", name="uq_domain_trash"),
+        sa.Index("ix_domain_deleted_alias_user_id", "user_id"),
     )
 
     email = sa.Column(sa.String(256), nullable=False)
@@ -2642,6 +2686,8 @@ class Coupon(Base, ModelMixin):
     # a coupon can have an expiration
     expires_date = sa.Column(ArrowType, nullable=True)
 
+    __table_args__ = (sa.Index("ix_coupon_used_by_user_id", "used_by_user_id"),)
+
 
 class Directory(Base, ModelMixin):
     __tablename__ = "directory"
@@ -2655,6 +2701,8 @@ class Directory(Base, ModelMixin):
     _mailboxes = orm.relationship(
         "Mailbox", secondary="directory_mailbox", lazy="joined"
     )
+
+    __table_args__ = (sa.Index("ix_directory_user_id", "user_id"),)
 
     @property
     def mailboxes(self):
@@ -2897,6 +2945,8 @@ class RefusedEmail(Base, ModelMixin):
     # toggle this when email content (stored at full_report_path & path are deleted)
     deleted = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
 
+    __table_args__ = (sa.Index("ix_refused_email_user_id", "user_id"),)
+
     def get_url(self, expires_in=3600):
         if self.path:
             return s3.get_url(self.path, expires_in)
@@ -2918,6 +2968,8 @@ class Referral(Base, ModelMixin):
     code = sa.Column(sa.String(128), unique=True, nullable=False)
 
     user = orm.relationship(User, foreign_keys=[user_id], backref="referrals")
+
+    __table_args__ = (sa.Index("ix_referral_user_id", "user_id"),)
 
     @property
     def nb_user(self) -> int:
@@ -2957,6 +3009,8 @@ class SentAlert(Base, ModelMixin):
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     to_email = sa.Column(sa.String(256), nullable=False)
     alert_type = sa.Column(sa.String(256), nullable=False)
+
+    __table_args__ = (sa.Index("ix_sent_alert_user_id", "user_id"),)
 
 
 class AliasMailbox(Base, ModelMixin):
@@ -3203,6 +3257,11 @@ class BatchImport(Base, ModelMixin):
     file = orm.relationship(File)
     user = orm.relationship(User)
 
+    __table_args__ = (
+        sa.Index("ix_batch_import_file_id", "file_id"),
+        sa.Index("ix_batch_import_user_id", "user_id"),
+    )
+
     def nb_alias(self):
         return Alias.filter_by(batch_import_id=self.id).count()
 
@@ -3223,6 +3282,7 @@ class AuthorizedAddress(Base, ModelMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("mailbox_id", "email", name="uq_authorize_address"),
+        sa.Index("ix_authorized_address_user_id", "user_id"),
     )
 
     mailbox = orm.relationship(Mailbox, backref="authorized_addresses")
@@ -3364,6 +3424,8 @@ class Payout(Base, ModelMixin):
 
     user = orm.relationship(User)
 
+    __table_args__ = (sa.Index("ix_payout_user_id", "user_id"),)
+
 
 class IgnoredEmail(Base, ModelMixin):
     """If an email has mail_from and rcpt_to present in this table, discard it by returning 250 status."""
@@ -3464,6 +3526,8 @@ class PhoneReservation(Base, ModelMixin):
 
     start = sa.Column(ArrowType, nullable=False)
     end = sa.Column(ArrowType, nullable=False)
+
+    __table_args__ = (sa.Index("ix_phone_reservation_user_id", "user_id"),)
 
 
 class PhoneMessage(Base, ModelMixin):
@@ -3639,6 +3703,11 @@ class ProviderComplaint(Base, ModelMixin):
     user = orm.relationship(User, foreign_keys=[user_id])
     refused_email = orm.relationship(RefusedEmail, foreign_keys=[refused_email_id])
 
+    __table_args__ = (
+        sa.Index("ix_provider_complaint_user_id", "user_id"),
+        sa.Index("ix_provider_complaint_refused_email_id", "refused_email_id"),
+    )
+
 
 class PartnerApiToken(Base, ModelMixin):
     __tablename__ = "partner_api_token"
@@ -3762,6 +3831,8 @@ class NewsletterUser(Base, ModelMixin):
     user = orm.relationship(User)
     newsletter = orm.relationship(Newsletter)
 
+    __table_args__ = (sa.Index("ix_newsletter_user_user_id", "user_id"),)
+
 
 class ApiToCookieToken(Base, ModelMixin):
     __tablename__ = "api_cookie_token"
@@ -3771,6 +3842,11 @@ class ApiToCookieToken(Base, ModelMixin):
 
     user = orm.relationship(User)
     api_key = orm.relationship(ApiKey)
+
+    __table_args__ = (
+        sa.Index("ix_api_to_cookie_token_api_key_id", "api_key_id"),
+        sa.Index("ix_api_to_cookie_token_user_id", "user_id"),
+    )
 
     @classmethod
     def create(cls, **kwargs):
