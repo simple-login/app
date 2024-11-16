@@ -3273,8 +3273,6 @@ hypnotic
 hypnotism
 hypnotist
 hypnotize
-hypocrisy
-hypocrite
 ibuprofen
 ice
 iciness
@@ -3304,7 +3302,6 @@ image
 imaginary
 imagines
 imaging
-imbecile
 imitate
 imitation
 immerse
@@ -3727,7 +3724,6 @@ machine
 machinist
 magazine
 magenta
-maggot
 magical
 magician
 magma
@@ -7446,8 +7442,6 @@ wheat
 whenever
 whiff
 whimsical
-whinny
-whiny
 whisking
 whoever
 whole
