@@ -1,6 +1,4 @@
 abacus
-abdomen
-abdominal
 abide
 abiding
 ability
@@ -1031,7 +1029,6 @@ chosen
 chowder
 chowtime
 chrome
-chubby
 chuck
 chug
 chummy
@@ -2041,8 +2038,6 @@ dwindling
 dynamic
 dynamite
 dynasty
-dyslexia
-dyslexic
 each
 eagle
 earache
@@ -2081,7 +2076,6 @@ eatery
 eating
 eats
 ebay
-ebony
 ebook
 ecard
 eccentric
@@ -2375,8 +2369,6 @@ exclude
 excluding
 exclusion
 exclusive
-excretion
-excretory
 excursion
 excusable
 excusably
@@ -2396,8 +2388,6 @@ existing
 exit
 exodus
 exonerate
-exorcism
-exorcist
 expand
 expanse
 expansion
@@ -2483,7 +2473,6 @@ fanning
 fantasize
 fantastic
 fantasy
-fascism
 fastball
 faster
 fasting
@@ -3028,7 +3017,6 @@ guiding
 guileless
 guise
 gulf
-gullible
 gully
 gulp
 gumball
@@ -3040,10 +3028,6 @@ gurgle
 gurgling
 guru
 gush
-gusto
-gusty
-gutless
-guts
 gutter
 guy
 guzzler
@@ -3242,8 +3226,6 @@ humble
 humbling
 humbly
 humid
-humiliate
-humility
 humming
 hummus
 humongous
@@ -3271,7 +3253,6 @@ hurray
 hurricane
 hurried
 hurry
-hurt
 husband
 hush
 husked
@@ -3968,8 +3949,6 @@ multitude
 mumble
 mumbling
 mumbo
-mummified
-mummify
 mumps
 munchkin
 mundane
@@ -4022,8 +4001,6 @@ napped
 napping
 nappy
 narrow
-nastily
-nastiness
 national
 native
 nativity
@@ -4446,7 +4423,6 @@ pasta
 pasted
 pastel
 pastime
-pastor
 pastrami
 pasture
 pasty
@@ -4458,7 +4434,6 @@ path
 patience
 patient
 patio
-patriarch
 patriot
 patrol
 patronage
@@ -4549,7 +4524,6 @@ pettiness
 petty
 petunia
 phantom
-phobia
 phoenix
 phonebook
 phoney
@@ -4608,7 +4582,6 @@ plot
 plow
 ploy
 pluck
-plug
 plunder
 plunging
 plural
@@ -4875,7 +4848,6 @@ pupil
 puppet
 puppy
 purchase
-pureblood
 purebred
 purely
 pureness
@@ -5047,7 +5019,6 @@ recharger
 recipient
 recital
 recite
-reckless
 reclaim
 recliner
 reclining
@@ -5440,7 +5411,6 @@ rubdown
 ruby
 ruckus
 rudder
-rug
 ruined
 rule
 rumble
@@ -5448,7 +5418,6 @@ rumbling
 rummage
 rumor
 runaround
-rundown
 runner
 running
 runny
@@ -5518,7 +5487,6 @@ sandpaper
 sandpit
 sandstone
 sandstorm
-sandworm
 sandy
 sanitary
 sanitizer
@@ -5541,7 +5509,6 @@ satisfy
 saturate
 saturday
 sauciness
-saucy
 sauna
 savage
 savanna
@@ -5552,7 +5519,6 @@ savor
 saxophone
 say
 scabbed
-scabby
 scalded
 scalding
 scale
@@ -5587,7 +5553,6 @@ science
 scientist
 scion
 scoff
-scolding
 scone
 scoop
 scooter
@@ -5651,8 +5616,6 @@ sedate
 sedation
 sedative
 sediment
-seduce
-seducing
 segment
 seismic
 seizing
@@ -5899,7 +5862,6 @@ skimpily
 skincare
 skinless
 skinning
-skinny
 skintight
 skipper
 skipping
@@ -6248,17 +6210,12 @@ stifle
 stifling
 stillness
 stilt
-stimulant
-stimulate
-stimuli
 stimulus
 stinger
 stingily
 stinging
 stingray
 stingy
-stinking
-stinky
 stipend
 stipulate
 stir
@@ -6866,7 +6823,6 @@ unbent
 unbiased
 unbitten
 unblended
-unblessed
 unblock
 unbolted
 unbounded
@@ -6947,7 +6903,6 @@ undertone
 undertook
 undertow
 underuse
-underwear
 underwent
 underwire
 undesired
@@ -7031,7 +6986,6 @@ uninsured
 uninvited
 union
 uniquely
-unisexual
 unison
 unissued
 unit
@@ -7599,7 +7553,6 @@ wrongness
 wrought
 xbox
 xerox
-yahoo
 yam
 yanking
 yapping
