@@ -174,7 +174,12 @@ def setting():
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
         elif request.form.get("form-name") == "random-alias-suffix":
-            scheme = int(request.form.get("random-alias-suffix-generator"))
+            try:
+                scheme = int(request.form.get("random-alias-suffix-generator"))
+            except ValueError:
+                flash("Invalid value", "error")
+                return redirect(url_for("dashboard.setting"))
+
             if AliasSuffixEnum.has_value(scheme):
                 current_user.random_alias_suffix = scheme
                 Session.commit()
