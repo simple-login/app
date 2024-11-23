@@ -1,5 +1,5 @@
 from app.db import Session
-from app.models import Alias, Mailbox, AliasMailbox, User
+from app.models import Alias, Mailbox, AliasMailbox, User, CustomDomain
 from tests.utils import create_new_user, random_email
 
 
@@ -29,3 +29,23 @@ def test_alias_create_from_partner_flags_also_the_user():
         flush=True,
     )
     assert alias.user.flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER > 0
+
+
+def test_alias_create_from_partner_domain_flags_the_alias():
+    user = create_new_user()
+    domain = CustomDomain.create(
+        domain=random_email(),
+        verified=True,
+        user_id=user.id,
+        partner_id=1,
+    )
+    Session.flush()
+    email = random_email()
+    alias = Alias.create(
+        user_id=user.id,
+        email=email,
+        mailbox_id=user.default_mailbox_id,
+        custom_domain_id=domain.id,
+        flush=True,
+    )
+    assert alias.flags & Alias.FLAG_PARTNER_CREATED > 0

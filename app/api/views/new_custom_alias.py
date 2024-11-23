@@ -153,7 +153,8 @@ def new_custom_alias_v3():
     if not isinstance(data, dict):
         return jsonify(error="request body does not follow the required format"), 400
 
-    alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
+    alias_prefix_data = data.get("alias_prefix", "") or ""
+    alias_prefix = alias_prefix_data.strip().lower().replace(" ", "")
     signed_suffix = data.get("signed_suffix", "") or ""
     signed_suffix = signed_suffix.strip()
 

@@ -14,8 +14,9 @@ jobs:
   - name: SimpleLogin Custom Domain check
     command: python /code/cron.py -j check_custom_domain
     shell: /bin/bash
-    schedule: "15 2 * * *"
+    schedule: "15 */4 * * *"
     captureStderr: true
+    concurrencyPolicy: Forbid
     onFailure:
       retry:
         maximumRetries: 10
@@ -26,7 +27,7 @@ jobs:
   - name: SimpleLogin HIBP check
     command: python /code/cron.py -j check_hibp
     shell: /bin/bash
-    schedule: "16 */4 * * *"
+    schedule: "*/5 * * * *"
     captureStderr: true
     concurrencyPolicy: Forbid
     onFailure:
