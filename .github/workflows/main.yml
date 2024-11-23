@@ -4,7 +4,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 4 * * 7' # Sundays at 4am UTC
+    - cron: '0 4 * * 0' # Sundays at 4am UTC
   workflow_dispatch: # on button
 
 jobs:
