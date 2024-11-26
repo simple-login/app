@@ -1011,6 +1011,8 @@ async def _hibp_process_queue_check(api_key: str, queue: asyncio.Queue):
         try:
             alias_id = queue.get_nowait()
         except asyncio.QueueEmpty:
+            if len(alias_tasks) > 0:
+                await asyncio.gather(*alias_tasks, return_exceptions=True)
             return
 
         alias = Alias.get(alias_id)
@@ -1021,8 +1023,6 @@ async def _hibp_process_queue_check(api_key: str, queue: asyncio.Queue):
         if len(alias_tasks) >= config.HIBP_CONCURRENT_TASKS:
             await asyncio.gather(*alias_tasks, return_exceptions=True)
             alias_tasks = []
-    if len(alias_tasks) > 0:
-        await asyncio.gather(*alias_tasks, return_exceptions=True)
 
 
 async def _hibp_check_alias(alias: Alias, api_key: str, retries: int = 0):
