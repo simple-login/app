@@ -33,12 +33,14 @@ def create_partner_user(
 
 def create_partner_subscription(
     partner_user: PartnerUser,
-    expiration: Optional[Arrow],
+    expiration: Optional[Arrow] = None,
+    lifetime: bool = False,
     msg: Optional[str] = None,
 ) -> PartnerSubscription:
     instance = PartnerSubscription.create(
         partner_user_id=partner_user.id,
         end_at=expiration,
+        lifetime=lifetime,
     )
 
     message = "User upgraded through partner subscription"
