@@ -6,9 +6,18 @@ import pytest
 from app import mailbox_utils, config
 from app.db import Session
 from app.mail_sender import mail_sender
-from app.mailbox_utils import MailboxEmailChangeError
-from app.models import Mailbox, MailboxActivation, User, Job, UserAuditLog
+from app.mailbox_utils import MailboxEmailChangeError, get_mailbox_for_reply_phase
+from app.models import (
+    Mailbox,
+    MailboxActivation,
+    User,
+    Job,
+    UserAuditLog,
+    Alias,
+    AuthorizedAddress,
+)
 from app.user_audit_log_utils import UserAuditLogAction
+from app.utils import random_string, canonicalize_email
 from tests.utils import create_new_user, random_email
 
 
@@ -418,3 +427,75 @@ def test_perform_mailbox_email_change_success():
         user_id=user.id, action=UserAuditLogAction.UpdateMailbox.value
     ).count()
     assert audit_log_entries == 1
+
+
+def test_get_mailbox_from_mail_from(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    mb = get_mailbox_for_reply_phase(user.email, "", alias)
+    assert mb.email == user.email
+
+    mb = get_mailbox_for_reply_phase("unauthorized@gmail.com", "", alias)
+    assert mb is None
+
+    # authorized address
+    AuthorizedAddress.create(
+        user_id=user.id,
+        mailbox_id=user.default_mailbox_id,
+        email="unauthorized@gmail.com",
+        commit=True,
+    )
+    mb = get_mailbox_for_reply_phase("unauthorized@gmail.com", "", alias)
+    assert mb.email == user.email
+
+
+def test_get_mailbox_from_mail_from_for_canonical_email(flask_client):
+    prefix = random_string(10)
+    email = f"{prefix}+subaddresxs@gmail.com"
+    canonical_email = canonicalize_email(email)
+    assert canonical_email != email
+
+    user = create_new_user()
+    mbox = Mailbox.create(
+        email=canonical_email, user_id=user.id, verified=True, flush=True
+    )
+    alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
+    Session.flush()
+
+    mb = get_mailbox_for_reply_phase(email, "", alias)
+    assert mb.email == canonical_email
+
+    mb = get_mailbox_for_reply_phase(canonical_email, "", alias)
+    assert mb.email == canonical_email
+
+
+def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_aligned(
+    flask_client,
+):
+    domain = f"{random_string(10)}.com"
+    envelope_from = f"envelope_verp@{domain}"
+    mail_from = f"mail_from@{domain}"
+    user = create_new_user()
+    mbox = Mailbox.create(email=mail_from, user_id=user.id, verified=True, flush=True)
+    alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
+    Session.flush()
+
+    mb = get_mailbox_for_reply_phase(envelope_from, mail_from, alias)
+    assert mb.email == mail_from
+
+
+def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_not_aligned(
+    flask_client,
+):
+    domain = f"{random_string(10)}.com"
+    envelope_from = f"envelope_verp@{domain}"
+    mail_from = f"mail_from@other_{domain}"
+    user = create_new_user()
+    mbox = Mailbox.create(email=mail_from, user_id=user.id, verified=True, flush=True)
+    alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
+    Session.flush()
+
+    mb = get_mailbox_for_reply_phase(envelope_from, mail_from, alias)
+    assert mb is None
