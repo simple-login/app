@@ -26,7 +26,7 @@
     <div class="card">
       <div class="card-body">
         <div class="card-title mb-3">Current Plan</div>
-        {% if current_user.lifetime %}
+        {% if current_user.is_lifetime() %}
 
           You have lifetime access to the Premium plan.
         {% elif current_user.lifetime_or_active_subscription() %}
@@ -79,7 +79,13 @@
               </a>
             </div>
           {% endif %}
-          {% if partner_sub %}<div>Premium subscription managed by {{ partner_name }}.</div>{% endif %}
+          {% if partner_sub %}
+              {% if partner_sub.lifetime %}
+                  <div>Premium lifetime subscription managed by {{ partner_name }}.</div>
+              {% else %}
+                  <div>Premium subscription managed by {{ partner_name }}.</div>
+              {%  endif %}
+          {% endif %}
         {% elif current_user.in_trial() %}
           Your Premium trial expires {{ current_user.trial_end | dt }}.
         {% else %}
