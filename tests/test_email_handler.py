@@ -21,6 +21,7 @@ from app.models import (
     VerpType,
     Contact,
     SentAlert,
+    Mailbox,
 )
 from app.utils import random_string, canonicalize_email
 from email_handler import (
@@ -36,10 +37,10 @@ def test_get_mailbox_from_mail_from(flask_client):
     alias = Alias.create_new_random(user)
     Session.commit()
 
-    mb = get_mailbox_from_mail_from(user.email, alias)
+    mb = get_mailbox_from_mail_from(user.email, "", alias)
     assert mb.email == user.email
 
-    mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
+    mb = get_mailbox_from_mail_from("unauthorized@gmail.com", "", alias)
     assert mb is None
 
     # authorized address
@@ -49,8 +50,58 @@ def test_get_mailbox_from_mail_from(flask_client):
         email="unauthorized@gmail.com",
         commit=True,
     )
-    mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
+    mb = get_mailbox_from_mail_from("unauthorized@gmail.com", "", alias)
     assert mb.email == user.email
+
+
+def test_get_mailbox_from_mail_from_for_canonical_email(flask_client):
+    prefix = random_string(10)
+    email = f"{prefix}+subaddresxs@gmail.com"
+    canonical_email = canonicalize_email(email)
+    assert canonical_email != email
+
+    user = create_new_user()
+    mbox = Mailbox.create(
+        email=canonical_email, user_id=user.id, verified=True, flush=True
+    )
+    alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
+    Session.flush()
+
+    mb = get_mailbox_from_mail_from(email, "", alias)
+    assert mb.email == canonical_email
+
+    mb = get_mailbox_from_mail_from(canonical_email, "", alias)
+    assert mb.email == canonical_email
+
+
+def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_aligned(
+    flask_client,
+):
+    domain = f"{random_string(10)}.com"
+    envelope_from = f"envelope_verp@{domain}"
+    mail_from = f"mail_from@{domain}"
+    user = create_new_user()
+    mbox = Mailbox.create(email=mail_from, user_id=user.id, verified=True, flush=True)
+    alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
+    Session.flush()
+
+    mb = get_mailbox_from_mail_from(envelope_from, mail_from, alias)
+    assert mb.email == mail_from
+
+
+def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_not_aligned(
+    flask_client,
+):
+    domain = f"{random_string(10)}.com"
+    envelope_from = f"envelope_verp@{domain}"
+    mail_from = f"mail_from@other_{domain}"
+    user = create_new_user()
+    mbox = Mailbox.create(email=mail_from, user_id=user.id, verified=True, flush=True)
+    alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
+    Session.flush()
+
+    mb = get_mailbox_from_mail_from(envelope_from, mail_from, alias)
+    assert mb is None
 
 
 def test_should_ignore(flask_client):
