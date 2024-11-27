@@ -3778,7 +3778,8 @@ class PartnerSubscription(Base, ModelMixin):
     )
 
     # when the partner subscription ends
-    end_at = sa.Column(ArrowType, nullable=False, index=True)
+    end_at = sa.Column(ArrowType, nullable=True, index=True)
+    lifetime = sa.Column(sa.Boolean, default=False, nullable=False, server_default="0")
 
     partner_user = orm.relationship(PartnerUser)
 
@@ -3800,7 +3801,9 @@ class PartnerSubscription(Base, ModelMixin):
         return None
 
     def is_active(self):
-        return self.end_at > arrow.now().shift(days=-_PARTNER_SUBSCRIPTION_GRACE_DAYS)
+        return self.lifetime or self.end_at > arrow.now().shift(
+            days=-_PARTNER_SUBSCRIPTION_GRACE_DAYS
+        )
 
 
 # endregion
