@@ -14,7 +14,6 @@ from app.email_utils import generate_verp_email
 from app.mail_sender import mail_sender
 from app.models import (
     Alias,
-    AuthorizedAddress,
     IgnoredEmail,
     EmailLog,
     Notification,
@@ -24,33 +23,10 @@ from app.models import (
 )
 from app.utils import random_string, canonicalize_email
 from email_handler import (
-    get_mailbox_from_mail_from,
     should_ignore,
     is_automatic_out_of_office,
 )
 from tests.utils import load_eml_file, create_new_user, random_email
-
-
-def test_get_mailbox_from_mail_from(flask_client):
-    user = create_new_user()
-    alias = Alias.create_new_random(user)
-    Session.commit()
-
-    mb = get_mailbox_from_mail_from(user.email, alias)
-    assert mb.email == user.email
-
-    mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
-    assert mb is None
-
-    # authorized address
-    AuthorizedAddress.create(
-        user_id=user.id,
-        mailbox_id=user.default_mailbox_id,
-        email="unauthorized@gmail.com",
-        commit=True,
-    )
-    mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
-    assert mb.email == user.email
 
 
 def test_should_ignore(flask_client):

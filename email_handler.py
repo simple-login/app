@@ -149,6 +149,7 @@ from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
 from app.mail_sender import sl_sendmail
+from app.mailbox_utils import get_mailbox_for_reply_phase
 from app.message_utils import message_to_bytes
 from app.models import (
     Alias,
@@ -172,7 +173,7 @@ from app.pgp_utils import (
     sign_data,
     load_public_key_and_check,
 )
-from app.utils import sanitize_email, canonicalize_email
+from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_light_app
 
@@ -1008,7 +1009,6 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         return False, status.E503
 
     user = alias.user
-    mail_from = envelope.mail_from
 
     if not user.can_send_or_receive():
         LOG.i(f"User {user} cannot send emails")
@@ -1022,13 +1022,15 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         return False, dmarc_delivery_status
 
     # Anti-spoofing
-    mailbox = get_mailbox_from_mail_from(mail_from, alias)
+    mailbox = get_mailbox_for_reply_phase(
+        envelope.mail_from, get_header_unicode(msg[headers.FROM]), alias
+    )
     if not mailbox:
         if alias.disable_email_spoofing_check:
             # ignore this error, use default alias mailbox
             LOG.w(
                 "ignore unknown sender to reverse-alias %s: %s -> %s",
-                mail_from,
+                envelope.mail_from,
                 alias,
                 contact,
             )
@@ -1365,32 +1367,6 @@ def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message)
 
         del msg[headers.REFERENCES]
         msg[headers.REFERENCES] = " ".join(new_message_ids)
-
-
-def get_mailbox_from_mail_from(mail_from: str, alias) -> Optional[Mailbox]:
-    """return the corresponding mailbox given the mail_from and alias
-    Usually the mail_from=mailbox.email but it can also be one of the authorized address
-    """
-
-    def __check(email_address: str, alias: Alias) -> Optional[Mailbox]:
-        for mailbox in alias.mailboxes:
-            if mailbox.email == email_address:
-                return mailbox
-
-            for authorized_address in mailbox.authorized_addresses:
-                if authorized_address.email == email_address:
-                    LOG.d(
-                        "Found an authorized address for %s %s %s",
-                        alias,
-                        mailbox,
-                        authorized_address,
-                    )
-                    return mailbox
-        return None
-
-    # We need to first check for the uncanonicalized version because we still have users in the db with the
-    # email non canonicalized. So if it matches the already existing one use that, otherwise check the canonical one
-    return __check(mail_from, alias) or __check(canonicalize_email(mail_from), alias)
 
 
 def handle_unknown_mailbox(

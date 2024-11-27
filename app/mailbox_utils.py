@@ -12,11 +12,13 @@ from app.email_utils import (
     email_can_be_used_as_mailbox,
     send_email,
     render,
+    get_email_domain_part,
 )
 from app.email_validation import is_valid_email
 from app.log import LOG
-from app.models import User, Mailbox, Job, MailboxActivation
+from app.models import User, Mailbox, Job, MailboxActivation, Alias
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.utils import canonicalize_email
 
 
 @dataclasses.dataclass
@@ -328,3 +330,56 @@ def perform_mailbox_email_change(mailbox_id: int) -> MailboxEmailChangeResult:
             message="Invalid link",
             message_category="error",
         )
+
+
+def __get_alias_mailbox_from_email(
+    email_address: str, alias: Alias
+) -> Optional[Mailbox]:
+    for mailbox in alias.mailboxes:
+        if mailbox.email == email_address:
+            return mailbox
+
+        for authorized_address in mailbox.authorized_addresses:
+            if authorized_address.email == email_address:
+                LOG.d(
+                    "Found an authorized address for %s %s %s",
+                    alias,
+                    mailbox,
+                    authorized_address,
+                )
+                return mailbox
+    return None
+
+
+def __get_alias_mailbox_from_email_or_canonical_email(
+    email_address: str, alias: Alias
+) -> Optional[Mailbox]:
+    # We need to first check for the uncanonicalized version because we still have users in the db with the
+    # email non canonicalized. So if it matches the already existing one use that, otherwise check the canonical one
+    mbox = __get_alias_mailbox_from_email(email_address, alias)
+    if mbox is not None:
+        return mbox
+    canonical_email = canonicalize_email(email_address)
+    if canonical_email != email_address:
+        return __get_alias_mailbox_from_email(canonical_email, alias)
+    return None
+
+
+def get_mailbox_for_reply_phase(
+    envelope_mail_from: str, header_mail_from: str, alias
+) -> Optional[Mailbox]:
+    """return the corresponding mailbox given the mail_from and alias
+    Usually the mail_from=mailbox.email but it can also be one of the authorized address
+    """
+    mbox = __get_alias_mailbox_from_email_or_canonical_email(envelope_mail_from, alias)
+    if mbox is not None:
+        return mbox
+    if not header_mail_from:
+        return None
+    envelope_from_domain = get_email_domain_part(envelope_mail_from)
+    header_from_domain = get_email_domain_part(header_mail_from)
+    if envelope_from_domain != header_from_domain:
+        return None
+    # For services that use VERP sending (envelope from has encoded data to account for bounces)
+    # if the domain is the same in the header from as the envelope from we can use the header from
+    return __get_alias_mailbox_from_email_or_canonical_email(header_mail_from, alias)
