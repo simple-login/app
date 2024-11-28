@@ -106,7 +106,10 @@ def create_mailbox(
 
 
 def delete_mailbox(
-    user: User, mailbox_id: int, transfer_mailbox_id: Optional[int]
+    user: User,
+    mailbox_id: int,
+    transfer_mailbox_id: Optional[int],
+    send_mail: bool = True,
 ) -> Mailbox:
     mailbox = Mailbox.get(mailbox_id)
 
@@ -152,6 +155,7 @@ def delete_mailbox(
             "transfer_mailbox_id": transfer_mailbox_id
             if transfer_mailbox_id and transfer_mailbox_id > 0
             else None,
+            "send_mail": send_mail,
         },
         run_at=arrow.now(),
         commit=True,
