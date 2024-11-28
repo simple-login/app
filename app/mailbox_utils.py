@@ -18,7 +18,7 @@ from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import User, Mailbox, Job, MailboxActivation, Alias
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
-from app.utils import canonicalize_email
+from app.utils import canonicalize_email, sanitize_email
 
 
 @dataclasses.dataclass
@@ -54,6 +54,7 @@ def create_mailbox(
     use_digit_codes: bool = False,
     send_link: bool = True,
 ) -> CreateMailboxOutput:
+    email = sanitize_email(email)
     if not user.is_premium():
         LOG.i(
             f"User {user} has tried to create mailbox with {email} but is not premium"

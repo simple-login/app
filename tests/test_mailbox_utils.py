@@ -59,6 +59,14 @@ def test_already_used():
         mailbox_utils.create_mailbox(user, user.email)
 
 
+def test_already_used_with_different_case():
+    user.lifetime = True
+    email = random_email()
+    mailbox_utils.create_mailbox(user, email)
+    with pytest.raises(mailbox_utils.MailboxError):
+        mailbox_utils.create_mailbox(user, email.upper())
+
+
 @mail_sender.store_emails_test_decorator
 def test_create_mailbox():
     email = random_email()
