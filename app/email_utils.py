@@ -1345,17 +1345,16 @@ def get_queue_id(msg: Message) -> Optional[str]:
 
     received_header = str(msg[headers.RECEIVED])
     if not received_header:
-        return
+        return None
 
     # received_header looks like 'from mail-wr1-x434.google.com (mail-wr1-x434.google.com [IPv6:2a00:1450:4864:20::434])\r\n\t(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))\r\n\t(No client certificate requested)\r\n\tby mx1.simplelogin.co (Postfix) with ESMTPS id 4FxQmw1DXdz2vK2\r\n\tfor <jglfdjgld@alias.com>; Fri,  4 Jun 2021 14:55:43 +0000 (UTC)'
-    search_result = re.search("with ESMTPS id [0-9a-zA-Z]{1,}", received_header)
-    if not search_result:
-        return
-
-    # the "with ESMTPS id 4FxQmw1DXdz2vK2" part
-    with_esmtps = received_header[search_result.start() : search_result.end()]
-
-    return with_esmtps[len("with ESMTPS id ") :]
+    search_result = re.search(r"with E?SMTP[AS]? id ([0-9a-zA-Z]{1,})", received_header)
+    if search_result:
+        return search_result.group(1)
+    search_result = re.search("\(Postfix\)\r\n\tid ([a-zA-Z0-9]{1,});", received_header)
+    if search_result:
+        return search_result.group(1)
+    return None
 
 
 def should_ignore_bounce(mail_from: str) -> bool:

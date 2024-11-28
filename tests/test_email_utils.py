@@ -791,12 +791,21 @@ def test_parse_id_from_bounce():
     assert parse_id_from_bounce("anything+1234+@local") == 1234
 
 
-def test_get_queue_id():
+def test_get_queue_id_esmtps():
+    for id_type in ["SMTP", "ESMTP", "ESMTPA", "ESMTPS"]:
+        msg = email.message_from_string(
+            f"Received: from mail-wr1-x434.google.com (mail-wr1-x434.google.com [IPv6:2a00:1450:4864:20::434])\r\n\t(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))\r\n\t(No client certificate requested)\r\n\tby mx1.simplelogin.co (Postfix) with {id_type} id 4FxQmw1DXdz2vK2\r\n\tfor <jglfdjgld@alias.com>; Fri,  4 Jun 2021 14:55:43 +0000 (UTC)"
+        )
+
+        assert get_queue_id(msg) == "4FxQmw1DXdz2vK2", f"Failed for {id_type}"
+
+
+def test_get_queue_id_postfix():
     msg = email.message_from_string(
-        "Received: from mail-wr1-x434.google.com (mail-wr1-x434.google.com [IPv6:2a00:1450:4864:20::434])\r\n\t(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))\r\n\t(No client certificate requested)\r\n\tby mx1.simplelogin.co (Postfix) with ESMTPS id 4FxQmw1DXdz2vK2\r\n\tfor <jglfdjgld@alias.com>; Fri,  4 Jun 2021 14:55:43 +0000 (UTC)"
+        "Received: by mailin001.somewhere.net (Postfix)\r\n\tid 4Xz5pb2nMszGrqpL; Wed, 27 Nov 2024 17:21:59 +0000 (UTC)'] by mailin001.somewhere.net (Postfix)"
     )
 
-    assert get_queue_id(msg) == "4FxQmw1DXdz2vK2"
+    assert get_queue_id(msg) == "4Xz5pb2nMszGrqpL"
 
 
 def test_get_queue_id_from_double_header():
