@@ -113,7 +113,7 @@ class HttpProtonClient(ProtonClient):
         if plan_value == PLAN_FREE:
             plan = SLPlan(type=SLPlanType.Free, expiration=None)
         elif plan_value == PLAN_PREMIUM:
-            expiration = info.get("Expiration", "1")
+            expiration = info.get("PlanExpiration", "1")
             plan = SLPlan(
                 type=SLPlanType.Premium,
                 expiration=Arrow.fromtimestamp(expiration, tzinfo="utc"),

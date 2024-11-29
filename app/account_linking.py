@@ -91,7 +91,7 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
             end_time = None
         if sub is None:
             LOG.i(
-                f"Creating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
+                f"Creating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}] with {end_time} / {is_lifetime}"
             )
             create_partner_subscription(
                 partner_user=partner_user,
@@ -102,14 +102,14 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
             agent.record_custom_event("PlanChange", {"plan": "premium", "type": "new"})
         else:
             if sub.end_at != plan.expiration or sub.lifetime != is_lifetime:
-                LOG.i(
-                    f"Updating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
-                )
                 agent.record_custom_event(
                     "PlanChange", {"plan": "premium", "type": "extension"}
                 )
                 sub.end_at = plan.expiration if not is_lifetime else None
                 sub.lifetime = is_lifetime
+                LOG.i(
+                    f"Updating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}] to {sub.end_at} / {sub.lifetime} "
+                )
                 emit_user_audit_log(
                     user=partner_user.user,
                     action=UserAuditLogAction.SubscriptionExtended,
