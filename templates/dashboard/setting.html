@@ -80,11 +80,12 @@
             </div>
           {% endif %}
           {% if partner_sub %}
-              {% if partner_sub.lifetime %}
-                  <div>Premium lifetime subscription managed by {{ partner_name }}.</div>
-              {% else %}
-                  <div>Premium subscription managed by {{ partner_name }}.</div>
-              {%  endif %}
+            {% if partner_sub.lifetime %}
+
+              <div>Premium lifetime subscription managed by {{ partner_name }}.</div>
+            {% else %}
+              <div>Premium subscription managed by {{ partner_name }}.</div>
+            {% endif %}
           {% endif %}
         {% elif current_user.in_trial() %}
           Your Premium trial expires {{ current_user.trial_end | dt }}.

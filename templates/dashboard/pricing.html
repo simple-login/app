@@ -57,30 +57,20 @@
 {% endblock %}
 {% block default_content %}
 
-  {% if NOW.timestamp < 1701475201 %}
+  {% if NOW.timestamp < 1733184000 %}
 
-    <div class="alert alert-info">
-      Black Friday Deal: 33% off on the yearly plan for the <b>first</b> year ($20 instead of $30).
+    <div class="alert alert-primary">
+      Lifetime deal for SimpleLogin Premium and Proton Pass Plus for $199
+      <a class="btn btn-primary"
+         href="https://proton.me/pass/black-friday"
+         target="_blank">Buy now</a>
       <br>
-      Please use this coupon code
-      <em data-toggle="tooltip"
-          title="Click to copy"
-          class="clipboard"
-          data-clipboard-text="BF2023">BF2023</em> during the checkout.
-      <br>
-      <img src="/static/images/coupon.png" class="m-2" style="max-width: 300px">
-      <br>
-      Available until December 1, 2023.
+      Available until December 3, 2024.
     </div>
   {% endif %}
   <div class="pb-8">
-    <div class="text-center mx-md-auto mb-8 mt-6">
+    <div class="text-center mx-md-auto mb-4 mt-4">
       <h1>Upgrade to unlock premium features</h1>
-    </div>
-    <div class="alert alert-info">
-      <span class="badge badge-success">new</span> SimpleLogin Premium now includes Proton Pass premium features.
-      <a href="https://simplelogin.io/blog/sl-premium-including-pass-plus/"
-         target="_blank">Learn more ↗</a>
     </div>
     {% if manual_sub %}
 
@@ -130,6 +120,11 @@
          aria-controls="yearly-plan"
          aria-selected="true">Yearly<span class="badge badge-success position-absolute tab-yearly__badge"
       style="font-size: 12px">Save $18</span></a>
+    </div>
+    <div class="alert alert-info">
+      <span class="badge badge-success">new</span> SimpleLogin Premium now includes Proton Pass premium features.
+      <a href="https://simplelogin.io/blog/sl-premium-including-pass-plus/"
+         target="_blank">Learn more ↗</a>
     </div>
     <div class="tab-content mb-8">
       <!-- monthly tab content -->
@@ -223,12 +218,12 @@
               <div class="card card-md flex-grow-1">
                 <div class="card-body">
                   <div class="text-center">
-                    <div class="h3">Proton plan</div>
+                    <div class="h3">Proton Unlimited</div>
                     <div class="h3 my-3">Starts at $12.99 / month</div>
                     <div class="text-center mt-4 mb-6">
                       <a class="btn btn-lg btn-outline-primary w-100"
                          role="button"
-                         href="https://account.proton.me/u/0/mail/upgrade"
+                         href="https://account.proton.me/u/0/pass/upgrade"
                          target="_blank">Upgrade your Proton account</a>
                     </div>
                   </div>
@@ -362,12 +357,12 @@
               <div class="card card-md flex-grow-1">
                 <div class="card-body">
                   <div class="text-center">
-                    <div class="h3">Proton plan</div>
+                    <div class="h3">Proton Unlimited</div>
                     <div class="h3 my-3">Starts at $119.88 / year</div>
                     <div class="text-center mt-4 mb-6">
                       <a class="btn btn-lg btn-outline-primary w-100"
                          role="button"
-                         href="https://account.proton.me/u/0/mail/upgrade"
+                         href="https://account.proton.me/u/0/pass/upgrade"
                          target="_blank">Upgrade your Proton account</a>
                     </div>
                   </div>
