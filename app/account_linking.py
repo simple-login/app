@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Optional
 
 import arrow
+import sqlalchemy.exc
 from arrow import Arrow
 from newrelic import agent
 from psycopg2.errors import UniqueViolation
@@ -192,7 +193,8 @@ class NewUserStrategy(ClientMergeStrategy):
                 user=new_user,
                 strategy=self.__class__.__name__,
             )
-        except UniqueViolation:
+        except (UniqueViolation, sqlalchemy.exc.IntegrityError) as e:
+            LOG.debug(f"Got the duplicate user error: {e}")
             return self.create_missing_link(canonical_email)
 
     def create_missing_link(self, canonical_email: str):
