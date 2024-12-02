@@ -1659,7 +1659,7 @@ class Alias(Base, ModelMixin):
         return False
 
     @staticmethod
-    def get_custom_domain(alias_address) -> Optional["CustomDomain"]:
+    def get_custom_domain(alias_address: str) -> Optional["CustomDomain"]:
         alias_domain = validate_email(
             alias_address, check_deliverability=False, allow_smtputf8=False
         ).domain
