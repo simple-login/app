@@ -299,7 +299,13 @@ def update_alias(alias_id):
         changed = True
 
     if "mailbox_ids" in data:
-        mailbox_ids = [int(m_id) for m_id in data.get("mailbox_ids")]
+        mailbox_ids = []
+        for mailbox_id in data.get("mailbox_ids"):
+            try:
+                mailbox_ids.append(int(mailbox_id))
+            except ValueError:
+                return jsonify(error="Invalid mailbox_id"), 400
+
         err = set_mailboxes_for_alias(
             user_id=user.id, alias=alias, mailbox_ids=mailbox_ids
         )

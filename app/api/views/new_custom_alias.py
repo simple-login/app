@@ -1,3 +1,4 @@
+from email_validator import EmailNotValidError
 from flask import g
 from flask import jsonify, request
 
@@ -93,12 +94,15 @@ def new_custom_alias_v2():
             400,
         )
 
-    alias = Alias.create(
-        user_id=user.id,
-        email=full_alias,
-        mailbox_id=user.default_mailbox_id,
-        note=note,
-    )
+    try:
+        alias = Alias.create(
+            user_id=user.id,
+            email=full_alias,
+            mailbox_id=user.default_mailbox_id,
+            note=note,
+        )
+    except EmailNotValidError:
+        return jsonify(error="Email is not valid"), 400
 
     Session.commit()
 
@@ -154,8 +158,16 @@ def new_custom_alias_v3():
         return jsonify(error="request body does not follow the required format"), 400
 
     alias_prefix_data = data.get("alias_prefix", "") or ""
+
+    if not isinstance(alias_prefix_data, str):
+        return jsonify(error="request body does not follow the required format"), 400
+
     alias_prefix = alias_prefix_data.strip().lower().replace(" ", "")
     signed_suffix = data.get("signed_suffix", "") or ""
+
+    if not isinstance(signed_suffix, str):
+        return jsonify(error="request body does not follow the required format"), 400
+
     signed_suffix = signed_suffix.strip()
 
     mailbox_ids = data.get("mailbox_ids")
