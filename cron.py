@@ -1,5 +1,8 @@
 import argparse
 import asyncio
+import time
+
+import aiohttp
 import urllib.parse
 from typing import List, Tuple
 
@@ -997,86 +1000,84 @@ def delete_expired_tokens():
     LOG.d("Delete api to cookie tokens older than %s, nb row %s", max_time, nb_row)
 
 
-async def _hibp_check(api_key: str, queue: asyncio.Queue):
+async def _hibp_process_queue_check(api_key: str, queue: asyncio.Queue):
     """
     Uses a single API key to check the queue as fast as possible.
 
     This function to be ran simultaneously (multiple _hibp_check functions with different keys on the same queue) to make maximum use of multiple API keys.
     """
-    default_rate_sleep = (60.0 / config.HIBP_RPM) + 0.1
-    rate_sleep = default_rate_sleep
-    rate_hit_counter = 0
+    alias_tasks = []
     while True:
         try:
             alias_id = queue.get_nowait()
         except asyncio.QueueEmpty:
+            if len(alias_tasks) > 0:
+                await asyncio.gather(*alias_tasks, return_exceptions=True)
             return
 
         alias = Alias.get(alias_id)
         if not alias:
             continue
-        user = alias.user
-        if user.disabled or not user.is_premium():
-            # Mark it as hibp done to skip it as if it had been checked
-            alias.hibp_last_check = arrow.utcnow()
-            Session.commit()
-            continue
-        if alias.flags & Alias.FLAG_PARTNER_CREATED > 0:
-            # Mark as hibp done
-            alias.hibp_last_check = arrow.utcnow()
-            Session.commit()
-            continue
+        alias_tasks.append(_hibp_check_alias(alias, api_key))
 
-        LOG.d("Checking HIBP for %s", alias)
+        if len(alias_tasks) >= config.HIBP_CONCURRENT_TASKS:
+            await asyncio.gather(*alias_tasks, return_exceptions=True)
+            alias_tasks = []
 
-        request_headers = {
-            "user-agent": "SimpleLogin",
-            "hibp-api-key": api_key,
-        }
-        r = requests.get(
-            f"https://haveibeenpwned.com/api/v3/breachedaccount/{urllib.parse.quote(alias.email)}",
-            headers=request_headers,
-        )
-        if r.status_code == 200:
-            # Breaches found
-            alias.hibp_breaches = [
-                Hibp.get_by(name=entry["Name"]) for entry in r.json()
-            ]
-            if len(alias.hibp_breaches) > 0:
-                LOG.w("%s appears in HIBP breaches %s", alias, alias.hibp_breaches)
-            if rate_hit_counter > 0:
-                rate_hit_counter -= 1
-        elif r.status_code == 404:
-            # No breaches found
-            alias.hibp_breaches = []
-        elif r.status_code == 429:
-            # rate limited
-            LOG.w("HIBP rate limited, check alias %s in the next run", alias)
-            rate_hit_counter += 1
-            rate_sleep = default_rate_sleep + (0.2 * rate_hit_counter)
-            if rate_hit_counter > 10:
-                LOG.w(f"HIBP rate limited too many times stopping with alias {alias}")
-                return
-            # Just sleep for a while
-            asyncio.sleep(5)
-        elif r.status_code > 500:
-            LOG.w("HIBP server 5** error %s", r.status_code)
-            return
-        else:
-            LOG.error(
-                "An error occurred while checking alias %s: %s - %s",
-                alias,
-                r.status_code,
-                r.text,
-            )
-            return
 
-        alias.hibp_last_check = arrow.utcnow()
-        Session.add(alias)
-        Session.commit()
+async def _hibp_check_alias(alias: Alias, api_key: str, retries: int = 0):
+    user = alias.user
+    if user.disabled or not user.is_premium():
+        return
+    if alias.flags & Alias.FLAG_PARTNER_CREATED > 0:
+        return
+    LOG.d("Checking HIBP for %s", alias)
 
-        LOG.d("Updated breach info for %s", alias)
-        await asyncio.sleep(rate_sleep)
+    request_headers = {
+        "user-agent": "SimpleLogin",
+        "hibp-api-key": api_key,
+    }
+    url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{urllib.parse.quote(alias.email)}"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=request_headers) as response:
+            if response.status == 200:
+                # Breaches found
+                json_response = await response.json()
+                alias.hibp_breaches = [
+                    Hibp.get_by(name=entry["Name"]) for entry in json_response
+                ]
+                if len(alias.hibp_breaches) > 0:
+                    LOG.w("HIBP: %s appears in breaches %s", alias, alias.hibp_breaches)
+                alias.hibp_last_check = arrow.utcnow()
+                Session.commit()
+                LOG.d("HIBP: Updated new breach info for %s", alias)
+            elif response.status == 404:
+                # No breaches found
+                alias.hibp_breaches = []
+                alias.hibp_last_check = arrow.utcnow()
+                Session.commit()
+                LOG.d("HIBP: Updated no breach info for %s", alias)
+            elif response.status == 429:
+                # rate limited
+                if retries > 0:
+                    LOG.w(f"HIBP: Cannot retry {alias} more times. Stopping")
+                    return
+                # Just sleep until the next minute (go 1 sec over to make sure we change minute)
+                sleep_time = 61 - int(time.time()) % 60
+                LOG.w(
+                    f"HIBP: Rate limited, check alias {alias} in the next run in {sleep_time} seconds"
+                )
+                await asyncio.sleep(sleep_time)
+                await _hibp_check_alias(alias, api_key, retries + 1)
+            elif response.status > 500:
+                LOG.w("HIBP: server 5** error %s", response.status)
+            else:
+                LOG.error(
+                    "An error occurred while checking alias %s: %s - %s",
+                    alias,
+                    response.status,
+                    await response.text(),
+                )
 
 
 def get_alias_to_check_hibp(
@@ -1185,7 +1186,7 @@ async def check_hibp():
         checkers = []
         for i in range(len(config.HIBP_API_KEYS)):
             checker = asyncio.create_task(
-                _hibp_check(
+                _hibp_process_queue_check(
                     config.HIBP_API_KEYS[i],
                     queue,
                 )
