@@ -572,15 +572,19 @@
 
                                 <div class="col-6">
                                   <div class="my-2 p-2 card">
-                                    <h5 class="card-title">{{ blocked_domain.domain }}</h5>
-                                    <div class="col">
-                                      <form method="post" action="#blocked-domains">
-                                        {{ csrf_form.csrf_token }}
-                                        <input type="hidden" name="form-name" value="blocked-domains-remove">
-                                        <input type="hidden" name="domain_name" value="{{ blocked_domain.domain }}">
-                                        <input type="hidden" name="domain_id" value="{{ blocked_domain.id }}">
-                                        <button class="card-link btn btn-link text-danger float-right">Delete</button>
-                                      </form>
+                                    <div class="row">
+                                      <div class="col">
+                                        <h5>{{ blocked_domain.domain }}</h5>
+                                      </div>
+                                      <div class="col-2">
+                                        <form method="post" action="#blocked-domains">
+                                          {{ csrf_form.csrf_token }}
+                                          <input type="hidden" name="form-name" value="blocked-domains-remove">
+                                          <input type="hidden" name="domain_name" value="{{ blocked_domain.domain }}">
+                                          <input type="hidden" name="domain_id" value="{{ blocked_domain.id }}">
+                                          <button class="btn btn-link text-danger">Delete</button>
+                                        </form>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
