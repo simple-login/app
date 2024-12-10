@@ -581,6 +581,16 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             handle_email_sent_to_ourself(alias, addr, msg, user)
             return [(True, status.E209)]
 
+    mail_from_domain = get_email_domain_part(mail_from)
+    if user.is_domain_blocked(mail_from_domain):
+        # by default return 2** instead of 5** to allow user to receive emails again
+        # when domain is unblocked
+        res_status = status.E200
+        if user.block_behaviour == BlockBehaviourEnum.return_5xx:
+            res_status = status.E502
+
+        return [(True, res_status)]
+
     from_header = get_header_unicode(msg[headers.FROM])
     LOG.d("Create or get contact for from_header:%s", from_header)
     contact = get_or_create_contact(from_header, envelope.mail_from, alias)

@@ -12,7 +12,7 @@ from app.custom_domain_utils import (
     CannotSetCustomDomainMailboxesCause,
 )
 from app.db import Session
-from app.models import User, CustomDomain, Mailbox, DomainMailbox
+from app.models import User, CustomDomain, Mailbox, DomainMailbox, BlockedDomain
 from tests.utils import get_proton_partner, random_email
 from tests.utils import create_new_user, random_string, random_domain
 
@@ -84,6 +84,13 @@ def test_can_domain_be_used_invalid_domain():
     domain = f"{random_string(10)}@lol.com"
     res = can_domain_be_used(user, domain, CustomDomain)
     assert res is CannotUseDomainReason.InvalidDomain
+
+
+def test_can_blocked_domain_be_used_existing_domain():
+    domain = random_domain()
+    BlockedDomain.create(user_id=user.id, domain=domain, commit=True)
+    res = can_domain_be_used(user, domain, BlockedDomain)
+    assert res is CannotUseDomainReason.DomainAlreadyUsed
 
 
 # sanitize_domain

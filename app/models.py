@@ -1202,6 +1202,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             > 0
         )
 
+    def is_domain_blocked(self, domain: str) -> bool:
+        """checks whether the provided domain is blocked for a given user"""
+        domains = []
+
+        for domain in BlockedDomain.filter_by(user_id=self.id):
+            domains.append(domain)
+
+        return domain in domains
+
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
 
