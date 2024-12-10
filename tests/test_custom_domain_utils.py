@@ -50,39 +50,39 @@ def test_is_valid_domain():
 # can_domain_be_used
 def test_can_domain_be_used():
     domain = f"{random_string(10)}.com"
-    res = can_domain_be_used(user, domain)
+    res = can_domain_be_used(user, domain, CustomDomain)
     assert res is None
 
 
 def test_can_domain_be_used_existing_domain():
     domain = random_domain()
     CustomDomain.create(user_id=user.id, domain=domain, commit=True)
-    res = can_domain_be_used(user, domain)
+    res = can_domain_be_used(user, domain, CustomDomain)
     assert res is CannotUseDomainReason.DomainAlreadyUsed
 
 
 def test_can_domain_be_used_sl_domain():
     domain = ALIAS_DOMAINS[0]
-    res = can_domain_be_used(user, domain)
+    res = can_domain_be_used(user, domain, CustomDomain)
     assert res is CannotUseDomainReason.BuiltinDomain
 
 
 def test_can_domain_be_used_domain_of_user_email():
     domain = user.email.split("@")[1]
-    res = can_domain_be_used(user, domain)
+    res = can_domain_be_used(user, domain, CustomDomain)
     assert res is CannotUseDomainReason.DomainPartOfUserEmail
 
 
 def test_can_domain_be_used_domain_of_existing_mailbox():
     domain = random_domain()
     Mailbox.create(user_id=user.id, email=f"email@{domain}", verified=True, commit=True)
-    res = can_domain_be_used(user, domain)
+    res = can_domain_be_used(user, domain, CustomDomain)
     assert res is CannotUseDomainReason.DomainUserInMailbox
 
 
 def test_can_domain_be_used_invalid_domain():
     domain = f"{random_string(10)}@lol.com"
-    res = can_domain_be_used(user, domain)
+    res = can_domain_be_used(user, domain, CustomDomain)
     assert res is CannotUseDomainReason.InvalidDomain
 
 
