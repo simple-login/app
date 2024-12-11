@@ -55,18 +55,18 @@ class EventDispatcher:
         if dispatcher is None:
             dispatcher = GlobalDispatcher.get_dispatcher()
         if config.EVENT_WEBHOOK_DISABLE:
-            LOG.i("Not sending events because webhook is disabled")
+            LOG.d("Not sending events because webhook is disabled")
             return
 
         if not config.EVENT_WEBHOOK and skip_if_webhook_missing:
-            LOG.i(
+            LOG.d(
                 "Not sending events because webhook is not configured and allowed to be empty"
             )
             return
 
         partner_user = EventDispatcher.__partner_user(user.id)
         if not partner_user:
-            LOG.i(f"Not sending events because there's no partner user for user {user}")
+            LOG.d(f"Not sending events because there's no partner user for user {user}")
             return
 
         event = event_pb2.Event(
