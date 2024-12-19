@@ -44,13 +44,14 @@
         <h4 class="mb-3">{{ title }} <span class="text-success">Verified</span></h4>
     {% else %}
         <h4 class="mb-3">{{ title }}</h4>
-        <p>Expected {{expected}}</p>
-            <p>Current response</p>
-            <ul class="list-group">
-            {% for error in errors %}
-                <li class="list-group-item">{{ error }}</li>
-            {% endfor %}
-            </ul>
+        <p>Expected</p>
+        <p>{{expected}}</p>
+        <p>Current response</p>
+        <ul class="list-group">
+        {% for error in errors %}
+            <li class="list-group-item">{{ error }}</li>
+        {% endfor %}
+        </ul>
     {% endif %}
 {%- endmacro %}
 
@@ -70,7 +71,7 @@
         </li>
         {% for dkim_domain in domain_with_data.dkim_expected %}
             <li class="list-group-item">
-            {{ show_verification("DKIM {}".format(dkim_domain), domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
+            {{ show_verification("DKIM {}.{}".format(dkim_domain, domain.domain), domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
             </li>
         {% endfor %}
     </ul>
@@ -83,7 +84,7 @@
     <div class="border border-dark border-2 mt-1 mb-2 p-3">
         <form method="get">
             <div class="form-group">
-                <label for="email">User to search:</label>
+                <label for="email">User or domain to search:</label>
                 <input type="text"
                        class="form-control"
                        name="user"
@@ -105,7 +106,7 @@
     <div class="d-flex">
 
     {% for domain_with_data in data.domains  %}
-        <div class="card m-2" style="width: 30rem;">
+        <div class="card m-2 border-dark" style="width: 30rem;">
         <div class="card-body">
             {{ show_domain(domain_with_data) }}
         </div>

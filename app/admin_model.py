@@ -1011,6 +1011,10 @@ class CustomDomainSearchAdmin(BaseView):
                 user = User.get_by(id=user_id)
             except ValueError:
                 user = User.get_by(email=query)
+                if user is None:
+                    cd = CustomDomain.get_by(domain=query)
+                    if cd is not None:
+                        user = cd.user
             search = CustomDomainSearchResult.from_user(user)
             print("NEW", search.domains)
 
