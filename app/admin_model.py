@@ -8,14 +8,16 @@ from flask_admin.form import SecureForm
 from flask_admin.model.template import EndpointLinkRowAction
 from markupsafe import Markup
 
-from app import models, s3
+from app import models, s3, config
 from flask import redirect, url_for, request, flash, Response
 from flask_admin import expose, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.contrib import sqla
 from flask_login import current_user
 
+from app.custom_domain_validation import CustomDomainValidation, DomainValidationResult
 from app.db import Session
+from app.dns_utils import get_network_dns_client
 from app.events.event_dispatcher import EventDispatcher
 from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.models import (
@@ -39,6 +41,7 @@ from app.models import (
     AliasMailbox,
     AliasAuditLog,
     UserAuditLog,
+    CustomDomain,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
@@ -773,18 +776,19 @@ class InvalidMailboxDomainAdmin(SLModelView):
 
 
 class EmailSearchResult:
-    no_match: bool = True
-    alias: Optional[Alias] = None
-    alias_audit_log: Optional[List[AliasAuditLog]] = None
-    mailbox: List[Mailbox] = []
-    mailbox_count: int = 0
-    deleted_alias: Optional[DeletedAlias] = None
-    deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
-    domain_deleted_alias: Optional[DomainDeletedAlias] = None
-    domain_deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
-    user: Optional[User] = None
-    user_audit_log: Optional[List[UserAuditLog]] = None
-    query: str
+    def __init__(self):
+        self.no_match: bool = True
+        self.alias: Optional[Alias] = None
+        self.alias_audit_log: Optional[List[AliasAuditLog]] = None
+        self.mailbox: List[Mailbox] = []
+        self.mailbox_count: int = 0
+        self.deleted_alias: Optional[DeletedAlias] = None
+        self.deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
+        self.domain_deleted_alias: Optional[DomainDeletedAlias] = None
+        self.domain_deleted_alias_audit_log: Optional[List[AliasAuditLog]] = None
+        self.user: Optional[User] = None
+        self.user_audit_log: Optional[List[UserAuditLog]] = None
+        self.query: str
 
     @staticmethod
     def from_email(email: str) -> EmailSearchResult:
@@ -915,4 +919,107 @@ class EmailSearchAdmin(BaseView):
             email=email,
             data=search,
             helper=EmailSearchHelpers,
+        )
+
+
+class CustomDomainWithValidationData:
+    def __init__(self, domain: CustomDomain):
+        self.domain: CustomDomain = domain
+        self.ownership_expected: Optional[str] = None
+        self.ownership_validation: Optional[DomainValidationResult] = None
+        self.mx_expected: Optional[str] = None
+        self.mx_validation: Optional[DomainValidationResult] = None
+        self.spf_expected: Optional[str] = None
+        self.spf_validation: Optional[DomainValidationResult] = None
+        self.dkim_expected: {str: str} = {}
+        self.dkim_validation: {str: str} = {}
+
+
+class CustomDomainSearchResult:
+    def __init__(self):
+        self.no_match: bool = False
+        self.user: Optional[User] = None
+        self.domains: list[CustomDomainWithValidationData] = []
+
+    @staticmethod
+    def from_user(user: Optional[User]) -> CustomDomainSearchResult:
+        out = CustomDomainSearchResult()
+        if user is None:
+            out.no_match = True
+            return out
+        out.user = user
+        dns_client = get_network_dns_client()
+        validator = CustomDomainValidation(
+            dkim_domain=config.EMAIL_DOMAIN,
+            partner_domains=config.PARTNER_DNS_CUSTOM_DOMAINS,
+            partner_domains_validation_prefixes=config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES,
+            dns_client=dns_client,
+        )
+        for custom_domain in user.custom_domains:
+            validation_data = CustomDomainWithValidationData(custom_domain)
+            if not custom_domain.ownership_verified:
+                validation_data.ownership_expected = (
+                    validator.get_ownership_verification_record(custom_domain)
+                )
+                validation_data.ownership_validation = (
+                    validator.validate_domain_ownership(custom_domain)
+                )
+            if not custom_domain.verified:
+                validation_data.mx_expected = validator.get_expected_mx_records(
+                    custom_domain
+                )
+                validation_data.mx_validation = validator.validate_mx_records(
+                    custom_domain
+                )
+            if not custom_domain.spf_verified:
+                validation_data.spf_expected = validator.get_expected_spf_record(
+                    custom_domain
+                )
+                validation_data.spf_validation = validator.validate_spf_records(
+                    custom_domain
+                )
+            if not custom_domain.dkim_verified:
+                validation_data.dkim_expected = validator.get_dkim_records(
+                    custom_domain
+                )
+                validation_data.dkim_validation = validator.validate_dkim_records(
+                    custom_domain
+                )
+            out.domains.append(validation_data)
+            print(validation_data.dkim_expected, validation_data.dkim_validation)
+
+        return out
+
+
+class CustomDomainSearchAdmin(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+
+    def inaccessible_callback(self, name, **kwargs):
+        # redirect to login page if user doesn't have access
+        flash("You don't have access to the admin page", "error")
+        return redirect(url_for("dashboard.index", next=request.url))
+
+    @expose("/", methods=["GET", "POST"])
+    def index(self):
+        query = request.args.get("user")
+        if query is None:
+            search = CustomDomainSearchResult()
+        else:
+            try:
+                user_id = int(query)
+                user = User.get_by(id=user_id)
+            except ValueError:
+                user = User.get_by(email=query)
+                if user is None:
+                    cd = CustomDomain.get_by(domain=query)
+                    if cd is not None:
+                        user = cd.user
+            search = CustomDomainSearchResult.from_user(user)
+            print("NEW", search.domains)
+
+        return self.render(
+            "admin/custom_domain_search.html",
+            data=search,
+            query=query,
         )
