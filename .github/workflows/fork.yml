@@ -11,6 +11,7 @@ jobs:
     steps:
       - uses: tgymnich/fork-sync@v2.0.10
         with:
+          token: ${{ secrets.FORK_PAT }}
           owner: simple-login
           repo: app
           base: master
