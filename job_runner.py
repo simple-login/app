@@ -164,6 +164,8 @@ def delete_mailbox_job(job: Job):
     Session.commit()
     LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
 
+    if not job.payload.get("send_mail", True):
+        return
     if alias_transferred_to:
         send_email(
             user.email,

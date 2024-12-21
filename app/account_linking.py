@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Optional
 
 import arrow
+import sqlalchemy.exc
 from arrow import Arrow
 from newrelic import agent
 from psycopg2.errors import UniqueViolation
@@ -35,6 +36,7 @@ from app.utils import random_string
 class SLPlanType(Enum):
     Free = 1
     Premium = 2
+    PremiumLifetime = 3
 
 
 @dataclass
@@ -75,6 +77,7 @@ def send_user_plan_changed_event(partner_user: PartnerUser) -> Optional[int]:
 
 def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
     sub = PartnerSubscription.get_by(partner_user_id=partner_user.id)
+    is_lifetime = plan.type == SLPlanType.PremiumLifetime
     if plan.type == SLPlanType.Free:
         if sub is not None:
             LOG.i(
@@ -83,25 +86,30 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
             PartnerSubscription.delete(sub.id)
             agent.record_custom_event("PlanChange", {"plan": "free"})
     else:
+        end_time = plan.expiration
+        if plan.type == SLPlanType.PremiumLifetime:
+            end_time = None
         if sub is None:
             LOG.i(
-                f"Creating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
+                f"Creating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}] with {end_time} / {is_lifetime}"
             )
             create_partner_subscription(
                 partner_user=partner_user,
-                expiration=plan.expiration,
+                expiration=end_time,
+                lifetime=is_lifetime,
                 msg="Upgraded via partner. User did not have a previous partner subscription",
             )
             agent.record_custom_event("PlanChange", {"plan": "premium", "type": "new"})
         else:
-            if sub.end_at != plan.expiration:
-                LOG.i(
-                    f"Updating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
-                )
+            if sub.end_at != plan.expiration or sub.lifetime != is_lifetime:
                 agent.record_custom_event(
                     "PlanChange", {"plan": "premium", "type": "extension"}
                 )
-                sub.end_at = plan.expiration
+                sub.end_at = plan.expiration if not is_lifetime else None
+                sub.lifetime = is_lifetime
+                LOG.i(
+                    f"Updating partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}] to {sub.end_at} / {sub.lifetime} "
+                )
                 emit_user_audit_log(
                     user=partner_user.user,
                     action=UserAuditLogAction.SubscriptionExtended,
@@ -185,7 +193,8 @@ class NewUserStrategy(ClientMergeStrategy):
                 user=new_user,
                 strategy=self.__class__.__name__,
             )
-        except UniqueViolation:
+        except (UniqueViolation, sqlalchemy.exc.IntegrityError) as e:
+            LOG.debug(f"Got the duplicate user error: {e}")
             return self.create_missing_link(canonical_email)
 
     def create_missing_link(self, canonical_email: str):
