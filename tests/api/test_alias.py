@@ -549,7 +549,7 @@ def test_create_contact_route_free_users(flask_client):
     assert r.status_code == 201
 
     # End trial and disallow for new free users. Config should allow it
-    user.flags = User.FLAG_DISABLE_CREATE_CONTACTS
+    user.flags = User.FLAG_FREE_DISABLE_CREATE_CONTACTS
     Session.commit()
     r = flask_client.post(
         url_for("api.create_contact_route", alias_id=alias.id),
