@@ -2,6 +2,7 @@ import random
 from email.message import EmailMessage
 from typing import List
 
+import arrow
 import pytest
 from aiosmtpd.smtp import Envelope
 
@@ -387,3 +388,15 @@ def test_preserve_headers(flask_client):
     msg = sent_mails[0].msg
     for header in headers_to_keep:
         assert msg[header] == header + "keep"
+
+
+def test_not_send_to_pending_to_delete_users(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    user.delete_on = arrow.utcnow()
+    envelope = Envelope()
+    envelope.mail_from = "somewhere@lo.cal"
+    envelope.rcpt_tos = [alias.email]
+    msg = EmailMessage()
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E504

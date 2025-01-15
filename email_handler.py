@@ -600,6 +600,17 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         else:
             reply_to_contact = get_or_create_reply_to_contact(reply_to, alias, msg)
 
+    if alias.user.delete_on is not None:
+        LOG.d(f"user {user} is pending to be deleted. Do not forward")
+        EmailLog.create(
+            contact_id=contact.id,
+            user_id=contact.user_id,
+            blocked=True,
+            alias_id=contact.alias_id,
+            commit=True,
+        )
+        return [(True, status.E502)]
+
     if not alias.enabled or contact.block_forward:
         LOG.d("%s is disabled, do not forward", alias)
         EmailLog.create(

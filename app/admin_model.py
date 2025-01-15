@@ -791,7 +791,7 @@ class EmailSearchResult:
         self.query: str
 
     @staticmethod
-    def from_email(email: str) -> EmailSearchResult:
+    def from_request_email(email: str) -> EmailSearchResult:
         output = EmailSearchResult()
         output.query = email
         alias = Alias.get_by(email=email)
@@ -803,7 +803,11 @@ class EmailSearchResult:
                 .all()
             )
             output.no_match = False
-        user = User.get_by(email=email)
+        try:
+            user_id = int(email)
+            user = User.get(user_id)
+        except ValueError:
+            user = User.get_by(email=email)
         if user:
             output.user = user
             output.user_audit_log = (
@@ -912,7 +916,7 @@ class EmailSearchAdmin(BaseView):
         email = request.args.get("email")
         if email is not None and len(email) > 0:
             email = email.strip()
-            search = EmailSearchResult.from_email(email)
+            search = EmailSearchResult.from_request_email(email)
 
         return self.render(
             "admin/email_search.html",
