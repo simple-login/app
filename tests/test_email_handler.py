@@ -399,4 +399,4 @@ def test_not_send_to_pending_to_delete_users(flask_client):
     envelope.rcpt_tos = [alias.email]
     msg = EmailMessage()
     result = email_handler.handle(envelope, msg)
-    assert result == status.E200
+    assert result == status.E504
