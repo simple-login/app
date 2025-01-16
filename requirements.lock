@@ -13,7 +13,6 @@
 aiohappyeyeballs==2.4.4
     # via aiohttp
 aiohttp==3.11.11
-    # via google-auth
     # via yacron
 aiosignal==1.3.2
     # via aiohttp
@@ -65,7 +64,7 @@ cffi==1.17.1
 chardet==3.0.4
     # via flanker
     # via requests
-click==7.1.2
+click==8.0.3
     # via flask
     # via typer
 coinbase-commerce==1.0.1
@@ -85,6 +84,7 @@ decorator==4.4.2
     # via ipython
 deprecated==1.2.15
     # via jwcrypto
+    # via limits
     # via simplelogin
 dkimpy==1.0.6
     # via simplelogin
@@ -155,7 +155,7 @@ google-auth-httplib2==0.0.4
     # via simplelogin
 googleapis-common-protos==1.66.0
     # via google-api-core
-greenlet==3.1.1
+greenlet==2.0.2
     # via gevent
 gunicorn==20.0.4
     # via simplelogin
@@ -211,6 +211,8 @@ newrelic-telemetry-sdk==0.5.1
     # via simplelogin
 oauthlib==3.2.2
     # via requests-oauthlib
+packaging==24.2
+    # via limits
 parso==0.8.4
     # via jedi
 pexpect==4.9.0
@@ -228,9 +230,12 @@ prompt-toolkit==3.0.48
 propcache==0.2.1
     # via aiohttp
     # via yarl
+proto-plus==1.25.0
+    # via google-api-core
 protobuf==5.29.3
     # via google-api-core
     # via googleapis-common-protos
+    # via proto-plus
 psutil==5.7.2
     # via memory-profiler
 psycopg2-binary==2.9.10
@@ -272,7 +277,6 @@ python-dotenv==0.14.0
 python-gnupg==0.4.9
     # via simplelogin
 pytz==2024.2
-    # via google-api-core
     # via twilio
     # via yacron
 redis==4.5.5
@@ -300,8 +304,6 @@ sentry-sdk==2.20.0
     # via simplelogin
     # via yacron
 setuptools==67.6.0
-    # via google-api-core
-    # via google-auth
     # via gunicorn
     # via ipython
     # via zope-event
@@ -313,16 +315,12 @@ six==1.17.0
     # via flanker
     # via flask-cors
     # via flask-limiter
-    # via google-api-core
     # via google-api-python-client
-    # via google-auth
     # via google-auth-httplib2
     # via jwcrypto
-    # via limits
     # via pgpy
     # via pyopenssl
     # via python-dateutil
-    # via requests-file
     # via sqlalchemy-utils
     # via webauthn
 sqlalchemy==1.3.24
@@ -351,6 +349,8 @@ typer==0.9.4
 typing-extensions==4.12.2
     # via aiospamc
     # via alembic
+    # via limits
+    # via multidict
     # via typer
 unidecode==1.1.2
     # via simplelogin
