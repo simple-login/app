@@ -42,7 +42,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
       fail-fast: true
 
     # service containers to run with `postgres-job`
