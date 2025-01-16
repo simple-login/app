@@ -10,21 +10,20 @@
 #   universal: false
 
 -e file:.
-aiohappyeyeballs==2.4.4
-    # via aiohttp
-aiohttp==3.11.11
+aiohttp==3.8.4
+    # via google-auth
     # via yacron
-aiosignal==1.3.2
+aiosignal==1.2.0
     # via aiohttp
-aiosmtpd==1.4.6
+aiosmtpd==1.4.2
     # via simplelogin
 aiosmtplib==1.1.4
     # via yacron
 aiospamc==0.10.0
     # via simplelogin
-alembic==1.14.0
+alembic==1.4.3
     # via flask-migrate
-appnope==0.1.4
+appnope==0.1.0
     # via ipython
 arrow==0.16.0
     # via simplelogin
@@ -33,15 +32,15 @@ async-timeout==4.0.2
     # via redis
 atpublic==2.0
     # via aiosmtpd
-attrs==24.3.0
+attrs==20.2.0
     # via aiohttp
     # via aiosmtpd
     # via flanker
 backcall==0.2.0
     # via ipython
-bcrypt==3.2.2
+bcrypt==3.2.0
     # via simplelogin
-blinker==1.9.0
+blinker==1.4
     # via flask-debugtoolbar
     # via simplelogin
 boto3==1.36.0
@@ -52,28 +51,30 @@ botocore==1.36.0
     # via s3transfer
 cachetools==4.1.1
     # via google-auth
-cbor2==5.6.5
+cbor2==5.2.0
     # via webauthn
-certifi==2024.12.14
+certifi==2019.11.28
     # via aiospamc
     # via requests
     # via sentry-sdk
-cffi==1.17.1
+cffi==1.14.4
     # via bcrypt
     # via cryptography
 chardet==3.0.4
     # via flanker
     # via requests
+charset-normalizer==3.4.1
+    # via aiohttp
 click==8.0.3
     # via flask
     # via typer
 coinbase-commerce==1.0.1
     # via simplelogin
-coloredlogs==14.3
+coloredlogs==14.0
     # via simplelogin
 crontab==0.22.8
     # via yacron
-cryptography==37.0.4
+cryptography==37.0.1
     # via flanker
     # via jwcrypto
     # via pgpy
@@ -82,11 +83,9 @@ cryptography==37.0.4
     # via webauthn
 decorator==4.4.2
     # via ipython
-deprecated==1.2.15
-    # via jwcrypto
-    # via limits
+deprecated==1.2.13
     # via simplelogin
-dkimpy==1.0.6
+dkimpy==1.0.5
     # via simplelogin
 dnspython==2.6.1
     # via dkimpy
@@ -96,11 +95,11 @@ email-validator==1.1.3
     # via simplelogin
 facebook-sdk==3.1.0
     # via simplelogin
-filelock==3.16.1
+filelock==3.15.4
     # via tldextract
 flanker==0.9.11
     # via simplelogin
-flask==1.1.4
+flask==1.1.2
     # via flask-admin
     # via flask-cors
     # via flask-debugtoolbar
@@ -112,16 +111,16 @@ flask==1.1.4
     # via flask-sqlalchemy
     # via flask-wtf
     # via simplelogin
-flask-admin==1.5.8
+flask-admin==1.5.7
     # via simplelogin
-flask-cors==3.0.10
+flask-cors==3.0.9
     # via simplelogin
 flask-debugtoolbar==0.11.0
     # via flask-debugtoolbar-sqlalchemy
     # via simplelogin
 flask-debugtoolbar-sqlalchemy==0.2.0
     # via simplelogin
-flask-httpauth==4.8.0
+flask-httpauth==4.1.0
     # via flask-profiler
 flask-limiter==1.4
     # via simplelogin
@@ -135,7 +134,7 @@ flask-sqlalchemy==2.5.1
     # via flask-migrate
 flask-wtf==0.14.3
     # via simplelogin
-frozenlist==1.5.0
+frozenlist==1.3.3
     # via aiohttp
     # via aiosignal
 future==0.18.3
@@ -144,7 +143,7 @@ gevent==24.11.1
     # via simplelogin
 google-api-core==1.22.2
     # via google-api-python-client
-google-api-python-client==1.12.11
+google-api-python-client==1.12.3
     # via simplelogin
 google-auth==1.22.0
     # via google-api-core
@@ -153,9 +152,9 @@ google-auth==1.22.0
 google-auth-httplib2==0.0.4
     # via google-api-python-client
     # via simplelogin
-googleapis-common-protos==1.66.0
+googleapis-common-protos==1.52.0
     # via google-api-core
-greenlet==2.0.2
+greenlet==3.1.1
     # via gevent
 gunicorn==20.0.4
     # via simplelogin
@@ -172,12 +171,14 @@ idna==2.10
     # via yarl
 ipython==7.31.1
     # via simplelogin
+ipython-genutils==0.2.0
+    # via traitlets
 itsdangerous==1.1.0
     # via flask
     # via flask-debugtoolbar
     # via flask-wtf
     # via simplelogin
-jedi==0.19.2
+jedi==0.17.2
     # via ipython
 jinja2==2.11.3
     # via flask
@@ -185,37 +186,35 @@ jinja2==2.11.3
 jmespath==0.10.0
     # via boto3
     # via botocore
-jwcrypto==0.9.1
+jwcrypto==0.8
     # via simplelogin
 limits==1.5.1
     # via flask-limiter
-loguru==0.7.3
+loguru==0.7.2
     # via aiospamc
-mako==1.3.8
+mako==1.2.4
     # via alembic
 markupsafe==1.1.1
     # via jinja2
     # via mako
     # via simplelogin
     # via wtforms
-matplotlib-inline==0.1.7
+matplotlib-inline==0.1.3
     # via ipython
 memory-profiler==0.57.0
     # via simplelogin
 multidict==4.7.6
     # via aiohttp
     # via yarl
-newrelic==8.8.1
+newrelic==8.8.0
     # via simplelogin
-newrelic-telemetry-sdk==0.5.1
+newrelic-telemetry-sdk==0.5.0
     # via simplelogin
-oauthlib==3.2.2
+oauthlib==3.1.0
     # via requests-oauthlib
-packaging==24.2
-    # via limits
-parso==0.8.4
+parso==0.7.1
     # via jedi
-pexpect==4.9.0
+pexpect==4.8.0
     # via ipython
 pgpy==0.5.4
     # via simplelogin
@@ -225,42 +224,36 @@ pickleshare==0.7.5
     # via ipython
 ply==3.11
     # via flanker
-prompt-toolkit==3.0.48
+prompt-toolkit==3.0.7
     # via ipython
-propcache==0.2.1
-    # via aiohttp
-    # via yarl
-proto-plus==1.25.0
-    # via google-api-core
-protobuf==5.29.3
+protobuf==5.27.1
     # via google-api-core
     # via googleapis-common-protos
-    # via proto-plus
 psutil==5.7.2
     # via memory-profiler
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.3
     # via simplelogin
-ptyprocess==0.7.0
+ptyprocess==0.6.0
     # via pexpect
-pyasn1==0.6.1
+pyasn1==0.4.8
     # via pgpy
     # via pyasn1-modules
     # via rsa
-pyasn1-modules==0.4.1
+pyasn1-modules==0.2.8
     # via google-auth
-pycparser==2.22
+pycparser==2.20
     # via cffi
-pycryptodome==3.9.9
+pycryptodome==3.9.8
     # via simplelogin
-pygments==2.19.1
+pygments==2.7.4
     # via flask-debugtoolbar-sqlalchemy
     # via ipython
-pyjwt==2.10.1
+pyjwt==2.4.0
     # via twilio
 pyopenssl==19.1.0
     # via simplelogin
     # via webauthn
-pyotp==2.4.1
+pyotp==2.4.0
     # via simplelogin
 pyparsing==2.4.7
     # via httplib2
@@ -268,20 +261,24 @@ pyre2==0.3.6
     # via simplelogin
 pyspf==2.0.14
     # via simplelogin
-python-dateutil==2.9.0.post0
+python-dateutil==2.8.1
+    # via alembic
     # via arrow
     # via botocore
     # via strictyaml
 python-dotenv==0.14.0
     # via simplelogin
-python-gnupg==0.4.9
+python-editor==1.0.4
+    # via alembic
+python-gnupg==0.4.6
     # via simplelogin
-pytz==2024.2
+pytz==2020.1
+    # via google-api-core
     # via twilio
     # via yacron
 redis==4.5.5
     # via simplelogin
-regex==2024.11.6
+regex==2023.12.25
     # via flanker
 requests==2.25.1
     # via coinbase-commerce
@@ -294,33 +291,43 @@ requests==2.25.1
     # via twilio
 requests-file==1.5.1
     # via tldextract
-requests-oauthlib==1.3.1
+requests-oauthlib==1.3.0
     # via simplelogin
-rsa==4.9
+rsa==4.6
     # via google-auth
+ruamel-yaml==0.18.10
+    # via strictyaml
+ruamel-yaml-clib==0.2.12
+    # via ruamel-yaml
 s3transfer==0.11.0
     # via boto3
 sentry-sdk==2.20.0
     # via simplelogin
     # via yacron
 setuptools==67.6.0
+    # via google-api-core
+    # via google-auth
     # via gunicorn
     # via ipython
     # via zope-event
     # via zope-interface
-simplejson==3.19.3
+simplejson==3.17.2
     # via flask-profiler
-six==1.17.0
+six==1.15.0
+    # via bcrypt
     # via coinbase-commerce
     # via flanker
     # via flask-cors
     # via flask-limiter
+    # via google-api-core
     # via google-api-python-client
+    # via google-auth
     # via google-auth-httplib2
-    # via jwcrypto
+    # via limits
     # via pgpy
     # via pyopenssl
     # via python-dateutil
+    # via requests-file
     # via sqlalchemy-utils
     # via webauthn
 sqlalchemy==1.3.24
@@ -331,28 +338,25 @@ sqlalchemy==1.3.24
     # via sqlalchemy-utils
 sqlalchemy-utils==0.36.8
     # via simplelogin
-sqlparse==0.5.3
+sqlparse==0.4.4
     # via flask-debugtoolbar-sqlalchemy
-strictyaml==1.7.3
+strictyaml==1.1.0
     # via yacron
-tld==0.13
+tld==0.12.6
     # via flanker
 tldextract==3.1.2
     # via simplelogin
-traitlets==5.14.3
+traitlets==5.0.4
     # via ipython
     # via matplotlib-inline
 twilio==7.3.2
     # via simplelogin
-typer==0.9.4
+typer==0.9.0
     # via aiospamc
-typing-extensions==4.12.2
+typing-extensions==4.8.0
     # via aiospamc
-    # via alembic
-    # via limits
-    # via multidict
     # via typer
-unidecode==1.1.2
+unidecode==1.1.1
     # via simplelogin
 uritemplate==3.0.1
     # via google-api-python-client
@@ -363,17 +367,17 @@ urllib3==1.26.20
     # via sentry-sdk
 watchtower==0.8.0
     # via simplelogin
-wcwidth==0.2.13
+wcwidth==0.2.5
     # via prompt-toolkit
 webauthn==0.4.7
     # via simplelogin
-webob==1.8.9
+webob==1.8.7
     # via flanker
 werkzeug==1.0.1
     # via flask
     # via flask-debugtoolbar
     # via simplelogin
-wrapt==1.17.2
+wrapt==1.15.0
     # via deprecated
 wtforms==2.3.3
     # via flask-admin
@@ -381,7 +385,7 @@ wtforms==2.3.3
     # via simplelogin
 yacron==0.11.2
     # via simplelogin
-yarl==1.18.3
+yarl==1.9.2
     # via aiohttp
 zope-event==5.0
     # via gevent
