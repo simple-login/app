@@ -140,5 +140,8 @@ build-backend = "hatchling.build"
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.hatch.build.targets.sdist]
+include = ["app", "local_data", "migrations", "templates"]
+
 [tool.hatch.build.targets.wheel]
-packages = ["src/tmp"]
+packages = ["app", "local_data", "migrations", "templates"]
