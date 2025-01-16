@@ -11,8 +11,6 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
@@ -41,8 +39,6 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
 
     # service containers to run with `postgres-job`
     services:
