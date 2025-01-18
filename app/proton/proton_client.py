@@ -16,6 +16,7 @@ PROTON_ERROR_CODE_HV_NEEDED = 9001
 
 PLAN_FREE = 1
 PLAN_PREMIUM = 2
+PLAN_PREMIUM_LIFETIME = 3
 
 
 @dataclass
@@ -112,10 +113,13 @@ class HttpProtonClient(ProtonClient):
         if plan_value == PLAN_FREE:
             plan = SLPlan(type=SLPlanType.Free, expiration=None)
         elif plan_value == PLAN_PREMIUM:
+            expiration = info.get("PlanExpiration", "1")
             plan = SLPlan(
                 type=SLPlanType.Premium,
-                expiration=Arrow.fromtimestamp(info["PlanExpiration"], tzinfo="utc"),
+                expiration=Arrow.fromtimestamp(expiration, tzinfo="utc"),
             )
+        elif plan_value == PLAN_PREMIUM_LIFETIME:
+            plan = SLPlan(SLPlanType.PremiumLifetime, expiration=None)
         else:
             raise Exception(f"Invalid value for plan: {plan_value}")
 

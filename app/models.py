@@ -343,7 +343,7 @@ class Fido(Base, ModelMixin):
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
     __tablename__ = "users"
 
-    FLAG_DISABLE_CREATE_CONTACTS = 1 << 0
+    FLAG_FREE_DISABLE_CREATE_CONTACTS = 1 << 0
     FLAG_CREATED_FROM_PARTNER = 1 << 1
     FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
     FLAG_CREATED_ALIAS_FROM_PARTNER = 1 << 3
@@ -550,7 +550,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     # bitwise flags. Allow for future expansion
     flags = sa.Column(
         sa.BigInteger,
-        default=FLAG_DISABLE_CREATE_CONTACTS,
+        default=FLAG_FREE_DISABLE_CREATE_CONTACTS,
         server_default="0",
         nullable=False,
     )
@@ -640,7 +640,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         # If the user is created from partner, do not notify
         # nor give a trial
         if from_partner:
-            user.flags = User.FLAG_CREATED_FROM_PARTNER
+            user.flags = user.flags | User.FLAG_CREATED_FROM_PARTNER
             user.notification = False
             user.trial_end = None
             Job.create(
@@ -1189,7 +1189,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def can_create_contacts(self) -> bool:
         if self.is_premium():
             return True
-        if self.flags & User.FLAG_DISABLE_CREATE_CONTACTS == 0:
+        if self.flags & User.FLAG_FREE_DISABLE_CREATE_CONTACTS == 0:
             return True
         return not config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
 
@@ -1659,7 +1659,7 @@ class Alias(Base, ModelMixin):
         return False
 
     @staticmethod
-    def get_custom_domain(alias_address) -> Optional["CustomDomain"]:
+    def get_custom_domain(alias_address: str) -> Optional["CustomDomain"]:
         alias_domain = validate_email(
             alias_address, check_deliverability=False, allow_smtputf8=False
         ).domain
@@ -3778,7 +3778,8 @@ class PartnerSubscription(Base, ModelMixin):
     )
 
     # when the partner subscription ends
-    end_at = sa.Column(ArrowType, nullable=False, index=True)
+    end_at = sa.Column(ArrowType, nullable=True, index=True)
+    lifetime = sa.Column(sa.Boolean, default=False, nullable=False, server_default="0")
 
     partner_user = orm.relationship(PartnerUser)
 
@@ -3800,7 +3801,9 @@ class PartnerSubscription(Base, ModelMixin):
         return None
 
     def is_active(self):
-        return self.end_at > arrow.now().shift(days=-_PARTNER_SUBSCRIPTION_GRACE_DAYS)
+        return self.lifetime or self.end_at > arrow.now().shift(
+            days=-_PARTNER_SUBSCRIPTION_GRACE_DAYS
+        )
 
 
 # endregion

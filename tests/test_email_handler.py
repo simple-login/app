@@ -2,6 +2,7 @@ import random
 from email.message import EmailMessage
 from typing import List
 
+import arrow
 import pytest
 from aiosmtpd.smtp import Envelope
 
@@ -14,7 +15,6 @@ from app.email_utils import generate_verp_email
 from app.mail_sender import mail_sender
 from app.models import (
     Alias,
-    AuthorizedAddress,
     IgnoredEmail,
     EmailLog,
     Notification,
@@ -24,33 +24,10 @@ from app.models import (
 )
 from app.utils import random_string, canonicalize_email
 from email_handler import (
-    get_mailbox_from_mail_from,
     should_ignore,
     is_automatic_out_of_office,
 )
 from tests.utils import load_eml_file, create_new_user, random_email
-
-
-def test_get_mailbox_from_mail_from(flask_client):
-    user = create_new_user()
-    alias = Alias.create_new_random(user)
-    Session.commit()
-
-    mb = get_mailbox_from_mail_from(user.email, alias)
-    assert mb.email == user.email
-
-    mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
-    assert mb is None
-
-    # authorized address
-    AuthorizedAddress.create(
-        user_id=user.id,
-        mailbox_id=user.default_mailbox_id,
-        email="unauthorized@gmail.com",
-        commit=True,
-    )
-    mb = get_mailbox_from_mail_from("unauthorized@gmail.com", alias)
-    assert mb.email == user.email
 
 
 def test_should_ignore(flask_client):
@@ -411,3 +388,15 @@ def test_preserve_headers(flask_client):
     msg = sent_mails[0].msg
     for header in headers_to_keep:
         assert msg[header] == header + "keep"
+
+
+def test_not_send_to_pending_to_delete_users(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    user.delete_on = arrow.utcnow()
+    envelope = Envelope()
+    envelope.mail_from = "somewhere@lo.cal"
+    envelope.rcpt_tos = [alias.email]
+    msg = EmailMessage()
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E504

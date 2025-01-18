@@ -135,7 +135,7 @@ def test_create_contact_free_user():
     assert result.contact is not None
     assert not result.contact.automatic_created
     # Free users with the flag should be able to still create automatic emails
-    user.flags = User.FLAG_DISABLE_CREATE_CONTACTS
+    user.flags = User.FLAG_FREE_DISABLE_CREATE_CONTACTS
     Session.flush()
     result = create_contact(random_email(), alias, automatic_created=True)
     assert result.error is None

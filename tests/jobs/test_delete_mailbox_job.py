@@ -37,6 +37,24 @@ def test_delete_mailbox_transfer_mailbox_primary(flask_client):
 
 
 @mail_sender.store_emails_test_decorator
+def test_delete_mailbox_no_email(flask_client):
+    user = create_new_user()
+    m1 = Mailbox.create(
+        user_id=user.id, email=random_email(), verified=True, flush=True
+    )
+    job = Job.create(
+        name=JOB_DELETE_MAILBOX,
+        payload={"mailbox_id": m1.id, "transfer_mailbox_id": None, "send_mail": False},
+        run_at=arrow.now(),
+        commit=True,
+    )
+    Session.commit()
+    delete_mailbox_job(job)
+    mails_sent = mail_sender.get_stored_emails()
+    assert len(mails_sent) == 0
+
+
+@mail_sender.store_emails_test_decorator
 def test_delete_mailbox_transfer_mailbox_in_list(flask_client):
     user = create_new_user()
     m1 = Mailbox.create(

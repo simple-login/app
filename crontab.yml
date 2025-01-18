@@ -27,7 +27,7 @@ jobs:
   - name: SimpleLogin HIBP check
     command: python /code/cron.py -j check_hibp
     shell: /bin/bash
-    schedule: "*/5 * * * *"
+    schedule: "13 */4 * * *"
     captureStderr: true
     concurrencyPolicy: Forbid
     onFailure:
