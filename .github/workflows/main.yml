@@ -1,4 +1,4 @@
-name: SimpleLogin actions
+name: Test and lint
 
 on:
   push:
@@ -9,38 +9,38 @@ on:
 
 jobs:
   lint:
-    - cron: '0 4 * * 0' # Sundays at 4am UTC
-  workflow_dispatch: # on button
+    runs-on: ubuntu-latest
+    steps:
       - name: Check out repo
         uses: actions/checkout@v3
 
-      - name: "Install rye"
-        id: setup-rye
-        uses: eifinger/setup-rye@v4
+      - name: Install poetry
+        run: pipx install poetry
+
+      - uses: actions/setup-python@v4
         with:
-          version: '0.43.0'
-          checksum: 'ca702c3d93fd6ec76a1a0efaaa605e10736ee79a0674d241aad1bc0fe26f7d80'
-          enable-cache: true
+          python-version: '3.10'
+          cache: 'poetry'
 
       - name: Install OS dependencies
+        if: ${{ matrix.python-version }} == '3.10'
         run: |
           sudo apt update
           sudo apt install -y libre2-dev libpq-dev
 
       - name: Install dependencies
-        if: steps.setup-rye.outputs.cache-hit != 'true'
-        run: rye sync --no-lock
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction
 
       - name: Check formatting & linting
         run: |
-          rye run pre-commit run --all-files
+          poetry run pre-commit run --all-files
 
 
   test:
     runs-on: ubuntu-latest
-
-    # service containers to run with `postgres-job`
-    services:
+    strategy:
+      max-parallel: 4
       matrix:
         python-version: ["3.10"]
 
@@ -66,48 +66,48 @@ jobs:
         # set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
       - name: Check out repo
         uses: actions/checkout@v3
 
-      - name: Install rye
-        id: setup-rye
-        uses: eifinger/setup-rye@v4
+      - name: Install poetry
+        run: pipx install poetry
+
+      - uses: actions/setup-python@v4
         with:
-          version: '0.43.0'
-          checksum: 'ca702c3d93fd6ec76a1a0efaaa605e10736ee79a0674d241aad1bc0fe26f7d80'
-          enable-cache: true
-          cache-prefix: 'rye-cache'
+          python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
 
       - name: Install OS dependencies
+        if: ${{ matrix.python-version }} == '3.10'
         run: |
           sudo apt update
           sudo apt install -y libre2-dev libpq-dev
 
       - name: Install dependencies
-        if: steps.setup-rye.outputs.cache-hit != 'true'
-        run: rye sync --no-lock
-
-      - name: Start Redis v6
-        uses: superchargejs/redis-github-action@1.1.0
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction
 
 
-      - name: Run db migration
-        run: |
-          rye install alembic
-          CONFIG=tests/test.env rye run alembic upgrade head
+      - name: Start Redis v6
+        uses: superchargejs/redis-github-action@1.1.0
+        with:
+          redis-version: 6
 
-      - name: Prepare version file
-        run: |
+      - name: Run db migration
         run: |
           CONFIG=tests/test.env poetry run alembic upgrade head
 
-      - name: Test with pytest
+      - name: Prepare version file
         run: |
-          rye run pytest
-        env:
-          GITHUB_ACTIONS_TEST: true
+          scripts/generate-build-info.sh ${{ github.sha }}
+          cat app/build_info.py
 
+      - name: Test with pytest
         run: |
           poetry run pytest
         env:
