@@ -4,10 +4,11 @@ WORKDIR /code
 COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm ci
 
-FROM --platform=linux/amd64 ubuntu:22.04
+# FROM --platform=linux/amd64 ubuntu:22.04
+FROM ubuntu:22.04
 
 ARG RYE_VERSION="0.43.0"
-ARG RYE_HASH="ca702c3d93fd6ec76a1a0efaaa605e10736ee79a0674d241aad1bc0fe26f7d80"
+# ARG RYE_HASH="ca702c3d93fd6ec76a1a0efaaa605e10736ee79a0674d241aad1bc0fe26f7d80"
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
