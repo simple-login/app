@@ -14,8 +14,6 @@ ARG TARGETARCH
 
 # RUN export RYE_HASH=$(if [ "$TARGETARCH" = "amd64" ]; then echo "$RYE_HASH_amd64"; elif [ "$TARGETARCH" = "arm64" ]; then echo "$RYE_HASH_arm64"; else echo "Unsupported TARGETARCH: $TARGETARCH" && exit 1; fi) && echo "Using RYE_HASH=$RYE_HASH"
 
-# Keeps Python from generating .pyc files in the container
-ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
@@ -27,22 +25,22 @@ COPY pyproject.toml requirements.lock requirements-dev.lock .python-version ./
 # Install deps
 RUN apt-get update \
     && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang \
-    if [ "$TARGETARCH" = "amd64" ]; then \
-    curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-x86_64-linux.gz" > rye.gz \
-    && echo "${RYE_HASH_x86_64}  rye.gz" | sha256sum -c - \; \
+    && if [ "$TARGETARCH" = "amd64" ]; then \
+        curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-x86_64-linux.gz" > rye.gz \
+        && echo "${RYE_HASH_x86_64}  rye.gz" | sha256sum -c - ; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
-    curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-aarch64-linux.gz" > rye.gz \
-    && echo "${RYE_HASH_aarch64}  rye.gz" | sha256sum -c - \ ) ; \
+        curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-aarch64-linux.gz" > rye.gz \
+        && echo "${RYE_HASH_aarch64}  rye.gz" | sha256sum -c - ; \
     else \
-    echo "compatable arch not detected" ; \
-    fi; \
+        echo "compatible arch not detected" ; \
+    fi \
     && gunzip rye.gz \
     && chmod +x rye \
     && mv rye /usr/bin/rye \
     && rye toolchain fetch `cat .python-version` \
     && rye sync --no-lock --no-dev \
     && apt-get autoremove -y \
-    && apt-get purge -y curl netcat-traditional build-essential pkg-config cmake ninja-build python3-dev clang\
+    && apt-get purge -y curl netcat-traditional build-essential pkg-config cmake ninja-build python3-dev clang \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
