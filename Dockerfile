@@ -13,9 +13,9 @@ ARG RYE_VERSION="0.43.0"
 ARG TARGETARCH
 
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
-    export TARGETARCH="x86_64"; \
+    export RYE_TARGETARCH="x86_64"; \
   elif [ "$TARGETARCH" = "arm64" ]; then \
-    export TARGETARCH="aarch64"; \
+    export RYE_TARGETARCH="aarch64"; \
   fi
 
 # RUN export RYE_HASH=$(if [ "$TARGETARCH" = "amd64" ]; then echo "$RYE_HASH_amd64"; elif [ "$TARGETARCH" = "arm64" ]; then echo "$RYE_HASH_arm64"; else echo "Unsupported TARGETARCH: $TARGETARCH" && exit 1; fi) && echo "Using RYE_HASH=$RYE_HASH"
@@ -34,7 +34,7 @@ COPY pyproject.toml requirements.lock requirements-dev.lock .python-version ./
 # Install deps
 RUN apt-get update \
     && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang \
-    && curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-${TARGETARCH}-linux.gz" > rye.gz \
+    && curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-${RYE_TARGETARCH}-linux.gz" > rye.gz \
     # && echo "${RYE_HASH}  rye.gz" | sha256sum -c - \
     && gunzip rye.gz \
     && chmod +x rye \
