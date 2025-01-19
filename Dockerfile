@@ -12,6 +12,12 @@ ARG RYE_VERSION="0.43.0"
 # ARG RYE_HASH_arm64="72db8238de446f300a1a9eb9d76caa05a8429aeb3315ae5de606462b9da20c5a"
 ARG TARGETARCH
 
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+    export TARGETARCH="x86_64"; \
+  elif [ "$TARGETARCH" = "arm64" ]; then \
+    export TARGETARCH="aarch64"; \
+  fi
+
 # RUN export RYE_HASH=$(if [ "$TARGETARCH" = "amd64" ]; then echo "$RYE_HASH_amd64"; elif [ "$TARGETARCH" = "arm64" ]; then echo "$RYE_HASH_arm64"; else echo "Unsupported TARGETARCH: $TARGETARCH" && exit 1; fi) && echo "Using RYE_HASH=$RYE_HASH"
 
 # Keeps Python from generating .pyc files in the container
