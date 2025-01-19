@@ -28,7 +28,7 @@ COPY pyproject.toml requirements.lock requirements-dev.lock .python-version ./
 RUN apt-get update \
     && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang \
     if [ "$TARGETARCH" = "amd64" ]; then \
-    curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-x86_64-linux.gz" > rye.gz \ 
+    curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-x86_64-linux.gz" > rye.gz \
     && echo "${RYE_HASH_x86_64}  rye.gz" | sha256sum -c - \; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
     curl -sSL "https://github.com/astral-sh/rye/releases/download/${RYE_VERSION}/rye-aarch64-linux.gz" > rye.gz \
