@@ -18,7 +18,6 @@ jobs:
         uses: eifinger/setup-rye@v4
         with:
           version: '0.43.0'
-          checksum: 'ca702c3d93fd6ec76a1a0efaaa605e10736ee79a0674d241aad1bc0fe26f7d80'
           enable-cache: true
 
       - name: Install OS dependencies
@@ -73,7 +72,6 @@ jobs:
         uses: eifinger/setup-rye@v4
         with:
           version: '0.43.0'
-          checksum: 'ca702c3d93fd6ec76a1a0efaaa605e10736ee79a0674d241aad1bc0fe26f7d80'
           enable-cache: true
           cache-prefix: 'rye-cache'
 
