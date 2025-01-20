@@ -10,10 +10,10 @@ docker run -d --name sl-test-db -e POSTGRES_PASSWORD=test -e POSTGRES_USER=test 
 sleep 3
 
 # migrate the DB to the latest version
-CONFIG=tests/test.env rye run alembic upgrade head
+CONFIG=tests/test.env uv run alembic upgrade head
 
 # run test
-rye run pytest -c pytest.ci.ini
+uv run pytest -c pytest.ci.ini
 
 # Delete the test DB
 docker rm -f sl-test-db
