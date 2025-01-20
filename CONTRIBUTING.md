@@ -20,7 +20,7 @@ SimpleLogin backend consists of 2 main components:
 ## Install dependencies
 
 The project requires:
-- Python 3.10 and rye to manage dependencies
+- Python 3.10 and uv to manage dependencies
 - Node v10 for front-end.
 - Postgres 13+
 
@@ -28,7 +28,7 @@ First, install all dependencies by running the following command.
 Feel free to use `virtualenv` or similar tools to isolate development environment.
 
 ```bash
-rye sync
+uv sync
 ```
 
 On Mac, sometimes you might need to install some other packages via `brew`:
@@ -55,7 +55,7 @@ brew install -s re2 pybind11
 We use pre-commit to run all our linting and static analysis checks. Please run
 
 ```bash
-rye run pre-commit install
+uv run pre-commit install
 ```
 
 To install it in your development environment.
@@ -160,25 +160,25 @@ Here are the small sum-ups of the directory structures and their roles:
 The code is formatted using [ruff](https://github.com/astral-sh/ruff), to format the code, simply run
 
 ```
-rye run ruff format .
+uv run ruff format .
 ```
 
 The code is also checked with `flake8`, make sure to run `flake8` before creating the pull request by
 
 ```bash
-rye run flake8
+uv run flake8
 ```
 
 For HTML templates, we use `djlint`. Before creating a pull request, please run
 
 ```bash
-rye run djlint --check templates
+uv run djlint --check templates
 ```
 
 If some files aren't properly formatted, you can format all files with
 
 ```bash
-rye run djlint --reformat .
+uv run djlint --reformat .
 ```
 
 ## Test sending email
@@ -236,11 +236,18 @@ There are several ways to setup Python and manage the project dependencies on Ma
 # we haven't managed to make python 3.12 work
 brew install python3.10
 
-# Install rye using the official installation script, found on https://rye.astral.sh/guide/installation/
+# make sure to update the PATH so python, pip point to Python3
+# for us it can be done by adding "export PATH=/opt/homebrew/opt/python@3.10/libexec/bin:$PATH" to .zprofile
 
-# Install the dependencies
-rye sync
+# Although pipx is the recommended way to install uv,
+# install pipx via brew will automatically install python 3.12
+# and uv will then use python 3.12
+# so we recommend using uv this way instead
+curl -sSL https://install.python-uv.org | python3 -
+
+uv install
 
 # activate the virtualenv and you should be good to go!
 source .venv/bin/activate
+
 ```
