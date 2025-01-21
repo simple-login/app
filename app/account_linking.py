@@ -194,6 +194,7 @@ class NewUserStrategy(ClientMergeStrategy):
                 strategy=self.__class__.__name__,
             )
         except (UniqueViolation, sqlalchemy.exc.IntegrityError) as e:
+            Session.rollback()
             LOG.debug(f"Got the duplicate user error: {e}")
             return self.create_missing_link(canonical_email)
 
