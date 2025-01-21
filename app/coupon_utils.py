@@ -80,7 +80,7 @@ def redeem_lifetime_coupon(coupon_code: str, user: User) -> Optional[Coupon]:
     if not coupon:
         return None
 
-    sql = f"UPDATE {LifetimeCoupon.__tablename__} SET nb_used = nb_used -1 where nb_used >0 and code = :code"
+    sql = f"UPDATE {LifetimeCoupon.__table__} SET nb_used = nb_used -1 where nb_used >0 and code = :code"
     res = Session.execute(sql, {"code": coupon_code})
     if res.rowcount == 0:
         LOG.i("Coupon could not be redeemed")
