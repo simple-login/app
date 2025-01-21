@@ -33,8 +33,8 @@ def redeem_coupon(coupon_code: str, user: User) -> Optional[Coupon]:
         LOG.i(f"User is trying to redeem coupon {coupon_code} that does not exist")
         return None
 
-    sql = """
-        UPDATE "coupon"
+    sql = f"""
+        UPDATE {Coupon.__table__}
         SET used = True, used_by_user_id = :user_id, updated_at = now()
         WHERE code = :code AND used = False and (expires_date IS NULL OR expires_date > now())
     """
@@ -80,7 +80,7 @@ def redeem_lifetime_coupon(coupon_code: str, user: User) -> Optional[Coupon]:
     if not coupon:
         return None
 
-    sql = 'UPDATE "lifetime_coupon" SET nb_used = nb_used -1 where nb_used >0 and "code" = :code'
+    sql = f"UPDATE {LifetimeCoupon.__tablename__} SET nb_used = nb_used -1 where nb_used >0 and code = :code"
     res = Session.execute(sql, {"code": coupon_code})
     if res.rowcount == 0:
         LOG.i("Coupon could not be redeemed")
