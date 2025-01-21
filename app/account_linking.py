@@ -69,6 +69,8 @@ def send_user_plan_changed_event(
         event = UserPlanChanged(lifetime=True)
     elif subscription_end:
         event = UserPlanChanged(plan_end_time=subscription_end.timestamp)
+    else:
+        event = UserPlanChanged(plan_end_time=None)
     EventDispatcher.send_event(partner_user.user, EventContent(user_plan_change=event))
     Session.flush()
     return event
