@@ -61,7 +61,7 @@ class LinkResult:
 
 def send_user_plan_changed_event(
     partner_user: PartnerUser,
-) -> Optional[UserPlanChanged]:
+) -> UserPlanChanged:
     subscription_end = partner_user.user.get_active_subscription_end(
         include_partner_subscription=False
     )

@@ -28,7 +28,7 @@ def redeem_coupon(coupon_code: str, user: User) -> Optional[Coupon]:
         )
         raise CouponUserCannotRedeemError()
 
-    coupon = Session.query(Coupon).filter(Coupon.code == coupon_code).one()
+    coupon = Coupon.get_by(code=coupon_code)
     if not coupon:
         LOG.i(f"User is trying to redeem coupon {coupon_code} that does not exist")
         return None
