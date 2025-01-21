@@ -1,16 +1,11 @@
-import arrow
 from flask import render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
-from app.config import ADMIN_EMAIL
+from app import parallel_limiter
+from app.coupon_utils import redeem_lifetime_coupon
 from app.dashboard.base import dashboard_bp
-from app.db import Session
-from app.email_utils import send_email
-from app.events.event_dispatcher import EventDispatcher
-from app.events.generated.event_pb2 import UserPlanChanged, EventContent
-from app.models import LifetimeCoupon
 
 
 class CouponForm(FlaskForm):
@@ -19,6 +14,7 @@ class CouponForm(FlaskForm):
 
 @dashboard_bp.route("/lifetime_licence", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock()
 def lifetime_licence():
     if current_user.lifetime:
         flash("You already have a lifetime licence", "warning")
@@ -35,36 +31,12 @@ def lifetime_licence():
 
     if coupon_form.validate_on_submit():
         code = coupon_form.code.data
-
-        coupon: LifetimeCoupon = LifetimeCoupon.get_by(code=code)
-        if coupon and coupon.nb_used > 0:
-            coupon.nb_used -= 1
-            current_user.lifetime = True
-            current_user.lifetime_coupon_id = coupon.id
-            if coupon.paid:
-                current_user.paid_lifetime = True
-            EventDispatcher.send_event(
-                user=current_user,
-                content=EventContent(
-                    user_plan_change=UserPlanChanged(
-                        plan_end_time=arrow.get("2038-01-01").timestamp
-                    )
-                ),
-            )
-            Session.commit()
-
-            # notify admin
-            send_email(
-                ADMIN_EMAIL,
-                subject=f"User {current_user} used lifetime coupon({coupon.comment}). Coupon nb_used: {coupon.nb_used}",
-                plaintext="",
-                html="",
-            )
-
+        coupon = redeem_lifetime_coupon(code, current_user)
+        if coupon:
             flash("You are upgraded to lifetime premium!", "success")
             return redirect(url_for("dashboard.index"))
 
         else:
-            flash(f"Code *{code}* expired or invalid", "warning")
+            flash("Coupon code expired or invalid", "warning")
 
     return render_template("dashboard/lifetime_licence.html", coupon_form=coupon_form)

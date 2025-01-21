@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-import arrow
 import sqlalchemy.exc
 from arrow import Arrow
 from newrelic import agent
@@ -60,19 +59,19 @@ class LinkResult:
     strategy: str
 
 
-def send_user_plan_changed_event(partner_user: PartnerUser) -> Optional[int]:
+def send_user_plan_changed_event(
+    partner_user: PartnerUser,
+) -> Optional[UserPlanChanged]:
     subscription_end = partner_user.user.get_active_subscription_end(
         include_partner_subscription=False
     )
-    end_timestamp = None
     if partner_user.user.lifetime:
-        end_timestamp = arrow.get("2038-01-01").timestamp
+        event = UserPlanChanged(lifetime=True)
     elif subscription_end:
-        end_timestamp = subscription_end.timestamp
-    event = UserPlanChanged(plan_end_time=end_timestamp)
+        event = UserPlanChanged(plan_end_time=subscription_end.timestamp)
     EventDispatcher.send_event(partner_user.user, EventContent(user_plan_change=event))
     Session.flush()
-    return end_timestamp
+    return event
 
 
 def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
