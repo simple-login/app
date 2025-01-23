@@ -85,8 +85,7 @@ def create_mailbox(
 
     send_verification_email(
         user,
-        new_mailbox.id,
-        new_mailbox.email,
+        new_mailbox,
         activation=activation,
         send_link=send_link,
     )
@@ -188,7 +187,7 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
             f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
         )
         raise MailboxError("Invalid mailbox")
-    if mailbox.verified:
+    if mailbox.verified and not mailbox.new_email:
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because it's already verified"
         )
@@ -225,13 +224,27 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
         activation.tries = activation.tries + 1
         Session.commit()
         raise CannotVerifyError("Invalid activation code")
-    LOG.i(f"User {user} has verified mailbox {mailbox_id}")
-    mailbox.verified = True
-    emit_user_audit_log(
-        user=user,
-        action=UserAuditLogAction.VerifyMailbox,
-        message=f"Verify mailbox {mailbox_id} ({mailbox.email})",
-    )
+    if mailbox.verified and mailbox.new_email:
+        if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
+            raise MailboxError("That addres is already in use")
+        LOG.i(
+            f"User {user} has verified mailbox email change from {mailbox.email} to {mailbox.new_email}"
+        )
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.UpdateMailbox,
+            message=f"Change mailbox email for mailbox {mailbox_id} (old={mailbox.email} | new={mailbox.new_email})",
+        )
+        mailbox.email = mailbox.new_email
+        mailbox.new_email = None
+    else:
+        LOG.i(f"User {user} has verified mailbox {mailbox_id}")
+        mailbox.verified = True
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.VerifyMailbox,
+            message=f"Verify mailbox {mailbox_id} ({mailbox.email})",
+        )
     clear_activation_codes_for_mailbox(mailbox)
     return mailbox
 
@@ -257,40 +270,62 @@ def generate_activation_code(
 
 def send_verification_email(
     user: User,
-    mailbox_id: int,
-    mailbox_email: str,
+    mailbox: Mailbox,
     activation: MailboxActivation,
     send_link: bool = True,
 ):
     LOG.i(
-        f"Sending mailbox verification email to {mailbox_email} with send link={send_link}"
+        f"Sending mailbox verification email to {mailbox.email} with send link={send_link}"
     )
 
     if send_link:
         verification_url = (
             config.URL
             + "/dashboard/mailbox_verify"
-            + f"?mailbox_id={mailbox_id}&code={activation.code}"
+            + f"?mailbox_id={mailbox.id}&code={activation.code}"
         )
     else:
         verification_url = None
 
     send_email(
-        mailbox_email,
-        f"Please confirm your mailbox {mailbox_email}",
+        mailbox.email,
+        f"Please confirm your mailbox {mailbox.email}",
         render(
             "transactional/verify-mailbox.txt.jinja2",
             user=user,
             code=activation.code,
             link=verification_url,
-            mailbox_email=mailbox_email,
+            mailbox_email=mailbox.email,
         ),
         render(
             "transactional/verify-mailbox.html",
             user=user,
             code=activation.code,
             link=verification_url,
-            mailbox_email=mailbox_email,
+            mailbox_email=mailbox.email,
+        ),
+    )
+
+
+def send_change_email(user: User, mailbox: Mailbox, activation: MailboxActivation):
+    verification_url = f"{config.URL}/dashboard/mailbox/confirm_change?mailbox_id={mailbox.id}&code={activation.code}"
+
+    send_email(
+        mailbox.new_email,
+        "Confirm mailbox change on SimpleLogin",
+        render(
+            "transactional/verify-mailbox-change.txt.jinja2",
+            user=user,
+            link=verification_url,
+            mailbox_email=mailbox.email,
+            mailbox_new_email=mailbox.new_email,
+        ),
+        render(
+            "transactional/verify-mailbox-change.html",
+            user=user,
+            link=verification_url,
+            mailbox_email=mailbox.email,
+            mailbox_new_email=mailbox.new_email,
         ),
     )
 
@@ -302,7 +337,6 @@ def request_mailbox_email_change(
     verified: bool = False,
     send_email: bool = True,
     use_digit_codes: bool = False,
-    send_link: bool = True,
 ) -> CreateMailboxOutput:
     new_email = sanitize_email(new_email)
     if new_email == mailbox.email:
@@ -331,12 +365,10 @@ def request_mailbox_email_change(
         LOG.i(f"Skipping sending validation email for mailbox {mailbox}")
         return output
 
-    send_verification_email(
+    send_change_email(
         user,
-        mailbox.id,
-        new_email,
+        mailbox,
         activation=activation,
-        send_link=send_link,
     )
     return output
 

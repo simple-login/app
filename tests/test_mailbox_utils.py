@@ -161,9 +161,7 @@ def test_send_verification_email():
     mailbox = Mailbox.get_by(email=email)
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
     mail_sender.purge_stored_emails()
-    mailbox_utils.send_verification_email(
-        user, mailbox.id, mailbox.email, activation, send_link=False
-    )
+    mailbox_utils.send_verification_email(user, mailbox, activation, send_link=False)
 
     assert 1 == len(mail_sender.get_stored_emails())
     mail_sent = mail_sender.get_stored_emails()[0]
@@ -180,9 +178,7 @@ def test_send_verification_email_with_link():
     mailbox = Mailbox.get_by(email=email)
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
     mail_sender.purge_stored_emails()
-    mailbox_utils.send_verification_email(
-        user, mailbox.id, mailbox.email, activation, send_link=True
-    )
+    mailbox_utils.send_verification_email(user, mailbox, activation, send_link=True)
 
     assert 1 == len(mail_sender.get_stored_emails())
     mail_sent = mail_sender.get_stored_emails()[0]

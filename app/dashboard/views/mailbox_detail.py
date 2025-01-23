@@ -8,11 +8,9 @@ from wtforms.fields.html5 import EmailField
 
 from app import mailbox_utils
 from app.config import ENFORCE_SPF, MAILBOX_SECRET
-from app.config import URL
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
-from app.email_utils import render, send_email
 from app.extensions import limiter
 from app.mailbox_utils import perform_mailbox_email_change, MailboxEmailChangeError
 from app.models import AuthorizedAddress
@@ -248,33 +246,6 @@ def mailbox_detail_route(mailbox_id):
     return render_template("dashboard/mailbox_detail.html", **locals())
 
 
-def verify_mailbox_change(user, mailbox, new_email):
-    s = TimestampSigner(MAILBOX_SECRET)
-    mailbox_id_signed = s.sign(str(mailbox.id)).decode()
-    verification_url = (
-        f"{URL}/dashboard/mailbox/confirm_change?mailbox_id={mailbox_id_signed}"
-    )
-
-    send_email(
-        new_email,
-        "Confirm mailbox change on SimpleLogin",
-        render(
-            "transactional/verify-mailbox-change.txt.jinja2",
-            user=user,
-            link=verification_url,
-            mailbox_email=mailbox.email,
-            mailbox_new_email=new_email,
-        ),
-        render(
-            "transactional/verify-mailbox-change.html",
-            user=user,
-            link=verification_url,
-            mailbox_email=mailbox.email,
-            mailbox_new_email=new_email,
-        ),
-    )
-
-
 @dashboard_bp.route(
     "/mailbox/<int:mailbox_id>/cancel_email_change", methods=["GET", "POST"]
 )
@@ -301,28 +272,39 @@ def cancel_mailbox_change_route(mailbox_id):
 
 @dashboard_bp.route("/mailbox/confirm_change")
 def mailbox_confirm_email_change_route():
-    s = TimestampSigner(MAILBOX_SECRET)
-    signed_mailbox_id = request.args.get("mailbox_id")
+    mailbox_id = request.args.get("mailbox_id")
 
-    try:
-        mailbox_id = int(s.unsign(signed_mailbox_id, max_age=900))
-    except Exception:
-        flash("Invalid link", "error")
-        return redirect(url_for("dashboard.index"))
-
-    res = perform_mailbox_email_change(mailbox_id)
-
-    flash(res.message, res.message_category)
-    if res.error:
-        if res.error == MailboxEmailChangeError.EmailAlreadyUsed:
+    code = request.args.get("code")
+    if code:
+        print("HAS OCO", code)
+        try:
+            mailbox = mailbox_utils.verify_mailbox_code(current_user, mailbox_id, code)
+            flash("Successfully changed mailbox email", "success")
             return redirect(
-                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
             )
-        elif res.error == MailboxEmailChangeError.InvalidId:
-            return redirect(url_for("dashboard.index"))
-        else:
-            raise Exception("Unhandled MailboxEmailChangeError")
+        except mailbox_utils.MailboxError as e:
+            print(e)
+            flash(f"Cannot verify mailbox: {e.msg}", "error")
+            return redirect(url_for("dashboard.mailbox_route"))
     else:
-        return redirect(
-            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
-        )
+        s = TimestampSigner(MAILBOX_SECRET)
+        try:
+            mailbox_id = int(s.unsign(mailbox_id, max_age=900))
+            res = perform_mailbox_email_change(mailbox_id)
+            flash(res.message, res.message_category)
+            if res.error:
+                if res.error == MailboxEmailChangeError.EmailAlreadyUsed:
+                    return redirect(
+                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+                    )
+                elif res.error == MailboxEmailChangeError.InvalidId:
+                    return redirect(url_for("dashboard.index"))
+                else:
+                    raise Exception("Unhandled MailboxEmailChangeError")
+        except Exception:
+            flash("Invalid link", "error")
+            return redirect(url_for("dashboard.index"))
+
+    flash("Successfully changed mailbox email", "success")
+    return redirect(url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id))
