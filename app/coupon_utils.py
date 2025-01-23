@@ -1,6 +1,7 @@
 from typing import Optional
 
 import arrow
+from sqlalchemy import or_, update, and_
 
 from app.config import ADMIN_EMAIL
 from app.db import Session
@@ -33,12 +34,22 @@ def redeem_coupon(coupon_code: str, user: User) -> Optional[Coupon]:
         LOG.i(f"User is trying to redeem coupon {coupon_code} that does not exist")
         return None
 
-    sql = f"""
-        UPDATE {Coupon.__table__}
-        SET used = True, used_by_user_id = :user_id, updated_at = now()
-        WHERE code = :code AND used = False and (expires_date IS NULL OR expires_date > now())
-    """
-    res = Session.execute(sql, {"code": coupon_code, "user_id": user.id})
+    now = arrow.utcnow()
+    stmt = (
+        update(Coupon)
+        .where(
+            and_(
+                Coupon.code == coupon_code,
+                Coupon.used == False,  # noqa: E712
+                or_(
+                    Coupon.expires_date == None,  # noqa: E711
+                    Coupon.expires_date > now,
+                ),
+            )
+        )
+        .values(used=True, used_by_user_id=user.id, updated_at=now)
+    )
+    res = Session.execute(stmt)
     if res.rowcount == 0:
         LOG.i(f"Coupon {coupon.id} could not be redeemed. It's expired or invalid.")
         return None
@@ -80,8 +91,17 @@ def redeem_lifetime_coupon(coupon_code: str, user: User) -> Optional[Coupon]:
     if not coupon:
         return None
 
-    sql = f"UPDATE {LifetimeCoupon.__table__} SET nb_used = nb_used -1 where nb_used >0 and code = :code"
-    res = Session.execute(sql, {"code": coupon_code})
+    stmt = (
+        update(LifetimeCoupon)
+        .where(
+            and_(
+                LifetimeCoupon.code == coupon_code,
+                LifetimeCoupon.nb_used > 0,
+            )
+        )
+        .values(nb_used=LifetimeCoupon.nb_used - 1)
+    )
+    res = Session.execute(stmt)
     if res.rowcount == 0:
         LOG.i("Coupon could not be redeemed")
         return None
