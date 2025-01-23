@@ -130,7 +130,7 @@ def update_mailbox(mailbox_id):
     if "cancel_email_change" in data:
         cancel_email_change = data.get("cancel_email_change")
         if cancel_email_change:
-            mailbox.new_email = None
+            mailbox_utils.cancel_email_change(mailbox.id, user)
             changed = True
 
     if changed:

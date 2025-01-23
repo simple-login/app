@@ -224,9 +224,7 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
         activation.tries = activation.tries + 1
         Session.commit()
         raise CannotVerifyError("Invalid activation code")
-    if mailbox.verified and mailbox.new_email:
-        if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
-            raise MailboxError("That addres is already in use")
+    if mailbox.new_email:
         LOG.i(
             f"User {user} has verified mailbox email change from {mailbox.email} to {mailbox.new_email}"
         )
@@ -237,7 +235,8 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
         )
         mailbox.email = mailbox.new_email
         mailbox.new_email = None
-    else:
+        mailbox.verified = True
+    elif not mailbox.verified:
         LOG.i(f"User {user} has verified mailbox {mailbox_id}")
         mailbox.verified = True
         emit_user_audit_log(
@@ -245,6 +244,14 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
             action=UserAuditLogAction.VerifyMailbox,
             message=f"Verify mailbox {mailbox_id} ({mailbox.email})",
         )
+        if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
+            raise MailboxError("That addres is already in use")
+
+    else:
+        LOG.i(
+            "User {user} alread has mailbox {mailbox} verified and no pending email change"
+        )
+
     clear_activation_codes_for_mailbox(mailbox)
     return mailbox
 
@@ -338,9 +345,6 @@ def request_mailbox_email_change(
     send_email: bool = True,
     use_digit_codes: bool = False,
 ) -> CreateMailboxOutput:
-    if not mailbox.verified:
-        LOG.i(f"User {user} has tried to change email of unverified mailbox {mailbox}")
-        raise MailboxError("Mailbox has not been verified")
     new_email = sanitize_email(new_email)
     if new_email == mailbox.email:
         raise MailboxError("Same email")
@@ -425,6 +429,23 @@ def perform_mailbox_email_change(mailbox_id: int) -> MailboxEmailChangeResult:
             message="Invalid link",
             message_category="error",
         )
+
+
+def cancel_email_change(mailbox_id: int, user: User):
+    mailbox = Mailbox.get(mailbox_id)
+    if not mailbox:
+        LOG.i(
+            f"User {user} has tried to cancel a mailbox an unknown mailbox {mailbox_id}"
+        )
+        raise MailboxError("Invalid mailbox")
+    if mailbox.user.id != user.id:
+        LOG.i(
+            f"User {user} has tried to cancel a mailbox {mailbox} owned by another user"
+        )
+        raise MailboxError("Invalid mailbox")
+    mailbox.new_email = None
+    LOG.i(f"User {mailbox.user} has cancelled mailbox email change")
+    clear_activation_codes_for_mailbox(mailbox)
 
 
 def __get_alias_mailbox_from_email(

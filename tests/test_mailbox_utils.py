@@ -11,7 +11,6 @@ from app.mailbox_utils import (
     MailboxEmailChangeError,
     get_mailbox_for_reply_phase,
     request_mailbox_email_change,
-    MailboxError,
 )
 from app.models import (
     Mailbox,
@@ -531,14 +530,6 @@ def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_not_aligned(
 
     mb = get_mailbox_for_reply_phase(envelope_from, mail_from, alias)
     assert mb is None
-
-
-def test_cannot_change_email_on_unverified_mailbox():
-    user = create_new_user()
-    mail = random_email()
-    mbox = Mailbox.create(email=mail, user_id=user.id, verified=False, flush=True)
-    with pytest.raises(MailboxError):
-        request_mailbox_email_change(user, mbox, random_email())
 
 
 @mail_sender.store_emails_test_decorator

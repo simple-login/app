@@ -12,7 +12,11 @@ from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.extensions import limiter
-from app.mailbox_utils import perform_mailbox_email_change, MailboxEmailChangeError
+from app.mailbox_utils import (
+    perform_mailbox_email_change,
+    MailboxEmailChangeError,
+    MailboxError,
+)
 from app.models import AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key_and_check
@@ -251,23 +255,15 @@ def mailbox_detail_route(mailbox_id):
 )
 @login_required
 def cancel_mailbox_change_route(mailbox_id):
-    mailbox = Mailbox.get(mailbox_id)
-    if not mailbox or mailbox.user_id != current_user.id:
-        flash("You cannot see this page", "warning")
-        return redirect(url_for("dashboard.index"))
-
-    if mailbox.new_email:
-        mailbox.new_email = None
-        Session.commit()
+    try:
+        mailbox_utils.cancel_email_change(mailbox_id, current_user)
         flash("Your mailbox change is cancelled", "success")
         return redirect(
             url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
         )
-    else:
-        flash("You have no pending mailbox change", "warning")
-        return redirect(
-            url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
-        )
+    except MailboxError as e:
+        flash(e.msg, "warning")
+        return redirect(url_for("dashboard.index"))
 
 
 @dashboard_bp.route("/mailbox/confirm_change")
