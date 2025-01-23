@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 import arrow
@@ -6,7 +7,11 @@ import pytest
 from app import mailbox_utils, config
 from app.db import Session
 from app.mail_sender import mail_sender
-from app.mailbox_utils import MailboxEmailChangeError, get_mailbox_for_reply_phase
+from app.mailbox_utils import (
+    MailboxEmailChangeError,
+    get_mailbox_for_reply_phase,
+    request_mailbox_email_change,
+)
 from app.models import (
     Mailbox,
     MailboxActivation,
@@ -156,7 +161,9 @@ def test_send_verification_email():
     mailbox = Mailbox.get_by(email=email)
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
     mail_sender.purge_stored_emails()
-    mailbox_utils.send_verification_email(user, mailbox, activation, send_link=False)
+    mailbox_utils.send_verification_email(
+        user, mailbox.id, mailbox.email, activation, send_link=False
+    )
 
     assert 1 == len(mail_sender.get_stored_emails())
     mail_sent = mail_sender.get_stored_emails()[0]
@@ -173,7 +180,9 @@ def test_send_verification_email_with_link():
     mailbox = Mailbox.get_by(email=email)
     activation = MailboxActivation.get_by(mailbox_id=mailbox.id)
     mail_sender.purge_stored_emails()
-    mailbox_utils.send_verification_email(user, mailbox, activation, send_link=True)
+    mailbox_utils.send_verification_email(
+        user, mailbox.id, mailbox.email, activation, send_link=True
+    )
 
     assert 1 == len(mail_sender.get_stored_emails())
     mail_sent = mail_sender.get_stored_emails()[0]
@@ -507,3 +516,71 @@ def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_not_aligned(
 
     mb = get_mailbox_for_reply_phase(envelope_from, mail_from, alias)
     assert mb is None
+
+
+@mail_sender.store_emails_test_decorator
+def test_change_mailbox_address(flask_client):
+    user = create_new_user()
+    domain = f"{random_string(10)}.com"
+    mail1 = f"mail_1@{domain}"
+    mbox = Mailbox.create(email=mail1, user_id=user.id, verified=True, flush=True)
+    mail2 = f"mail_2@{domain}"
+    out = request_mailbox_email_change(user, mbox, mail2)
+    changed_mailbox = Mailbox.get(mbox.id)
+    assert changed_mailbox.new_email == mail2
+    assert out.activation.mailbox_id == changed_mailbox.id
+    assert re.match("^[0-9]+$", out.activation.code) is None
+    assert 1 == len(mail_sender.get_stored_emails())
+    mail_sent = mail_sender.get_stored_emails()[0]
+    mail_contents = str(mail_sent.msg)
+    assert mail_contents.find(config.URL) > 0
+    assert mail_contents.find(out.activation.code) > 0
+    assert mail_sent.envelope_to == mail2
+
+
+@mail_sender.store_emails_test_decorator
+def test_change_mailbox_address_without_verification_email(flask_client):
+    user = create_new_user()
+    domain = f"{random_string(10)}.com"
+    mail1 = f"mail_1@{domain}"
+    mbox = Mailbox.create(email=mail1, user_id=user.id, verified=True, flush=True)
+    mail2 = f"mail_2@{domain}"
+    out = request_mailbox_email_change(user, mbox, mail2, send_email=False)
+    changed_mailbox = Mailbox.get(mbox.id)
+    assert changed_mailbox.new_email == mail2
+    assert out.activation.mailbox_id == changed_mailbox.id
+    assert re.match("^[0-9]+$", out.activation.code) is None
+    assert 0 == len(mail_sender.get_stored_emails())
+
+
+@mail_sender.store_emails_test_decorator
+def test_change_mailbox_address_with_code(flask_client):
+    user = create_new_user()
+    domain = f"{random_string(10)}.com"
+    mail1 = f"mail_1@{domain}"
+    mbox = Mailbox.create(email=mail1, user_id=user.id, verified=True, flush=True)
+    mail2 = f"mail_2@{domain}"
+    out = request_mailbox_email_change(user, mbox, mail2, use_digit_codes=True)
+    changed_mailbox = Mailbox.get(mbox.id)
+    assert changed_mailbox.new_email == mail2
+    assert out.activation.mailbox_id == changed_mailbox.id
+    assert re.match("^[0-9]+$", out.activation.code) is not None
+    assert 1 == len(mail_sender.get_stored_emails())
+    mail_sent = mail_sender.get_stored_emails()[0]
+    mail_contents = str(mail_sent.msg)
+    assert mail_contents.find(config.URL) > 0
+    assert mail_contents.find(out.activation.code) > 0
+    assert mail_sent.envelope_to == mail2
+
+
+def test_change_mailbox_verified_address(flask_client):
+    user = create_new_user()
+    domain = f"{random_string(10)}.com"
+    mail1 = f"mail_1@{domain}"
+    mbox = Mailbox.create(email=mail1, user_id=user.id, verified=True, flush=True)
+    mail2 = f"mail_2@{domain}"
+    out = request_mailbox_email_change(user, mbox, mail2, verified=True)
+    changed_mailbox = Mailbox.get(mbox.id)
+    assert changed_mailbox.email == mail2
+    assert out.activation is None
+    assert 0 == len(mail_sender.get_stored_emails())

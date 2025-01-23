@@ -1,5 +1,3 @@
-from smtplib import SMTPRecipientsRefused
-
 from email_validator import validate_email, EmailNotValidError
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -8,16 +6,16 @@ from itsdangerous import TimestampSigner
 from wtforms import validators
 from wtforms.fields.html5 import EmailField
 
+from app import mailbox_utils
 from app.config import ENFORCE_SPF, MAILBOX_SECRET
 from app.config import URL
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
-from app.email_utils import email_can_be_used_as_mailbox
-from app.email_utils import mailbox_already_used, render, send_email
+from app.email_utils import render, send_email
 from app.extensions import limiter
 from app.mailbox_utils import perform_mailbox_email_change, MailboxEmailChangeError
-from app.models import Alias, AuthorizedAddress
+from app.models import AuthorizedAddress
 from app.models import Mailbox
 from app.pgp_utils import PGPException, load_public_key_and_check
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
@@ -56,34 +54,19 @@ def mailbox_detail_route(mailbox_id):
             request.form.get("form-name") == "update-email"
             and change_email_form.validate_on_submit()
         ):
-            new_email = sanitize_email(change_email_form.email.data)
-            if new_email != mailbox.email and not pending_email:
-                # check if this email is not already used
-                if mailbox_already_used(new_email, current_user) or Alias.get_by(
-                    email=new_email
-                ):
-                    flash(f"Email {new_email} already used", "error")
-                elif not email_can_be_used_as_mailbox(new_email):
-                    flash("You cannot use this email address as your mailbox", "error")
-                else:
-                    mailbox.new_email = new_email
-                    Session.commit()
-
-                    try:
-                        verify_mailbox_change(current_user, mailbox, new_email)
-                    except SMTPRecipientsRefused:
-                        flash(
-                            f"Incorrect mailbox, please recheck {mailbox.email}",
-                            "error",
-                        )
-                    else:
-                        flash(
-                            f"You are going to receive an email to confirm {new_email}.",
-                            "success",
-                        )
-                    return redirect(
-                        url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
-                    )
+            try:
+                response = mailbox_utils.request_mailbox_email_change(
+                    current_user, mailbox, change_email_form.email.data
+                )
+                flash(
+                    f"You are going to receive an email to confirm {mailbox.email}.",
+                    "success",
+                )
+            except mailbox_utils.MailboxError as e:
+                flash(e.msg, "error")
+            return redirect(
+                url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox_id)
+            )
         elif request.form.get("form-name") == "force-spf":
             if not ENFORCE_SPF:
                 flash("SPF enforcement globally not enabled", "error")
