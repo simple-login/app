@@ -11,6 +11,7 @@ from app.mailbox_utils import (
     MailboxEmailChangeError,
     get_mailbox_for_reply_phase,
     request_mailbox_email_change,
+    MailboxError,
 )
 from app.models import (
     Mailbox,
@@ -366,6 +367,24 @@ def test_verify_ok():
     assert mailbox.verified
 
 
+@mail_sender.store_emails_test_decorator
+def test_verify_ok_for_mailbox_email_change():
+    out_create = mailbox_utils.create_mailbox(user, random_email(), verified=True)
+    mailbox_id = out_create.mailbox.id
+    new_email = f"new{out_create.mailbox.email}"
+    out_change = mailbox_utils.request_mailbox_email_change(
+        user, out_create.mailbox, new_email
+    )
+    assert out_change.activation.code is not None
+    mailbox_utils.verify_mailbox_code(user, mailbox_id, out_change.activation.code)
+    activation = MailboxActivation.get_by(mailbox_id=out_create.mailbox.id)
+    assert activation is None
+    mailbox = Mailbox.get(id=out_create.mailbox.id)
+    assert mailbox.verified
+    assert mailbox.email == new_email
+    assert mailbox.new_email is None
+
+
 # perform_mailbox_email_change
 def test_perform_mailbox_email_change_invalid_id():
     res = mailbox_utils.perform_mailbox_email_change(99999)
@@ -514,6 +533,14 @@ def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_not_aligned(
     assert mb is None
 
 
+def test_cannot_change_email_on_unverified_mailbox():
+    user = create_new_user()
+    mail = random_email()
+    mbox = Mailbox.create(email=mail, user_id=user.id, verified=False, flush=True)
+    with pytest.raises(MailboxError):
+        request_mailbox_email_change(user, mbox, random_email())
+
+
 @mail_sender.store_emails_test_decorator
 def test_change_mailbox_address(flask_client):
     user = create_new_user()
@@ -575,7 +602,7 @@ def test_change_mailbox_verified_address(flask_client):
     mail1 = f"mail_1@{domain}"
     mbox = Mailbox.create(email=mail1, user_id=user.id, verified=True, flush=True)
     mail2 = f"mail_2@{domain}"
-    out = request_mailbox_email_change(user, mbox, mail2, verified=True)
+    out = request_mailbox_email_change(user, mbox, mail2, email_ownership_verified=True)
     changed_mailbox = Mailbox.get(mbox.id)
     assert changed_mailbox.email == mail2
     assert out.activation is None

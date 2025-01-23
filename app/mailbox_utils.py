@@ -334,26 +334,29 @@ def request_mailbox_email_change(
     user: User,
     mailbox: Mailbox,
     new_email: str,
-    verified: bool = False,
+    email_ownership_verified: bool = False,
     send_email: bool = True,
     use_digit_codes: bool = False,
 ) -> CreateMailboxOutput:
+    if not mailbox.verified:
+        LOG.i(f"User {user} has tried to change email of unverified mailbox {mailbox}")
+        raise MailboxError("Mailbox has not been verified")
     new_email = sanitize_email(new_email)
     if new_email == mailbox.email:
         raise MailboxError("Same email")
     check_email_for_mailbox(new_email, user)
-    if verified:
+    if email_ownership_verified:
         mailbox.email = new_email
     else:
         mailbox.new_email = new_email
     emit_user_audit_log(
         user=user,
         action=UserAuditLogAction.UpdateMailbox,
-        message=f"Updated mailbox {mailbox.id} email ({new_email}) pre-verified({verified}",
+        message=f"Updated mailbox {mailbox.id} email ({new_email}) pre-verified({email_ownership_verified}",
     )
     Session.commit()
 
-    if verified:
+    if email_ownership_verified:
         LOG.i(f"User {user} as created a pre-verified mailbox with {new_email}")
         return CreateMailboxOutput(mailbox=mailbox, activation=None)
 
