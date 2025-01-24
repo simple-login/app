@@ -43,7 +43,7 @@ from app.models import (
     UnsubscribeBehaviourEnum,
     BlockedDomain,
 )
-from app.proton.utils import get_proton_partner
+from app.proton.utils import get_proton_partner, can_unlink_proton_account
 from app.utils import (
     random_string,
     CSRFValidationForm,
@@ -358,5 +358,6 @@ def setting():
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
         connect_with_proton=CONNECT_WITH_PROTON,
         proton_linked_account=proton_linked_account,
+        can_unlink_proton_account=can_unlink_proton_account(current_user),
         blocked_domains=blocked_domains,
     )

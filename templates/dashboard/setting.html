@@ -155,6 +155,7 @@
                 Your account is currently linked to the Proton account <b>{{ proton_linked_account }}</b>
                 <br />
               </div>
+                {% if can_unlink_proton_account %}
               <form method="post"
                     action="{{ url_for("dashboard.unlink_proton_account") }}">
                 {{ csrf_form.csrf_token }}
@@ -163,6 +164,7 @@
                   Unlink account
                 </button>
               </form>
+                    {% endif %}
             {% else %}
               <div class="mb-3">
                 You can connect your Proton and SimpleLogin accounts.

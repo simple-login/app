@@ -33,8 +33,11 @@ from app.models import (
     SLDomain,
     Hibp,
     AliasHibp,
+    PartnerUser,
+    PartnerSubscription,
 )
 from app.pgp_utils import load_public_key
+from app.proton.utils import get_proton_partner
 
 
 def fake_data():
@@ -269,3 +272,27 @@ def fake_data():
     CustomDomain.create(
         user_id=user.id, domain="old.com", verified=True, ownership_verified=True
     )
+
+    # Create a user
+    proton_partner = get_proton_partner()
+    user = User.create(
+        email="test@proton.me",
+        name="Proton test",
+        password="password",
+        activated=True,
+        is_admin=False,
+        intro_shown=True,
+        from_partner=True,
+        flush=True,
+    )
+    pu = PartnerUser.create(
+        user_id=user.id,
+        partner_id=proton_partner.id,
+        partner_email="test@proton.me",
+        external_user_id="DUMMY",
+        flush=True,
+    )
+    PartnerSubscription.create(
+        partner_user_id=pu.id, end_at=arrow.now().shift(years=1, days=1)
+    )
+    Session.commit()

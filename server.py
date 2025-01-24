@@ -8,7 +8,6 @@ import flask_limiter
 import flask_profiler
 import newrelic.agent
 import sentry_sdk
-
 from flask import (
     Flask,
     redirect,
@@ -498,9 +497,9 @@ def register_custom_commands(app):
         from init_app import add_sl_domains, add_proton_partner
 
         LOG.w("reset db, add fake data")
+        add_proton_partner()
         fake_data()
         add_sl_domains()
-        add_proton_partner()
 
     @app.cli.command("send-newsletter")
     @click.option("-n", "--newsletter_id", type=int, help="Newsletter ID to be sent")
