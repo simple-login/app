@@ -27,16 +27,16 @@ RUN apt-get update \
     && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang \
     && if [ "$TARGETARCH" = "amd64" ]; then \
         curl -sSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" > uv.tar.gz \
-        && echo "${UV_HASH_x86_64}  uv.gz" | sha256sum -c - ; \
+        && echo "${UV_HASH_x86_64}  uv.gz" | sha256sum -c - \
         && tar xf uv.tar.gz -C /tmp/ \
         && mv /tmp/uv-x86_64-unknown-linux-gnu/uv /usr/bin/uv \
-        && mv /tmp/uv-x86_64-unknown-linux-gnu/uvx /usr/bin/uvx \
+        && mv /tmp/uv-x86_64-unknown-linux-gnu/uvx /usr/bin/uvx ;\
     elif [ "$TARGETARCH" = "arm64" ]; then \
         curl -sSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-aarch64-unknown-linux-gnu.tar.gz" > uv.tar.gz \
-        && echo "${UV_HASH_aarch64}  uv.tar.gz" | sha256sum -c - ; \
+        && echo "${UV_HASH_aarch64}  uv.tar.gz" | sha256sum -c - \
         && tar xf uv.tar.gz -C /tmp/ \
         && mv /tmp/uv-aarch64-unknown-linux-gnu/uv /usr/bin/uv \
-        && mv /tmp/uv-aarch64-unknown-linux-gnu/uvx /usr/bin/uvx \
+        && mv /tmp/uv-aarch64-unknown-linux-gnu/uvx /usr/bin/uvx ;\
     else \
         echo "compatible arch not detected" ; \
     fi \
