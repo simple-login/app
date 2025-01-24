@@ -16,7 +16,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-
 WORKDIR /code
 
 # Copy dependency files
@@ -45,7 +44,7 @@ RUN apt-get update \
     && uv python install `cat .python-version` \
     && uv sync --locked \
     && apt-get autoremove -y \
-    && apt-get purge -y curl netcat-traditional build-essential pkg-config cmake ninja-build python3-dev clang\
+    && apt-get purge -y curl netcat-traditional build-essential pkg-config cmake ninja-build python3-dev clang \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

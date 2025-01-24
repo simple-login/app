@@ -19,7 +19,6 @@ jobs:
         with:
           # Install a specific version of uv.
           version: "0.5.21"
-          enable-cache: true
 
       - name: Install OS dependencies
         run: |
