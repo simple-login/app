@@ -121,11 +121,13 @@ jobs:
           path: htmlcov
 
   build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-latest-arm]
+        arch: [linux/amd64, linux/arm64]
+    runs-on: ${{ matrix.os }}
     needs: ['test', 'lint']
     #if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
-
     steps:
       - name: Docker meta
         id: meta
@@ -170,7 +172,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          platforms: linux/amd64, linux/arm64
+          platforms: ${{ matrix.arch }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
