@@ -4,6 +4,7 @@ package simplelogin_events;
 
 message UserPlanChanged {
   uint32 plan_end_time = 1;
+  bool lifetime = 2;
 }
 
 message UserDeleted {

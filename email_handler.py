@@ -590,15 +590,25 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         contact.alias
     )  # In case the Session was closed in the get_or_create we re-fetch the alias
 
-    reply_to_contact = None
+    reply_to_contact = []
     if msg[headers.REPLY_TO]:
-        reply_to = get_header_unicode(msg[headers.REPLY_TO])
-        LOG.d("Create or get contact for reply_to_header:%s", reply_to)
-        # ignore when reply-to = alias
-        if reply_to == alias.email:
-            LOG.i("Reply-to same as alias %s", alias)
-        else:
-            reply_to_contact = get_or_create_reply_to_contact(reply_to, alias, msg)
+        reply_to_header_contents = get_header_unicode(msg[headers.REPLY_TO])
+        if reply_to_header_contents:
+            LOG.d(
+                "Create or get contact for reply_to_header:%s", reply_to_header_contents
+            )
+            for reply_to in [
+                reply_to.strip()
+                for reply_to in reply_to_header_contents.split(",")
+                if reply_to.strip()
+            ]:
+                reply_to_name, reply_to_email = parse_full_address(reply_to)
+                if reply_to_email == alias.email:
+                    LOG.i("Reply-to same as alias %s", alias)
+                else:
+                    reply_to_contact.append(
+                        get_or_create_reply_to_contact(reply_to_email, alias, msg)
+                    )
 
     if alias.user.delete_on is not None:
         LOG.d(f"user {user} is pending to be deleted. Do not forward")
@@ -701,7 +711,7 @@ def forward_email_to_mailbox(
     envelope,
     mailbox,
     user,
-    reply_to_contact: Optional[Contact],
+    reply_to_contacts: list[Contact],
 ) -> (bool, str):
     LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
 
@@ -884,11 +894,13 @@ def forward_email_to_mailbox(
     add_or_replace_header(msg, "From", new_from_header)
     LOG.d("From header, new:%s, old:%s", new_from_header, old_from_header)
 
-    if reply_to_contact:
-        reply_to_header = msg[headers.REPLY_TO]
-        new_reply_to_header = reply_to_contact.new_addr()
+    if len(reply_to_contacts) > 0:
+        original_reply_to = get_header_unicode(msg[headers.REPLY_TO])
+        new_reply_to_header = ", ".join(
+            [reply_to_contact.new_addr() for reply_to_contact in reply_to_contacts][:5]
+        )
         add_or_replace_header(msg, "Reply-To", new_reply_to_header)
-        LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, reply_to_header)
+        LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, original_reply_to)
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
     try:

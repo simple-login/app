@@ -6,12 +6,7 @@ from flask import request
 
 from app import mailbox_utils
 from app.api.base import api_bp, require_api_auth
-from app.dashboard.views.mailbox_detail import verify_mailbox_change
 from app.db import Session
-from app.email_utils import (
-    mailbox_already_used,
-    email_can_be_used_as_mailbox,
-)
 from app.models import Mailbox
 from app.utils import sanitize_email
 
@@ -122,20 +117,10 @@ def update_mailbox(mailbox_id):
 
     if "email" in data:
         new_email = sanitize_email(data.get("email"))
-
-        if mailbox_already_used(new_email, user):
-            return jsonify(error=f"{new_email} already used"), 400
-        elif not email_can_be_used_as_mailbox(new_email):
-            return (
-                jsonify(
-                    error=f"{new_email} cannot be used. Please note a mailbox cannot "
-                    f"be a disposable email address"
-                ),
-                400,
-            )
-
         try:
-            verify_mailbox_change(user, mailbox, new_email)
+            mailbox_utils.request_mailbox_email_change(user, mailbox, new_email)
+        except mailbox_utils.MailboxError as e:
+            return jsonify(error=e.msg), 400
         except SMTPRecipientsRefused:
             return jsonify(error=f"Incorrect mailbox, please recheck {new_email}"), 400
         else:
@@ -145,7 +130,7 @@ def update_mailbox(mailbox_id):
     if "cancel_email_change" in data:
         cancel_email_change = data.get("cancel_email_change")
         if cancel_email_change:
-            mailbox.new_email = None
+            mailbox_utils.cancel_email_change(mailbox.id, user)
             changed = True
 
     if changed:

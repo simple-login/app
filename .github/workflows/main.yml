@@ -14,26 +14,29 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v3
 
-      - name: "Install rye"
-        id: setup-rye
-        uses: eifinger/setup-rye@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          version: '0.43.0'
-          # checksum: 'ca702c3d93fd6ec76a1a0efaaa605e10736ee79a0674d241aad1bc0fe26f7d80'
-          enable-cache: true
+          # Install a specific version of uv.
+          version: "0.5.21"
 
       - name: Install OS dependencies
         run: |
           sudo apt update
           sudo apt install -y libre2-dev libpq-dev
 
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
       - name: Install dependencies
-        if: steps.setup-rye.outputs.cache-hit != 'true'
-        run: rye sync --no-lock
+        if: steps.setup-uv.outputs.cache-hit != 'true'
+        run: uv sync --locked --all-extras
 
       - name: Check formatting & linting
         run: |
-          rye run pre-commit run --all-files
+          uv run pre-commit run --all-files
 
 
   test:
@@ -69,23 +72,27 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v3
 
-      - name: Install rye
-        id: setup-rye
-        uses: eifinger/setup-rye@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          version: '0.43.0'
-          # checksum: 'ca702c3d93fd6ec76a1a0efaaa605e10736ee79a0674d241aad1bc0fe26f7d80'
+          # Install a specific version of uv.
+          version: "0.5.21"
           enable-cache: true
-          cache-prefix: 'rye-cache'
 
       - name: Install OS dependencies
         run: |
           sudo apt update
           sudo apt install -y libre2-dev libpq-dev
 
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
       - name: Install dependencies
-        if: steps.setup-rye.outputs.cache-hit != 'true'
-        run: rye sync --no-lock
+        if: steps.setup-uv.outputs.cache-hit != 'true'
+        run: uv sync --locked --all-extras
+
 
       - name: Start Redis v6
         uses: superchargejs/redis-github-action@1.1.0
@@ -94,8 +101,7 @@ jobs:
 
       - name: Run db migration
         run: |
-          rye install alembic
-          CONFIG=tests/test.env rye run alembic upgrade head
+          CONFIG=tests/test.env uv run alembic upgrade head
 
       - name: Prepare version file
         run: |
@@ -104,7 +110,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          rye run pytest
+          uv run pytest
         env:
           GITHUB_ACTIONS_TEST: true
 
