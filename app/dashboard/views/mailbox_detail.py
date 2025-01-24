@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from itsdangerous import TimestampSigner
 from wtforms import validators
-from wtforms.fields.html5 import EmailField
+from wtforms.fields.simple import StringField
 
 from app import mailbox_utils
 from app.config import ENFORCE_SPF, MAILBOX_SECRET
@@ -25,7 +25,7 @@ from app.utils import sanitize_email, CSRFValidationForm
 
 
 class ChangeEmailForm(FlaskForm):
-    email = EmailField(
+    email = StringField(
         "email", validators=[validators.DataRequired(), validators.Email()]
     )
 
