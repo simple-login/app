@@ -239,6 +239,8 @@ def unlink_proton_account():
         flash("Invalid request", "warning")
         return redirect(url_for("dashboard.setting"))
 
-    perform_proton_account_unlink(current_user)
-    flash("Your Proton account has been unlinked", "success")
+    if not perform_proton_account_unlink(current_user):
+        flash("Account cannot be unlinked", "warning")
+    else:
+        flash("Your Proton account has been unlinked", "success")
     return redirect(url_for("dashboard.setting"))

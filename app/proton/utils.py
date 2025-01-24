@@ -1,9 +1,10 @@
-from newrelic import agent
 from typing import Optional
 
+from newrelic import agent
+
 from app.db import Session
-from app.log import LOG
 from app.errors import ProtonPartnerNotSetUp
+from app.log import LOG
 from app.models import Partner, PartnerUser, User
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
@@ -26,7 +27,13 @@ def is_proton_partner(partner: Partner) -> bool:
     return partner.name == PROTON_PARTNER_NAME
 
 
-def perform_proton_account_unlink(current_user: User):
+def can_unlink_proton_account(user: User) -> bool:
+    return (user.flags & User.FLAG_CREATED_FROM_PARTNER) == 0
+
+
+def perform_proton_account_unlink(current_user: User) -> bool:
+    if not can_unlink_proton_account(current_user):
+        return False
     proton_partner = get_proton_partner()
     partner_user = PartnerUser.get_by(
         user_id=current_user.id, partner_id=proton_partner.id
@@ -41,3 +48,4 @@ def perform_proton_account_unlink(current_user: User):
         PartnerUser.delete(partner_user.id)
     Session.commit()
     agent.record_custom_event("AccountUnlinked", {"partner": proton_partner.name})
+    return True
