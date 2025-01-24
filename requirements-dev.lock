@@ -234,7 +234,7 @@ matplotlib-inline==0.1.7
     # via ipython
 mccabe==0.7.0
     # via pylint
-memory-profiler==0.57.0
+memory-profiler==0.61.0
     # via simplelogin
 multidict==6.1.0
     # via aiohttp
