@@ -7,8 +7,8 @@ RUN cd /code/static && npm ci
 FROM ubuntu:22.04
 
 ARG UV_VERSION="0.5.21"
-ARG UV_HASH_x86_64="a0eb614f7fc38a6e14ef1c4819f1f187591db8e0d3c4218dae38b1bd663a00e2"
-ARG UV_HASH_aarch64="3cf910468c37c709580d83d19b7b55352cfe05d6e1cc038718698410b6b8c6f0"
+ARG UV_HASH_x86_64="e108c300eafae22ad8e6d94519605530f18f8762eb58d2b98a617edfb5d088fc"
+ARG UV_HASH_aarch64="c4cc2ec78a294378b867ebd08c5842d3ce71074c2818dc7f641422fb3bf4b2d2"
 ARG TARGETARCH
 
 # Keeps Python from generating .pyc files in the container
