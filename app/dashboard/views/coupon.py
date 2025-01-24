@@ -1,17 +1,15 @@
 import arrow
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app import parallel_limiter
 from app.config import PADDLE_VENDOR_ID, PADDLE_COUPON_ID
+from app.coupon_utils import redeem_coupon, CouponUserCannotRedeemError
 from app.dashboard.base import dashboard_bp
-from app.db import Session
 from app.log import LOG
 from app.models import (
-    ManualSubscription,
-    Coupon,
     Subscription,
     AppleSubscription,
     CoinbaseSubscription,
@@ -58,56 +56,23 @@ def coupon_route():
 
     if coupon_form.validate_on_submit():
         code = coupon_form.code.data
-
-        coupon: Coupon = Coupon.get_by(code=code)
-        if coupon and not coupon.used:
-            if coupon.expires_date and coupon.expires_date < arrow.now():
-                flash(
-                    f"The coupon was expired on {coupon.expires_date.humanize()}",
-                    "error",
-                )
-                return redirect(request.url)
-
-            updated = (
-                Session.query(Coupon)
-                .filter_by(code=code, used=False)
-                .update({"used_by_user_id": current_user.id, "used": True})
-            )
-            if updated != 1:
-                flash("Coupon is not valid", "error")
-                return redirect(request.url)
-
-            manual_sub: ManualSubscription = ManualSubscription.get_by(
-                user_id=current_user.id
-            )
-            if manual_sub:
-                # renew existing subscription
-                if manual_sub.end_at > arrow.now():
-                    manual_sub.end_at = manual_sub.end_at.shift(years=coupon.nb_year)
-                else:
-                    manual_sub.end_at = arrow.now().shift(years=coupon.nb_year, days=1)
-                Session.commit()
-                flash(
-                    f"Your current subscription is extended to {manual_sub.end_at.humanize()}",
-                    "success",
-                )
-            else:
-                ManualSubscription.create(
-                    user_id=current_user.id,
-                    end_at=arrow.now().shift(years=coupon.nb_year, days=1),
-                    comment="using coupon code",
-                    is_giveaway=coupon.is_giveaway,
-                    commit=True,
-                )
+        try:
+            coupon = redeem_coupon(code, current_user)
+            if coupon:
                 flash(
                     "Your account has been upgraded to Premium, thanks for your support!",
                     "success",
                 )
-
-            return redirect(url_for("dashboard.index"))
-
-        else:
-            flash(f"Code *{code}* expired or invalid", "warning")
+            else:
+                flash(
+                    "This coupon cannot be redeemed. It's invalid or has expired",
+                    "warning",
+                )
+        except CouponUserCannotRedeemError:
+            flash(
+                "You have an active subscription. Please remove it before redeeming a coupon",
+                "warning",
+            )
 
     return render_template(
         "dashboard/coupon.html",

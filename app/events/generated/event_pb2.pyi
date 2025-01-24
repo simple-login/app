@@ -6,10 +6,12 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class UserPlanChanged(_message.Message):
-    __slots__ = ("plan_end_time",)
+    __slots__ = ("plan_end_time", "lifetime")
     PLAN_END_TIME_FIELD_NUMBER: _ClassVar[int]
+    LIFETIME_FIELD_NUMBER: _ClassVar[int]
     plan_end_time: int
-    def __init__(self, plan_end_time: _Optional[int] = ...) -> None: ...
+    lifetime: bool
+    def __init__(self, plan_end_time: _Optional[int] = ..., lifetime: bool = ...) -> None: ...
 
 class UserDeleted(_message.Message):
     __slots__ = ()

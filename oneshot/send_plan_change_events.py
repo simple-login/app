@@ -2,7 +2,6 @@
 import argparse
 import time
 
-import arrow
 from sqlalchemy import func
 
 from app.account_linking import send_user_plan_changed_event
@@ -38,9 +37,9 @@ for batch_start in range(pu_id_start, max_pu_id, step):
         )
     ).all()
     for partner_user in partner_users:
-        subscription_end = send_user_plan_changed_event(partner_user)
-        if subscription_end is not None:
-            if subscription_end > arrow.get("2038-01-01").timestamp:
+        event = send_user_plan_changed_event(partner_user)
+        if event is not None:
+            if event.lifetime:
                 with_lifetime += 1
             else:
                 with_premium += 1
