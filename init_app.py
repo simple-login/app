@@ -56,14 +56,15 @@ def add_sl_domains():
     Session.commit()
 
 
-def add_proton_partner():
+def add_proton_partner() -> Partner:
     proton_partner = Partner.get_by(name=PROTON_PARTNER_NAME)
     if not proton_partner:
-        Partner.create(
+        proton_partner = Partner.create(
             name=PROTON_PARTNER_NAME,
             contact_email="simplelogin@protonmail.com",
         )
         Session.commit()
+    return proton_partner
 
 
 if __name__ == "__main__":
