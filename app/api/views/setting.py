@@ -144,5 +144,6 @@ def get_available_domains_for_random_alias_v2():
 @require_api_auth
 def unlink_proton_account():
     user = g.user
-    perform_proton_account_unlink(user)
+    if not perform_proton_account_unlink(user):
+        return jsonify(error="The account cannot be unlinked"), 400
     return jsonify({"ok": True})
