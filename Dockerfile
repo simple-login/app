@@ -43,7 +43,7 @@ RUN apt-get update \
         && rm -rf /tmp/uv* \
         && rm -f uv.tar.gz \
         && uv python install `cat .python-version` \
-        && uv sync --locked ; \
+        && uv sync --locked --parallel 4 ; \
     else \
         echo "compatible arch not detected" ; \
     fi \
