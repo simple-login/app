@@ -28,8 +28,8 @@ RUN apt-get update \
         curl -sSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" > uv.tar.gz \
         && echo "${UV_HASH_x86_64}  uv.tar.gz" | sha256sum -c - \
         && tar xf uv.tar.gz -C /tmp/ \
-        && mv /tmp/uv-aarch64-unknown-linux-gnu/uv /usr/bin/uv \
-        && mv /tmp/uv-aarch64-unknown-linux-gnu/uvx /usr/bin/uvx \
+        && mv /tmp/uv-x86_64-unknown-linux-gnu/uv /usr/bin/uv \
+        && mv /tmp/uv-x86_64-unknown-linux-gnu/uvx /usr/bin/uvx \
         && rm -rf /tmp/uv* \
         && rm -f uv.tar.gz \
         && uv python install `cat .python-version` \
