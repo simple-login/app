@@ -35,16 +35,15 @@ RUN apt-get update \
         && uv python install `cat .python-version` \
         && uv sync --locked ; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
-        # curl -sSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-aarch64-unknown-linux-gnu.tar.gz" > uv.tar.gz \
-        # && echo "${UV_HASH_aarch64}  uv.tar.gz" | sha256sum -c - \
-        # && tar xf uv.tar.gz -C /tmp/ \
-        # && mv /tmp/uv-aarch64-unknown-linux-gnu/uv /usr/bin/uv \
-        # && mv /tmp/uv-aarch64-unknown-linux-gnu/uvx /usr/bin/uvx \
-        # && rm -rf /tmp/uv* \
-        # && rm -f uv.tar.gz \
-        # && uv python install `cat .python-version` \
-        # && uv sync --locked ; \
-        echo "skipping uv installatio on arm64" ; \
+        curl -sSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-aarch64-unknown-linux-gnu.tar.gz" > uv.tar.gz \
+        && echo "${UV_HASH_aarch64}  uv.tar.gz" | sha256sum -c - \
+        && tar xf uv.tar.gz -C /tmp/ \
+        && mv /tmp/uv-aarch64-unknown-linux-gnu/uv /usr/bin/uv \
+        && mv /tmp/uv-aarch64-unknown-linux-gnu/uvx /usr/bin/uvx \
+        && rm -rf /tmp/uv* \
+        && rm -f uv.tar.gz \
+        && uv python install `cat .python-version` \
+        && uv sync --locked ; \
     else \
         echo "compatible arch not detected" ; \
     fi \
