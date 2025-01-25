@@ -8,6 +8,9 @@ on:
       - v*
   pull_request:
 
+env:
+  DOCKERHUB_REPO: simplelogin/app-ci
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -123,26 +126,31 @@ jobs:
           path: htmlcov
 
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [amd64, arm64]
+        include:
+          - platform: amd64
+            runs-on: ubuntu-latest
+          - platform: arm64
+            runs-on: ubuntu-20.04
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: ['test', 'lint']
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
 
     steps:
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-        with:
-          daemon-config: |
-            {
-              "debug": true,
-              "features": {
-                "containerd-snapshotter": true
-              }
-            }
+     - name: Prepare
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: simplelogin/app-ci
+          images: ${{ env.DOCKERHUB_REPO }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -162,6 +170,54 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Prepare version file
+        run: |
+          scripts/generate-build-info.sh ${{ github.sha }}
+          cat app/build_info.py
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,"name=${{ env.DOCKERHUB_REPO }}",push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
@@ -172,19 +228,33 @@ jobs:
           ignore_missing: true
           ignore_empty: true
 
-      - name: Prepare version file
-        run: |
-          scripts/generate-build-info.sh ${{ github.sha }}
-          cat app/build_info.py
-
-      - name: Build image and publish to Docker Registry
-        uses: docker/build-push-action@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          context: .
-          platforms: linux/amd64, linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          images: |
+            ${{ env.DOCKERHUB_REPO }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
 
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.DOCKERHUB_REPO }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.DOCKERHUB_REPO }}:${{ steps.meta.outputs.version }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - merge
+    steps:
 
       #- name: Send Telegram message
       #  uses: appleboy/telegram-action@master
