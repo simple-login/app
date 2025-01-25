@@ -8,7 +8,6 @@ FROM ubuntu:22.04
 
 ARG UV_VERSION="0.5.21"
 ARG UV_HASH_x86_64="e108c300eafae22ad8e6d94519605530f18f8762eb58d2b98a617edfb5d088fc"
-ARG UV_HASH_aarch64="c4cc2ec78a294378b867ebd08c5842d3ce71074c2818dc7f641422fb3bf4b2d2"
 ARG TARGETARCH
 
 # Keeps Python from generating .pyc files in the container
@@ -31,18 +30,14 @@ RUN apt-get update \
         && mv /tmp/uv-x86_64-unknown-linux-gnu/uv /usr/bin/uv \
         && mv /tmp/uv-x86_64-unknown-linux-gnu/uvx /usr/bin/uvx \
         && uv python install `cat .python-version` \
-        && uv sync --locked ; \
+        && uv sync --locked \
+        && rm -rf /tmp/uv* \
+        && rm -f uv.tar.gz ; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
-        curl -sSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-aarch64-unknown-linux-gnu.tar.gz" > uv.tar.gz \
-        && echo "${UV_HASH_aarch64}  uv.tar.gz" | sha256sum -c - \
-        && tar xf uv.tar.gz -C /tmp/ \
-        && mv /tmp/uv-aarch64-unknown-linux-gnu/uv /usr/bin/uv \
-        && mv /tmp/uv-aarch64-unknown-linux-gnu/uvx /usr/bin/uvx ; \
+        echo "skip uv checks on arm64" ; \
     else \
         echo "compatible arch not detected" ; \
     fi \
-    && rm -rf /tmp/uv* \
-    && rm -f uv.tar.gz \
     && apt-get autoremove -y \
     && apt-get purge -y curl netcat-traditional build-essential pkg-config cmake ninja-build python3-dev clang \
     && apt-get autoremove -y \
