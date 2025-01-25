@@ -128,12 +128,13 @@ jobs:
       fail-fast: false
       matrix:
         platform: [amd64, arm64]
-          include:
-            - platform: amd64
-              runs-on: ubuntu-latest
-            - platform: arm64
-              runs-on: ubuntu-24.04-arm
-    timeout-minutes: 120  # Increase the timeout to 120 minutes
+        include:
+          - platform: amd64
+            runs-on: ubuntu-latest
+          - platform: arm64
+            runs-on: ubuntu-24.04-arm64
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
     needs: ['test', 'lint']
     #if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     steps:
