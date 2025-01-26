@@ -3,8 +3,8 @@ name: SimpleLogin actions
 on:
   push:
   pull_request:
-  #schedule:
-  #  - cron: '0 4 * * 0' # Sundays at 4am UTC
+  schedule:
+    - cron: '0 4 * * 0' # Sundays at 4am UTC
   workflow_dispatch: # on button
 
 env:
