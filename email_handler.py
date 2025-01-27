@@ -47,11 +47,6 @@ from typing import List, Tuple, Optional
 import newrelic.agent
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
-from email_validator import validate_email, EmailNotValidError
-from flanker.addresslib import address
-from flanker.addresslib.address import EmailAddress
-from sqlalchemy.exc import IntegrityError
-
 from app import pgp_utils, s3, config, contact_utils
 from app.alias_utils import (
     try_auto_create,
@@ -174,8 +169,12 @@ from app.pgp_utils import (
     load_public_key_and_check,
 )
 from app.utils import sanitize_email
+from email_validator import validate_email, EmailNotValidError
+from flanker.addresslib import address
+from flanker.addresslib.address import EmailAddress
 from init_app import load_pgp_public_keys
 from server import create_light_app
+from sqlalchemy.exc import IntegrityError
 
 
 def get_or_create_contact(
@@ -606,9 +605,11 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
                 if reply_to_email == alias.email:
                     LOG.i("Reply-to same as alias %s", alias)
                 else:
-                    reply_to_contact.append(
-                        get_or_create_reply_to_contact(reply_to_email, alias, msg)
+                    reply_contact = get_or_create_reply_to_contact(
+                        reply_to_email, alias, msg
                     )
+                    if reply_contact:
+                        reply_to_contact.append(reply_contact)
 
     if alias.user.delete_on is not None:
         LOG.d(f"user {user} is pending to be deleted. Do not forward")
