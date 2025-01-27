@@ -125,7 +125,6 @@ jobs:
           - linux/amd64
           - linux/arm64
         include:
-          - platform: linux/amd64
           - platform: linux/arm64
             experimental: true
     continue-on-error: ${{ matrix.experimental }}
