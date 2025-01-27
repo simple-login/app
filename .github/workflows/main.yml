@@ -124,7 +124,10 @@ jobs:
           - linux/amd64
           - linux/arm64
         include:
+          - platform: linux/amd64
+            runs-on: ubuntu-latest
           - platform: linux/arm64
+            runs-on: ubuntu-latest
             continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 60
