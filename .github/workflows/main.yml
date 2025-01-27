@@ -125,10 +125,9 @@ jobs:
           - linux/arm64
         include:
           - platform: linux/amd64
-            runs-on: ubuntu-latest
           - platform: linux/arm64
-            runs-on: ubuntu-latest
-            continue-on-error: true
+            experimental: true
+    continue-on-error: ${{ matrix.experimental }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: ['test', 'lint']
