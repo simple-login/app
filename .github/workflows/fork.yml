@@ -16,6 +16,13 @@ jobs:
           repo: app
           base: master
           head: master
+          pr_title: 'sync: from upstream master to ${{ matrix.branch }}'
+          pr_message: 'Created by [*${{ github.job }}* workflow job](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) to sync changes from [upstream](${{ github.server_url }}/k8snetworkplumbingwg/${{ github.event.repository.name }}) to [downstream](${{ github.server_url }}/${{ github.repository }}).'
+          retries: 1
+          retry_after: 3
+          auto_approve: true
+          auto_merge: true
+          merge_method: rebase
           ignore_fail: true
         continue-on-error: true
 
