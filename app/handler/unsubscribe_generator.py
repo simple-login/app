@@ -2,8 +2,8 @@ import urllib
 from email.header import Header
 from email.message import Message
 
-from app.email import headers
 from app import config
+from app.email import headers
 from app.email_utils import add_or_replace_header, delete_header
 from app.handler.unsubscribe_encoder import (
     UnsubscribeEncoder,
@@ -46,7 +46,11 @@ class UnsubscribeGenerator:
             if start == -1 or end == -1 or start >= end:
                 continue
             method = raw_method[start + 1 : end]
-            url_data = urllib.parse.urlparse(method)
+            try:
+                url_data = urllib.parse.urlparse(method)
+            except ValueError:
+                LOG.debug(f"Unsub has invalid method {method}. Ignoring.")
+                continue
             if url_data.scheme == "mailto":
                 if url_data.path == config.UNSUBSCRIBER:
                     LOG.debug(
