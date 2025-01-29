@@ -106,6 +106,7 @@ from app.payments.coinbase import setup_coinbase_commerce
 from app.payments.paddle import setup_paddle_callback
 from app.phone.base import phone_bp
 from app.redis_services import initialize_redis_services
+from app.request_utils import generate_request_id
 from app.sentry_utils import sentry_before_send
 
 if SENTRY_DSN:
@@ -263,6 +264,7 @@ def set_index_page(app):
             and not request.path.startswith("/_debug_toolbar")
         ):
             g.start_time = time.time()
+            g.request_id = generate_request_id()
 
             # to handle the referral url that has ?slref=code part
             ref_code = request.args.get("slref")
