@@ -2782,8 +2782,7 @@ class Job(Base, ModelMixin):
 class Mailbox(Base, ModelMixin):
     __tablename__ = "mailbox"
     user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"),
-        nullable=False,
+        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
     )
     email = sa.Column(sa.String(256), nullable=False, index=True)
     verified = sa.Column(sa.Boolean, default=False, nullable=False)
