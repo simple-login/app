@@ -994,7 +994,6 @@ class CustomDomainSearchResult:
                     custom_domain
                 )
             out.domains.append(validation_data)
-            print(validation_data.dkim_expected, validation_data.dkim_validation)
 
         return out
 
@@ -1024,7 +1023,6 @@ class CustomDomainSearchAdmin(BaseView):
                     if cd is not None:
                         user = cd.user
             search = CustomDomainSearchResult.from_user(user)
-            print("NEW", search.domains)
 
         return self.render(
             "admin/custom_domain_search.html",

@@ -272,7 +272,6 @@ def mailbox_confirm_email_change_route():
 
     code = request.args.get("code")
     if code:
-        print("HAS OCO", code)
         try:
             mailbox = mailbox_utils.verify_mailbox_code(current_user, mailbox_id, code)
             flash("Successfully changed mailbox email", "success")
@@ -280,7 +279,6 @@ def mailbox_confirm_email_change_route():
                 url_for("dashboard.mailbox_detail_route", mailbox_id=mailbox.id)
             )
         except mailbox_utils.MailboxError as e:
-            print(e)
             flash(f"Cannot verify mailbox: {e.msg}", "error")
             return redirect(url_for("dashboard.mailbox_route"))
     else:

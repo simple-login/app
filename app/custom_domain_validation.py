@@ -227,7 +227,8 @@ class CustomDomainValidation:
         if not is_mx_equivalent(mx_domains, expected_mx_records):
             errors = []
             for prio in mx_domains:
-                errors.extend([f"{prio} {domain}" for domain in mx_domains[prio]])
+                for mx_domain in mx_domains[prio]:
+                    errors.append(f"{prio} {mx_domain}")
             return DomainValidationResult(success=False, errors=errors)
         else:
             custom_domain.verified = True
