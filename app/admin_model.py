@@ -1,21 +1,25 @@
 from __future__ import annotations
+
 from typing import Optional, List
 
 import arrow
 import sqlalchemy
-from flask_admin import BaseView
-from flask_admin.form import SecureForm
-from flask_admin.model.template import EndpointLinkRowAction
-from markupsafe import Markup
-
-from app import models, s3, config
 from flask import redirect, url_for, request, flash, Response
+from flask_admin import BaseView
 from flask_admin import expose, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.contrib import sqla
+from flask_admin.form import SecureForm
+from flask_admin.model.template import EndpointLinkRowAction
 from flask_login import current_user
+from markupsafe import Markup
 
-from app.custom_domain_validation import CustomDomainValidation, DomainValidationResult
+from app import models, s3, config
+from app.custom_domain_validation import (
+    CustomDomainValidation,
+    DomainValidationResult,
+    ExpectedValidationRecords,
+)
 from app.db import Session
 from app.dns_utils import get_network_dns_client
 from app.events.event_dispatcher import EventDispatcher
@@ -929,13 +933,13 @@ class EmailSearchAdmin(BaseView):
 class CustomDomainWithValidationData:
     def __init__(self, domain: CustomDomain):
         self.domain: CustomDomain = domain
-        self.ownership_expected: Optional[str] = None
+        self.ownership_expected: Optional[ExpectedValidationRecords] = None
         self.ownership_validation: Optional[DomainValidationResult] = None
-        self.mx_expected: Optional[str] = None
+        self.mx_expected: Optional[dict[int, ExpectedValidationRecords]] = None
         self.mx_validation: Optional[DomainValidationResult] = None
-        self.spf_expected: Optional[str] = None
+        self.spf_expected: Optional[ExpectedValidationRecords] = None
         self.spf_validation: Optional[DomainValidationResult] = None
-        self.dkim_expected: {str: str} = {}
+        self.dkim_expected: {str: ExpectedValidationRecords} = {}
         self.dkim_validation: {str: str} = {}
 
 
@@ -990,7 +994,6 @@ class CustomDomainSearchResult:
                     custom_domain
                 )
             out.domains.append(validation_data)
-            print(validation_data.dkim_expected, validation_data.dkim_validation)
 
         return out
 
@@ -1020,7 +1023,6 @@ class CustomDomainSearchAdmin(BaseView):
                     if cd is not None:
                         user = cd.user
             search = CustomDomainSearchResult.from_user(user)
-            print("NEW", search.domains)
 
         return self.render(
             "admin/custom_domain_search.html",
