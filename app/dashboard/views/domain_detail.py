@@ -5,8 +5,8 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators, IntegerField
 
-from app.constants import DMARC_RECORD
 from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
+from app.constants import DMARC_RECORD
 from app.custom_domain_utils import delete_custom_domain, set_custom_domain_mailboxes
 from app.custom_domain_validation import CustomDomainValidation
 from app.dashboard.base import dashboard_bp
@@ -137,7 +137,7 @@ def domain_detail_dns(custom_domain_id):
     return render_template(
         "dashboard/domain_detail/dns.html",
         EMAIL_SERVERS_WITH_PRIORITY=EMAIL_SERVERS_WITH_PRIORITY,
-        ownership_record=domain_validator.get_ownership_verification_record(
+        ownership_records=domain_validator.get_ownership_verification_record(
             custom_domain
         ),
         expected_mx_records=domain_validator.get_expected_mx_records(custom_domain),

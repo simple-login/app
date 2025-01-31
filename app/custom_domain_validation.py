@@ -5,9 +5,7 @@ from app import config
 from app.constants import DMARC_RECORD
 from app.db import Session
 from app.dns_utils import (
-    MxRecord,
     DNSClient,
-    is_mx_equivalent,
     get_network_dns_client,
 )
 from app.models import CustomDomain
@@ -19,6 +17,39 @@ from app.utils import random_string
 class DomainValidationResult:
     success: bool
     errors: [str]
+
+
+@dataclass
+class ExpectedValidationRecords:
+    recommended: str
+    valid: list[str]
+
+
+def is_mx_equivalent(
+    mx_domains: dict[int, list[str]],
+    expected_mx_domains: dict[int, ExpectedValidationRecords],
+) -> bool:
+    """
+    Compare mx_domains with ref_mx_domains to see if they are equivalent.
+    mx_domains and ref_mx_domains are list of (priority, domain)
+
+    The priority order is taken into account but not the priority number.
+    For example, [(1, domain1), (2, domain2)] is equivalent to [(10, domain1), (20, domain2)]
+    """
+
+    expected_prios = []
+    for prio in expected_mx_domains:
+        expected_prios.append(prio)
+
+    if len(expected_prios) != len(mx_domains):
+        return False
+
+    for prio_position, prio_value in enumerate(sorted(mx_domains.keys())):
+        for domain in mx_domains[prio_value]:
+            if domain not in expected_mx_domains[expected_prios[prio_position]].valid:
+                return False
+
+    return True
 
 
 class CustomDomainValidation:
@@ -37,59 +68,88 @@ class CustomDomainValidation:
             or config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES
         )
 
-    def get_ownership_verification_record(self, domain: CustomDomain) -> str:
-        prefix = "sl"
+    def get_ownership_verification_record(
+        self, domain: CustomDomain
+    ) -> ExpectedValidationRecords:
+        prefixes = ["sl"]
         if (
             domain.partner_id is not None
             and domain.partner_id in self._partner_domain_validation_prefixes
         ):
-            prefix = self._partner_domain_validation_prefixes[domain.partner_id]
+            prefixes.insert(
+                0, self._partner_domain_validation_prefixes[domain.partner_id]
+            )
 
         if not domain.ownership_txt_token:
             domain.ownership_txt_token = random_string(30)
             Session.commit()
 
-        return f"{prefix}-verification={domain.ownership_txt_token}"
+        valid = [
+            f"{prefix}-verification={domain.ownership_txt_token}" for prefix in prefixes
+        ]
+        return ExpectedValidationRecords(recommended=valid[0], valid=valid)
 
-    def get_expected_mx_records(self, domain: CustomDomain) -> list[MxRecord]:
-        records = []
+    def get_expected_mx_records(
+        self, domain: CustomDomain
+    ) -> dict[int, ExpectedValidationRecords]:
+        records = {}
         if domain.partner_id is not None and domain.partner_id in self._partner_domains:
             domain = self._partner_domains[domain.partner_id]
-            records.append(MxRecord(10, f"mx1.{domain}."))
-            records.append(MxRecord(20, f"mx2.{domain}."))
-        else:
-            # Default ones
-            for priority, domain in config.EMAIL_SERVERS_WITH_PRIORITY:
-                records.append(MxRecord(priority, domain))
+            records[10] = [f"mx1.{domain}."]
+            records[20] = [f"mx2.{domain}."]
+        # Default ones
+        for priority, domain in config.EMAIL_SERVERS_WITH_PRIORITY:
+            if priority not in records:
+                records[priority] = []
+            records[priority].append(domain)
 
-        return records
+        return {
+            priority: ExpectedValidationRecords(
+                recommended=records[priority][0], valid=records[priority]
+            )
+            for priority in records
+        }
 
-    def get_expected_spf_domain(self, domain: CustomDomain) -> str:
+    def get_expected_spf_domain(
+        self, domain: CustomDomain
+    ) -> ExpectedValidationRecords:
+        records = []
         if domain.partner_id is not None and domain.partner_id in self._partner_domains:
-            return self._partner_domains[domain.partner_id]
+            records.append(self._partner_domains[domain.partner_id])
         else:
-            return config.EMAIL_DOMAIN
+            records.append(config.EMAIL_DOMAIN)
+        return ExpectedValidationRecords(recommended=records[0], valid=records)
 
     def get_expected_spf_record(self, domain: CustomDomain) -> str:
         spf_domain = self.get_expected_spf_domain(domain)
-        return f"v=spf1 include:{spf_domain} ~all"
+        return f"v=spf1 include:{spf_domain.recommended} ~all"
 
-    def get_dkim_records(self, domain: CustomDomain) -> {str: str}:
+    def get_dkim_records(
+        self, domain: CustomDomain
+    ) -> {str: ExpectedValidationRecords}:
         """
         Get a list of dkim records to set up. Depending on the custom_domain, whether if it's from a partner or not,
         it will return the default ones or the partner ones.
         """
 
         # By default use the default domain
-        dkim_domain = self.dkim_domain
+        dkim_domains = [self.dkim_domain]
         if domain.partner_id is not None:
-            # Domain is from a partner. Retrieve the partner config and use that domain if exists
-            dkim_domain = self._partner_domains.get(domain.partner_id, dkim_domain)
+            # Domain is from a partner. Retrieve the partner config and use that domain as preferred if it exists
+            partner_domain = self._partner_domains.get(domain.partner_id, None)
+            if partner_domain is not None:
+                dkim_domains.insert(0, partner_domain)
 
-        return {
-            f"{key}._domainkey": f"{key}._domainkey.{dkim_domain}"
-            for key in ("dkim", "dkim02", "dkim03")
-        }
+        output = {}
+        for key in ("dkim", "dkim02", "dkim03"):
+            records = [
+                f"{key}._domainkey.{dkim_domain}" for dkim_domain in dkim_domains
+            ]
+            output[f"{key}._domainkey"] = ExpectedValidationRecords(
+                recommended=records[0], valid=records
+            )
+
+        return output
 
     def validate_dkim_records(self, custom_domain: CustomDomain) -> dict[str, str]:
         """
@@ -102,7 +162,7 @@ class CustomDomainValidation:
         for prefix, expected_record in expected_records.items():
             custom_record = f"{prefix}.{custom_domain.domain}"
             dkim_record = self._dns_client.get_cname_record(custom_record)
-            if dkim_record == expected_record:
+            if dkim_record in expected_record.valid:
                 correct_records[prefix] = custom_record
             else:
                 invalid_records[custom_record] = dkim_record or "empty"
@@ -138,11 +198,15 @@ class CustomDomainValidation:
         Check if the custom_domain has added the ownership verification records
         """
         txt_records = self._dns_client.get_txt_record(custom_domain.domain)
-        expected_verification_record = self.get_ownership_verification_record(
+        expected_verification_records = self.get_ownership_verification_record(
             custom_domain
         )
-
-        if expected_verification_record in txt_records:
+        found = False
+        for verification_record in expected_verification_records.valid:
+            if verification_record in txt_records:
+                found = True
+                break
+        if found:
             custom_domain.ownership_verified = True
             emit_user_audit_log(
                 user=custom_domain.user,
@@ -161,10 +225,10 @@ class CustomDomainValidation:
         expected_mx_records = self.get_expected_mx_records(custom_domain)
 
         if not is_mx_equivalent(mx_domains, expected_mx_records):
-            return DomainValidationResult(
-                success=False,
-                errors=[f"{record.priority} {record.domain}" for record in mx_domains],
-            )
+            errors = []
+            for prio in mx_domains:
+                errors.extend([f"{prio} {domain}" for domain in mx_domains[prio]])
+            return DomainValidationResult(success=False, errors=errors)
         else:
             custom_domain.verified = True
             emit_user_audit_log(
@@ -180,7 +244,7 @@ class CustomDomainValidation:
     ) -> DomainValidationResult:
         spf_domains = self._dns_client.get_spf_domain(custom_domain.domain)
         expected_spf_domain = self.get_expected_spf_domain(custom_domain)
-        if expected_spf_domain in spf_domains:
+        if len(set(expected_spf_domain.valid).intersection(set(spf_domains))) > 0:
             custom_domain.spf_verified = True
             emit_user_audit_log(
                 user=custom_domain.user,
@@ -221,8 +285,8 @@ class CustomDomainValidation:
         self, txt_records: List[str], custom_domain: CustomDomain
     ) -> List[str]:
         final_records = []
-        verification_record = self.get_ownership_verification_record(custom_domain)
+        verification_records = self.get_ownership_verification_record(custom_domain)
         for record in txt_records:
-            if record != verification_record:
+            if record not in verification_records.valid:
                 final_records.append(record)
         return final_records
