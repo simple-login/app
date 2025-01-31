@@ -36,6 +36,7 @@ def set_mailboxes_for_alias(
             Mailbox.user_id == user_id,
             Mailbox.verified == True,  # noqa: E712
         )
+        .order_by(Mailbox.id.asc())
         .all()
     )
     if len(mailboxes) != len(mailbox_ids):
