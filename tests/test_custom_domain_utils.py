@@ -195,7 +195,11 @@ def test_set_custom_domain_mailboxes_success():
     assert res.success is True
     assert res.reason is None
 
-    domain_mailboxes = DomainMailbox.filter_by(domain_id=domain.id).all()
+    domain_mailboxes = (
+        DomainMailbox.filter_by(domain_id=domain.id)
+        .order_by(DomainMailbox.mailbox_id.asc())
+        .all()
+    )
     assert len(domain_mailboxes) == 2
     assert domain_mailboxes[0].domain_id == domain.id
     assert domain_mailboxes[0].mailbox_id == user.default_mailbox_id
