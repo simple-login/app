@@ -2124,9 +2124,7 @@ class EmailLog(Base, ModelMixin):
         Index("ix_email_log_user_id_email_log_id", "user_id", "id"),
     )
 
-    user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
-    )
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     contact_id = sa.Column(
         sa.ForeignKey(Contact.id, ondelete="cascade"), nullable=False, index=True
     )
