@@ -14,9 +14,9 @@ from sqlalchemy.sql import Insert, text
 from app import s3, config
 from app.alias_utils import nb_email_log_for_mailbox
 from app.api.views.apple import verify_receipt
-from app.custom_domain_validation import CustomDomainValidation
+from app.custom_domain_validation import CustomDomainValidation, is_mx_equivalent
 from app.db import Session
-from app.dns_utils import get_mx_domains, is_mx_equivalent
+from app.dns_utils import get_mx_domains
 from app.email_utils import (
     send_email,
     send_trial_end_soon_email,
