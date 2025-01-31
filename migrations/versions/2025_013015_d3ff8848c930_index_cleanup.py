@@ -88,6 +88,4 @@ def downgrade():
         op.create_index(
             "ix_alias_hibp_alias_id", "alias_hibp", ["alias_id"], unique=False
         )
-        op.create_index(
-            "ix_mailbox_user_id", "user_id", table_name="users", unique=False
-        )
+        op.create_index("ix_mailbox_user_id", "users", ["user_id"], unique=False)
