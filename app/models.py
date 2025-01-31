@@ -32,7 +32,6 @@ from app import config, rate_limiter
 from app import s3
 from app.db import Session
 from app.dns_utils import get_mx_domains
-
 from app.errors import (
     AliasInTrashError,
     DirectoryInTrashError,
@@ -362,7 +361,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sa.Boolean, default=True, nullable=False, server_default="1"
     )
 
-    activated = sa.Column(sa.Boolean, default=False, nullable=False, index=True)
+    activated = sa.Column(sa.Boolean, default=False, nullable=False)
 
     # an account can be disabled if having harmful behavior
     disabled = sa.Column(sa.Boolean, default=False, nullable=False, server_default="0")
@@ -576,6 +575,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             "ix_users_default_alias_custom_domain_id", default_alias_custom_domain_id
         ),
         sa.Index("ix_users_profile_picture_id", profile_picture_id),
+        sa.Index(
+            "idx_users_email_trgm",
+            "email",
+            postgresql_ops={"email": "gin_trgm_ops"},
+            postgresql_using="gin",
+        ),
     )
 
     @property
@@ -1930,7 +1935,8 @@ class Contact(Base, ModelMixin):
         sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
     )
     alias_id = sa.Column(
-        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey(Alias.id, ondelete="cascade"),
+        nullable=False,
     )
 
     name = sa.Column(
@@ -2115,11 +2121,10 @@ class EmailLog(Base, ModelMixin):
         Index("ix_email_log_mailbox_id", "mailbox_id"),
         Index("ix_email_log_bounced_mailbox_id", "bounced_mailbox_id"),
         Index("ix_email_log_refused_email_id", "refused_email_id"),
+        Index("ix_email_log_user_id_email_log_id", "user_id", "id"),
     )
 
-    user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
-    )
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     contact_id = sa.Column(
         sa.ForeignKey(Contact.id, ondelete="cascade"), nullable=False, index=True
     )
@@ -2395,7 +2400,8 @@ class AliasUsedOn(Base, ModelMixin):
     )
 
     alias_id = sa.Column(
-        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey(Alias.id, ondelete="cascade"),
+        nullable=False,
     )
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
@@ -2418,10 +2424,7 @@ class ApiKey(Base, ModelMixin):
 
     user = orm.relationship(User)
 
-    __table_args__ = (
-        sa.Index("ix_api_key_code", "code"),
-        sa.Index("ix_api_key_user_id", "user_id"),
-    )
+    __table_args__ = (sa.Index("ix_api_key_user_id", "user_id"),)
 
     @classmethod
     def create(cls, user_id, name=None, **kwargs):
@@ -2581,7 +2584,6 @@ class AutoCreateRule(Base, ModelMixin):
         sa.UniqueConstraint(
             "custom_domain_id", "order", name="uq_auto_create_rule_order"
         ),
-        sa.Index("ix_auto_create_rule_custom_domain_id", "custom_domain_id"),
     )
 
     custom_domain_id = sa.Column(
@@ -2764,7 +2766,6 @@ class Job(Base, ModelMixin):
         nullable=False,
         server_default=str(JobState.ready.value),
         default=JobState.ready.value,
-        index=True,
     )
     attempts = sa.Column(sa.Integer, nullable=False, server_default="0", default=0)
     taken_at = sa.Column(ArrowType, nullable=True)
@@ -2777,9 +2778,7 @@ class Job(Base, ModelMixin):
 
 class Mailbox(Base, ModelMixin):
     __tablename__ = "mailbox"
-    user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
-    )
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = sa.Column(sa.String(256), nullable=False, index=True)
     verified = sa.Column(sa.Boolean, default=False, nullable=False)
     force_spf = sa.Column(sa.Boolean, default=True, server_default="1", nullable=False)
@@ -2808,6 +2807,13 @@ class Mailbox(Base, ModelMixin):
     __table_args__ = (
         sa.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),
         sa.Index("ix_mailbox_pgp_finger_print", "pgp_finger_print"),
+        # index on email column using pg_trgm
+        Index(
+            "ix_mailbox_email_trgm_idx",
+            "email",
+            postgresql_ops={"email": "gin_trgm_ops"},
+            postgresql_using="gin",
+        ),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id])
@@ -3010,7 +3016,11 @@ class SentAlert(Base, ModelMixin):
     to_email = sa.Column(sa.String(256), nullable=False)
     alert_type = sa.Column(sa.String(256), nullable=False)
 
-    __table_args__ = (sa.Index("ix_sent_alert_user_id", "user_id"),)
+    __table_args__ = (
+        sa.Index("ix_sent_alert_user_id", "user_id"),
+        sa.Index("ix_sent_alert_to_email", "to_email"),
+        sa.Index("ix_sent_alert_alert_type", "alert_type"),
+    )
 
 
 class AliasMailbox(Base, ModelMixin):
@@ -3020,7 +3030,8 @@ class AliasMailbox(Base, ModelMixin):
     )
 
     alias_id = sa.Column(
-        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey(Alias.id, ondelete="cascade"),
+        nullable=False,
     )
     mailbox_id = sa.Column(
         sa.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False, index=True
@@ -3035,7 +3046,8 @@ class AliasHibp(Base, ModelMixin):
     __table_args__ = (sa.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),)
 
     alias_id = sa.Column(
-        sa.Integer(), sa.ForeignKey("alias.id", ondelete="cascade"), index=True
+        sa.Integer(),
+        sa.ForeignKey("alias.id", ondelete="cascade"),
     )
     hibp_id = sa.Column(
         sa.Integer(), sa.ForeignKey("hibp.id", ondelete="cascade"), index=True
@@ -3751,7 +3763,8 @@ class PartnerUser(Base, ModelMixin):
         index=True,
     )
     partner_id = sa.Column(
-        sa.ForeignKey("partner.id", ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey("partner.id", ondelete="cascade"),
+        nullable=False,
     )
     external_user_id = sa.Column(sa.String(128), unique=False, nullable=False)
     partner_email = sa.Column(sa.String(255), unique=False, nullable=True)
