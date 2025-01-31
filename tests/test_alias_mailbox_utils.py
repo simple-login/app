@@ -59,11 +59,17 @@ def test_set_mailboxes_for_alias_mailbox_success():
     assert db_alias is not None
     assert db_alias.mailbox_id == mb1.id
 
-    alias_mailboxes = AliasMailbox.filter_by(alias_id=alias.id).all()
+    alias_mailboxes = (
+        AliasMailbox.filter_by(alias_id=alias.id).order_by(AliasMailbox.id.asc()).all()
+    )
     assert len(alias_mailboxes) == 1
     assert alias_mailboxes[0].mailbox_id == mb2.id
 
-    audit_logs = AliasAuditLog.filter_by(alias_id=alias.id).all()
+    audit_logs = (
+        AliasAuditLog.filter_by(alias_id=alias.id)
+        .order_by(AliasAuditLog.id.asc())
+        .all()
+    )
     assert len(audit_logs) == 2
     assert audit_logs[0].action == AliasAuditLogAction.CreateAlias.value
     assert audit_logs[1].action == AliasAuditLogAction.ChangedMailboxes.value
