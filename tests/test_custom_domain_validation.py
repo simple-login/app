@@ -136,11 +136,17 @@ def test_custom_domain_validation_get_expected_mx_records_domain_from_partner_wi
     # As the domain is a partner_domain and there is a custom config for partner, partner records
     # should be used
     assert len(expected_records) == 2
+    sl_domains = config.EMAIL_SERVERS_WITH_PRIORITY
 
     assert expected_records[10].recommended == f"mx1.{expected_mx_domain}."
-    assert expected_records[10].valid == [f"mx1.{expected_mx_domain}.", "ms1.a"]
+    expected = [f"mx1.{expected_mx_domain}."]
+    expected.extend([sl_dom[1] for sl_dom in sl_domains if sl_dom[0] == 10])
+    assert expected_records[10].valid == expected
+
     assert expected_records[20].recommended == f"mx2.{expected_mx_domain}."
-    assert expected_records[20].valid == [f"mx2.{expected_mx_domain}.", "mx2.b"]
+    expected = [f"mx2.{expected_mx_domain}."]
+    expected.extend([sl_dom[1] for sl_dom in sl_domains if sl_dom[0] == 20])
+    assert expected_records[20].valid == expected
 
 
 # get_expected_spf_records
