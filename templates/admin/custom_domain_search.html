@@ -92,38 +92,39 @@
 {% macro show_mx_verification(title, expected, errors) -%}
   {% if not expected %}
 
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-          <h5>{{ title }}</h5>
-          <span class="text-success status-icon"><i class="fa fa-check-circle"></i></span>
-      </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <h5>{{ title }}</h5>
+      <span class="text-success status-icon"><i class="fa fa-check-circle"></i></span>
+    </li>
   {% else %}
-      <li class="list-group-item">
-          <h5>{{ title }}</h5>
+    <li class="list-group-item">
+      <h5>{{ title }}</h5>
       <ul>
-      <li class="list-group-item">
-      {% for prio in expected %}
-          <p>
-              <strong>Priority {{ prio }}:</strong> {{ expected[prio].recommended }}
-          </p>
-          <p>
-              <strong>Allowed:</strong>
-          <ul>
-              {% for expected_record in expected[prio].allowed %}<li>{{ expected_record }}</li>{% endfor %}
-          </ul>
-          </p>
-          <p>
-              <strong>Current response:</strong>
-          </p>
-          {% for error in errors %}
-              <ul class="list-group">
-                  <li class="list-group-item">{{ error }}</li>
-              </ul>
-          {% endfor %}
-      </li>
-      {% endfor %}
-      </ul>
-      </li>
+        <li class="list-group-item">
+          {% for prio in expected %}
 
+            <p>
+              <strong>Priority {{ prio }}:</strong> {{ expected[prio].recommended }}
+            </p>
+            <p>
+              <strong>Allowed:</strong>
+              <ul>
+                {% for expected_record in expected[prio].allowed %}<li>{{ expected_record }}</li>{% endfor %}
+              </ul>
+            </p>
+            <p>
+              <strong>Current response:</strong>
+            </p>
+            {% for error in errors %}
+
+              <ul class="list-group">
+                <li class="list-group-item">{{ error }}</li>
+              </ul>
+            {% endfor %}
+          </li>
+        {% endfor %}
+      </ul>
+    </li>
   {% endif %}
 {%- endmacro %}
 {% macro show_domain(domain_with_data) -%}
@@ -135,11 +136,12 @@
       <div class="card-body">
         {% set domain = domain_with_data.domain %}
         <ul class="list-group">
-            {{ show_verification("Ownership", domain_with_data.ownership_expected, domain_with_data.ownership_validation.errors) }}
-            {{ show_mx_verification("MX", domain_with_data.mx_expected, domain_with_data.mx_validation.errors) }}
-            {{ show_verification("SPF", domain_with_data.spf_expected, domain_with_data.spf_validation.errors) }}
+          {{ show_verification("Ownership", domain_with_data.ownership_expected, domain_with_data.ownership_validation.errors) }}
+          {{ show_mx_verification("MX", domain_with_data.mx_expected, domain_with_data.mx_validation.errors) }}
+          {{ show_verification("SPF", domain_with_data.spf_expected, domain_with_data.spf_validation.errors) }}
           {% for dkim_domain in domain_with_data.dkim_expected %}
-              {{ show_verification("DKIM {}.{}".format(dkim_domain, domain.domain) , domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
+
+            {{ show_verification("DKIM {}.{}".format(dkim_domain, domain.domain) , domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
           {% endfor %}
         </ul>
       </div>

@@ -99,12 +99,12 @@
             Domain: {{ custom_domain.domain }} or
             <b>@</b>
             <br />
-            Priority: {{prio}}
+            Priority: {{ prio }}
             <br />
             Target: <em data-toggle="tooltip"
      title="Click to copy"
      class="clipboard"
-     data-clipboard-text="{{ expected_mx_records[prio].recommended }}">{{expected_mx_records[prio].recommended}}</em>
+     data-clipboard-text="{{ expected_mx_records[prio].recommended }}">{{ expected_mx_records[prio].recommended }}</em>
           </div>
         {% endfor %}
         <form method="post" action="#mx-form">
