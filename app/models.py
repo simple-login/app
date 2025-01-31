@@ -32,7 +32,6 @@ from app import config, rate_limiter
 from app import s3
 from app.db import Session
 from app.dns_utils import get_mx_domains
-
 from app.errors import (
     AliasInTrashError,
     DirectoryInTrashError,
@@ -2781,9 +2780,7 @@ class Job(Base, ModelMixin):
 
 class Mailbox(Base, ModelMixin):
     __tablename__ = "mailbox"
-    user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
-    )
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = sa.Column(sa.String(256), nullable=False, index=True)
     verified = sa.Column(sa.Boolean, default=False, nullable=False)
     force_spf = sa.Column(sa.Boolean, default=True, server_default="1", nullable=False)
