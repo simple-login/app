@@ -1,118 +1,181 @@
 {% extends 'admin/master.html' %}
 
+{% block head_css %}
+
+  {{ super() }}
+  <style>
+        .card-shadow {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+        }
+        .domain-title {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 8px 8px 0 0;
+        }
+        .status-icon {
+            font-size: 1.2em;
+        }
+  </style>
+{% endblock %}
 {% macro show_user(user) -%}
-    <h4>User <a href="/admin/email_search?email={{ user.email }}">{{ user.email }}</a> with ID {{ user.id }}.</h4>
-    <table class="table">
-        <thead>
-        <tr>
-            <th scope="col">User ID</th>
-            <th scope="col">Email</th>
-            <th scope="col">Verified</th>
-            <th scope="col">Status</th>
-            <th scope="col">Paid</th>
-            <th scope="col">Premium</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-            <td>{{ user.id }}</td>
-            <td>
-                <a href="/admin/email_search?email={{ user.email }}">{{ user.email }}</a>
-            </td>
-            {% if user.activated %}
+  <h4>
+    User <a href="/admin/email_search?email={{ user.email }}">{{ user.email }}</a> with ID {{ user.id }}.
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">User ID</th>
+        <th scope="col">Email</th>
+        <th scope="col">Verified</th>
+        <th scope="col">Status</th>
+        <th scope="col">Paid</th>
+        <th scope="col">Premium</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ user.id }}</td>
+        <td>
+          <a href="/admin/email_search?email={{ user.email }}">{{ user.email }}</a>
+        </td>
+        {% if user.activated %}
 
-                <td class="text-success">Activated</td>
-            {% else %}
-                <td class="text-warning">Pending</td>
-            {% endif %}
-            {% if user.disabled %}
+          <td class="text-success">Activated</td>
+        {% else %}
+          <td class="text-warning">Pending</td>
+        {% endif %}
+        {% if user.disabled %}
 
-                <td class="text-danger">Disabled</td>
-            {% else %}
-                <td class="text-success">Enabled</td>
-            {% endif %}
-            <td>{{ "yes" if user.is_paid() else "No" }}</td>
-            <td>{{ "yes" if user.is_premium() else "No" }}</td>
-        </tr>
-        </tbody>
-    </table>
+          <td class="text-danger">Disabled</td>
+        {% else %}
+          <td class="text-success">Enabled</td>
+        {% endif %}
+        <td>{{ "yes" if user.is_paid() else "No" }}</td>
+        <td>{{ "yes" if user.is_premium() else "No" }}</td>
+      </tr>
+    </tbody>
+  </table>
 {%- endmacro %}
-
-
 {% macro show_verification(title, expected, errors) -%}
-    {% if not expected %}
-        <h4 class="mb-3">{{ title }} <span class="text-success">Verified</span></h4>
-    {% else %}
-        <h4 class="mb-3">{{ title }}</h4>
-        <p>Expected</p>
-        <p>{{expected}}</p>
-        <p>Current response</p>
-        <ul class="list-group">
-        {% for error in errors %}
-            <li class="list-group-item">{{ error }}</li>
-        {% endfor %}
+  {% if not expected %}
+
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <h5>{{ title }}</h5>
+      <span class="text-success status-icon"><i class="fa fa-check-circle"></i></span>
+    </li>
+  {% else %}
+    <li class="list-group-item">
+      <h5>{{ title }}</h5>
+      <p>
+        <strong>Expected:</strong> {{ expected.recommended }}
+      </p>
+      <p>
+        <strong>Allowed:</strong>
+        <ul>
+          {% for expected_record in expected.allowed %}<li>{{ expected_record }}</li>{% endfor %}
         </ul>
-    {% endif %}
+      </p>
+      <p>
+        <strong>Current response:</strong>
+      </p>
+      {% for error in errors %}
+
+        <ul class="list-group">
+          <li class="list-group-item">{{ error }}</li>
+        </ul>
+      {% endfor %}
+    </li>
+  {% endif %}
 {%- endmacro %}
+{% macro show_mx_verification(title, expected, errors) -%}
+  {% if not expected %}
 
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <h5>{{ title }}</h5>
+      <span class="text-success status-icon"><i class="fa fa-check-circle"></i></span>
+    </li>
+  {% else %}
+    <li class="list-group-item">
+      <h5>{{ title }}</h5>
+      <ul>
+        <li class="list-group-item">
+          {% for prio in expected %}
 
-{% macro show_domain(domain_with_data) -%}
-    <h3>Domain {{ domain_with_data.domain.domain }}</h3>
-    {% set domain = domain_with_data.domain %}
-    <ul class="list-group">
-        <li class="list-group-item">
-            {{ show_verification("Ownership", domain_with_data.ownership_expected, domain_with_data.ownership_validation.errors) }}
-        </li>
-        <li class="list-group-item">
-            {{ show_verification("MX", domain_with_data.mx_expected, domain_with_data.mx_validation.errors) }}
-        </li>
-        <li class="list-group-item">
-            {{ show_verification("SPF", domain_with_data.spf_expected, domain_with_data.spf_validation.errors) }}
-        </li>
-        {% for dkim_domain in domain_with_data.dkim_expected %}
-            <li class="list-group-item">
-            {{ show_verification("DKIM {}.{}".format(dkim_domain, domain.domain), domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
-            </li>
+            <p>
+              <strong>Priority {{ prio }}:</strong> {{ expected[prio].recommended }}
+            </p>
+            <p>
+              <strong>Allowed:</strong>
+              <ul>
+                {% for expected_record in expected[prio].allowed %}<li>{{ expected_record }}</li>{% endfor %}
+              </ul>
+            </p>
+            <p>
+              <strong>Current response:</strong>
+            </p>
+            {% for error in errors %}
+
+              <ul class="list-group">
+                <li class="list-group-item">{{ error }}</li>
+              </ul>
+            {% endfor %}
+          </li>
         {% endfor %}
-    </ul>
-
+      </ul>
+    </li>
+  {% endif %}
 {%- endmacro %}
+{% macro show_domain(domain_with_data) -%}
+  <div class="col-md-3 mb-4">
+    <div class="card card-shadow">
+      <div class="domain-title text-center">
+        <h4>Domain {{ domain_with_data.domain.domain }}</h4>
+      </div>
+      <div class="card-body">
+        {% set domain = domain_with_data.domain %}
+        <ul class="list-group">
+          {{ show_verification("Ownership", domain_with_data.ownership_expected, domain_with_data.ownership_validation.errors) }}
+          {{ show_mx_verification("MX", domain_with_data.mx_expected, domain_with_data.mx_validation.errors) }}
+          {{ show_verification("SPF", domain_with_data.spf_expected, domain_with_data.spf_validation.errors) }}
+          {% for dkim_domain in domain_with_data.dkim_expected %}
 
-
+            {{ show_verification("DKIM {}.{}".format(dkim_domain, domain.domain) , domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+{%- endmacro %}
 {% block body %}
 
+  <div class="border border-dark border-2 mt-1 mb-2 p-3">
+    <form method="get">
+      <div class="form-group">
+        <label for="email">User or domain to search:</label>
+        <input type="text"
+               class="form-control"
+               name="user"
+               value="{{ query or '' }}" />
+      </div>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  </div>
+  {% if data.no_match and query %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
+         role="alert">No user, alias or mailbox found for {{ query }}</div>
+  {% endif %}
+  {% if data.user %}
+
     <div class="border border-dark border-2 mt-1 mb-2 p-3">
-        <form method="get">
-            <div class="form-group">
-                <label for="email">User or domain to search:</label>
-                <input type="text"
-                       class="form-control"
-                       name="user"
-                       value="{{ query or '' }}" />
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
+      <h3 class="mb-3">Found User {{ data.user.email }}</h3>
+      {{ show_user(data.user) }}
     </div>
-    {% if data.no_match and query %}
-        <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
-             role="alert">No user, alias or mailbox found for {{ query }}</div>
-    {% endif %}
-    {% if data.user %}
-        <div class="border border-dark border-2 mt-1 mb-2 p-3">
-            <h3 class="mb-3">Found User {{ data.user.email }}</h3>
-            {{ show_user(data.user) }}
-        </div>
-    {% endif %}
-    <div class="d-flex">
-
-    {% for domain_with_data in data.domains  %}
-        <div class="card m-2 border-dark" style="width: 30rem;">
-        <div class="card-body">
-            {{ show_domain(domain_with_data) }}
-        </div>
-        </div>
-    {% endfor %}
-    </div>
-
-
+  {% endif %}
+  <div class="row mt-4">
+    {% for domain_with_data in data.domains %}{{ show_domain(domain_with_data) }}{% endfor %}
+  </div>
+</div>
 {% endblock %}

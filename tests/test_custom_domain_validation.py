@@ -4,8 +4,8 @@ from app import config
 from app.constants import DMARC_RECORD
 from app.custom_domain_validation import CustomDomainValidation
 from app.db import Session
+from app.dns_utils import InMemoryDNSClient
 from app.models import CustomDomain, User
-from app.dns_utils import InMemoryDNSClient, MxRecord
 from app.proton.utils import get_proton_partner
 from app.utils import random_string
 from tests.utils import create_new_user, random_domain
@@ -33,9 +33,12 @@ def test_custom_domain_validation_get_dkim_records():
     records = validator.get_dkim_records(custom_domain)
 
     assert len(records) == 3
-    assert records["dkim02._domainkey"] == f"dkim02._domainkey.{domain}"
-    assert records["dkim03._domainkey"] == f"dkim03._domainkey.{domain}"
-    assert records["dkim._domainkey"] == f"dkim._domainkey.{domain}"
+    assert records["dkim02._domainkey"].recommended == f"dkim02._domainkey.{domain}"
+    assert records["dkim02._domainkey"].allowed == [f"dkim02._domainkey.{domain}"]
+    assert records["dkim03._domainkey"].recommended == f"dkim03._domainkey.{domain}"
+    assert records["dkim03._domainkey"].allowed == [f"dkim03._domainkey.{domain}"]
+    assert records["dkim._domainkey"].recommended == f"dkim._domainkey.{domain}"
+    assert records["dkim._domainkey"].allowed == [f"dkim._domainkey.{domain}"]
 
 
 def test_custom_domain_validation_get_dkim_records_for_partner():
@@ -53,9 +56,25 @@ def test_custom_domain_validation_get_dkim_records_for_partner():
     records = validator.get_dkim_records(custom_domain)
 
     assert len(records) == 3
-    assert records["dkim02._domainkey"] == f"dkim02._domainkey.{dkim_domain}"
-    assert records["dkim03._domainkey"] == f"dkim03._domainkey.{dkim_domain}"
-    assert records["dkim._domainkey"] == f"dkim._domainkey.{dkim_domain}"
+    assert (
+        records["dkim02._domainkey"].recommended == f"dkim02._domainkey.{dkim_domain}"
+    )
+    assert records["dkim02._domainkey"].allowed == [
+        f"dkim02._domainkey.{dkim_domain}",
+        f"dkim02._domainkey.{domain}",
+    ]
+    assert (
+        records["dkim03._domainkey"].recommended == f"dkim03._domainkey.{dkim_domain}"
+    )
+    assert records["dkim03._domainkey"].allowed == [
+        f"dkim03._domainkey.{dkim_domain}",
+        f"dkim03._domainkey.{domain}",
+    ]
+    assert records["dkim._domainkey"].recommended == f"dkim._domainkey.{dkim_domain}"
+    assert records["dkim._domainkey"].allowed == [
+        f"dkim._domainkey.{dkim_domain}",
+        f"dkim._domainkey.{domain}",
+    ]
 
 
 # get_expected_mx_records
@@ -75,8 +94,8 @@ def test_custom_domain_validation_get_expected_mx_records_regular_domain():
     assert len(records) == len(config.EMAIL_SERVERS_WITH_PRIORITY)
     for i in range(len(config.EMAIL_SERVERS_WITH_PRIORITY)):
         config_record = config.EMAIL_SERVERS_WITH_PRIORITY[i]
-        assert records[i].priority == config_record[0]
-        assert records[i].domain == config_record[1]
+        assert records[config_record[0]].recommended == config_record[1]
+        assert records[config_record[0]].allowed == [config_record[1]]
 
 
 def test_custom_domain_validation_get_expected_mx_records_domain_from_partner():
@@ -89,14 +108,15 @@ def test_custom_domain_validation_get_expected_mx_records_domain_from_partner():
 
     dkim_domain = random_domain()
     validator = CustomDomainValidation(dkim_domain)
-    records = validator.get_expected_mx_records(custom_domain)
+    expected_records = validator.get_expected_mx_records(custom_domain)
     # As the domain is a partner_domain but there is no custom config for partner, default records
     # should be used
-    assert len(records) == len(config.EMAIL_SERVERS_WITH_PRIORITY)
+    assert len(expected_records) == len(config.EMAIL_SERVERS_WITH_PRIORITY)
     for i in range(len(config.EMAIL_SERVERS_WITH_PRIORITY)):
         config_record = config.EMAIL_SERVERS_WITH_PRIORITY[i]
-        assert records[i].priority == config_record[0]
-        assert records[i].domain == config_record[1]
+        expected = expected_records[config_record[0]]
+        assert expected.recommended == config_record[1]
+        assert expected.allowed == [config_record[1]]
 
 
 def test_custom_domain_validation_get_expected_mx_records_domain_from_partner_with_custom_config():
@@ -112,15 +132,21 @@ def test_custom_domain_validation_get_expected_mx_records_domain_from_partner_wi
     validator = CustomDomainValidation(
         dkim_domain, partner_domains={partner_id: expected_mx_domain}
     )
-    records = validator.get_expected_mx_records(custom_domain)
+    expected_records = validator.get_expected_mx_records(custom_domain)
     # As the domain is a partner_domain and there is a custom config for partner, partner records
     # should be used
-    assert len(records) == 2
+    assert len(expected_records) == 2
+    sl_domains = config.EMAIL_SERVERS_WITH_PRIORITY
 
-    assert records[0].priority == 10
-    assert records[0].domain == f"mx1.{expected_mx_domain}."
-    assert records[1].priority == 20
-    assert records[1].domain == f"mx2.{expected_mx_domain}."
+    assert expected_records[10].recommended == f"mx1.{expected_mx_domain}."
+    expected = [f"mx1.{expected_mx_domain}."]
+    expected.extend([sl_dom[1] for sl_dom in sl_domains if sl_dom[0] == 10])
+    assert expected_records[10].allowed == expected
+
+    assert expected_records[20].recommended == f"mx2.{expected_mx_domain}."
+    expected = [f"mx2.{expected_mx_domain}."]
+    expected.extend([sl_dom[1] for sl_dom in sl_domains if sl_dom[0] == 20])
+    assert expected_records[20].allowed == expected
 
 
 # get_expected_spf_records
@@ -309,7 +335,7 @@ def test_custom_domain_validation_validate_ownership_success():
     domain = create_custom_domain(random_domain())
 
     dns_client.set_txt_record(
-        domain.domain, [validator.get_ownership_verification_record(domain)]
+        domain.domain, validator.get_ownership_verification_record(domain).allowed
     )
     res = validator.validate_domain_ownership(domain)
 
@@ -336,7 +362,7 @@ def test_custom_domain_validation_validate_ownership_from_partner_success():
     Session.commit()
 
     dns_client.set_txt_record(
-        domain.domain, [validator.get_ownership_verification_record(domain)]
+        domain.domain, validator.get_ownership_verification_record(domain).allowed
     )
     res = validator.validate_domain_ownership(domain)
 
@@ -370,7 +396,7 @@ def test_custom_domain_validation_validate_mx_records_wrong_records_failure():
 
     wrong_record_1 = random_string()
     wrong_record_2 = random_string()
-    wrong_records = [MxRecord(10, wrong_record_1), MxRecord(20, wrong_record_2)]
+    wrong_records = {10: [wrong_record_1], 20: [wrong_record_2]}
     dns_client.set_mx_records(domain.domain, wrong_records)
     res = validator.validate_mx_records(domain)
 
@@ -387,7 +413,12 @@ def test_custom_domain_validation_validate_mx_records_success():
 
     domain = create_custom_domain(random_domain())
 
-    dns_client.set_mx_records(domain.domain, validator.get_expected_mx_records(domain))
+    mx_records_by_prio = validator.get_expected_mx_records(domain)
+    dns_records = {
+        priority: mx_records_by_prio[priority].allowed
+        for priority in mx_records_by_prio
+    }
+    dns_client.set_mx_records(domain.domain, dns_records)
     res = validator.validate_mx_records(domain)
 
     assert res.success is True
@@ -485,16 +516,19 @@ def test_custom_domain_validation_validate_spf_cleans_verification_record():
     domain.partner_id = proton_partner_id
     Session.commit()
 
-    wrong_record = random_string()
-    dns_client.set_txt_record(
-        hostname=domain.domain,
-        txt_list=[wrong_record, validator.get_ownership_verification_record(domain)],
-    )
-    res = validator.validate_spf_records(domain)
+    ownership_records = validator.get_ownership_verification_record(domain)
 
-    assert res.success is False
-    assert len(res.errors) == 1
-    assert res.errors[0] == wrong_record
+    for ownership_record in ownership_records.allowed:
+        wrong_record = random_string()
+        dns_client.set_txt_record(
+            hostname=domain.domain,
+            txt_list=[wrong_record, ownership_record],
+        )
+        res = validator.validate_spf_records(domain)
+
+        assert res.success is False
+        assert len(res.errors) == 1
+        assert res.errors[0] == wrong_record
 
 
 # validate_dmarc_records

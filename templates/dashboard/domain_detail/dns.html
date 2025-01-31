@@ -38,7 +38,7 @@
             Value: <em data-toggle="tooltip"
      title="Click to copy"
      class="clipboard"
-     data-clipboard-text="{{ ownership_record }}">{{ ownership_record }}</em>
+     data-clipboard-text="{{ ownership_records.recommended }}">{{ ownership_records.recommended }}</em>
           </div>
           <form method="post" action="#ownership-form">
             {{ csrf_form.csrf_token }}
@@ -91,7 +91,7 @@
           <br />
           Some domain registrars (Namecheap, CloudFlare, etc) might also use <em>@</em> for the root domain.
         </div>
-        {% for record in expected_mx_records %}
+        {% for prio in expected_mx_records %}
 
           <div class="mb-3 p-3 dns-record">
             Record: MX
@@ -99,12 +99,12 @@
             Domain: {{ custom_domain.domain }} or
             <b>@</b>
             <br />
-            Priority: {{ record.priority }}
+            Priority: {{ prio }}
             <br />
             Target: <em data-toggle="tooltip"
      title="Click to copy"
      class="clipboard"
-     data-clipboard-text="{{ record.domain }}">{{ record.domain }}</em>
+     data-clipboard-text="{{ expected_mx_records[prio].recommended }}">{{ expected_mx_records[prio].recommended }}</em>
           </div>
         {% endfor %}
         <form method="post" action="#mx-form">
@@ -251,8 +251,8 @@
             <em data-toggle="tooltip"
                 title="Click to copy"
                 class="clipboard"
-                data-clipboard-text="{{ dkim_cname_value }}."
-                style="overflow-wrap: break-word">{{ dkim_cname_value }}.</em>
+                data-clipboard-text="{{ dkim_cname_value.recommended }}."
+                style="overflow-wrap: break-word">{{ dkim_cname_value.recommended }}.</em>
           </div>
         {% endfor %}
         <div class="alert alert-info">
