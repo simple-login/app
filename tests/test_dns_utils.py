@@ -36,44 +36,44 @@ def test_is_mx_equivalent():
     assert is_mx_equivalent(
         mx_domains={1: ["domain"]},
         expected_mx_domains={
-            1: ExpectedValidationRecords(recommended="nop", valid=["domain"])
+            1: ExpectedValidationRecords(recommended="nop", allowed=["domain"])
         },
     )
     assert is_mx_equivalent(
         mx_domains={10: ["domain10"], 20: ["domain20"]},
         expected_mx_domains={
-            10: ExpectedValidationRecords(recommended="nop", valid=["domain10"]),
-            20: ExpectedValidationRecords(recommended="nop", valid=["domain20"]),
+            10: ExpectedValidationRecords(recommended="nop", allowed=["domain10"]),
+            20: ExpectedValidationRecords(recommended="nop", allowed=["domain20"]),
         },
     )
 
     assert is_mx_equivalent(
         mx_domains={5: ["domain1"], 10: ["domain2"]},
         expected_mx_domains={
-            10: ExpectedValidationRecords(recommended="nop", valid=["domain1"]),
-            20: ExpectedValidationRecords(recommended="nop", valid=["domain2"]),
+            10: ExpectedValidationRecords(recommended="nop", allowed=["domain1"]),
+            20: ExpectedValidationRecords(recommended="nop", allowed=["domain2"]),
         },
     )
 
     assert not is_mx_equivalent(
         mx_domains={10: ["domain10", "domain11"], 20: ["domain20"]},
         expected_mx_domains={
-            10: ExpectedValidationRecords(recommended="nop", valid=["domain10"]),
-            20: ExpectedValidationRecords(recommended="nop", valid=["domain20"]),
+            10: ExpectedValidationRecords(recommended="nop", allowed=["domain10"]),
+            20: ExpectedValidationRecords(recommended="nop", allowed=["domain20"]),
         },
     )
     assert not is_mx_equivalent(
         mx_domains={5: ["domain1"], 10: ["domain2"], 20: ["domain3"]},
         expected_mx_domains={
-            10: ExpectedValidationRecords(recommended="nop", valid=["domain1"]),
-            20: ExpectedValidationRecords(recommended="nop", valid=["domain2"]),
+            10: ExpectedValidationRecords(recommended="nop", allowed=["domain1"]),
+            20: ExpectedValidationRecords(recommended="nop", allowed=["domain2"]),
         },
     )
     assert not is_mx_equivalent(
         mx_domains={10: ["domain1"]},
         expected_mx_domains={
-            10: ExpectedValidationRecords(recommended="nop", valid=["domain1"]),
-            20: ExpectedValidationRecords(recommended="nop", valid=["domain2"]),
+            10: ExpectedValidationRecords(recommended="nop", allowed=["domain1"]),
+            20: ExpectedValidationRecords(recommended="nop", allowed=["domain2"]),
         },
     )
 

@@ -44,13 +44,43 @@
         <h4 class="mb-3">{{ title }} <span class="text-success">Verified</span></h4>
     {% else %}
         <h4 class="mb-3">{{ title }}</h4>
-        <p>Expected</p>
-        <p>{{expected}}</p>
+        <p>Recommended value</p>
+        <p>{{expected.recommended}}</p>
+        <p>Allowed values</p>
+        <ul>
+        {% for expected_record in expected.allowed %}
+            <li>{{expected_record}}</li>
+        {% endfor %}
+        </ul>
         <p>Current response</p>
         <ul class="list-group">
         {% for error in errors %}
             <li class="list-group-item">{{ error }}</li>
         {% endfor %}
+        </ul>
+    {% endif %}
+{%- endmacro %}
+
+{% macro show_mx_verification(title, expected, errors) -%}
+    {% if not expected %}
+        <h4 class="mb-3">{{ title }} <span class="text-success">Verified</span></h4>
+    {% else %}
+        <h4 class="mb-3">{{ title }}</h4>
+        {% for prio in expected %}
+            <p>Expected for {{ prio }} priority</p>
+        <p>{{expected[prio].recommended}}</p>
+        <p>Allowed</p>
+        <ul>
+            {% for expected_record in expected[prio].allowed %}
+                <li>{{expected_record}}</li>
+            {% endfor %}
+        </ul>
+        {% endfor %}
+        <p>Current response</p>
+        <ul class="list-group">
+            {% for error in errors %}
+                <li class="list-group-item">{{ error }}</li>
+            {% endfor %}
         </ul>
     {% endif %}
 {%- endmacro %}
@@ -64,7 +94,7 @@
             {{ show_verification("Ownership", domain_with_data.ownership_expected, domain_with_data.ownership_validation.errors) }}
         </li>
         <li class="list-group-item">
-            {{ show_verification("MX", domain_with_data.mx_expected, domain_with_data.mx_validation.errors) }}
+            {{ show_mx_verification("MX", domain_with_data.mx_expected, domain_with_data.mx_validation.errors) }}
         </li>
         <li class="list-group-item">
             {{ show_verification("SPF", domain_with_data.spf_expected, domain_with_data.spf_validation.errors) }}
