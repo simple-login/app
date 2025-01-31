@@ -191,15 +191,8 @@ def get_alias_infos_with_pagination_v3(
         q = q.order_by(Alias.email.desc())
     else:
         # default sorting
-        latest_activity = case(
-            [
-                (Alias.created_at > EmailLog.created_at, Alias.created_at),
-                (Alias.created_at < EmailLog.created_at, EmailLog.created_at),
-            ],
-            else_=Alias.created_at,
-        )
         q = q.order_by(Alias.pinned.desc())
-        q = q.order_by(latest_activity.desc())
+        q = q.order_by(func.greatest(Alias.created_at, EmailLog.created_at).desc())
 
     q = q.limit(page_limit).offset(page_id * page_size)
 
