@@ -1940,10 +1940,12 @@ class Contact(Base, ModelMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("alias_id", "website_email", name="uq_contact"),
+        sa.Index("ix_contact_user_id_id", "user_id", "id"),
     )
 
     user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey(User.id, ondelete="cascade"),
+        nullable=False,
     )
     alias_id = sa.Column(
         sa.ForeignKey(Alias.id, ondelete="cascade"),
