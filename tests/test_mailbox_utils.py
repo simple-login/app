@@ -25,7 +25,6 @@ from app.user_audit_log_utils import UserAuditLogAction
 from app.utils import random_string, canonicalize_email
 from tests.utils import create_new_user, random_email
 
-
 user: Optional[User] = None
 
 
@@ -598,3 +597,27 @@ def test_change_mailbox_verified_address(flask_client):
     assert changed_mailbox.email == mail2
     assert out.activation is None
     assert 0 == len(mail_sender.get_stored_emails())
+
+
+def test_change_mailbox_email_duplicate(flask_client):
+    user = create_new_user()
+    domain = f"{random_string(10)}.com"
+    mail1 = f"mail_1@{domain}"
+    mbox = Mailbox.create(email=mail1, user_id=user.id, verified=True, flush=True)
+    mail2 = f"mail_2@{domain}"
+    request_mailbox_email_change(user, mbox, mail2, email_ownership_verified=True)
+    with pytest.raises(mailbox_utils.MailboxError):
+        request_mailbox_email_change(user, mbox, mail2, email_ownership_verified=True)
+
+
+def test_change_mailbox_email_duplicate_in_another_mailbox(flask_client):
+    user = create_new_user()
+    domain = f"{random_string(10)}.com"
+    mail1 = f"mail_1@{domain}"
+    mbox1 = Mailbox.create(email=mail1, user_id=user.id, verified=True, flush=True)
+    mail2 = f"mail_2@{domain}"
+    mbox2 = Mailbox.create(email=mail2, user_id=user.id, verified=True, flush=True)
+    mail3 = f"mail_3@{domain}"
+    request_mailbox_email_change(user, mbox1, mail3)
+    with pytest.raises(mailbox_utils.MailboxError):
+        request_mailbox_email_change(user, mbox2, mail3)
