@@ -34,6 +34,9 @@ message AliasCreatedList {
   repeated AliasCreated events = 1;
 }
 
+message UserUnlinked {
+}
+
 message EventContent {
   oneof content {
     UserPlanChanged user_plan_change = 1;
@@ -42,6 +45,7 @@ message EventContent {
     AliasStatusChanged alias_status_change = 4;
     AliasDeleted alias_deleted = 5;
     AliasCreatedList alias_create_list = 6;
+    UserUnlinked user_unlinked = 7;
   }
 }
 

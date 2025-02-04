@@ -4,6 +4,8 @@ from newrelic import agent
 
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import UserUnlinked, EventContent
 from app.log import LOG
 from app.models import Partner, PartnerUser, User
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
@@ -44,6 +46,9 @@ def perform_proton_account_unlink(current_user: User) -> bool:
             user=current_user,
             action=UserAuditLogAction.UnlinkAccount,
             message=f"User has unlinked the account (email={partner_user.partner_email} | external_user_id={partner_user.external_user_id})",
+        )
+        EventDispatcher.send_event(
+            partner_user.user, EventContent(user_unlinked=UserUnlinked())
         )
         PartnerUser.delete(partner_user.id)
     Session.commit()
