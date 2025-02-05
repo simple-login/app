@@ -267,6 +267,8 @@ def cancel_mailbox_change_route(mailbox_id):
 
 
 @dashboard_bp.route("/mailbox/confirm_change")
+@login_required
+@limiter.limit("3/minute")
 def mailbox_confirm_email_change_route():
     mailbox_id = request.args.get("mailbox_id")
 
