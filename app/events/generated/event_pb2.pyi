@@ -57,21 +57,27 @@ class AliasCreatedList(_message.Message):
     events: _containers.RepeatedCompositeFieldContainer[AliasCreated]
     def __init__(self, events: _Optional[_Iterable[_Union[AliasCreated, _Mapping]]] = ...) -> None: ...
 
+class UserUnlinked(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class EventContent(_message.Message):
-    __slots__ = ("user_plan_change", "user_deleted", "alias_created", "alias_status_change", "alias_deleted", "alias_create_list")
+    __slots__ = ("user_plan_change", "user_deleted", "alias_created", "alias_status_change", "alias_deleted", "alias_create_list", "user_unlinked")
     USER_PLAN_CHANGE_FIELD_NUMBER: _ClassVar[int]
     USER_DELETED_FIELD_NUMBER: _ClassVar[int]
     ALIAS_CREATED_FIELD_NUMBER: _ClassVar[int]
     ALIAS_STATUS_CHANGE_FIELD_NUMBER: _ClassVar[int]
     ALIAS_DELETED_FIELD_NUMBER: _ClassVar[int]
     ALIAS_CREATE_LIST_FIELD_NUMBER: _ClassVar[int]
+    USER_UNLINKED_FIELD_NUMBER: _ClassVar[int]
     user_plan_change: UserPlanChanged
     user_deleted: UserDeleted
     alias_created: AliasCreated
     alias_status_change: AliasStatusChanged
     alias_deleted: AliasDeleted
     alias_create_list: AliasCreatedList
-    def __init__(self, user_plan_change: _Optional[_Union[UserPlanChanged, _Mapping]] = ..., user_deleted: _Optional[_Union[UserDeleted, _Mapping]] = ..., alias_created: _Optional[_Union[AliasCreated, _Mapping]] = ..., alias_status_change: _Optional[_Union[AliasStatusChanged, _Mapping]] = ..., alias_deleted: _Optional[_Union[AliasDeleted, _Mapping]] = ..., alias_create_list: _Optional[_Union[AliasCreatedList, _Mapping]] = ...) -> None: ...
+    user_unlinked: UserUnlinked
+    def __init__(self, user_plan_change: _Optional[_Union[UserPlanChanged, _Mapping]] = ..., user_deleted: _Optional[_Union[UserDeleted, _Mapping]] = ..., alias_created: _Optional[_Union[AliasCreated, _Mapping]] = ..., alias_status_change: _Optional[_Union[AliasStatusChanged, _Mapping]] = ..., alias_deleted: _Optional[_Union[AliasDeleted, _Mapping]] = ..., alias_create_list: _Optional[_Union[AliasCreatedList, _Mapping]] = ..., user_unlinked: _Optional[_Union[UserUnlinked, _Mapping]] = ...) -> None: ...
 
 class Event(_message.Message):
     __slots__ = ("user_id", "external_user_id", "partner_id", "content")

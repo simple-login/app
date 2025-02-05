@@ -18,7 +18,7 @@ from app.models import (
     PartnerSubscription,
     PartnerUser,
 )
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from tests.utils import create_new_user, random_string, random_email
 
 

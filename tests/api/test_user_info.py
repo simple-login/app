@@ -3,7 +3,7 @@ from flask import url_for
 from app import config
 from app.db import Session
 from app.models import User, PartnerUser
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login, random_token, random_email
 

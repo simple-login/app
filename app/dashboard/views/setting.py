@@ -41,7 +41,8 @@ from app.models import (
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
 )
-from app.proton.utils import get_proton_partner, can_unlink_proton_account
+from app.proton.proton_partner import get_proton_partner
+from app.proton.proton_unlink import can_unlink_proton_account
 from app.utils import (
     random_string,
     CSRFValidationForm,

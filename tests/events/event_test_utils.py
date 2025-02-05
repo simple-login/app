@@ -1,7 +1,7 @@
 from app.events.event_dispatcher import Dispatcher
 from app.events.generated import event_pb2
 from app.models import PartnerUser, User
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from tests.utils import create_new_user, random_token
 from typing import Tuple
 
