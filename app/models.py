@@ -2838,14 +2838,9 @@ class Mailbox(Base, ModelMixin):
         return len(alias_ids)
 
     def is_proton(self) -> bool:
-        if (
-            self.email.endswith("@proton.me")
-            or self.email.endswith("@protonmail.com")
-            or self.email.endswith("@protonmail.ch")
-            or self.email.endswith("@proton.ch")
-            or self.email.endswith("@pm.me")
-        ):
-            return True
+        for proton_email_domain in config.PROTON_EMAIL_DOMAINS:
+            if self.email.endswith(f"@{proton_email_domain}"):
+                return True
 
         from app.email_utils import get_email_local_part
 
