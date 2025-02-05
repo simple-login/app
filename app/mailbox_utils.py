@@ -2,7 +2,9 @@ import dataclasses
 import secrets
 from enum import Enum
 from typing import Optional
+
 import arrow
+from sqlalchemy.exc import IntegrityError
 
 from app import config
 from app.config import JOB_DELETE_MAILBOX
@@ -358,7 +360,12 @@ def request_mailbox_email_change(
         action=UserAuditLogAction.UpdateMailbox,
         message=f"Updated mailbox {mailbox.id} email ({new_email}) pre-verified({email_ownership_verified}",
     )
-    Session.commit()
+    try:
+        Session.commit()
+    except IntegrityError:
+        LOG.i(f"This email {new_email} is already pending for some mailbox")
+        Session.rollback()
+        raise MailboxError("Email already in use")
 
     if email_ownership_verified:
         LOG.i(f"User {user} as created a pre-verified mailbox with {new_email}")

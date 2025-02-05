@@ -6,6 +6,7 @@ from app.coupon_utils import (
     CouponUserCannotRedeemError,
     redeem_lifetime_coupon,
 )
+from app.db import Session
 from app.models import (
     Coupon,
     Subscription,
@@ -14,8 +15,11 @@ from app.models import (
     CoinbaseSubscription,
     LifetimeCoupon,
     User,
+    PartnerSubscription,
+    PartnerUser,
 )
-from tests.utils import create_new_user, random_string
+from app.proton.utils import get_proton_partner
+from tests.utils import create_new_user, random_string, random_email
 
 
 def test_use_coupon():
@@ -157,3 +161,55 @@ def test_used_lifetime_coupon():
     user = User.get(user.id)
     assert not user.lifetime
     assert not user.paid_lifetime
+
+
+def test_used_lifetime_coupon_with_lifetime_user():
+    user = create_new_user()
+    user.lifetime = True
+    code = random_string(10)
+    LifetimeCoupon.create(code=code, nb_used=10, paid=True)
+    coupon = redeem_lifetime_coupon(code, user)
+    assert coupon is None
+
+
+def test_used_lifetime_coupon_with_lifetime_partner():
+    email = random_email()
+    user = User.create(email=email)
+    pu = PartnerUser.create(
+        user_id=user.id,
+        partner_id=get_proton_partner().id,
+        partner_email=email,
+        external_user_id=random_string(10),
+        flush=True,
+    )
+    PartnerSubscription.create(
+        partner_user_id=pu.id, end_at=arrow.utcnow().shift(years=10), lifetime=True
+    )
+    Session.flush()
+    code = random_string(10)
+    LifetimeCoupon.create(code=code, nb_used=10, paid=True)
+    coupon = redeem_lifetime_coupon(code, user)
+    assert coupon is None
+
+
+def test_used_lifetime_coupon_with_partner_sub():
+    email = random_email()
+    user = User.create(email=email)
+    pu = PartnerUser.create(
+        user_id=user.id,
+        partner_id=get_proton_partner().id,
+        partner_email=email,
+        external_user_id=random_string(10),
+        flush=True,
+    )
+    PartnerSubscription.create(
+        partner_user_id=pu.id, end_at=arrow.utcnow().shift(years=10)
+    )
+    Session.flush()
+    code = random_string(10)
+    LifetimeCoupon.create(code=code, nb_used=10, paid=True)
+    coupon = redeem_lifetime_coupon(code, user)
+    assert coupon
+    user = User.get(user.id)
+    assert user.lifetime
+    assert user.paid_lifetime
