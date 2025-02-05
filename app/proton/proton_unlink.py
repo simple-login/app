@@ -1,32 +1,12 @@
-from typing import Optional
-
 from newrelic import agent
 
 from app.db import Session
-from app.errors import ProtonPartnerNotSetUp
 from app.events.event_dispatcher import EventDispatcher
-from app.events.generated.event_pb2 import UserUnlinked, EventContent
+from app.events.generated.event_pb2 import EventContent, UserUnlinked
 from app.log import LOG
-from app.models import Partner, PartnerUser, User
+from app.models import User, PartnerUser
+from app.proton.proton_partner import get_proton_partner
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
-
-PROTON_PARTNER_NAME = "Proton"
-_PROTON_PARTNER: Optional[Partner] = None
-
-
-def get_proton_partner() -> Partner:
-    global _PROTON_PARTNER
-    if _PROTON_PARTNER is None:
-        partner = Partner.get_by(name=PROTON_PARTNER_NAME)
-        if partner is None:
-            raise ProtonPartnerNotSetUp
-        Session.expunge(partner)
-        _PROTON_PARTNER = partner
-    return _PROTON_PARTNER
-
-
-def is_proton_partner(partner: Partner) -> bool:
-    return partner.name == PROTON_PARTNER_NAME
 
 
 def can_unlink_proton_account(user: User) -> bool:

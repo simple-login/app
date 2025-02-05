@@ -19,7 +19,7 @@ from app.account_linking import (
 from app.db import Session
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException
 from app.models import Partner, PartnerUser, User, UserAuditLog
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from app.user_audit_log_utils import UserAuditLogAction
 from app.utils import random_string, canonicalize_email
 from tests.utils import random_email

@@ -14,7 +14,7 @@ from app.models import (
     Job,
     PartnerUser,
 )
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from events.event_sink import EventSink
 
 

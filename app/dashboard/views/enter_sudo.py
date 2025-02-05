@@ -11,7 +11,7 @@ from app.dashboard.base import dashboard_bp
 from app.extensions import limiter
 from app.log import LOG
 from app.models import PartnerUser, SocialAuth
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from app.utils import sanitize_next_url
 
 _SUDO_GAP = 120
