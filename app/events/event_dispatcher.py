@@ -8,7 +8,7 @@ from app.errors import ProtonPartnerNotSetUp
 from app.events.generated import event_pb2
 from app.log import LOG
 from app.models import User, PartnerUser, SyncEvent
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from typing import Optional
 
 NOTIFICATION_CHANNEL = "simplelogin_sync_events"

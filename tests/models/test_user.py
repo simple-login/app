@@ -2,7 +2,7 @@ import arrow
 from app import config
 from app.db import Session
 from app.models import User, Job, PartnerSubscription, PartnerUser, ManualSubscription
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from tests.utils import random_email, random_token
 
 

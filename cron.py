@@ -59,7 +59,7 @@ from app.models import (
     ApiToCookieToken,
 )
 from app.pgp_utils import load_public_key_and_check, PGPException
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
 from server import create_light_app

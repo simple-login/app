@@ -4,7 +4,7 @@ from app import config
 from app.events.generated.event_pb2 import EventContent, AliasDeleted
 from app.jobs.send_event_job import SendEventToWebhookJob
 from app.models import PartnerUser
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from events.event_sink import ConsoleEventSink
 from tests.utils import create_new_user, random_token
 

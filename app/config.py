@@ -62,6 +62,17 @@ def get_env_dict(env_var: str) -> dict[str, str]:
     return result
 
 
+def get_env_csv(env_var: str, default: Optional[str]) -> list[str]:
+    """
+    Get an env variable and convert it into a list of strings separated by,
+    Syntax is: val1,val2
+    """
+    value = os.getenv(env_var, default)
+    if not value:
+        return []
+    return [field.strip() for field in value.split(",") if field.strip()]
+
+
 config_file = os.environ.get("CONFIG")
 if config_file:
     config_file = get_abs_path(config_file)
@@ -170,6 +181,14 @@ FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN
 # list of (priority, email server)
 # e.g. [(10, "mx1.hostname."), (10, "mx2.hostname.")]
 EMAIL_SERVERS_WITH_PRIORITY = sl_getenv("EMAIL_SERVERS_WITH_PRIORITY")
+
+PROTON_MX_SERVERS = get_env_csv(
+    "PROTON_MX_SERVERS", "mail.protonmail.ch., mailsec.protonmail.ch."
+)
+
+PROTON_EMAIL_DOMAINS = get_env_csv(
+    "PROTON_EMAIL_DOMAINS", "proton.me, protonmail.com, protonmail.ch, proton.ch, pm.me"
+)
 
 # disable the alias suffix, i.e. the ".random_word" part
 DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ

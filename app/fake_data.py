@@ -37,7 +37,7 @@ from app.models import (
     PartnerSubscription,
 )
 from app.pgp_utils import load_public_key
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 
 
 def fake_data():
