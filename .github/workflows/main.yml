@@ -121,13 +121,15 @@ jobs:
       fail-fast: false
       matrix:
         experimental: [false]
+        runs-on: [ubuntu-latest]
         platform:
           - linux/amd64
         include:
           - platform: linux/arm64
             experimental: true
+            runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 60
     needs: ['test', 'lint']
     #if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
