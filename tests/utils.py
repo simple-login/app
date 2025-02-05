@@ -10,7 +10,7 @@ import jinja2
 from flask import url_for
 
 from app.models import User, PartnerUser
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from app.utils import random_string
 
 

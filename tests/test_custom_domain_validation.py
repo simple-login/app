@@ -6,7 +6,7 @@ from app.custom_domain_validation import CustomDomainValidation
 from app.db import Session
 from app.dns_utils import InMemoryDNSClient
 from app.models import CustomDomain, User
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from app.utils import random_string
 from tests.utils import create_new_user, random_domain
 

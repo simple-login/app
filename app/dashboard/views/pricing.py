@@ -22,7 +22,7 @@ from app.models import (
     PartnerUser,
     PartnerSubscription,
 )
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 
 
 @dashboard_bp.route("/pricing", methods=["GET", "POST"])

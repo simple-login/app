@@ -4,6 +4,7 @@ from sys import argv, exit
 
 from app.config import EVENT_LISTENER_DB_URI
 from app.log import LOG
+from app.monitor_utils import send_version_event
 from events import event_debugger
 from events.runner import Runner
 from events.event_source import DeadLetterEventSource, PostgresEventSource
@@ -30,9 +31,11 @@ def main(mode: Mode, dry_run: bool, max_retries: int):
     if mode == Mode.DEAD_LETTER:
         LOG.i("Using DeadLetterEventSource")
         source = DeadLetterEventSource(max_retries)
+        service_name = "event_listener_dead_letter"
     elif mode == Mode.LISTENER:
         LOG.i("Using PostgresEventSource")
         source = PostgresEventSource(EVENT_LISTENER_DB_URI)
+        service_name = "event_listener"
     else:
         raise ValueError(f"Invalid mode: {mode}")
 
@@ -43,7 +46,8 @@ def main(mode: Mode, dry_run: bool, max_retries: int):
         LOG.i("Starting with HttpEventSink")
         sink = HttpEventSink()
 
-    runner = Runner(source=source, sink=sink)
+    send_version_event(service_name)
+    runner = Runner(source=source, sink=sink, service_name=service_name)
     runner.run()
 
 

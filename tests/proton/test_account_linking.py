@@ -7,7 +7,7 @@ from app.account_linking import (
 )
 from app.db import Session
 from app.models import User, PartnerUser, PartnerSubscription
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from app.utils import random_string
 from tests.utils import random_email
 

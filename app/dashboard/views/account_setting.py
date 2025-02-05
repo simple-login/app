@@ -39,7 +39,7 @@ from app.models import (
     SenderFormatEnum,
     UnsubscribeBehaviourEnum,
 )
-from app.proton.utils import perform_proton_account_unlink
+from app.proton.proton_unlink import perform_proton_account_unlink
 from app.utils import (
     random_string,
     CSRFValidationForm,
