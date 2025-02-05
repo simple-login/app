@@ -115,10 +115,11 @@ class InMemoryDNSClient(DNSClient):
         return self.txt_records.get(hostname, [])
 
 
-global_dns_client = Optional[DNSClient]
+global_dns_client: Optional[DNSClient] = None
 
 
-def get_network_dns_client() -> NetworkDNSClient:
+def get_network_dns_client() -> DNSClient:
+    global global_dns_client
     if global_dns_client is not None:
         return global_dns_client
     return NetworkDNSClient(NAMESERVERS)
