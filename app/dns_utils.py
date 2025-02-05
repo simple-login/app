@@ -115,8 +115,18 @@ class InMemoryDNSClient(DNSClient):
         return self.txt_records.get(hostname, [])
 
 
+global_dns_client = Optional[DNSClient]
+
+
 def get_network_dns_client() -> NetworkDNSClient:
+    if global_dns_client is not None:
+        return global_dns_client
     return NetworkDNSClient(NAMESERVERS)
+
+
+def set_global_dns_client(dns_client: Optional[DNSClient]):
+    global global_dns_client
+    global_dns_client = dns_client
 
 
 def get_mx_domains(hostname: str) -> dict[int, list[str]]:
