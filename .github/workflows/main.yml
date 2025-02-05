@@ -126,9 +126,9 @@ jobs:
           path: htmlcov
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: ['test', 'lint']
-    # if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
 
     steps:
       - name: Docker meta
@@ -253,47 +253,3 @@ jobs:
           body: ${{ steps.build_changelog.outputs.changelog }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-arm64:
-    runs-on: ubuntu-latest
-    needs: ['build']
-    continue-on-error: true
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
-
-    steps:
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.DOCKERHUB_REPO }}-arm64
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # We need to checkout the repository in order for the "Create Sentry release" to work
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Prepare version file
-        run: |
-          scripts/generate-build-info.sh ${{ github.sha }}
-          cat app/build_info.py
-
-      - name: Build image and publish to Docker Registry
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          platforms: linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
