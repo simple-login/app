@@ -23,7 +23,7 @@ from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
     Action,
 )
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from app.utils import sanitize_next_url, sanitize_scheme
 
 _authorization_base_url = PROTON_BASE_URL + "/oauth/authorize"

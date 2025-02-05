@@ -12,7 +12,7 @@ from app.models import (
     SenderFormatEnum,
     AliasSuffixEnum,
 )
-from app.proton.utils import perform_proton_account_unlink
+from app.proton.proton_unlink import perform_proton_account_unlink
 
 
 def setting_to_dict(user: User):

@@ -11,7 +11,7 @@ from app.proton.proton_callback_handler import (
     generate_account_not_allowed_to_log_in,
 )
 from app.models import User, PartnerUser, Job, JobState
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from app.utils import random_string
 from typing import Optional
 from tests.utils import random_email

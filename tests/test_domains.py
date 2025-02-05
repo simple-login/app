@@ -1,6 +1,6 @@
 from app.db import Session
 from app.models import SLDomain, PartnerUser, AliasOptions, BlockedDomain
-from app.proton.utils import get_proton_partner
+from app.proton.proton_partner import get_proton_partner
 from init_app import add_sl_domains
 from tests.utils import create_new_user, random_token
 
