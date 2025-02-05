@@ -47,7 +47,7 @@ from app.admin_model import (
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
-from app.build_info import SHA1, VERSION
+from app.build_info import SHA1
 from app.config import (
     DB_URI,
     FLASK_SECRET,
@@ -99,6 +99,7 @@ from app.models import (
     InvalidMailboxDomain,
 )
 from app.monitor.base import monitor_bp
+from app.monitor_utils import send_version_event
 from app.newsletter_utils import send_newsletter_to_user
 from app.oauth.base import oauth_bp
 from app.onboarding.base import onboarding_bp
@@ -295,9 +296,7 @@ def set_index_page(app):
             newrelic.agent.record_custom_event(
                 "HttpResponseStatus", {"code": res.status_code}
             )
-            newrelic.agent.record_custom_event(
-                "ServiceVersion", {"service": "app", "version": VERSION}
-            )
+            send_version_event("app")
         return res
 
 
