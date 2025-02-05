@@ -2850,10 +2850,8 @@ class Mailbox(Base, ModelMixin):
         from app.email_utils import get_email_local_part
 
         mx_domains = get_mx_domains(get_email_local_part(self.email))
-        proton_mx_domains = (
-            "mail.protonmail.ch.",
-            "mailsec.protonmail.ch.",
-        )
+
+        proton_mx_domains = config.PROTON_MX_SERVERS
         # Proton is the first domain
         for prio in mx_domains:
             for mx_domain in mx_domains[prio]:

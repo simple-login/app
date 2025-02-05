@@ -171,6 +171,16 @@ FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN
 # e.g. [(10, "mx1.hostname."), (10, "mx2.hostname.")]
 EMAIL_SERVERS_WITH_PRIORITY = sl_getenv("EMAIL_SERVERS_WITH_PRIORITY")
 
+
+def setup_proton_mx_servers() -> list[str]:
+    value = os.environ.get(
+        "PROTON_MX_SERVERS", "mail.protonmail.ch., mailsec.protonmail.ch."
+    )
+    return [domain.strip() for domain in value.split(",") if domain.strip()]
+
+
+PROTON_MX_SERVERS = setup_proton_mx_servers()
+
 # disable the alias suffix, i.e. the ".random_word" part
 DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 
