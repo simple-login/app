@@ -47,7 +47,7 @@ from app.admin_model import (
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
-from app.build_info import SHA1
+from app.build_info import SHA1, VERSION
 from app.config import (
     DB_URI,
     FLASK_SECRET,
@@ -294,6 +294,9 @@ def set_index_page(app):
             )
             newrelic.agent.record_custom_event(
                 "HttpResponseStatus", {"code": res.status_code}
+            )
+            newrelic.agent.record_custom_event(
+                "ServiceVersion", {"service": "app", "version": VERSION}
             )
         return res
 

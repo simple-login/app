@@ -107,7 +107,7 @@ jobs:
 
       - name: Prepare version file
         run: |
-          scripts/generate-build-info.sh ${{ github.sha }}
+          scripts/generate-build-info.sh ${{ github.sha }} ${{ github.ref_name }}
           cat app/build_info.py
 
       - name: Test with pytest
@@ -164,7 +164,7 @@ jobs:
 
       - name: Prepare version file
         run: |
-          scripts/generate-build-info.sh ${{ github.sha }}
+          scripts/generate-build-info.sh ${{ github.sha }} ${{ github.ref_name }}
           cat app/build_info.py
 
       - name: Build image and publish to Docker Registry
