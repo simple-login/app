@@ -21,6 +21,7 @@ from app.jobs.export_user_data_job import ExportUserDataJob
 from app.jobs.send_event_job import SendEventToWebhookJob
 from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
+from app.monitor_utils import send_version_event
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from server import create_light_app
 
@@ -189,6 +190,7 @@ SimpleLogin team.
 
 
 def process_job(job: Job):
+    send_version_event("job_runner")
     if job.name == config.JOB_ONBOARDING_1:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
@@ -334,6 +336,7 @@ def get_jobs_to_run() -> List[Job]:
 
 
 if __name__ == "__main__":
+    send_version_event("job_runner")
     while True:
         # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
         with create_light_app().app_context():

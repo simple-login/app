@@ -167,6 +167,7 @@ from app.models import (
     VerpType,
     SLDomain,
 )
+from app.monitor_utils import send_version_event
 from app.pgp_utils import (
     PGPException,
     sign_data_with_pgpy,
@@ -2369,6 +2370,7 @@ class MailHandler:
             "Custom/nb_rcpt_tos", len(envelope.rcpt_tos)
         )
 
+        send_version_event("email_handler")
         with create_light_app().app_context():
             return_status = handle(envelope, msg)
             elapsed = time.time() - start
@@ -2404,6 +2406,7 @@ def main(port: int):
 
     controller.start()
     LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
+    send_version_event("email_handler")
 
     if LOAD_PGP_EMAIL_HANDLER:
         LOG.w("LOAD PGP keys")
