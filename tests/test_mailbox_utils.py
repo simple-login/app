@@ -621,3 +621,23 @@ def test_change_mailbox_email_duplicate_in_another_mailbox(flask_client):
     request_mailbox_email_change(user, mbox1, mail3)
     with pytest.raises(mailbox_utils.MailboxError):
         request_mailbox_email_change(user, mbox2, mail3)
+
+
+def test_change_mailbox_verified_email_clears_pending_email(flask_client):
+    user = create_new_user()
+    domain = f"{random_string(10)}.com"
+    mail = f"mail_1@{domain}"
+    mbox1 = Mailbox.create(
+        email=mail,
+        new_email=f"oldpending_{mail}",
+        user_id=user.id,
+        verified=True,
+        flush=True,
+    )
+    new_email = f"new_{mail}"
+    out = request_mailbox_email_change(
+        user, mbox1, new_email, email_ownership_verified=True
+    )
+    assert out.activation is None
+    assert out.mailbox.email == new_email
+    assert out.mailbox.new_email is None
