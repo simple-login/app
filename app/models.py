@@ -503,6 +503,8 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     default_mailbox = orm.relationship("Mailbox", foreign_keys=[default_mailbox_id])
 
+    _blocked_domains = orm.relationship("BlockedDomain", lazy="joined")
+
     # user can set a more strict max_spam score to block spams more aggressively
     max_spam_score = sa.Column(sa.Integer, nullable=True)
 
@@ -1278,6 +1280,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             & (User.FLAG_CREATED_ALIAS_FROM_PARTNER | User.FLAG_CREATED_FROM_PARTNER)
             > 0
         )
+
+    def is_domain_blocked(self, domain: str) -> bool:
+        """checks whether the provided domain is blocked for a given user"""
+        domain_names = []
+
+        for blocked_domain in BlockedDomain.filter_by(user_id=self.id):
+            domain_names.append(blocked_domain.domain)
+
+        return any(domain in domain_name for domain_name in domain_names)
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
@@ -3250,6 +3261,20 @@ class DomainMailbox(Base, ModelMixin):
     mailbox_id = sa.Column(
         sa.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False
     )
+
+
+class BlockedDomain(Base, ModelMixin):
+    """store the blocked domains for a user"""
+
+    __tablename__ = "blocked_domain"
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "domain", name="uq_blocked_domain"),
+    )
+
+    domain = sa.Column(sa.String(128), nullable=False)
+
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
 
 _NB_RECOVERY_CODE = 8
