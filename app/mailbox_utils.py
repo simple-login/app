@@ -353,6 +353,7 @@ def request_mailbox_email_change(
     check_email_for_mailbox(new_email, user)
     if email_ownership_verified:
         mailbox.email = new_email
+        mailbox.new_email = None
     else:
         mailbox.new_email = new_email
     emit_user_audit_log(
