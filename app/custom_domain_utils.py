@@ -3,13 +3,22 @@ import re
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from app.constants import JobType
 from app.db import Session
 from app.email_utils import get_email_domain_part
 from app.log import LOG
-from app.models import User, CustomDomain, SLDomain, Mailbox, Job, DomainMailbox, Alias
+from app.models import (
+    User,
+    CustomDomain,
+    SLDomain,
+    Mailbox,
+    Job,
+    DomainMailbox,
+    ModelMixin,
+    Alias,
+)
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 _ALLOWED_DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
@@ -89,12 +98,14 @@ def sanitize_domain(domain: str) -> str:
     return new_domain
 
 
-def can_domain_be_used(user: User, domain: str) -> Optional[CannotUseDomainReason]:
+def can_domain_be_used(
+    user: User, domain: str, model_type: Type[ModelMixin]
+) -> Optional[CannotUseDomainReason]:
     if not is_valid_domain(domain):
         return CannotUseDomainReason.InvalidDomain
     elif SLDomain.get_by(domain=domain):
         return CannotUseDomainReason.BuiltinDomain
-    elif CustomDomain.get_by(domain=domain):
+    elif model_type.get_by(domain=domain):
         return CannotUseDomainReason.DomainAlreadyUsed
     elif get_email_domain_part(user.email) == domain:
         return CannotUseDomainReason.DomainPartOfUserEmail
@@ -116,7 +127,7 @@ def create_custom_domain(
         )
 
     new_domain = sanitize_domain(domain)
-    domain_forbidden_cause = can_domain_be_used(user, new_domain)
+    domain_forbidden_cause = can_domain_be_used(user, new_domain, CustomDomain)
     if domain_forbidden_cause:
         return CreateCustomDomainResult(
             message=domain_forbidden_cause.message(new_domain), message_category="error"
