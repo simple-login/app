@@ -62,8 +62,17 @@ def new_custom_alias_v2():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
-    signed_suffix = data.get("signed_suffix", "").strip()
+    alias_prefix = data.get("alias_prefix", "")
+    if not isinstance(alias_prefix, str) or not alias_prefix:
+        return jsonify(error="invalid value for alias_prefix"), 400
+
+    alias_prefix = alias_prefix.strip().lower().replace(" ", "")
+    signed_suffix = data.get("signed_suffix", "")
+    if not isinstance(signed_suffix, str) or not signed_suffix:
+        return jsonify(error="invalid value for signed_suffix"), 400
+
+    signed_suffix = signed_suffix.strip()
+
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
