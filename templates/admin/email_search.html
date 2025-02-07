@@ -1,295 +1,303 @@
 {% extends 'admin/master.html' %}
 
 {% macro show_user(user) -%}
-  <h4>User {{ user.email }} with ID {{ user.id }}.</h4>
-  {% set pu = helper.partner_user(user) %}
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">User ID</th>
-        <th scope="col">Email</th>
-        <th scope="col">Verified</th>
-        <th scope="col">Status</th>
-        <th scope="col">Paid</th>
-        <th scope="col">Premium</th>
-        <th>Subscription</th>
-        <th>Created At</th>
-        <th>Updated At</th>
-        <th>Connected with Proton account</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ user.id }}</td>
-        <td>
-          <a href="?email={{ user.email }}">{{ user.email }}</a>
-        </td>
-        {% if user.activated %}
+    <h4>User {{ user.email }} with ID {{ user.id }}.</h4>
+    {% set pu = helper.partner_user(user) %}
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">User ID</th>
+            <th scope="col">Email</th>
+            <th scope="col">Verified</th>
+            <th scope="col">Status</th>
+            <th scope="col">Paid</th>
+            <th scope="col">Premium</th>
+            <th>Subscription</th>
+            <th>Created At</th>
+            <th>Updated At</th>
+            <th>Connected with Proton account</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>
+                <a href="?query={{ user.email }}">{{ user.email }}</a>
+            </td>
+            {% if user.activated %}
 
-          <td class="text-success">Activated</td>
-        {% else %}
-          <td class="text-warning">Pending</td>
-        {% endif %}
-        {% if user.disabled %}
+                <td class="text-success">Activated</td>
+            {% else %}
+                <td class="text-warning">Pending</td>
+            {% endif %}
+            {% if user.disabled %}
 
-          <td class="text-danger">Disabled</td>
-        {% else %}
-          <td class="text-success">Enabled</td>
-        {% endif %}
-        <td>{{ "yes" if user.is_paid() else "No" }}</td>
-        <td>{{ "yes" if user.is_premium() else "No" }}</td>
-        <td>{{ user.get_active_subscription() }}</td>
-        <td>{{ user.created_at }}</td>
-        <td>{{ user.updated_at }}</td>
-        {% if pu %}
+                <td class="text-danger">Disabled</td>
+            {% else %}
+                <td class="text-success">Enabled</td>
+            {% endif %}
+            <td>{{ "yes" if user.is_paid() else "No" }}</td>
+            <td>{{ "yes" if user.is_premium() else "No" }}</td>
+            <td>{{ user.get_active_subscription() }}</td>
+            <td>{{ user.created_at }}</td>
+            <td>{{ user.updated_at }}</td>
+            {% if pu %}
 
-          <td>
-            <a href="?email={{ pu.partner_email }}">{{ pu.partner_email }}</a>
-          </td>
-        {% else %}
-          <td>No</td>
-        {% endif %}
-      </tr>
-    </tbody>
-  </table>
+                <td class="flex">
+                    <a href="?query={{ pu.partner_email }}">{{ pu.partner_email }}</a>
+                    <form class="d-inline" action="{{ url_for("admin.email_search.delete_partner_link") }}" method="POST">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit"
+                                onclick="return confirm('Are you sure you would like to unlink the user?');"
+                                class="btn btn-danger d-inline" >
+                        Unlink
+                        </button>
+                    </form>
+                </td>
+            {% else %}
+                <td>No</td>
+            {% endif %}
+        </tr>
+        </tbody>
+    </table>
 {%- endmacro %}
 {% macro list_mailboxes(message, mbox_count, mboxes) %}
-  <h4>
-    {{ mbox_count }} {{ message }}.
-    {% if mbox_count>10 %}Showing only the last 10.{% endif %}
-  </h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Mailbox ID</th>
-        <th>Email</th>
-        <th>Verified</th>
-        <th>Created At</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for mailbox in mboxes %}
+    <h4>
+        {{ mbox_count }} {{ message }}.
+        {% if mbox_count>10 %}Showing only the last 10.{% endif %}
+    </h4>
+    <table class="table">
+        <thead>
         <tr>
-          <td>{{ mailbox.id }}</td>
-          <td>
-            <a href="?email={{ mailbox.email }}">{{ mailbox.email }}</a>
-          </td>
-          <td>{{ "Yes" if mailbox.verified else "No" }}</td>
-          <td>{{ mailbox.created_at }}</td>
+            <th>Mailbox ID</th>
+            <th>Email</th>
+            <th>Verified</th>
+            <th>Created At</th>
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        </thead>
+        <tbody>
+        {% for mailbox in mboxes %}
+            <tr>
+                <td>{{ mailbox.id }}</td>
+                <td>
+                    <a href="?query={{ mailbox.email }}">{{ mailbox.email }}</a>
+                </td>
+                <td>{{ "Yes" if mailbox.verified else "No" }}</td>
+                <td>{{ mailbox.created_at }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 {% endmacro %}
 {% macro list_alias(alias_count, aliases) %}
-  <h4>
-    {{ alias_count }} Aliases found.
-    {% if alias_count>10 %}Showing only the last 10.{% endif %}
-  </h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Alias ID</th>
-        <th>Email</th>
-        <th>Enabled</th>
-        <th>Created At</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for alias in aliases %}
-
+    <h4>
+        {{ alias_count }} Aliases found.
+        {% if alias_count>10 %}Showing only the last 10.{% endif %}
+    </h4>
+    <table class="table">
+        <thead>
         <tr>
-          <td>{{ alias.id }}</td>
-          <td>
-            <a href="?email={{ alias.email }}">{{ alias.email }}</a>
-          </td>
-          <td>{{ "Yes" if alias.enabled else "No" }}</td>
-          <td>{{ alias.created_at }}</td>
+            <th>Alias ID</th>
+            <th>Email</th>
+            <th>Enabled</th>
+            <th>Created At</th>
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        </thead>
+        <tbody>
+        {% for alias in aliases %}
+
+            <tr>
+                <td>{{ alias.id }}</td>
+                <td>
+                    <a href="?query={{ alias.email }}">{{ alias.email }}</a>
+                </td>
+                <td>{{ "Yes" if alias.enabled else "No" }}</td>
+                <td>{{ alias.created_at }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 {% endmacro %}
 {% macro show_deleted_alias(deleted_alias) -%}
-  <h4>Deleted Alias {{ deleted_alias.email }} with ID {{ deleted_alias.id }}.</h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Deleted Alias ID</th>
-        <th scope="col">Email</th>
-        <th scope="col">Deleted At</th>
-        <th scope="col">Reason</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ deleted_alias.id }}</td>
-        <td>{{ deleted_alias.email }}</td>
-        <td>{{ deleted_alias.created_at }}</td>
-        <td>{{ deleted_alias.reason }}</td>
-      </tr>
-    </tbody>
-  </table>
+    <h4>Deleted Alias {{ deleted_alias.email }} with ID {{ deleted_alias.id }}.</h4>
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">Deleted Alias ID</th>
+            <th scope="col">Email</th>
+            <th scope="col">Deleted At</th>
+            <th scope="col">Reason</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ deleted_alias.id }}</td>
+            <td>{{ deleted_alias.email }}</td>
+            <td>{{ deleted_alias.created_at }}</td>
+            <td>{{ deleted_alias.reason }}</td>
+        </tr>
+        </tbody>
+    </table>
 {%- endmacro %}
 {% macro show_domain_deleted_alias(dom_deleted_alias) -%}
-  <h4>
-    Domain Deleted Alias {{ dom_deleted_alias.email }} with ID {{ dom_deleted_alias.id }} for
-    domain {{ dom_deleted_alias.domain.domain }}
-  </h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Deleted Alias ID</th>
-        <th scope="col">Email</th>
-        <th scope="col">Domain</th>
-        <th scope="col">Domain ID</th>
-        <th scope="col">Domain owner user ID</th>
-        <th scope="col">Domain owner user email</th>
-        <th scope="col">Deleted At</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ dom_deleted_alias.id }}</td>
-        <td>{{ dom_deleted_alias.email }}</td>
-        <td>{{ dom_deleted_alias.domain.domain }}</td>
-        <td>{{ dom_deleted_alias.domain.id }}</td>
-        <td>{{ dom_deleted_alias.domain.user_id }}</td>
-        <td>{{ dom_deleted_alias.created_at }}</td>
-      </tr>
-    </tbody>
-  </table>
-  {{ show_user(data.domain_deleted_alias.domain.user) }}
+    <h4>
+        Domain Deleted Alias {{ dom_deleted_alias.email }} with ID {{ dom_deleted_alias.id }} for
+        domain {{ dom_deleted_alias.domain.domain }}
+    </h4>
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">Deleted Alias ID</th>
+            <th scope="col">Email</th>
+            <th scope="col">Domain</th>
+            <th scope="col">Domain ID</th>
+            <th scope="col">Domain owner user ID</th>
+            <th scope="col">Domain owner user email</th>
+            <th scope="col">Deleted At</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ dom_deleted_alias.id }}</td>
+            <td>{{ dom_deleted_alias.email }}</td>
+            <td>{{ dom_deleted_alias.domain.domain }}</td>
+            <td>{{ dom_deleted_alias.domain.id }}</td>
+            <td>{{ dom_deleted_alias.domain.user_id }}</td>
+            <td>{{ dom_deleted_alias.created_at }}</td>
+        </tr>
+        </tbody>
+    </table>
+    {{ show_user(data.domain_deleted_alias.domain.user) }}
 {%- endmacro %}
 {% macro list_alias_audit_log(alias_audit_log) %}
-  <h4>Alias Audit Log</h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>User ID</th>
-        <th>Alias ID</th>
-        <th>Alias Email</th>
-        <th>Action</th>
-        <th>Message</th>
-        <th>Time</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in alias_audit_log %}
-
+    <h4>Alias Audit Log</h4>
+    <table class="table">
+        <thead>
         <tr>
-          <td>{{ entry.user_id }}</td>
-          <td>{{ entry.alias_id }}</td>
-          <td>
-            <a href="?email={{ entry.alias_email }}">{{ entry.alias_email }}</a>
-          </td>
-          <td>{{ entry.action }}</td>
-          <td>{{ entry.message }}</td>
-          <td>{{ entry.created_at }}</td>
+            <th>User ID</th>
+            <th>Alias ID</th>
+            <th>Alias Email</th>
+            <th>Action</th>
+            <th>Message</th>
+            <th>Time</th>
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        </thead>
+        <tbody>
+        {% for entry in alias_audit_log %}
+
+            <tr>
+                <td>{{ entry.user_id }}</td>
+                <td>{{ entry.alias_id }}</td>
+                <td>
+                    <a href="?query={{ entry.alias_email }}">{{ entry.alias_email }}</a>
+                </td>
+                <td>{{ entry.action }}</td>
+                <td>{{ entry.message }}</td>
+                <td>{{ entry.created_at }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 {% endmacro %}
 {% macro list_user_audit_log(user_audit_log) %}
-  <h4>User Audit Log</h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>User email</th>
-        <th>Action</th>
-        <th>Message</th>
-        <th>Time</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in user_audit_log %}
-
+    <h4>User Audit Log</h4>
+    <table class="table">
+        <thead>
         <tr>
-          <td>
-            <a href="?email={{ entry.user_email }}">{{ entry.user_email }}</a>
-          </td>
-          <td>{{ entry.action }}</td>
-          <td>{{ entry.message }}</td>
-          <td>{{ entry.created_at }}</td>
+            <th>User email</th>
+            <th>Action</th>
+            <th>Message</th>
+            <th>Time</th>
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        </thead>
+        <tbody>
+        {% for entry in user_audit_log %}
+
+            <tr>
+                <td>
+                    <a href="?query={{ entry.user_email }}">{{ entry.user_email }}</a>
+                </td>
+                <td>{{ entry.action }}</td>
+                <td>{{ entry.message }}</td>
+                <td>{{ entry.created_at }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 {% endmacro %}
 {% block body %}
 
-  <div class="border border-dark border-2 mt-1 mb-2 p-3">
-    <form method="get">
-      <div class="form-group">
-        <label for="email">Email to search:</label>
-        <input type="text"
-               class="form-control"
-               name="email"
-               value="{{ email or '' }}" />
-      </div>
-      <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
-  </div>
-  {% if data.no_match and email %}
-
-    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
-         role="alert">No user, alias or mailbox found for {{ email }}</div>
-  {% endif %}
-  {% if data.alias %}
-
     <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found Alias {{ data.alias.email }}</h3>
-      {{ list_alias(1,[data.alias]) }}
-      {{ list_alias_audit_log(data.alias_audit_log) }}
-      {{ list_mailboxes("Mailboxes for alias", helper.alias_mailbox_count(data.alias) , helper.alias_mailboxes(data.alias)) }}
-      {{ show_user(data.alias.user) }}
+        <form method="get">
+            <div class="form-group">
+                <label for="email">UserID or Email to search:</label>
+                <input type="text"
+                       class="form-control"
+                       name="query"
+                       value="{{ email or '' }}" />
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
     </div>
-  {% endif %}
-  {% if data.user %}
+    {% if data.no_match and email %}
 
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found User {{ data.user.email }}</h3>
-      {{ show_user(data.user) }}
-      {{ list_mailboxes("Mailboxes for user", helper.mailbox_count(data.user) , helper.mailbox_list(data.user) ) }}
-      {{ list_alias(helper.alias_count(data.user) ,helper.alias_list(data.user)) }}
-    </div>
-  {% endif %}
-  {% if data.user_audit_log %}
+        <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
+             role="alert">No user, alias or mailbox found for {{ email }}</div>
+    {% endif %}
+    {% if data.alias %}
 
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Audit log entries for user {{ data.query }}</h3>
-      {{ list_user_audit_log(data.user_audit_log) }}
-    </div>
-  {% endif %}
-  {% if data.mailbox_count > 10 %}
+        <div class="border border-dark border-2 mt-1 mb-2 p-3">
+            <h3 class="mb-3">Found Alias {{ data.alias.email }}</h3>
+            {{ list_alias(1,[data.alias]) }}
+            {{ list_alias_audit_log(data.alias_audit_log) }}
+            {{ list_mailboxes("Mailboxes for alias", helper.alias_mailbox_count(data.alias) , helper.alias_mailboxes(data.alias)) }}
+            {{ show_user(data.alias.user) }}
+        </div>
+    {% endif %}
+    {% if data.user %}
 
-    <h3>Found more than 10 mailboxes for {{ email }}. Showing the last 10</h3>
-  {% elif data.mailbox_count > 0 %}
-    <h3>Found {{ data.mailbox_count }} mailbox(es) for {{ email }}</h3>
-  {% endif %}
-  {% for mailbox in data.mailbox %}
+        <div class="border border-dark border-2 mt-1 mb-2 p-3">
+            <h3 class="mb-3">Found User {{ data.user.email }}</h3>
+            {{ show_user(data.user) }}
+            {{ list_mailboxes("Mailboxes for user", helper.mailbox_count(data.user) , helper.mailbox_list(data.user) ) }}
+            {{ list_alias(helper.alias_count(data.user) ,helper.alias_list(data.user)) }}
+        </div>
+    {% endif %}
+    {% if data.user_audit_log %}
 
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found Mailbox {{ mailbox.email }}</h3>
-      {{ list_mailboxes("Mailbox found", 1, [mailbox]) }}
-      {{ show_user(mailbox.user) }}
-    </div>
-  {% endfor %}
-  {% if data.deleted_alias %}
+        <div class="border border-dark border-2 mt-1 mb-2 p-3">
+            <h3 class="mb-3">Audit log entries for user {{ data.query }}</h3>
+            {{ list_user_audit_log(data.user_audit_log) }}
+        </div>
+    {% endif %}
+    {% if data.mailbox_count > 10 %}
 
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found DeletedAlias {{ data.deleted_alias.email }}</h3>
-      {{ show_deleted_alias(data.deleted_alias) }}
-      {{ list_alias_audit_log(data.deleted_alias_audit_log) }}
-    </div>
-  {% endif %}
-  {% if data.domain_deleted_alias %}
+        <h3>Found more than 10 mailboxes for {{ email }}. Showing the last 10</h3>
+    {% elif data.mailbox_count > 0 %}
+        <h3>Found {{ data.mailbox_count }} mailbox(es) for {{ email }}</h3>
+    {% endif %}
+    {% for mailbox in data.mailbox %}
 
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found DomainDeletedAlias {{ data.domain_deleted_alias.email }}</h3>
-      {{ show_domain_deleted_alias(data.domain_deleted_alias) }}
-      {{ list_alias_audit_log(data.domain_deleted_alias_audit_log) }}
-    </div>
-  {% endif %}
+        <div class="border border-dark mt-1 mb-2 p-3">
+            <h3 class="mb-3">Found Mailbox {{ mailbox.email }}</h3>
+            {{ list_mailboxes("Mailbox found", 1, [mailbox]) }}
+            {{ show_user(mailbox.user) }}
+        </div>
+    {% endfor %}
+    {% if data.deleted_alias %}
+
+        <div class="border border-dark mt-1 mb-2 p-3">
+            <h3 class="mb-3">Found DeletedAlias {{ data.deleted_alias.email }}</h3>
+            {{ show_deleted_alias(data.deleted_alias) }}
+            {{ list_alias_audit_log(data.deleted_alias_audit_log) }}
+        </div>
+    {% endif %}
+    {% if data.domain_deleted_alias %}
+
+        <div class="border border-dark mt-1 mb-2 p-3">
+            <h3 class="mb-3">Found DomainDeletedAlias {{ data.domain_deleted_alias.email }}</h3>
+            {{ show_domain_deleted_alias(data.domain_deleted_alias) }}
+            {{ list_alias_audit_log(data.domain_deleted_alias_audit_log) }}
+        </div>
+    {% endif %}
 {% endblock %}
