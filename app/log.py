@@ -44,7 +44,7 @@ class RequestIdFilter(logging.Filter):
         from flask import g, has_request_context
 
         request_id = ""
-        if has_request_context():
+        if has_request_context() and hasattr(g, "request_id"):
             ctx_request_id = getattr(g, "request_id")
             if ctx_request_id:
                 request_id = f"{ctx_request_id} - "
