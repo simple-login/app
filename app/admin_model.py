@@ -955,7 +955,7 @@ class EmailSearchAdmin(BaseView):
             model=User.__class__.__name__,
             model_id=user.id,
             action=AuditLogActionEnum.unlink_user.value,
-            data={"extenal_user_id": external_user_id},
+            data={"external_user_id": external_user_id},
         )
         Session.commit()
 
