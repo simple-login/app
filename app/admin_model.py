@@ -945,8 +945,8 @@ class EmailSearchAdmin(BaseView):
         if user is None:
             flash("User not found", "error")
             return redirect(url_for("admin.email_search.index", query=user_id))
-        extenal_user_id = perform_proton_account_unlink(user, skip_check=True)
-        if not extenal_user_id:
+        external_user_id = perform_proton_account_unlink(user, skip_check=True)
+        if not external_user_id:
             flash("User unlinked", "success")
             return redirect(url_for("admin.email_search.index", query=user_id))
 
@@ -955,7 +955,7 @@ class EmailSearchAdmin(BaseView):
             model=User.__class__.__name__,
             model_id=user.id,
             action=AuditLogActionEnum.unlink_user.value,
-            data={"extenal_user_id": extenal_user_id},
+            data={"extenal_user_id": external_user_id},
         )
         Session.commit()
 
