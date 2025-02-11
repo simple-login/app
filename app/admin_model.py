@@ -48,6 +48,7 @@ from app.models import (
     CustomDomain,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
+from app.proton.proton_unlink import perform_proton_account_unlink
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
@@ -125,7 +126,7 @@ class SLAdminIndexView(AdminIndexView):
         if not current_user.is_authenticated or not current_user.is_admin:
             return redirect(url_for("auth.login", next=request.url))
 
-        return redirect("/admin/email_search")
+        return redirect(url_for("admin.email_search.index"))
 
 
 class UserAdmin(SLModelView):
@@ -917,7 +918,7 @@ class EmailSearchAdmin(BaseView):
     @expose("/", methods=["GET", "POST"])
     def index(self):
         search = EmailSearchResult()
-        email = request.args.get("email")
+        email = request.args.get("query")
         if email is not None and len(email) > 0:
             email = email.strip()
             search = EmailSearchResult.from_request_email(email)
@@ -928,6 +929,37 @@ class EmailSearchAdmin(BaseView):
             data=search,
             helper=EmailSearchHelpers,
         )
+
+    @expose("/partner_unlink", methods=["POST"])
+    def delete_partner_link(self):
+        user_id = request.form.get("user_id")
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+        external_user_id = perform_proton_account_unlink(user, skip_check=True)
+        if not external_user_id:
+            flash("User unlinked", "success")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        AdminAuditLog.create(
+            admin_user_id=user.id,
+            model=User.__class__.__name__,
+            model_id=user.id,
+            action=AuditLogActionEnum.unlink_user.value,
+            data={"external_user_id": external_user_id},
+        )
+        Session.commit()
+
+        return redirect(url_for("admin.email_search.index", query=user_id))
 
 
 class CustomDomainWithValidationData:

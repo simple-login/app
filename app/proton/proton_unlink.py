@@ -13,9 +13,11 @@ def can_unlink_proton_account(user: User) -> bool:
     return (user.flags & User.FLAG_CREATED_FROM_PARTNER) == 0
 
 
-def perform_proton_account_unlink(current_user: User) -> bool:
-    if not can_unlink_proton_account(current_user):
-        return False
+def perform_proton_account_unlink(
+    current_user: User, skip_check: bool = False
+) -> None | str:
+    if not skip_check and not can_unlink_proton_account(current_user):
+        return None
     proton_partner = get_proton_partner()
     partner_user = PartnerUser.get_by(
         user_id=current_user.id, partner_id=proton_partner.id
@@ -31,6 +33,7 @@ def perform_proton_account_unlink(current_user: User) -> bool:
             partner_user.user, EventContent(user_unlinked=UserUnlinked())
         )
         PartnerUser.delete(partner_user.id)
+    external_user_id = partner_user.external_user_id
     Session.commit()
     agent.record_custom_event("AccountUnlinked", {"partner": proton_partner.name})
-    return True
+    return external_user_id
