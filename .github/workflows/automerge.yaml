@@ -1,19 +1,18 @@
-name: automerge
-on:
+name: Auto-merge Fork Syncs
+on: 
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
   automerge:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
+    if: github.actor == 'martadams89'
     steps:
-      - id: automerge
-        name: automerge
-        uses: "pascalgn/automerge-action@v0.16.4"
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          MERGE_DELETE_BRANCH: true
-          MERGE_FORKS: true
-          MERGE_FILTER_AUTHOR: martadams89
-          MERGE_LABELS: ""
+      - uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
