@@ -247,7 +247,7 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
             message=f"Verify mailbox {mailbox_id} ({mailbox.email})",
         )
         if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
-            raise MailboxError("That addres is already in use")
+            raise MailboxError("That address is already in use")
 
     else:
         LOG.i(
@@ -353,6 +353,8 @@ def request_mailbox_email_change(
     check_email_for_mailbox(new_email, user)
     if email_ownership_verified:
         mailbox.email = new_email
+        mailbox.new_email = None
+        mailbox.verified = True
     else:
         mailbox.new_email = new_email
     emit_user_audit_log(

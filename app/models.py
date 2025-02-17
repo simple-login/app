@@ -238,6 +238,7 @@ class AuditLogActionEnum(EnumE):
     disable_user = 9
     enable_user = 10
     stop_trial = 11
+    unlink_user = 12
 
 
 class Phase(EnumE):

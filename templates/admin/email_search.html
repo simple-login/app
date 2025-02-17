@@ -22,7 +22,7 @@
       <tr>
         <td>{{ user.id }}</td>
         <td>
-          <a href="?email={{ user.email }}">{{ user.email }}</a>
+          <a href="?query={{ user.email }}">{{ user.email }}</a>
         </td>
         {% if user.activated %}
 
@@ -43,8 +43,16 @@
         <td>{{ user.updated_at }}</td>
         {% if pu %}
 
-          <td>
-            <a href="?email={{ pu.partner_email }}">{{ pu.partner_email }}</a>
+          <td class="flex">
+            <a href="?query={{ pu.partner_email }}">{{ pu.partner_email }}</a>
+            <form class="d-inline"
+                  action="{{ url_for("admin.email_search.delete_partner_link") }}"
+                  method="POST">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <button type="submit"
+                      onclick="return confirm('Are you sure you would like to unlink the user?');"
+                      class="btn btn-danger d-inline">Unlink</button>
+            </form>
           </td>
         {% else %}
           <td>No</td>
@@ -72,7 +80,7 @@
         <tr>
           <td>{{ mailbox.id }}</td>
           <td>
-            <a href="?email={{ mailbox.email }}">{{ mailbox.email }}</a>
+            <a href="?query={{ mailbox.email }}">{{ mailbox.email }}</a>
           </td>
           <td>{{ "Yes" if mailbox.verified else "No" }}</td>
           <td>{{ mailbox.created_at }}</td>
@@ -101,7 +109,7 @@
         <tr>
           <td>{{ alias.id }}</td>
           <td>
-            <a href="?email={{ alias.email }}">{{ alias.email }}</a>
+            <a href="?query={{ alias.email }}">{{ alias.email }}</a>
           </td>
           <td>{{ "Yes" if alias.enabled else "No" }}</td>
           <td>{{ alias.created_at }}</td>
@@ -181,7 +189,7 @@
           <td>{{ entry.user_id }}</td>
           <td>{{ entry.alias_id }}</td>
           <td>
-            <a href="?email={{ entry.alias_email }}">{{ entry.alias_email }}</a>
+            <a href="?query={{ entry.alias_email }}">{{ entry.alias_email }}</a>
           </td>
           <td>{{ entry.action }}</td>
           <td>{{ entry.message }}</td>
@@ -207,7 +215,7 @@
 
         <tr>
           <td>
-            <a href="?email={{ entry.user_email }}">{{ entry.user_email }}</a>
+            <a href="?query={{ entry.user_email }}">{{ entry.user_email }}</a>
           </td>
           <td>{{ entry.action }}</td>
           <td>{{ entry.message }}</td>
@@ -222,10 +230,10 @@
   <div class="border border-dark border-2 mt-1 mb-2 p-3">
     <form method="get">
       <div class="form-group">
-        <label for="email">Email to search:</label>
+        <label for="email">UserID or Email to search:</label>
         <input type="text"
                class="form-control"
-               name="email"
+               name="query"
                value="{{ email or '' }}" />
       </div>
       <button type="submit" class="btn btn-primary">Submit</button>
