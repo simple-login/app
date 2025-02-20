@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 import arrow
 from dateutil.relativedelta import relativedelta
@@ -31,6 +32,8 @@ def setup_paddle_callback(app: Flask):
         if not paddle_utils.verify_incoming_request(dict(request.form)):
             LOG.e("request not coming from paddle. Request data:%s", dict(request.form))
             return "KO", 400
+
+        sub: Optional[Subscription] = None
 
         if (
             request.form.get("alert_name") == "subscription_created"
@@ -69,14 +72,6 @@ def setup_paddle_callback(app: Flask):
                         request.form.get("next_bill_date"), "YYYY-MM-DD"
                     ).date(),
                     plan=plan,
-                )
-                EventDispatcher.send_event(
-                    user=user,
-                    content=EventContent(
-                        user_plan_change=UserPlanChanged(
-                            plan_end_time=arrow.get(sub.next_bill_date).timestamp
-                        )
-                    ),
                 )
                 emit_user_audit_log(
                     user=user,
@@ -263,6 +258,19 @@ def setup_paddle_callback(app: Flask):
             else:
                 LOG.w("partial subscription_payment_refunded, not handled")
             execute_subscription_webhook(sub.user)
+
+        if sub:
+            if sub.cancelled:
+                plan_end_time = None
+            else:
+                plan_end_time = arrow.get(sub.next_bill_date).timestamp
+
+            EventDispatcher.send_event(
+                user=sub.user,
+                content=EventContent(
+                    user_plan_change=UserPlanChanged(plan_end_time=plan_end_time)
+                ),
+            )
 
         return "OK"
 
