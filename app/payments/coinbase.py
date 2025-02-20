@@ -51,20 +51,24 @@ def handle_coinbase_event(event) -> bool:
     except ValueError:
         user_id = int(float(server_user_id))
 
-    code = event["data"]["code"]
+    code: str = event["data"]["code"]
     user: Optional[User] = User.get(user_id)
     if not user:
         LOG.e("User not found %s", user_id)
         return False
 
-    coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
-        user_id=user_id
-    )
+    create_coinbase_subscription(user, code)
+    return True
 
+
+def create_coinbase_subscription(user: User, code: str) -> CoinbaseSubscription:
+    coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+        user_id=user.id
+    )
     if not coinbase_subscription:
         LOG.d("Create a coinbase subscription for %s", user)
         coinbase_subscription = CoinbaseSubscription.create(
-            user_id=user_id, end_at=arrow.now().shift(years=1), code=code, commit=True
+            user_id=user.id, end_at=arrow.now().shift(years=1), code=code, commit=True
         )
         emit_user_audit_log(
             user=user,
@@ -72,14 +76,7 @@ def handle_coinbase_event(event) -> bool:
             message="Upgraded though Coinbase",
             commit=True,
         )
-        EventDispatcher.send_event(
-            user=user,
-            content=EventContent(
-                user_plan_change=UserPlanChanged(
-                    plan_end_time=coinbase_subscription.end_at.timestamp
-                )
-            ),
-        )
+
         send_email(
             user.email,
             "Your SimpleLogin account has been upgraded",
@@ -109,7 +106,6 @@ def handle_coinbase_event(event) -> bool:
             action=UserAuditLogAction.SubscriptionExtended,
             message="Extended coinbase subscription",
         )
-        Session.commit()
 
         send_email(
             user.email,
@@ -125,6 +121,14 @@ def handle_coinbase_event(event) -> bool:
                 coinbase_subscription=coinbase_subscription,
             ),
         )
+    EventDispatcher.send_event(
+        user=user,
+        content=EventContent(
+            user_plan_change=UserPlanChanged(
+                plan_end_time=coinbase_subscription.end_at.timestamp
+            )
+        ),
+    )
+    Session.commit()
     execute_subscription_webhook(user)
-
-    return True
+    return coinbase_subscription
