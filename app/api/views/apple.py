@@ -9,10 +9,12 @@ from requests import RequestException
 
 from app.api.base import api_bp, require_api_auth
 from app.config import APPLE_API_SECRET, MACAPP_APPLE_API_SECRET
-from app.subscription_webhook import execute_subscription_webhook
 from app.db import Session
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.log import LOG
 from app.models import PlanEnum, AppleSubscription
+from app.subscription_webhook import execute_subscription_webhook
 
 _MONTHLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.monthly"
 _YEARLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.yearly"
@@ -568,6 +570,14 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
             original_transaction_id=original_transaction_id,
             plan=plan,
             product_id=latest_transaction["product_id"],
+        )
+        EventDispatcher.send_event(
+            user=user,
+            content=EventContent(
+                user_plan_change=UserPlanChanged(
+                    plan_end_time=apple_sub.expires_date.timestamp
+                )
+            ),
         )
 
     execute_subscription_webhook(user)

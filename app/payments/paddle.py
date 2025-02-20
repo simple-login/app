@@ -1,8 +1,7 @@
-import arrow
 import json
+
+import arrow
 from dateutil.relativedelta import relativedelta
-
-
 from flask import Flask, request
 
 from app import paddle_utils, paddle_callback
@@ -14,6 +13,8 @@ from app.config import (
 )
 from app.db import Session
 from app.email_utils import send_email, render
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.log import LOG
 from app.models import Subscription, PlanEnum, User, Coupon
 from app.subscription_webhook import execute_subscription_webhook
@@ -58,7 +59,7 @@ def setup_paddle_callback(app: Flask):
 
             if not sub:
                 LOG.d(f"create a new Subscription for user {user}")
-                Subscription.create(
+                sub = Subscription.create(
                     user_id=user.id,
                     cancel_url=request.form.get("cancel_url"),
                     update_url=request.form.get("update_url"),
@@ -68,6 +69,14 @@ def setup_paddle_callback(app: Flask):
                         request.form.get("next_bill_date"), "YYYY-MM-DD"
                     ).date(),
                     plan=plan,
+                )
+                EventDispatcher.send_event(
+                    user=user,
+                    content=EventContent(
+                        user_plan_change=UserPlanChanged(
+                            plan_end_time=arrow.get(sub.next_bill_date).timestamp
+                        )
+                    ),
                 )
                 emit_user_audit_log(
                     user=user,

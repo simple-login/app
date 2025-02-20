@@ -1,7 +1,6 @@
 from typing import Optional
 
 import arrow
-
 from coinbase_commerce.error import WebhookInvalidPayload, SignatureVerificationError
 from coinbase_commerce.webhook import Webhook
 from flask import Flask, request
@@ -9,6 +8,8 @@ from flask import Flask, request
 from app.config import COINBASE_WEBHOOK_SECRET
 from app.db import Session
 from app.email_utils import send_email, render
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.log import LOG
 from app.models import CoinbaseSubscription, User
 from app.subscription_webhook import execute_subscription_webhook
@@ -70,6 +71,14 @@ def handle_coinbase_event(event) -> bool:
             action=UserAuditLogAction.Upgrade,
             message="Upgraded though Coinbase",
             commit=True,
+        )
+        EventDispatcher.send_event(
+            user=user,
+            content=EventContent(
+                user_plan_change=UserPlanChanged(
+                    plan_end_time=coinbase_subscription.end_at.timestamp
+                )
+            ),
         )
         send_email(
             user.email,
