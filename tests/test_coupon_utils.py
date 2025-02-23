@@ -66,6 +66,31 @@ def test_use_coupon_extend_manual_sub():
     assert left.days > 364
 
 
+def test_use_coupon_extend_expired_manual_sub():
+    user = create_new_user()
+    initial_end = arrow.now().shift(days=-15)
+    ManualSubscription.create(
+        user_id=user.id,
+        end_at=initial_end,
+        flush=True,
+    )
+    code = random_string(10)
+    Coupon.create(code=code, nb_year=1, commit=True)
+
+    coupon = redeem_coupon(code, user)
+    assert coupon
+
+    coupon = Coupon.get_by(code=code)
+    assert coupon
+    assert coupon.used
+    assert coupon.used_by_user_id == user.id
+
+    sub = user.get_active_subscription()
+    assert isinstance(sub, ManualSubscription)
+    left = sub.end_at - initial_end
+    assert left.days > 364
+
+
 def test_coupon_with_subscription():
     user = create_new_user()
     end_at = arrow.utcnow().shift(days=1).replace(hour=0, minute=0, second=0)

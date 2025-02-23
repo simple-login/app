@@ -71,13 +71,18 @@ def redeem_coupon(coupon_code: str, user: User) -> Optional[Coupon]:
         else:
             sub.end_at = arrow.now().shift(years=coupon.nb_year, days=1)
     else:
-        sub = ManualSubscription.create(
-            user_id=user.id,
-            end_at=arrow.now().shift(years=coupon.nb_year, days=1),
-            comment="using coupon code",
-            is_giveaway=coupon.is_giveaway,
-            commit=True,
-        )
+        # There may be an expired manual subscription
+        sub = ManualSubscription.get_by(user_id=user.id)
+        end_at = arrow.now().shift(years=coupon.nb_year, days=1)
+        if sub:
+            sub.end_at = end_at
+        else:
+            sub = ManualSubscription.create(
+                user_id=user.id,
+                end_at=end_at,
+                comment="using coupon code",
+                is_giveaway=coupon.is_giveaway,
+            )
     emit_user_audit_log(
         user=user,
         action=UserAuditLogAction.Upgrade,
