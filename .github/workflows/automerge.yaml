@@ -3,16 +3,16 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  pull-requests: write
-  contents: write
-
 jobs:
   automerge:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
     if: github.actor == 'martadams89'
     steps:
       - uses: peter-evans/enable-pull-request-automerge@v3
         with:
           pull-request-number: ${{ github.event.pull_request.number }}
           merge-method: squash
+          token: ${{ secrets.FORK_PAT }}
