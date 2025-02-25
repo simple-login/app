@@ -2786,7 +2786,6 @@ class Job(Base, ModelMixin):
     )
 
     __table_args__ = (
-        Index("ix_state_run_at_taken_at", state, run_at, taken_at),
         Index("ix_state_run_at_taken_at_priority", state, run_at, taken_at, priority),
     )
 
