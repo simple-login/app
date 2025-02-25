@@ -24,6 +24,7 @@ from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
 from app.monitor_utils import send_version_event
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from events.event_sink import HttpEventSink
 from server import create_light_app
 
 
@@ -309,7 +310,7 @@ def process_job(job: Job):
     elif job.name == config.JOB_SEND_EVENT_TO_WEBHOOK:
         send_job = SendEventToWebhookJob.create_from_job(job)
         if send_job:
-            send_job.run()
+            send_job.run(HttpEventSink())
     else:
         LOG.e("Unknown job name %s", job.name)
 
@@ -338,17 +339,19 @@ def get_jobs_to_run(taken_before_time: arrow.Arrow) -> List[Job]:
 def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
     sql = """
         UPDATE job
-        SET taken_time = :taken_time, attempts = attempts + 1, state = :taken_state
-        WHERE
-            id = :job_id AND
-            ( state = :state_ready OR (state=:taken_state AND taken_at < :taken_before_time) )
+        SET
+            taken_at = :taken_time,
+            attempts = attempts + 1,
+            state = :taken_state
+        WHERE id = :job_id
+          AND (state = :ready_state OR (state=:taken_state AND taken_at < :taken_before_time))
         """
     args = {
-        "taken_time": arrow.now().datetime(),
+        "taken_time": arrow.now().datetime,
         "job_id": job.id,
         "ready_state": JobState.ready.value,
         "taken_state": JobState.taken.value,
-        "taken_before_time": taken_before_time,
+        "taken_before_time": taken_before_time.datetime,
     }
     try:
         res = Session.execute(sql, args)
@@ -370,7 +373,7 @@ if __name__ == "__main__":
 
             jobs_done = 0
             for job in get_jobs_to_run(taken_before_time):
-                if not job.mark_as_taken(taken_before_time):
+                if not take_job(job, taken_before_time):
                     continue
                 LOG.d("Take job %s", job)
                 process_job(job)
