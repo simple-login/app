@@ -12,7 +12,7 @@ packages = [
 ]
 include = ["templates/*", "templates/**/*", "local_data/*.txt"]
 
-requires-python = "~=3.10"
+requires-python = "~=3.11"
 
 dependencies = [
     "flask ~= 1.1.2",
@@ -24,7 +24,7 @@ dependencies = [
     "python-dotenv ~= 0.14.0",
     "ipython ~= 7.31.1",
     "sqlalchemy_utils ~= 0.36.8",
-    "psycopg2-binary ~= 2.9.3",
+    "psycopg2-binary ~= 2.9.10",
     "sentry_sdk ~= 2.20.0",
     "blinker ~= 1.4",
     "arrow ~= 0.16.0",
