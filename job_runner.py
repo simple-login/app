@@ -333,7 +333,7 @@ def get_jobs_to_run(taken_before_time: arrow.Arrow) -> List[Job]:
             or_(Job.run_at.is_(None), and_(Job.run_at <= run_at_earliest)),
         )
     )
-    return query.all()
+    return query.order_by(Job.priority.desc()).order_by(Job.run_at.asc()).all()
 
 
 def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
