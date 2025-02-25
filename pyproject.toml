@@ -12,7 +12,7 @@ packages = [
 ]
 include = ["templates/*", "templates/**/*", "local_data/*.txt"]
 
-requires-python = "~=3.11"
+requires-python = "~=3.12"
 
 dependencies = [
     "flask ~= 1.1.2",
@@ -36,7 +36,7 @@ dependencies = [
     "watchtower ~= 0.8.0",
     "sqlalchemy-utils == 0.36.8",
     "jwcrypto ~= 0.8",
-    "yacron~=0.11.2",
+    "yacron~=0.19.0",
     "flask-debugtoolbar ~= 0.11.0",
     "requests_oauthlib ~= 1.3.0",
     "pyopenssl ~= 19.1.0",
@@ -77,10 +77,11 @@ dependencies = [
     "itsdangerous ~= 1.1.0",
     "werkzeug ~= 1.0.1",
     "alembic ~= 1.4.3",
+    "six ~= 1.17.0",
 ]
 
 [tool.black]
-target-version = ['py310']
+target-version = ['py312']
 exclude = '''
 (
  /(
@@ -127,7 +128,7 @@ ignore = "H006,H013,H016,H017,H019,H021,H025,H030,H031,T003,J004,J018,T001"
 dev-dependencies = [
     "pytest ~= 7.0.0",
     "pytest-cov ~= 3.0.0",
-    "pre-commit ~= 2.17.0",
+    "pre-commit ~= 4.1.0",
     "black ~= 22.1.0",
     "djlint==1.34.1",
     "pylint ~= 2.14.4",
