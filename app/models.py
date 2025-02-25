@@ -275,6 +275,12 @@ class AliasDeleteReason(EnumE):
     CustomDomainDeleted = 5
 
 
+class JobPriority(EnumE):
+    Low = 1
+    Default = 50
+    High = 100
+
+
 class IntEnumType(sa.types.TypeDecorator):
     impl = sa.Integer
 
@@ -2772,8 +2778,17 @@ class Job(Base, ModelMixin):
     )
     attempts = sa.Column(sa.Integer, nullable=False, server_default="0", default=0)
     taken_at = sa.Column(ArrowType, nullable=True)
+    priority = sa.Column(
+        IntEnumType(JobPriority),
+        default=JobPriority.Default,
+        server_default=str(JobPriority.Default.value),
+        nullable=False,
+    )
 
-    __table_args__ = (Index("ix_state_run_at_taken_at", state, run_at, taken_at),)
+    __table_args__ = (
+        Index("ix_state_run_at_taken_at", state, run_at, taken_at),
+        Index("ix_state_run_at_taken_at_priority", state, run_at, taken_at, priority),
+    )
 
     def __repr__(self):
         return f"<Job {self.id} {self.name} {self.payload}>"
