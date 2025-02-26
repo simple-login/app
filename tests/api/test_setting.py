@@ -55,10 +55,10 @@ def test_update_settings_random_alias_default_domain(flask_client):
     assert r.status_code == 400
 
     r = flask_client.patch(
-        "/api/setting", json={"random_alias_default_domain": "d1.test"}
+        "/api/setting", json={"random_alias_default_domain": "d1.lan"}
     )
     assert r.status_code == 200
-    assert user.default_random_alias_domain() == "d1.test"
+    assert user.default_random_alias_domain() == "d1.lan"
 
     r = flask_client.patch(
         "/api/setting", json={"random_alias_default_domain": custom_domain.domain}

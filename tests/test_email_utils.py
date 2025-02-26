@@ -79,16 +79,16 @@ def test_get_email_domain_part():
 def test_email_belongs_to_alias_domains():
     # default alias domain
     assert can_create_directory_for_address("ab@sl.lan")
-    assert not can_create_directory_for_address("ab@not-exist.local")
+    assert not can_create_directory_for_address("ab@not-exist.lan")
 
-    assert can_create_directory_for_address("hey@d1.test")
-    assert not can_create_directory_for_address("hey@d3.test")
+    assert can_create_directory_for_address("hey@d1.lan")
+    assert not can_create_directory_for_address("hey@d3.lan")
 
 
 def test_can_be_used_as_personal_email(flask_client):
     # default alias domain
     assert not email_can_be_used_as_mailbox("ab@sl.lan")
-    assert not email_can_be_used_as_mailbox("hey@d1.test")
+    assert not email_can_be_used_as_mailbox("hey@d1.lan")
 
     # custom domain as SL domain
     domain = random_domain()
