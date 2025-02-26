@@ -60,7 +60,7 @@ def login(flask_client, user: Optional[User] = None) -> User:
 
 
 def random_domain() -> str:
-    return random_token() + ".test"
+    return random_token() + ".lan"
 
 
 def random_token(length: int = 10) -> str:

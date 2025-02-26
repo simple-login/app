@@ -115,7 +115,7 @@ def test_can_be_used_as_personal_email(flask_client):
 
 
 def test_disabled_user_prevents_email_from_being_used_as_mailbox():
-    email = f"user_{random_token(10)}@mailbox.test"
+    email = f"user_{random_token(10)}@mailbox.lan"
     assert email_can_be_used_as_mailbox(email)
     user = create_new_user(email)
     user.disabled = True
@@ -124,7 +124,7 @@ def test_disabled_user_prevents_email_from_being_used_as_mailbox():
 
 
 def test_disabled_user_with_secondary_mailbox_prevents_email_from_being_used_as_mailbox():
-    email = f"user_{random_token(10)}@mailbox.test"
+    email = f"user_{random_token(10)}@mailbox.lan"
     assert email_can_be_used_as_mailbox(email)
     user = create_new_user()
     Mailbox.create(user_id=user.id, email=email)
