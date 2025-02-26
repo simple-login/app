@@ -2,6 +2,7 @@
 Run scheduled jobs.
 Not meant for running job at precise time (+- 1h)
 """
+
 import time
 from typing import List, Optional
 
@@ -26,6 +27,8 @@ from app.monitor_utils import send_version_event
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from events.event_sink import HttpEventSink
 from server import create_light_app
+
+_MAX_JOBS_PER_BATCH = 50
 
 
 def onboarding_send_from_alias(user):
@@ -333,7 +336,12 @@ def get_jobs_to_run(taken_before_time: arrow.Arrow) -> List[Job]:
             or_(Job.run_at.is_(None), and_(Job.run_at <= run_at_earliest)),
         )
     )
-    return query.order_by(Job.priority.desc()).order_by(Job.run_at.asc()).all()
+    return (
+        query.order_by(Job.priority.desc())
+        .order_by(Job.run_at.asc())
+        .limit(_MAX_JOBS_PER_BATCH)
+        .all()
+    )
 
 
 def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
