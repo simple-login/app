@@ -1801,11 +1801,11 @@ wheels = [
 
 [[package]]
 name = "ruamel-yaml"
-version = "0.16.12"
+version = "0.17.4"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/17/2f/f38332bf6ba751d1c8124ea70681d2b2326d69126d9058fbd9b4c434d268/ruamel.yaml-0.16.12.tar.gz", hash = "sha256:076cc0bc34f1966d920a49f18b52b6ad559fbe656a0748e3535cf7b3f29ebf9e", size = 147355 }
+sdist = { url = "https://files.pythonhosted.org/packages/62/cf/148028462ab88a71046ba0a30780357ae9e07125863ea9ca7808f1ea3798/ruamel.yaml-0.17.4.tar.gz", hash = "sha256:44bc6b54fddd45e4bc0619059196679f9e8b79c027f4131bb072e6a22f4d5e28", size = 119758 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/39/186f14f3836ac5d2a6a042c8de69988770e8b9abb537610edc429e4914aa/ruamel.yaml-0.16.12-py2.py3-none-any.whl", hash = "sha256:012b9470a0ea06e4e44e99e7920277edf6b46eee0232a04487ea73a7386340a5", size = 111129 },
+    { url = "https://files.pythonhosted.org/packages/29/4e/c3105bbbbc662f6a671a505f00ec771e93b5254f09fbb06002af9087071a/ruamel.yaml-0.17.4-py3-none-any.whl", hash = "sha256:ac79fb25f5476e8e9ed1c53b8a2286d2c3f5dde49eb37dbcee5c7eb6a8415a22", size = 101915 },
 ]
 
 [[package]]
@@ -1931,6 +1931,7 @@ dependencies = [
     { name = "sentry-sdk" },
     { name = "sqlalchemy" },
     { name = "sqlalchemy-utils" },
+    { name = "strictyaml" },
     { name = "tldextract" },
     { name = "twilio" },
     { name = "unidecode" },
@@ -2009,6 +2010,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = "~=1.3.24" },
     { name = "sqlalchemy-utils", specifier = "==0.36.8" },
     { name = "sqlalchemy-utils", specifier = "~=0.36.8" },
+    { name = "strictyaml", specifier = "~=1.7.3" },
     { name = "tldextract", specifier = "~=3.1.2" },
     { name = "twilio", specifier = "~=7.3.2" },
     { name = "unidecode", specifier = "~=1.1.1" },
@@ -2066,13 +2068,15 @@ wheels = [
 
 [[package]]
 name = "strictyaml"
-version = "1.1.0"
+version = "1.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "python-dateutil" },
-    { name = "ruamel-yaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a6/94/4030aaa69482a2c0780d03e354a8f8273bd49d4c99a3b5fd73710283cf7a/strictyaml-1.1.0.tar.gz", hash = "sha256:6b07dbd4f77ab023ed4167c43ffc1b9f9354fb6075cc6ff3b91fefcbb80342ca", size = 50092 }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/08/efd28d49162ce89c2ad61a88bd80e11fb77bc9f6c145402589112d38f8af/strictyaml-1.7.3.tar.gz", hash = "sha256:22f854a5fcab42b5ddba8030a0e4be51ca89af0267961c8d6cfa86395586c407", size = 115206 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/96/7c/a81ef5ef10978dd073a854e0fa93b5d8021d0594b639cc8f6453c3c78a1d/strictyaml-1.7.3-py3-none-any.whl", hash = "sha256:fb5c8a4edb43bebb765959e420f9b3978d7f1af88c80606c03fb420888f5d1c7", size = 123917 },
+]
 
 [[package]]
 name = "tld"

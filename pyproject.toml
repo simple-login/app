@@ -78,6 +78,7 @@ dependencies = [
     "werkzeug ~= 1.0.1",
     "alembic ~= 1.4.3",
     "limits ~= 4.0.1",
+    "strictyaml ~= 1.7.3",
 ]
 
 [tool.black]
