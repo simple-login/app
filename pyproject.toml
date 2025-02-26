@@ -77,7 +77,6 @@ dependencies = [
     "itsdangerous ~= 1.1.0",
     "werkzeug ~= 1.0.1",
     "alembic ~= 1.4.3",
-    "six ~= 1.17.0",
     "limits ~= 4.0.1",
 ]
 
