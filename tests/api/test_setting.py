@@ -15,7 +15,7 @@ def test_get_setting(flask_client):
     assert r.json == {
         "alias_generator": "word",
         "notification": True,
-        "random_alias_default_domain": "sl.local",
+        "random_alias_default_domain": "sl.lan",
         "sender_format": "AT",
         "random_alias_suffix": "word",
     }
@@ -47,7 +47,7 @@ def test_update_settings_random_alias_default_domain(flask_client):
     custom_domain = CustomDomain.create(
         domain=random_domain(), verified=True, user_id=user.id, flush=True
     )
-    assert user.default_random_alias_domain() == "sl.local"
+    assert user.default_random_alias_domain() == "sl.lan"
 
     r = flask_client.patch(
         "/api/setting", json={"random_alias_default_domain": "invalid"}

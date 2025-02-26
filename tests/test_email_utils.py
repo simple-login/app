@@ -78,7 +78,7 @@ def test_get_email_domain_part():
 
 def test_email_belongs_to_alias_domains():
     # default alias domain
-    assert can_create_directory_for_address("ab@sl.local")
+    assert can_create_directory_for_address("ab@sl.lan")
     assert not can_create_directory_for_address("ab@not-exist.local")
 
     assert can_create_directory_for_address("hey@d1.test")
@@ -87,7 +87,7 @@ def test_email_belongs_to_alias_domains():
 
 def test_can_be_used_as_personal_email(flask_client):
     # default alias domain
-    assert not email_can_be_used_as_mailbox("ab@sl.local")
+    assert not email_can_be_used_as_mailbox("ab@sl.lan")
     assert not email_can_be_used_as_mailbox("hey@d1.test")
 
     # custom domain as SL domain
@@ -592,8 +592,8 @@ def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
 
 
 def test_normalize_reply_email(flask_client):
-    assert normalize_reply_email("re+abcd@sl.local") == "re+abcd@sl.local"
-    assert normalize_reply_email('re+"ab cd"@sl.local') == "re+_ab_cd_@sl.local"
+    assert normalize_reply_email("re+abcd@sl.lan") == "re+abcd@sl.lan"
+    assert normalize_reply_email('re+"ab cd"@sl.lan') == "re+_ab_cd_@sl.lan"
 
 
 def test_get_encoding():
@@ -669,7 +669,7 @@ def test_should_disable(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
     for _ in range(20):
@@ -702,7 +702,7 @@ def test_should_disable_bounces_every_day(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
     for i in range(9):
@@ -730,7 +730,7 @@ def test_should_disable_bounces_account(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
 
@@ -758,7 +758,7 @@ def test_should_disable_bounce_consecutive_days(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
 
