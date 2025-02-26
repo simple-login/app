@@ -34,4 +34,4 @@ for i in range(tests):
 
 end = time.time()
 time_taken = end - start
-print(f"Took {time_taken} -> {time_taken/tests} per test")
+print(f"Took {time_taken} -> {time_taken / tests} per test")

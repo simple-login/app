@@ -5,6 +5,7 @@ The step-to-step guide can be found on https://simplelogin.io/docs/siwsl/app/
 This example is based on
 https://requests-oauthlib.readthedocs.io/en/latest/examples/real_world_example.html
 """
+
 import os
 
 from flask import Flask, request, redirect, session, url_for
