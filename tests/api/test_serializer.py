@@ -112,14 +112,14 @@ def test_get_alias_infos_with_pagination_v3_no_duplicate_when_empty_contact(
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
     )
 
     Contact.create(
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact2@example.com",
-        reply_email="rep2@sl.local",
+        reply_email="rep2@sl.lan",
     )
 
     alias_infos = get_alias_infos_with_pagination_v3(user)

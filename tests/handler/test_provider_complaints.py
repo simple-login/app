@@ -37,7 +37,7 @@ def prepare_complaint(
     contact = Contact.create(
         user_id=alias.user.id,
         alias_id=alias.id,
-        website_email=f"contact{random.random()}@mailbox.test",
+        website_email=f"contact{random.random()}@mailbox.lan",
         reply_email="d@e.f",
         commit=True,
     )

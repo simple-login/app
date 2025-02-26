@@ -647,8 +647,8 @@ def test_get_alias(flask_client):
 
 
 def test_is_reverse_alias(flask_client):
-    assert is_reverse_alias("ra+abcd@sl.local")
-    assert is_reverse_alias("reply+abcd@sl.local")
+    assert is_reverse_alias("ra+abcd@sl.lan")
+    assert is_reverse_alias("reply+abcd@sl.lan")
 
     assert not is_reverse_alias("ra+abcd@test.org")
     assert not is_reverse_alias("reply+abcd@test.org")

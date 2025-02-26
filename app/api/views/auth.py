@@ -1,7 +1,6 @@
 import secrets
 import string
 
-import facebook
 import google.oauth2.credentials
 import googleapiclient.discovery
 from flask import jsonify, request
@@ -261,6 +260,8 @@ def auth_facebook():
         }
 
     """
+    import facebook
+
     data = request.get_json()
     if not data:
         return jsonify(error="request body cannot be empty"), 400

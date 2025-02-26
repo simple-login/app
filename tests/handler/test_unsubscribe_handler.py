@@ -49,7 +49,7 @@ def test_old_subject_block_contact():
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email=f"{random()}@sl.local",
+        reply_email=f"{random()}@sl.lan",
         block_forward=False,
         commit=True,
     )
@@ -92,7 +92,7 @@ def test_new_subject_block_contact():
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email=f"{random()}@sl.local",
+        reply_email=f"{random()}@sl.lan",
         block_forward=False,
         commit=True,
     )
@@ -172,7 +172,7 @@ def test_request_disable_contact(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email=f"{random()}@sl.local",
+        reply_email=f"{random()}@sl.lan",
         block_forward=False,
         commit=True,
     )

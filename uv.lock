@@ -180,6 +180,12 @@ wheels = [
 ]
 
 [[package]]
+name = "authres"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/29/e28209b5d3d56c102845cca5a4a3abaf2724f79e83476a52b94d775ecce6/authres-1.2.0.tar.gz", hash = "sha256:93d1b995ad7ce21e62db649f361048125dd6022563a0ae8a23909465f1fd25b7", size = 23226 }
+
+[[package]]
 name = "backcall"
 version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -227,9 +233,12 @@ wheels = [
 
 [[package]]
 name = "blinker"
-version = "1.4"
+version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1b/51/e2a9f3b757eb802f61dc1f2b09c8c99f6eb01cf06416c0671253536517b6/blinker-1.4.tar.gz", hash = "sha256:471aee25f3992bd325afa3772f1063dbdbbca947a041b8b89466dc00d606f8b6", size = 111476 }
+sdist = { url = "https://files.pythonhosted.org/packages/21/28/9b3f50ce0e048515135495f198351908d99540d69bfdc8c1d15b73dc55ce/blinker-1.9.0.tar.gz", hash = "sha256:b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf", size = 22460 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/cb/f2ad4230dc2eb1a74edf38f1a38b9b52277f75bef262d8908e60d957e13c/blinker-1.9.0-py3-none-any.whl", hash = "sha256:ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc", size = 8458 },
+]
 
 [[package]]
 name = "boto3"
@@ -497,11 +506,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/b5/33/9c60f3a34d4d7237e
 
 [[package]]
 name = "dnspython"
-version = "2.0.0"
+version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/67/d0/639a9b5273103a18c5c68a7a9fc02b01cffa3403e72d553acec444f85d5b/dnspython-2.0.0.zip", hash = "sha256:044af09374469c3a39eeea1a146e8cac27daec951f1f1f157b1962fc7cb9d1b7", size = 324706 }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/4a/263763cb2ba3816dd94b08ad3a33d5fdae34ecb856678773cc40a3605829/dnspython-2.7.0.tar.gz", hash = "sha256:ce9c432eda0dc91cf618a5cedf1a4e142651196bbcd2c80e89ed5a907e5cfaf1", size = 345197 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/49/cb426577c28ca3e35332815b795a99e467523843fc83cc85ca0d6be2515a/dnspython-2.0.0-py3-none-any.whl", hash = "sha256:40bb3c24b9d4ec12500f0124288a65df232a3aa749bb0c39734b782873a2544d", size = 208262 },
+    { url = "https://files.pythonhosted.org/packages/68/1b/e0a87d256e40e8c888847551b20a017a6b98139178505dc7ffb96f04e954/dnspython-2.7.0-py3-none-any.whl", hash = "sha256:b4c34b7d10b51bcc3a5071e7b8dee77939f1e878477eeecc965e9835f63c6c86", size = 313632 },
 ]
 
 [[package]]
@@ -515,15 +524,15 @@ wheels = [
 
 [[package]]
 name = "email-validator"
-version = "1.1.3"
+version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dnspython" },
     { name = "idna" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/25/f3/017ab4619ee83e79fc1c9572ac601671cf9cfb33a0523021b46851b4d9a4/email_validator-1.1.3.tar.gz", hash = "sha256:aa237a65f6f4da067119b7df3f13e89c25c051327b2b5b66dc075f33d62480d7", size = 24484 }
+sdist = { url = "https://files.pythonhosted.org/packages/48/ce/13508a1ec3f8bb981ae4ca79ea40384becc868bfae97fd1c942bb3a001b1/email_validator-2.2.0.tar.gz", hash = "sha256:cb690f344c617a714f22e66ae771445a1ceb46821152df8e165c5f9a364582b7", size = 48967 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9e/e4/e01e92092fdac940f10fa4c8ac3481bf70fc74023a76f5c72020c9445e68/email_validator-1.1.3-py2.py3-none-any.whl", hash = "sha256:5675c8ceb7106a37e40e2698a57c056756bf3f272cfa8682a4f87ebd95d8440b", size = 18318 },
+    { url = "https://files.pythonhosted.org/packages/d7/ee/bf0adb559ad3c786f12bcbc9296b3f5675f529199bef03e2df281fa1fadb/email_validator-2.2.0-py3-none-any.whl", hash = "sha256:561977c2d73ce3611850a06fa56b414621e0c8faa9d66f2611407d87465da631", size = 33521 },
 ]
 
 [[package]]
@@ -1488,6 +1497,15 @@ wheels = [
 ]
 
 [[package]]
+name = "py3dns"
+version = "4.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/67/d7e745a5248bd7ecf2b76d3a1c8280255cbbdcb21174b171cf3c87740836/py3dns-4.0.2.tar.gz", hash = "sha256:98652e80ecec143c60f78f0e6b341631ca9a7560edd8dddfc864c02902618a39", size = 33982 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/43/1ff28f5302a0f423d4210cacc1f12fb416b6ba1f4c7107e020d264acb625/py3dns-4.0.2-py3-none-any.whl", hash = "sha256:36bffe62b59a72cfa09c03f0bd3473e0126f20ee4285d14c07415dbf6f5fd571", size = 29589 },
+]
+
+[[package]]
 name = "pyasn1"
 version = "0.4.8"
 source = { registry = "https://pypi.org/simple" }
@@ -1604,9 +1622,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/bc/7c/d724ef1ec3ab2125f
 
 [[package]]
 name = "pyspf"
-version = "2.0.14"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d4/dc/5b3838ff90474e21fe0914920c53430f73402e07d6598ea228e61b74963e/pyspf-2.0.14.tar.gz", hash = "sha256:57a7ef01bda090173aafb6af0106251686ed73f03db4e911fcd34c57fc347186", size = 69446 }
+version = "2.1.0"
+source = { git = "https://github.com/sdgathman/pyspf.git?rev=665a6df079485a9824be0829e7d71088453db7f6#665a6df079485a9824be0829e7d71088453db7f6" }
+dependencies = [
+    { name = "authres" },
+    { name = "py3dns" },
+]
 
 [[package]]
 name = "pytest"
@@ -1960,15 +1981,15 @@ requires-dist = [
     { name = "alembic", specifier = "~=1.4.3" },
     { name = "arrow", specifier = "~=0.16.0" },
     { name = "bcrypt", specifier = "~=3.2.0" },
-    { name = "blinker", specifier = "~=1.4" },
+    { name = "blinker", specifier = "~=1.9.0" },
     { name = "boto3", specifier = "~=1.35.37" },
     { name = "coinbase-commerce", specifier = "~=1.0.1" },
     { name = "coloredlogs", specifier = "~=14.0" },
     { name = "cryptography", specifier = "~=37.0.1" },
     { name = "deprecated", specifier = "~=1.2.13" },
     { name = "dkimpy", specifier = "~=1.0.5" },
-    { name = "dnspython", specifier = "==2.0.0" },
-    { name = "email-validator", specifier = "~=1.1.3" },
+    { name = "dnspython", specifier = "~=2.7.0" },
+    { name = "email-validator", specifier = "~=2.2.0" },
     { name = "facebook-sdk", specifier = "~=3.1.0" },
     { name = "flanker", specifier = "~=0.9.11" },
     { name = "flask", specifier = "~=1.1.2" },
@@ -2000,7 +2021,7 @@ requires-dist = [
     { name = "pyopenssl", specifier = "~=19.1.0" },
     { name = "pyotp", specifier = "~=2.4.0" },
     { name = "pyre2", specifier = "~=0.3.6" },
-    { name = "pyspf", specifier = "~=2.0.14" },
+    { name = "pyspf", git = "https://github.com/sdgathman/pyspf.git?rev=665a6df079485a9824be0829e7d71088453db7f6#665a6df079485a9824be0829e7d71088453db7f6" },
     { name = "python-dotenv", specifier = "~=0.14.0" },
     { name = "python-gnupg", specifier = "~=0.4.6" },
     { name = "redis", specifier = "==4.6.0" },
