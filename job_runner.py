@@ -11,6 +11,7 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql.expression import or_, and_
 
 from app import config
+from app.constants import JobType
 from app.db import Session
 from app.email_utils import (
     send_email,
@@ -196,7 +197,7 @@ SimpleLogin team.
 
 def process_job(job: Job):
     send_version_event("job_runner")
-    if job.name == config.JOB_ONBOARDING_1:
+    if job.name == JobType.ONBOARDING_1.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
 
@@ -205,7 +206,7 @@ def process_job(job: Job):
         if user and user.notification and user.activated:
             LOG.d("send onboarding send-from-alias email to user %s", user)
             onboarding_send_from_alias(user)
-    elif job.name == config.JOB_ONBOARDING_2:
+    elif job.name == JobType.ONBOARDING_2.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
 
@@ -214,7 +215,7 @@ def process_job(job: Job):
         if user and user.notification and user.activated:
             LOG.d("send onboarding mailbox email to user %s", user)
             onboarding_mailbox(user)
-    elif job.name == config.JOB_ONBOARDING_4:
+    elif job.name == JobType.ONBOARDING_4.value:
         user_id = job.payload.get("user_id")
         user: User = User.get(user_id)
 
@@ -229,11 +230,11 @@ def process_job(job: Job):
                 LOG.d("send onboarding pgp email to user %s", user)
                 onboarding_pgp(user)
 
-    elif job.name == config.JOB_BATCH_IMPORT:
+    elif job.name == JobType.BATCH_IMPORT.value:
         batch_import_id = job.payload.get("batch_import_id")
         batch_import = BatchImport.get(batch_import_id)
         handle_batch_import(batch_import)
-    elif job.name == config.JOB_DELETE_ACCOUNT:
+    elif job.name == JobType.DELETE_ACCOUNT.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
 
@@ -252,10 +253,10 @@ def process_job(job: Job):
         )
         User.delete(user.id)
         Session.commit()
-    elif job.name == config.JOB_DELETE_MAILBOX:
+    elif job.name == JobType.DELETE_MAILBOX.value:
         delete_mailbox_job(job)
 
-    elif job.name == config.JOB_DELETE_DOMAIN:
+    elif job.name == JobType.DELETE_DOMAIN.value:
         custom_domain_id = job.payload.get("custom_domain_id")
         custom_domain: Optional[CustomDomain] = CustomDomain.get(custom_domain_id)
         if not custom_domain:
@@ -292,17 +293,17 @@ def process_job(job: Job):
     """,
                 retries=3,
             )
-    elif job.name == config.JOB_SEND_USER_REPORT:
+    elif job.name == JobType.SEND_USER_REPORT.value:
         export_job = ExportUserDataJob.create_from_job(job)
         if export_job:
             export_job.run()
-    elif job.name == config.JOB_SEND_PROTON_WELCOME_1:
+    elif job.name == JobType.SEND_PROTON_WELCOME_1.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
         if user and user.activated:
             LOG.d("Send proton welcome email to user %s", user)
             welcome_proton(user)
-    elif job.name == config.JOB_SEND_ALIAS_CREATION_EVENTS:
+    elif job.name == JobType.SEND_ALIAS_CREATION_EVENTS.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
         if user and user.activated:
@@ -310,7 +311,7 @@ def process_job(job: Job):
             send_alias_creation_events_for_user(
                 user, dispatcher=PostgresDispatcher.get()
             )
-    elif job.name == config.JOB_SEND_EVENT_TO_WEBHOOK:
+    elif job.name == JobType.SEND_EVENT_TO_WEBHOOK.value:
         send_job = SendEventToWebhookJob.create_from_job(job)
         if send_job:
             send_job.run(HttpEventSink())

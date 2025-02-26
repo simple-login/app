@@ -5,7 +5,7 @@ from typing import Optional
 
 import arrow
 
-from app import config
+from app.constants import JobType
 from app.errors import ProtonPartnerNotSetUp
 from app.events.generated import event_pb2
 from app.events.generated.event_pb2 import EventContent
@@ -60,7 +60,7 @@ class SendEventToWebhookJob:
     def store_job_in_db(self, run_at: Optional[arrow.Arrow]) -> Job:
         stub = self._event.SerializeToString()
         return Job.create(
-            name=config.JOB_SEND_EVENT_TO_WEBHOOK,
+            name=JobType.SEND_EVENT_TO_WEBHOOK.value,
             payload={
                 "user_id": self._user.id,
                 "event": base64.b64encode(stub).decode("utf-8"),
