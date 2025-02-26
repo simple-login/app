@@ -5,6 +5,7 @@ import arrow
 import pytest
 
 from app import mailbox_utils, config
+from app.constants import JobType
 from app.db import Session
 from app.mail_sender import mail_sender
 from app.mailbox_utils import (
@@ -231,7 +232,7 @@ def test_delete_with_no_transfer():
     mailbox_utils.delete_mailbox(user, mailbox.id, transfer_mailbox_id=None)
     job = Session.query(Job).order_by(Job.id.desc()).first()
     assert job is not None
-    assert job.name == config.JOB_DELETE_MAILBOX
+    assert job.name == JobType.DELETE_MAILBOX.value
     assert job.payload["mailbox_id"] == mailbox.id
     assert job.payload["transfer_mailbox_id"] is None
 
@@ -252,13 +253,13 @@ def test_delete_with_transfer():
     )
     job = Session.query(Job).order_by(Job.id.desc()).first()
     assert job is not None
-    assert job.name == config.JOB_DELETE_MAILBOX
+    assert job.name == JobType.DELETE_MAILBOX.value
     assert job.payload["mailbox_id"] == mailbox.id
     assert job.payload["transfer_mailbox_id"] == transfer_mailbox.id
     mailbox_utils.delete_mailbox(user, mailbox.id, transfer_mailbox_id=None)
     job = Session.query(Job).order_by(Job.id.desc()).first()
     assert job is not None
-    assert job.name == config.JOB_DELETE_MAILBOX
+    assert job.name == JobType.DELETE_MAILBOX.value
     assert job.payload["mailbox_id"] == mailbox.id
     assert job.payload["transfer_mailbox_id"] is None
 

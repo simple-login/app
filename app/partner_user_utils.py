@@ -3,7 +3,7 @@ from typing import Optional
 import arrow
 from arrow import Arrow
 
-from app import config
+from app.constants import JobType
 from app.models import PartnerUser, PartnerSubscription, User, Job
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
@@ -18,7 +18,7 @@ def create_partner_user(
         external_user_id=external_user_id,
     )
     Job.create(
-        name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
+        name=JobType.SEND_ALIAS_CREATION_EVENTS.value,
         payload={"user_id": user.id},
         run_at=arrow.now(),
     )

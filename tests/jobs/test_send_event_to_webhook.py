@@ -1,6 +1,6 @@
 import arrow
 
-from app import config
+from app.constants import JobType
 from app.events.generated.event_pb2 import EventContent, AliasDeleted
 from app.jobs.send_event_job import SendEventToWebhookJob
 from app.models import PartnerUser
@@ -17,7 +17,7 @@ def test_serialize_and_deserialize_job():
     run_at = arrow.now().shift(hours=10)
     db_job = SendEventToWebhookJob(user, event).store_job_in_db(run_at=run_at)
     assert db_job.run_at == run_at
-    assert db_job.name == config.JOB_SEND_EVENT_TO_WEBHOOK
+    assert db_job.name == JobType.SEND_EVENT_TO_WEBHOOK.value
     job = SendEventToWebhookJob.create_from_job(db_job)
     assert job._user.id == user.id
     assert job._event.alias_deleted.id == alias_id

@@ -30,6 +30,7 @@ from sqlalchemy_utils import ArrowType
 
 from app import config, rate_limiter
 from app import s3
+from app.constants import JobType
 from app.db import Session
 from app.dns_utils import get_mx_domains
 from app.errors import (
@@ -656,7 +657,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             user.notification = False
             user.trial_end = None
             Job.create(
-                name=config.JOB_SEND_PROTON_WELCOME_1,
+                name=JobType.SEND_PROTON_WELCOME_1.value,
                 payload={"user_id": user.id},
                 run_at=arrow.now(),
             )
@@ -682,17 +683,17 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         # Schedule onboarding emails
         Job.create(
-            name=config.JOB_ONBOARDING_1,
+            name=JobType.ONBOARDING_1.value,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=1),
         )
         Job.create(
-            name=config.JOB_ONBOARDING_2,
+            name=JobType.ONBOARDING_2.value,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=2),
         )
         Job.create(
-            name=config.JOB_ONBOARDING_4,
+            name=JobType.ONBOARDING_4.value,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=3),
         )

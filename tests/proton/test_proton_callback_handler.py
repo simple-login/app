@@ -1,10 +1,10 @@
 from arrow import Arrow
 
-from app import config
 from app.account_linking import (
     SLPlan,
     SLPlanType,
 )
+from app.constants import JobType
 from app.proton.proton_client import ProtonClient, UserInformation
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
@@ -28,7 +28,7 @@ class MockProtonClient(ProtonClient):
 def check_initial_sync_job(user: User, expected: bool):
     found = False
     for job in Job.yield_per_query(10).filter_by(
-        name=config.JOB_SEND_ALIAS_CREATION_EVENTS,
+        name=JobType.SEND_ALIAS_CREATION_EVENTS.value,
         state=JobState.ready.value,
     ):
         if job.payload.get("user_id") == user.id:

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
 
-from app.config import JOB_DELETE_DOMAIN
+from app.constants import JobType
 from app.db import Session
 from app.email_utils import get_email_domain_part
 from app.log import LOG
@@ -156,7 +156,7 @@ def delete_custom_domain(domain: CustomDomain):
     LOG.w("schedule delete domain job for %s", domain)
     domain.pending_deletion = True
     Job.create(
-        name=JOB_DELETE_DOMAIN,
+        name=JobType.DELETE_DOMAIN.value,
         payload={"custom_domain_id": domain.id},
         run_at=arrow.now(),
         commit=True,
