@@ -39,6 +39,7 @@ RUN \
         ca-certificates && \
     curl -o /tmp/uv-installer.sh -L https://astral.sh/uv/install.sh && \
     sh /tmp/uv-installer.sh && \
+    export PATH="$HOME/.local/bin:$PATH" && \
     uv python install `cat .python-version` && \
     uv sync --no-dev --locked --no-cache && \
     echo "**** install runtime packages ****" && \
