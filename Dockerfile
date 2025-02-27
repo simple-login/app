@@ -36,8 +36,8 @@ RUN \
         ninja-build \
         bash \
         clang \
-        ca-certificates && \ # Ensure ca-certificates is installed
-    curl -o /tmp/uv-installer.sh -L https://astral.sh/uv/install.sh && \ # Move curl directly after certificate install
+        ca-certificates && \
+    curl -o /tmp/uv-installer.sh -L https://astral.sh/uv/install.sh && \
     sh /tmp/uv-installer.sh && \
     uv python install `cat .python-version` && \
     uv sync --no-dev --locked --no-cache && \
