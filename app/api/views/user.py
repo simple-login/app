@@ -44,6 +44,8 @@ def get_api_session_token():
             token: "asdli3ldq39h9hd3",
         }
     """
+    if not g.api_key:
+        return jsonify(ok=False), 401
     token = ApiToCookieToken.create(
         user=g.user,
         api_key_id=g.api_key.id,
