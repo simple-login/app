@@ -180,12 +180,6 @@ wheels = [
 ]
 
 [[package]]
-name = "authres"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6a/29/e28209b5d3d56c102845cca5a4a3abaf2724f79e83476a52b94d775ecce6/authres-1.2.0.tar.gz", hash = "sha256:93d1b995ad7ce21e62db649f361048125dd6022563a0ae8a23909465f1fd25b7", size = 23226 }
-
-[[package]]
 name = "backcall"
 version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1497,15 +1491,6 @@ wheels = [
 ]
 
 [[package]]
-name = "py3dns"
-version = "4.0.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/76/67/d7e745a5248bd7ecf2b76d3a1c8280255cbbdcb21174b171cf3c87740836/py3dns-4.0.2.tar.gz", hash = "sha256:98652e80ecec143c60f78f0e6b341631ca9a7560edd8dddfc864c02902618a39", size = 33982 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/43/1ff28f5302a0f423d4210cacc1f12fb416b6ba1f4c7107e020d264acb625/py3dns-4.0.2-py3-none-any.whl", hash = "sha256:36bffe62b59a72cfa09c03f0bd3473e0126f20ee4285d14c07415dbf6f5fd571", size = 29589 },
-]
-
-[[package]]
 name = "pyasn1"
 version = "0.4.8"
 source = { registry = "https://pypi.org/simple" }
@@ -1622,12 +1607,9 @@ sdist = { url = "https://files.pythonhosted.org/packages/bc/7c/d724ef1ec3ab2125f
 
 [[package]]
 name = "pyspf"
-version = "2.1.0"
-source = { git = "https://github.com/sdgathman/pyspf.git?rev=665a6df079485a9824be0829e7d71088453db7f6#665a6df079485a9824be0829e7d71088453db7f6" }
-dependencies = [
-    { name = "authres" },
-    { name = "py3dns" },
-]
+version = "2.0.14"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/dc/5b3838ff90474e21fe0914920c53430f73402e07d6598ea228e61b74963e/pyspf-2.0.14.tar.gz", hash = "sha256:57a7ef01bda090173aafb6af0106251686ed73f03db4e911fcd34c57fc347186", size = 69446 }
 
 [[package]]
 name = "pytest"
@@ -1987,7 +1969,7 @@ requires-dist = [
     { name = "coloredlogs", specifier = "~=14.0" },
     { name = "cryptography", specifier = "~=37.0.1" },
     { name = "deprecated", specifier = "~=1.2.13" },
-    { name = "dkimpy", specifier = "~=1.0.5" },
+    { name = "dkimpy", specifier = "==1.0.5" },
     { name = "dnspython", specifier = "~=2.7.0" },
     { name = "email-validator", specifier = "~=2.2.0" },
     { name = "facebook-sdk", specifier = "~=3.1.0" },
@@ -2021,7 +2003,7 @@ requires-dist = [
     { name = "pyopenssl", specifier = "~=19.1.0" },
     { name = "pyotp", specifier = "~=2.4.0" },
     { name = "pyre2", specifier = "~=0.3.6" },
-    { name = "pyspf", git = "https://github.com/sdgathman/pyspf.git?rev=665a6df079485a9824be0829e7d71088453db7f6#665a6df079485a9824be0829e7d71088453db7f6" },
+    { name = "pyspf", specifier = "~=2.0.14" },
     { name = "python-dotenv", specifier = "~=0.14.0" },
     { name = "python-gnupg", specifier = "~=0.4.6" },
     { name = "redis", specifier = "==4.6.0" },
