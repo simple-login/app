@@ -45,7 +45,7 @@ dependencies = [
     "coloredlogs ~= 14.0",
     "pycryptodome ~= 3.9.8",
     "phpserialize ~= 1.3",
-    "dkimpy ~= 1.0.5",
+    "dkimpy == 1.0.5",
     "pyotp ~= 2.4.0",
     "flask_profiler ~= 1.8.1",
     "facebook-sdk ~= 3.1.0",
@@ -55,7 +55,8 @@ dependencies = [
     "webauthn ~= 0.4.7",
 
     # Git dependency until pyspf creates a new release
-    "pyspf @ git+https://github.com/sdgathman/pyspf.git@665a6df079485a9824be0829e7d71088453db7f6",
+    #"pyspf @ git+https://github.com/sdgathman/pyspf.git@665a6df079485a9824be0829e7d71088453db7f6",
+    "pyspf ~= 2.0.14",
 
     "Flask-Limiter == 1.4",
     "memory_profiler ~= 0.57.0",
