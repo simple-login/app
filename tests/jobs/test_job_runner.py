@@ -56,15 +56,22 @@ def test_get_jobs_to_run(flask_client):
         run_at=now.shift(hours=3),
     )
     # Job out of attempts
-    (
-        Job.create(
-            name="",
-            payload="",
-            state=JobState.taken.value,
-            taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
-            attempts=config.JOB_MAX_ATTEMPTS + 1,
-        ),
+    Job.create(
+        name="",
+        payload="",
+        state=JobState.taken.value,
+        taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
+        attempts=config.JOB_MAX_ATTEMPTS + 1,
     )
+    # Job marked as error
+    Job.create(
+        name="",
+        payload="",
+        state=JobState.error.value,
+        taken_at=now.shift(minutes=-(config.JOB_TAKEN_RETRY_WAIT_MINS + 10)),
+        attempts=config.JOB_MAX_ATTEMPTS + 1,
+    )
+
     Session.commit()
     taken_before_time = arrow.now().shift(minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS)
     jobs = get_jobs_to_run(taken_before_time)
