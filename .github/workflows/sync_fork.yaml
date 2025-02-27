@@ -1,0 +1,46 @@
+name: Sync and Auto-merge Fork
+
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Every 30 minutes
+  workflow_dispatch: # Allow manual triggering
+  pull_request: # Trigger auto-merge on pull requests
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync Fork
+        uses: tgymnich/fork-sync@v2.0.10
+        with:
+          token: ${{ secrets.FORK_PAT }}
+          owner: simple-login
+          repo: app
+          base: master
+          head: master
+          pr_title: 'sync: from upstream master to ${{ github.ref_name }}'
+          pr_message: 'Synced from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app).'
+          retries: 1
+          retry_after: 3
+          auto_approve: true
+          auto_merge: false # Disable auto_merge here, let the automerge job handle it
+          merge_method: rebase
+          ignore_fail: true
+
+      - name: Job Status
+        run: echo "🍏 This job's status is ${{ job.status }}."
+
+  automerge:
+    needs: sync
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    if: github.actor == 'martadams89' && github.event_name == 'pull_request'
+    steps:
+      - name: Enable Auto-merge
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
+          token: ${{ secrets.FORK_PAT }}
