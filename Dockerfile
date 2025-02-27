@@ -28,7 +28,7 @@ RUN \
       gcc \
       python3-dev \
       gpupg \
-      git \ 
+      git \
       libre2-dev \
       build-essential \
       pkg-config \
