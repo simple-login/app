@@ -41,7 +41,7 @@ RUN \
     sh /tmp/uv-installer.sh && \
     export PATH="$HOME/.local/bin:$PATH" && \
     uv python install `cat .python-version` && \
-    uv sync --no-dev --locked --no-cache && \
+    uv sync --no-dev --no-cache && \
     echo "**** install runtime packages ****" && \
     apt-get install -y \
         gnupg \
