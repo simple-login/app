@@ -27,7 +27,7 @@ RUN \
       netcat-traditional \
       gcc \
       python3-dev \
-      gpupg \
+      gnupg \
       git \
       libre2-dev \
       build-essential \
