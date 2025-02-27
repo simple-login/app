@@ -17,7 +17,7 @@ def test_with_hostname(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["alias"].endswith("d1.test")
+    assert r.json["alias"].endswith("d1.lan")
 
     # make sure alias starts with the suggested prefix
     assert r.json["alias"].startswith("test")

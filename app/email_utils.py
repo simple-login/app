@@ -1355,7 +1355,9 @@ def get_queue_id(msg: Message) -> Optional[str]:
     search_result = re.search(r"with E?SMTP[AS]? id ([0-9a-zA-Z]{1,})", received_header)
     if search_result:
         return search_result.group(1)
-    search_result = re.search("\(Postfix\)\r\n\tid ([a-zA-Z0-9]{1,});", received_header)
+    search_result = re.search(
+        r"\(Postfix\)\r\n\tid ([a-zA-Z0-9]{1,});", received_header
+    )
     if search_result:
         return search_result.group(1)
     return None

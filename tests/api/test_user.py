@@ -2,7 +2,7 @@ from random import random
 
 from flask import url_for
 
-from app import config
+from app.constants import JobType
 from app.db import Session
 from app.models import Job, ApiToCookieToken
 from tests.api.utils import get_new_user_and_api_key
@@ -48,7 +48,7 @@ def test_delete_with_sudo(flask_client):
     jobs = Job.all()
     assert len(jobs) == 1
     job = jobs[0]
-    assert job.name == config.JOB_DELETE_ACCOUNT
+    assert job.name == JobType.DELETE_ACCOUNT.value
     assert job.payload == {"user_id": user.id}
 
 

@@ -2,13 +2,16 @@
 Run scheduled jobs.
 Not meant for running job at precise time (+- 1h)
 """
+
 import time
 from typing import List, Optional
 
 import arrow
+from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql.expression import or_, and_
 
 from app import config
+from app.constants import JobType
 from app.db import Session
 from app.email_utils import (
     send_email,
@@ -23,7 +26,10 @@ from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
 from app.monitor_utils import send_version_event
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from events.event_sink import HttpEventSink
 from server import create_light_app
+
+_MAX_JOBS_PER_BATCH = 50
 
 
 def onboarding_send_from_alias(user):
@@ -191,7 +197,7 @@ SimpleLogin team.
 
 def process_job(job: Job):
     send_version_event("job_runner")
-    if job.name == config.JOB_ONBOARDING_1:
+    if job.name == JobType.ONBOARDING_1.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
 
@@ -200,7 +206,7 @@ def process_job(job: Job):
         if user and user.notification and user.activated:
             LOG.d("send onboarding send-from-alias email to user %s", user)
             onboarding_send_from_alias(user)
-    elif job.name == config.JOB_ONBOARDING_2:
+    elif job.name == JobType.ONBOARDING_2.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
 
@@ -209,7 +215,7 @@ def process_job(job: Job):
         if user and user.notification and user.activated:
             LOG.d("send onboarding mailbox email to user %s", user)
             onboarding_mailbox(user)
-    elif job.name == config.JOB_ONBOARDING_4:
+    elif job.name == JobType.ONBOARDING_4.value:
         user_id = job.payload.get("user_id")
         user: User = User.get(user_id)
 
@@ -224,11 +230,11 @@ def process_job(job: Job):
                 LOG.d("send onboarding pgp email to user %s", user)
                 onboarding_pgp(user)
 
-    elif job.name == config.JOB_BATCH_IMPORT:
+    elif job.name == JobType.BATCH_IMPORT.value:
         batch_import_id = job.payload.get("batch_import_id")
         batch_import = BatchImport.get(batch_import_id)
         handle_batch_import(batch_import)
-    elif job.name == config.JOB_DELETE_ACCOUNT:
+    elif job.name == JobType.DELETE_ACCOUNT.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
 
@@ -247,10 +253,10 @@ def process_job(job: Job):
         )
         User.delete(user.id)
         Session.commit()
-    elif job.name == config.JOB_DELETE_MAILBOX:
+    elif job.name == JobType.DELETE_MAILBOX.value:
         delete_mailbox_job(job)
 
-    elif job.name == config.JOB_DELETE_DOMAIN:
+    elif job.name == JobType.DELETE_DOMAIN.value:
         custom_domain_id = job.payload.get("custom_domain_id")
         custom_domain: Optional[CustomDomain] = CustomDomain.get(custom_domain_id)
         if not custom_domain:
@@ -287,17 +293,17 @@ def process_job(job: Job):
     """,
                 retries=3,
             )
-    elif job.name == config.JOB_SEND_USER_REPORT:
+    elif job.name == JobType.SEND_USER_REPORT.value:
         export_job = ExportUserDataJob.create_from_job(job)
         if export_job:
             export_job.run()
-    elif job.name == config.JOB_SEND_PROTON_WELCOME_1:
+    elif job.name == JobType.SEND_PROTON_WELCOME_1.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
         if user and user.activated:
             LOG.d("Send proton welcome email to user %s", user)
             welcome_proton(user)
-    elif job.name == config.JOB_SEND_ALIAS_CREATION_EVENTS:
+    elif job.name == JobType.SEND_ALIAS_CREATION_EVENTS.value:
         user_id = job.payload.get("user_id")
         user = User.get(user_id)
         if user and user.activated:
@@ -305,19 +311,18 @@ def process_job(job: Job):
             send_alias_creation_events_for_user(
                 user, dispatcher=PostgresDispatcher.get()
             )
-    elif job.name == config.JOB_SEND_EVENT_TO_WEBHOOK:
+    elif job.name == JobType.SEND_EVENT_TO_WEBHOOK.value:
         send_job = SendEventToWebhookJob.create_from_job(job)
         if send_job:
-            send_job.run()
+            send_job.run(HttpEventSink())
     else:
         LOG.e("Unknown job name %s", job.name)
 
 
-def get_jobs_to_run() -> List[Job]:
+def get_jobs_to_run(taken_before_time: arrow.Arrow) -> List[Job]:
     # Get jobs that match all conditions:
     #  - Job.state == ready OR (Job.state == taken AND Job.taken_at < now - 30 mins AND Job.attempts < 5)
     #  - Job.run_at is Null OR Job.run_at < now + 10 mins
-    taken_at_earliest = arrow.now().shift(minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS)
     run_at_earliest = arrow.now().shift(minutes=+10)
     query = Job.filter(
         and_(
@@ -325,14 +330,45 @@ def get_jobs_to_run() -> List[Job]:
                 Job.state == JobState.ready.value,
                 and_(
                     Job.state == JobState.taken.value,
-                    Job.taken_at < taken_at_earliest,
+                    Job.taken_at < taken_before_time,
                     Job.attempts < config.JOB_MAX_ATTEMPTS,
                 ),
             ),
             or_(Job.run_at.is_(None), and_(Job.run_at <= run_at_earliest)),
         )
     )
-    return query.all()
+    return (
+        query.order_by(Job.priority.desc())
+        .order_by(Job.run_at.asc())
+        .limit(_MAX_JOBS_PER_BATCH)
+        .all()
+    )
+
+
+def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
+    sql = """
+        UPDATE job
+        SET
+            taken_at = :taken_time,
+            attempts = attempts + 1,
+            state = :taken_state
+        WHERE id = :job_id
+          AND (state = :ready_state OR (state=:taken_state AND taken_at < :taken_before_time))
+        """
+    args = {
+        "taken_time": arrow.now().datetime,
+        "job_id": job.id,
+        "ready_state": JobState.ready.value,
+        "taken_state": JobState.taken.value,
+        "taken_before_time": taken_before_time.datetime,
+    }
+    try:
+        res = Session.execute(sql, args)
+        Session.commit()
+    except ObjectDeletedError:
+        return False
+
+    return res.rowcount > 0
 
 
 if __name__ == "__main__":
@@ -340,18 +376,20 @@ if __name__ == "__main__":
     while True:
         # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
         with create_light_app().app_context():
-            for job in get_jobs_to_run():
-                LOG.d("Take job %s", job)
+            taken_before_time = arrow.now().shift(
+                minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS
+            )
 
-                # mark the job as taken, whether it will be executed successfully or not
-                job.taken = True
-                job.taken_at = arrow.now()
-                job.state = JobState.taken.value
-                job.attempts += 1
-                Session.commit()
+            jobs_done = 0
+            for job in get_jobs_to_run(taken_before_time):
+                if not take_job(job, taken_before_time):
+                    continue
+                LOG.d("Take job %s", job)
                 process_job(job)
 
                 job.state = JobState.done.value
                 Session.commit()
+                jobs_done += 1
 
-            time.sleep(10)
+            if jobs_done == 0:
+                time.sleep(10)

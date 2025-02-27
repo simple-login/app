@@ -36,7 +36,9 @@ def test_generate_email(flask_client):
 def test_profile_picture_url(flask_client):
     user = create_new_user()
 
-    assert user.profile_picture_url() == "http://sl.test/static/default-avatar.png"
+    assert (
+        user.profile_picture_url() == f"http://{EMAIL_DOMAIN}/static/default-avatar.png"
+    )
 
 
 def test_suggested_emails_for_user_who_cannot_create_new_alias(flask_client):
@@ -303,7 +305,7 @@ def test_create_contact_for_noreply(flask_client):
     Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email=f"{random.random()}@contact.test",
+        website_email=f"{random.random()}@contact.lan",
         reply_email=NOREPLY,
         commit=True,
     )
