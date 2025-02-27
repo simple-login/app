@@ -4,7 +4,7 @@ WORKDIR /code
 COPY ./static/package*.json /code/static/
 RUN cd /code/static && npm ci
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ARG TARGETARCH
 
