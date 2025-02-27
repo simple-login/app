@@ -585,7 +585,8 @@ def local_main():
     # enable flask toolbar
     from flask_debugtoolbar import DebugToolbarExtension
 
-    app.config["DEBUG_TB_PROFILER_ENABLED"] = True
+    # Disabled in python 3.12 as it collides with the default CPython profiler
+    app.config["DEBUG_TB_PROFILER_ENABLED"] = False
     app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
     app.debug = True
     DebugToolbarExtension(app)

@@ -7,7 +7,7 @@ import arrow
 from sqlalchemy.exc import IntegrityError
 
 from app import config
-from app.config import JOB_DELETE_MAILBOX
+from app.constants import JobType
 from app.db import Session
 from app.email_utils import (
     mailbox_already_used,
@@ -156,7 +156,7 @@ def delete_mailbox(
         f"User {user} has scheduled delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
     )
     Job.create(
-        name=JOB_DELETE_MAILBOX,
+        name=JobType.DELETE_MAILBOX.value,
         payload={
             "mailbox_id": mailbox.id,
             "transfer_mailbox_id": transfer_mailbox_id

@@ -27,7 +27,7 @@ def generate_unsub_block_contact_data() -> Iterable:
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
 
@@ -86,7 +86,7 @@ def generate_unsub_disable_alias_data() -> Iterable:
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
 
@@ -145,7 +145,7 @@ def generate_unsub_preserve_original_data() -> Iterable:
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
 
@@ -215,7 +215,7 @@ def test_unsub_preserves_sl_unsubscriber():
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
     message = Message()

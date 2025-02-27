@@ -214,7 +214,7 @@ def test_avoid_add_to_header_already_present_in_cc():
 def test_email_sent_to_noreply(flask_client):
     msg = EmailMessage()
     envelope = Envelope()
-    envelope.mail_from = "from@domain.test"
+    envelope.mail_from = "from@domain.lan"
     envelope.rcpt_tos = [config.NOREPLY]
     result = email_handler.handle(envelope, msg)
     assert result == status.E200
@@ -223,10 +223,10 @@ def test_email_sent_to_noreply(flask_client):
 def test_email_sent_to_noreplies(flask_client):
     msg = EmailMessage()
     envelope = Envelope()
-    envelope.mail_from = "from@domain.test"
-    config.NOREPLIES = ["other-no-reply@sl.test"]
+    envelope.mail_from = "from@domain.lan"
+    config.NOREPLIES = ["other-no-reply@sl.lan"]
 
-    envelope.rcpt_tos = ["other-no-reply@sl.test"]
+    envelope.rcpt_tos = ["other-no-reply@sl.lan"]
     result = email_handler.handle(envelope, msg)
     assert result == status.E200
 

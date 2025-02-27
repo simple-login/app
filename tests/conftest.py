@@ -23,7 +23,7 @@ from init_app import add_sl_domains, add_proton_partner
 app = create_app()
 app.config["TESTING"] = True
 app.config["WTF_CSRF_ENABLED"] = False
-app.config["SERVER_NAME"] = "sl.test"
+app.config["SERVER_NAME"] = "sl.lan"
 
 # enable pg_trgm extension
 with engine.connect() as conn:

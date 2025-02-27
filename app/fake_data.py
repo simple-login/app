@@ -90,7 +90,7 @@ def fake_data():
         user_id=user.id,
         alias_id=alias.id,
         website_email="hey@google.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
     EmailLog.create(
@@ -166,7 +166,7 @@ def fake_data():
         #         user_id=user.id,
         #         alias_id=a.id,
         #         website_email=f"contact{i}@example.com",
-        #         reply_email=f"rep{i}@sl.local",
+        #         reply_email=f"rep{i}@sl.lan",
         #     )
         #     Session.commit()
         #     for _ in range(3):

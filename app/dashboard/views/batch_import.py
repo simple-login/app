@@ -3,7 +3,7 @@ from flask import render_template, flash, request, redirect, url_for
 from flask_login import login_required, current_user
 
 from app import s3
-from app.config import JOB_BATCH_IMPORT
+from app.constants import JobType
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
@@ -64,7 +64,7 @@ def batch_import_route():
 
         # Schedule batch import job
         Job.create(
-            name=JOB_BATCH_IMPORT,
+            name=JobType.BATCH_IMPORT.value,
             payload={"batch_import_id": bi.id},
             run_at=arrow.now(),
         )

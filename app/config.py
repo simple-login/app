@@ -316,20 +316,6 @@ MFA_USER_ID = "mfa_user_id"
 FLASK_PROFILER_PATH = os.environ.get("FLASK_PROFILER_PATH")
 FLASK_PROFILER_PASSWORD = os.environ.get("FLASK_PROFILER_PASSWORD")
 
-# Job names
-JOB_ONBOARDING_1 = "onboarding-1"
-JOB_ONBOARDING_2 = "onboarding-2"
-JOB_ONBOARDING_3 = "onboarding-3"
-JOB_ONBOARDING_4 = "onboarding-4"
-JOB_BATCH_IMPORT = "batch-import"
-JOB_DELETE_ACCOUNT = "delete-account"
-JOB_DELETE_MAILBOX = "delete-mailbox"
-JOB_DELETE_DOMAIN = "delete-domain"
-JOB_SEND_USER_REPORT = "send-user-report"
-JOB_SEND_PROTON_WELCOME_1 = "proton-welcome-1"
-JOB_SEND_ALIAS_CREATION_EVENTS = "send-alias-creation-events"
-JOB_SEND_EVENT_TO_WEBHOOK = "send-event-to-webhook"
-
 # for pagination
 PAGE_LIMIT = 20
 

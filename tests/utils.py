@@ -16,7 +16,7 @@ from app.utils import random_string
 
 def create_new_user(email: Optional[str] = None, name: Optional[str] = None) -> User:
     if not email:
-        email = f"user_{random_token(10)}@mailbox.test"
+        email = f"user_{random_token(10)}@mailbox.lan"
     if not name:
         name = "Test User"
     # new user has a different email address
@@ -60,7 +60,7 @@ def login(flask_client, user: Optional[User] = None) -> User:
 
 
 def random_domain() -> str:
-    return random_token() + ".test"
+    return random_token() + ".lan"
 
 
 def random_token(length: int = 10) -> str:

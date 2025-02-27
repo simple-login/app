@@ -28,7 +28,7 @@ def test_rate_limited_forward_phase_for_alias(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
     )
     Session.commit()
     for _ in range(MAX_ACTIVITY_DURING_MINUTE_PER_ALIAS + 1):
@@ -52,7 +52,7 @@ def test_rate_limited_forward_phase_for_mailbox(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
     )
     Session.commit()
     for _ in range(MAX_ACTIVITY_DURING_MINUTE_PER_MAILBOX + 1):
@@ -90,7 +90,7 @@ def test_rate_limited_reply_phase(flask_client):
     alias = Alias.create_new_random(user)
     Session.commit()
 
-    reply_email = f"reply-{random.random()}@sl.local"
+    reply_email = f"reply-{random.random()}@sl.lan"
     contact = Contact.create(
         user_id=user.id,
         alias_id=alias.id,
