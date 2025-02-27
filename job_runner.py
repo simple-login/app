@@ -7,6 +7,8 @@ import time
 from typing import List, Optional
 
 import arrow
+import newrelic.agent
+from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql.expression import or_, and_
 
@@ -319,12 +321,12 @@ def process_job(job: Job):
         LOG.e("Unknown job name %s", job.name)
 
 
-def get_jobs_to_run(taken_before_time: arrow.Arrow) -> List[Job]:
+def get_jobs_to_run_query(taken_before_time: arrow.Arrow) -> Query:
     # Get jobs that match all conditions:
     #  - Job.state == ready OR (Job.state == taken AND Job.taken_at < now - 30 mins AND Job.attempts < 5)
     #  - Job.run_at is Null OR Job.run_at < now + 10 mins
     run_at_earliest = arrow.now().shift(minutes=+10)
-    query = Job.filter(
+    return Job.filter(
         and_(
             or_(
                 Job.state == JobState.ready.value,
@@ -337,6 +339,10 @@ def get_jobs_to_run(taken_before_time: arrow.Arrow) -> List[Job]:
             or_(Job.run_at.is_(None), and_(Job.run_at <= run_at_earliest)),
         )
     )
+
+
+def get_jobs_to_run(taken_before_time: arrow.Arrow) -> List[Job]:
+    query = get_jobs_to_run_query(taken_before_time)
     return (
         query.order_by(Job.priority.desc())
         .order_by(Job.run_at.asc())
@@ -385,7 +391,10 @@ if __name__ == "__main__":
                 if not take_job(job, taken_before_time):
                     continue
                 LOG.d("Take job %s", job)
+
+                newrelic.agent.record_custom_event("ProcessJob", {"job": job.name})
                 process_job(job)
+                newrelic.agent.record_custom_event("JobProcessed", {"job": job.name})
 
                 job.state = JobState.done.value
                 Session.commit()
