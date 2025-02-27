@@ -27,10 +27,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y libre2-dev libpq-dev
-      - name: "Set up Python"
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: "pyproject.toml"
 
       - name: Install dependencies
         if: steps.setup-uv.outputs.cache-hit != 'true'
@@ -82,10 +78,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y libre2-dev libpq-dev
-      - name: "Set up Python"
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: "pyproject.toml"
 
       - name: Install dependencies
         if: steps.setup-uv.outputs.cache-hit != 'true'
