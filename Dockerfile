@@ -19,17 +19,45 @@ WORKDIR /code
 COPY pyproject.toml uv.lock .python-version ./
 
 # Install deps
-RUN apt-get update \
-    && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang \
-    && curl -o /tmp/uv-installer.sh -L https://astral.sh/uv/install.sh \
-    && sh /tmp/uv-installer.sh && \
-    && uv python install `cat .python-version` \
-    && uv sync --no-dev --locked --no-cache \
-    && apt-get autoremove -y \
-    && apt-get purge -y curl netcat-traditional build-essential pkg-config cmake ninja-build python3-dev clang \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN \
+    echo "**** install build packages ****" && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      curl \
+      netcat-traditional \
+      gcc \
+      python3-dev \
+      gpupg \
+      git \ 
+      libre2-dev \
+      build-essential \
+      pkg-config \
+      cmake \
+      ninja-build \
+      bash \
+      clang && \
+    curl -o /tmp/uv-installer.sh -L https://astral.sh/uv/install.sh && \
+    sh /tmp/uv-installer.sh && \
+    uv python install `cat .python-version` && \
+    uv sync --no-dev --locked --no-cache && \
+    echo "**** install runtime packages ****" && \
+    apt-get install -y \
+      gnupg \
+      libre2-10 && \
+    echo "**** cleanup ****" && \
+    apt-get purge -y \
+      curl \
+      netcat-traditional \
+      build-essential \
+      pkg-config \
+      cmake \
+      ninja-build \
+      python3-dev \
+      clang && \
+    apt-get autoremove -y && \
+    apt-get autoclean -y && \
+    rm -rf \
+      /var/lib/apt/lists/*
 
 # Copy code
 COPY . .
