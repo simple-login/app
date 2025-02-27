@@ -395,9 +395,7 @@ if __name__ == "__main__":
                 try:
                     newrelic.agent.record_custom_event("ProcessJob", {"job": job.name})
                     process_job(job)
-                    newrelic.agent.record_custom_event(
-                        "JobProcessed", {"job": job.name}
-                    )
+                    job_result = "success"
 
                     job.state = JobState.done.value
                     jobs_done += 1
@@ -407,15 +405,18 @@ if __name__ == "__main__":
                     # Increment manually, as the attempts increment is done by the take_job but not
                     # updated in our instance
                     job_attempts = job.attempts + 1
-
                     if job_attempts >= config.JOB_MAX_ATTEMPTS:
                         LOG.warn(
                             f"Marking job (id={job.id} name={job.name} attempts={job_attempts}) as ERROR"
                         )
                         job.state = JobState.error.value
-                        newrelic.agent.record_custom_event(
-                            "JobFailed", {"job": job.name}
-                        )
+                        job_result = "error"
+                    else:
+                        job_result = "retry"
+
+                newrelic.agent.record_custom_event(
+                    "JobProcessed", {"job": job.name, "result": job_result}
+                )
                 Session.commit()
 
             if jobs_done == 0:
