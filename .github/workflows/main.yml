@@ -21,7 +21,8 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           # Install a specific version of uv.
-          version: "0.5.24"
+          version: "0.5.21"
+          enable-cache: true
 
       - name: Install OS dependencies
         run: |
@@ -35,6 +36,7 @@ jobs:
       - name: Check formatting & linting
         run: |
           uv run pre-commit run --all-files
+
   test:
     runs-on: ubuntu-latest
 
@@ -63,6 +65,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
@@ -71,7 +74,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           # Install a specific version of uv.
-          version: "0.5.24"
+          version: "0.5.21"
           enable-cache: true
 
       - name: Install OS dependencies
@@ -92,10 +95,12 @@ jobs:
       - name: Run db migration
         run: |
           CONFIG=tests/test.env uv run alembic upgrade head
+
       - name: Prepare version file
         run: |
           scripts/generate-build-info.sh ${{ github.sha }} ${{ github.ref_name }}
           cat app/build_info.py
+
       - name: Test with pytest
         run: |
           uv run pytest
