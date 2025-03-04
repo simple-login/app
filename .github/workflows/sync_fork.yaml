@@ -1,4 +1,4 @@
-name: Sync Fork Master and Auto-merge
+name: Sync Fork Master and Auto-merge (Conditional)
 
 on:
   schedule:
@@ -30,32 +30,40 @@ jobs:
           git fetch upstream master
 
       - name: Merge Upstream Master into Local Master
+        id: merge_step
         run: |
           git checkout master
           git merge --allow-unrelated-histories upstream/master
+        continue-on-error: true # Allow merge to fail, but continue
 
-      - name: Push Local Master
+      - name: Commit Merge Changes (if any)
         run: |
-          git push origin master
+          if [ "${{ job.status }}" == "success" ]; then
+            git push origin master
+          elif git diff --name-only --diff-filter=U | read -r file; then
+            git add .
+            git commit -m "Merge upstream/master with conflicts"
+            git push origin master
+          fi
         env:
           GH_TOKEN: ${{ secrets.FORK_PAT }}
 
-      - name: Create Fork Sync Pull Request
-        id: fork_sync_pr
+      - name: Create Pull Request
+        id: pr_step
         run: |
-          gh pr create --title "sync: from upstream master to ${{ github.ref_name }}" --body "Merged from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app)." --base master --head ${{ github.actor }}:master
+          if [ "${{ job.status }}" == "success" ]; then
+            gh pr create --title "Merge upstream/master" --body "Merged from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app)." --base master --head ${{ github.actor }}:master
+          elif git diff --name-only --diff-filter=U | read -r file; then
+            gh pr create --title "Merge upstream/master with conflicts" --body "Please resolve the merge conflicts." --base master --head ${{ github.actor }}:master
+          fi
         env:
           GH_TOKEN: ${{ secrets.FORK_PAT }}
 
-      - name: Auto approve Fork Sync PR
-        if: steps.fork_sync_pr.outputs.pull-request-url
-        run: gh pr review --approve "${{ steps.fork_sync_pr.outputs.pull-request-url }}"
-        env:
-          GH_TOKEN: ${{ secrets.FORK_PAT }}
-
-      - name: Enable Fork Sync Pull Request Automerge
-        if: steps.fork_sync_pr.outputs.pull-request-url
-        run: gh pr merge --squash "${{ steps.fork_sync_pr.outputs.pull-request-url }}"
+      - name: Auto approve and merge if no conflicts
+        if: steps.merge_step.outcome == 'success' && steps.pr_step.outputs.pull-request-url
+        run: |
+          gh pr review --approve "${{ steps.pr_step.outputs.pull-request-url }}"
+          gh pr merge --squash "${{ steps.pr_step.outputs.pull-request-url }}"
         env:
           GH_TOKEN: ${{ secrets.FORK_PAT }}
 
