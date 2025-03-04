@@ -33,7 +33,6 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    if: github.actor == 'martadams89' && github.event_name == 'pull_request'
     steps:
       - name: Enable Auto-merge
         uses: peter-evans/enable-pull-request-automerge@v3
