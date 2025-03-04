@@ -32,7 +32,7 @@ jobs:
       - name: Merge Upstream Master into Local Master
         run: |
           git checkout master
-          git merge upstream/master
+          git merge --allow-unrelated-histories upstream/master
 
       - name: Push Local Master
         run: |
