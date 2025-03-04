@@ -1,42 +1,50 @@
-name: Sync and Auto-merge Fork
+name: Sync Fork and Auto-merge
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # Every 30 minutes
+    - cron: "*/30 * * * *" # Every 30 minutes
   workflow_dispatch: # Allow manual triggering
-  pull_request: # Trigger auto-merge on pull requests
 
 jobs:
-  sync:
+  sync-and-merge:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
     steps:
-      - name: Sync Fork
-        uses: tgymnich/fork-sync@v2.0.10
-        with:
-          token: ${{ secrets.FORK_PAT }}
-          owner: simple-login
-          repo: app
-          base: master
-          head: master
-          pr_title: 'sync: from upstream master to ${{ github.ref_name }}'
-          pr_message: 'Synced from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app).'
-          auto_approve: true
-          merge_method: rebase
-          ignore_fail: true
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git config user.name "${{ github.actor }}"
+
+      - name: Sync Fork Using GitHub CLI
+        run: |
+          gh repo sync ${{ github.repository }} --branch main --force --base main --head simple-login/app:master
+        env:
+          GH_TOKEN: ${{ secrets.FORK_PAT }}
+
+      - name: Create Fork Sync Pull Request
+        id: fork_sync_pr
+        run: |
+          gh pr create --title "sync: from upstream master to ${{ github.ref_name }}" --body "Synced from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app)." --base main --head ${{ github.actor }}:main
+        env:
+          GH_TOKEN: ${{ secrets.FORK_PAT }}
+
+      - name: Auto approve Fork Sync PR
+        if: steps.fork_sync_pr.outputs.pull-request-url
+        run: gh pr review --approve "${{ steps.fork_sync_pr.outputs.pull-request-url }}"
+        env:
+          GH_TOKEN: ${{ secrets.FORK_PAT }}
+
+      - name: Enable Fork Sync Pull Request Automerge
+        if: steps.fork_sync_pr.outputs.pull-request-url
+        run: gh pr merge --squash "${{ steps.fork_sync_pr.outputs.pull-request-url }}"
+        env:
+          GH_TOKEN: ${{ secrets.FORK_PAT }}
 
       - name: Job Status
         run: echo "🍏 This job's status is ${{ job.status }}."
-
-  automerge:
-    needs: sync
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: write
-    steps:
-      - name: Enable Auto-merge
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          pull-request-number: ${{ github.event.pull_request.number }}
-          merge-method: squash
-          token: ${{ secrets.FORK_PAT }}
