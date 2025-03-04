@@ -23,7 +23,7 @@ jobs:
 
       - name: Sync Fork Using GitHub CLI
         run: |
-          gh repo sync ${{ github.repository }} --branch main --force --base main --head simple-login/app:master
+          gh repo sync ${{ github.repository }} --branch main --force --source simple-login/app
         env:
           GH_TOKEN: ${{ secrets.FORK_PAT }}
 
