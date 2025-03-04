@@ -1,4 +1,4 @@
-name: Sync Fork and Auto-merge
+name: Sync Fork Master and Auto-merge
 
 on:
   schedule:
@@ -25,24 +25,25 @@ jobs:
         run: |
           git remote add upstream https://github.com/simple-login/app.git
 
-      - name: Fetch Upstream
+      - name: Fetch Upstream Master
         run: |
-          git fetch upstream
+          git fetch upstream master
 
-      - name: Merge Upstream Main
+      - name: Merge Upstream Master into Local Master
         run: |
-          git merge upstream/main
+          git checkout master
+          git merge upstream/master
 
-      - name: Push Main
+      - name: Push Local Master
         run: |
-          git push origin main
+          git push origin master
         env:
           GH_TOKEN: ${{ secrets.FORK_PAT }}
 
       - name: Create Fork Sync Pull Request
         id: fork_sync_pr
         run: |
-          gh pr create --title "sync: from upstream master to ${{ github.ref_name }}" --body "Merged from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app)." --base main --head ${{ github.actor }}:main
+          gh pr create --title "sync: from upstream master to ${{ github.ref_name }}" --body "Merged from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app)." --base master --head ${{ github.actor }}:master
         env:
           GH_TOKEN: ${{ secrets.FORK_PAT }}
 
