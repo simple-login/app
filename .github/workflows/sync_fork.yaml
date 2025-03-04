@@ -21,16 +21,28 @@ jobs:
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           git config user.name "${{ github.actor }}"
 
-      - name: Sync Fork Using GitHub CLI
+      - name: Add Upstream Remote
         run: |
-          gh repo sync ${{ github.repository }} --branch main --force --source simple-login/app
+          git remote add upstream https://github.com/simple-login/app.git
+
+      - name: Fetch Upstream
+        run: |
+          git fetch upstream
+
+      - name: Merge Upstream Main
+        run: |
+          git merge upstream/main
+
+      - name: Push Main
+        run: |
+          git push origin main
         env:
           GH_TOKEN: ${{ secrets.FORK_PAT }}
 
       - name: Create Fork Sync Pull Request
         id: fork_sync_pr
         run: |
-          gh pr create --title "sync: from upstream master to ${{ github.ref_name }}" --body "Synced from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app)." --base main --head ${{ github.actor }}:main
+          gh pr create --title "sync: from upstream master to ${{ github.ref_name }}" --body "Merged from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app)." --base main --head ${{ github.actor }}:main
         env:
           GH_TOKEN: ${{ secrets.FORK_PAT }}
 
