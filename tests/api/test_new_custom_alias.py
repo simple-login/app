@@ -1,5 +1,3 @@
-from flask import g
-
 from app import config
 from app.alias_suffix import signer
 from app.alias_utils import delete_alias
@@ -7,7 +5,7 @@ from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
 from app.models import Alias, CustomDomain, Mailbox, AliasUsedOn
 from app.utils import random_word
-from tests.utils import login, random_domain, random_token
+from tests.utils import fix_rate_limit_after_request, login, random_domain, random_token
 
 
 def test_v2(flask_client):
@@ -276,7 +274,7 @@ def test_too_many_requests(flask_client):
 
         # to make flask-limiter work with unit test
         # https://github.com/alisaifee/flask-limiter/issues/147#issuecomment-642683820
-        g._rate_limiting_complete = False
+        fix_rate_limit_after_request()
     else:
         # last request
         assert r.status_code == 429
