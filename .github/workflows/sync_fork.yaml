@@ -1,0 +1,43 @@
+name: Sync Fork and Auto-merge with tgymnich/fork-sync
+
+on:
+  schedule:
+    - cron: "*/30 * * * *" # Every 30 minutes
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  sync-and-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Sync Fork
+        id: fork_sync
+        uses: tgymnich/fork-sync@v2.0.10
+        with:
+          token: ${{ secrets.FORK_PAT }}
+          owner: simple-login
+          repo: app
+          base: master
+          head: master
+          pr_title: 'sync: from upstream master to ${{ github.ref_name }}'
+          pr_message: 'Synced from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app).'
+          auto_approve: false # We'll handle auto-approval later
+          merge_method: merge # or rebase, as needed
+          ignore_fail: true # Allow the sync to fail, and we will handle the outcome
+
+      - name: Auto approve and merge if PR created
+        if: steps.fork_sync.outputs.pull-request-number
+        run: |
+          gh pr review --approve "${{ steps.fork_sync.outputs.pull-request-number }}"
+          gh pr merge --squash "${{ steps.fork_sync.outputs.pull-request-number }}"
+        env:
+          GH_TOKEN: ${{ secrets.FORK_PAT }}
+
+      - name: Job Status
+        run: echo "🍏 This job's status is ${{ job.status }}."

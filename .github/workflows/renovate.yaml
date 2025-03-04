@@ -1,0 +1,61 @@
+name: Renovate
+on:
+  push:
+    branches:
+      - "*"
+    paths:
+      - ".github/workflows/renovate.yaml"
+  schedule:
+    # The "*" (#42, asterisk) character has special semantics in YAML, so this
+    # string has to be quoted.
+    - cron: "0 9 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: Dry Run
+        default: "false"
+        required: false
+      logLevel:
+        description: Log Level
+        default: debug
+        required: false
+      version:
+        description: Renovate version
+        default: latest
+        required: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+      # Don't waste time starting Renovate if JSON is invalid
+      - name: Validate Renovate JSON
+        run: jq type .github/renovate.json
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@v40.1.6
+        with:
+          configurationFile: .github/renovate.json
+          token: ${{ secrets.RENOVATE }}
+        env:
+          # LOG_LEVEL: "${{ inputs.logLevel || 'debug' }}"
+          # RENOVATE_AUTODISCOVER: true
+          # RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
+          # # Onboarding not needed for self hosted
+          # RENOVATE_ONBOARDING: "false"
+          # RENOVATE_DRY_RUN: "${{ inputs.dryRun == true }}"
+          # RENOVATE_PLATFORM: github
+          # RENOVATE_PLATFORM_COMMIT: true
+          # WORKFLOW_RENOVATE_VERSION: "${{ inputs.version || 'latest' }}"
+          RENOVATE_DRY_RUN: "${{ inputs.dryRun == true }}"
+          # Repository taken from variable to keep configuration file generic
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          # Onboarding not needed for self hosted
+          RENOVATE_ONBOARDING: "false"
+          # Git commit author used
+          RENOVATE_GIT_AUTHOR: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          # Use GitHub API to create commits (this allows for signed commits from GitHub App)
+          RENOVATE_PLATFORM_COMMIT: "true"
+          LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
+          RENOVATE_PR_HOURLY_LIMIT: 20
