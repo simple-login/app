@@ -20,10 +20,7 @@ jobs:
           head: master
           pr_title: 'sync: from upstream master to ${{ github.ref_name }}'
           pr_message: 'Synced from upstream [simple-login/app](https://github.com/simple-login/app) to [martadams89/sl-app](https://github.com/martadams89/sl-app).'
-          retries: 1
-          retry_after: 3
           auto_approve: true
-          auto_merge: false # Disable auto_merge here, let the automerge job handle it
           merge_method: rebase
           ignore_fail: true
 
