@@ -1,4 +1,4 @@
-name: Sync Fork Master and Auto-merge (Conditional)
+name: Sync Fork Master with Upstream (No Unrelated Histories)
 
 on:
   schedule:
@@ -33,7 +33,7 @@ jobs:
         id: merge_step
         run: |
           git checkout master
-          git merge --allow-unrelated-histories upstream/master
+          git merge upstream/master
         continue-on-error: true # Allow merge to fail, but continue
 
       - name: Commit Merge Changes (if any)
