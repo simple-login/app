@@ -89,3 +89,11 @@ def load_eml_file(
 
 def random_email() -> str:
     return "{rand}@{rand}.com".format(rand=random_string(20))
+
+
+def fix_rate_limit_after_request():
+    from flask import g
+    from app.extensions import limiter
+
+    g._rate_limiting_complete = False
+    setattr(g, "%s_rate_limiting_complete" % limiter._key_prefix, False)

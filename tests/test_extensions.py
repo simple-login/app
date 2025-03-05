@@ -1,12 +1,10 @@
 from http import HTTPStatus
 from random import Random
 
-from flask import g
-
 from app import config
 from app.extensions import limiter
 from tests.conftest import app as test_app
-from tests.utils import login
+from tests.utils import fix_rate_limit_after_request, login
 
 # IMPORTANT NOTICE
 # ----------------
@@ -32,10 +30,6 @@ def random_ip() -> str:
     rand = Random()
     octets = [str(rand.randint(0, 255)) for _ in range(4)]
     return ".".join(octets)
-
-
-def fix_rate_limit_after_request():
-    g._rate_limiting_complete = False
 
 
 def request_headers(source_ip: str) -> dict:
