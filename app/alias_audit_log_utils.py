@@ -9,6 +9,7 @@ class AliasAuditLogAction(Enum):
     ChangeAliasStatus = "change_status"
     DeleteAlias = "delete"
     UpdateAlias = "update"
+    TrashAlias = "trash"
 
     InitiateTransferAlias = "initiate_transfer_alias"
     AcceptTransferAlias = "accept_transfer_alias"

@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError, DataError
 from flask import make_response
 
 from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
+from app.alias_actions import perform_alias_deletion, move_alias_to_trash
 from app.config import (
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
     BOUNCE_PREFIX,
@@ -42,7 +43,6 @@ from app.models import (
     CustomDomain,
     Directory,
     User,
-    DeletedAlias,
     DomainDeletedAlias,
     AliasMailbox,
     Mailbox,
@@ -51,6 +51,7 @@ from app.models import (
     AutoCreateRule,
     AliasUsedOn,
     ClientUser,
+    UserAliasDeleteAction,
 )
 from app.regex_utils import regex_match
 
@@ -340,48 +341,21 @@ def delete_alias(
     commit: bool = False,
 ):
     """
-    Delete an alias and add it to either global or domain trash
+    Determine if the alias is meant to be sent to the user trash or to the global trash, depending on:
+    - alias.delete_on
+    - user.alias_delete_action
     Should be used instead of Alias.delete, DomainDeletedAlias.create, DeletedAlias.create
     """
-    LOG.i(f"User {user} has deleted alias {alias}")
-    # save deleted alias to either global or domain tra
-    if alias.custom_domain_id:
-        if not DomainDeletedAlias.get_by(
-            email=alias.email, domain_id=alias.custom_domain_id
-        ):
-            domain_deleted_alias = DomainDeletedAlias(
-                user_id=user.id,
-                email=alias.email,
-                domain_id=alias.custom_domain_id,
-                reason=reason,
-            )
-            Session.add(domain_deleted_alias)
-            Session.commit()
-            LOG.i(
-                f"Moving {alias} to domain {alias.custom_domain_id} trash {domain_deleted_alias}"
-            )
+    # Determine if the alias should be deleted or moved to trash
+    if (
+        alias.delete_on is not None
+        or user.alias_delete_action == UserAliasDeleteAction.DeleteImmediately
+    ):
+        # Perform alias deletion
+        perform_alias_deletion(alias, user, reason, commit)
     else:
-        if not DeletedAlias.get_by(email=alias.email):
-            deleted_alias = DeletedAlias(email=alias.email, reason=reason)
-            Session.add(deleted_alias)
-            Session.commit()
-            LOG.i(f"Moving {alias} to global trash {deleted_alias}")
-
-    alias_id = alias.id
-    alias_email = alias.email
-
-    emit_alias_audit_log(
-        alias, AliasAuditLogAction.DeleteAlias, "Alias deleted by user action"
-    )
-    Alias.filter(Alias.id == alias.id).delete()
-    Session.commit()
-
-    EventDispatcher.send_event(
-        user,
-        EventContent(alias_deleted=AliasDeleted(id=alias_id, email=alias_email)),
-    )
-    if commit:
-        Session.commit()
+        # Move alias to trash
+        move_alias_to_trash(alias, user, reason, commit)
 
 
 def aliases_for_mailbox(mailbox: Mailbox) -> [Alias]:

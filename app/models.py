@@ -276,6 +276,11 @@ class AliasDeleteReason(EnumE):
     CustomDomainDeleted = 5
 
 
+class UserAliasDeleteAction(EnumE):
+    MoveToTrash = 0
+    DeleteImmediately = 1
+
+
 class JobPriority(EnumE):
     Low = 1
     Default = 50
@@ -290,9 +295,13 @@ class IntEnumType(sa.types.TypeDecorator):
         self._enum_type = enumtype
 
     def process_bind_param(self, enum_obj, dialect):
+        if enum_obj is None:
+            return None
         return enum_obj.value
 
     def process_result_value(self, enum_value, dialect):
+        if enum_value is None:
+            return None
         return self._enum_type(enum_value)
 
 
@@ -572,6 +581,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     # Trigger hard deletion of the account at this time
     delete_on = sa.Column(ArrowType, default=None)
+
+    # Action to perform when deleting an alias
+    alias_delete_action = sa.Column(
+        IntEnumType(UserAliasDeleteAction),
+        default=UserAliasDeleteAction.MoveToTrash,
+        server_default=str(UserAliasDeleteAction.MoveToTrash.value),
+        nullable=False,
+    )
 
     __table_args__ = (
         sa.Index(
@@ -1620,6 +1637,14 @@ class Alias(Base, ModelMixin):
 
     last_email_log_id = sa.Column(sa.Integer, default=None, nullable=True)
 
+    delete_on = sa.Column(ArrowType, default=None, server_default=None, nullable=True)
+    delete_reason = sa.Column(
+        IntEnumType(AliasDeleteReason),
+        default=None,
+        server_default=None,
+        nullable=True,
+    )
+
     __table_args__ = (
         Index("ix_video___ts_vector__", ts_vector, postgresql_using="gin"),
         # index on note column using pg_trgm
@@ -1630,6 +1655,7 @@ class Alias(Base, ModelMixin):
             postgresql_using="gin",
         ),
         Index("ix_alias_original_owner_id", "original_owner_id"),
+        Index("ix_alias_delete_on", "delete_on"),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id])
