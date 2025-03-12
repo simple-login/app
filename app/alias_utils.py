@@ -1,15 +1,15 @@
 import csv
-from io import StringIO
 import re
 from dataclasses import dataclass
+from io import StringIO
 from typing import Optional, Tuple
 
 from email_validator import validate_email, EmailNotValidError
-from sqlalchemy.exc import IntegrityError, DataError
 from flask import make_response
+from sqlalchemy.exc import IntegrityError, DataError
 
-from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
 from app.alias_actions import perform_alias_deletion, move_alias_to_trash
+from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
 from app.config import (
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
     BOUNCE_PREFIX,
@@ -570,3 +570,42 @@ def get_alias_recipient_name(alias: Alias) -> AliasRecipientName:
                 message=f"Put domain default alias name {alias.custom_domain.name} in from header",
             )
     return AliasRecipientName(name=alias.email)
+
+
+def untrash_alias(user: User, alias_id: int) -> int:
+    LOG.i(f"Try to untrash alias {alias_id} by {user.id}")
+    count = (
+        Session.query(Alias)
+        .filter(Alias.id == alias_id, Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
+        .update({"delete_on": None, "delete_reason": None})
+    )
+    Session.commit()
+    return count
+
+
+def untrash_all_alias(user: User) -> int:
+    LOG.i(f"Try to untrash all alias by {user.id}")
+    count = (
+        Session.query(Alias)
+        .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
+        .update({"delete_on": None, "delete_reason": None})
+    )
+    LOG.i(f"Untrashed {count} alias by user {user}")
+    Session.commit()
+    return count
+
+
+def clear_trash(user: User) -> int:
+    LOG.i(f"Clear alias trash by {user}")
+    alias_query = (
+        Session.query(Alias)
+        .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
+        .enable_eagerloads(False)
+        .yield_per(10)
+    )
+    count = 0
+    for alias in alias_query.all():
+        count = count + 1
+        delete_alias(alias, user, reason=alias.delete_reason, commit=False)
+    Session.commit()
+    return count
