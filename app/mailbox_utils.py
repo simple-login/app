@@ -151,7 +151,7 @@ def delete_mailbox(
             LOG.i(f"User {user} has tried to transfer to a non verified mailbox")
             raise MailboxError("Your new mailbox is not verified")
 
-    # Schedule delete account job
+    # Schedule delete mailbox job
     LOG.i(
         f"User {user} has scheduled delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
     )
