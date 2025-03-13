@@ -353,7 +353,7 @@ def construct_alias_query(user: User):
             ).label("nb_forward"),
         )
         .join(EmailLog, Alias.id == EmailLog.alias_id, isouter=True)
-        .filter(Alias.user_id == user.id)
+        .filter(Alias.user_id == user.id, Alias.delete_on == None)  # noqa: E711
         .group_by(Alias.id)
         .subquery()
     )

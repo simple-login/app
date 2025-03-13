@@ -30,7 +30,7 @@ class Stats:
 
 
 def get_stats(user: User) -> Stats:
-    nb_alias = Alias.filter_by(user_id=user.id).count()
+    nb_alias = Alias.filter_by(user_id=user.id, delete_on=None).count()  # noqa : E711
     nb_forward = (
         Session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=False, blocked=False, bounced=False)

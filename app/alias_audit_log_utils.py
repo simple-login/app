@@ -14,6 +14,7 @@ class AliasAuditLogAction(Enum):
     InitiateTransferAlias = "initiate_transfer_alias"
     AcceptTransferAlias = "accept_transfer_alias"
     TransferredAlias = "transferred_alias"
+    RestoreAlias = "restored_alias"
 
     ChangedMailboxes = "changed_mailboxes"
 

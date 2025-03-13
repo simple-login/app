@@ -35,12 +35,12 @@ def alias_trash():
         elif action == "restore-one":
             try:
                 alias_id = int(form.alias_id.data)
-                alias_delete.untrash_alias(current_user, alias_id)
+                alias_delete.restore_alias(current_user, alias_id)
                 flash("Restored alias", "success")
             except ValueError:
                 flash("Invalid alias", "warning")
         elif action == "restore-all":
-            count = alias_delete.untrash_all_alias(current_user)
+            count = alias_delete.restore_all_alias(current_user)
             flash(f"Restored {count} aliases", "success")
 
     alias_in_trash = (

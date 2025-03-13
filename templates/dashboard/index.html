@@ -90,9 +90,9 @@
         </div>
         <div>
           <div class="btn-group">
-            <a href="{{ url_for("dashboard.alias_trash") }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for("dashboard.alias_trash") }}" class="btn btn-outline-primary">
                 <i class="fe fe-trash"></i> Trash</a>
-          <div>
+          </div>
           <div class="btn-group">
             <a @click="toggleStats()" class="btn btn-outline-secondary">
               <span v-if="!showStats">

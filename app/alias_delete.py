@@ -4,7 +4,7 @@ from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.config import ALIAS_TRASH_DAYS
 from app.db import Session
 from app.events.event_dispatcher import EventDispatcher
-from app.events.generated.event_pb2 import EventContent, AliasDeleted
+from app.events.generated.event_pb2 import EventContent, AliasDeleted, AliasCreated
 from app.log import LOG
 from app.models import (
     Alias,
@@ -111,26 +111,58 @@ def move_alias_to_trash(
         Session.commit()
 
 
-def untrash_alias(user: User, alias_id: int) -> int:
-    LOG.i(f"Try to untrash alias {alias_id} by {user.id}")
-    count = (
-        Session.query(Alias)
-        .filter(Alias.id == alias_id, Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
-        .update({"delete_on": None, "delete_reason": None})
+def __perform_alias_restore(user: User, alias: Alias) -> None:
+    LOG.i(f"User {user} is restoring {alias}")
+    if alias.delete_on is None:
+        LOG.i(f"Alias {alias} is not trashed")
+        return
+    alias.delete_on = None
+    alias.delete_reason = None
+    alias.enabled = True
+    emit_alias_audit_log(
+        alias=alias,
+        action=AliasAuditLogAction.RestoreAlias,
+        message=f"Restored alias {alias.id} from trash",
+        user_id=alias.user_id,
+    )
+    EventDispatcher.send_event(
+        user,
+        EventContent(
+            alias_created=AliasCreated(
+                id=alias.id,
+                email=alias.email,
+                note=alias.note,
+                enabled=alias.enabled,
+                created_at=int(alias.created_at.timestamp),
+            )
+        ),
     )
     Session.commit()
-    return count
+    return
 
 
-def untrash_all_alias(user: User) -> int:
-    LOG.i(f"Try to untrash all alias by {user.id}")
-    count = (
+def restore_alias(user: User, alias_id: int) -> None | Alias:
+    LOG.i(f"Try to restore alias {alias_id} by {user.id}")
+    alias = Alias.get_by(id=alias_id, user_id=user.id)
+    if alias is None:
+        return None
+    __perform_alias_restore(user, alias)
+    return alias
+
+
+def restore_all_alias(user: User) -> int:
+    LOG.i(f"Try to restore all alias by {user.id}")
+    query = (
         Session.query(Alias)
         .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
-        .update({"delete_on": None, "delete_reason": None})
+        .enable_eagerloads(False)
+        .yield_per(50)
     )
+    count = 0
+    for alias in query.all():
+        __perform_alias_restore(user, alias)
+        count += 1
     LOG.i(f"Untrashed {count} alias by user {user}")
-    Session.commit()
     return count
 
 
@@ -140,7 +172,7 @@ def clear_trash(user: User) -> int:
         Session.query(Alias)
         .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
         .enable_eagerloads(False)
-        .yield_per(10)
+        .yield_per(50)
     )
     count = 0
     for alias in alias_query.all():
