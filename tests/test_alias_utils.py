@@ -1,11 +1,14 @@
 from typing import List
 
+import arrow
+
 from app.alias_utils import (
     delete_alias,
     check_alias_prefix,
     get_user_if_alias_would_auto_create,
     get_alias_recipient_name,
     try_auto_create,
+    untrash_alias,
 )
 from app.config import ALIAS_DOMAINS
 from app.db import Session
@@ -18,6 +21,7 @@ from app.models import (
     DirectoryMailbox,
     User,
     DomainDeletedAlias,
+    AliasDeleteReason,
 )
 from app.utils import random_string
 from tests.utils import create_new_user, random_domain, random_token, random_email
@@ -221,3 +225,22 @@ def test_get_alias_recipient_alias_without_name_and_custom_domain_name():
     res = get_alias_recipient_name(alias)
     assert res.message is not None
     assert res.name == f"{custom_domain.name} <{alias.email}>"
+
+
+# Untrash alias
+def test_untrash_one_alias():
+    user = create_new_user()
+    alias1 = Alias.create_new_random(user)
+    alias1.delete_on = arrow.now().shift(minutes=6)
+    alias1.delete_reason = AliasDeleteReason.Unspecified
+    alias2 = Alias.create_new_random(user)
+    alias2.delete_on = arrow.now().shift(minutes=10)
+    alias2.delete_reason = AliasDeleteReason.Unspecified
+    Session.commit()
+    untrash_alias(user, alias2.id)
+    new_alias_1 = Alias.get(alias1.id)
+    assert new_alias_1.delete_on is not None
+    assert new_alias_1.delete_reason is not None
+    new_alias_2 = Alias.get(alias2.id)
+    assert new_alias_2.delete_on is None
+    assert new_alias_2.delete_reason is None
