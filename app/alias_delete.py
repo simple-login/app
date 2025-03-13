@@ -183,6 +183,6 @@ def clear_trash(user: User) -> int:
     for alias in alias_query.all():
         count = count + 1
         delete_alias(alias, user, reason=alias.delete_reason, commit=False)
-    newrelic.agent.record_custom_event("ClearAliasTrash")
+    newrelic.agent.record_custom_event("ClearAliasTrash", {})
     Session.commit()
     return count
