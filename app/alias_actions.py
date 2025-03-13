@@ -64,6 +64,7 @@ def move_alias_to_trash(
 ):
     alias.delete_on = arrow.now().shift(days=+ALIAS_TRASH_DAYS)
     alias.delete_reason = reason
+    alias.enabled = False
 
     alias_id = alias.id
     alias_email = alias.email

@@ -19,6 +19,7 @@ from typing import List, Optional
 def ensure_alias_is_trashed(
     alias: Alias, expected_audit_log_size: int, reason: AliasDeleteReason
 ):
+    assert alias.enabled is False
     assert alias.delete_on is not None
     assert alias.delete_reason == reason
 
