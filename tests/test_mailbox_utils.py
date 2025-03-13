@@ -1,10 +1,12 @@
 import re
-from typing import Optional
+from typing import List, Optional
 
 import arrow
 import pytest
 
 from app import mailbox_utils, config
+from app.alias_delete import move_alias_to_trash
+from app.alias_mailbox_utils import set_mailboxes_for_alias
 from app.constants import JobType
 from app.db import Session
 from app.mail_sender import mail_sender
@@ -12,6 +14,7 @@ from app.mailbox_utils import (
     MailboxEmailChangeError,
     get_mailbox_for_reply_phase,
     request_mailbox_email_change,
+    count_mailbox_aliases,
 )
 from app.models import (
     Mailbox,
@@ -663,3 +666,52 @@ def test_change_mailbox_verified_email_sets_mailbox_as_verified(flask_client):
     assert out.mailbox.email == new_email
     assert out.mailbox.new_email is None
     assert out.mailbox.verified is True
+
+
+def test_count_mailbox_aliases(flask_client):
+    user = create_new_user()
+
+    # Test setup
+    # Mailboxes:
+    # - mailbox1
+    # - mailbox2
+    # - mailbox3
+    # Aliases:
+    # - alias1(active) -> mailbox1
+    # - alias2(active) -> mailbox1, mailbox2
+    # - alias3(active) -> mailbox2, mailbox1
+    # - alias4(active) -> mailbox2
+    # - alias5(trashed) -> mailbox1
+    # - alias6(trashed) -> mailbox2
+    # - alias7(trashed) -> mailbox2, mailbox1
+    # - alias8(trashed) -> mailbox1, mailbox2
+    # Expected counts:
+    # - mailbox1 -> 3 (alias1, alias2, alias3)
+    # - mailbox2 -> 3 (alias2, alias3, alias4)
+    # - mailbox3 -> 0
+
+    mbx1 = Mailbox.create(user_id=user.id, email=random_email(), verified=True)
+    mbx2 = Mailbox.create(user_id=user.id, email=random_email(), verified=True)
+    mbx3 = Mailbox.create(user_id=user.id, email=random_email(), verified=True)
+    Session.commit()
+
+    def alias_with_mbxes(mbxes: List[Mailbox], trashed: bool = False) -> Alias:
+        alias = Alias.create_new_random(user)
+        set_mailboxes_for_alias(user.id, alias, [mbx.id for mbx in mbxes])
+        if trashed:
+            move_alias_to_trash(alias, user)
+        Session.commit()
+        return alias
+
+    _alias1 = alias_with_mbxes([mbx1])
+    _alias2 = alias_with_mbxes([mbx1, mbx2])
+    _alias3 = alias_with_mbxes([mbx2, mbx1])
+    _alias4 = alias_with_mbxes([mbx2])
+    _alias5 = alias_with_mbxes([mbx1], True)
+    _alias6 = alias_with_mbxes([mbx2], True)
+    _alias7 = alias_with_mbxes([mbx2, mbx1], True)
+    _alias8 = alias_with_mbxes([mbx1, mbx2], True)
+
+    assert count_mailbox_aliases(mbx1) == 3
+    assert count_mailbox_aliases(mbx2) == 3
+    assert count_mailbox_aliases(mbx3) == 0

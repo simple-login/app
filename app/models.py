@@ -2872,15 +2872,9 @@ class Mailbox(Base, ModelMixin):
         return False
 
     def nb_alias(self):
-        alias_ids = set()
+        from app.mailbox_utils import count_mailbox_aliases
 
-        for am in AliasMailbox.filter_by(mailbox_id=self.id).all():
-            if not am.alias.is_trashed():
-                alias_ids.add(am.alias_id)
-
-        for alias in Alias.filter_by(mailbox_id=self.id).values(Alias.id):
-            alias_ids.add(alias.id)
-        return len(alias_ids)
+        return count_mailbox_aliases(self)
 
     def is_proton(self) -> bool:
         for proton_email_domain in config.PROTON_EMAIL_DOMAINS:
