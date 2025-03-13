@@ -1,20 +1,23 @@
+import pytest
+
 from app.alias_audit_log_utils import AliasAuditLogAction
 from app.alias_utils import delete_alias
 from app.alias_actions import perform_alias_deletion, move_alias_to_trash
+from app.db import Session
 from app.models import (
     UserAliasDeleteAction,
     Alias,
     AliasDeleteReason,
     AliasAuditLog,
     DeletedAlias,
-    User,
+    Mailbox,
 )
 from tests.utils import create_new_user
 from typing import List, Optional
 
 
 def ensure_alias_is_trashed(
-    alias: Alias, user: User, expected_audit_log_size: int, reason: AliasDeleteReason
+    alias: Alias, expected_audit_log_size: int, reason: AliasDeleteReason
 ):
     assert alias.delete_on is not None
     assert alias.delete_reason == reason
@@ -39,7 +42,6 @@ def ensure_alias_is_trashed(
 def ensure_alias_is_deleted(
     alias_id: int,
     alias_email: str,
-    user: User,
     expected_audit_log_size: int,
     reason: AliasDeleteReason,
 ):
@@ -58,6 +60,7 @@ def ensure_alias_is_deleted(
     # Make sure the DeletedAlias instance is created
     deleted_alias: Optional[DeletedAlias] = DeletedAlias.get_by(email=alias_email)
     assert deleted_alias is not None
+    assert deleted_alias.reason == reason
 
 
 # Delete alias
@@ -71,11 +74,11 @@ def test_delete_alias_twice_performs_alias_deletion():
     # This one should move to trash
     reason = AliasDeleteReason.ManualAction
     delete_alias(alias, user, reason=reason, commit=True)
-    ensure_alias_is_trashed(alias, user, 2, reason)
+    ensure_alias_is_trashed(alias, 2, reason)
 
     # This one should delete it
     delete_alias(alias, user, commit=True)
-    ensure_alias_is_deleted(alias_id, alias_email, user, 3, reason)
+    ensure_alias_is_deleted(alias_id, alias_email, 3, reason)
 
 
 def test_delete_alias_with_user_action_set_to_delete():
@@ -87,7 +90,7 @@ def test_delete_alias_with_user_action_set_to_delete():
 
     reason = AliasDeleteReason.ManualAction
     delete_alias(alias, user, reason=reason, commit=True)
-    ensure_alias_is_deleted(alias_id, alias_email, user, 2, reason)
+    ensure_alias_is_deleted(alias_id, alias_email, 2, reason)
 
 
 # perform_alias_deletion
@@ -100,7 +103,7 @@ def test_perform_alias_deletion():
 
     reason = AliasDeleteReason.ManualAction
     perform_alias_deletion(alias, user, reason=reason, commit=True)
-    ensure_alias_is_deleted(alias_id, alias_email, user, 2, reason)
+    ensure_alias_is_deleted(alias_id, alias_email, 2, reason)
 
 
 # move_alias_to_trash
@@ -111,4 +114,29 @@ def test_move_alias_to_trash():
 
     reason = AliasDeleteReason.ManualAction
     move_alias_to_trash(alias, user, reason=reason, commit=True)
-    ensure_alias_is_trashed(alias, user, 2, reason)
+    ensure_alias_is_trashed(alias, 2, reason)
+
+
+# delete mailbox
+def generate_user_setting() -> List[UserAliasDeleteAction]:
+    return [UserAliasDeleteAction.DeleteImmediately, UserAliasDeleteAction.MoveToTrash]
+
+
+@pytest.mark.parametrize("user_setting", generate_user_setting())
+def test_delete_mailbox_deletes_alias_with_user_setting(
+    user_setting: UserAliasDeleteAction
+):
+    user = create_new_user(alias_delete_action=user_setting)
+    mb = Mailbox.create(user_id=user.id, email="ab1@cd.com", verified=True)
+    alias = Alias.create_new_random(user)
+    alias.mailbox_id = mb.id
+    Session.commit()
+    assert alias.delete_on is None
+    alias_id = alias.id
+    alias_email = alias.email
+
+    Mailbox.delete(mb.id)
+
+    ensure_alias_is_deleted(
+        alias_id, alias_email, 2, reason=AliasDeleteReason.MailboxDeleted
+    )

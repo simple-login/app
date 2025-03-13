@@ -2911,10 +2911,10 @@ class Mailbox(Base, ModelMixin):
                 alias.mailbox_id = first_mb.id
                 alias._mailboxes.remove(first_mb)
             else:
-                from app import alias_utils
+                from app.alias_actions import perform_alias_deletion
 
                 # only put aliases that have mailbox as a single mailbox into trash
-                alias_utils.delete_alias(alias, user, AliasDeleteReason.MailboxDeleted)
+                perform_alias_deletion(alias, user, AliasDeleteReason.MailboxDeleted)
             Session.commit()
 
         cls.filter(cls.id == obj_id).delete()
