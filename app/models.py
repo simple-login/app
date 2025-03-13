@@ -1725,7 +1725,7 @@ class Alias(Base, ModelMixin):
             limits = config.ALIAS_CREATE_RATE_LIMIT_FREE
         # limits is array of (hits,days)
         for limit in limits:
-            key = f"alias_create_{limit[1]}d:{user.id}"
+            key = f"alias_create_{limit[1]}:{user.id}"
             rate_limiter.check_bucket_limit(key, limit[0], limit[1])
 
         email = kw["email"]

@@ -1,6 +1,7 @@
 import arrow
 import newrelic.agent
 
+from app import config, rate_limiter
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.config import ALIAS_TRASH_DAYS
 from app.db import Session
@@ -144,6 +145,10 @@ def __perform_alias_restore(user: User, alias: Alias) -> None:
 
 def restore_alias(user: User, alias_id: int) -> None | Alias:
     LOG.i(f"Try to restore alias {alias_id} by {user.id}")
+    limits = config.ALIAS_RESTORE_ONE_RATE_LIMIT
+    for limit in limits:
+        key = f"alias_restore_all_{limit[1]}:{user.id}"
+        rate_limiter.check_bucket_limit(key, limit[0], limit[1])
     alias = Alias.get_by(id=alias_id, user_id=user.id)
     if alias is None:
         return None
@@ -155,6 +160,10 @@ def restore_alias(user: User, alias_id: int) -> None | Alias:
 
 def restore_all_alias(user: User) -> int:
     LOG.i(f"Try to restore all alias by {user.id}")
+    limits = config.ALIAS_RESTORE_ALL_RATE_LIMIT
+    for limit in limits:
+        key = f"alias_restore_all_{limit[1]}:{user.id}"
+        rate_limiter.check_bucket_limit(key, limit[0], limit[1])
     query = (
         Session.query(Alias)
         .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
