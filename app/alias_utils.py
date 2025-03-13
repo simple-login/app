@@ -335,7 +335,9 @@ def aliases_for_mailbox(mailbox: Mailbox) -> [Alias]:
     """
     get list of aliases for a given mailbox
     """
-    ret = set(Alias.filter(Alias.mailbox_id == mailbox.id).all())
+    ret = set(
+        Alias.filter(Alias.mailbox_id == mailbox.id, Alias.delete_on == None).all()  # noqa: E711
+    )
 
     for alias in (
         Session.query(Alias)
@@ -380,7 +382,7 @@ def alias_export_csv(user, csv_direct_export=False):
 
     """
     data = [["alias", "note", "enabled", "mailboxes"]]
-    for alias in Alias.filter_by(user_id=user.id).all():  # type: Alias
+    for alias in Alias.filter_by(user_id=user.id, delete_on=None).all():  # type: Alias
         # Always put the main mailbox first
         # It is seen a primary while importing
         alias_mailboxes = alias.mailboxes

@@ -1111,6 +1111,7 @@ def get_alias_to_check_hibp(
             ),
             Alias.user_id.notin_(user_ids_to_skip),
             Alias.enabled,
+            Alias.delete_on == None,  # noqa: E711
             Alias.id >= min_alias_id,
             Alias.id < max_alias_id,
             User.disabled == False,  # noqa: E712

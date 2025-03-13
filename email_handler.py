@@ -629,7 +629,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         )
         return [(True, status.E502)]
 
-    if not alias.enabled or contact.block_forward:
+    if not alias.enabled or alias.is_trashed() or contact.block_forward:
         LOG.d("%s is disabled, do not forward", alias)
         EmailLog.create(
             contact_id=contact.id,

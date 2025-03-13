@@ -1697,6 +1697,9 @@ class Alias(Base, ModelMixin):
             return True
         return False
 
+    def is_trashed(self) -> bool:
+        return self.delete_on is not None
+
     @staticmethod
     def get_custom_domain(alias_address: str) -> Optional["CustomDomain"]:
         alias_domain = validate_email(
@@ -2869,12 +2872,12 @@ class Mailbox(Base, ModelMixin):
         return False
 
     def nb_alias(self):
-        alias_ids = set(
-            am.alias_id
-            for am in AliasMailbox.filter_by(mailbox_id=self.id).values(
-                AliasMailbox.alias_id
-            )
-        )
+        alias_ids = set()
+
+        for am in AliasMailbox.filter_by(mailbox_id=self.id).all():
+            if not am.alias.is_trashed():
+                alias_ids.add(am.alias_id)
+
         for alias in Alias.filter_by(mailbox_id=self.id).values(Alias.id):
             alias_ids.add(alias.id)
         return len(alias_ids)
