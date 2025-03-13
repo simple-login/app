@@ -1,8 +1,11 @@
+from typing import List, Optional
+
+import arrow
 import pytest
 
+from app.alias_actions import delete_alias
+from app.alias_actions import perform_alias_deletion, move_alias_to_trash, untrash_alias
 from app.alias_audit_log_utils import AliasAuditLogAction
-from app.alias_utils import delete_alias
-from app.alias_actions import perform_alias_deletion, move_alias_to_trash
 from app.db import Session
 from app.models import (
     UserAliasDeleteAction,
@@ -13,7 +16,6 @@ from app.models import (
     Mailbox,
 )
 from tests.utils import create_new_user
-from typing import List, Optional
 
 
 def ensure_alias_is_trashed(
@@ -141,3 +143,22 @@ def test_delete_mailbox_deletes_alias_with_user_setting(
     ensure_alias_is_deleted(
         alias_id, alias_email, 2, reason=AliasDeleteReason.MailboxDeleted
     )
+
+
+# Untrash alias
+def test_untrash_one_alias():
+    user = create_new_user()
+    alias1 = Alias.create_new_random(user)
+    alias1.delete_on = arrow.now().shift(minutes=6)
+    alias1.delete_reason = AliasDeleteReason.Unspecified
+    alias2 = Alias.create_new_random(user)
+    alias2.delete_on = arrow.now().shift(minutes=10)
+    alias2.delete_reason = AliasDeleteReason.Unspecified
+    Session.commit()
+    untrash_alias(user, alias2.id)
+    new_alias_1 = Alias.get(alias1.id)
+    assert new_alias_1.delete_on is not None
+    assert new_alias_1.delete_reason is not None
+    new_alias_2 = Alias.get(alias2.id)
+    assert new_alias_2.delete_on is None
+    assert new_alias_2.delete_reason is None

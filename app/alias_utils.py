@@ -8,7 +8,6 @@ from email_validator import validate_email, EmailNotValidError
 from flask import make_response
 from sqlalchemy.exc import IntegrityError, DataError
 
-from app.alias_actions import perform_alias_deletion, move_alias_to_trash
 from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
 from app.config import (
     BOUNCE_PREFIX_FOR_REPLY_PHASE,
@@ -39,7 +38,6 @@ from app.events.generated.event_pb2 import (
 from app.log import LOG
 from app.models import (
     Alias,
-    AliasDeleteReason,
     CustomDomain,
     Directory,
     User,
@@ -51,7 +49,6 @@ from app.models import (
     AutoCreateRule,
     AliasUsedOn,
     ClientUser,
-    UserAliasDeleteAction,
 )
 from app.regex_utils import regex_match
 
@@ -334,30 +331,6 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         return None
 
 
-def delete_alias(
-    alias: Alias,
-    user: User,
-    reason: AliasDeleteReason = AliasDeleteReason.Unspecified,
-    commit: bool = False,
-):
-    """
-    Determine if the alias is meant to be sent to the user trash or to the global trash, depending on:
-    - alias.delete_on
-    - user.alias_delete_action
-    Should be used instead of Alias.delete, DomainDeletedAlias.create, DeletedAlias.create
-    """
-    # Determine if the alias should be deleted or moved to trash
-    if (
-        alias.delete_on is not None
-        or user.alias_delete_action == UserAliasDeleteAction.DeleteImmediately
-    ):
-        # Perform alias deletion
-        perform_alias_deletion(alias, user, reason, commit)
-    else:
-        # Move alias to trash
-        move_alias_to_trash(alias, user, reason, commit)
-
-
 def aliases_for_mailbox(mailbox: Mailbox) -> [Alias]:
     """
     get list of aliases for a given mailbox
@@ -570,42 +543,3 @@ def get_alias_recipient_name(alias: Alias) -> AliasRecipientName:
                 message=f"Put domain default alias name {alias.custom_domain.name} in from header",
             )
     return AliasRecipientName(name=alias.email)
-
-
-def untrash_alias(user: User, alias_id: int) -> int:
-    LOG.i(f"Try to untrash alias {alias_id} by {user.id}")
-    count = (
-        Session.query(Alias)
-        .filter(Alias.id == alias_id, Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
-        .update({"delete_on": None, "delete_reason": None})
-    )
-    Session.commit()
-    return count
-
-
-def untrash_all_alias(user: User) -> int:
-    LOG.i(f"Try to untrash all alias by {user.id}")
-    count = (
-        Session.query(Alias)
-        .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
-        .update({"delete_on": None, "delete_reason": None})
-    )
-    LOG.i(f"Untrashed {count} alias by user {user}")
-    Session.commit()
-    return count
-
-
-def clear_trash(user: User) -> int:
-    LOG.i(f"Clear alias trash by {user}")
-    alias_query = (
-        Session.query(Alias)
-        .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
-        .enable_eagerloads(False)
-        .yield_per(10)
-    )
-    count = 0
-    for alias in alias_query.all():
-        count = count + 1
-        delete_alias(alias, user, reason=alias.delete_reason, commit=False)
-    Session.commit()
-    return count

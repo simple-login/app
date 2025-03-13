@@ -728,7 +728,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
 
         # Manually delete all aliases for the user that is about to be deleted
-        from app.alias_utils import delete_alias
+        from app.alias_actions import delete_alias
 
         for alias in Alias.filter_by(user_id=user.id):
             delete_alias(alias, user, AliasDeleteReason.UserHasBeenDeleted)
@@ -2594,10 +2594,10 @@ class CustomDomain(Base, ModelMixin):
         if obj.is_sl_subdomain:
             DeletedSubdomain.create(domain=obj.domain)
 
-        from app import alias_utils
+        from app import alias_actions
 
         for alias in Alias.filter_by(custom_domain_id=obj_id):
-            alias_utils.delete_alias(
+            alias_actions.delete_alias(
                 alias, obj.user, AliasDeleteReason.CustomDomainDeleted
             )
 
@@ -2773,9 +2773,9 @@ class Directory(Base, ModelMixin):
         user = obj.user
         # Put all aliases belonging to this directory to global or domain trash
         for alias in Alias.filter_by(directory_id=obj_id):
-            from app import alias_utils
+            from app import alias_actions
 
-            alias_utils.delete_alias(alias, user, AliasDeleteReason.DirectoryDeleted)
+            alias_actions.delete_alias(alias, user, AliasDeleteReason.DirectoryDeleted)
 
         DeletedDirectory.create(name=obj.name)
         cls.filter(cls.id == obj_id).delete()

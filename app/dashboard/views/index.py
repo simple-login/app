@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
-from app import alias_utils, parallel_limiter
+from app import alias_utils, parallel_limiter, alias_actions
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
 from app.config import ALIAS_LIMIT, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
@@ -147,7 +147,7 @@ def index():
             if request.form.get("form-name") == "delete-alias":
                 LOG.i(f"User {current_user} requested deletion of alias {alias}")
                 email = alias.email
-                alias_utils.delete_alias(
+                alias_actions.delete_alias(
                     alias, current_user, AliasDeleteReason.ManualAction, commit=True
                 )
                 flash(f"Alias {email} has been deleted", "success")

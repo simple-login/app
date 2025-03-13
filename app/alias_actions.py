@@ -6,7 +6,38 @@ from app.db import Session
 from app.events.event_dispatcher import EventDispatcher
 from app.events.generated.event_pb2 import EventContent, AliasDeleted
 from app.log import LOG
-from app.models import Alias, User, AliasDeleteReason, DomainDeletedAlias, DeletedAlias
+from app.models import (
+    Alias,
+    User,
+    AliasDeleteReason,
+    DomainDeletedAlias,
+    DeletedAlias,
+    UserAliasDeleteAction,
+)
+
+
+def delete_alias(
+    alias: Alias,
+    user: User,
+    reason: AliasDeleteReason = AliasDeleteReason.Unspecified,
+    commit: bool = False,
+):
+    """
+    Determine if the alias is meant to be sent to the user trash or to the global trash, depending on:
+    - alias.delete_on
+    - user.alias_delete_action
+    Should be used instead of Alias.delete, DomainDeletedAlias.create, DeletedAlias.create
+    """
+    # Determine if the alias should be deleted or moved to trash
+    if (
+        alias.delete_on is not None
+        or user.alias_delete_action == UserAliasDeleteAction.DeleteImmediately
+    ):
+        # Perform alias deletion
+        perform_alias_deletion(alias, user, reason, commit)
+    else:
+        # Move alias to trash
+        move_alias_to_trash(alias, user, reason, commit)
 
 
 def perform_alias_deletion(
@@ -78,3 +109,42 @@ def move_alias_to_trash(
     )
     if commit:
         Session.commit()
+
+
+def untrash_alias(user: User, alias_id: int) -> int:
+    LOG.i(f"Try to untrash alias {alias_id} by {user.id}")
+    count = (
+        Session.query(Alias)
+        .filter(Alias.id == alias_id, Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
+        .update({"delete_on": None, "delete_reason": None})
+    )
+    Session.commit()
+    return count
+
+
+def untrash_all_alias(user: User) -> int:
+    LOG.i(f"Try to untrash all alias by {user.id}")
+    count = (
+        Session.query(Alias)
+        .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
+        .update({"delete_on": None, "delete_reason": None})
+    )
+    LOG.i(f"Untrashed {count} alias by user {user}")
+    Session.commit()
+    return count
+
+
+def clear_trash(user: User) -> int:
+    LOG.i(f"Clear alias trash by {user}")
+    alias_query = (
+        Session.query(Alias)
+        .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
+        .enable_eagerloads(False)
+        .yield_per(10)
+    )
+    count = 0
+    for alias in alias_query.all():
+        count = count + 1
+        delete_alias(alias, user, reason=alias.delete_reason, commit=False)
+    Session.commit()
+    return count
