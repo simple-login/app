@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField
 
-from app import alias_actions
+from app import alias_delete
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -30,17 +30,17 @@ def alias_trash():
             return redirect(url_for("dashboard.alias_trash"))
         action = form.action.data.strip()
         if action == "trash-all":
-            count = alias_actions.clear_trash(current_user)
+            count = alias_delete.clear_trash(current_user)
             flash(f"Deleted {count} aliases", "success")
         elif action == "restore-one":
             try:
                 alias_id = int(form.alias_id.data)
-                alias_actions.untrash_alias(current_user, alias_id)
+                alias_delete.untrash_alias(current_user, alias_id)
                 flash("Restored alias", "success")
             except ValueError:
                 flash("Invalid alias", "warning")
         elif action == "restore-all":
-            count = alias_actions.untrash_all_alias(current_user)
+            count = alias_delete.untrash_all_alias(current_user)
             flash(f"Restored {count} aliases", "success")
 
     alias_in_trash = (

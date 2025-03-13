@@ -3,7 +3,7 @@ from random import random
 from flask import url_for
 
 from app import config
-from app.alias_actions import delete_alias
+from app.alias_delete import delete_alias
 from app.alias_suffix import (
     get_alias_suffixes,
     AliasSuffix,

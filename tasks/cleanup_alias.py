@@ -4,7 +4,7 @@ from sqlalchemy import and_
 from app.db import Session
 from app.log import LOG
 from app.models import Alias
-from app.alias_actions import perform_alias_deletion
+from app.alias_delete import perform_alias_deletion
 
 
 def cleanup_alias(oldest_allowed: arrow.Arrow):

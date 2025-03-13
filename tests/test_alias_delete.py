@@ -3,8 +3,8 @@ from typing import List, Optional
 import arrow
 import pytest
 
-from app.alias_actions import delete_alias
-from app.alias_actions import perform_alias_deletion, move_alias_to_trash, untrash_alias
+from app.alias_delete import delete_alias
+from app.alias_delete import perform_alias_deletion, move_alias_to_trash, untrash_alias
 from app.alias_audit_log_utils import AliasAuditLogAction
 from app.db import Session
 from app.models import (

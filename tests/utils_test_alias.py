@@ -3,7 +3,7 @@ from io import StringIO
 
 from flask import url_for
 
-from app.alias_actions import delete_alias
+from app.alias_delete import delete_alias
 from app.db import Session
 from app.models import Alias, CustomDomain, Mailbox, AliasMailbox
 from tests.utils import login, create_new_user, random_domain, random_token

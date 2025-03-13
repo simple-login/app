@@ -1,6 +1,6 @@
 import random
 
-from app.alias_actions import delete_alias
+from app.alias_delete import delete_alias
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.alias_utils import transfer_alias
 from app.models import Alias, AliasAuditLog, AliasDeleteReason
