@@ -15,9 +15,13 @@ class DeleteCustomDomainJob:
     def create_from_job(job: Job) -> Optional["DeleteCustomDomainJob"]:
         custom_domain_id = job.payload.get("custom_domain_id")
         if not custom_domain_id:
+            LOG.error(
+                f"Job {job.id} did not have custom_domain_id property. Payload: {job.payload}"
+            )
             return None
         custom_domain: Optional[CustomDomain] = CustomDomain.get(custom_domain_id)
         if not custom_domain:
+            LOG.error(f"Could not find CustomDomain: {custom_domain_id}")
             return None
 
         return DeleteCustomDomainJob(custom_domain)
