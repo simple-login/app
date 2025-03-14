@@ -2565,7 +2565,9 @@ class CustomDomain(Base, ModelMixin):
             return [self.user.default_mailbox]
 
     def nb_alias(self):
-        return Alias.filter_by(custom_domain_id=self.id).count()
+        from app.custom_domain_utils import count_custom_domain_aliases
+
+        return count_custom_domain_aliases(self)
 
     def get_trash_url(self):
         return config.URL + f"/dashboard/domains/{self.id}/trash"
@@ -2597,11 +2599,11 @@ class CustomDomain(Base, ModelMixin):
         if obj.is_sl_subdomain:
             DeletedSubdomain.create(domain=obj.domain)
 
-        from app import alias_delete
+        from app.alias_delete import perform_alias_deletion
 
         for alias in Alias.filter_by(custom_domain_id=obj_id):
-            alias_delete.delete_alias(
-                alias, obj.user, AliasDeleteReason.CustomDomainDeleted
+            perform_alias_deletion(
+                alias, alias.user, AliasDeleteReason.CustomDomainDeleted
             )
 
         return super(CustomDomain, cls).delete(obj_id)
