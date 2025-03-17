@@ -1,49 +1,5 @@
 $('.mailbox-select').multipleSelect();
 
-function confirmDeleteAlias() {
-  let that = $(this);
-  let alias = that.data("alias-email");
-  let aliasDomainTrashUrl = that.data("custom-domain-trash-url");
-
-  let message = `Maybe you want to disable the alias instead? Please note once deleted, it <b>can't</b> be restored.`;
-  if (aliasDomainTrashUrl !== undefined) {
-    message = `Maybe you want to disable the alias instead? When it's deleted, it's moved to the domain
-    <a href="${aliasDomainTrashUrl}">trash</a>`;
-  }
-
-  bootbox.dialog({
-    title: `Delete ${alias}`,
-    message: message,
-    size: 'large',
-    onEscape: true,
-    backdrop: true,
-    buttons: {
-      disable: {
-        label: 'Disable it',
-        className: 'btn-primary',
-        callback: function () {
-          that.closest("form").find('input[name="form-name"]').val("disable-alias");
-          that.closest("form").submit();
-        }
-      },
-
-      delete: {
-        label: "Delete it, I don't need it anymore",
-        className: 'btn-outline-danger',
-        callback: function () {
-          that.closest("form").submit();
-        }
-      },
-
-      cancel: {
-        label: 'Cancel',
-        className: 'btn-outline-primary'
-      },
-
-    }
-  });
-}
-
 $(".enable-disable-alias").change(async function () {
   let aliasId = $(this).data("alias");
   let alias = $(this).data("alias-email");

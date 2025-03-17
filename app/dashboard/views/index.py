@@ -17,6 +17,7 @@ from app.models import (
     User,
     EmailLog,
     Contact,
+    UserAliasDeleteAction,
 )
 from app.utils import CSRFValidationForm
 
@@ -221,6 +222,7 @@ def index():
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
+        UserAliasDeleteAction=UserAliasDeleteAction,
         mailboxes=mailboxes,
         show_intro=show_intro,
         page=page,

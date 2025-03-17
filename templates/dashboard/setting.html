@@ -520,7 +520,7 @@
                               <b>Delete</b> means the alias will be permanently deleted and won't be available for restore.
                               <br />
                           </div>
-                          <form method="post" action="#alias-delete-action" class="form-inline">
+                          <form method="post" action="#alias-delete-action" class="form-inline mb-3">
                               {{ csrf_form.csrf_token }}
                               <input type="hidden" name="form-name" value="alias-delete-action">
                               <select class="form-control mr-sm-2" name="alias-delete-action">
@@ -533,6 +533,9 @@
                               </select>
                               <button class="btn btn-outline-primary">Update</button>
                           </form>
+
+                          <a href="{{ url_for("dashboard.alias_trash") }}"
+                             class="btn btn-outline-primary">See alias trash</a>
                       </div>
                   </div>
                   <!-- END Alias delete action -->
