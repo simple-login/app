@@ -918,7 +918,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def can_create_new_alias(self) -> bool:
         """
         Whether user can create a new alias. User can't create a new alias if
-        - has more than 15 aliases in the free plan, *even in the free trial*
+        - has more than user.max_alias_for_free_account() aliases in the free plan, *even in the free trial*
         """
         if not self.is_active():
             return False
@@ -929,10 +929,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if self.lifetime_or_active_subscription():
             return True
         else:
-            return (
-                Alias.filter_by(user_id=self.id).count()
-                < self.max_alias_for_free_account()
-            )
+            active_alias_count = Alias.filter_by(
+                user_id=self.id, delete_on=None
+            ).count()
+            return active_alias_count < self.max_alias_for_free_account()
 
     def can_send_or_receive(self) -> bool:
         if self.disabled:
