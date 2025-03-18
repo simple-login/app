@@ -5,6 +5,7 @@ from app import config, rate_limiter
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.config import ALIAS_TRASH_DAYS
 from app.db import Session
+from app.errors import CannotCreateAliasQuotaExceeded
 from app.events.event_dispatcher import EventDispatcher
 from app.events.generated.event_pb2 import EventContent, AliasDeleted, AliasCreated
 from app.log import LOG
@@ -140,7 +141,11 @@ def __perform_alias_restore(user: User, alias: Alias) -> None:
         ),
     )
     Session.commit()
-    return
+
+
+def check_user_can_restore_num_aliases(user: User, num_aliases_to_restore: int):
+    if not user.can_create_num_aliases(num_aliases_to_restore):
+        raise CannotCreateAliasQuotaExceeded()
 
 
 def restore_alias(user: User, alias_id: int) -> None | Alias:
@@ -152,6 +157,8 @@ def restore_alias(user: User, alias_id: int) -> None | Alias:
     alias = Alias.get_by(id=alias_id, user_id=user.id)
     if alias is None:
         return None
+
+    check_user_can_restore_num_aliases(user, 1)
     __perform_alias_restore(user, alias)
     newrelic.agent.record_custom_event("RestoreAlias", {"mode": "single"})
     newrelic.agent.record_custom_metric("AliasRestored", 1)
@@ -164,12 +171,13 @@ def restore_all_alias(user: User) -> int:
     for limit in limits:
         key = f"alias_restore_all_{limit[1]}:{user.id}"
         rate_limiter.check_bucket_limit(key, limit[0], limit[1])
-    query = (
-        Session.query(Alias)
-        .filter(Alias.user_id == user.id, Alias.delete_on != None)  # noqa: E711
-        .enable_eagerloads(False)
-        .yield_per(50)
-    )
+
+    filters = [Alias.user_id == user.id, Alias.delete_on != None]  # noqa: E711
+
+    trashed_aliases_count = Session.query(Alias).filter(*filters).count()
+    check_user_can_restore_num_aliases(user, trashed_aliases_count)
+
+    query = Session.query(Alias).filter(*filters).enable_eagerloads(False).yield_per(50)
     count = 0
     for alias in query.all():
         __perform_alias_restore(user, alias)
