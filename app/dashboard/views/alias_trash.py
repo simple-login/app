@@ -40,7 +40,7 @@ def alias_trash():
                     alias_delete.restore_alias(current_user, alias_id)
                     flash("Restored alias", "success")
                 except CannotCreateAliasQuotaExceeded:
-                    flash("You cannot create more aliases", "error")
+                    flash("You do not have enough quota to restore this alias", "error")
             except ValueError:
                 flash("Invalid alias", "warning")
         elif action == "restore-all":
