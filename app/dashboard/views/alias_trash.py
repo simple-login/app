@@ -7,6 +7,7 @@ from app import alias_delete
 from app.config import PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
 from app.db import Session
+from app.errors import CannotCreateAliasQuotaExceeded
 from app.models import Alias
 
 
@@ -35,13 +36,19 @@ def alias_trash():
         elif action == "restore-one":
             try:
                 alias_id = int(form.alias_id.data)
-                alias_delete.restore_alias(current_user, alias_id)
-                flash("Restored alias", "success")
+                try:
+                    alias_delete.restore_alias(current_user, alias_id)
+                    flash("Restored alias", "success")
+                except CannotCreateAliasQuotaExceeded:
+                    flash("You do not have enough quota to restore this alias", "error")
             except ValueError:
                 flash("Invalid alias", "warning")
         elif action == "restore-all":
-            count = alias_delete.restore_all_alias(current_user)
-            flash(f"Restored {count} aliases", "success")
+            try:
+                count = alias_delete.restore_all_alias(current_user)
+                flash(f"Restored {count} aliases", "success")
+            except CannotCreateAliasQuotaExceeded:
+                flash("You do not have enough quota to restore all aliases", "error")
 
     alias_in_trash = (
         Session.query(Alias)

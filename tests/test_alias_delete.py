@@ -8,6 +8,7 @@ from app.alias_audit_log_utils import AliasAuditLogAction
 from app.alias_delete import delete_alias, restore_all_alias, clear_trash
 from app.alias_delete import perform_alias_deletion, move_alias_to_trash, restore_alias
 from app.db import Session
+from app.errors import CannotCreateAliasQuotaExceeded
 from app.events.event_dispatcher import GlobalDispatcher
 from app.models import (
     UserAliasDeleteAction,
@@ -253,3 +254,90 @@ def test_clear_trash():
     deleted_alias = DeletedAlias.get_by(email=alias2.email)
     assert deleted_alias is not None
     assert deleted_alias.reason == AliasDeleteReason.MailboxDeleted
+
+
+def test_cannot_restore_single_alias_if_over_quota():
+    user = create_new_user()
+
+    # Max out aliases
+    aliases = []
+    while user.can_create_new_alias():
+        aliases.append(Alias.create_new_random(user))
+
+    # Trash one alias
+    alias_to_trash = aliases[0]
+    move_alias_to_trash(alias_to_trash, user)
+
+    # Create new alias
+    Alias.create_new_random(user)
+
+    # Try to restore trashed alias
+    with pytest.raises(CannotCreateAliasQuotaExceeded):
+        restore_alias(user, alias_to_trash.id)
+
+
+def test_can_restore_single_alias_just_to_quota():
+    user = create_new_user()
+
+    # Max out aliases
+    aliases = []
+    while user.can_create_new_alias():
+        aliases.append(Alias.create_new_random(user))
+
+    # Trash one alias
+    alias_to_trash = aliases[0]
+    move_alias_to_trash(alias_to_trash, user)
+
+    # Create new alias
+    new_alias = Alias.create_new_random(user)
+
+    # Trash that alias too
+    move_alias_to_trash(new_alias, user)
+
+    # Restore first alias
+    restored_alias = restore_alias(user, alias_to_trash.id)
+    assert restored_alias is not None
+    assert restored_alias.id == alias_to_trash.id
+
+    assert restored_alias.delete_on is None
+    assert restored_alias.delete_reason is None
+
+
+def test_cannot_restore_many_aliases_over_quota():
+    user = create_new_user()
+
+    # Max out aliases
+    aliases = []
+    while user.can_create_new_alias():
+        aliases.append(Alias.create_new_random(user))
+
+    # Trash two aliases
+    alias_to_trash1 = aliases[0]
+    move_alias_to_trash(alias_to_trash1, user)
+    alias_to_trash2 = aliases[1]
+    move_alias_to_trash(alias_to_trash2, user)
+
+    # Create new alias
+    Alias.create_new_random(user)
+
+    # Try to restore trashed aliases
+    with pytest.raises(CannotCreateAliasQuotaExceeded):
+        restore_all_alias(user)
+
+
+def test_can_restore_many_aliases_just_to_quota():
+    user = create_new_user()
+
+    # Max out aliases
+    aliases = []
+    while user.can_create_new_alias():
+        aliases.append(Alias.create_new_random(user))
+
+    # Trash two aliases
+    alias_to_trash1 = aliases[0]
+    move_alias_to_trash(alias_to_trash1, user)
+    alias_to_trash2 = aliases[1]
+    move_alias_to_trash(alias_to_trash2, user)
+
+    count = restore_all_alias(user)
+    assert count == 2
