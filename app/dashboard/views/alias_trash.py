@@ -48,7 +48,7 @@ def alias_trash():
                 count = alias_delete.restore_all_alias(current_user)
                 flash(f"Restored {count} aliases", "success")
             except CannotCreateAliasQuotaExceeded:
-                flash("You cannot create more aliases", "error")
+                flash("You do not have enough quota to restore all aliases", "error")
 
     alias_in_trash = (
         Session.query(Alias)
