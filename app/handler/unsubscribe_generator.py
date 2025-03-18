@@ -106,6 +106,7 @@ class UnsubscribeGenerator:
         Add List-Unsubscribe header based on the user preference.
         """
         unsub_behaviour = alias.user.unsub_behaviour
+        message = self.__preserve_original_headers(message)
         if unsub_behaviour == UnsubscribeBehaviourEnum.PreserveOriginal:
             return self._generate_header_with_original_behaviour(alias, message)
         elif unsub_behaviour == UnsubscribeBehaviourEnum.DisableAlias:
@@ -114,3 +115,16 @@ class UnsubscribeGenerator:
         else:
             unsub = UnsubscribeData(UnsubscribeAction.DisableContact, contact.id)
             return self._add_unsubscribe_header(message, unsub)
+
+    def __preserve_original_headers(self, message: Message) -> Message:
+        unsubscribe_data = message[headers.LIST_UNSUBSCRIBE]
+        if unsubscribe_data:
+            add_or_replace_header(
+                message, headers.SL_ORIGINAL_LIST_UNSUBSCRIBE, unsubscribe_data
+            )
+        unsubscribe_data = message[headers.LIST_UNSUBSCRIBE_POST]
+        if unsubscribe_data:
+            add_or_replace_header(
+                message, headers.SL_ORIGINAL_LIST_UNSUBSCRIBE_POST, unsubscribe_data
+            )
+        return message
